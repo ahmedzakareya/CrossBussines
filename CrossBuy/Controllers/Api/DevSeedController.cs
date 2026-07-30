@@ -1036,6 +1036,42 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
 		}
 
+		// GET /api/dev/hm2-kwd-invoice-test?key=seed123 — HM-2 Batch 3-أ: a KWD sales invoice (3-decimal price) must preserve fils in the
+		// document, store GrandTotalBase == the 1102 JE line (single-source constraint), and post a balanced JE. Rolled-back tx (zero persistence).
+		[HttpGet("hm2-kwd-invoice-test")]
+		public async Task<IActionResult> Hm2KwdInvoiceTest(string key, [FromServices] CrossBuy.BL.IReceivableService ar)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int ctrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			if (ctrl == 0 || rev == 0) return BadRequest(new { message = "need 1102/4101" });
+			var cust = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-CUST");
+			if (cust == null) { cust = new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-KWD-CUST", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
+			long loads0 = CrossBuy.BL.JournalEntryService.RoundingDiffLoads;
+			await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+			// KWD (currencyId 5) line priced 0.755 — a 3rd decimal (fils) that 2dp rounding would destroy (→0.76).
+			var (ok, err, inv) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> {
+				new CrossBuy.BL.SalesLineInput { ItemDescription = "ZZ KWD 3dp", Qty = 3, UnitPrice = 0.755m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = null, WarehouseId = null } }, "ZZ KWD", null, 5);
+			object result;
+			if (ok && inv != null)
+			{
+				var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == inv.JournalEntryId).ToListAsync();
+				decimal arLine = jl.Where(l => l.AccountId == ctrl).Sum(l => l.Debit);
+				decimal jd = jl.Sum(l => l.Debit), jc = jl.Sum(l => l.Credit);
+				result = new
+				{
+					posted = true,
+					documentCurrency = "KWD", documentGrandTotal = inv.GrandTotal, filsPreserved = inv.GrandTotal == 2.265m,   // 3 × 0.755 = 2.265 (would be 2.27 or 2.26 at 2dp)
+					grandTotalBase = inv.GrandTotalBase, arJeLine1102 = arLine, columnEqualsJeLine = inv.GrandTotalBase == arLine,
+					jeBalanced = jd == jc, exchangeRate = inv.ExchangeRate, roundingDiffLoaded = CrossBuy.BL.JournalEntryService.RoundingDiffLoads - loads0
+				};
+			}
+			else result = new { posted = false, error = err };
+			await tx.RollbackAsync();
+			return Ok(new { note = "KWD invoice inside a rolled-back tx (zero persistence)", result });
+		}
+
 		// GET /api/dev/hm2-rounding-test?key=seed123 — HM-2 Batch 1: proves the centralized rounding-remainder rule in JournalEntryService
 		// (load on eligible P&L / reject caller imbalance / reject when no eligible line). Each JE posts inside a rolled-back tx (zero persistence).
 		[HttpGet("hm2-rounding-test")]

@@ -130,6 +130,20 @@
 <!--end::New group modal-->
 
 @section Scripts {
+<script>
+(function () {
+    // surface any JS error on-screen (so we can see it without the console)
+    window.addEventListener('error', function (e) {
+        try {
+            var d = document.getElementById('cbchat_err');
+            if (!d) { d = document.createElement('div'); d.id = 'cbchat_err'; d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#f1416c;color:#fff;padding:10px;font:12px/1.5 monospace;white-space:pre-wrap'; (document.body || document.documentElement).appendChild(d); }
+            d.textContent = 'CHAT JS ERROR: ' + e.message + '  @@ ' + String(e.filename || '').split('/').pop() + ':' + e.lineno + ':' + e.colno;
+        } catch (x) { }
+    });
+    // safety: never let the theme page-loader trap this page
+    setTimeout(function () { try { document.body.removeAttribute('data-kt-app-page-loading'); document.body.classList.remove('page-loading'); } catch (e) { } }, 1200);
+})();
+</script>
 <script src="@Url.Content("~/Backend-assets/plugins/signalr.min.js")"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -260,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var others = (curHeader.memberCount || 1) - 1, readers = 0;
             for (var k in memberReads) { if (memberReads[k] >= lastId) readers++; }
             if (others > 0 && readers >= others) el.innerHTML = seenIco + '@Localizer["Read by all"]';
-            else if (readers > 0) el.innerHTML = seenIco + '@Localizer["Read by {0}"]'.replace('{0}', readers);
+            else if (readers > 0) el.innerHTML = seenIco + '@Localizer["Read by"]' + ' ' + readers;
             else el.innerHTML = sentIco + '@Localizer["Sent"]';
         }
     }

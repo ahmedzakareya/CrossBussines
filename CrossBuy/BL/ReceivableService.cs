@@ -93,7 +93,8 @@ namespace CrossBuy.BL
 		private readonly IStockService _stock;
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
-		public ReceivableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; }
+		private readonly ICurrencyRounding _rounding;
+		public ReceivableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; }
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
@@ -192,24 +193,31 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Sell"); rate = r; }
-			decimal ToBase(decimal foreignAmt) => R(foreignAmt * rate);
+			// HM-2: document totals round to the DOCUMENT currency (Rd); stored base totals round to the FUNCTIONAL currency (Rf).
+			// ToBase stays RAW — JournalEntryService rounds the JE lines to functional dp and owns the rounding remainder (Batch 1).
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+			decimal ToBase(decimal foreignAmt) => foreignAmt * rate;   // RAW (unrounded)
 
 			var inv = new SalesInvoice { CompanyID = companyId, CustomerId = customerId, InvoiceDate = date.Date, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate), ProjectId = projectId };
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount);
-				var lineTax = R(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);   // document currency
+				var lineTax = Rd(lineTotal * l.TaxRate / 100m);              // per-line tax (no header distribution)
 				sub += lineTotal; tax += lineTax;
 				inv.Lines.Add(new SalesInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
-			inv.SubTotal = R(sub); inv.TaxTotal = R(tax); inv.GrandTotal = R(sub + tax);
-			// functional-currency base totals — revenue grouped, VAT single line; AR = sum so the GL balances exactly
+			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);   // document totals = Σ rounded lines
+			// functional-currency base totals — RAW conversion of ONE grand value; stored rounded to functional dp (Rf).
+			// The customer (1102) JE line below uses the SAME raw grandBase, which JES rounds to Rf — so column == JE line by construction.
 			var revGroups = inv.Lines.GroupBy(l => l.RevenueAccountId).Select(g => new { Acc = g.Key, Base = ToBase(g.Sum(x => x.LineTotal)) }).ToList();
 			decimal revBase = revGroups.Sum(g => g.Base);
 			decimal vatBase = ToBase(inv.TaxTotal);
-			decimal grandBase = revBase + vatBase;
-			inv.SubTotalBase = revBase; inv.TaxTotalBase = vatBase; inv.GrandTotalBase = grandBase;
+			decimal grandBase = revBase + vatBase;   // the SINGLE raw value that feeds both the stored column and the 1102 line
+			inv.SubTotalBase = Rf(revBase); inv.TaxTotalBase = Rf(vatBase); inv.GrandTotalBase = Rf(grandBase);
 
 			// P3-4: credit-limit enforcement (0/null limit = disabled) — compared in functional currency
 			if (cust.CreditLimit.HasValue && cust.CreditLimit.Value > 0)
