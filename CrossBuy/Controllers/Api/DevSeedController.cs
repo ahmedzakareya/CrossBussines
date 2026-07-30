@@ -5696,9 +5696,9 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var jtId = await _db.JobTitles.Select(j => j.ID).FirstOrDefaultAsync();
 			var defs = new[]
 			{
-				new { user = "cb_chat1", ar = "سارة (اختبار الشات)", en = "Sara (Chat test)" },
-				new { user = "cb_chat2", ar = "خالد (اختبار الشات)", en = "Khaled (Chat test)" },
-				new { user = "cb_chat3", ar = "منى (اختبار الشات)",  en = "Mona (Chat test)" },
+				new { user = "cb_chat1", ar = "سارة (اختبار الشات)", en = "Sara (Chat test)",  img = "/Backend-assets/media/avatars/300-5.jpg" },
+				new { user = "cb_chat2", ar = "خالد (اختبار الشات)", en = "Khaled (Chat test)", img = "/Backend-assets/media/avatars/300-1.jpg" },
+				new { user = "cb_chat3", ar = "منى (اختبار الشات)",  en = "Mona (Chat test)",  img = "/Backend-assets/media/avatars/300-9.jpg" },
 			};
 			const string pass = "Chat@12345";
 			var accounts = new List<object>();
@@ -5717,7 +5717,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 					emp = new Employee
 					{
 						FirstName = "T", LastName = "T", FullName = d.ar, FullNameEn = d.en, Address = "", PhoneNumber = "",
-						Email = u.Email, ProfileImage = "", Gender = "F", MaritalStatus = "S", JobTitleID = jtId,
+						Email = u.Email, ProfileImage = d.img, Gender = "F", MaritalStatus = "S", JobTitleID = jtId,
 						EmpCompanyID = companyId, IsActive = true, DateOfBirth = new DateTime(1995, 1, 1), DateOfJoining = new DateTime(2022, 1, 1), UserId = u.Id
 					};
 					_db.Employee.Add(emp); await _db.SaveChangesAsync();
