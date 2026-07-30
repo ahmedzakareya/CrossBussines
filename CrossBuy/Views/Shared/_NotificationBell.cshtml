@@ -48,9 +48,12 @@
             var icon = n.icon || 'ki-notification-status';
             var bg = n.isRead ? '' : 'bg-light-primary';
             var cur = (n.url ? ' style="cursor:pointer"' : '');
+            var avatar = n.actorAvatar
+                ? '<span class="symbol symbol-35px symbol-circle me-3"><img src="' + n.actorAvatar + '" alt=""></span>'
+                : '<span class="symbol symbol-35px me-3"><span class="symbol-label bg-light"><i class="ki-outline ' + icon + ' fs-3 text-primary"></i></span></span>';
             return '<div class="cbnb-item d-flex align-items-start px-7 py-4 border-bottom border-gray-100 ' + bg + '"' +
                 ' data-id="' + n.id + '" data-url="' + (n.url || '') + '"' + cur + '>' +
-                '<span class="symbol symbol-35px me-3"><span class="symbol-label bg-light"><i class="ki-outline ' + icon + ' fs-3 text-primary"></i></span></span>' +
+                avatar +
                 '<div class="flex-grow-1"><div class="fw-bold fs-7 text-gray-900">' + title + '</div>' +
                 '<div class="fs-8 text-muted">' + body + '</div>' +
                 '<div class="fs-9 text-gray-400 mt-1">' + when(n.createdAt) + '</div></div></div>';
@@ -124,7 +127,7 @@
         if (window.signalR) { connectHub(); }
         else {
             var s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js';
+            s.src = '@Url.Content("~/Backend-assets/plugins/signalr.min.js")';
             s.onload = connectHub; s.onerror = function () {}; // polling still covers it
             document.head.appendChild(s);
         }

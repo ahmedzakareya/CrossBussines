@@ -81,6 +81,12 @@ namespace CrossBuy.Controllers
             ViewBag.Categories = await _db.Notifications.AsNoTracking()
                 .Where(n => n.RecipientEmployeeID == empId.Value && n.Category != null)
                 .Select(n => n.Category!).Distinct().OrderBy(c => c).ToListAsync();
+
+            // actor photos → shown as the notification avatar
+            var actorIds = items.Where(n => n.ActorEmployeeID.HasValue).Select(n => n.ActorEmployeeID!.Value).Distinct().ToList();
+            ViewBag.ActorAvatars = await _db.Employee.AsNoTracking()
+                .Where(e => actorIds.Contains(e.ID) && e.ProfileImage != null && e.ProfileImage != "")
+                .ToDictionaryAsync(e => e.ID, e => e.ProfileImage);
             return View(items);
         }
     }

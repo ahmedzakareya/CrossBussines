@@ -10,6 +10,7 @@
     var unread = ViewBag.Unread as bool?;
     int page = ViewBag.Page; int pages = ViewBag.Pages; int total = ViewBag.Total; int unreadCount = ViewBag.UnreadCount;
     var categories = ViewBag.Categories as List<string> ?? new();
+    var actorAvatars = ViewBag.ActorAvatars as Dictionary<int, string> ?? new();
     var catColor = new Dictionary<string, string> { ["HR"] = "primary", ["Sales"] = "success", ["Purchasing"] = "info", ["Inventory"] = "warning", ["Accounting"] = "success", ["CRM"] = "primary", ["Governance"] = "danger", ["Chat"] = "info", ["General"] = "secondary" };
     string cc(string? c) => c != null && catColor.TryGetValue(c, out var v) ? v : "secondary";
     string qs(int p) => $"?q={Uri.EscapeDataString(q ?? "")}&category={Uri.EscapeDataString(category ?? "")}&unread={(unread == true ? "true" : "")}&page={p}";
@@ -67,7 +68,14 @@
                         var color = cc(n.Category);
                         var icon = string.IsNullOrEmpty(n.Icon) ? "ki-notification-status" : n.Icon;
                         <div class="d-flex align-items-start p-4 rounded mb-3 border border-gray-200 cbnb-row @(n.IsRead ? "" : "bg-light-primary")" data-id="@n.ID" data-url="@n.Url" style="@(string.IsNullOrEmpty(n.Url) ? "" : "cursor:pointer;")">
-                            <span class="symbol symbol-40px me-4"><span class="symbol-label bg-light-@color"><i class="ki-outline @icon fs-2 text-@color"></i></span></span>
+                            @if (n.ActorEmployeeID.HasValue && actorAvatars.TryGetValue(n.ActorEmployeeID.Value, out var av))
+                            {
+                                <span class="symbol symbol-40px symbol-circle me-4"><img src="@av" alt="" /></span>
+                            }
+                            else
+                            {
+                                <span class="symbol symbol-40px me-4"><span class="symbol-label bg-light-@color"><i class="ki-outline @icon fs-2 text-@color"></i></span></span>
+                            }
                             <div class="flex-grow-1">
                                 <div class="d-flex flex-stack">
                                     <span class="fw-bold text-gray-900">@title</span>

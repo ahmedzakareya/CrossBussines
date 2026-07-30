@@ -2744,10 +2744,28 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 		// GET /api/dev/inv-test-integrity?key=seed123 — runs all integrity checks and prints a summary
 		[HttpGet("inv-test-integrity")]
-		public async Task<IActionResult> InvTestIntegrity(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		public async Task<IActionResult> InvTestIntegrity(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, [FromServices] IServiceScopeFactory scopeFactory)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var (run, checks) = await integ.RunAndLogAsync(1, "Manual");
+
+			// PILLAR GUARD (runtime, from the service provider — not code reading): the own-or-join transaction design REQUIRES
+			// CrossDbContext to be Scoped, so services sharing a request scope share ONE DbContext (=> one ambient tx). If a
+			// parallel edit to Program.cs made it Transient/Singleton/Factory, the ambient tx would silently split and partial
+			// effects could persist — while the 19 ledger checks stay green (books revert on rollback). So we PROVE it behaviorally.
+			string dbContextLifetime; bool dbScopedOk;
+			using (var s1 = scopeFactory.CreateScope())
+			{
+				var a = s1.ServiceProvider.GetRequiredService<CrossDbContext>();
+				var b = s1.ServiceProvider.GetRequiredService<CrossDbContext>();
+				bool sameInScope = ReferenceEquals(a, b);
+				using var s2 = scopeFactory.CreateScope();
+				var c = s2.ServiceProvider.GetRequiredService<CrossDbContext>();
+				bool diffAcrossScopes = !ReferenceEquals(a, c);
+				dbContextLifetime = sameInScope ? (diffAcrossScopes ? "Scoped" : "Singleton") : "Transient";
+				dbScopedOk = sameInScope && diffAcrossScopes;
+			}
+			int failedCount = run.FailedCount + (dbScopedOk ? 0 : 1);   // a non-Scoped DbContext is a REAL failure (breaks own-or-join)
 			// HM-D6 item 3: show the ACTUAL build config of the running assembly + the state of the #if DEBUG test seams,
 			// so a Debug deployment (which would REVIVE the bypass/fault seams) is visible here. Display only; changes nothing.
 			string buildConfig =
@@ -2758,9 +2776,11 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 #endif
 			return Ok(new
 			{
-				runId = run.ID, allOk = run.AllOk, failedCount = run.FailedCount, buildConfig,
-				checks = checks.Select(c => new { c.Key, name = c.NameAr, c.Expected, c.Actual, diff = c.Diff, c.Ok, c.Note }),
-				note = "نفس الفحوص يشغّلها HostedService يوميًا ويُخطر مديري المخزون عند أي انحراف. الانحرافات الظاهرة (إن وُجدت) ناتجة عن بيانات اختبارات سابقة رحّلت مخزونًا بدون GL."
+				runId = run.ID, allOk = run.AllOk && dbScopedOk, failedCount, buildConfig,
+				dbContextLifetime, dbContextScopedOk = dbScopedOk,   // PILLAR: must be "Scoped" (own-or-join depends on it)
+				checks = checks.Select(c => (object)new { c.Key, name = c.NameAr, c.Expected, c.Actual, diff = c.Diff, c.Ok, c.Note })
+					.Append((object)new { Key = "dbcontext_lifetime", name = "عمر CrossDbContext = Scoped (ركيزة امتلك-أو-انضمّ)", Ok = dbScopedOk, Note = $"actual={dbContextLifetime} (runtime)" }),
+				note = "نفس الفحوص يشغّلها HostedService يوميًا ويُخطر مديري المخزون عند أي انحراف. فحص عمر CrossDbContext يُقرأ من مزوّد الخدمات وقت التشغيل: أي قيمة غير Scoped تُبطل المعاملة المحيطة وترفع failedCount."
 			});
 		}
 

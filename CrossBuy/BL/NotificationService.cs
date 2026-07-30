@@ -53,17 +53,22 @@ namespace CrossBuy.BL
 			_context.Notifications.Add(n);
 			await _context.SaveChangesAsync();
 
-			await PushAsync(n);
+			// the actor's photo → shown as the notification avatar (falls back to a category icon when absent)
+			string? actorAvatar = actorEmployeeId.HasValue
+				? await _context.Employee.AsNoTracking().Where(e => e.ID == actorEmployeeId.Value).Select(e => e.ProfileImage).FirstOrDefaultAsync()
+				: null;
+			await PushAsync(n, actorAvatar);
 		}
 
 		// Real-time payload → the recipient's company-scoped SignalR group.
-		private Task PushAsync(Notification n)
+		private Task PushAsync(Notification n, string? actorAvatar = null)
 		{
 			var payload = new
 			{
 				id = n.ID, titleAr = n.TitleAr, titleEn = n.TitleEn, bodyAr = n.BodyAr, bodyEn = n.BodyEn,
 				type = n.Type, refId = n.RefId, isRead = n.IsRead, createdAt = n.CreatedAt,
 				url = n.Url, priority = n.Priority, category = n.Category, icon = n.Icon,
+				actorAvatar = string.IsNullOrEmpty(actorAvatar) ? null : actorAvatar,
 			};
 			return _hub.Clients.Group(NotificationsHub.GroupFor(n.RecipientEmployeeID))
 				.SendAsync("notification", payload);
@@ -115,7 +120,10 @@ namespace CrossBuy.BL
 			_context.Notifications.AddRange(rows);
 			await _context.SaveChangesAsync();
 
-			foreach (var n in rows) await PushAsync(n);
+			string? actorAvatar = exceptEmployeeId.HasValue
+				? await _context.Employee.AsNoTracking().Where(e => e.ID == exceptEmployeeId.Value).Select(e => e.ProfileImage).FirstOrDefaultAsync()
+				: null;
+			foreach (var n in rows) await PushAsync(n, actorAvatar);
 			return recipients.Count;
 		}
 	}

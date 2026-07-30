@@ -60,6 +60,7 @@ namespace CrossBuy.Controllers.Api
 					category = n.Category,
 					icon = n.Icon,
 					priority = n.Priority,
+					actorAvatar = _context.Employee.Where(e => e.ID == n.ActorEmployeeID).Select(e => e.ProfileImage).FirstOrDefault(),
 				})
 				.ToListAsync();
 

@@ -119,13 +119,15 @@
 <!--end::New group modal-->
 
 @section Scripts {
+<script src="@Url.Content("~/Backend-assets/plugins/signalr.min.js")"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var isAr = @(isAr ? "true" : "false");
     var meId = @meId;
     var blank = '@blank';
     var openConv = @(openConv?.ToString() ?? "null");
-    var cur = null, curHeader = null, dir = [], conn = null, replyTo = null, oldestId = null, loading = false;
+    var signalrSrc = '@Url.Content("~/Backend-assets/plugins/signalr.min.js")';
+    var cur = null, curHeader = null, dir = [], conn = null, replyTo = null, oldestId = null, loading = false, seen = {};
 
     var $ = function (id) { return document.getElementById(id); };
     var convList = $('chatConvList'), convEmpty = $('chatConvEmpty');
@@ -219,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var dl = el.querySelector('.dl'); if (dl) dl.addEventListener('click', function () { if (confirm('@Localizer["Delete message?"]')) post('/Chat/Delete', { id: el.getAttribute('data-id') }); });
     }
     function appendMsg(m, prepend) {
+        if (m.id) { if (seen[m.id]) return null; seen[m.id] = 1; }
         var wrap = document.createElement('div'); wrap.innerHTML = msgHtml(m); var el = wrap.firstChild;
         if (prepend) scroll.insertBefore(el, scroll.firstChild); else scroll.appendChild(el);
         bindMsg(el, m);
@@ -234,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function () {
         headSym.classList.toggle('d-none', meta.kind === 'Group');
         headAvatar.src = meta.avatar || blank;
         presenceEl.innerHTML = meta.kind === 'Direct' ? ('<span class="badge badge-circle w-8px h-8px me-1 ' + (meta.online ? 'badge-success' : 'badge-secondary') + '"></span>' + (meta.online ? '@Localizer["Active"]' : '@Localizer["Offline"]')) : '@Localizer["Group"]';
-        scroll.innerHTML = '';
+        seen = {}; scroll.innerHTML = '';
         fetch('/Chat/Messages?c=' + id, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (msgs) {
             msgs.forEach(function (m) { appendMsg(m, false); });
             if (msgs.length) oldestId = msgs[0].id;
@@ -331,7 +334,18 @@ document.addEventListener('DOMContentLoaded', function () {
         conn.start().then(function () { if (cur) conn.invoke('JoinConversation', cur); }).catch(function () {});
     }
     if (window.signalR) startHub();
-    else { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js'; s.onload = startHub; document.head.appendChild(s); }
+    else { var s = document.createElement('script'); s.src = signalrSrc; s.onload = startHub; document.head.appendChild(s); }
+
+    // ---------- polling fallback (keeps the chat live even if SignalR is unavailable) ----------
+    setInterval(function () {
+        if (!cur || document.hidden) return;
+        fetch('/Chat/Messages?c=' + cur, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (msgs) {
+            var added = false;
+            msgs.forEach(function (m) { if (appendMsg(m, false)) added = true; });
+            if (added) { scrollBottom(); post('/Chat/MarkRead', { c: cur }); }
+        }).catch(function () {});
+        loadConvs();
+    }, 4000);
 
     // ---------- boot ----------
     loadDir();
