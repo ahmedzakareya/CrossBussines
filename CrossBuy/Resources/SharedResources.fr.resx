@@ -711,603 +711,1797 @@
   <data name="Vendor" xml:space="preserve">
     <value>Fournisseur</value>
   </data>
-  <data name="Customer" xml:space="preserve"><value>Client</value></data>
-  <data name="Customers" xml:space="preserve"><value>Clients</value></data>
-  <data name="Amount" xml:space="preserve"><value>Montant</value></data>
-  <data name="Date" xml:space="preserve"><value>Date</value></data>
-  <data name="Status" xml:space="preserve"><value>Statut</value></data>
-  <data name="Type" xml:space="preserve"><value>Type</value></data>
-  <data name="Reference" xml:space="preserve"><value>Référence</value></data>
-  <data name="Account" xml:space="preserve"><value>Compte</value></data>
-  <data name="Debit" xml:space="preserve"><value>Débit</value></data>
-  <data name="Credit" xml:space="preserve"><value>Crédit</value></data>
-  <data name="Balance" xml:space="preserve"><value>Solde</value></data>
-  <data name="Print" xml:space="preserve"><value>Imprimer</value></data>
-  <data name="Export" xml:space="preserve"><value>Exporter</value></data>
-  <data name="Currency" xml:space="preserve"><value>Devise</value></data>
-  <data name="Quantity" xml:space="preserve"><value>Quantité</value></data>
-  <data name="Note" xml:space="preserve"><value>Remarque</value></data>
-  <data name="Notes" xml:space="preserve"><value>Remarques</value></data>
-  <data name="All" xml:space="preserve"><value>Tous</value></data>
-  <data name="View" xml:space="preserve"><value>Voir</value></data>
-  <data name="Approve" xml:space="preserve"><value>Approuver</value></data>
-  <data name="Reject" xml:space="preserve"><value>Refuser</value></data>
-  <data name="Post" xml:space="preserve"><value>Comptabiliser</value></data>
-  <data name="Draft" xml:space="preserve"><value>Brouillon</value></data>
-  <data name="Number" xml:space="preserve"><value>Numéro</value></data>
-  <data name="Code" xml:space="preserve"><value>Code</value></data>
-  <data name="Branch" xml:space="preserve"><value>Succursale</value></data>
-  <data name="Warehouse" xml:space="preserve"><value>Entrepôt</value></data>
-  <data name="Item" xml:space="preserve"><value>Article</value></data>
-  <data name="Items" xml:space="preserve"><value>Articles</value></data>
-  <data name="Price" xml:space="preserve"><value>Prix</value></data>
-  <data name="Discount" xml:space="preserve"><value>Remise</value></data>
-  <data name="Tax" xml:space="preserve"><value>Taxe</value></data>
-  <data name="Subtotal" xml:space="preserve"><value>Sous-total</value></data>
-  <data name="GrandTotal" xml:space="preserve"><value>Total général</value></data>
-  <data name="Add" xml:space="preserve"><value>Ajouter</value></data>
-  <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
-  <data name="Update" xml:space="preserve"><value>Mettre à jour</value></data>
-  <data name="Active" xml:space="preserve"><value>Actif</value></data>
-  <data name="Inactive" xml:space="preserve"><value>Inactif</value></data>
-  <data name="Paid" xml:space="preserve"><value>Payé</value></data>
-  <data name="Unpaid" xml:space="preserve"><value>Impayé</value></data>
-  <data name="From" xml:space="preserve"><value>De</value></data>
-  <data name="To" xml:space="preserve"><value>À</value></data>
-  <data name="Company" xml:space="preserve"><value>Entreprise</value></data>
-  <data name="Employee" xml:space="preserve"><value>Employé</value></data>
-  <data name="Department" xml:space="preserve"><value>Département</value></data>
-  <data name="NoData" xml:space="preserve"><value>Aucune donnée disponible</value></data>
-  <data name="Filter" xml:space="preserve"><value>Filtrer</value></data>
-  <data name="Reset" xml:space="preserve"><value>Réinitialiser</value></data>
-  <data name="Submit" xml:space="preserve"><value>Soumettre</value></data>
-  <data name="Back" xml:space="preserve"><value>Retour</value></data>
-  <data name="Next" xml:space="preserve"><value>Suivant</value></data>
-  <data name="Previous" xml:space="preserve"><value>Précédent</value></data>
-  <data name="Inventory" xml:space="preserve"><value>Stock</value></data>
-  <data name="Manufacturing" xml:space="preserve"><value>Fabrication</value></data>
-  <data name="Employees" xml:space="preserve"><value>Employés</value></data>
-  <data name="Required documents" xml:space="preserve"><value>Documents requis</value></data>
-  <data name="Job applications" xml:space="preserve"><value>Candidatures</value></data>
-  <data name="Application saved" xml:space="preserve"><value>Candidature enregistrée</value></data>
-  <data name="Stage updated" xml:space="preserve"><value>Étape mise à jour</value></data>
-  <data name="Document uploaded" xml:space="preserve"><value>Document téléversé</value></data>
-  <data name="Document deleted" xml:space="preserve"><value>Document supprimé</value></data>
-  <data name="HumanResources" xml:space="preserve"><value>Ressources humaines</value></data>
-  <data name="CRM" xml:space="preserve"><value>CRM</value></data>
-  <data name="POS" xml:space="preserve"><value>Point de vente</value></data>
-  <data name="Logout" xml:space="preserve"><value>Se déconnecter</value></data>
-  <data name="Profile" xml:space="preserve"><value>Profil</value></data>
-  <data name="Settings" xml:space="preserve"><value>Paramètres</value></data>
-  <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
-  <data name="Dashboard" xml:space="preserve"><value>Tableau de bord</value></data>
-  <data name="Home" xml:space="preserve"><value>Accueil</value></data>
-  <data name="MyAccount" xml:space="preserve"><value>Mon compte</value></data>
-  <data name="The code and name are required" xml:space="preserve"><value>Le code et le nom sont obligatoires</value></data>
-  <data name="Currency not found" xml:space="preserve"><value>Devise introuvable</value></data>
-  <data name="The currency code is already in use" xml:space="preserve"><value>Le code de devise est déjà utilisé</value></data>
-  <data name="The currency code already exists" xml:space="preserve"><value>Le code de devise existe déjà</value></data>
-  <data name="Currency updated" xml:space="preserve"><value>Devise mise à jour</value></data>
-  <data name="Currency added" xml:space="preserve"><value>Devise ajoutée</value></data>
-  <data name="Invalid exchange rate data" xml:space="preserve"><value>Données de taux de change non valides</value></data>
-  <data name="Exchange rate updated" xml:space="preserve"><value>Taux de change mis à jour</value></data>
-  <data name="Exchange rate added" xml:space="preserve"><value>Taux de change ajouté</value></data>
-  <data name="The company currency cannot be changed once postings exist — the currency is locked" xml:space="preserve"><value>La devise de l'entreprise ne peut pas être modifiée une fois que des écritures existent — la devise est verrouillée</value></data>
-  <data name="The company default currency has been set" xml:space="preserve"><value>La devise par défaut de l'entreprise a été définie</value></data>
-  <data name="Branch not found" xml:space="preserve"><value>Succursale introuvable</value></data>
-  <data name="This branch currency is locked after the first transaction — it cannot be changed" xml:space="preserve"><value>La devise de cette succursale est verrouillée après la première transaction — elle ne peut pas être modifiée</value></data>
-  <data name="The branch functional currency has been set" xml:space="preserve"><value>La devise fonctionnelle de la succursale a été définie</value></data>
-  <data name="The revaluation and its automatic reversing entry have been posted" xml:space="preserve"><value>La réévaluation et son écriture de contre-passation automatique ont été comptabilisées</value></data>
-  <data name="Project saved" xml:space="preserve"><value>Projet enregistré</value></data>
-  <data name="Project deleted" xml:space="preserve"><value>Projet supprimé</value></data>
-  <data name="Brand saved" xml:space="preserve"><value>Marque enregistrée</value></data>
-  <data name="Brand deleted" xml:space="preserve"><value>Marque supprimée</value></data>
-  <data name="Brands activated — linked {0} branches to the default brand" xml:space="preserve"><value>Marques activées — {0} succursales rattachées à la marque par défaut</value></data>
-  <data name="Internal error:" xml:space="preserve"><value>Erreur interne :</value></data>
-  <data name="Account added" xml:space="preserve"><value>Compte ajouté</value></data>
-  <data name="Account updated" xml:space="preserve"><value>Compte mis à jour</value></data>
-  <data name="The entry ({0:N2}) exceeds the approval threshold — saved as a draft awaiting the chief accountant's approval" xml:space="preserve"><value>L'écriture ({0:N2}) dépasse le seuil d'approbation — enregistrée en brouillon en attente de l'approbation du chef comptable</value></data>
-  <data name="The journal entry was posted successfully" xml:space="preserve"><value>L'écriture de journal a été comptabilisée avec succès</value></data>
-  <data name="The journal entry was saved as a draft" xml:space="preserve"><value>L'écriture de journal a été enregistrée en brouillon</value></data>
-  <data name="Journal entry not found" xml:space="preserve"><value>Écriture de journal introuvable</value></data>
-  <data name="The entry ({0:N2}) exceeds the approval threshold — the chief accountant's approval is required" xml:space="preserve"><value>L'écriture ({0:N2}) dépasse le seuil d'approbation — l'approbation du chef comptable est requise</value></data>
-  <data name="Segregation of duties: the entry's creator cannot approve it — another chief accountant is required" xml:space="preserve"><value>Séparation des tâches : le créateur de l'écriture ne peut pas l'approuver — un autre chef comptable est requis</value></data>
-  <data name="Posted and approved" xml:space="preserve"><value>Comptabilisée et approuvée</value></data>
-  <data name="The journal entry was reversed" xml:space="preserve"><value>L'écriture de journal a été contre-passée</value></data>
-  <data name="The period status was updated" xml:space="preserve"><value>Le statut de la période a été mis à jour</value></data>
-  <data name="The payroll entry was posted and payslips issued successfully" xml:space="preserve"><value>L'écriture de paie a été comptabilisée et les bulletins de paie émis avec succès</value></data>
-  <data name="Net payroll was disbursed" xml:space="preserve"><value>La paie nette a été versée</value></data>
-  <data name="The deduction was remitted to the authority" xml:space="preserve"><value>La retenue a été reversée à l'organisme</value></data>
-  <data name="Payroll settings saved" xml:space="preserve"><value>Paramètres de paie enregistrés</value></data>
-  <data name="The bracket's upper limit must exceed the lower limit" xml:space="preserve"><value>La limite supérieure de la tranche doit être supérieure à la limite inférieure</value></data>
-  <data name="Tax bracket saved" xml:space="preserve"><value>Tranche d'imposition enregistrée</value></data>
-  <data name="Bracket deleted" xml:space="preserve"><value>Tranche supprimée</value></data>
-  <data name="Payslip not found" xml:space="preserve"><value>Bulletin de paie introuvable</value></data>
-  <data name="The amount ({0:N2}) exceeds the approval threshold — the chief accountant is required" xml:space="preserve"><value>Le montant ({0:N2}) dépasse le seuil d'approbation — le chef comptable est requis</value></data>
-  <data name="You do not have permission to issue a document in a currency other than the branch currency" xml:space="preserve"><value>Vous n'êtes pas autorisé à émettre un document dans une devise autre que celle de la succursale</value></data>
-  <data name="The sales invoice was issued and posted" xml:space="preserve"><value>La facture de vente a été émise et comptabilisée</value></data>
-  <data name="«{0}»: the price {1:N2} is below the floor {2:N2} (cost {3:N2} + margin {4:N2}%)" xml:space="preserve"><value>«{0}» : le prix {1:N2} est inférieur au plancher {2:N2} (coût {3:N2} + marge {4:N2}%)</value></data>
-  <data name="Margin floor block — " xml:space="preserve"><value>Blocage du plancher de marge — </value></data>
-  <data name="Margin floor warning — " xml:space="preserve"><value>Avertissement de plancher de marge — </value></data>
-  <data name="The sales return was recorded and a credit note issued" xml:space="preserve"><value>Le retour de vente a été enregistré et un avoir émis</value></data>
-  <data name="Return not found" xml:space="preserve"><value>Retour introuvable</value></data>
-  <data name="The receipt voucher was recorded and posted" xml:space="preserve"><value>Le bon d'encaissement a été enregistré et comptabilisé</value></data>
-  <data name="Customer updated" xml:space="preserve"><value>Client mis à jour</value></data>
-  <data name="Customer added" xml:space="preserve"><value>Client ajouté</value></data>
-  <data name="Vendor updated" xml:space="preserve"><value>Fournisseur mis à jour</value></data>
-  <data name="Vendor added" xml:space="preserve"><value>Fournisseur ajouté</value></data>
-  <data name="The purchase invoice was recorded and posted" xml:space="preserve"><value>La facture d'achat a été enregistrée et comptabilisée</value></data>
-  <data name="The purchase return was recorded and a debit note issued" xml:space="preserve"><value>Le retour d'achat a été enregistré et une note de débit émise</value></data>
-  <data name="The payment voucher was recorded and posted" xml:space="preserve"><value>Le bon de paiement a été enregistré et comptabilisé</value></data>
-  <data name="The bank name and ledger account are required" xml:space="preserve"><value>Le nom de la banque et le compte du grand livre sont obligatoires</value></data>
-  <data name="Bank account added" xml:space="preserve"><value>Compte bancaire ajouté</value></data>
-  <data name="The name and ledger account are required" xml:space="preserve"><value>Le nom et le compte du grand livre sont obligatoires</value></data>
-  <data name="Cash box added" xml:space="preserve"><value>Caisse ajoutée</value></data>
-  <data name="The transfer was made and posted" xml:space="preserve"><value>Le virement a été effectué et comptabilisé</value></data>
-  <data name="The bank reconciliation was saved" xml:space="preserve"><value>Le rapprochement bancaire a été enregistré</value></data>
-  <data name="The asset was recorded and its acquisition entry posted" xml:space="preserve"><value>L'immobilisation a été enregistrée et son écriture d'acquisition comptabilisée</value></data>
-  <data name="The maintenance schedule was saved" xml:space="preserve"><value>Le calendrier de maintenance a été enregistré</value></data>
-  <data name="Schedule deleted" xml:space="preserve"><value>Calendrier supprimé</value></data>
-  <data name="Maintenance logged and the journal entry posted" xml:space="preserve"><value>Maintenance enregistrée et écriture de journal comptabilisée</value></data>
-  <data name="Maintenance logged" xml:space="preserve"><value>Maintenance enregistrée</value></data>
-  <data name="The asset was disposed and the journal entry posted" xml:space="preserve"><value>L'immobilisation a été cédée et l'écriture de journal comptabilisée</value></data>
-  <data name="Category added" xml:space="preserve"><value>Catégorie ajoutée</value></data>
-  <data name="Depreciation was calculated and posted" xml:space="preserve"><value>L'amortissement a été calculé et comptabilisé</value></data>
-  <data name="Tax code added" xml:space="preserve"><value>Code de taxe ajouté</value></data>
-  <data name="Tax code updated" xml:space="preserve"><value>Code de taxe mis à jour</value></data>
-  <data name="Tax code deleted" xml:space="preserve"><value>Code de taxe supprimé</value></data>
-  <data name="The VAT return was filed" xml:space="preserve"><value>La déclaration de TVA a été déposée</value></data>
-  <data name="The VAT settlement entry was posted" xml:space="preserve"><value>L'écriture de règlement de la TVA a été comptabilisée</value></data>
-  <data name="The fiscal year was closed and the closing entry posted" xml:space="preserve"><value>L'exercice a été clôturé et l'écriture de clôture comptabilisée</value></data>
-  <data name="The year was reopened and the closing entry reversed" xml:space="preserve"><value>L'exercice a été rouvert et l'écriture de clôture contre-passée</value></data>
-  <data name="Invalid data" xml:space="preserve"><value>Données non valides</value></data>
-  <data name="Role assigned" xml:space="preserve"><value>Rôle attribué</value></data>
-  <data name="The approval threshold was saved" xml:space="preserve"><value>Le seuil d'approbation a été enregistré</value></data>
-  <data name="Role deleted" xml:space="preserve"><value>Rôle supprimé</value></data>
-  <data name="Tax Reg. No." xml:space="preserve"><value>N° d'immatriculation fiscale</value></data>
-  <data name="Contact Person" xml:space="preserve"><value>Personne à contacter</value></data>
-  <data name="Segment" xml:space="preserve"><value>Segment</value></data>
-  <data name="Credit Limit" xml:space="preserve"><value>Limite de crédit</value></data>
-  <data name="Payment Terms (days)" xml:space="preserve"><value>Conditions de paiement (jours)</value></data>
-  <data name="Suspended" xml:space="preserve"><value>Suspendu</value></data>
-  <data name="Customers — CrossBuy" xml:space="preserve"><value>Clients — CrossBuy</value></data>
-  <data name="Vendors" xml:space="preserve"><value>Fournisseurs</value></data>
-  <data name="Vendors — CrossBuy" xml:space="preserve"><value>Fournisseurs — CrossBuy</value></data>
-  <data name="Invoice No." xml:space="preserve"><value>N° de facture</value></data>
-  <data name="Sales Invoices" xml:space="preserve"><value>Factures de vente</value></data>
-  <data name="Sales Invoices — CrossBuy" xml:space="preserve"><value>Factures de vente — CrossBuy</value></data>
-  <data name="Purchase Invoices" xml:space="preserve"><value>Factures d'achat</value></data>
-  <data name="Purchase Invoices — CrossBuy" xml:space="preserve"><value>Factures d'achat — CrossBuy</value></data>
-  <data name="Voucher No." xml:space="preserve"><value>N° de bon</value></data>
-  <data name="Method" xml:space="preserve"><value>Méthode</value></data>
-  <data name="Receipts" xml:space="preserve"><value>Encaissements</value></data>
-  <data name="Receipts — CrossBuy" xml:space="preserve"><value>Encaissements — CrossBuy</value></data>
-  <data name="Payments" xml:space="preserve"><value>Paiements</value></data>
-  <data name="Payments — CrossBuy" xml:space="preserve"><value>Paiements — CrossBuy</value></data>
-  <data name="Entry No." xml:space="preserve"><value>N° d'écriture</value></data>
-  <data name="Journals" xml:space="preserve"><value>Journaux</value></data>
-  <data name="Journal Entries — CrossBuy" xml:space="preserve"><value>Écritures de journal — CrossBuy</value></data>
-  <data name="Sales" xml:space="preserve"><value>Ventes</value></data>
-  <data name="Collections" xml:space="preserve"><value>Recouvrements</value></data>
-  <data name="Returns" xml:space="preserve"><value>Retours</value></data>
-  <data name="Outstanding" xml:space="preserve"><value>Encours</value></data>
-  <data name="Revenue" xml:space="preserve"><value>Chiffre d'affaires</value></data>
-  <data name="Cost" xml:space="preserve"><value>Coût</value></data>
-  <data name="Gross Profit" xml:space="preserve"><value>Bénéfice brut</value></data>
-  <data name="Margin %" xml:space="preserve"><value>Marge %</value></data>
-  <data name="Invoice Count" xml:space="preserve"><value>Nombre de factures</value></data>
-  <data name="First Invoice" xml:space="preserve"><value>Première facture</value></data>
-  <data name="Last Invoice" xml:space="preserve"><value>Dernière facture</value></data>
-  <data name="Avg Invoice" xml:space="preserve"><value>Facture moyenne</value></data>
-  <data name="Customer Analytics" xml:space="preserve"><value>Analyse des clients</value></data>
-  <data name="Customer Analytics — CrossBuy" xml:space="preserve"><value>Analyse des clients — CrossBuy</value></data>
-  <data name="Holiday saved" xml:space="preserve"><value>Jour férié enregistré</value></data>
-  <data name="Holiday deleted" xml:space="preserve"><value>Jour férié supprimé</value></data>
-  <data name="Attendance recorded" xml:space="preserve"><value>Présence enregistrée</value></data>
-  <data name="Final settlement posted and employee terminated" xml:space="preserve"><value>Solde de tout compte comptabilisé et employé licencié</value></data>
-  <data name="Contract saved" xml:space="preserve"><value>Contrat enregistré</value></data>
-  <data name="Contract deleted" xml:space="preserve"><value>Contrat supprimé</value></data>
-  <data name="Document saved" xml:space="preserve"><value>Document enregistré</value></data>
-  <data name="Document deleted" xml:space="preserve"><value>Document supprimé</value></data>
-  <data name="Sent {0} alert(s)" xml:space="preserve"><value>{0} alerte(s) envoyée(s)</value></data>
-  <data name="Leave allowance disbursed" xml:space="preserve"><value>Indemnité de congé versée</value></data>
-  <data name="Carried over {0} record(s) to year {1}" xml:space="preserve"><value>{0} enregistrement(s) reporté(s) sur l'année {1}</value></data>
-  <data name="Leave provision settlement posted" xml:space="preserve"><value>Règlement de la provision pour congés comptabilisé</value></data>
-  <data name="Encashability updated" xml:space="preserve"><value>Monétisation mise à jour</value></data>
-  <data name="Item not found" xml:space="preserve"><value>Article introuvable</value></data>
-  <data name="An error occurred: " xml:space="preserve"><value>Une erreur s'est produite : </value></data>
-  <data name="Added" xml:space="preserve"><value>Ajouté</value></data>
-  <data name="Updated" xml:space="preserve"><value>Mis à jour</value></data>
-  <data name=" successfully." xml:space="preserve"><value> avec succès.</value></data>
-  <data name="An error occurred while saving." xml:space="preserve"><value>Une erreur s'est produite lors de l'enregistrement.</value></data>
-  <data name="Leave type not found." xml:space="preserve"><value>Type de congé introuvable.</value></data>
-  <data name="Invalid identifier." xml:space="preserve"><value>Identifiant non valide.</value></data>
-  <data name="Record not found." xml:space="preserve"><value>Enregistrement introuvable.</value></data>
-  <data name="Added successfully." xml:space="preserve"><value>Ajouté avec succès.</value></data>
-  <data name="Updated successfully." xml:space="preserve"><value>Mis à jour avec succès.</value></data>
-  <data name="An unexpected error occurred." xml:space="preserve"><value>Une erreur inattendue s'est produite.</value></data>
-  <data name="No data submitted." xml:space="preserve"><value>Aucune donnée soumise.</value></data>
-  <data name="Saved successfully." xml:space="preserve"><value>Enregistré avec succès.</value></data>
-  <data name="An unexpected error occurred while saving." xml:space="preserve"><value>Une erreur inattendue s'est produite lors de l'enregistrement.</value></data>
-  <data name="Policy not found." xml:space="preserve"><value>Politique introuvable.</value></data>
-  <data name="First name is required" xml:space="preserve"><value>Le prénom est obligatoire</value></data>
-  <data name="Last name is required" xml:space="preserve"><value>Le nom de famille est obligatoire</value></data>
-  <data name="Email is required" xml:space="preserve"><value>L'e-mail est obligatoire</value></data>
-  <data name="Invalid email format" xml:space="preserve"><value>Format d'e-mail non valide</value></data>
-  <data name="Training course saved" xml:space="preserve"><value>Formation enregistrée</value></data>
-  <data name="Course deleted" xml:space="preserve"><value>Formation supprimée</value></data>
-  <data name="Course not found" xml:space="preserve"><value>Formation introuvable</value></data>
-  <data name="Employees enrolled" xml:space="preserve"><value>Employés inscrits</value></data>
-  <data name="Enrollment status updated" xml:space="preserve"><value>Statut d'inscription mis à jour</value></data>
-  <data name="Enrollment removed" xml:space="preserve"><value>Inscription supprimée</value></data>
-  <data name="Appraisal cycle saved" xml:space="preserve"><value>Cycle d'évaluation enregistré</value></data>
-  <data name="Cycle status updated" xml:space="preserve"><value>Statut du cycle mis à jour</value></data>
-  <data name="Appraisal template saved" xml:space="preserve"><value>Modèle d'évaluation enregistré</value></data>
-  <data name="Template deleted" xml:space="preserve"><value>Modèle supprimé</value></data>
-  <data name="Appraisal created — enter scores" xml:space="preserve"><value>Évaluation créée — saisir les notes</value></data>
-  <data name="Appraisal not found" xml:space="preserve"><value>Évaluation introuvable</value></data>
-  <data name="Appraisal sent to employee" xml:space="preserve"><value>Évaluation envoyée à l'employé</value></data>
-  <data name="Scores saved" xml:space="preserve"><value>Notes enregistrées</value></data>
-  <data name="Leave request submitted" xml:space="preserve"><value>Demande de congé soumise</value></data>
-  <data name="Request approved" xml:space="preserve"><value>Demande approuvée</value></data>
-  <data name="Request rejected" xml:space="preserve"><value>Demande refusée</value></data>
-  <data name="Request submitted" xml:space="preserve"><value>Demande soumise</value></data>
-  <data name="Acknowledged" xml:space="preserve"><value>Pris en compte</value></data>
-  <data name="Custom field saved" xml:space="preserve"><value>Champ personnalisé enregistré</value></data>
-  <data name="Field deleted" xml:space="preserve"><value>Champ supprimé</value></data>
-  <data name="Automation rule saved" xml:space="preserve"><value>Règle d'automatisation enregistrée</value></data>
-  <data name="Rule deleted" xml:space="preserve"><value>Règle supprimée</value></data>
-  <data name="Account created" xml:space="preserve"><value>Compte créé</value></data>
-  <data name="Contact saved" xml:space="preserve"><value>Contact enregistré</value></data>
-  <data name="Contact deleted" xml:space="preserve"><value>Contact supprimé</value></data>
-  <data name="Campaign updated" xml:space="preserve"><value>Campagne mise à jour</value></data>
-  <data name="Campaign added" xml:space="preserve"><value>Campagne ajoutée</value></data>
-  <data name="Campaign not found" xml:space="preserve"><value>Campagne introuvable</value></data>
-  <data name="Member added" xml:space="preserve"><value>Membre ajouté</value></data>
-  <data name="Member already exists" xml:space="preserve"><value>Le membre existe déjà</value></data>
-  <data name="Added {0} members from the list" xml:space="preserve"><value>{0} membres ajoutés depuis la liste</value></data>
-  <data name="List updated" xml:space="preserve"><value>Liste mise à jour</value></data>
-  <data name="List created" xml:space="preserve"><value>Liste créée</value></data>
-  <data name="Ticket updated" xml:space="preserve"><value>Ticket mis à jour</value></data>
-  <data name="Ticket created" xml:space="preserve"><value>Ticket créé</value></data>
-  <data name="Ticket status updated" xml:space="preserve"><value>Statut du ticket mis à jour</value></data>
-  <data name="SLA policy saved" xml:space="preserve"><value>Politique SLA enregistrée</value></data>
-  <data name="Rule saved" xml:space="preserve"><value>Règle enregistrée</value></data>
-  <data name="Settings saved" xml:space="preserve"><value>Paramètres enregistrés</value></data>
-  <data name="Recomputed scores for {0} leads" xml:space="preserve"><value>Scores recalculés pour {0} prospects</value></data>
-  <data name="Lead updated" xml:space="preserve"><value>Prospect mis à jour</value></data>
-  <data name="Lead added" xml:space="preserve"><value>Prospect ajouté</value></data>
-  <data name="Lead converted to account" xml:space="preserve"><value>Prospect converti en compte</value></data>
-  <data name="Pipeline updated" xml:space="preserve"><value>Pipeline mis à jour</value></data>
-  <data name="Pipeline created" xml:space="preserve"><value>Pipeline créé</value></data>
-  <data name="Opportunity updated" xml:space="preserve"><value>Opportunité mise à jour</value></data>
-  <data name="Opportunity added" xml:space="preserve"><value>Opportunité ajoutée</value></data>
-  <data name="Opportunity lines saved" xml:space="preserve"><value>Lignes de l'opportunité enregistrées</value></data>
-  <data name="Quotation #{0} created" xml:space="preserve"><value>Devis n°{0} créé</value></data>
-  <data name="Activity updated" xml:space="preserve"><value>Activité mise à jour</value></data>
-  <data name="Activity added" xml:space="preserve"><value>Activité ajoutée</value></data>
-  <data name="Unit added" xml:space="preserve"><value>Unité ajoutée</value></data>
-  <data name="Category not found" xml:space="preserve"><value>Catégorie introuvable</value></data>
-  <data name="Category updated" xml:space="preserve"><value>Catégorie mise à jour</value></data>
-  <data name="Item added" xml:space="preserve"><value>Article ajouté</value></data>
-  <data name="Item updated" xml:space="preserve"><value>Article mis à jour</value></data>
-  <data name="Warehouse added" xml:space="preserve"><value>Entrepôt ajouté</value></data>
-  <data name="Warehouse updated" xml:space="preserve"><value>Entrepôt mis à jour</value></data>
-  <data name="Saved" xml:space="preserve"><value>Enregistré</value></data>
-  <data name="Deleted" xml:space="preserve"><value>Supprimé</value></data>
-  <data name="Invalid section" xml:space="preserve"><value>Section non valide</value></data>
-  <data name="Rack must belong to the selected section" xml:space="preserve"><value>Le rayon doit appartenir à la section sélectionnée</value></data>
-  <data name="Item locations saved" xml:space="preserve"><value>Emplacements des articles enregistrés</value></data>
-  <data name="Distributed {0} items to their default locations" xml:space="preserve"><value>{0} articles répartis dans leurs emplacements par défaut</value></data>
-  <data name="Rack count saved" xml:space="preserve"><value>Comptage du rayon enregistré</value></data>
-  <data name="Quantity relocated between locations" xml:space="preserve"><value>Quantité déplacée entre les emplacements</value></data>
-  <data name="Movement posted; balance and journal entry updated" xml:space="preserve"><value>Mouvement comptabilisé ; solde et écriture de journal mis à jour</value></data>
-  <data name="Purchase order not found" xml:space="preserve"><value>Bon de commande introuvable</value></data>
-  <data name="Price list updated" xml:space="preserve"><value>Liste de prix mise à jour</value></data>
-  <data name="Price list created" xml:space="preserve"><value>Liste de prix créée</value></data>
-  <data name="Price list not found" xml:space="preserve"><value>Liste de prix introuvable</value></data>
-  <data name="Price list copied as a new draft" xml:space="preserve"><value>Liste de prix copiée en tant que nouveau brouillon</value></data>
-  <data name="Price list deleted" xml:space="preserve"><value>Liste de prix supprimée</value></data>
-  <data name="Delete failed" xml:space="preserve"><value>Échec de la suppression</value></data>
-  <data name="Promotion updated" xml:space="preserve"><value>Promotion mise à jour</value></data>
-  <data name="Promotion created" xml:space="preserve"><value>Promotion créée</value></data>
-  <data name="Promotion deleted" xml:space="preserve"><value>Promotion supprimée</value></data>
-  <data name="Document not found" xml:space="preserve"><value>Document introuvable</value></data>
-  <data name="Disassembly posted; stock and journal entry updated" xml:space="preserve"><value>Désassemblage comptabilisé ; stock et écriture de journal mis à jour</value></data>
-  <data name="Assembly posted; stock and journal entry updated" xml:space="preserve"><value>Assemblage comptabilisé ; stock et écriture de journal mis à jour</value></data>
-  <data name="Work order created" xml:space="preserve"><value>Ordre de fabrication créé</value></data>
-  <data name="Work order not found" xml:space="preserve"><value>Ordre de fabrication introuvable</value></data>
-  <data name="You do not have permission to use a foreign currency (currency-override)" xml:space="preserve"><value>Vous n'êtes pas autorisé à utiliser une devise étrangère (currency-override)</value></data>
-  <data name="Labor charged to the work order (WIP)" xml:space="preserve"><value>Main-d'œuvre imputée à l'ordre de fabrication (WIP)</value></data>
-  <data name="Labor line removed and its entry reversed" xml:space="preserve"><value>Ligne de main-d'œuvre supprimée et son écriture contre-passée</value></data>
-  <data name="Work order saved" xml:space="preserve"><value>Ordre de fabrication enregistré</value></data>
-  <data name="Work order released: materials issued to WIP" xml:space="preserve"><value>Ordre de fabrication lancé : matières sorties vers le WIP</value></data>
-  <data name="Work order cancelled (issued materials returned if any)" xml:space="preserve"><value>Ordre de fabrication annulé (matières sorties retournées le cas échéant)</value></data>
-  <data name="Work order completed: materials consumed, item produced, journal entry posted" xml:space="preserve"><value>Ordre de fabrication terminé : matières consommées, article produit, écriture de journal comptabilisée</value></data>
-  <data name="Produced {0} and closed the order (variance posted to account 520109)" xml:space="preserve"><value>{0} produit(s) et ordre clôturé (écart comptabilisé au compte 520109)</value></data>
-  <data name="Produced {0} partially (WIP carries the remainder)" xml:space="preserve"><value>{0} produit(s) partiellement (le WIP porte le reste)</value></data>
-  <data name="Work center saved" xml:space="preserve"><value>Poste de charge enregistré</value></data>
-  <data name="Operation saved" xml:space="preserve"><value>Opération enregistrée</value></data>
-  <data name="Operation deleted" xml:space="preserve"><value>Opération supprimée</value></data>
-  <data name="Plan deleted" xml:space="preserve"><value>Plan supprimé</value></data>
-  <data name="Plan not found" xml:space="preserve"><value>Plan introuvable</value></data>
-  <data name="Demand added" xml:space="preserve"><value>Demande ajoutée</value></data>
-  <data name="Demand removed" xml:space="preserve"><value>Demande supprimée</value></data>
-  <data name="Created {0} work orders from the plan" xml:space="preserve"><value>{0} ordres de fabrication créés à partir du plan</value></data>
-  <data name="Purchase order exceeds the approval limit — sent for approval" xml:space="preserve"><value>Le bon de commande dépasse la limite d'approbation — envoyé pour approbation</value></data>
-  <data name="Purchase order created" xml:space="preserve"><value>Bon de commande créé</value></data>
-  <data name="Purchase order converted to a purchase invoice (#{0})" xml:space="preserve"><value>Bon de commande converti en facture d'achat (#{0})</value></data>
-  <data name="Goods receipt posted; stock updated" xml:space="preserve"><value>Bon de réception comptabilisé ; stock mis à jour</value></data>
-  <data name="Sales order created" xml:space="preserve"><value>Commande client créée</value></data>
-  <data name="«{0}»: price {1:N2} is below the minimum {2:N2} (cost {3:N2} + margin {4:N2}%)" xml:space="preserve"><value>«{0}» : le prix {1:N2} est inférieur au minimum {2:N2} (coût {3:N2} + marge {4:N2}%)</value></data>
-  <data name="Minimum profit floor block — " xml:space="preserve"><value>Blocage du plancher de profit minimum — </value></data>
-  <data name="Minimum profit floor warning — " xml:space="preserve"><value>Avertissement de plancher de profit minimum — </value></data>
-  <data name="Quotation created" xml:space="preserve"><value>Devis créé</value></data>
-  <data name="Quotation not found" xml:space="preserve"><value>Devis introuvable</value></data>
-  <data name="Quotation status updated" xml:space="preserve"><value>Statut du devis mis à jour</value></data>
-  <data name="Quotation converted to a sales order" xml:space="preserve"><value>Devis converti en commande client</value></data>
-  <data name="Sales order converted to a sales invoice (#{0})" xml:space="preserve"><value>Commande client convertie en facture de vente (#{0})</value></data>
-  <data name="Delivery note posted; stock deducted and cost recorded" xml:space="preserve"><value>Bon de livraison comptabilisé ; stock déduit et coût enregistré</value></data>
-  <data name="Transfer exceeds the approval limit — sent for approval" xml:space="preserve"><value>Le transfert dépasse la limite d'approbation — envoyé pour approbation</value></data>
-  <data name="Inter-warehouse transfer posted" xml:space="preserve"><value>Transfert inter-entrepôts comptabilisé</value></data>
-  <data name="Stock count adjustment exceeds the approval limit — sent for approval" xml:space="preserve"><value>L'ajustement d'inventaire dépasse la limite d'approbation — envoyé pour approbation</value></data>
-  <data name="Stock count posted; differences adjusted" xml:space="preserve"><value>Inventaire comptabilisé ; écarts ajustés</value></data>
-  <data name="Add at least one line" xml:space="preserve"><value>Ajoutez au moins une ligne</value></data>
-  <data name="Write-off exceeds the approval limit — sent for approval" xml:space="preserve"><value>La mise au rebut dépasse la limite d'approbation — envoyée pour approbation</value></data>
-  <data name="Write-off recorded as an adjustment ({0})" xml:space="preserve"><value>Mise au rebut enregistrée en tant qu'ajustement ({0})</value></data>
-  <data name="Write-off document {0} posted" xml:space="preserve"><value>Document de mise au rebut {0} comptabilisé</value></data>
-  <data name="Integrity check: all invariants match" xml:space="preserve"><value>Contrôle d'intégrité : tous les invariants correspondent</value></data>
-  <data name="Integrity check: {0} deviations — administrators notified" xml:space="preserve"><value>Contrôle d'intégrité : {0} écarts — administrateurs notifiés</value></data>
-  <data name="Opening stock entered" xml:space="preserve"><value>Stock d'ouverture saisi</value></data>
-  <data name="Opening customer balance entered" xml:space="preserve"><value>Solde d'ouverture client saisi</value></data>
-  <data name="Opening vendor balance entered" xml:space="preserve"><value>Solde d'ouverture fournisseur saisi</value></data>
-  <data name="Opening asset entered" xml:space="preserve"><value>Immobilisation d'ouverture saisie</value></data>
-  <data name="Opening account balances entered" xml:space="preserve"><value>Soldes d'ouverture des comptes saisis</value></data>
-  <data name="Opening balances finalized successfully" xml:space="preserve"><value>Soldes d'ouverture finalisés avec succès</value></data>
-  <data name="Asset capitalized from stock (cost {0:N2}) — entry Dr fixed asset / Cr inventory" xml:space="preserve"><value>Immobilisation activée depuis le stock (coût {0:N2}) — écriture Dt immobilisation / Ct stock</value></data>
-  <data name="Approved and executed" xml:space="preserve"><value>Approuvé et exécuté</value></data>
-  <data name="Document rejected" xml:space="preserve"><value>Document refusé</value></data>
-  <data name="Role removed" xml:space="preserve"><value>Rôle supprimé</value></data>
-  <data name="Inventory settings saved" xml:space="preserve"><value>Paramètres de stock enregistrés</value></data>
-  <data name="Landed cost posted; inventory value updated" xml:space="preserve"><value>Coût de revient comptabilisé ; valeur du stock mise à jour</value></data>
-  <data name="Reorder points saved" xml:space="preserve"><value>Points de réapprovisionnement enregistrés</value></data>
-  <data name="Select at least one item" xml:space="preserve"><value>Sélectionnez au moins un article</value></data>
-  <data name="Purchase order {0} created from planning" xml:space="preserve"><value>Bon de commande {0} créé depuis la planification</value></data>
-  <data name="Item code" xml:space="preserve"><value>Code article</value></data>
-  <data name="Category" xml:space="preserve"><value>Catégorie</value></data>
-  <data name="Unit" xml:space="preserve"><value>Unité</value></data>
-  <data name="Barcode" xml:space="preserve"><value>Code-barres</value></data>
-  <data name="Sales price" xml:space="preserve"><value>Prix de vente</value></data>
-  <data name="Items — CrossBuy" xml:space="preserve"><value>Articles — CrossBuy</value></data>
-  <data name="Average cost" xml:space="preserve"><value>Coût moyen</value></data>
-  <data name="Value" xml:space="preserve"><value>Valeur</value></data>
-  <data name="Stock balances" xml:space="preserve"><value>Soldes de stock</value></data>
-  <data name="Stock balances — CrossBuy" xml:space="preserve"><value>Soldes de stock — CrossBuy</value></data>
-  <data name="In" xml:space="preserve"><value>Entrée</value></data>
-  <data name="Out" xml:space="preserve"><value>Sortie</value></data>
-  <data name="Unit cost" xml:space="preserve"><value>Coût unitaire</value></data>
-  <data name="Journal entry no." xml:space="preserve"><value>N° d'écriture de journal</value></data>
-  <data name="Stock movements" xml:space="preserve"><value>Mouvements de stock</value></data>
-  <data name="Stock movements — CrossBuy" xml:space="preserve"><value>Mouvements de stock — CrossBuy</value></data>
-  <data name="Order no." xml:space="preserve"><value>N° de commande</value></data>
-  <data name="Purchase orders" xml:space="preserve"><value>Bons de commande</value></data>
-  <data name="Purchase orders — CrossBuy" xml:space="preserve"><value>Bons de commande — CrossBuy</value></data>
-  <data name="Note no." xml:space="preserve"><value>N° de note</value></data>
-  <data name="Purchase order" xml:space="preserve"><value>Bon de commande</value></data>
-  <data name="Total cost" xml:space="preserve"><value>Coût total</value></data>
-  <data name="Goods receipts" xml:space="preserve"><value>Bons de réception</value></data>
-  <data name="Goods receipts — CrossBuy" xml:space="preserve"><value>Bons de réception — CrossBuy</value></data>
-  <data name="Sales orders" xml:space="preserve"><value>Commandes clients</value></data>
-  <data name="Sales orders — CrossBuy" xml:space="preserve"><value>Commandes clients — CrossBuy</value></data>
-  <data name="Quotation no." xml:space="preserve"><value>N° de devis</value></data>
-  <data name="Valid until" xml:space="preserve"><value>Valable jusqu'au</value></data>
-  <data name="Quotations" xml:space="preserve"><value>Devis</value></data>
-  <data name="Quotations — CrossBuy" xml:space="preserve"><value>Devis — CrossBuy</value></data>
-  <data name="Sales order" xml:space="preserve"><value>Commande client</value></data>
-  <data name="Deliveries" xml:space="preserve"><value>Livraisons</value></data>
-  <data name="Deliveries — CrossBuy" xml:space="preserve"><value>Livraisons — CrossBuy</value></data>
-  <data name="Priority" xml:space="preserve"><value>Priorité</value></data>
-  <data name="Line count" xml:space="preserve"><value>Nombre de lignes</value></data>
-  <data name="Valid from" xml:space="preserve"><value>Valable à partir du</value></data>
-  <data name="Valid to" xml:space="preserve"><value>Valable jusqu'au</value></data>
-  <data name="Active (list)" xml:space="preserve"><value>Actif (liste)</value></data>
-  <data name="Inactive (list)" xml:space="preserve"><value>Inactif (liste)</value></data>
-  <data name="Price lists" xml:space="preserve"><value>Listes de prix</value></data>
-  <data name="Price lists — CrossBuy" xml:space="preserve"><value>Listes de prix — CrossBuy</value></data>
-  <data name="Activity type and its default capabilities have been enabled" xml:space="preserve"><value>Le type d'activité et ses capacités par défaut ont été activés</value></data>
-  <data name="Capabilities saved" xml:space="preserve"><value>Capacités enregistrées</value></data>
-  <data name="Sales settings saved" xml:space="preserve"><value>Paramètres de vente enregistrés</value></data>
-  <data name="Dining area saved" xml:space="preserve"><value>Espace de restauration enregistré</value></data>
-  <data name="Dining area deleted" xml:space="preserve"><value>Espace de restauration supprimé</value></data>
-  <data name="Station saved" xml:space="preserve"><value>Station enregistrée</value></data>
-  <data name="Station deleted" xml:space="preserve"><value>Station supprimée</value></data>
-  <data name="Driver saved" xml:space="preserve"><value>Chauffeur enregistré</value></data>
-  <data name="Driver deleted" xml:space="preserve"><value>Chauffeur supprimé</value></data>
-  <data name="Delivery zone saved" xml:space="preserve"><value>Zone de livraison enregistrée</value></data>
-  <data name="Delivery zone deleted" xml:space="preserve"><value>Zone de livraison supprimée</value></data>
-  <data name="Reservation saved" xml:space="preserve"><value>Réservation enregistrée</value></data>
-  <data name="Reservation updated" xml:space="preserve"><value>Réservation mise à jour</value></data>
-  <data name="Enter the customer name" xml:space="preserve"><value>Saisissez le nom du client</value></data>
-  <data name="Table saved" xml:space="preserve"><value>Table enregistrée</value></data>
-  <data name="Table positions saved" xml:space="preserve"><value>Positions des tables enregistrées</value></data>
-  <data name="Table deleted" xml:space="preserve"><value>Table supprimée</value></data>
-  <data name="QR code regenerated" xml:space="preserve"><value>Code QR régénéré</value></data>
-  <data name="Group saved" xml:space="preserve"><value>Groupe enregistré</value></data>
-  <data name="Group deleted" xml:space="preserve"><value>Groupe supprimé</value></data>
-  <data name="Option saved" xml:space="preserve"><value>Option enregistrée</value></data>
-  <data name="Option deleted" xml:space="preserve"><value>Option supprimée</value></data>
-  <data name="Unlinked" xml:space="preserve"><value>Dissocié</value></data>
-  <data name="Payment method saved" xml:space="preserve"><value>Mode de paiement enregistré</value></data>
-  <data name="Device saved" xml:space="preserve"><value>Appareil enregistré</value></data>
-  <data name="Device deleted" xml:space="preserve"><value>Appareil supprimé</value></data>
-  <data name="Shift opened" xml:space="preserve"><value>Caisse ouverte</value></data>
-  <data name="Shift closed" xml:space="preserve"><value>Caisse fermée</value></data>
-  <data name="Tab saved" xml:space="preserve"><value>Onglet enregistré</value></data>
-  <data name="Tab deleted" xml:space="preserve"><value>Onglet supprimé</value></data>
-  <data name="Quick button added" xml:space="preserve"><value>Bouton rapide ajouté</value></data>
-  <data name="Button deleted" xml:space="preserve"><value>Bouton supprimé</value></data>
-  <data name="Quick code saved" xml:space="preserve"><value>Code rapide enregistré</value></data>
-  <data name="Session expired" xml:space="preserve"><value>Session expirée</value></data>
-  <data name="This role is not allowed to operate orders" xml:space="preserve"><value>Ce rôle n'est pas autorisé à gérer les commandes</value></data>
-  <data name="Not authorized" xml:space="preserve"><value>Non autorisé</value></data>
-  <data name="Table not found" xml:space="preserve"><value>Table introuvable</value></data>
-  <data name="This role is not allowed to take payment/collection" xml:space="preserve"><value>Ce rôle n'est pas autorisé à encaisser les paiements</value></data>
-  <data name="Invalid login credentials" xml:space="preserve"><value>Identifiants de connexion non valides</value></data>
-  <data name="You do not have cashier permission for any branch" xml:space="preserve"><value>Vous n'avez d'autorisation de caissier pour aucune succursale</value></data>
-  <data name="Device not found" xml:space="preserve"><value>Appareil introuvable</value></data>
-  <data name="Table is closed" xml:space="preserve"><value>La table est fermée</value></data>
-  <data name="The order is not available on this table" xml:space="preserve"><value>La commande n'est pas disponible sur cette table</value></data>
-  <data name="The kitchen screen is for kitchen/manager roles only" xml:space="preserve"><value>L'écran cuisine est réservé aux rôles cuisine/responsable</value></data>
-  <data name="This action is for kitchen/manager roles only" xml:space="preserve"><value>Cette action est réservée aux rôles cuisine/responsable</value></data>
-  <data name="The delivery board is for cashier/manager roles" xml:space="preserve"><value>Le tableau des livraisons est réservé aux rôles caissier/responsable</value></data>
-  <data name="The order is not available" xml:space="preserve"><value>La commande n'est pas disponible</value></data>
-  <data name="Invalid split format" xml:space="preserve"><value>Format de partage non valide</value></data>
-  <data name="No split data" xml:space="preserve"><value>Aucune donnée de partage</value></data>
-  <data name="Target table not selected" xml:space="preserve"><value>Table cible non sélectionnée</value></data>
-  <data name="Invalid status" xml:space="preserve"><value>Statut non valide</value></data>
-  <data name="The table is busy with an open order" xml:space="preserve"><value>La table est occupée par une commande ouverte</value></data>
-  <data name="Adding tables is for manager/admin roles only" xml:space="preserve"><value>L'ajout de tables est réservé aux rôles responsable/administrateur</value></data>
-  <data name="Dining area not found" xml:space="preserve"><value>Espace de restauration introuvable</value></data>
-  <data name="Enter the table number" xml:space="preserve"><value>Saisissez le numéro de la table</value></data>
-  <data name="Table number is already in use" xml:space="preserve"><value>Le numéro de la table est déjà utilisé</value></data>
-  <data name="General" xml:space="preserve"><value>Général</value></data>
-  <data name="Master data" xml:space="preserve"><value>Données de base</value></data>
-  <data name="Categories" xml:space="preserve"><value>Catégories</value></data>
-  <data name="Units" xml:space="preserve"><value>Unités</value></data>
-  <data name="Warehouses" xml:space="preserve"><value>Entrepôts</value></data>
-  <data name="Sections / racks" xml:space="preserve"><value>Sections / rayons</value></data>
-  <data name="Item locations" xml:space="preserve"><value>Emplacements d'articles</value></data>
-  <data name="Movements &amp; balances" xml:space="preserve"><value>Mouvements &amp; soldes</value></data>
-  <data name="Rack stock" xml:space="preserve"><value>Stock par rayon</value></data>
-  <data name="Batches &amp; expiry" xml:space="preserve"><value>Lots &amp; péremption</value></data>
-  <data name="Serials" xml:space="preserve"><value>Numéros de série</value></data>
-  <data name="Operations" xml:space="preserve"><value>Opérations</value></data>
-  <data name="Assembly" xml:space="preserve"><value>Assemblage</value></data>
-  <data name="Transfers" xml:space="preserve"><value>Transferts</value></data>
-  <data name="Stock counts" xml:space="preserve"><value>Inventaires</value></data>
-  <data name="Write-offs" xml:space="preserve"><value>Radiations</value></data>
-  <data name="Landed costs" xml:space="preserve"><value>Coûts de revient</value></data>
-  <data name="Capitalize asset" xml:space="preserve"><value>Immobiliser un article</value></data>
-  <data name="Purchasing &amp; sales" xml:space="preserve"><value>Achats &amp; ventes</value></data>
-  <data name="Replenishment" xml:space="preserve"><value>Réapprovisionnement</value></data>
-  <data name="Promotions" xml:space="preserve"><value>Promotions</value></data>
-  <data name="Governance &amp; setup" xml:space="preserve"><value>Gouvernance &amp; configuration</value></data>
-  <data name="Opening balances" xml:space="preserve"><value>Soldes d'ouverture</value></data>
-  <data name="Integrity check" xml:space="preserve"><value>Contrôle d'intégrité</value></data>
-  <data name="Approvals" xml:space="preserve"><value>Approbations</value></data>
-  <data name="Inventory roles" xml:space="preserve"><value>Rôles de stock</value></data>
-  <data name="Inventory settings" xml:space="preserve"><value>Paramètres de stock</value></data>
-  <data name="Reports" xml:space="preserve"><value>Rapports</value></data>
-  <data name="Inventory reports" xml:space="preserve"><value>Rapports de stock</value></data>
-  <data name="Production" xml:space="preserve"><value>Production</value></data>
-  <data name="Work orders" xml:space="preserve"><value>Ordres de fabrication</value></data>
-  <data name="New work order" xml:space="preserve"><value>Nouvel ordre de fabrication</value></data>
-  <data name="Production planning" xml:space="preserve"><value>Planification de production</value></data>
-  <data name="Quick assembly" xml:space="preserve"><value>Assemblage rapide</value></data>
-  <data name="Items &amp; BOMs" xml:space="preserve"><value>Articles &amp; nomenclatures</value></data>
-  <data name="Work centers" xml:space="preserve"><value>Postes de charge</value></data>
-  <data name="Manufacturing reports" xml:space="preserve"><value>Rapports de fabrication</value></data>
-  <data name="Cashier terminal" xml:space="preserve"><value>Terminal caissier</value></data>
-  <data name="Kitchen display" xml:space="preserve"><value>Écran cuisine</value></data>
-  <data name="Delivery board" xml:space="preserve"><value>Tableau des livraisons</value></data>
-  <data name="Floor &amp; menu" xml:space="preserve"><value>Salle &amp; menu</value></data>
-  <data name="Operations setup" xml:space="preserve"><value>Configuration des opérations</value></data>
-  <data name="Areas &amp; stations" xml:space="preserve"><value>Salles &amp; stations</value></data>
-  <data name="Floor plan" xml:space="preserve"><value>Plan de salle</value></data>
-  <data name="Reservations" xml:space="preserve"><value>Réservations</value></data>
-  <data name="Quick items" xml:space="preserve"><value>Articles rapides</value></data>
-  <data name="Modifiers" xml:space="preserve"><value>Modificateurs</value></data>
-  <data name="Cashier preview" xml:space="preserve"><value>Aperçu caissier</value></data>
-  <data name="Setup" xml:space="preserve"><value>Configuration</value></data>
-  <data name="Cashier terminals" xml:space="preserve"><value>Terminaux caissiers</value></data>
-  <data name="Delivery drivers" xml:space="preserve"><value>Livreurs</value></data>
-  <data name="Payment methods" xml:space="preserve"><value>Modes de paiement</value></data>
-  <data name="Cashier roles" xml:space="preserve"><value>Rôles caissier</value></data>
-  <data name="Delivery zones &amp; fees" xml:space="preserve"><value>Zones &amp; frais de livraison</value></data>
-  <data name="Executive dashboard" xml:space="preserve"><value>Tableau de bord exécutif</value></data>
-  <data name="Chart of accounts" xml:space="preserve"><value>Plan comptable</value></data>
-  <data name="Cost centers" xml:space="preserve"><value>Centres de coûts</value></data>
-  <data name="Projects" xml:space="preserve"><value>Projets</value></data>
-  <data name="Project profitability" xml:space="preserve"><value>Rentabilité des projets</value></data>
-  <data name="Fiscal periods" xml:space="preserve"><value>Périodes fiscales</value></data>
-  <data name="AI insights" xml:space="preserve"><value>Analyses IA</value></data>
-  <data name="Currencies &amp; FX" xml:space="preserve"><value>Devises &amp; change</value></data>
-  <data name="Currencies" xml:space="preserve"><value>Devises</value></data>
-  <data name="Exchange rates" xml:space="preserve"><value>Taux de change</value></data>
-  <data name="Functional currency setup" xml:space="preserve"><value>Configuration de la devise fonctionnelle</value></data>
-  <data name="FX revaluation" xml:space="preserve"><value>Réévaluation des devises</value></data>
-  <data name="Receivables" xml:space="preserve"><value>Clients</value></data>
-  <data name="Sales invoices" xml:space="preserve"><value>Factures de vente</value></data>
-  <data name="Sales returns" xml:space="preserve"><value>Retours de vente</value></data>
-  <data name="AR aging" xml:space="preserve"><value>Balance âgée clients</value></data>
-  <data name="Customer analytics" xml:space="preserve"><value>Analyses clients</value></data>
-  <data name="CRM dashboard" xml:space="preserve"><value>Tableau de bord CRM</value></data>
-  <data name="Accounts" xml:space="preserve"><value>Comptes</value></data>
-  <data name="Leads" xml:space="preserve"><value>Prospects</value></data>
-  <data name="Opportunities" xml:space="preserve"><value>Opportunités</value></data>
-  <data name="Pipeline (Kanban)" xml:space="preserve"><value>Pipeline (Kanban)</value></data>
-  <data name="Pipeline setup" xml:space="preserve"><value>Configuration des pipelines</value></data>
-  <data name="Activities" xml:space="preserve"><value>Activités</value></data>
-  <data name="Campaigns" xml:space="preserve"><value>Campagnes</value></data>
-  <data name="Marketing lists" xml:space="preserve"><value>Listes marketing</value></data>
-  <data name="Tickets" xml:space="preserve"><value>Tickets</value></data>
-  <data name="SLA policies" xml:space="preserve"><value>Politiques SLA</value></data>
-  <data name="Forecast" xml:space="preserve"><value>Prévisions</value></data>
-  <data name="360° reports" xml:space="preserve"><value>Rapports 360°</value></data>
-  <data name="Scoring &amp; automation" xml:space="preserve"><value>Scoring &amp; automatisation</value></data>
-  <data name="Custom fields" xml:space="preserve"><value>Champs personnalisés</value></data>
-  <data name="Automation rules" xml:space="preserve"><value>Règles d'automatisation</value></data>
-  <data name="CRM roles" xml:space="preserve"><value>Rôles CRM</value></data>
-  <data name="Payables" xml:space="preserve"><value>Fournisseurs</value></data>
-  <data name="Purchase invoices" xml:space="preserve"><value>Factures d'achat</value></data>
-  <data name="Purchase returns" xml:space="preserve"><value>Retours d'achat</value></data>
-  <data name="AP aging" xml:space="preserve"><value>Balance âgée fournisseurs</value></data>
-  <data name="Banks &amp; cash" xml:space="preserve"><value>Banques &amp; caisse</value></data>
-  <data name="Bank accounts" xml:space="preserve"><value>Comptes bancaires</value></data>
-  <data name="Cash boxes" xml:space="preserve"><value>Caisses</value></data>
-  <data name="Cash transfer" xml:space="preserve"><value>Transfert d'espèces</value></data>
-  <data name="Bank reconcile" xml:space="preserve"><value>Rapprochement bancaire</value></data>
-  <data name="Payroll" xml:space="preserve"><value>Paie</value></data>
-  <data name="Payroll run" xml:space="preserve"><value>Traitement de la paie</value></data>
-  <data name="Payslips" xml:space="preserve"><value>Bulletins de paie</value></data>
-  <data name="Disbursement &amp; remittance" xml:space="preserve"><value>Décaissement &amp; versement</value></data>
-  <data name="Payroll tax &amp; insurance" xml:space="preserve"><value>Impôts &amp; cotisations sur salaire</value></data>
-  <data name="Tax codes" xml:space="preserve"><value>Codes de taxe</value></data>
-  <data name="VAT returns" xml:space="preserve"><value>Déclarations de TVA</value></data>
-  <data name="ETA status" xml:space="preserve"><value>Statut facture électronique</value></data>
-  <data name="Fixed assets" xml:space="preserve"><value>Immobilisations</value></data>
-  <data name="Asset categories" xml:space="preserve"><value>Catégories d'immobilisations</value></data>
-  <data name="Depreciation runs" xml:space="preserve"><value>Traitements d'amortissement</value></data>
-  <data name="Maintenance due" xml:space="preserve"><value>Maintenance due</value></data>
-  <data name="Financial reports" xml:space="preserve"><value>Rapports financiers</value></data>
-  <data name="Trial balance" xml:space="preserve"><value>Balance générale</value></data>
-  <data name="Balance sheet" xml:space="preserve"><value>Bilan</value></data>
-  <data name="Income statement" xml:space="preserve"><value>Compte de résultat</value></data>
-  <data name="Cash flow" xml:space="preserve"><value>Flux de trésorerie</value></data>
-  <data name="Closing" xml:space="preserve"><value>Clôture</value></data>
-  <data name="Year-end close" xml:space="preserve"><value>Clôture de fin d'année</value></data>
-  <data name="Setup &amp; roles" xml:space="preserve"><value>Configuration &amp; rôles</value></data>
-  <data name="Accounting roles" xml:space="preserve"><value>Rôles comptables</value></data>
-  <data name="Employees &amp; structure" xml:space="preserve"><value>Employés &amp; structure</value></data>
-  <data name="Org structure" xml:space="preserve"><value>Structure organisationnelle</value></data>
-  <data name="Job titles" xml:space="preserve"><value>Intitulés de poste</value></data>
-  <data name="Administrative bodies" xml:space="preserve"><value>Entités administratives</value></data>
-  <data name="Contracts &amp; documents" xml:space="preserve"><value>Contrats &amp; documents</value></data>
-  <data name="Expiry alerts" xml:space="preserve"><value>Alertes d'expiration</value></data>
-  <data name="Termination &amp; settlement" xml:space="preserve"><value>Fin de service &amp; solde</value></data>
-  <data name="Leave &amp; attendance" xml:space="preserve"><value>Congés &amp; présence</value></data>
-  <data name="Leave types" xml:space="preserve"><value>Types de congé</value></data>
-  <data name="Official holidays" xml:space="preserve"><value>Jours fériés officiels</value></data>
-  <data name="Attendance" xml:space="preserve"><value>Présence</value></data>
-  <data name="Encashment &amp; provision" xml:space="preserve"><value>Encaissement &amp; provision</value></data>
-  <data name="Leave carry-over" xml:space="preserve"><value>Report des congés</value></data>
-  <data name="Performance appraisal" xml:space="preserve"><value>Évaluation des performances</value></data>
-  <data name="Training" xml:space="preserve"><value>Formation</value></data>
-  <data name="System setup" xml:space="preserve"><value>Configuration du système</value></data>
-  <data name="Brands" xml:space="preserve"><value>Marques</value></data>
-  <data name="Back-office" xml:space="preserve"><value>Back-office</value></data>
-  <data name="People" xml:space="preserve"><value>Personnel</value></data>
-  <data name="Restaurant" xml:space="preserve"><value>Restaurant</value></data>
+  <data name="Customer" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Customers" xml:space="preserve">
+    <value>Clients</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>Montant</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Statut</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Reference" xml:space="preserve">
+    <value>Référence</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Compte</value>
+  </data>
+  <data name="Debit" xml:space="preserve">
+    <value>Débit</value>
+  </data>
+  <data name="Credit" xml:space="preserve">
+    <value>Crédit</value>
+  </data>
+  <data name="Balance" xml:space="preserve">
+    <value>Solde</value>
+  </data>
+  <data name="Print" xml:space="preserve">
+    <value>Imprimer</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Exporter</value>
+  </data>
+  <data name="Currency" xml:space="preserve">
+    <value>Devise</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantité</value>
+  </data>
+  <data name="Note" xml:space="preserve">
+    <value>Remarque</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>Remarques</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Tous</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>Voir</value>
+  </data>
+  <data name="Approve" xml:space="preserve">
+    <value>Approuver</value>
+  </data>
+  <data name="Reject" xml:space="preserve">
+    <value>Refuser</value>
+  </data>
+  <data name="Post" xml:space="preserve">
+    <value>Comptabiliser</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Brouillon</value>
+  </data>
+  <data name="Number" xml:space="preserve">
+    <value>Numéro</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>Succursale</value>
+  </data>
+  <data name="Warehouse" xml:space="preserve">
+    <value>Entrepôt</value>
+  </data>
+  <data name="Item" xml:space="preserve">
+    <value>Article</value>
+  </data>
+  <data name="Items" xml:space="preserve">
+    <value>Articles</value>
+  </data>
+  <data name="Price" xml:space="preserve">
+    <value>Prix</value>
+  </data>
+  <data name="Discount" xml:space="preserve">
+    <value>Remise</value>
+  </data>
+  <data name="Tax" xml:space="preserve">
+    <value>Taxe</value>
+  </data>
+  <data name="Subtotal" xml:space="preserve">
+    <value>Sous-total</value>
+  </data>
+  <data name="GrandTotal" xml:space="preserve">
+    <value>Total général</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Ajouter</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>Mettre à jour</value>
+  </data>
+  <data name="Active" xml:space="preserve">
+    <value>Actif</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Inactif</value>
+  </data>
+  <data name="Paid" xml:space="preserve">
+    <value>Payé</value>
+  </data>
+  <data name="Unpaid" xml:space="preserve">
+    <value>Impayé</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>De</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>À</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Entreprise</value>
+  </data>
+  <data name="Employee" xml:space="preserve">
+    <value>Employé</value>
+  </data>
+  <data name="Department" xml:space="preserve">
+    <value>Département</value>
+  </data>
+  <data name="NoData" xml:space="preserve">
+    <value>Aucune donnée disponible</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filtrer</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Réinitialiser</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>Soumettre</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Retour</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Suivant</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Précédent</value>
+  </data>
+  <data name="Inventory" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="Manufacturing" xml:space="preserve">
+    <value>Fabrication</value>
+  </data>
+  <data name="Employees" xml:space="preserve">
+    <value>Employés</value>
+  </data>
+  <data name="Required documents" xml:space="preserve">
+    <value>Documents requis</value>
+  </data>
+  <data name="Job applications" xml:space="preserve">
+    <value>Candidatures</value>
+  </data>
+  <data name="Application saved" xml:space="preserve">
+    <value>Candidature enregistrée</value>
+  </data>
+  <data name="Stage updated" xml:space="preserve">
+    <value>Étape mise à jour</value>
+  </data>
+  <data name="Document uploaded" xml:space="preserve">
+    <value>Document téléversé</value>
+  </data>
+  <data name="Document deleted" xml:space="preserve">
+    <value>Document supprimé</value>
+  </data>
+  <data name="HumanResources" xml:space="preserve">
+    <value>Ressources humaines</value>
+  </data>
+  <data name="CRM" xml:space="preserve">
+    <value>CRM</value>
+  </data>
+  <data name="POS" xml:space="preserve">
+    <value>Point de vente</value>
+  </data>
+  <data name="Logout" xml:space="preserve">
+    <value>Se déconnecter</value>
+  </data>
+  <data name="Profile" xml:space="preserve">
+    <value>Profil</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>Tableau de bord</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="MyAccount" xml:space="preserve">
+    <value>Mon compte</value>
+  </data>
+  <data name="The code and name are required" xml:space="preserve">
+    <value>Le code et le nom sont obligatoires</value>
+  </data>
+  <data name="Currency not found" xml:space="preserve">
+    <value>Devise introuvable</value>
+  </data>
+  <data name="The currency code is already in use" xml:space="preserve">
+    <value>Le code de devise est déjà utilisé</value>
+  </data>
+  <data name="The currency code already exists" xml:space="preserve">
+    <value>Le code de devise existe déjà</value>
+  </data>
+  <data name="Currency updated" xml:space="preserve">
+    <value>Devise mise à jour</value>
+  </data>
+  <data name="Currency added" xml:space="preserve">
+    <value>Devise ajoutée</value>
+  </data>
+  <data name="Invalid exchange rate data" xml:space="preserve">
+    <value>Données de taux de change non valides</value>
+  </data>
+  <data name="Exchange rate updated" xml:space="preserve">
+    <value>Taux de change mis à jour</value>
+  </data>
+  <data name="Exchange rate added" xml:space="preserve">
+    <value>Taux de change ajouté</value>
+  </data>
+  <data name="The company currency cannot be changed once postings exist — the currency is locked" xml:space="preserve">
+    <value>La devise de l'entreprise ne peut pas être modifiée une fois que des écritures existent — la devise est verrouillée</value>
+  </data>
+  <data name="The company default currency has been set" xml:space="preserve">
+    <value>La devise par défaut de l'entreprise a été définie</value>
+  </data>
+  <data name="Branch not found" xml:space="preserve">
+    <value>Succursale introuvable</value>
+  </data>
+  <data name="This branch currency is locked after the first transaction — it cannot be changed" xml:space="preserve">
+    <value>La devise de cette succursale est verrouillée après la première transaction — elle ne peut pas être modifiée</value>
+  </data>
+  <data name="The branch functional currency has been set" xml:space="preserve">
+    <value>La devise fonctionnelle de la succursale a été définie</value>
+  </data>
+  <data name="The revaluation and its automatic reversing entry have been posted" xml:space="preserve">
+    <value>La réévaluation et son écriture de contre-passation automatique ont été comptabilisées</value>
+  </data>
+  <data name="Project saved" xml:space="preserve">
+    <value>Projet enregistré</value>
+  </data>
+  <data name="Project deleted" xml:space="preserve">
+    <value>Projet supprimé</value>
+  </data>
+  <data name="Brand saved" xml:space="preserve">
+    <value>Marque enregistrée</value>
+  </data>
+  <data name="Brand deleted" xml:space="preserve">
+    <value>Marque supprimée</value>
+  </data>
+  <data name="Brands activated — linked {0} branches to the default brand" xml:space="preserve">
+    <value>Marques activées — {0} succursales rattachées à la marque par défaut</value>
+  </data>
+  <data name="Internal error:" xml:space="preserve">
+    <value>Erreur interne :</value>
+  </data>
+  <data name="Account added" xml:space="preserve">
+    <value>Compte ajouté</value>
+  </data>
+  <data name="Account updated" xml:space="preserve">
+    <value>Compte mis à jour</value>
+  </data>
+  <data name="The entry ({0:N2}) exceeds the approval threshold — saved as a draft awaiting the chief accountant's approval" xml:space="preserve">
+    <value>L'écriture ({0:N2}) dépasse le seuil d'approbation — enregistrée en brouillon en attente de l'approbation du chef comptable</value>
+  </data>
+  <data name="The journal entry was posted successfully" xml:space="preserve">
+    <value>L'écriture de journal a été comptabilisée avec succès</value>
+  </data>
+  <data name="The journal entry was saved as a draft" xml:space="preserve">
+    <value>L'écriture de journal a été enregistrée en brouillon</value>
+  </data>
+  <data name="Journal entry not found" xml:space="preserve">
+    <value>Écriture de journal introuvable</value>
+  </data>
+  <data name="The entry ({0:N2}) exceeds the approval threshold — the chief accountant's approval is required" xml:space="preserve">
+    <value>L'écriture ({0:N2}) dépasse le seuil d'approbation — l'approbation du chef comptable est requise</value>
+  </data>
+  <data name="Segregation of duties: the entry's creator cannot approve it — another chief accountant is required" xml:space="preserve">
+    <value>Séparation des tâches : le créateur de l'écriture ne peut pas l'approuver — un autre chef comptable est requis</value>
+  </data>
+  <data name="Posted and approved" xml:space="preserve">
+    <value>Comptabilisée et approuvée</value>
+  </data>
+  <data name="The journal entry was reversed" xml:space="preserve">
+    <value>L'écriture de journal a été contre-passée</value>
+  </data>
+  <data name="The period status was updated" xml:space="preserve">
+    <value>Le statut de la période a été mis à jour</value>
+  </data>
+  <data name="The payroll entry was posted and payslips issued successfully" xml:space="preserve">
+    <value>L'écriture de paie a été comptabilisée et les bulletins de paie émis avec succès</value>
+  </data>
+  <data name="Net payroll was disbursed" xml:space="preserve">
+    <value>La paie nette a été versée</value>
+  </data>
+  <data name="The deduction was remitted to the authority" xml:space="preserve">
+    <value>La retenue a été reversée à l'organisme</value>
+  </data>
+  <data name="Payroll settings saved" xml:space="preserve">
+    <value>Paramètres de paie enregistrés</value>
+  </data>
+  <data name="The bracket's upper limit must exceed the lower limit" xml:space="preserve">
+    <value>La limite supérieure de la tranche doit être supérieure à la limite inférieure</value>
+  </data>
+  <data name="Tax bracket saved" xml:space="preserve">
+    <value>Tranche d'imposition enregistrée</value>
+  </data>
+  <data name="Bracket deleted" xml:space="preserve">
+    <value>Tranche supprimée</value>
+  </data>
+  <data name="Payslip not found" xml:space="preserve">
+    <value>Bulletin de paie introuvable</value>
+  </data>
+  <data name="The amount ({0:N2}) exceeds the approval threshold — the chief accountant is required" xml:space="preserve">
+    <value>Le montant ({0:N2}) dépasse le seuil d'approbation — le chef comptable est requis</value>
+  </data>
+  <data name="You do not have permission to issue a document in a currency other than the branch currency" xml:space="preserve">
+    <value>Vous n'êtes pas autorisé à émettre un document dans une devise autre que celle de la succursale</value>
+  </data>
+  <data name="The sales invoice was issued and posted" xml:space="preserve">
+    <value>La facture de vente a été émise et comptabilisée</value>
+  </data>
+  <data name="«{0}»: the price {1:N2} is below the floor {2:N2} (cost {3:N2} + margin {4:N2}%)" xml:space="preserve">
+    <value>«{0}» : le prix {1:N2} est inférieur au plancher {2:N2} (coût {3:N2} + marge {4:N2}%)</value>
+  </data>
+  <data name="Margin floor block — " xml:space="preserve">
+    <value>Blocage du plancher de marge — </value>
+  </data>
+  <data name="Margin floor warning — " xml:space="preserve">
+    <value>Avertissement de plancher de marge — </value>
+  </data>
+  <data name="The sales return was recorded and a credit note issued" xml:space="preserve">
+    <value>Le retour de vente a été enregistré et un avoir émis</value>
+  </data>
+  <data name="Return not found" xml:space="preserve">
+    <value>Retour introuvable</value>
+  </data>
+  <data name="The receipt voucher was recorded and posted" xml:space="preserve">
+    <value>Le bon d'encaissement a été enregistré et comptabilisé</value>
+  </data>
+  <data name="Customer updated" xml:space="preserve">
+    <value>Client mis à jour</value>
+  </data>
+  <data name="Customer added" xml:space="preserve">
+    <value>Client ajouté</value>
+  </data>
+  <data name="Vendor updated" xml:space="preserve">
+    <value>Fournisseur mis à jour</value>
+  </data>
+  <data name="Vendor added" xml:space="preserve">
+    <value>Fournisseur ajouté</value>
+  </data>
+  <data name="The purchase invoice was recorded and posted" xml:space="preserve">
+    <value>La facture d'achat a été enregistrée et comptabilisée</value>
+  </data>
+  <data name="The purchase return was recorded and a debit note issued" xml:space="preserve">
+    <value>Le retour d'achat a été enregistré et une note de débit émise</value>
+  </data>
+  <data name="The payment voucher was recorded and posted" xml:space="preserve">
+    <value>Le bon de paiement a été enregistré et comptabilisé</value>
+  </data>
+  <data name="The bank name and ledger account are required" xml:space="preserve">
+    <value>Le nom de la banque et le compte du grand livre sont obligatoires</value>
+  </data>
+  <data name="Bank account added" xml:space="preserve">
+    <value>Compte bancaire ajouté</value>
+  </data>
+  <data name="The name and ledger account are required" xml:space="preserve">
+    <value>Le nom et le compte du grand livre sont obligatoires</value>
+  </data>
+  <data name="Cash box added" xml:space="preserve">
+    <value>Caisse ajoutée</value>
+  </data>
+  <data name="The transfer was made and posted" xml:space="preserve">
+    <value>Le virement a été effectué et comptabilisé</value>
+  </data>
+  <data name="The bank reconciliation was saved" xml:space="preserve">
+    <value>Le rapprochement bancaire a été enregistré</value>
+  </data>
+  <data name="The asset was recorded and its acquisition entry posted" xml:space="preserve">
+    <value>L'immobilisation a été enregistrée et son écriture d'acquisition comptabilisée</value>
+  </data>
+  <data name="The maintenance schedule was saved" xml:space="preserve">
+    <value>Le calendrier de maintenance a été enregistré</value>
+  </data>
+  <data name="Schedule deleted" xml:space="preserve">
+    <value>Calendrier supprimé</value>
+  </data>
+  <data name="Maintenance logged and the journal entry posted" xml:space="preserve">
+    <value>Maintenance enregistrée et écriture de journal comptabilisée</value>
+  </data>
+  <data name="Maintenance logged" xml:space="preserve">
+    <value>Maintenance enregistrée</value>
+  </data>
+  <data name="The asset was disposed and the journal entry posted" xml:space="preserve">
+    <value>L'immobilisation a été cédée et l'écriture de journal comptabilisée</value>
+  </data>
+  <data name="Category added" xml:space="preserve">
+    <value>Catégorie ajoutée</value>
+  </data>
+  <data name="Depreciation was calculated and posted" xml:space="preserve">
+    <value>L'amortissement a été calculé et comptabilisé</value>
+  </data>
+  <data name="Tax code added" xml:space="preserve">
+    <value>Code de taxe ajouté</value>
+  </data>
+  <data name="Tax code updated" xml:space="preserve">
+    <value>Code de taxe mis à jour</value>
+  </data>
+  <data name="Tax code deleted" xml:space="preserve">
+    <value>Code de taxe supprimé</value>
+  </data>
+  <data name="The VAT return was filed" xml:space="preserve">
+    <value>La déclaration de TVA a été déposée</value>
+  </data>
+  <data name="The VAT settlement entry was posted" xml:space="preserve">
+    <value>L'écriture de règlement de la TVA a été comptabilisée</value>
+  </data>
+  <data name="The fiscal year was closed and the closing entry posted" xml:space="preserve">
+    <value>L'exercice a été clôturé et l'écriture de clôture comptabilisée</value>
+  </data>
+  <data name="The year was reopened and the closing entry reversed" xml:space="preserve">
+    <value>L'exercice a été rouvert et l'écriture de clôture contre-passée</value>
+  </data>
+  <data name="Invalid data" xml:space="preserve">
+    <value>Données non valides</value>
+  </data>
+  <data name="Role assigned" xml:space="preserve">
+    <value>Rôle attribué</value>
+  </data>
+  <data name="The approval threshold was saved" xml:space="preserve">
+    <value>Le seuil d'approbation a été enregistré</value>
+  </data>
+  <data name="Role deleted" xml:space="preserve">
+    <value>Rôle supprimé</value>
+  </data>
+  <data name="Tax Reg. No." xml:space="preserve">
+    <value>N° d'immatriculation fiscale</value>
+  </data>
+  <data name="Contact Person" xml:space="preserve">
+    <value>Personne à contacter</value>
+  </data>
+  <data name="Segment" xml:space="preserve">
+    <value>Segment</value>
+  </data>
+  <data name="Credit Limit" xml:space="preserve">
+    <value>Limite de crédit</value>
+  </data>
+  <data name="Payment Terms (days)" xml:space="preserve">
+    <value>Conditions de paiement (jours)</value>
+  </data>
+  <data name="Suspended" xml:space="preserve">
+    <value>Suspendu</value>
+  </data>
+  <data name="Customers — CrossBuy" xml:space="preserve">
+    <value>Clients — CrossBuy</value>
+  </data>
+  <data name="Vendors" xml:space="preserve">
+    <value>Fournisseurs</value>
+  </data>
+  <data name="Vendors — CrossBuy" xml:space="preserve">
+    <value>Fournisseurs — CrossBuy</value>
+  </data>
+  <data name="Invoice No." xml:space="preserve">
+    <value>N° de facture</value>
+  </data>
+  <data name="Sales Invoices" xml:space="preserve">
+    <value>Factures de vente</value>
+  </data>
+  <data name="Sales Invoices — CrossBuy" xml:space="preserve">
+    <value>Factures de vente — CrossBuy</value>
+  </data>
+  <data name="Purchase Invoices" xml:space="preserve">
+    <value>Factures d'achat</value>
+  </data>
+  <data name="Purchase Invoices — CrossBuy" xml:space="preserve">
+    <value>Factures d'achat — CrossBuy</value>
+  </data>
+  <data name="Voucher No." xml:space="preserve">
+    <value>N° de bon</value>
+  </data>
+  <data name="Method" xml:space="preserve">
+    <value>Méthode</value>
+  </data>
+  <data name="Receipts" xml:space="preserve">
+    <value>Encaissements</value>
+  </data>
+  <data name="Receipts — CrossBuy" xml:space="preserve">
+    <value>Encaissements — CrossBuy</value>
+  </data>
+  <data name="Payments" xml:space="preserve">
+    <value>Paiements</value>
+  </data>
+  <data name="Payments — CrossBuy" xml:space="preserve">
+    <value>Paiements — CrossBuy</value>
+  </data>
+  <data name="Entry No." xml:space="preserve">
+    <value>N° d'écriture</value>
+  </data>
+  <data name="Journals" xml:space="preserve">
+    <value>Journaux</value>
+  </data>
+  <data name="Journal Entries — CrossBuy" xml:space="preserve">
+    <value>Écritures de journal — CrossBuy</value>
+  </data>
+  <data name="Sales" xml:space="preserve">
+    <value>Ventes</value>
+  </data>
+  <data name="Collections" xml:space="preserve">
+    <value>Recouvrements</value>
+  </data>
+  <data name="Returns" xml:space="preserve">
+    <value>Retours</value>
+  </data>
+  <data name="Outstanding" xml:space="preserve">
+    <value>Encours</value>
+  </data>
+  <data name="Revenue" xml:space="preserve">
+    <value>Chiffre d'affaires</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Coût</value>
+  </data>
+  <data name="Gross Profit" xml:space="preserve">
+    <value>Bénéfice brut</value>
+  </data>
+  <data name="Margin %" xml:space="preserve">
+    <value>Marge %</value>
+  </data>
+  <data name="Invoice Count" xml:space="preserve">
+    <value>Nombre de factures</value>
+  </data>
+  <data name="First Invoice" xml:space="preserve">
+    <value>Première facture</value>
+  </data>
+  <data name="Last Invoice" xml:space="preserve">
+    <value>Dernière facture</value>
+  </data>
+  <data name="Avg Invoice" xml:space="preserve">
+    <value>Facture moyenne</value>
+  </data>
+  <data name="Customer Analytics" xml:space="preserve">
+    <value>Analyse des clients</value>
+  </data>
+  <data name="Customer Analytics — CrossBuy" xml:space="preserve">
+    <value>Analyse des clients — CrossBuy</value>
+  </data>
+  <data name="Holiday saved" xml:space="preserve">
+    <value>Jour férié enregistré</value>
+  </data>
+  <data name="Holiday deleted" xml:space="preserve">
+    <value>Jour férié supprimé</value>
+  </data>
+  <data name="Attendance recorded" xml:space="preserve">
+    <value>Présence enregistrée</value>
+  </data>
+  <data name="Final settlement posted and employee terminated" xml:space="preserve">
+    <value>Solde de tout compte comptabilisé et employé licencié</value>
+  </data>
+  <data name="Contract saved" xml:space="preserve">
+    <value>Contrat enregistré</value>
+  </data>
+  <data name="Contract deleted" xml:space="preserve">
+    <value>Contrat supprimé</value>
+  </data>
+  <data name="Document saved" xml:space="preserve">
+    <value>Document enregistré</value>
+  </data>
+  <data name="Document deleted" xml:space="preserve">
+    <value>Document supprimé</value>
+  </data>
+  <data name="Sent {0} alert(s)" xml:space="preserve">
+    <value>{0} alerte(s) envoyée(s)</value>
+  </data>
+  <data name="Leave allowance disbursed" xml:space="preserve">
+    <value>Indemnité de congé versée</value>
+  </data>
+  <data name="Carried over {0} record(s) to year {1}" xml:space="preserve">
+    <value>{0} enregistrement(s) reporté(s) sur l'année {1}</value>
+  </data>
+  <data name="Leave provision settlement posted" xml:space="preserve">
+    <value>Règlement de la provision pour congés comptabilisé</value>
+  </data>
+  <data name="Encashability updated" xml:space="preserve">
+    <value>Monétisation mise à jour</value>
+  </data>
+  <data name="Item not found" xml:space="preserve">
+    <value>Article introuvable</value>
+  </data>
+  <data name="An error occurred: " xml:space="preserve">
+    <value>Une erreur s'est produite : </value>
+  </data>
+  <data name="Added" xml:space="preserve">
+    <value>Ajouté</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>Mis à jour</value>
+  </data>
+  <data name=" successfully." xml:space="preserve">
+    <value> avec succès.</value>
+  </data>
+  <data name="An error occurred while saving." xml:space="preserve">
+    <value>Une erreur s'est produite lors de l'enregistrement.</value>
+  </data>
+  <data name="Leave type not found." xml:space="preserve">
+    <value>Type de congé introuvable.</value>
+  </data>
+  <data name="Invalid identifier." xml:space="preserve">
+    <value>Identifiant non valide.</value>
+  </data>
+  <data name="Record not found." xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="Added successfully." xml:space="preserve">
+    <value>Ajouté avec succès.</value>
+  </data>
+  <data name="Updated successfully." xml:space="preserve">
+    <value>Mis à jour avec succès.</value>
+  </data>
+  <data name="An unexpected error occurred." xml:space="preserve">
+    <value>Une erreur inattendue s'est produite.</value>
+  </data>
+  <data name="No data submitted." xml:space="preserve">
+    <value>Aucune donnée soumise.</value>
+  </data>
+  <data name="Saved successfully." xml:space="preserve">
+    <value>Enregistré avec succès.</value>
+  </data>
+  <data name="An unexpected error occurred while saving." xml:space="preserve">
+    <value>Une erreur inattendue s'est produite lors de l'enregistrement.</value>
+  </data>
+  <data name="Policy not found." xml:space="preserve">
+    <value>Politique introuvable.</value>
+  </data>
+  <data name="First name is required" xml:space="preserve">
+    <value>Le prénom est obligatoire</value>
+  </data>
+  <data name="Last name is required" xml:space="preserve">
+    <value>Le nom de famille est obligatoire</value>
+  </data>
+  <data name="Email is required" xml:space="preserve">
+    <value>L'e-mail est obligatoire</value>
+  </data>
+  <data name="Invalid email format" xml:space="preserve">
+    <value>Format d'e-mail non valide</value>
+  </data>
+  <data name="Training course saved" xml:space="preserve">
+    <value>Formation enregistrée</value>
+  </data>
+  <data name="Course deleted" xml:space="preserve">
+    <value>Formation supprimée</value>
+  </data>
+  <data name="Course not found" xml:space="preserve">
+    <value>Formation introuvable</value>
+  </data>
+  <data name="Employees enrolled" xml:space="preserve">
+    <value>Employés inscrits</value>
+  </data>
+  <data name="Enrollment status updated" xml:space="preserve">
+    <value>Statut d'inscription mis à jour</value>
+  </data>
+  <data name="Enrollment removed" xml:space="preserve">
+    <value>Inscription supprimée</value>
+  </data>
+  <data name="Appraisal cycle saved" xml:space="preserve">
+    <value>Cycle d'évaluation enregistré</value>
+  </data>
+  <data name="Cycle status updated" xml:space="preserve">
+    <value>Statut du cycle mis à jour</value>
+  </data>
+  <data name="Appraisal template saved" xml:space="preserve">
+    <value>Modèle d'évaluation enregistré</value>
+  </data>
+  <data name="Template deleted" xml:space="preserve">
+    <value>Modèle supprimé</value>
+  </data>
+  <data name="Appraisal created — enter scores" xml:space="preserve">
+    <value>Évaluation créée — saisir les notes</value>
+  </data>
+  <data name="Appraisal not found" xml:space="preserve">
+    <value>Évaluation introuvable</value>
+  </data>
+  <data name="Appraisal sent to employee" xml:space="preserve">
+    <value>Évaluation envoyée à l'employé</value>
+  </data>
+  <data name="Scores saved" xml:space="preserve">
+    <value>Notes enregistrées</value>
+  </data>
+  <data name="Leave request submitted" xml:space="preserve">
+    <value>Demande de congé soumise</value>
+  </data>
+  <data name="Request approved" xml:space="preserve">
+    <value>Demande approuvée</value>
+  </data>
+  <data name="Request rejected" xml:space="preserve">
+    <value>Demande refusée</value>
+  </data>
+  <data name="Request submitted" xml:space="preserve">
+    <value>Demande soumise</value>
+  </data>
+  <data name="Acknowledged" xml:space="preserve">
+    <value>Pris en compte</value>
+  </data>
+  <data name="Custom field saved" xml:space="preserve">
+    <value>Champ personnalisé enregistré</value>
+  </data>
+  <data name="Field deleted" xml:space="preserve">
+    <value>Champ supprimé</value>
+  </data>
+  <data name="Automation rule saved" xml:space="preserve">
+    <value>Règle d'automatisation enregistrée</value>
+  </data>
+  <data name="Rule deleted" xml:space="preserve">
+    <value>Règle supprimée</value>
+  </data>
+  <data name="Account created" xml:space="preserve">
+    <value>Compte créé</value>
+  </data>
+  <data name="Contact saved" xml:space="preserve">
+    <value>Contact enregistré</value>
+  </data>
+  <data name="Contact deleted" xml:space="preserve">
+    <value>Contact supprimé</value>
+  </data>
+  <data name="Campaign updated" xml:space="preserve">
+    <value>Campagne mise à jour</value>
+  </data>
+  <data name="Campaign added" xml:space="preserve">
+    <value>Campagne ajoutée</value>
+  </data>
+  <data name="Campaign not found" xml:space="preserve">
+    <value>Campagne introuvable</value>
+  </data>
+  <data name="Member added" xml:space="preserve">
+    <value>Membre ajouté</value>
+  </data>
+  <data name="Member already exists" xml:space="preserve">
+    <value>Le membre existe déjà</value>
+  </data>
+  <data name="Added {0} members from the list" xml:space="preserve">
+    <value>{0} membres ajoutés depuis la liste</value>
+  </data>
+  <data name="List updated" xml:space="preserve">
+    <value>Liste mise à jour</value>
+  </data>
+  <data name="List created" xml:space="preserve">
+    <value>Liste créée</value>
+  </data>
+  <data name="Ticket updated" xml:space="preserve">
+    <value>Ticket mis à jour</value>
+  </data>
+  <data name="Ticket created" xml:space="preserve">
+    <value>Ticket créé</value>
+  </data>
+  <data name="Ticket status updated" xml:space="preserve">
+    <value>Statut du ticket mis à jour</value>
+  </data>
+  <data name="SLA policy saved" xml:space="preserve">
+    <value>Politique SLA enregistrée</value>
+  </data>
+  <data name="Rule saved" xml:space="preserve">
+    <value>Règle enregistrée</value>
+  </data>
+  <data name="Settings saved" xml:space="preserve">
+    <value>Paramètres enregistrés</value>
+  </data>
+  <data name="Recomputed scores for {0} leads" xml:space="preserve">
+    <value>Scores recalculés pour {0} prospects</value>
+  </data>
+  <data name="Lead updated" xml:space="preserve">
+    <value>Prospect mis à jour</value>
+  </data>
+  <data name="Lead added" xml:space="preserve">
+    <value>Prospect ajouté</value>
+  </data>
+  <data name="Lead converted to account" xml:space="preserve">
+    <value>Prospect converti en compte</value>
+  </data>
+  <data name="Pipeline updated" xml:space="preserve">
+    <value>Pipeline mis à jour</value>
+  </data>
+  <data name="Pipeline created" xml:space="preserve">
+    <value>Pipeline créé</value>
+  </data>
+  <data name="Opportunity updated" xml:space="preserve">
+    <value>Opportunité mise à jour</value>
+  </data>
+  <data name="Opportunity added" xml:space="preserve">
+    <value>Opportunité ajoutée</value>
+  </data>
+  <data name="Opportunity lines saved" xml:space="preserve">
+    <value>Lignes de l'opportunité enregistrées</value>
+  </data>
+  <data name="Quotation #{0} created" xml:space="preserve">
+    <value>Devis n°{0} créé</value>
+  </data>
+  <data name="Activity updated" xml:space="preserve">
+    <value>Activité mise à jour</value>
+  </data>
+  <data name="Activity added" xml:space="preserve">
+    <value>Activité ajoutée</value>
+  </data>
+  <data name="Unit added" xml:space="preserve">
+    <value>Unité ajoutée</value>
+  </data>
+  <data name="Category not found" xml:space="preserve">
+    <value>Catégorie introuvable</value>
+  </data>
+  <data name="Category updated" xml:space="preserve">
+    <value>Catégorie mise à jour</value>
+  </data>
+  <data name="Item added" xml:space="preserve">
+    <value>Article ajouté</value>
+  </data>
+  <data name="Item updated" xml:space="preserve">
+    <value>Article mis à jour</value>
+  </data>
+  <data name="Warehouse added" xml:space="preserve">
+    <value>Entrepôt ajouté</value>
+  </data>
+  <data name="Warehouse updated" xml:space="preserve">
+    <value>Entrepôt mis à jour</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>Enregistré</value>
+  </data>
+  <data name="Deleted" xml:space="preserve">
+    <value>Supprimé</value>
+  </data>
+  <data name="Invalid section" xml:space="preserve">
+    <value>Section non valide</value>
+  </data>
+  <data name="Rack must belong to the selected section" xml:space="preserve">
+    <value>Le rayon doit appartenir à la section sélectionnée</value>
+  </data>
+  <data name="Item locations saved" xml:space="preserve">
+    <value>Emplacements des articles enregistrés</value>
+  </data>
+  <data name="Distributed {0} items to their default locations" xml:space="preserve">
+    <value>{0} articles répartis dans leurs emplacements par défaut</value>
+  </data>
+  <data name="Rack count saved" xml:space="preserve">
+    <value>Comptage du rayon enregistré</value>
+  </data>
+  <data name="Quantity relocated between locations" xml:space="preserve">
+    <value>Quantité déplacée entre les emplacements</value>
+  </data>
+  <data name="Movement posted; balance and journal entry updated" xml:space="preserve">
+    <value>Mouvement comptabilisé ; solde et écriture de journal mis à jour</value>
+  </data>
+  <data name="Purchase order not found" xml:space="preserve">
+    <value>Bon de commande introuvable</value>
+  </data>
+  <data name="Price list updated" xml:space="preserve">
+    <value>Liste de prix mise à jour</value>
+  </data>
+  <data name="Price list created" xml:space="preserve">
+    <value>Liste de prix créée</value>
+  </data>
+  <data name="Price list not found" xml:space="preserve">
+    <value>Liste de prix introuvable</value>
+  </data>
+  <data name="Price list copied as a new draft" xml:space="preserve">
+    <value>Liste de prix copiée en tant que nouveau brouillon</value>
+  </data>
+  <data name="Price list deleted" xml:space="preserve">
+    <value>Liste de prix supprimée</value>
+  </data>
+  <data name="Delete failed" xml:space="preserve">
+    <value>Échec de la suppression</value>
+  </data>
+  <data name="Promotion updated" xml:space="preserve">
+    <value>Promotion mise à jour</value>
+  </data>
+  <data name="Promotion created" xml:space="preserve">
+    <value>Promotion créée</value>
+  </data>
+  <data name="Promotion deleted" xml:space="preserve">
+    <value>Promotion supprimée</value>
+  </data>
+  <data name="Document not found" xml:space="preserve">
+    <value>Document introuvable</value>
+  </data>
+  <data name="Disassembly posted; stock and journal entry updated" xml:space="preserve">
+    <value>Désassemblage comptabilisé ; stock et écriture de journal mis à jour</value>
+  </data>
+  <data name="Assembly posted; stock and journal entry updated" xml:space="preserve">
+    <value>Assemblage comptabilisé ; stock et écriture de journal mis à jour</value>
+  </data>
+  <data name="Work order created" xml:space="preserve">
+    <value>Ordre de fabrication créé</value>
+  </data>
+  <data name="Work order not found" xml:space="preserve">
+    <value>Ordre de fabrication introuvable</value>
+  </data>
+  <data name="You do not have permission to use a foreign currency (currency-override)" xml:space="preserve">
+    <value>Vous n'êtes pas autorisé à utiliser une devise étrangère (currency-override)</value>
+  </data>
+  <data name="Labor charged to the work order (WIP)" xml:space="preserve">
+    <value>Main-d'œuvre imputée à l'ordre de fabrication (WIP)</value>
+  </data>
+  <data name="Labor line removed and its entry reversed" xml:space="preserve">
+    <value>Ligne de main-d'œuvre supprimée et son écriture contre-passée</value>
+  </data>
+  <data name="Work order saved" xml:space="preserve">
+    <value>Ordre de fabrication enregistré</value>
+  </data>
+  <data name="Work order released: materials issued to WIP" xml:space="preserve">
+    <value>Ordre de fabrication lancé : matières sorties vers le WIP</value>
+  </data>
+  <data name="Work order cancelled (issued materials returned if any)" xml:space="preserve">
+    <value>Ordre de fabrication annulé (matières sorties retournées le cas échéant)</value>
+  </data>
+  <data name="Work order completed: materials consumed, item produced, journal entry posted" xml:space="preserve">
+    <value>Ordre de fabrication terminé : matières consommées, article produit, écriture de journal comptabilisée</value>
+  </data>
+  <data name="Produced {0} and closed the order (variance posted to account 520109)" xml:space="preserve">
+    <value>{0} produit(s) et ordre clôturé (écart comptabilisé au compte 520109)</value>
+  </data>
+  <data name="Produced {0} partially (WIP carries the remainder)" xml:space="preserve">
+    <value>{0} produit(s) partiellement (le WIP porte le reste)</value>
+  </data>
+  <data name="Work center saved" xml:space="preserve">
+    <value>Poste de charge enregistré</value>
+  </data>
+  <data name="Operation saved" xml:space="preserve">
+    <value>Opération enregistrée</value>
+  </data>
+  <data name="Operation deleted" xml:space="preserve">
+    <value>Opération supprimée</value>
+  </data>
+  <data name="Plan deleted" xml:space="preserve">
+    <value>Plan supprimé</value>
+  </data>
+  <data name="Plan not found" xml:space="preserve">
+    <value>Plan introuvable</value>
+  </data>
+  <data name="Demand added" xml:space="preserve">
+    <value>Demande ajoutée</value>
+  </data>
+  <data name="Demand removed" xml:space="preserve">
+    <value>Demande supprimée</value>
+  </data>
+  <data name="Created {0} work orders from the plan" xml:space="preserve">
+    <value>{0} ordres de fabrication créés à partir du plan</value>
+  </data>
+  <data name="Purchase order exceeds the approval limit — sent for approval" xml:space="preserve">
+    <value>Le bon de commande dépasse la limite d'approbation — envoyé pour approbation</value>
+  </data>
+  <data name="Purchase order created" xml:space="preserve">
+    <value>Bon de commande créé</value>
+  </data>
+  <data name="Purchase order converted to a purchase invoice (#{0})" xml:space="preserve">
+    <value>Bon de commande converti en facture d'achat (#{0})</value>
+  </data>
+  <data name="Goods receipt posted; stock updated" xml:space="preserve">
+    <value>Bon de réception comptabilisé ; stock mis à jour</value>
+  </data>
+  <data name="Sales order created" xml:space="preserve">
+    <value>Commande client créée</value>
+  </data>
+  <data name="«{0}»: price {1:N2} is below the minimum {2:N2} (cost {3:N2} + margin {4:N2}%)" xml:space="preserve">
+    <value>«{0}» : le prix {1:N2} est inférieur au minimum {2:N2} (coût {3:N2} + marge {4:N2}%)</value>
+  </data>
+  <data name="Minimum profit floor block — " xml:space="preserve">
+    <value>Blocage du plancher de profit minimum — </value>
+  </data>
+  <data name="Minimum profit floor warning — " xml:space="preserve">
+    <value>Avertissement de plancher de profit minimum — </value>
+  </data>
+  <data name="Quotation created" xml:space="preserve">
+    <value>Devis créé</value>
+  </data>
+  <data name="Quotation not found" xml:space="preserve">
+    <value>Devis introuvable</value>
+  </data>
+  <data name="Quotation status updated" xml:space="preserve">
+    <value>Statut du devis mis à jour</value>
+  </data>
+  <data name="Quotation converted to a sales order" xml:space="preserve">
+    <value>Devis converti en commande client</value>
+  </data>
+  <data name="Sales order converted to a sales invoice (#{0})" xml:space="preserve">
+    <value>Commande client convertie en facture de vente (#{0})</value>
+  </data>
+  <data name="Delivery note posted; stock deducted and cost recorded" xml:space="preserve">
+    <value>Bon de livraison comptabilisé ; stock déduit et coût enregistré</value>
+  </data>
+  <data name="Transfer exceeds the approval limit — sent for approval" xml:space="preserve">
+    <value>Le transfert dépasse la limite d'approbation — envoyé pour approbation</value>
+  </data>
+  <data name="Inter-warehouse transfer posted" xml:space="preserve">
+    <value>Transfert inter-entrepôts comptabilisé</value>
+  </data>
+  <data name="Stock count adjustment exceeds the approval limit — sent for approval" xml:space="preserve">
+    <value>L'ajustement d'inventaire dépasse la limite d'approbation — envoyé pour approbation</value>
+  </data>
+  <data name="Stock count posted; differences adjusted" xml:space="preserve">
+    <value>Inventaire comptabilisé ; écarts ajustés</value>
+  </data>
+  <data name="Add at least one line" xml:space="preserve">
+    <value>Ajoutez au moins une ligne</value>
+  </data>
+  <data name="Write-off exceeds the approval limit — sent for approval" xml:space="preserve">
+    <value>La mise au rebut dépasse la limite d'approbation — envoyée pour approbation</value>
+  </data>
+  <data name="Write-off recorded as an adjustment ({0})" xml:space="preserve">
+    <value>Mise au rebut enregistrée en tant qu'ajustement ({0})</value>
+  </data>
+  <data name="Write-off document {0} posted" xml:space="preserve">
+    <value>Document de mise au rebut {0} comptabilisé</value>
+  </data>
+  <data name="Integrity check: all invariants match" xml:space="preserve">
+    <value>Contrôle d'intégrité : tous les invariants correspondent</value>
+  </data>
+  <data name="Integrity check: {0} deviations — administrators notified" xml:space="preserve">
+    <value>Contrôle d'intégrité : {0} écarts — administrateurs notifiés</value>
+  </data>
+  <data name="Opening stock entered" xml:space="preserve">
+    <value>Stock d'ouverture saisi</value>
+  </data>
+  <data name="Opening customer balance entered" xml:space="preserve">
+    <value>Solde d'ouverture client saisi</value>
+  </data>
+  <data name="Opening vendor balance entered" xml:space="preserve">
+    <value>Solde d'ouverture fournisseur saisi</value>
+  </data>
+  <data name="Opening asset entered" xml:space="preserve">
+    <value>Immobilisation d'ouverture saisie</value>
+  </data>
+  <data name="Opening account balances entered" xml:space="preserve">
+    <value>Soldes d'ouverture des comptes saisis</value>
+  </data>
+  <data name="Opening balances finalized successfully" xml:space="preserve">
+    <value>Soldes d'ouverture finalisés avec succès</value>
+  </data>
+  <data name="Asset capitalized from stock (cost {0:N2}) — entry Dr fixed asset / Cr inventory" xml:space="preserve">
+    <value>Immobilisation activée depuis le stock (coût {0:N2}) — écriture Dt immobilisation / Ct stock</value>
+  </data>
+  <data name="Approved and executed" xml:space="preserve">
+    <value>Approuvé et exécuté</value>
+  </data>
+  <data name="Document rejected" xml:space="preserve">
+    <value>Document refusé</value>
+  </data>
+  <data name="Role removed" xml:space="preserve">
+    <value>Rôle supprimé</value>
+  </data>
+  <data name="Inventory settings saved" xml:space="preserve">
+    <value>Paramètres de stock enregistrés</value>
+  </data>
+  <data name="Landed cost posted; inventory value updated" xml:space="preserve">
+    <value>Coût de revient comptabilisé ; valeur du stock mise à jour</value>
+  </data>
+  <data name="Reorder points saved" xml:space="preserve">
+    <value>Points de réapprovisionnement enregistrés</value>
+  </data>
+  <data name="Select at least one item" xml:space="preserve">
+    <value>Sélectionnez au moins un article</value>
+  </data>
+  <data name="Purchase order {0} created from planning" xml:space="preserve">
+    <value>Bon de commande {0} créé depuis la planification</value>
+  </data>
+  <data name="Item code" xml:space="preserve">
+    <value>Code article</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Catégorie</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>Unité</value>
+  </data>
+  <data name="Barcode" xml:space="preserve">
+    <value>Code-barres</value>
+  </data>
+  <data name="Sales price" xml:space="preserve">
+    <value>Prix de vente</value>
+  </data>
+  <data name="Items — CrossBuy" xml:space="preserve">
+    <value>Articles — CrossBuy</value>
+  </data>
+  <data name="Average cost" xml:space="preserve">
+    <value>Coût moyen</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Valeur</value>
+  </data>
+  <data name="Stock balances" xml:space="preserve">
+    <value>Soldes de stock</value>
+  </data>
+  <data name="Stock balances — CrossBuy" xml:space="preserve">
+    <value>Soldes de stock — CrossBuy</value>
+  </data>
+  <data name="In" xml:space="preserve">
+    <value>Entrée</value>
+  </data>
+  <data name="Out" xml:space="preserve">
+    <value>Sortie</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>Coût unitaire</value>
+  </data>
+  <data name="Journal entry no." xml:space="preserve">
+    <value>N° d'écriture de journal</value>
+  </data>
+  <data name="Stock movements" xml:space="preserve">
+    <value>Mouvements de stock</value>
+  </data>
+  <data name="Stock movements — CrossBuy" xml:space="preserve">
+    <value>Mouvements de stock — CrossBuy</value>
+  </data>
+  <data name="Order no." xml:space="preserve">
+    <value>N° de commande</value>
+  </data>
+  <data name="Purchase orders" xml:space="preserve">
+    <value>Bons de commande</value>
+  </data>
+  <data name="Purchase orders — CrossBuy" xml:space="preserve">
+    <value>Bons de commande — CrossBuy</value>
+  </data>
+  <data name="Note no." xml:space="preserve">
+    <value>N° de note</value>
+  </data>
+  <data name="Purchase order" xml:space="preserve">
+    <value>Bon de commande</value>
+  </data>
+  <data name="Total cost" xml:space="preserve">
+    <value>Coût total</value>
+  </data>
+  <data name="Goods receipts" xml:space="preserve">
+    <value>Bons de réception</value>
+  </data>
+  <data name="Goods receipts — CrossBuy" xml:space="preserve">
+    <value>Bons de réception — CrossBuy</value>
+  </data>
+  <data name="Sales orders" xml:space="preserve">
+    <value>Commandes clients</value>
+  </data>
+  <data name="Sales orders — CrossBuy" xml:space="preserve">
+    <value>Commandes clients — CrossBuy</value>
+  </data>
+  <data name="Quotation no." xml:space="preserve">
+    <value>N° de devis</value>
+  </data>
+  <data name="Valid until" xml:space="preserve">
+    <value>Valable jusqu'au</value>
+  </data>
+  <data name="Quotations" xml:space="preserve">
+    <value>Devis</value>
+  </data>
+  <data name="Quotations — CrossBuy" xml:space="preserve">
+    <value>Devis — CrossBuy</value>
+  </data>
+  <data name="Sales order" xml:space="preserve">
+    <value>Commande client</value>
+  </data>
+  <data name="Deliveries" xml:space="preserve">
+    <value>Livraisons</value>
+  </data>
+  <data name="Deliveries — CrossBuy" xml:space="preserve">
+    <value>Livraisons — CrossBuy</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>Priorité</value>
+  </data>
+  <data name="Line count" xml:space="preserve">
+    <value>Nombre de lignes</value>
+  </data>
+  <data name="Valid from" xml:space="preserve">
+    <value>Valable à partir du</value>
+  </data>
+  <data name="Valid to" xml:space="preserve">
+    <value>Valable jusqu'au</value>
+  </data>
+  <data name="Active (list)" xml:space="preserve">
+    <value>Actif (liste)</value>
+  </data>
+  <data name="Inactive (list)" xml:space="preserve">
+    <value>Inactif (liste)</value>
+  </data>
+  <data name="Price lists" xml:space="preserve">
+    <value>Listes de prix</value>
+  </data>
+  <data name="Price lists — CrossBuy" xml:space="preserve">
+    <value>Listes de prix — CrossBuy</value>
+  </data>
+  <data name="Activity type and its default capabilities have been enabled" xml:space="preserve">
+    <value>Le type d'activité et ses capacités par défaut ont été activés</value>
+  </data>
+  <data name="Capabilities saved" xml:space="preserve">
+    <value>Capacités enregistrées</value>
+  </data>
+  <data name="Sales settings saved" xml:space="preserve">
+    <value>Paramètres de vente enregistrés</value>
+  </data>
+  <data name="Dining area saved" xml:space="preserve">
+    <value>Espace de restauration enregistré</value>
+  </data>
+  <data name="Dining area deleted" xml:space="preserve">
+    <value>Espace de restauration supprimé</value>
+  </data>
+  <data name="Station saved" xml:space="preserve">
+    <value>Station enregistrée</value>
+  </data>
+  <data name="Station deleted" xml:space="preserve">
+    <value>Station supprimée</value>
+  </data>
+  <data name="Driver saved" xml:space="preserve">
+    <value>Chauffeur enregistré</value>
+  </data>
+  <data name="Driver deleted" xml:space="preserve">
+    <value>Chauffeur supprimé</value>
+  </data>
+  <data name="Delivery zone saved" xml:space="preserve">
+    <value>Zone de livraison enregistrée</value>
+  </data>
+  <data name="Delivery zone deleted" xml:space="preserve">
+    <value>Zone de livraison supprimée</value>
+  </data>
+  <data name="Reservation saved" xml:space="preserve">
+    <value>Réservation enregistrée</value>
+  </data>
+  <data name="Reservation updated" xml:space="preserve">
+    <value>Réservation mise à jour</value>
+  </data>
+  <data name="Enter the customer name" xml:space="preserve">
+    <value>Saisissez le nom du client</value>
+  </data>
+  <data name="Table saved" xml:space="preserve">
+    <value>Table enregistrée</value>
+  </data>
+  <data name="Table positions saved" xml:space="preserve">
+    <value>Positions des tables enregistrées</value>
+  </data>
+  <data name="Table deleted" xml:space="preserve">
+    <value>Table supprimée</value>
+  </data>
+  <data name="QR code regenerated" xml:space="preserve">
+    <value>Code QR régénéré</value>
+  </data>
+  <data name="Group saved" xml:space="preserve">
+    <value>Groupe enregistré</value>
+  </data>
+  <data name="Group deleted" xml:space="preserve">
+    <value>Groupe supprimé</value>
+  </data>
+  <data name="Option saved" xml:space="preserve">
+    <value>Option enregistrée</value>
+  </data>
+  <data name="Option deleted" xml:space="preserve">
+    <value>Option supprimée</value>
+  </data>
+  <data name="Unlinked" xml:space="preserve">
+    <value>Dissocié</value>
+  </data>
+  <data name="Payment method saved" xml:space="preserve">
+    <value>Mode de paiement enregistré</value>
+  </data>
+  <data name="Device saved" xml:space="preserve">
+    <value>Appareil enregistré</value>
+  </data>
+  <data name="Device deleted" xml:space="preserve">
+    <value>Appareil supprimé</value>
+  </data>
+  <data name="Shift opened" xml:space="preserve">
+    <value>Caisse ouverte</value>
+  </data>
+  <data name="Shift closed" xml:space="preserve">
+    <value>Caisse fermée</value>
+  </data>
+  <data name="Tab saved" xml:space="preserve">
+    <value>Onglet enregistré</value>
+  </data>
+  <data name="Tab deleted" xml:space="preserve">
+    <value>Onglet supprimé</value>
+  </data>
+  <data name="Quick button added" xml:space="preserve">
+    <value>Bouton rapide ajouté</value>
+  </data>
+  <data name="Button deleted" xml:space="preserve">
+    <value>Bouton supprimé</value>
+  </data>
+  <data name="Quick code saved" xml:space="preserve">
+    <value>Code rapide enregistré</value>
+  </data>
+  <data name="Session expired" xml:space="preserve">
+    <value>Session expirée</value>
+  </data>
+  <data name="This role is not allowed to operate orders" xml:space="preserve">
+    <value>Ce rôle n'est pas autorisé à gérer les commandes</value>
+  </data>
+  <data name="Not authorized" xml:space="preserve">
+    <value>Non autorisé</value>
+  </data>
+  <data name="Table not found" xml:space="preserve">
+    <value>Table introuvable</value>
+  </data>
+  <data name="This role is not allowed to take payment/collection" xml:space="preserve">
+    <value>Ce rôle n'est pas autorisé à encaisser les paiements</value>
+  </data>
+  <data name="Invalid login credentials" xml:space="preserve">
+    <value>Identifiants de connexion non valides</value>
+  </data>
+  <data name="You do not have cashier permission for any branch" xml:space="preserve">
+    <value>Vous n'avez d'autorisation de caissier pour aucune succursale</value>
+  </data>
+  <data name="Device not found" xml:space="preserve">
+    <value>Appareil introuvable</value>
+  </data>
+  <data name="Table is closed" xml:space="preserve">
+    <value>La table est fermée</value>
+  </data>
+  <data name="The order is not available on this table" xml:space="preserve">
+    <value>La commande n'est pas disponible sur cette table</value>
+  </data>
+  <data name="The kitchen screen is for kitchen/manager roles only" xml:space="preserve">
+    <value>L'écran cuisine est réservé aux rôles cuisine/responsable</value>
+  </data>
+  <data name="This action is for kitchen/manager roles only" xml:space="preserve">
+    <value>Cette action est réservée aux rôles cuisine/responsable</value>
+  </data>
+  <data name="The delivery board is for cashier/manager roles" xml:space="preserve">
+    <value>Le tableau des livraisons est réservé aux rôles caissier/responsable</value>
+  </data>
+  <data name="The order is not available" xml:space="preserve">
+    <value>La commande n'est pas disponible</value>
+  </data>
+  <data name="Invalid split format" xml:space="preserve">
+    <value>Format de partage non valide</value>
+  </data>
+  <data name="No split data" xml:space="preserve">
+    <value>Aucune donnée de partage</value>
+  </data>
+  <data name="Target table not selected" xml:space="preserve">
+    <value>Table cible non sélectionnée</value>
+  </data>
+  <data name="Invalid status" xml:space="preserve">
+    <value>Statut non valide</value>
+  </data>
+  <data name="The table is busy with an open order" xml:space="preserve">
+    <value>La table est occupée par une commande ouverte</value>
+  </data>
+  <data name="Adding tables is for manager/admin roles only" xml:space="preserve">
+    <value>L'ajout de tables est réservé aux rôles responsable/administrateur</value>
+  </data>
+  <data name="Dining area not found" xml:space="preserve">
+    <value>Espace de restauration introuvable</value>
+  </data>
+  <data name="Enter the table number" xml:space="preserve">
+    <value>Saisissez le numéro de la table</value>
+  </data>
+  <data name="Table number is already in use" xml:space="preserve">
+    <value>Le numéro de la table est déjà utilisé</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Général</value>
+  </data>
+  <data name="Master data" xml:space="preserve">
+    <value>Données de base</value>
+  </data>
+  <data name="Categories" xml:space="preserve">
+    <value>Catégories</value>
+  </data>
+  <data name="Units" xml:space="preserve">
+    <value>Unités</value>
+  </data>
+  <data name="Warehouses" xml:space="preserve">
+    <value>Entrepôts</value>
+  </data>
+  <data name="Sections / racks" xml:space="preserve">
+    <value>Sections / rayons</value>
+  </data>
+  <data name="Item locations" xml:space="preserve">
+    <value>Emplacements d'articles</value>
+  </data>
+  <data name="Movements &amp; balances" xml:space="preserve">
+    <value>Mouvements &amp; soldes</value>
+  </data>
+  <data name="Rack stock" xml:space="preserve">
+    <value>Stock par rayon</value>
+  </data>
+  <data name="Batches &amp; expiry" xml:space="preserve">
+    <value>Lots &amp; péremption</value>
+  </data>
+  <data name="Serials" xml:space="preserve">
+    <value>Numéros de série</value>
+  </data>
+  <data name="Operations" xml:space="preserve">
+    <value>Opérations</value>
+  </data>
+  <data name="Assembly" xml:space="preserve">
+    <value>Assemblage</value>
+  </data>
+  <data name="Transfers" xml:space="preserve">
+    <value>Transferts</value>
+  </data>
+  <data name="Stock counts" xml:space="preserve">
+    <value>Inventaires</value>
+  </data>
+  <data name="Write-offs" xml:space="preserve">
+    <value>Radiations</value>
+  </data>
+  <data name="Landed costs" xml:space="preserve">
+    <value>Coûts de revient</value>
+  </data>
+  <data name="Capitalize asset" xml:space="preserve">
+    <value>Immobiliser un article</value>
+  </data>
+  <data name="Purchasing &amp; sales" xml:space="preserve">
+    <value>Achats &amp; ventes</value>
+  </data>
+  <data name="Replenishment" xml:space="preserve">
+    <value>Réapprovisionnement</value>
+  </data>
+  <data name="Promotions" xml:space="preserve">
+    <value>Promotions</value>
+  </data>
+  <data name="Governance &amp; setup" xml:space="preserve">
+    <value>Gouvernance &amp; configuration</value>
+  </data>
+  <data name="Opening balances" xml:space="preserve">
+    <value>Soldes d'ouverture</value>
+  </data>
+  <data name="Integrity check" xml:space="preserve">
+    <value>Contrôle d'intégrité</value>
+  </data>
+  <data name="Approvals" xml:space="preserve">
+    <value>Approbations</value>
+  </data>
+  <data name="Inventory roles" xml:space="preserve">
+    <value>Rôles de stock</value>
+  </data>
+  <data name="Inventory settings" xml:space="preserve">
+    <value>Paramètres de stock</value>
+  </data>
+  <data name="Reports" xml:space="preserve">
+    <value>Rapports</value>
+  </data>
+  <data name="Inventory reports" xml:space="preserve">
+    <value>Rapports de stock</value>
+  </data>
+  <data name="Production" xml:space="preserve">
+    <value>Production</value>
+  </data>
+  <data name="Work orders" xml:space="preserve">
+    <value>Ordres de fabrication</value>
+  </data>
+  <data name="New work order" xml:space="preserve">
+    <value>Nouvel ordre de fabrication</value>
+  </data>
+  <data name="Production planning" xml:space="preserve">
+    <value>Planification de production</value>
+  </data>
+  <data name="Quick assembly" xml:space="preserve">
+    <value>Assemblage rapide</value>
+  </data>
+  <data name="Items &amp; BOMs" xml:space="preserve">
+    <value>Articles &amp; nomenclatures</value>
+  </data>
+  <data name="Work centers" xml:space="preserve">
+    <value>Postes de charge</value>
+  </data>
+  <data name="Manufacturing reports" xml:space="preserve">
+    <value>Rapports de fabrication</value>
+  </data>
+  <data name="Cashier terminal" xml:space="preserve">
+    <value>Terminal caissier</value>
+  </data>
+  <data name="Kitchen display" xml:space="preserve">
+    <value>Écran cuisine</value>
+  </data>
+  <data name="Delivery board" xml:space="preserve">
+    <value>Tableau des livraisons</value>
+  </data>
+  <data name="Floor &amp; menu" xml:space="preserve">
+    <value>Salle &amp; menu</value>
+  </data>
+  <data name="Operations setup" xml:space="preserve">
+    <value>Configuration des opérations</value>
+  </data>
+  <data name="Areas &amp; stations" xml:space="preserve">
+    <value>Salles &amp; stations</value>
+  </data>
+  <data name="Floor plan" xml:space="preserve">
+    <value>Plan de salle</value>
+  </data>
+  <data name="Reservations" xml:space="preserve">
+    <value>Réservations</value>
+  </data>
+  <data name="Quick items" xml:space="preserve">
+    <value>Articles rapides</value>
+  </data>
+  <data name="Modifiers" xml:space="preserve">
+    <value>Modificateurs</value>
+  </data>
+  <data name="Cashier preview" xml:space="preserve">
+    <value>Aperçu caissier</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>Configuration</value>
+  </data>
+  <data name="Cashier terminals" xml:space="preserve">
+    <value>Terminaux caissiers</value>
+  </data>
+  <data name="Delivery drivers" xml:space="preserve">
+    <value>Livreurs</value>
+  </data>
+  <data name="Payment methods" xml:space="preserve">
+    <value>Modes de paiement</value>
+  </data>
+  <data name="Cashier roles" xml:space="preserve">
+    <value>Rôles caissier</value>
+  </data>
+  <data name="Delivery zones &amp; fees" xml:space="preserve">
+    <value>Zones &amp; frais de livraison</value>
+  </data>
+  <data name="Executive dashboard" xml:space="preserve">
+    <value>Tableau de bord exécutif</value>
+  </data>
+  <data name="Chart of accounts" xml:space="preserve">
+    <value>Plan comptable</value>
+  </data>
+  <data name="Cost centers" xml:space="preserve">
+    <value>Centres de coûts</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Projets</value>
+  </data>
+  <data name="Project profitability" xml:space="preserve">
+    <value>Rentabilité des projets</value>
+  </data>
+  <data name="Fiscal periods" xml:space="preserve">
+    <value>Périodes fiscales</value>
+  </data>
+  <data name="AI insights" xml:space="preserve">
+    <value>Analyses IA</value>
+  </data>
+  <data name="Currencies &amp; FX" xml:space="preserve">
+    <value>Devises &amp; change</value>
+  </data>
+  <data name="Currencies" xml:space="preserve">
+    <value>Devises</value>
+  </data>
+  <data name="Exchange rates" xml:space="preserve">
+    <value>Taux de change</value>
+  </data>
+  <data name="Functional currency setup" xml:space="preserve">
+    <value>Configuration de la devise fonctionnelle</value>
+  </data>
+  <data name="FX revaluation" xml:space="preserve">
+    <value>Réévaluation des devises</value>
+  </data>
+  <data name="Receivables" xml:space="preserve">
+    <value>Clients</value>
+  </data>
+  <data name="Sales invoices" xml:space="preserve">
+    <value>Factures de vente</value>
+  </data>
+  <data name="Sales returns" xml:space="preserve">
+    <value>Retours de vente</value>
+  </data>
+  <data name="AR aging" xml:space="preserve">
+    <value>Balance âgée clients</value>
+  </data>
+  <data name="Customer analytics" xml:space="preserve">
+    <value>Analyses clients</value>
+  </data>
+  <data name="CRM dashboard" xml:space="preserve">
+    <value>Tableau de bord CRM</value>
+  </data>
+  <data name="Accounts" xml:space="preserve">
+    <value>Comptes</value>
+  </data>
+  <data name="Leads" xml:space="preserve">
+    <value>Prospects</value>
+  </data>
+  <data name="Opportunities" xml:space="preserve">
+    <value>Opportunités</value>
+  </data>
+  <data name="Pipeline (Kanban)" xml:space="preserve">
+    <value>Pipeline (Kanban)</value>
+  </data>
+  <data name="Pipeline setup" xml:space="preserve">
+    <value>Configuration des pipelines</value>
+  </data>
+  <data name="Activities" xml:space="preserve">
+    <value>Activités</value>
+  </data>
+  <data name="Campaigns" xml:space="preserve">
+    <value>Campagnes</value>
+  </data>
+  <data name="Marketing lists" xml:space="preserve">
+    <value>Listes marketing</value>
+  </data>
+  <data name="Tickets" xml:space="preserve">
+    <value>Tickets</value>
+  </data>
+  <data name="SLA policies" xml:space="preserve">
+    <value>Politiques SLA</value>
+  </data>
+  <data name="Forecast" xml:space="preserve">
+    <value>Prévisions</value>
+  </data>
+  <data name="360° reports" xml:space="preserve">
+    <value>Rapports 360°</value>
+  </data>
+  <data name="Scoring &amp; automation" xml:space="preserve">
+    <value>Scoring &amp; automatisation</value>
+  </data>
+  <data name="Custom fields" xml:space="preserve">
+    <value>Champs personnalisés</value>
+  </data>
+  <data name="Automation rules" xml:space="preserve">
+    <value>Règles d'automatisation</value>
+  </data>
+  <data name="CRM roles" xml:space="preserve">
+    <value>Rôles CRM</value>
+  </data>
+  <data name="Payables" xml:space="preserve">
+    <value>Fournisseurs</value>
+  </data>
+  <data name="Purchase invoices" xml:space="preserve">
+    <value>Factures d'achat</value>
+  </data>
+  <data name="Purchase returns" xml:space="preserve">
+    <value>Retours d'achat</value>
+  </data>
+  <data name="AP aging" xml:space="preserve">
+    <value>Balance âgée fournisseurs</value>
+  </data>
+  <data name="Banks &amp; cash" xml:space="preserve">
+    <value>Banques &amp; caisse</value>
+  </data>
+  <data name="Bank accounts" xml:space="preserve">
+    <value>Comptes bancaires</value>
+  </data>
+  <data name="Cash boxes" xml:space="preserve">
+    <value>Caisses</value>
+  </data>
+  <data name="Cash transfer" xml:space="preserve">
+    <value>Transfert d'espèces</value>
+  </data>
+  <data name="Bank reconcile" xml:space="preserve">
+    <value>Rapprochement bancaire</value>
+  </data>
+  <data name="Payroll" xml:space="preserve">
+    <value>Paie</value>
+  </data>
+  <data name="Payroll run" xml:space="preserve">
+    <value>Traitement de la paie</value>
+  </data>
+  <data name="Payslips" xml:space="preserve">
+    <value>Bulletins de paie</value>
+  </data>
+  <data name="Disbursement &amp; remittance" xml:space="preserve">
+    <value>Décaissement &amp; versement</value>
+  </data>
+  <data name="Payroll tax &amp; insurance" xml:space="preserve">
+    <value>Impôts &amp; cotisations sur salaire</value>
+  </data>
+  <data name="Tax codes" xml:space="preserve">
+    <value>Codes de taxe</value>
+  </data>
+  <data name="VAT returns" xml:space="preserve">
+    <value>Déclarations de TVA</value>
+  </data>
+  <data name="ETA status" xml:space="preserve">
+    <value>Statut facture électronique</value>
+  </data>
+  <data name="Fixed assets" xml:space="preserve">
+    <value>Immobilisations</value>
+  </data>
+  <data name="Asset categories" xml:space="preserve">
+    <value>Catégories d'immobilisations</value>
+  </data>
+  <data name="Depreciation runs" xml:space="preserve">
+    <value>Traitements d'amortissement</value>
+  </data>
+  <data name="Maintenance due" xml:space="preserve">
+    <value>Maintenance due</value>
+  </data>
+  <data name="Financial reports" xml:space="preserve">
+    <value>Rapports financiers</value>
+  </data>
+  <data name="Trial balance" xml:space="preserve">
+    <value>Balance générale</value>
+  </data>
+  <data name="Balance sheet" xml:space="preserve">
+    <value>Bilan</value>
+  </data>
+  <data name="Income statement" xml:space="preserve">
+    <value>Compte de résultat</value>
+  </data>
+  <data name="Cash flow" xml:space="preserve">
+    <value>Flux de trésorerie</value>
+  </data>
+  <data name="Closing" xml:space="preserve">
+    <value>Clôture</value>
+  </data>
+  <data name="Year-end close" xml:space="preserve">
+    <value>Clôture de fin d'année</value>
+  </data>
+  <data name="Setup &amp; roles" xml:space="preserve">
+    <value>Configuration &amp; rôles</value>
+  </data>
+  <data name="Accounting roles" xml:space="preserve">
+    <value>Rôles comptables</value>
+  </data>
+  <data name="Employees &amp; structure" xml:space="preserve">
+    <value>Employés &amp; structure</value>
+  </data>
+  <data name="Org structure" xml:space="preserve">
+    <value>Structure organisationnelle</value>
+  </data>
+  <data name="Job titles" xml:space="preserve">
+    <value>Intitulés de poste</value>
+  </data>
+  <data name="Administrative bodies" xml:space="preserve">
+    <value>Entités administratives</value>
+  </data>
+  <data name="Contracts &amp; documents" xml:space="preserve">
+    <value>Contrats &amp; documents</value>
+  </data>
+  <data name="Expiry alerts" xml:space="preserve">
+    <value>Alertes d'expiration</value>
+  </data>
+  <data name="Termination &amp; settlement" xml:space="preserve">
+    <value>Fin de service &amp; solde</value>
+  </data>
+  <data name="Leave &amp; attendance" xml:space="preserve">
+    <value>Congés &amp; présence</value>
+  </data>
+  <data name="Leave types" xml:space="preserve">
+    <value>Types de congé</value>
+  </data>
+  <data name="Official holidays" xml:space="preserve">
+    <value>Jours fériés officiels</value>
+  </data>
+  <data name="Attendance" xml:space="preserve">
+    <value>Présence</value>
+  </data>
+  <data name="Encashment &amp; provision" xml:space="preserve">
+    <value>Encaissement &amp; provision</value>
+  </data>
+  <data name="Leave carry-over" xml:space="preserve">
+    <value>Report des congés</value>
+  </data>
+  <data name="Performance appraisal" xml:space="preserve">
+    <value>Évaluation des performances</value>
+  </data>
+  <data name="Training" xml:space="preserve">
+    <value>Formation</value>
+  </data>
+  <data name="System setup" xml:space="preserve">
+    <value>Configuration du système</value>
+  </data>
+  <data name="Brands" xml:space="preserve">
+    <value>Marques</value>
+  </data>
+  <data name="Back-office" xml:space="preserve">
+    <value>Back-office</value>
+  </data>
+  <data name="People" xml:space="preserve">
+    <value>Personnel</value>
+  </data>
+  <data name="Restaurant" xml:space="preserve">
+    <value>Restaurant</value>
+  </data>
   <data name="Difference" xml:space="preserve">
     <value>Différence</value>
   </data>
@@ -1383,8 +2577,28 @@
   <data name="Amount by account" xml:space="preserve">
     <value>Montant par compte</value>
   </data>
-  <data name="Only accepted applications can be hired" xml:space="preserve"><value>Seules les candidatures acceptées peuvent être embauchées</value></data>
-  <data name="Applicant hired. A login was created — temporary password:" xml:space="preserve"><value>Candidat embauché. Un identifiant a été créé — mot de passe temporaire :</value></data>
-  <data name="Applicant hired and linked to the employee." xml:space="preserve"><value>Candidat embauché et lié à l’employé.</value></data>
-  <data name="Manufacturing dashboard" xml:space="preserve"><value>Tableau de bord de fabrication</value></data>
+  <data name="Only accepted applications can be hired" xml:space="preserve">
+    <value>Seules les candidatures acceptées peuvent être embauchées</value>
+  </data>
+  <data name="Applicant hired. A login was created — temporary password:" xml:space="preserve">
+    <value>Candidat embauché. Un identifiant a été créé — mot de passe temporaire :</value>
+  </data>
+  <data name="Applicant hired and linked to the employee." xml:space="preserve">
+    <value>Candidat embauché et lié à l’employé.</value>
+  </data>
+  <data name="Manufacturing dashboard" xml:space="preserve">
+    <value>Tableau de bord de fabrication</value>
+  </data>
+  <data name="Chat">
+    <value>Discussions</value>
+  </data>
+  <data name="Projects dashboard">
+    <value>Tableau de bord des projets</value>
+  </data>
+  <data name="My approvals">
+    <value>Mes approbations</value>
+  </data>
+  <data name="Restaurant dashboard">
+    <value>Tableau de bord du restaurant</value>
+  </data>
 </root>

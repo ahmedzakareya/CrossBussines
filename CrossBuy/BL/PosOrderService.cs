@@ -203,8 +203,9 @@ namespace CrossBuy.BL
 		private readonly IManufService _manuf;              // BIS-3: WO completion for method 3
 		private readonly Microsoft.Extensions.Logging.ILogger<PosOrderService> _logger;   // HM-D5-أ 5ب-3: independent app-log channel for non-blocking anomalies
 		private readonly ICurrencyRounding _rounding;
-		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding)
-		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; }
+		private readonly ICurrencyService _currency;
+		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding, ICurrencyService currency)
+		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; _currency = currency; }
 
 		// HM-D5-أ 5ب-4: TEST-ONLY fault seam (default null ⇒ no-op in production). Set by a dev self-test to force a
 		// failure right before the sync-log commit, proving the whole replay rolls back atomically. Never set in prod.
@@ -1426,7 +1427,7 @@ namespace CrossBuy.BL
 				AppendSaleLines(methodByItem, bomByItem, modsByLine, l, a.Qty, disc, revenue, whId, retLines);
 			}
 
-			var (rok, rerr, ret) = await _receivables.CreateSalesReturnAsync(companyId, cust.ID, o.InvoiceId, DateTime.Today, retLines, $"مرتجع جزئي — طلب كاشير #{o.ID}", userId);
+			var (rok, rerr, ret) = await _receivables.CreateSalesReturnAsync(companyId, cust.ID, o.InvoiceId, DateTime.Today, retLines, $"مرتجع جزئي — طلب كاشير #{o.ID}", userId, o.CurrencyId);
 			if (!rok || ret == null) return (false, rerr ?? "فشل إنشاء المرتجع", null);
 
 			// cash refund: close the AR credit the return opened + take the cash out of the drawer.
@@ -1435,18 +1436,35 @@ namespace CrossBuy.BL
 			// — otherwise GL AR (0 after refund) would diverge from the subledger (which still carries the credit note).
 			if (ret.GrandTotal > 0)
 			{
+				// HM-2 (3-ج-0): refund JE lines are FUNCTIONAL (base). AR closes at the INVOICE rate (= the credit note's GrandTotalBase);
+				// the drawer pays document currency valued at the RETURN-DAY rate; the difference is realized FX (4902/5902). No new account.
+				int __fdp = await _rounding.DecimalsAsync(companyId, null);
+				decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+				var functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+				var ordCur = o.CurrencyId ?? functional;
+				decimal todayRate = ordCur == functional ? 1m : (await _currency.ToBaseAsync(1m, ordCur, functional, DateTime.Today, "Sell")).effectiveRate;
+				decimal arBase = ret.GrandTotalBase ?? ret.GrandTotal;      // AR at the invoice rate (single source = credit-note column)
+				decimal cashOutBase = Rf(ret.GrandTotal * todayRate);       // cash paid, valued at the return-day rate
+				decimal fxNet = cashOutBase - arBase;
 				var refund = new List<JournalLineInput>
 				{
-					new JournalLineInput { AccountId = cust.ControlAccountId, Debit = R(ret.GrandTotal), Credit = 0, Description = $"رد نقدي مرتجع {ret.ReturnNo}" },
-					new JournalLineInput { AccountId = drawer, Debit = 0, Credit = R(ret.GrandTotal), Description = $"رد نقدي من الدرج — مرتجع {ret.ReturnNo}" },
+					new JournalLineInput { AccountId = cust.ControlAccountId, Debit = arBase, Credit = 0, Description = $"رد نقدي مرتجع {ret.ReturnNo}" },
+					new JournalLineInput { AccountId = drawer, Debit = 0, Credit = cashOutBase, Description = $"رد نقدي من الدرج — مرتجع {ret.ReturnNo}" },
 				};
+				if (fxNet != 0)
+				{
+					var fxAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == (fxNet > 0 ? "5902" : "4902")).Select(a => (int?)a.ID).FirstOrDefaultAsync();
+					if (fxAcc == null) return (false, "حساب فروق العملة المحققة (4902/5902) غير مُهيّأ", null);
+					if (fxNet > 0) refund.Add(new JournalLineInput { AccountId = fxAcc.Value, Debit = fxNet, Credit = 0, Description = "خسارة فرق عملة محققة — مرتجع" });
+					else refund.Add(new JournalLineInput { AccountId = fxAcc.Value, Debit = 0, Credit = -fxNet, Description = "ربح فرق عملة محقق — مرتجع" });
+				}
 				var (jok, jerr, jentry) = await _journals.CreateAndPostAsync(new JournalEntryInput
-				{ CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Auto", SourceType = "PosRefund", SourceId = ret.ID, Description = $"رد نقدي مرتجع {ret.ReturnNo} — طلب #{o.ID}", Lines = refund }, userId);
+				{ CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Auto", SourceType = "PosRefund", SourceId = ret.ID, CurrencyId = ordCur, Description = $"رد نقدي مرتجع {ret.ReturnNo} — طلب #{o.ID}", Lines = refund }, userId);
 				if (!jok) return (false, "تعذّر ترحيل قيد الرد النقدي: " + jerr, null);
 				var refundReceipt = new CrossBuy.Models.Context.Accounting.Receipt
 				{
-					CompanyID = companyId, CustomerId = cust.ID, ReceiptDate = DateTime.Today, Amount = -R(ret.GrandTotal), AmountBase = -R(ret.GrandTotal),
-					Method = "Cash", CashAccountId = drawer, Status = "Posted", JournalEntryId = jentry!.ID, ExchangeRate = 1m,
+					CompanyID = companyId, CustomerId = cust.ID, ReceiptDate = DateTime.Today, Amount = -ret.GrandTotal, AmountBase = -arBase,
+					Method = "Cash", CashAccountId = drawer, Status = "Posted", JournalEntryId = jentry!.ID, CurrencyId = ordCur, ExchangeRate = Math.Round(todayRate, 4, MidpointRounding.AwayFromZero),
 					Notes = $"رد نقدي مرتجع {ret.ReturnNo} — طلب #{o.ID}", CreatedAt = DateTime.UtcNow,
 				};
 				_db.Receipts.Add(refundReceipt);

@@ -94,7 +94,9 @@
             var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
             var lvl = (n.priority === 'Critical') ? 'error' : (n.priority === 'High') ? 'warning' : 'info';
             // Keep the DEFAULT toastr look; REMOVE the type-icon and insert the sender's PHOTO in its place.
-            var $t = toastr[lvl](body, title, { timeOut: 6000, closeButton: true, escapeHtml: true, positionClass: isAr ? 'toast-top-left' : 'toast-top-right' });
+            // On phones the top corner sits behind the fixed header → show bottom-center so it's always visible.
+            var pos = (window.innerWidth < 768) ? 'toast-bottom-center' : (isAr ? 'toast-top-left' : 'toast-top-right');
+            var $t = toastr[lvl](body, title, { timeOut: 6000, closeButton: true, escapeHtml: true, positionClass: pos });
             try {
                 var el = $t && $t[0];
                 if (el) {

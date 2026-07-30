@@ -29,6 +29,8 @@ namespace CrossBuy.BL
         // ----- Chat (P3) -----
         public const string ChatMessage = "chat_message";
         public const string ChatMention = "chat_mention";
+        public const string ChatAdded = "chat_added";
+        public const string ChatRemoved = "chat_removed";
 
         public enum Prio { Normal, High, Critical }
 
@@ -48,6 +50,7 @@ namespace CrossBuy.BL
             "integrity" or "Integrity" => ("Governance", "ki-shield-tick", nameof(Prio.Critical)),
             "opportunity_won" or "crm_reminder" or "crm-reminder" or "crm_automation" or "crm_assigned" or "crm_ticket" => ("CRM", "ki-notification-status", nameof(Prio.Normal)),
             "chat_message" or "chat_mention" => ("Chat", "ki-message-text-2", nameof(Prio.Normal)),
+            "chat_added" or "chat_removed" => ("Chat", "ki-people", nameof(Prio.Normal)),
             _ => ("General", "ki-notification-status", nameof(Prio.Normal)),
         };
 
@@ -71,7 +74,8 @@ namespace CrossBuy.BL
             "crm_ticket" => "/Crm/Tickets",
             "integrity" or "Integrity" => "/Inventory/IntegrityReconciliation",
             "inventory_approval" or "InventoryApproval" => "/Inventory/Approvals",
-            "chat_message" or "chat_mention" => refId.HasValue ? $"/Chat?c={refId.Value}" : "/Chat",
+            "chat_message" or "chat_mention" or "chat_added" => refId.HasValue ? $"/Chat?c={refId.Value}" : "/Chat",
+            "chat_removed" => "/Chat",
             _ => null,
         };
     }

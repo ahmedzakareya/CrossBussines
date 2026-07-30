@@ -82,7 +82,7 @@ namespace CrossBuy.BL
 		// P3-3a: sales returns / credit notes
 		Task<List<SalesReturn>> GetSalesReturnsAsync(int companyId);
 		Task<SalesReturn?> GetSalesReturnAsync(int companyId, int id);
-		Task<(bool ok, string? error, SalesReturn? ret)> CreateSalesReturnAsync(int companyId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId);
+		Task<(bool ok, string? error, SalesReturn? ret)> CreateSalesReturnAsync(int companyId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null);
 		Task<(bool ok, string? error, SalesReturn? ret)> EditSalesReturnAsync(int companyId, int returnId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId);
 	}
 
@@ -400,27 +400,45 @@ namespace CrossBuy.BL
 			await _context.SalesReturns.AsNoTracking().Include(r => r.Lines).FirstOrDefaultAsync(r => r.ID == id && r.CompanyID == companyId);
 
 		public async Task<(bool ok, string? error, SalesReturn? ret)> CreateSalesReturnAsync(
-			int companyId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId)
+			int companyId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null)
 		{
 			var cust = await _context.Customers.FirstOrDefaultAsync(c => c.ID == customerId && c.CompanyID == companyId);
 			if (cust == null) return (false, "العميل غير موجود", null);
 			if (lines == null || lines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند واحد على الأقل", null);
 			var vatOut = await AccIdAsync(companyId, "210201");
-			// HM-2: this method is functional-currency-only (no currencyId param) ⇒ document == functional; round to functional dp (Rf).
-			// A KWD-DOCUMENT sales return on an EGP-functional company is a pre-existing scope gap (no currency param) — HM-D26.
+			// HM-2 (3-ج-0): currency-aware. The AR is reversed at the ORIGINAL INVOICE's rate (so ar_sub nets to 0 against it);
+			// with NO original invoice there is no reference rate ⇒ book at the return-day rate (no FX). All JE lines are functional (base).
+			var functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+			var cur = currencyId ?? functional;
+			decimal rate;
+			if (originalInvoiceId != null)
+			{
+				var origRate = await _context.SalesInvoices.AsNoTracking().Where(i => i.ID == originalInvoiceId.Value && i.CompanyID == companyId).Select(i => i.ExchangeRate).FirstOrDefaultAsync();
+				rate = (origRate.HasValue && origRate.Value > 0) ? origRate.Value : 1m;   // settle at the invoice rate
+			}
+			else if (cur == functional) rate = 1m;
+			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
+			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Sell"); rate = r; }
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
 			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+			decimal ToBase(decimal foreignAmt) => foreignAmt * rate;   // RAW at the settlement (invoice) rate
 
-			var ret = new SalesReturn { CompanyID = companyId, CustomerId = customerId, OriginalInvoiceId = originalInvoiceId, ReturnDate = date.Date, WarehouseId = lines.FirstOrDefault()?.WarehouseId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow };
+			var ret = new SalesReturn { CompanyID = companyId, CustomerId = customerId, OriginalInvoiceId = originalInvoiceId, ReturnDate = date.Date, WarehouseId = lines.FirstOrDefault()?.WarehouseId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = Rf(l.Qty * l.UnitPrice - l.DiscountAmount);
-				var lineTax = Rf(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);   // document currency
+				var lineTax = Rd(lineTotal * l.TaxRate / 100m);
 				sub += lineTotal; tax += lineTax;
 				ret.Lines.Add(new SalesReturnLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
-			ret.SubTotal = Rf(sub); ret.TaxTotal = Rf(tax); ret.GrandTotal = Rf(sub + tax);
+			ret.SubTotal = Rd(sub); ret.TaxTotal = Rd(tax); ret.GrandTotal = Rd(sub + tax);   // document totals
+			// base at the settlement (invoice) rate — the single raw grandBase feeds both the stored column and the 1102 line
+			var revGroups = ret.Lines.GroupBy(l => l.RevenueAccountId).Select(g => new { Acc = g.Key, Base = ToBase(g.Sum(x => x.LineTotal)) }).ToList();
+			decimal revBase = revGroups.Sum(g => g.Base), vatBase = ToBase(ret.TaxTotal), grandBase = revBase + vatBase;
+			ret.SubTotalBase = Rf(revBase); ret.TaxTotalBase = Rf(vatBase); ret.GrandTotalBase = Rf(grandBase);
 			// HM-1-أ ب-3: ONE ambient transaction — the credit note + its GL + the stock return are all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			_context.SalesReturns.Add(ret);
@@ -428,17 +446,17 @@ namespace CrossBuy.BL
 			ret.ReturnNo = $"CN-{date:yyyy}-{ret.ID:D5}";
 			await _context.SaveChangesAsync();
 
-			// credit-note JE = REVERSE of the sale: Dr revenue (per line) + Dr VAT-output / Cr AR control
+			// credit-note JE = REVERSE of the sale at the invoice rate (all lines functional/base): Dr revenue + Dr VAT / Cr AR (single grandBase)
 			var jlines = new List<JournalLineInput>();
-			foreach (var g in ret.Lines.GroupBy(l => l.RevenueAccountId))
-				jlines.Add(new JournalLineInput { AccountId = g.Key, Debit = Rf(g.Sum(x => x.LineTotal)), Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
-			if (ret.TaxTotal > 0 && vatOut != null)
-				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = ret.TaxTotal, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
-			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = ret.GrandTotal, Description = $"إشعار دائن {ret.ReturnNo}" });
+			foreach (var g in revGroups)
+				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = g.Base, Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
+			if (vatBase > 0 && vatOut != null)
+				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = vatBase, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
+			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = grandBase, Description = $"إشعار دائن {ret.ReturnNo}" });
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
-				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "SalesReturn", SourceId = ret.ID,
+				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "SalesReturn", SourceId = ret.ID, CurrencyId = cur,
 				Description = $"إشعار دائن {ret.ReturnNo} - {cust.Name}", DescriptionEn = $"Credit note {ret.ReturnNo}", Lines = jlines,
 			}, userId);
 			if (!ok) return (false, err, null);

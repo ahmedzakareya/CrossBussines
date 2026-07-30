@@ -38,7 +38,7 @@ namespace CrossBuy.BL
     }
     public class ChatReactionDto { public string Emoji { get; set; } = ""; public int Count { get; set; } public bool Mine { get; set; } }
     public class ChatMemberRead { public int EmployeeId { get; set; } public int LastReadMessageId { get; set; } }
-    public class ChatHeaderDto { public int Id { get; set; } public string Kind { get; set; } = ""; public string Title { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } public int MemberCount { get; set; } public List<int> MemberIds { get; set; } = new(); public int OtherReadMessageId { get; set; } public List<ChatMemberRead> MemberReads { get; set; } = new(); }
+    public class ChatHeaderDto { public int Id { get; set; } public string Kind { get; set; } = ""; public string Title { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } public int MemberCount { get; set; } public List<int> MemberIds { get; set; } = new(); public int OtherReadMessageId { get; set; } public List<ChatMemberRead> MemberReads { get; set; } = new(); public List<ChatDirectoryDto> Members { get; set; } = new(); public bool IsOwner { get; set; } }
     public class ChatDirectoryDto { public int Id { get; set; } public string Name { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } }
 
     public interface IChatService
@@ -54,6 +54,8 @@ namespace CrossBuy.BL
         Task ToggleReactionAsync(int meId, int messageId, string emoji);
         Task MarkReadAsync(int meId, int conversationId);
         Task<List<ChatDirectoryDto>> DirectoryAsync(int companyId, int meId, string? q);
+        Task<bool> AddMemberAsync(int companyId, int meId, int conversationId, int newMemberId);
+        Task<bool> RemoveMemberAsync(int companyId, int meId, int conversationId, int memberId);
     }
 
     public class ChatService : IChatService
@@ -173,6 +175,13 @@ namespace CrossBuy.BL
             h.MemberReads = await _db.ConversationMembers.AsNoTracking()
                 .Where(m => m.ConversationId == conversationId && m.EmployeeId != meId)
                 .Select(m => new ChatMemberRead { EmployeeId = m.EmployeeId, LastReadMessageId = m.LastReadMessageId }).ToListAsync();
+            h.IsOwner = await _db.ConversationMembers.AsNoTracking().AnyAsync(m => m.ConversationId == conversationId && m.EmployeeId == meId && m.Role == "Owner");
+            if (c.Kind == "Group")
+            {
+                var names = await NamesAsync(members);   // members = all member ids
+                h.Members = members.Where(id => id != meId).Select(id => new ChatDirectoryDto
+                { Id = id, Name = names.TryGetValue(id, out var info) ? info.name : "-", Avatar = names.TryGetValue(id, out var i2) ? i2.avatar : null, Online = ChatHub.IsOnline(id) }).ToList();
+            }
             return h;
         }
 
@@ -239,7 +248,10 @@ namespace CrossBuy.BL
 
             // other members: conversation-list bump + a bell notification (deduped per conversation) + mentions
             var members = await _db.ConversationMembers.AsNoTracking().Where(m => m.ConversationId == conversationId && m.EmployeeId != meId).Select(m => m.EmployeeId).ToListAsync();
-            var senderName = names.TryGetValue(meId, out var si) ? si.name : "";
+            // store the sender name in BOTH languages so each recipient sees it in THEIR culture
+            var senderRaw = await _db.Employee.AsNoTracking().Where(e => e.ID == meId).Select(e => new { e.FullName, e.FullNameEn }).FirstOrDefaultAsync();
+            var nameAr = senderRaw?.FullName ?? "";
+            var nameEn = string.IsNullOrWhiteSpace(senderRaw?.FullNameEn) ? nameAr : senderRaw!.FullNameEn!;
             var mset = (mentionedIds ?? Enumerable.Empty<int>()).ToHashSet();
             var url = $"/Chat?c={conversationId}";
             foreach (var mem in members)
@@ -249,7 +261,7 @@ namespace CrossBuy.BL
                 {
                     bool mention = mset.Contains(mem);
                     await _notify.NotifyAsync(mem,
-                        senderName, senderName, preview, preview,
+                        nameAr, nameEn, preview, preview,
                         mention ? NotificationTypes.ChatMention : NotificationTypes.ChatMessage,
                         conversationId, url: url, companyId: companyId, actorEmployeeId: meId,
                         dedupKey: (mention ? $"chat-mention-{conversationId}" : $"chat-{conversationId}"));
@@ -315,6 +327,58 @@ namespace CrossBuy.BL
             var emps = await query.OrderBy(e => e.FullName).Take(50)
                 .Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage }).ToListAsync();
             return emps.Select(e => new ChatDirectoryDto { Id = e.ID, Name = Nm(e.FullName, e.FullNameEn), Avatar = string.IsNullOrEmpty(e.ProfileImage) ? null : e.ProfileImage, Online = ChatHub.IsOnline(e.ID) }).ToList();
+        }
+
+        // bilingual actor name for member add/remove notices
+        private async Task<(string ar, string en)> ActorNameAsync(int id)
+        {
+            var e = await _db.Employee.AsNoTracking().Where(x => x.ID == id).Select(x => new { x.FullName, x.FullNameEn }).FirstOrDefaultAsync();
+            var ar = e?.FullName ?? ""; var en = string.IsNullOrWhiteSpace(e?.FullNameEn) ? ar : e!.FullNameEn!;
+            return (ar, en);
+        }
+
+        public async Task<bool> AddMemberAsync(int companyId, int meId, int conversationId, int newMemberId)
+        {
+            var conv = await _db.Conversations.FirstOrDefaultAsync(c => c.ID == conversationId && c.CompanyID == companyId && c.Kind == "Group");
+            if (conv == null || !await IsMemberAsync(conversationId, meId)) return false;   // only a member can add
+            if (await IsMemberAsync(conversationId, newMemberId)) return true;               // already in
+            _db.ConversationMembers.Add(new ConversationMember { ConversationId = conversationId, EmployeeId = newMemberId, Role = "Member", JoinedAt = DateTime.UtcNow });
+            await _db.SaveChangesAsync();
+            await _hub.Clients.Group(ChatHub.ConvGroup(conversationId)).SendAsync("members", new { conversationId });
+            await _hub.Clients.Group(ChatHub.UserGroup(newMemberId)).SendAsync("conversation", new { conversationId, from = meId });
+            try
+            {
+                var (ar, en) = await ActorNameAsync(meId); var t = conv.Title ?? "";
+                await _notify.NotifyAsync(newMemberId, t, t, $"أضافك {ar} إلى المجموعة", $"{en} added you to the group",
+                    NotificationTypes.ChatAdded, conversationId, url: $"/Chat?c={conversationId}", companyId: companyId, actorEmployeeId: meId);
+            }
+            catch { }
+            return true;
+        }
+
+        public async Task<bool> RemoveMemberAsync(int companyId, int meId, int conversationId, int memberId)
+        {
+            var conv = await _db.Conversations.FirstOrDefaultAsync(c => c.ID == conversationId && c.CompanyID == companyId && c.Kind == "Group");
+            if (conv == null) return false;
+            var meOwner = await _db.ConversationMembers.AnyAsync(m => m.ConversationId == conversationId && m.EmployeeId == meId && m.Role == "Owner");
+            if (!meOwner && memberId != meId) return false;   // owner removes anyone; others may only leave
+            var mem = await _db.ConversationMembers.FirstOrDefaultAsync(m => m.ConversationId == conversationId && m.EmployeeId == memberId);
+            if (mem == null) return true;
+            _db.ConversationMembers.Remove(mem);
+            await _db.SaveChangesAsync();
+            await _hub.Clients.Group(ChatHub.ConvGroup(conversationId)).SendAsync("members", new { conversationId });
+            await _hub.Clients.Group(ChatHub.UserGroup(memberId)).SendAsync("removed", new { conversationId });
+            try
+            {
+                if (memberId != meId)
+                {
+                    var (ar, en) = await ActorNameAsync(meId); var t = conv.Title ?? "";
+                    await _notify.NotifyAsync(memberId, t, t, $"أزالك {ar} من المجموعة", $"{en} removed you from the group",
+                        NotificationTypes.ChatRemoved, conversationId, companyId: companyId, actorEmployeeId: meId);
+                }
+            }
+            catch { }
+            return true;
         }
     }
 }

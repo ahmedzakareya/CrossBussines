@@ -17,7 +17,16 @@
     #cbchat_messenger { display: flex; flex-direction: column; min-height: 420px; }
     #cbchat_messenger_body { flex: 1 1 auto; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
     #chatScroll { flex: 1 1 auto; height: auto !important; }
-    #chatFooter { flex: 0 0 auto; }
+    #chatFooter { flex: 0 0 auto; position: relative; }
+    #chatMentionBox .cbm.active { background: var(--bs-light-primary); }
+    /* WhatsApp-style composer */
+    .cbchat-pill { background: var(--bs-gray-100); border-radius: 24px; padding: 4px 6px; min-height: 46px; }
+    .cbchat-pill .cbchat-ta { background: transparent !important; border: 0 !important; box-shadow: none !important; resize: none; padding: 8px 6px; margin: 0; max-height: 130px; line-height: 1.4; }
+    .cbchat-pill .cbchat-ta:focus { background: transparent !important; }
+    .cbchat-icbtn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; color: var(--bs-gray-600); cursor: pointer; flex: 0 0 auto; margin: 0; transition: color .15s, background .15s; }
+    .cbchat-icbtn:hover { color: var(--bs-primary); background: rgba(0,0,0,.05); }
+    .cbchat-send { width: 46px; height: 46px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 2px 6px rgba(31,125,87,.35); }
+    .cbchat-send i { font-size: 20px; }
 </style>
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -82,21 +91,23 @@
                         <div id="chatTyping" class="text-muted fs-8 fw-semibold mt-1" style="height:16px;"></div>
                     </div>
                     <div class="card-footer pt-4 d-none" id="chatFooter">
+                        <div id="chatMentionBox" class="d-none position-absolute bg-body border border-gray-300 rounded shadow-sm p-1" style="bottom:100%;inset-inline-start:12px;margin-bottom:6px;max-height:230px;overflow:auto;width:270px;z-index:30;"></div>
                         <div id="chatReplyBar" class="d-none align-items-center bg-light-primary rounded p-2 mb-2">
                             <i class="ki-outline ki-arrow-bottom-right fs-5 text-primary me-2"></i>
                             <span class="fs-8 text-gray-700 flex-grow-1 text-truncate" id="chatReplyText"></span>
                             <button type="button" class="btn btn-icon btn-sm" id="chatReplyCancel"><i class="ki-outline ki-cross fs-6"></i></button>
                         </div>
-                        <textarea class="form-control form-control-flush mb-3" rows="1" id="chatInput" placeholder="@Localizer["Type a message"]"></textarea>
-                        <div class="d-flex flex-stack">
-                            <div class="d-flex align-items-center me-2">
-                                <label class="btn btn-sm btn-icon btn-active-light-primary mb-0" title="@Localizer["Attach"]">
-                                    <i class="ki-outline ki-paper-clip fs-2"></i>
+                        <div id="chatAttachName" class="fs-8 text-muted mb-2 d-none"><i class="ki-outline ki-paper-clip fs-6 me-1"></i><span></span></div>
+                        <div class="d-flex align-items-end gap-2">
+                            <div class="cbchat-pill d-flex align-items-center flex-grow-1">
+                                <span class="cbchat-icbtn" id="chatEmojiBtn" title="@Localizer["Emoji"]"><i class="ki-outline ki-emoji-happy fs-2"></i></span>
+                                <label class="cbchat-icbtn mb-0" title="@Localizer["Attach"]">
+                                    <i class="ki-outline ki-plus fs-1"></i>
                                     <input type="file" id="chatAttach" class="d-none" />
                                 </label>
-                                <span id="chatAttachName" class="fs-8 text-muted ms-1"></span>
+                                <textarea class="form-control cbchat-ta flex-grow-1" rows="1" id="chatInput" placeholder="@Localizer["Type a message"]"></textarea>
                             </div>
-                            <button class="btn btn-primary" id="chatSend" type="button">@Localizer["Send"]</button>
+                            <button class="btn btn-primary btn-icon cbchat-send" id="chatSend" type="button" title="@Localizer["Send"]"><i class="ki-outline ki-send fs-2"></i></button>
                         </div>
                     </div>
                 </div>
@@ -166,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var blank = '@blank';
     var openConv = @(openConv?.ToString() ?? "null");
     var signalrSrc = '@Url.Content("~/Backend-assets/plugins/signalr.min.js")';
-    var cur = null, curHeader = null, dir = [], conn = null, replyTo = null, oldestId = null, loading = false, seen = {}, otherReadUpTo = 0, memberReads = {}, pendingFile = null;
+    var cur = null, curHeader = null, dir = [], members = [], conn = null, replyTo = null, oldestId = null, loading = false, seen = {}, otherReadUpTo = 0, memberReads = {}, pendingFile = null;
 
     var $ = function (id) { return document.getElementById(id); };
     var convList = $('chatConvList'), convEmpty = $('chatConvEmpty');
@@ -346,6 +357,59 @@ document.addEventListener('DOMContentLoaded', function () {
         dir.forEach(function (d) { if (body.indexOf('@@' + d.name) !== -1) ids.push(d.id); });
         return ids.join(',');
     }
+    // ---------- @@mention autocomplete ----------
+    var mentionBox = $('chatMentionBox'), mentionStart = -1;
+    function mentionOpen() { return mentionBox && !mentionBox.classList.contains('d-none'); }
+    function hideMention() { if (mentionBox) mentionBox.classList.add('d-none'); mentionStart = -1; }
+    function showMention() {
+        if (!mentionBox) return;
+        var val = input.value, pos = (input.selectionStart == null ? val.length : input.selectionStart);
+        var m = val.substring(0, pos).match(/@@(\S{0,20})$/);
+        // mentions only make sense in a GROUP, and only its members are mentionable
+        var src = (curHeader && curHeader.kind === 'Group') ? members : [];
+        if (!m || !src.length) { hideMention(); return; }
+        mentionStart = pos - m[0].length;
+        var q = m[1].toLowerCase();
+        var list = src.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; }).slice(0, 8);
+        if (!list.length) { hideMention(); return; }
+        mentionBox.innerHTML = list.map(function (d, i) {
+            return '<div class="cbm d-flex align-items-center p-2 rounded bg-hover-light cursor-pointer' + (i === 0 ? ' active' : '') + '" data-name="' + esc(d.name) + '">' +
+                '<div class="symbol symbol-25px symbol-circle me-2"><img src="' + (d.avatar || blank) + '" alt=""></div><span class="fs-7 fw-semibold text-gray-800">' + esc(d.name) + '</span></div>';
+        }).join('');
+        mentionBox.querySelectorAll('.cbm').forEach(function (el) {
+            el.addEventListener('mousedown', function (ev) { ev.preventDefault(); pickMention(el.getAttribute('data-name')); });
+        });
+        mentionBox.classList.remove('d-none');
+    }
+    function pickMention(name) {
+        var val = input.value, pos = (input.selectionStart == null ? val.length : input.selectionStart);
+        input.value = val.substring(0, mentionStart) + '@@' + name + ' ' + val.substring(pos);
+        var np = mentionStart + name.length + 2; try { input.setSelectionRange(np, np); } catch (e) { }
+        hideMention(); input.focus();
+    }
+    function autoGrow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 130) + 'px'; }
+    input.addEventListener('input', function () { showMention(); autoGrow(); });
+    input.addEventListener('blur', function () { setTimeout(hideMention, 200); });
+    // ---------- emoji picker (lightweight, no external lib) ----------
+    (function () {
+        var btn = $('chatEmojiBtn'); if (!btn) return;
+        var EMO = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤩','🥳','😅','😉','🙂','😇','🤔','🤗','😴','😢','😭','😡','👍','👎','👏','🙏','💪','🙌','👌','✌️','🤝','❤️','🔥','⭐','✅','❌','🎉','💯','☕','🚀','📎','📌'];
+        var pop = document.createElement('div');
+        pop.className = 'd-none position-absolute bg-body border border-gray-300 rounded shadow-sm p-2';
+        pop.style.cssText += 'bottom:100%;inset-inline-start:6px;margin-bottom:8px;width:284px;max-height:210px;overflow:auto;z-index:31;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;';
+        pop.innerHTML = EMO.map(function (e) { return '<span class="cbemo" style="cursor:pointer;font-size:20px;text-align:center;padding:4px;border-radius:6px;">' + e + '</span>'; }).join('');
+        $('chatFooter').appendChild(pop);
+        btn.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); pop.classList.toggle('d-none'); });
+        pop.addEventListener('click', function (e) {
+            var t = e.target.closest('.cbemo'); if (!t) return;
+            var s = input.selectionStart == null ? input.value.length : input.selectionStart;
+            var en = input.selectionEnd == null ? s : input.selectionEnd;
+            input.value = input.value.slice(0, s) + t.textContent + input.value.slice(en);
+            var np = s + t.textContent.length; input.focus(); try { input.setSelectionRange(np, np); } catch (x) {}
+            autoGrow();
+        });
+        document.addEventListener('click', function (e) { if (!pop.classList.contains('d-none') && !pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) pop.classList.add('d-none'); });
+    })();
     function sendCore(body, file) {
         if (!cur) return;
         body = (body || '').trim();
@@ -359,7 +423,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     function doSend() { var b = input.value.trim(); if (!b) return; input.value = ''; sendCore(b, null); }
     sendBtn.addEventListener('click', doSend);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } else if (conn && cur) { try { conn.invoke('Typing', cur); } catch (x) {} } });
+    input.addEventListener('keydown', function (e) {
+        if (mentionOpen()) {
+            var items = [].slice.call(mentionBox.querySelectorAll('.cbm'));
+            if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); var a = mentionBox.querySelector('.cbm.active') || items[0]; if (a) pickMention(a.getAttribute('data-name')); return; }
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault(); var idx = items.findIndex(function (x) { return x.classList.contains('active'); }); if (idx < 0) idx = 0;
+                items[idx].classList.remove('active'); idx = e.key === 'ArrowDown' ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length;
+                items[idx].classList.add('active'); items[idx].scrollIntoView({ block: 'nearest' }); return;
+            }
+            if (e.key === 'Escape') { hideMention(); return; }
+        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+        else if (conn && cur) { try { conn.invoke('Typing', cur); } catch (x) {} }
+    });
     // attaching a file opens a PREVIEW modal (image/preview + optional caption) BEFORE sending
     attach.addEventListener('change', function () {
         var f = attach.files && attach.files[0]; if (!f) return;

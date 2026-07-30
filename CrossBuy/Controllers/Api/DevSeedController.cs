@@ -1036,6 +1036,39 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
 		}
 
+		// GET /api/dev/hm2-kwd-return-test?key=seed123 — HM-2 Batch 3-ج-0: a KWD sales return of a KWD invoice must reverse AR at the
+		// INVOICE rate ⇒ GrandTotalBase (at invoice rate) == the 1102 JE line, fils preserved, JE balanced, ar_sub nets to 0. Rolled-back tx.
+		[HttpGet("hm2-kwd-return-test")]
+		public async Task<IActionResult> Hm2KwdReturnTest(string key, [FromServices] CrossBuy.BL.IReceivableService ar)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int ctrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			if (ctrl == 0 || rev == 0) return BadRequest(new { message = "need 1102/4101" });
+			var cust = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-CUST3");
+			if (cust == null) { cust = new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-KWD-CUST3", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
+			async Task<decimal> Out() => await ar.CustomerOutstandingAsync(company, cust.ID);
+			await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+			var line = new List<CrossBuy.BL.SalesLineInput> { new CrossBuy.BL.SalesLineInput { ItemDescription = "ZZ KWD", Qty = 3, UnitPrice = 0.755m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = null, WarehouseId = null } };
+			var (iok, ierr, inv) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, line, "ZZ inv", null, 5);
+			decimal outAfterInv = await Out();
+			var (rok, rerr, ret) = await ar.CreateSalesReturnAsync(company, cust.ID, inv!.ID, DateTime.Today, line, "ZZ ret", null, 5);   // full return, settle at invoice rate
+			decimal outAfterRet = await Out();
+			var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == ret!.JournalEntryId).ToListAsync();
+			decimal arLine = jl.Where(l => l.AccountId == ctrl).Sum(l => l.Credit);
+			return Ok(new
+			{
+				note = "rolled-back tx",
+				returnDocGrand = ret.GrandTotal, filsPreserved = ret.GrandTotal == 2.265m,
+				returnGrandBase = ret.GrandTotalBase, returnExchangeRate = ret.ExchangeRate, invoiceRate = inv.ExchangeRate,
+				settledAtInvoiceRate = ret.ExchangeRate == inv.ExchangeRate, columnEqualsJeLine = ret.GrandTotalBase == arLine,
+				jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit),
+				outstandingAfterInvoice = outAfterInv, outstandingAfterFullReturn = outAfterRet, arNetsToZero = outAfterRet == 0m,
+			});
+			await tx.RollbackAsync();
+		}
+
 		// GET /api/dev/hm2-kwd-receipt-test?key=seed123 — HM-2 Batch 3-ب: (1) collect a KWD invoice at a DIFFERENT rate ⇒ AR base settles
 		// to 0, realized FX on 4902/5902, ar_sub=0; (2) three partial collections ⇒ outstanding base 0, no penny hung. Rolled-back tx.
 		[HttpGet("hm2-kwd-receipt-test")]
@@ -5822,9 +5855,10 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var jtId = await _db.JobTitles.Select(j => j.ID).FirstOrDefaultAsync();
 			var defs = new[]
 			{
-				new { user = "cb_chat1", ar = "سارة (اختبار الشات)", en = "Sara (Chat test)",  img = "/Backend-assets/media/avatars/300-5.jpg" },
-				new { user = "cb_chat2", ar = "خالد (اختبار الشات)", en = "Khaled (Chat test)", img = "/Backend-assets/media/avatars/300-1.jpg" },
-				new { user = "cb_chat3", ar = "منى (اختبار الشات)",  en = "Mona (Chat test)",  img = "/Backend-assets/media/avatars/300-9.jpg" },
+				new { user = "cb_chat1", ar = "سارة (اختبار الشات)", en = "Sara (Chat test)",  img = "/Backend-assets/media/avatars/300-5.jpg", g = "F" },
+				new { user = "cb_chat2", ar = "خالد (اختبار الشات)", en = "Khaled (Chat test)", img = "/Backend-assets/media/avatars/300-1.jpg", g = "M" },
+				new { user = "cb_chat3", ar = "منى (اختبار الشات)",  en = "Mona (Chat test)",  img = "/Backend-assets/media/avatars/300-9.jpg", g = "F" },
+				new { user = "cb_ahmed", ar = "احمد انس",           en = "ahmed anas",        img = "/Backend-assets/media/avatars/300-3.jpg", g = "M" },
 			};
 			const string pass = "Chat@12345";
 			var accounts = new List<object>();
@@ -5843,7 +5877,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 					emp = new Employee
 					{
 						FirstName = "T", LastName = "T", FullName = d.ar, FullNameEn = d.en, Address = "", PhoneNumber = "",
-						Email = u.Email, ProfileImage = d.img, Gender = "F", MaritalStatus = "S", JobTitleID = jtId,
+						Email = u.Email, ProfileImage = d.img, Gender = d.g, MaritalStatus = "S", JobTitleID = jtId,
 						EmpCompanyID = companyId, IsActive = true, DateOfBirth = new DateTime(1995, 1, 1), DateOfJoining = new DateTime(2022, 1, 1), UserId = u.Id
 					};
 					_db.Employee.Add(emp); await _db.SaveChangesAsync();
