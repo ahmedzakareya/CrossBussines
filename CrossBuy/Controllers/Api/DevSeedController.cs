@@ -1039,10 +1039,14 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 		// GET /api/dev/hm2-rounding-test?key=seed123 — HM-2 Batch 1: proves the centralized rounding-remainder rule in JournalEntryService
 		// (load on eligible P&L / reject caller imbalance / reject when no eligible line). Each JE posts inside a rolled-back tx (zero persistence).
 		[HttpGet("hm2-rounding-test")]
-		public async Task<IActionResult> Hm2RoundingTest(string key, [FromServices] CrossBuy.BL.IJournalEntryService jes)
+		public async Task<IActionResult> Hm2RoundingTest(string key, [FromServices] CrossBuy.BL.IJournalEntryService jes, [FromServices] CrossBuy.BL.ICurrencyRounding rounding)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			const int company = 1; var log = new List<object>();
+			// البند ١: DecimalsAsync throws (not silent 2) for an undefined currency; null → functional explicitly.
+			object decimalsProbe;
+			try { int dpBogus = await rounding.DecimalsAsync(company, 999999); decimalsProbe = new { undefinedCurrency = "DID NOT THROW (returned " + dpBogus + ")" }; }
+			catch (InvalidOperationException ex) { decimalsProbe = new { undefinedCurrency = "threw (correct)", message = ex.Message, functionalKwd = await rounding.DecimalsAsync(company, 5), functionalEgpViaNull = await rounding.DecimalsAsync(company, null) }; }
 			async Task<int> Acc(string code) => await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == code).Select(a => a.ID).FirstOrDefaultAsync();
 			int rev = await Acc("4101"), exp = await Acc("520101"), ar = await Acc("1102"), ap = await Acc("2101");
 			if (rev == 0 || exp == 0 || ar == 0 || ap == 0) { exp = exp == 0 ? await Acc("520109") : exp; if (rev == 0 || exp == 0 || ar == 0 || ap == 0) return BadRequest(new { message = "need accounts 4101/520101/1102/2101" }); }
@@ -1075,7 +1079,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			log.Add(await TryJe("caller-imbalance-rejected", new() { D(exp, 100.00m), C(rev, 99.00m) }));
 			// (4) rounding remainder but NO eligible P&L line (all balance-sheet AR/AP) ⇒ rejected
 			log.Add(await TryJe("no-eligible-line-rejected", new() { D(ar, 100.004m), D(ar, 50.004m), C(ap, 150.008m) }));
-			return Ok(new { note = "each JE posted inside a rolled-back tx (zero persistence)", totalLoadsSinceBoot = CrossBuy.BL.JournalEntryService.RoundingDiffLoads, results = log });
+			return Ok(new { note = "each JE posted inside a rolled-back tx (zero persistence)", decimalsProbe, totalLoadsSinceBoot = CrossBuy.BL.JournalEntryService.RoundingDiffLoads, results = log });
 		}
 
 		// GET /api/dev/hm1-double-post-test?key=seed123 — (HM-D16 د) does GRN receipt + purchase invoice on the SAME goods

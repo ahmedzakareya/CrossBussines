@@ -133,10 +133,17 @@ namespace CrossBuy.BL
 		private readonly IFiscalPeriodService _periods;
 		private readonly ICurrencyService _currency;
 		private readonly Microsoft.Extensions.Logging.ILogger<StockService> _logger;
-		public StockService(CrossDbContext context, IJournalEntryService journals, IFiscalPeriodService periods, ICurrencyService currency, Microsoft.Extensions.Logging.ILogger<StockService> logger)
+		private readonly ICurrencyRounding _rounding;
+		public StockService(CrossDbContext context, IJournalEntryService journals, IFiscalPeriodService periods, ICurrencyService currency, Microsoft.Extensions.Logging.ILogger<StockService> logger, ICurrencyRounding rounding)
 		{
-			_context = context; _journals = journals; _periods = periods; _currency = currency; _logger = logger;
+			_context = context; _journals = journals; _periods = periods; _currency = currency; _logger = logger; _rounding = rounding;
 		}
+		// HM-2: inventory is valued in the company FUNCTIONAL currency, so cost-path money values (TotalValue/TotalCost/COGS/landed/
+		// count adjustment) round to the functional dp — for an EGP-functional company that is 2dp (unchanged). AvgCost/UnitCost/Qty
+		// and FIFO layers stay at R4 (per-unit rates / quantities, 4≥3 — untouched). Reference value = TotalValue (GL-matched);
+		// AvgCost is DERIVED = R4(TotalValue / Qty), so it is rounded to functional dp FIRST (via TotalValue) then divided — the
+		// average necessarily reflects the GL-matched value, which is correct (it must equal stock_gl).
+		private async Task<int> FunctionalDpAsync(int companyId) => await _rounding.DecimalsAsync(companyId, null);
 
 		// HM-D5/D6: process-lifetime tripwire — number of times the locked-balance-read guard aborted an operation because
 		// the tracked entity carried an UNSAVED change at the locked read (a batched-writer regression). Must stay 0 in prod.
@@ -364,6 +371,8 @@ namespace CrossBuy.BL
 		// single-item movement WITHOUT opening its own transaction (the caller owns it)
 		private async Task<(bool ok, string? error, StockMovement? movement)> PostSingleAsync(int companyId, MovementRequest req, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId);   // HM-2: cost values round to the functional currency dp
+			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			var item = await _context.Items.FirstOrDefaultAsync(i => i.ID == req.ItemId && i.CompanyID == companyId);
 			if (item == null) return (false, "الصنف غير موجود", null);
 			var wh = await _context.Warehouses.FirstOrDefaultAsync(w => w.ID == req.WarehouseId && w.CompanyID == companyId);
@@ -607,6 +616,8 @@ namespace CrossBuy.BL
 		{
 			if (fromWarehouseId == toWarehouseId) return (false, "اختر مخزنين مختلفين", null);
 			if (lines == null || lines.Count == 0) return (false, "التحويل يجب أن يحتوي على بند واحد على الأقل", null);
+			int __fdp = await FunctionalDpAsync(companyId);   // HM-2: functional-currency cost rounding
+			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 
 			var srcWh = await _context.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.ID == fromWarehouseId && w.CompanyID == companyId);
@@ -708,6 +719,8 @@ namespace CrossBuy.BL
 		// landed cost: allocates extra charges (freight/customs) over a goods receipt's items, raising their value (qty unchanged)
 		public async Task<(bool ok, string? error, LandedCost? landed)> PostLandedCostAsync(int companyId, int goodsReceiptId, DateTime date, string allocationMethod, List<LandedChargeInput> charges, string? notes, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId);   // HM-2: functional-currency cost rounding
+			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 			var gr = await _context.GoodsReceipts.Include(g => g.Lines).FirstOrDefaultAsync(g => g.ID == goodsReceiptId && g.CompanyID == companyId);
 			if (gr == null) return (false, "إذن الاستلام غير موجود", null);
@@ -782,6 +795,8 @@ namespace CrossBuy.BL
 		// physical count: compares counted vs book qty per item and posts the difference as an Adjustment
 		public async Task<(bool ok, string? error, StockCount? count)> PostCountAsync(int companyId, int warehouseId, DateTime date, string? notes, List<CountLineInput> lines, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId);   // HM-2: functional-currency cost rounding
+			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			if (warehouseId <= 0) return (false, "المخزن مطلوب", null);
 			if (lines == null || lines.Count == 0) return (false, "الجرد يجب أن يحتوي على بند واحد على الأقل", null);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }

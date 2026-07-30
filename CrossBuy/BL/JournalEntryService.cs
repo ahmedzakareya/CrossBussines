@@ -59,9 +59,11 @@ namespace CrossBuy.BL
 		private readonly ILogger<JournalEntryService> _logger;
 		// HM-2: counted (not failing) — how many times a rounding remainder was loaded onto an eligible P&L line. Surfaced in inv-test-integrity.
 		public static long RoundingDiffLoads;
-		// HM-2: explicit forbidden P&L accounts (externally-reconciled) — FX gain/loss + cash over/short (drawer). All balance-sheet
+		// HM-2: the CLOSED explicit forbidden P&L set (accounts externally-reconciled or feeding a control report): FX gain/loss
+		// (4902/4903/5902/5903), cash over/short = drawer reconciliation (520111), production cost variance = variance report (520109).
+		// Census verified: no "discount allowed" account exists; no P&L-type tax account (VAT is a liability). All balance-sheet
 		// accounts (AR/AP/inventory/GRNI/tax/cash/bank) are auto-excluded by the "P&L only" (AccountType 4/5) eligibility rule.
-		private static readonly HashSet<string> ForbiddenDiffAccounts = new() { "4902", "4903", "5902", "5903", "520111" };
+		private static readonly HashSet<string> ForbiddenDiffAccounts = new() { "4902", "4903", "5902", "5903", "520111", "520109" };
 		public JournalEntryService(CrossDbContext context, IFiscalPeriodService periods, IServiceScopeFactory scopes, IConfiguration config, ICurrencyRounding rounding, IStringLocalizer<CrossBuy.SharedResources> localizer, ILogger<JournalEntryService> logger)
 		{
 			_context = context; _periods = periods; _scopes = scopes; _config = config; _rounding = rounding; L = localizer; _logger = logger;

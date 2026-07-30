@@ -14,8 +14,8 @@
     .chat-tools-end { inset-inline-end: 0; }
     .chat-msg:hover .chat-tools { opacity: 1; pointer-events: auto; }
     /* fixed messenger height so the composer stays pinned/visible without page scroll */
-    #kt_chat_messenger { display: flex; flex-direction: column; min-height: 420px; }
-    #kt_chat_messenger_body { flex: 1 1 auto; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
+    #cbchat_messenger { display: flex; flex-direction: column; min-height: 420px; }
+    #cbchat_messenger_body { flex: 1 1 auto; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
     #chatScroll { flex: 1 1 auto; height: auto !important; }
     #chatFooter { flex: 0 0 auto; }
 </style>
@@ -36,7 +36,7 @@
             <!--begin::Contacts sidebar-->
             <div class="flex-column flex-lg-row-auto w-100 w-lg-300px w-xl-350px mb-10 mb-lg-0">
                 <div class="card card-flush">
-                    <div class="card-header pt-7 border-0" id="kt_chat_contacts_header">
+                    <div class="card-header pt-7 border-0" id="cbchat_contacts_header">
                         <div class="d-flex align-items-center gap-3 w-100">
                             <div class="position-relative flex-grow-1 my-1">
                                 <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4 top-50 translate-middle-y"></i>
@@ -62,8 +62,8 @@
 
             <!--begin::Messenger-->
             <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10">
-                <div class="card" id="kt_chat_messenger">
-                    <div class="card-header" id="kt_chat_messenger_header">
+                <div class="card" id="cbchat_messenger">
+                    <div class="card-header" id="cbchat_messenger_header">
                         <div class="card-title">
                             <div class="symbol symbol-40px symbol-circle me-3 d-none" id="chatHeadSym"><img id="chatHeadAvatar" src="@blank" alt="" /></div>
                             <div class="d-flex justify-content-center flex-column">
@@ -72,7 +72,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card-body" id="kt_chat_messenger_body">
+                    <div class="card-body" id="cbchat_messenger_body">
                         <div id="chatEmpty" class="d-flex flex-center flex-column py-20 text-muted">
                             <i class="ki-outline ki-message-text-2 fs-5x text-primary mb-4"></i>
                             <div class="fs-5 fw-semibold">@Localizer["Pick someone to start chatting"]</div>
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function scrollBottom() { scroll.scrollTop = scroll.scrollHeight; }
     // size the messenger to fill from its top edge down to the viewport bottom → composer always visible
     function fitMessenger() {
-        var m = document.getElementById('kt_chat_messenger'); if (!m) return;
+        var m = document.getElementById('cbchat_messenger'); if (!m) return;
         var h = window.innerHeight - m.getBoundingClientRect().top - 16;
         m.style.height = Math.max(420, h) + 'px';
         if (cur) scrollBottom();
