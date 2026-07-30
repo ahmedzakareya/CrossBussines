@@ -310,7 +310,13 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Sell"); rate = r; }
-			decimal ToBase(decimal foreignAmt) => R(foreignAmt * rate);
+			// HM-2: same pattern as create — document Rd, base Rf, single grandBase feeds the 1102 line + column. Reverse+repost
+			// use the SAME rate resolution, so an edit of a KWD invoice leaves no artifact in 1102 (net = new − old at one rate).
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+			decimal ToBase(decimal foreignAmt) => foreignAmt * rate;   // RAW
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole reverse+repost so an edit is all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -343,16 +349,16 @@ namespace CrossBuy.BL
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount);
-				var lineTax = R(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);
+				var lineTax = Rd(lineTotal * l.TaxRate / 100m);
 				sub += lineTotal; tax += lineTax;
 				inv.Lines.Add(new SalesInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
 			var revGroups = inv.Lines.GroupBy(l => l.RevenueAccountId).Select(g => new { Acc = g.Key, Base = ToBase(g.Sum(x => x.LineTotal)) }).ToList();
-			decimal revBase = revGroups.Sum(g => g.Base), vatBase = ToBase(R(tax)), grandBase = revBase + vatBase;
+			decimal revBase = revGroups.Sum(g => g.Base), vatBase = ToBase(Rd(tax)), grandBase = revBase + vatBase;   // single raw grandBase
 			inv.CustomerId = customerId; inv.InvoiceDate = date.Date; inv.Notes = notes; inv.CurrencyId = cur; inv.ExchangeRate = R4(rate); inv.ProjectId = projectId;
-			inv.SubTotal = R(sub); inv.TaxTotal = R(tax); inv.GrandTotal = R(sub + tax);
-			inv.SubTotalBase = revBase; inv.TaxTotalBase = vatBase; inv.GrandTotalBase = grandBase;
+			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);
+			inv.SubTotalBase = Rf(revBase); inv.TaxTotalBase = Rf(vatBase); inv.GrandTotalBase = Rf(grandBase);
 			await _context.SaveChangesAsync();
 
 			// (5) post the new GL entry
@@ -400,17 +406,21 @@ namespace CrossBuy.BL
 			if (cust == null) return (false, "العميل غير موجود", null);
 			if (lines == null || lines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند واحد على الأقل", null);
 			var vatOut = await AccIdAsync(companyId, "210201");
+			// HM-2: this method is functional-currency-only (no currencyId param) ⇒ document == functional; round to functional dp (Rf).
+			// A KWD-DOCUMENT sales return on an EGP-functional company is a pre-existing scope gap (no currency param) — HM-D26.
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
 			var ret = new SalesReturn { CompanyID = companyId, CustomerId = customerId, OriginalInvoiceId = originalInvoiceId, ReturnDate = date.Date, WarehouseId = lines.FirstOrDefault()?.WarehouseId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow };
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount);
-				var lineTax = R(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rf(l.Qty * l.UnitPrice - l.DiscountAmount);
+				var lineTax = Rf(lineTotal * l.TaxRate / 100m);
 				sub += lineTotal; tax += lineTax;
 				ret.Lines.Add(new SalesReturnLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
-			ret.SubTotal = R(sub); ret.TaxTotal = R(tax); ret.GrandTotal = R(sub + tax);
+			ret.SubTotal = Rf(sub); ret.TaxTotal = Rf(tax); ret.GrandTotal = Rf(sub + tax);
 			// HM-1-أ ب-3: ONE ambient transaction — the credit note + its GL + the stock return are all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			_context.SalesReturns.Add(ret);
@@ -421,7 +431,7 @@ namespace CrossBuy.BL
 			// credit-note JE = REVERSE of the sale: Dr revenue (per line) + Dr VAT-output / Cr AR control
 			var jlines = new List<JournalLineInput>();
 			foreach (var g in ret.Lines.GroupBy(l => l.RevenueAccountId))
-				jlines.Add(new JournalLineInput { AccountId = g.Key, Debit = R(g.Sum(x => x.LineTotal)), Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
+				jlines.Add(new JournalLineInput { AccountId = g.Key, Debit = Rf(g.Sum(x => x.LineTotal)), Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
 			if (ret.TaxTotal > 0 && vatOut != null)
 				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = ret.TaxTotal, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
 			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = ret.GrandTotal, Description = $"إشعار دائن {ret.ReturnNo}" });
@@ -464,6 +474,8 @@ namespace CrossBuy.BL
 			if (cust == null) return (false, "العميل غير موجود", null);
 			if (lines == null || lines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند واحد على الأقل", null);
 			var vatOut = await AccIdAsync(companyId, "210201");
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);   // HM-2: functional-currency-only method (no currencyId)
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole reverse+repost so an edit is all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -489,19 +501,19 @@ namespace CrossBuy.BL
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount);
-				sub += lineTotal; tax += R(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rf(l.Qty * l.UnitPrice - l.DiscountAmount);
+				sub += lineTotal; tax += Rf(lineTotal * l.TaxRate / 100m);
 				ret.Lines.Add(new SalesReturnLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
 			ret.CustomerId = customerId; ret.OriginalInvoiceId = originalInvoiceId; ret.ReturnDate = date.Date; ret.Notes = notes;
 			ret.WarehouseId = lines.FirstOrDefault()?.WarehouseId;
-			ret.SubTotal = R(sub); ret.TaxTotal = R(tax); ret.GrandTotal = R(sub + tax);
+			ret.SubTotal = Rf(sub); ret.TaxTotal = Rf(tax); ret.GrandTotal = Rf(sub + tax);
 			await _context.SaveChangesAsync();
 
 			// (4) new credit-note JE (Dr revenue per line + Dr VAT-out / Cr AR)
 			var jlines = new List<JournalLineInput>();
 			foreach (var g in ret.Lines.GroupBy(l => l.RevenueAccountId))
-				jlines.Add(new JournalLineInput { AccountId = g.Key, Debit = R(g.Sum(x => x.LineTotal)), Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
+				jlines.Add(new JournalLineInput { AccountId = g.Key, Debit = Rf(g.Sum(x => x.LineTotal)), Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
 			if (ret.TaxTotal > 0 && vatOut != null)
 				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = ret.TaxTotal, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
 			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = ret.GrandTotal, Description = $"إشعار دائن {ret.ReturnNo} (معدّل)" });
@@ -551,8 +563,16 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Sell"); rate = r; }
+			// HM-2: document amounts round to the document currency (Rd); base amounts to functional (Rf). NOTE: a receipt JE has no
+			// eligible P&L line (Cash/AR/FX are all forbidden from the rounding remainder), so it must balance BY CONSTRUCTION —
+			// fxNet = cashBase − arBaseTotal naturally absorbs any sub-unit as realized FX (which is what a currency-conversion
+			// sub-unit IS). So base amounts are Rf-rounded here (not passed raw) and the JE is exactly balanced before JES.
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
-			var rc = new Receipt { CompanyID = companyId, CustomerId = customerId, ReceiptDate = date.Date, Amount = R(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
+			var rc = new Receipt { CompanyID = companyId, CustomerId = customerId, ReceiptDate = date.Date, Amount = Rd(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
 			_context.Receipts.Add(rc);
 			await _context.SaveChangesAsync();
 			rc.ReceiptNo = $"RC-{date:yyyy}-{rc.ID:D5}";
@@ -566,24 +586,24 @@ namespace CrossBuy.BL
 								.GroupBy(a => a.SalesInvoiceId).Select(g => new { Inv = g.Key, F = g.Sum(x => x.ForeignAmount) }).ToListAsync())
 								.ToDictionary(x => x.Inv, x => x.F);
 
-			decimal left = R(amount), arBaseTotal = 0m;
+			decimal left = Rd(amount), arBaseTotal = 0m;
 			var allocs = new List<ReceiptAllocation>();
 			foreach (var inv in openInvoices)
 			{
 				if (left <= 0) break;
-				var remaining = R(inv.GrandTotal - (settledByInv.TryGetValue(inv.ID, out var s) ? s : 0m));
+				var remaining = Rd(inv.GrandTotal - (settledByInv.TryGetValue(inv.ID, out var s) ? s : 0m));   // document currency
 				if (remaining <= 0) continue;
 				var take = Math.Min(remaining, left);
 				var invRate = (inv.ExchangeRate.HasValue && inv.ExchangeRate.Value > 0) ? inv.ExchangeRate.Value : 1m;
-				var arBase = R(take * invRate);
-				arBaseTotal += arBase; left = R(left - take);
-				allocs.Add(new ReceiptAllocation { CompanyID = companyId, ReceiptId = rc.ID, SalesInvoiceId = inv.ID, ForeignAmount = take, InvoiceRate = R4(invRate), ReceiptRate = R4(rate), ArBase = arBase, FxDiff = R(take * rate) - arBase, CreatedAt = DateTime.UtcNow });
+				var arBase = Rf(take * invRate);           // AR cleared at the INVOICE rate (functional) — matches GrandTotalBase
+				arBaseTotal += arBase; left = Rd(left - take);
+				allocs.Add(new ReceiptAllocation { CompanyID = companyId, ReceiptId = rc.ID, SalesInvoiceId = inv.ID, ForeignAmount = take, InvoiceRate = R4(invRate), ReceiptRate = R4(rate), ArBase = arBase, FxDiff = Rf(take * rate) - arBase, CreatedAt = DateTime.UtcNow });
 			}
-			if (left > 0) arBaseTotal += R(left * rate);   // unallocated (advance / no open invoice) → AR at receipt rate, no FX
+			if (left > 0) arBaseTotal += Rf(left * rate);   // unallocated (advance / no open invoice) → AR at receipt rate, no FX
 
-			decimal cashBase = R(amount * rate);
-			rc.AmountBase = arBaseTotal;                   // AR cleared = subledger basis
-			decimal fxNet = R(cashBase - arBaseTotal);     // realized FX (gain when cash exceeds AR cleared)
+			decimal cashBase = Rf(amount * rate);
+			rc.AmountBase = arBaseTotal;                   // AR cleared = subledger basis (single source → matches the 1102 JE line)
+			decimal fxNet = Rf(cashBase - arBaseTotal);    // realized FX (gain when cash exceeds AR cleared); absorbs the conversion sub-unit
 
 			var lines = new List<JournalLineInput>
 			{

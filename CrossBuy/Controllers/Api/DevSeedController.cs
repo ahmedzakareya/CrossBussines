@@ -1036,6 +1036,48 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
 		}
 
+		// GET /api/dev/hm2-kwd-receipt-test?key=seed123 — HM-2 Batch 3-ب: (1) collect a KWD invoice at a DIFFERENT rate ⇒ AR base settles
+		// to 0, realized FX on 4902/5902, ar_sub=0; (2) three partial collections ⇒ outstanding base 0, no penny hung. Rolled-back tx.
+		[HttpGet("hm2-kwd-receipt-test")]
+		public async Task<IActionResult> Hm2KwdReceiptTest(string key, [FromServices] CrossBuy.BL.IReceivableService ar)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int ctrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			int cash = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			int g4902 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4902").Select(a => a.ID).FirstOrDefaultAsync();
+			if (ctrl == 0 || rev == 0 || cash == 0) return BadRequest(new { message = "need 1102/4101/110101" });
+			var cust = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-CUST2");
+			if (cust == null) { cust = new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-KWD-CUST2", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
+			async Task<decimal> Outstanding() => await ar.CustomerOutstandingAsync(company, cust.ID);
+
+			await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+			// (1) FX: invoice 10 KWD @163 (default), collect fully @165 (explicit) ⇒ FX gain
+			var (iok, ierr, inv) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> {
+				new CrossBuy.BL.SalesLineInput { ItemDescription = "ZZ KWD", Qty = 10, UnitPrice = 1.000m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = null, WarehouseId = null } }, "ZZ", null, 5);
+			decimal outAfterInv = await Outstanding();
+			var (r1ok, r1err) = await ar.CreateReceiptAsync(company, cust.ID, DateTime.Today, inv!.GrandTotal, "Cash", cash, "full @165", null, 5, 165m);
+			decimal outAfterPay = await Outstanding();
+			var recJe = await _db.Receipts.AsNoTracking().Where(r => r.CustomerId == cust.ID).OrderByDescending(r => r.ID).Select(r => r.JournalEntryId).FirstOrDefaultAsync();
+			var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == recJe).ToListAsync();
+			var fxLine = jl.Where(l => l.AccountId == g4902).Sum(l => l.Credit - l.Debit);
+			bool jeBal = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit);
+			var fx = new { invoiceGrandBase = inv.GrandTotalBase, invRate = inv.ExchangeRate, outAfterInvoice = outAfterInv, receiptOk = r1ok, receiptErr = r1err, outstandingBaseAfterFullPay = outAfterPay, settledToZero = outAfterPay == 0m, realizedFxOn4902 = fxLine, receiptJeBalanced = jeBal };
+
+			// (2) three partial collections of a fresh KWD invoice priced to force fractions
+			var (i2ok, _, inv2) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> {
+				new CrossBuy.BL.SalesLineInput { ItemDescription = "ZZ KWD2", Qty = 1, UnitPrice = 10.000m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = null, WarehouseId = null } }, "ZZ2", null, 5);
+			decimal before2 = await Outstanding();
+			var steps = new List<object>();
+			foreach (var part in new[] { 3.333m, 3.333m, 3.334m })   // Σ = 10.000
+			{ var (pok, perr) = await ar.CreateReceiptAsync(company, cust.ID, DateTime.Today, part, "Cash", cash, "partial", null, 5, 163m); steps.Add(new { part, ok = pok, err = perr, outstandingBase = await Outstanding() }); }
+			var partial = new { invoice2GrandBase = inv2!.GrandTotalBase, outstandingBaseBefore = before2, steps, outstandingBaseAfterAll = await Outstanding(), settledToZero = await Outstanding() == 0m };
+
+			await tx.RollbackAsync();
+			return Ok(new { note = "rolled-back tx (zero persistence)", fxCollection = fx, partialCollection = partial });
+		}
+
 		// GET /api/dev/hm2-kwd-invoice-test?key=seed123 — HM-2 Batch 3-أ: a KWD sales invoice (3-decimal price) must preserve fils in the
 		// document, store GrandTotalBase == the 1102 JE line (single-source constraint), and post a balanced JE. Rolled-back tx (zero persistence).
 		[HttpGet("hm2-kwd-invoice-test")]

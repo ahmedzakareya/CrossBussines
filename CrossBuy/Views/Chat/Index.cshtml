@@ -129,6 +129,20 @@
 </div></div></div>
 <!--end::New group modal-->
 
+<!--begin::Image/attachment preview modal (before send)-->
+<div class="modal fade" id="chatImgModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header py-3"><h2 class="fs-5 m-0">@Localizer["Send image"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body">
+        <div id="chatImgPreviewWrap" class="text-center mb-4"></div>
+        <input type="text" id="chatImgCaption" class="form-control form-control-solid" placeholder="@Localizer["Add a caption…"]" />
+    </div>
+    <div class="modal-footer py-3">
+        <button class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+        <button class="btn btn-primary" id="chatImgSend"><i class="ki-outline ki-send fs-4"></i>@Localizer["Send"]</button>
+    </div>
+</div></div></div>
+<!--end::Image/attachment preview modal-->
+
 @section Scripts {
 <script>
 (function () {
@@ -152,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var blank = '@blank';
     var openConv = @(openConv?.ToString() ?? "null");
     var signalrSrc = '@Url.Content("~/Backend-assets/plugins/signalr.min.js")';
-    var cur = null, curHeader = null, dir = [], conn = null, replyTo = null, oldestId = null, loading = false, seen = {}, otherReadUpTo = 0, memberReads = {};
+    var cur = null, curHeader = null, dir = [], conn = null, replyTo = null, oldestId = null, loading = false, seen = {}, otherReadUpTo = 0, memberReads = {}, pendingFile = null;
 
     var $ = function (id) { return document.getElementById(id); };
     var convList = $('chatConvList'), convEmpty = $('chatConvEmpty');
@@ -211,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     function attachHtml(m) {
         if (!m.attachmentPath) return '';
-        var isImg = m.attachmentType === 'image' || /\.(png|jpe?g|gif|bmp|webp|svg)(\?|#|$)/i.test(m.attachmentPath);
+        var isImg = m.attachmentType === 'image' || /\.(png|jpe?g|gif|bmp|webp|svg|avif|jfif|heic|heif|ico|tiff?)(\?|#|$)/i.test(m.attachmentPath);
         if (isImg) return '<a href="' + m.attachmentPath + '" target="_blank"><img src="' + m.attachmentPath + '" class="rounded mw-250px mt-2" style="max-height:240px;display:block;cursor:zoom-in" /></a>';
         return '<a href="' + m.attachmentPath + '" target="_blank" class="d-flex align-items-center bg-light rounded p-3 mt-2"><i class="ki-outline ki-file fs-2x text-primary me-3"></i><span class="fw-semibold text-gray-800">' + esc(m.attachmentName || 'file') + '</span></a>';
     }
@@ -224,9 +238,12 @@ document.addEventListener('DOMContentLoaded', function () {
         var head = '<div class="d-flex align-items-center mb-1">' + (mine ? '' : avatar) +
             '<div class="' + (mine ? 'me-3 text-end' : 'ms-0') + '"><span class="fs-6 fw-bold text-gray-900 me-1">' + (mine ? '@Localizer["You"]' : esc(m.senderName)) + '</span>' +
             '<span class="text-muted fs-8">' + timeStr(m.createdAt) + (m.editedAt ? ' · @Localizer["edited"]' : '') + '</span></div>' + (mine ? avatar : '') + '</div>';
+        var att = attachHtml(m);
+        var txt = m.body ? esc(m.body).replace(/\n/g, '<br>') : '';
+        var inner = att ? (att + (txt ? '<div class="mt-2">' + txt + '</div>' : '')) : txt;
         var content = m.deleted
             ? '<div class="p-3 rounded bg-light text-muted fst-italic mw-lg-450px">@Localizer["Message deleted"]</div>'
-            : '<div class="p-4 rounded ' + bubbleBg + ' text-gray-900 fw-semibold mw-lg-450px text-' + side + '">' + (m.body ? esc(m.body).replace(/\n/g, '<br>') : '') + attachHtml(m) + '</div>';
+            : '<div class="p-4 rounded ' + bubbleBg + ' text-gray-900 fw-semibold mw-lg-450px text-' + side + '">' + inner + '</div>';
         var tools = m.deleted ? '' :
             '<div class="chat-tools chat-tools-' + side + ' gap-1">' +
               '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="👍">👍</button>' +
@@ -329,21 +346,36 @@ document.addEventListener('DOMContentLoaded', function () {
         dir.forEach(function (d) { if (body.indexOf('@@' + d.name) !== -1) ids.push(d.id); });
         return ids.join(',');
     }
-    function doSend() {
+    function sendCore(body, file) {
         if (!cur) return;
-        var body = input.value.trim();
-        var file = attach.files && attach.files[0];
+        body = (body || '').trim();
         if (!body && !file) return;
         var fd = new FormData(); fd.append('c', cur); if (body) fd.append('body', body);
         if (replyTo) fd.append('replyToId', replyTo);
         var mids = detectMentions(body); if (mids) fd.append('mentionedIds', mids);
         if (file) fd.append('file', file);
-        input.value = ''; attach.value = ''; attachName.textContent = ''; replyTo = null; $('chatReplyBar').classList.add('d-none');
+        replyTo = null; $('chatReplyBar').classList.add('d-none');
         post('/Chat/Send', fd).then(function (dto) { if (dto) { appendMsg(dto, false); scrollBottom(); updateSeenBar(); loadConvs(); } });
     }
+    function doSend() { var b = input.value.trim(); if (!b) return; input.value = ''; sendCore(b, null); }
     sendBtn.addEventListener('click', doSend);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } else if (conn && cur) { try { conn.invoke('Typing', cur); } catch (x) {} } });
-    attach.addEventListener('change', function () { attachName.textContent = attach.files.length ? attach.files[0].name : ''; });
+    // attaching a file opens a PREVIEW modal (image/preview + optional caption) BEFORE sending
+    attach.addEventListener('change', function () {
+        var f = attach.files && attach.files[0]; if (!f) return;
+        pendingFile = f;
+        var wrap = $('chatImgPreviewWrap');
+        if (/^image\//.test(f.type)) { wrap.innerHTML = '<img src="' + URL.createObjectURL(f) + '" style="max-width:100%;max-height:52vh;border-radius:8px;display:block;margin:0 auto;" />'; }
+        else { wrap.innerHTML = '<div class="d-flex flex-center flex-column py-8"><i class="ki-outline ki-file fs-5x text-primary mb-3"></i><div class="fw-semibold text-gray-800">' + esc(f.name) + '</div></div>'; }
+        $('chatImgCaption').value = input.value.trim();
+        imgModal.show();
+    });
+    $('chatImgSend').addEventListener('click', function () {
+        var cap = $('chatImgCaption').value.trim(), f = pendingFile;
+        pendingFile = null; attach.value = ''; input.value = ''; imgModal.hide();
+        sendCore(cap, f);
+    });
+    $('chatImgModal').addEventListener('hidden.bs.modal', function () { pendingFile = null; attach.value = ''; $('chatImgPreviewWrap').innerHTML = ''; $('chatImgCaption').value = ''; });
 
     // ---------- directory / new chat / new group ----------
     function loadDir(cb) { fetch('/Chat/Directory', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) { dir = list; if (cb) cb(list); }); }
@@ -356,6 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     var newModal = new bootstrap.Modal($('chatNewModal'));
     var grpModal = new bootstrap.Modal($('chatGroupModal'));
+    var imgModal = new bootstrap.Modal($('chatImgModal'));
     $('chatBtnNew').addEventListener('click', function (e) { e.preventDefault(); loadDir(function (list) { renderDir('dirList', list, false); }); newModal.show(); });
     $('dirSearch').addEventListener('input', function () { var q = this.value.toLowerCase(); renderDir('dirList', dir.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; }), false); });
     $('chatBtnGroup').addEventListener('click', function (e) { e.preventDefault(); loadDir(function (list) { renderDir('grpList', list, true); }); grpModal.show(); });

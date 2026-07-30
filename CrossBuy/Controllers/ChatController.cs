@@ -102,7 +102,7 @@ namespace CrossBuy.Controllers
                 var stored = Guid.NewGuid() + ext;
                 using (var s = System.IO.File.Create(Path.Combine(dir, stored))) await file.CopyToAsync(s);
                 path = "/uploads/chat/" + stored; name = Path.GetFileName(file.FileName);
-                type = new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp" }.Contains(ext.ToLowerInvariant()) ? "image" : "file";
+                type = new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".avif", ".jfif", ".heic", ".heif", ".ico", ".tif", ".tiff" }.Contains(ext.ToLowerInvariant()) ? "image" : "file";
             }
             var ids = (mentionedIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(s => int.TryParse(s, out var n) ? n : 0).Where(n => n > 0).ToList();
