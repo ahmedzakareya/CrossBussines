@@ -1036,6 +1036,48 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
 		}
 
+		// GET /api/dev/hm2-rounding-test?key=seed123 — HM-2 Batch 1: proves the centralized rounding-remainder rule in JournalEntryService
+		// (load on eligible P&L / reject caller imbalance / reject when no eligible line). Each JE posts inside a rolled-back tx (zero persistence).
+		[HttpGet("hm2-rounding-test")]
+		public async Task<IActionResult> Hm2RoundingTest(string key, [FromServices] CrossBuy.BL.IJournalEntryService jes)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<object>();
+			async Task<int> Acc(string code) => await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == code).Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await Acc("4101"), exp = await Acc("520101"), ar = await Acc("1102"), ap = await Acc("2101");
+			if (rev == 0 || exp == 0 || ar == 0 || ap == 0) { exp = exp == 0 ? await Acc("520109") : exp; if (rev == 0 || exp == 0 || ar == 0 || ap == 0) return BadRequest(new { message = "need accounts 4101/520101/1102/2101" }); }
+			int cc = await _db.CostCenters.AsNoTracking().Where(x => x.CompanyID == company).OrderBy(x => x.ID).Select(x => x.ID).FirstOrDefaultAsync();
+
+			async Task<object> TryJe(string tag, List<CrossBuy.BL.JournalLineInput> lines)
+			{
+				long before = CrossBuy.BL.JournalEntryService.RoundingDiffLoads;
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				var (ok, err, entry) = await jes.CreateAndPostNoTxAsync(new CrossBuy.BL.JournalEntryInput { CompanyID = company, EntryDate = DateTime.Today, JournalType = "Manual", SourceType = "HM2Test", Description = tag, Lines = lines }, null);
+				object res;
+				if (ok && entry != null)
+				{
+					decimal sd = entry.Lines.Sum(l => l.Debit), sc = entry.Lines.Sum(l => l.Credit);
+					res = new { tag, posted = true, balanced = sd == sc, totalDr = sd, totalCr = sc, loadedThisJe = CrossBuy.BL.JournalEntryService.RoundingDiffLoads - before, lines = entry.Lines.OrderBy(l => l.LineNo).Select(l => new { l.AccountId, l.Debit, l.Credit }) };
+				}
+				else res = new { tag, posted = false, rejectedWith = err };
+				await tx.RollbackAsync();
+				return res;
+			}
+
+			CrossBuy.BL.JournalLineInput D(int a, decimal v) => new() { AccountId = a, Debit = v, Credit = 0, CostCenterId = cc };
+			CrossBuy.BL.JournalLineInput C(int a, decimal v) => new() { AccountId = a, Debit = 0, Credit = v, CostCenterId = cc };
+
+			// (1) rounding remainder — raw balances (100.004+50.004 = 150.008), 2dp rounding makes debit 150.00 vs credit 150.01 ⇒ −0.01 loaded on the largest eligible P&L line
+			log.Add(await TryJe("remainder-loaded", new() { D(exp, 100.004m), D(exp, 50.004m), C(rev, 150.008m) }));
+			// (2) opposite direction (credit side over-rounds ⇒ +0.01 loaded)
+			log.Add(await TryJe("remainder-loaded-other-dir", new() { C(rev, 100.004m), C(rev, 50.004m), D(exp, 150.008m) }));
+			// (3) CALLER imbalance (raw off by 1.00) ⇒ rejected, never swallowed
+			log.Add(await TryJe("caller-imbalance-rejected", new() { D(exp, 100.00m), C(rev, 99.00m) }));
+			// (4) rounding remainder but NO eligible P&L line (all balance-sheet AR/AP) ⇒ rejected
+			log.Add(await TryJe("no-eligible-line-rejected", new() { D(ar, 100.004m), D(ar, 50.004m), C(ap, 150.008m) }));
+			return Ok(new { note = "each JE posted inside a rolled-back tx (zero persistence)", totalLoadsSinceBoot = CrossBuy.BL.JournalEntryService.RoundingDiffLoads, results = log });
+		}
+
 		// GET /api/dev/hm1-double-post-test?key=seed123 — (HM-D16 د) does GRN receipt + purchase invoice on the SAME goods
 		// double-debit inventory with no guard? On ZZ entities; fully reversed via services afterward.
 		[HttpGet("hm1-double-post-test")]
@@ -2778,8 +2820,10 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			{
 				runId = run.ID, allOk = run.AllOk && dbScopedOk, failedCount, buildConfig,
 				dbContextLifetime, dbContextScopedOk = dbScopedOk,   // PILLAR: must be "Scoped" (own-or-join depends on it)
+				roundingDiffLoads = CrossBuy.BL.JournalEntryService.RoundingDiffLoads,   // HM-2: counted (visible, not failing)
 				checks = checks.Select(c => (object)new { c.Key, name = c.NameAr, c.Expected, c.Actual, diff = c.Diff, c.Ok, c.Note })
-					.Append((object)new { Key = "dbcontext_lifetime", name = "عمر CrossDbContext = Scoped (ركيزة امتلك-أو-انضمّ)", Ok = dbScopedOk, Note = $"actual={dbContextLifetime} (runtime)" }),
+					.Append((object)new { Key = "dbcontext_lifetime", name = "عمر CrossDbContext = Scoped (ركيزة امتلك-أو-انضمّ)", Ok = dbScopedOk, Note = $"actual={dbContextLifetime} (runtime)" })
+					.Append((object)new { Key = "rounding_diff_loads", name = "تحميلات فرق التقريب (HM-2، معدود لا مُفشِل)", Ok = true, Note = $"count={CrossBuy.BL.JournalEntryService.RoundingDiffLoads} (منذ الإقلاع)" }),
 				note = "نفس الفحوص يشغّلها HostedService يوميًا ويُخطر مديري المخزون عند أي انحراف. فحص عمر CrossDbContext يُقرأ من مزوّد الخدمات وقت التشغيل: أي قيمة غير Scoped تُبطل المعاملة المحيطة وترفع failedCount."
 			});
 		}

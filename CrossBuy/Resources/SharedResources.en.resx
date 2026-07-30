@@ -1388,4 +1388,22 @@
   <data name="Applicant hired. A login was created — temporary password:" xml:space="preserve"><value>Applicant hired. A login was created — temporary password:</value></data>
   <data name="Applicant hired and linked to the employee." xml:space="preserve"><value>Applicant hired and linked to the employee.</value></data>
   <data name="Manufacturing dashboard" xml:space="preserve"><value>Manufacturing dashboard</value></data>
+  <data name="Cannot determine the currency for value rounding (no document currency and no company functional currency)." xml:space="preserve">
+    <value>Cannot determine the currency for value rounding (no document currency and no company functional currency).</value>
+  </data>
+  <data name="Currency #{0} is undefined or has no decimal precision — silent 2-decimal rounding is not allowed." xml:space="preserve">
+    <value>Currency #{0} is undefined or has no decimal precision — silent 2-decimal rounding is not allowed.</value>
+  </data>
+  <data name="Journal entry is unbalanced by {0} before rounding — rejected (a caller imbalance is never absorbed as a rounding difference)." xml:space="preserve">
+    <value>Journal entry is unbalanced by {0} before rounding — rejected (a caller imbalance is never absorbed as a rounding difference).</value>
+  </data>
+  <data name="Rounding remainder {0} exceeds the guard ({1}) — rejected as a real imbalance, not rounding." xml:space="preserve">
+    <value>Rounding remainder {0} exceeds the guard ({1}) — rejected as a real imbalance, not rounding.</value>
+  </data>
+  <data name="No eligible P&amp;L line to bear the {0} rounding remainder — rejected." xml:space="preserve">
+    <value>No eligible P&amp;L line to bear the {0} rounding remainder — rejected.</value>
+  </data>
+  <data name="Loading the {0} rounding remainder would drive a line negative — rejected." xml:space="preserve">
+    <value>Loading the {0} rounding remainder would drive a line negative — rejected.</value>
+  </data>
 </root>

@@ -2928,4 +2928,22 @@
   <data name="days">
     <value>أيام</value>
   </data>
+  <data name="Cannot determine the currency for value rounding (no document currency and no company functional currency)." xml:space="preserve">
+    <value>تعذّر تحديد العملة لتقريب القيمة (لا عملة على المستند ولا عملة وظيفية للشركة).</value>
+  </data>
+  <data name="Currency #{0} is undefined or has no decimal precision — silent 2-decimal rounding is not allowed." xml:space="preserve">
+    <value>العملة رقم {0} غير معرّفة أو بلا دقّة عشرية — لا يُسمح بتقريب صامت إلى خانتين.</value>
+  </data>
+  <data name="Journal entry is unbalanced by {0} before rounding — rejected (a caller imbalance is never absorbed as a rounding difference)." xml:space="preserve">
+    <value>القيد غير متوازن بمقدار {0} قبل التقريب — مرفوض (اختلال المُستدعي لا يُبتلَع أبدًا كفرق تقريب).</value>
+  </data>
+  <data name="Rounding remainder {0} exceeds the guard ({1}) — rejected as a real imbalance, not rounding." xml:space="preserve">
+    <value>فرق التقريب {0} يتجاوز الحدّ المسموح ({1}) — مرفوض كاختلال حقيقيّ لا فرق تقريب.</value>
+  </data>
+  <data name="No eligible P&amp;L line to bear the {0} rounding remainder — rejected." xml:space="preserve">
+    <value>لا يوجد سطر ربح/خسارة مؤهَّل لاستحمال فرق التقريب {0} — مرفوض.</value>
+  </data>
+  <data name="Loading the {0} rounding remainder would drive a line negative — rejected." xml:space="preserve">
+    <value>تحميل فرق التقريب {0} سيجعل سطرًا سالبًا — مرفوض.</value>
+  </data>
 </root>

@@ -37,7 +37,8 @@ namespace CrossBuy.BL
         public List<ChatReactionDto> Reactions { get; set; } = new();
     }
     public class ChatReactionDto { public string Emoji { get; set; } = ""; public int Count { get; set; } public bool Mine { get; set; } }
-    public class ChatHeaderDto { public int Id { get; set; } public string Kind { get; set; } = ""; public string Title { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } public int MemberCount { get; set; } public List<int> MemberIds { get; set; } = new(); }
+    public class ChatMemberRead { public int EmployeeId { get; set; } public int LastReadMessageId { get; set; } }
+    public class ChatHeaderDto { public int Id { get; set; } public string Kind { get; set; } = ""; public string Title { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } public int MemberCount { get; set; } public List<int> MemberIds { get; set; } = new(); public int OtherReadMessageId { get; set; } public List<ChatMemberRead> MemberReads { get; set; } = new(); }
     public class ChatDirectoryDto { public int Id { get; set; } public string Name { get; set; } = ""; public string? Avatar { get; set; } public bool Online { get; set; } }
 
     public interface IChatService
@@ -162,8 +163,16 @@ namespace CrossBuy.BL
                 var names = await NamesAsync(new[] { otherId });
                 if (names.TryGetValue(otherId, out var info)) { h.Title = info.name; h.Avatar = info.avatar; }
                 h.Online = otherId != 0 && ChatHub.IsOnline(otherId);
+                // how far the other party has read → drives the "Seen/Sent" indicator on my messages
+                h.OtherReadMessageId = otherId == 0 ? 0 : await _db.ConversationMembers.AsNoTracking()
+                    .Where(m => m.ConversationId == conversationId && m.EmployeeId == otherId)
+                    .Select(m => m.LastReadMessageId).FirstOrDefaultAsync();
             }
             else { h.Title = c.Title ?? "-"; }
+            // read high-water per OTHER member → drives Seen/Sent (Direct) and "read by N" (Group)
+            h.MemberReads = await _db.ConversationMembers.AsNoTracking()
+                .Where(m => m.ConversationId == conversationId && m.EmployeeId != meId)
+                .Select(m => new ChatMemberRead { EmployeeId = m.EmployeeId, LastReadMessageId = m.LastReadMessageId }).ToListAsync();
             return h;
         }
 
@@ -295,6 +304,8 @@ namespace CrossBuy.BL
             var now = DateTime.UtcNow;
             foreach (var n in notifs) { n.IsRead = true; n.ReadAt = now; }
             await _db.SaveChangesAsync();
+            // tell the other party(s) in the room how far I've read → drives their "Seen" indicator
+            await _hub.Clients.Group(ChatHub.ConvGroup(conversationId)).SendAsync("read", new { conversationId, employeeId = meId, lastReadId = mem.LastReadMessageId });
         }
 
         public async Task<List<ChatDirectoryDto>> DirectoryAsync(int companyId, int meId, string? q)

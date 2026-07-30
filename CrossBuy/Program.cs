@@ -146,6 +146,7 @@ builder.Services.AddScoped<IPayableService, PayableService>();
 builder.Services.AddScoped<IAccountingDashboardService, AccountingDashboardService>();
 builder.Services.AddScoped<IExecutiveDashboardService, ExecutiveDashboardService>();
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+builder.Services.AddScoped<ICurrencyRounding, CurrencyRounding>();   // HM-2: single source of currency rounding precision
 builder.Services.AddScoped<IFxRevaluationService, FxRevaluationService>();
 builder.Services.AddScoped<IBankService, BankService>();
 builder.Services.AddScoped<IFixedAssetService, FixedAssetService>();

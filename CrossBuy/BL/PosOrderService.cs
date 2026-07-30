@@ -202,8 +202,9 @@ namespace CrossBuy.BL
 		private readonly IPricingService _pricing;
 		private readonly IManufService _manuf;              // BIS-3: WO completion for method 3
 		private readonly Microsoft.Extensions.Logging.ILogger<PosOrderService> _logger;   // HM-D5-أ 5ب-3: independent app-log channel for non-blocking anomalies
-		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger)
-		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; }
+		private readonly ICurrencyRounding _rounding;
+		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding)
+		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; }
 
 		// HM-D5-أ 5ب-4: TEST-ONLY fault seam (default null ⇒ no-op in production). Set by a dev self-test to force a
 		// failure right before the sync-log commit, proving the whole replay rolls back atomically. Never set in prod.
@@ -351,6 +352,8 @@ namespace CrossBuy.BL
 			}
 			var tips = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "210207").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			if (debit == 0 || tips == null) return (false, "حساب النقدية/البطاقة أو حساب الإكراميات المستحقة (210207) غير موجود");
+			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2: tip in the order's document currency
+			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			decimal amt = R(tipAmount);
 			var (jok, jerr, je) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
@@ -514,6 +517,9 @@ namespace CrossBuy.BL
 			if (o.Status != "Open") return (false, "لا يمكن التعديل على طلب غير مفتوح");
 			var item = await _db.Items.FirstOrDefaultAsync(i => i.ID == itemId && i.CompanyID == companyId);
 			if (item == null) return (false, "الصنف غير موجود");
+			// HM-2: line amounts round to the order's document currency.
+			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
+			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 
 			// RC-4: does this item have modifier groups? (active groups linked to the item)
 			var groupIds = await (from lnk in _db.ItemModifierGroups.AsNoTracking()
@@ -626,6 +632,8 @@ namespace CrossBuy.BL
 			if (o.Status != "Open") return (false, "لا يمكن التعديل على طلب غير مفتوح");
 			var l = await _db.PosOrderLines.FirstOrDefaultAsync(x => x.ID == lineId && x.OrderId == orderId);
 			if (l == null) return (false, "السطر غير موجود");
+			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2: document currency
+			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			// POS-4b: can't reduce below (or delete) what's already gone to the kitchen
 			if (l.SentQty > 0 && qty < l.SentQty) return (false, "لا يمكن تقليل كمية صنف مُرسل للمطبخ");
 			if (qty <= 0) { _db.PosOrderLines.Remove(l); }
@@ -957,6 +965,9 @@ namespace CrossBuy.BL
 
 		private async Task RecomputeAsync(PosOrder o)
 		{
+			// HM-2: round to the ORDER's document currency (o.CurrencyId stamped from branch DefaultCurrencyId; null → functional).
+			int __dp = await _rounding.DecimalsAsync(o.CompanyId, o.CurrencyId, o.BranchId);
+			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == o.ID).ToListAsync();
 			decimal sub = 0, tax = 0;
 			foreach (var l in lines) { l.LineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount); sub += l.LineTotal; tax += R(l.LineTotal * l.TaxRate / 100m); }
@@ -1028,6 +1039,9 @@ namespace CrossBuy.BL
 			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", null);
 			// RC-2: Cash only, on top of the flexible PosPayment structure. Other methods added later as types.
 			if (method != "Cash") return (false, "طريقة الدفع غير مدعومة بعد في هذه المرحلة (النقدي فقط)", null);
+			// HM-2: split-receipt portions round to the order's document currency.
+			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
+			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).OrderBy(l => l.Sort).ToListAsync();
 			if (lines.Count == 0) return (false, "لا يمكن دفع طلب فارغ", null);
 

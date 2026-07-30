@@ -3,6 +3,13 @@
 @{
     var nbIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 }
+<style>
+    .cbnb-toast { position: relative; background-image: none !important; padding-inline-start: 64px !important; }
+    .cbnb-toast::before, .cbnb-toast::after { display: none !important; }
+    .cbnb-toast > .cbnb-toast-av, .cbnb-toast > .cbnb-toast-ic { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .cbnb-toast > .cbnb-toast-ic { background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; }
+    .cbnb-toast > .cbnb-toast-ic i { font-size: 20px; color: #fff; }
+</style>
 <!--begin::Notifications (Communication Hub — real bell, shared across all lanes)-->
 <div class="app-navbar-item ms-2 ms-lg-4">
     <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary position-relative w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
@@ -86,7 +93,18 @@
             var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
             var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
             var lvl = (n.priority === 'Critical') ? 'error' : (n.priority === 'High') ? 'warning' : 'info';
-            toastr[lvl](body, title, { timeOut: 6000, positionClass: isAr ? 'toast-top-left' : 'toast-top-right' });
+            // Keep the DEFAULT toastr look; REMOVE the type-icon and insert the sender's PHOTO in its place.
+            var $t = toastr[lvl](body, title, { timeOut: 6000, closeButton: true, escapeHtml: true, positionClass: isAr ? 'toast-top-left' : 'toast-top-right' });
+            try {
+                var el = $t && $t[0];
+                if (el) {
+                    el.classList.add('cbnb-toast');
+                    var media;
+                    if (n.actorAvatar) { media = document.createElement('img'); media.className = 'cbnb-toast-av'; media.src = n.actorAvatar; media.alt = ''; }
+                    else { media = document.createElement('span'); media.className = 'cbnb-toast-ic'; media.innerHTML = '<i class="ki-outline ' + (n.icon || 'ki-notification-status') + '"></i>'; }
+                    el.insertBefore(media, el.firstChild);
+                }
+            } catch (e) { }
         }
         function apply(res, toastNew) {
             if (toastNew && res.data) res.data.filter(function (n) { return n.id > maxId; }).forEach(toastFor);

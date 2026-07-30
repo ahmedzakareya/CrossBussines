@@ -3,6 +3,8 @@ using CrossBuy.Models.Context.Accounting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 
 namespace CrossBuy.BL
 {
@@ -52,12 +54,18 @@ namespace CrossBuy.BL
 		private readonly IFiscalPeriodService _periods;
 		private readonly IServiceScopeFactory _scopes;   // HM-1-أ ب-3: isolated JV allocation (short-lived context)
 		private readonly IConfiguration _config;
-		public JournalEntryService(CrossDbContext context, IFiscalPeriodService periods, IServiceScopeFactory scopes, IConfiguration config)
+		private readonly ICurrencyRounding _rounding;    // HM-2: functional-currency rounding
+		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
+		private readonly ILogger<JournalEntryService> _logger;
+		// HM-2: counted (not failing) — how many times a rounding remainder was loaded onto an eligible P&L line. Surfaced in inv-test-integrity.
+		public static long RoundingDiffLoads;
+		// HM-2: explicit forbidden P&L accounts (externally-reconciled) — FX gain/loss + cash over/short (drawer). All balance-sheet
+		// accounts (AR/AP/inventory/GRNI/tax/cash/bank) are auto-excluded by the "P&L only" (AccountType 4/5) eligibility rule.
+		private static readonly HashSet<string> ForbiddenDiffAccounts = new() { "4902", "4903", "5902", "5903", "520111" };
+		public JournalEntryService(CrossDbContext context, IFiscalPeriodService periods, IServiceScopeFactory scopes, IConfiguration config, ICurrencyRounding rounding, IStringLocalizer<CrossBuy.SharedResources> localizer, ILogger<JournalEntryService> logger)
 		{
-			_context = context; _periods = periods; _scopes = scopes; _config = config;
+			_context = context; _periods = periods; _scopes = scopes; _config = config; _rounding = rounding; L = localizer; _logger = logger;
 		}
-
-		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 
 		private async Task<int> ResolveCurrencyAsync(int currencyId, int companyId)
 		{
@@ -89,7 +97,7 @@ namespace CrossBuy.BL
 				e.Lines.Add(new JournalEntryLine
 				{
 					LineNo = i++, AccountId = l.AccountId,
-					Debit = R(l.Debit), Credit = R(l.Credit),
+					Debit = l.Debit, Credit = l.Credit,   // HM-2: raw (functional) — rounded to functional dp in ApplyCurrencyRoundingAsync
 					CostCenterId = l.CostCenterId, ProjectId = l.ProjectId, EmployeeId = l.EmployeeId,
 					CurrencyId = currencyId, Description = l.Description, DescriptionEn = l.DescriptionEn,
 				});
@@ -100,16 +108,70 @@ namespace CrossBuy.BL
 		{
 			if (input == null || input.Lines == null || input.Lines.Count == 0)
 				return (false, "القيد يجب أن يحتوي على سطر واحد على الأقل", null);
-			foreach (var l in input.Lines)
-				if (l.Debit > 0 && l.Credit > 0)
-					return (false, "السطر لا يمكن أن يكون مدينًا ودائنًا في آن واحد", null);
 
 			var curId = await ResolveCurrencyAsync(input.CurrencyId, input.CompanyID);
 			var period = await _periods.ResolveAsync(input.CompanyID, input.EntryDate);
-			var entry = BuildEntry(input, curId, period?.ID ?? 0, "Draft", userId);
+			var entry = BuildEntry(input, curId, period?.ID ?? 0, "Draft", userId);   // raw (functional) Debit/Credit
+			// HM-2: round to functional dp + load the rounding remainder on an eligible P&L line (or reject) — CENTRALIZED here.
+			var (rok, rerr) = await ApplyCurrencyRoundingAsync(entry);
+			if (!rok) return (false, rerr, null);
+			// the both-debit-and-credit sanity now runs on the ROUNDED lines (moved from raw, so a caller error is caught at draft time on final values)
+			foreach (var l in entry.Lines)
+				if (l.Debit > 0 && l.Credit > 0)
+					return (false, "السطر لا يمكن أن يكون مدينًا ودائنًا في آن واحد", null);
 			_context.JournalEntries.Add(entry);
 			await _context.SaveChangesAsync();
 			return (true, null, entry);
+		}
+
+		// HM-2 (centralized): round every line to the JE's FUNCTIONAL currency dp (Debit/Credit are functional amounts), then
+		// make the entry balance by construction. A CALLER imbalance (rawDiff) is REJECTED, never swallowed; only the pure
+		// rounding remainder is loaded — on the largest eligible P&L line, within the guard — counted + logged (visible, not silent).
+		private async Task<(bool ok, string? error)> ApplyCurrencyRoundingAsync(JournalEntry entry)
+		{
+			int dp = await _rounding.DecimalsAsync(entry.CompanyID, null);   // functional dp (Debit/Credit are functional)
+			decimal unit = 1m; for (int i = 0; i < dp; i++) unit /= 10m;     // 10^(-dp) exactly, no double/Pow
+
+			// 1) CALLER imbalance on the RAW (pre-rounding) lines ⇒ rejected. A caller bug is never absorbed as a rounding diff.
+			decimal rawDiff = entry.Lines.Sum(l => l.Debit) - entry.Lines.Sum(l => l.Credit);
+			decimal rawEps = unit / 10000m;   // 4 orders of magnitude below the functional unit (see HM-2 report) — never masks a real imbalance
+			if (Math.Abs(rawDiff) > rawEps)
+				return (false, L["Journal entry is unbalanced by {0} before rounding — rejected (a caller imbalance is never absorbed as a rounding difference).", rawDiff]);
+
+			// 2) round each line to the functional dp.
+			foreach (var l in entry.Lines)
+			{
+				l.Debit = Math.Round(l.Debit, dp, MidpointRounding.AwayFromZero);
+				l.Credit = Math.Round(l.Credit, dp, MidpointRounding.AwayFromZero);
+			}
+
+			// 3) the pure ROUNDING remainder.
+			decimal roundingDiff = entry.Lines.Sum(l => l.Debit) - entry.Lines.Sum(l => l.Credit);
+			if (roundingDiff == 0m) return (true, null);
+
+			decimal maxAllowed = entry.Lines.Count * unit;   // at most one functional unit of rounding error per line
+			if (Math.Abs(roundingDiff) > maxAllowed)
+				return (false, L["Rounding remainder {0} exceeds the guard ({1}) — rejected as a real imbalance, not rounding.", roundingDiff, maxAllowed]);
+
+			// eligible = P&L (AccountType Revenue=4 / Expenses=5) minus the explicit externally-reconciled P&L accounts.
+			var accIds = entry.Lines.Select(l => l.AccountId).Distinct().ToList();
+			var eligibleSet = (await _context.Accounts.AsNoTracking()
+				.Where(a => accIds.Contains(a.ID) && (a.AccountTypeId == 4 || a.AccountTypeId == 5) && !ForbiddenDiffAccounts.Contains(a.Code))
+				.Select(a => a.ID).ToListAsync()).ToHashSet();
+			var target = entry.Lines.Where(l => eligibleSet.Contains(l.AccountId))
+				.OrderByDescending(l => Math.Abs(l.Debit - l.Credit)).ThenBy(l => l.AccountId).ThenBy(l => l.LineNo)
+				.FirstOrDefault();
+			if (target == null)
+				return (false, L["No eligible P&L line to bear the {0} rounding remainder — rejected.", roundingDiff]);
+
+			// deterministic direction: a debit line reduces its debit by the remainder; a credit line increases its credit by it.
+			if (target.Debit > 0) target.Debit -= roundingDiff; else target.Credit += roundingDiff;
+			if (target.Debit < 0 || target.Credit < 0)
+				return (false, L["Loading the {0} rounding remainder would drive a line negative — rejected.", roundingDiff]);
+
+			System.Threading.Interlocked.Increment(ref RoundingDiffLoads);
+			_logger?.LogInformation("HM-2 rounding remainder {Diff} loaded on account {Acct} (line {Line}) of JE for company {Co}", roundingDiff, target.AccountId, target.LineNo, entry.CompanyID);
+			return (true, null);
 		}
 
 		public async Task<(bool ok, string? error)> PostAsync(int entryId, int? userId)
@@ -167,8 +229,10 @@ namespace CrossBuy.BL
 				if ((l.Debit > 0) == (l.Credit > 0)) return (false, "كل سطر يجب أن يكون مدينًا أو دائنًا (وليس الاثنين أو لا شيء)");
 			}
 
-			var totalD = R(lines.Sum(l => l.Debit));
-			var totalC = R(lines.Sum(l => l.Credit));
+			// HM-2: lines are already rounded to functional dp AND balanced by ApplyCurrencyRoundingAsync (at draft build),
+			// so this is the pure sum of rounded values — zero tolerance stays absolute.
+			var totalD = lines.Sum(l => l.Debit);
+			var totalC = lines.Sum(l => l.Credit);
 			if (totalD != totalC) return (false, $"القيد غير متوازن: مدين {totalD} ≠ دائن {totalC}");
 			if (totalD <= 0) return (false, "إجمالي القيد يجب أن يكون أكبر من صفر");
 
