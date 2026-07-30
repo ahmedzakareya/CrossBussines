@@ -1,0 +1,78 @@
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var projects = ViewBag.Projects as List<Project> ?? new();
+    var cash = ViewBag.CashAccounts as List<Account> ?? new();
+    var bals = ViewBag.RetBalances as Dictionary<int, decimal> ?? new();
+    int selId = (ViewBag.SelectedProjectId as int?) ?? 0;
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    var projJson = System.Text.Json.JsonSerializer.Serialize(projects.Select(p => new {
+        id = p.ID, b = bals.TryGetValue(p.ID, out var bb) ? bb : 0m }));
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Release subcontractor retention"]</h1>
+            <span class="text-muted fs-7">@Localizer["Paying the withheld subcontractor retention — Dr subcontractor retention (2105) / Cr cash, tagged to the project. Reduces the held balance; does not touch AP."]</span></div>
+        <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <div class="row g-5">
+            <div class="col-lg-7">
+                <div class="card card-flush"><div class="card-header"><div class="card-title"><h2>@Localizer["Release subcontractor retention"]</h2></div></div>
+                    <div class="card-body pt-2"><form asp-action="ReleaseSubRetention" method="post" id="sr_form" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Confirm releasing the subcontractor retention?"]">@Html.AntiForgeryToken()
+                        <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Project"]</label>
+                            <select name="projectId" id="sr_project" class="form-select form-select-solid" data-control="select2" required>
+                                <option value="">@Localizer["Select project"]</option>
+                                @foreach (var p in projects) { <option value="@p.ID" selected="@(p.ID == selId)">@p.Code — @nm(p.Name, p.NameEn)</option> }
+                            </select></div>
+                        <div class="row">
+                            <div class="col-md-4 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Amount"]</label><input name="amount" id="sr_amount" type="number" step="0.01" min="0" class="form-control form-control-solid" required /></div>
+                            <div class="col-md-4 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Cash/Bank account"]</label>
+                                <select name="cashAccountId" id="sr_cash" class="form-select form-select-solid" data-control="select2" required>
+                                    @foreach (var a in cash) { <option value="@a.ID">@a.Code — @nm(a.Name, a.NameEn)</option> }
+                                </select></div>
+                            <div class="col-md-4 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input name="date" id="sr_date" class="form-control form-control-solid js-sr-date" autocomplete="off" required /></div>
+                        </div>
+                        <div class="form-text mb-4">@Localizer["Default amount = full held balance. You can edit it (partial)."]</div>
+                        <button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@Localizer["Post release"]</button>
+                    </form></div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card card-flush bg-light-primary"><div class="card-body py-8 text-center">
+                    <div class="text-muted fs-6 mb-1">@Localizer["Current subcontractor retention balance"]</div>
+                    <div class="fs-2x fw-bold text-primary" id="sr_balance">0.00</div>
+                </div></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    if (typeof flatpickr !== 'undefined') { flatpickr(document.getElementById('sr_date'), { dateFormat: "Y-m-d", locale: { firstDayOfWeek: 6 }, allowInput: true, defaultDate: new Date() }); }
+    var PROJ = @Html.Raw(projJson);
+    var map = {}; PROJ.forEach(function (p) { map[p.id] = p; });
+    function money(n) { return (Math.round(n * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function onSel() {
+        var id = parseInt(document.getElementById('sr_project').value || '0');
+        var p = map[id];
+        var bal = document.getElementById('sr_balance'), amt = document.getElementById('sr_amount');
+        if (!p) { bal.textContent = '0.00'; return; }
+        bal.textContent = money(p.b);
+        if (!amt.value || parseFloat(amt.value) === 0) amt.value = (Math.round(p.b * 100) / 100).toFixed(2);
+    }
+    var sel = document.getElementById('sr_project');
+    sel.addEventListener('change', function () { document.getElementById('sr_amount').value = ''; onSel(); });
+    if (window.jQuery) jQuery(sel).on('select2:select', function () { document.getElementById('sr_amount').value = ''; onSel(); });
+    onSel();
+})();
+</script>
+}

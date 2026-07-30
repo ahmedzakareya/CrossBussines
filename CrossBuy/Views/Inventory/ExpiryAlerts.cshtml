@@ -1,0 +1,49 @@
+@using CrossBuy.Controllers
+@model List<BatchRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    int days = ViewBag.Days ?? 30;
+    // brand-safe: red = genuine alert (expired), amber-caution = near (not Metronic bright yellow)
+    string sStyle(string s) => s == "Expired" ? "background:#fdeaea;color:#d92d20;" : "background:#fef3e2;color:#b96a00;";
+    string sName(string s) => s == "Expired" ? Localizer["Expired"].Value : Localizer["Near"].Value;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Expiry alerts"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Reports","Inventory")" class="text-muted text-hover-primary">@Localizer["Reports"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Expiry"]</li></ul></div>
+        <button onclick="window.print()" class="btn btn-light"><i class="ki-outline ki-printer fs-2"></i>@SR["Print"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush">
+            <div class="card-header align-items-center py-5 gap-3">
+                <div class="card-title"><span class="fs-5 fw-bold text-gray-800">@Localizer["Expiring within"]</span></div>
+                <div class="card-toolbar"><select id="daysSel" class="form-select form-select-solid w-150px" data-control="select2" data-hide-search="true">@foreach (var d in new[] { 7, 15, 30, 60, 90 }) { <option value="@d" selected="@(days==d)">@d @Localizer["days"]</option> }</select></div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-responsive">
+                <table class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th>@Localizer["Batch"]</th><th>@Localizer["Expiry"]</th><th class="text-end">@Localizer["On hand"]</th><th class="text-center">@Localizer["Days left"]</th><th class="text-center pe-4">@SR["Status"]</th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var r in Model)
+                    {
+                        <tr style="border-bottom:1px dashed #eef1f6;">
+                            <td class="ps-4 fw-bold text-gray-900">@r.ItemCode</td><td>@r.ItemName</td><td><span class="badge badge-light-secondary">@r.BatchNo</span></td>
+                            <td class="text-muted">@(r.Expiry?.ToString("yyyy-MM-dd") ?? "—")</td>
+                            <td class="text-end fw-bold text-gray-900">@r.OnHand.ToString("0.##")</td>
+                            <td class="text-center fw-bold" style="@(r.DaysToExpiry<0?"color:#d92d20;":"color:#b96a00;")">@r.DaysToExpiry</td>
+                            <td class="text-center pe-4"><span class="badge fw-bold" style="@sStyle(r.Status)">@sName(r.Status)</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                </div>
+                @if (Model.Count == 0) { <div class="text-center text-muted py-10"><i class="ki-outline ki-check-circle fs-3x text-primary mb-2 d-block"></i>@Localizer["No expiring batches 👍"]</div> }
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>(function(){var ds=document.getElementById('daysSel');if(ds){var go=function(){location.href='?days='+ds.value;};if(window.jQuery&&jQuery(ds).data('select2'))jQuery(ds).on('change',go);else ds.addEventListener('change',go);}})();</script>
+}

@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Financial Dashboard" xml:space="preserve">
+    <value>Tableau de bord financier</value>
+  </data>
+  <data name="FY" xml:space="preserve">
+    <value>Exercice</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>Clôturé</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouvert</value>
+  </data>
+  <data name="Balance Sheet" xml:space="preserve">
+    <value>Bilan</value>
+  </data>
+  <data name="New entry" xml:space="preserve">
+    <value>Nouvelle écriture</value>
+  </data>
+  <data name="Revenue vs Expense" xml:space="preserve">
+    <value>Produits vs Charges</value>
+  </data>
+  <data name="Last 6 months" xml:space="preserve">
+    <value>6 derniers mois</value>
+  </data>
+  <data name="Income Statement" xml:space="preserve">
+    <value>Compte de résultat</value>
+  </data>
+  <data name="Revenue" xml:space="preserve">
+    <value>Produits</value>
+  </data>
+  <data name="Expense" xml:space="preserve">
+    <value>Charges</value>
+  </data>
+  <data name="Financial Position" xml:space="preserve">
+    <value>Situation financière</value>
+  </data>
+  <data name="Balanced" xml:space="preserve">
+    <value>Équilibré</value>
+  </data>
+  <data name="Unbalanced" xml:space="preserve">
+    <value>Déséquilibré</value>
+  </data>
+  <data name="Total Assets" xml:space="preserve">
+    <value>Total de l'actif</value>
+  </data>
+  <data name="Liab. + Equity" xml:space="preserve">
+    <value>Passif + Capitaux propres</value>
+  </data>
+  <data name="Liabilities" xml:space="preserve">
+    <value>Passif</value>
+  </data>
+  <data name="Equity" xml:space="preserve">
+    <value>Capitaux propres</value>
+  </data>
+  <data name="Net result" xml:space="preserve">
+    <value>Résultat net</value>
+  </data>
+  <data name="Cash &amp; Banks" xml:space="preserve">
+    <value>Caisse &amp; Banques</value>
+  </data>
+  <data name="Liquid" xml:space="preserve">
+    <value>Liquidités</value>
+  </data>
+  <data name="Receivables" xml:space="preserve">
+    <value>Créances</value>
+  </data>
+  <data name="AR" xml:space="preserve">
+    <value>AR</value>
+  </data>
+  <data name="Payables" xml:space="preserve">
+    <value>Dettes</value>
+  </data>
+  <data name="AP" xml:space="preserve">
+    <value>AP</value>
+  </data>
+  <data name="Net Income {0}" xml:space="preserve">
+    <value>Résultat net {0}</value>
+  </data>
+  <data name="Profit" xml:space="preserve">
+    <value>Bénéfice</value>
+  </data>
+  <data name="Loss" xml:space="preserve">
+    <value>Perte</value>
+  </data>
+  <data name="Fixed Assets NBV" xml:space="preserve">
+    <value>VNC des immobilisations</value>
+  </data>
+  <data name="VAT Payable" xml:space="preserve">
+    <value>TVA à payer</value>
+  </data>
+  <data name="VAT Credit" xml:space="preserve">
+    <value>Crédit de TVA</value>
+  </data>
+  <data name="Due" xml:space="preserve">
+    <value>Exigible</value>
+  </data>
+  <data name="Recent Journal Entries" xml:space="preserve">
+    <value>Écritures de journal récentes</value>
+  </data>
+  <data name="posted" xml:space="preserve">
+    <value>comptabilisé</value>
+  </data>
+  <data name="draft" xml:space="preserve">
+    <value>brouillon</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>Voir tout</value>
+  </data>
+  <data name="Entry" xml:space="preserve">
+    <value>Écriture</value>
+  </data>
+  <data name="No entries yet" xml:space="preserve">
+    <value>Aucune écriture pour l'instant</value>
+  </data>
+  <data name="Expense Distribution" xml:space="preserve">
+    <value>Répartition des charges</value>
+  </data>
+  <data name="Top 5 accounts" xml:space="preserve">
+    <value>Top 5 des comptes</value>
+  </data>
+  <data name="No expenses yet" xml:space="preserve">
+    <value>Aucune charge pour l'instant</value>
+  </data>
+  <data name="Fixed Assets" xml:space="preserve">
+    <value>Immobilisations</value>
+  </data>
+  <data name="active assets" xml:space="preserve">
+    <value>immobilisations actives</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Coût</value>
+  </data>
+  <data name="Accum. dep." xml:space="preserve">
+    <value>Amort. cumulé</value>
+  </data>
+  <data name="Net book value" xml:space="preserve">
+    <value>Valeur nette comptable</value>
+  </data>
+  <data name="Depreciated" xml:space="preserve">
+    <value>Amorti</value>
+  </data>
+  <data name="VAT" xml:space="preserve">
+    <value>TVA</value>
+  </data>
+  <data name="Returns" xml:space="preserve">
+    <value>Retours</value>
+  </data>
+  <data name="Output VAT" xml:space="preserve">
+    <value>TVA collectée</value>
+  </data>
+  <data name="Input VAT" xml:space="preserve">
+    <value>TVA déductible</value>
+  </data>
+  <data name="Net payable" xml:space="preserve">
+    <value>Net à payer</value>
+  </data>
+  <data name="Credit balance" xml:space="preserve">
+    <value>Solde créditeur</value>
+  </data>
+  <data name="Quick Access" xml:space="preserve">
+    <value>Accès rapide</value>
+  </data>
+  <data name="Accounts" xml:space="preserve">
+    <value>Comptes</value>
+  </data>
+  <data name="Journals" xml:space="preserve">
+    <value>Journaux</value>
+  </data>
+  <data name="Taxes" xml:space="preserve">
+    <value>Taxes</value>
+  </data>
+  <data name="Cash Flow" xml:space="preserve">
+    <value>Flux de trésorerie</value>
+  </data>
+  <data name="Cost Centers" xml:space="preserve">
+    <value>Centres de coûts</value>
+  </data>
+  <data name="Payroll" xml:space="preserve">
+    <value>Paie</value>
+  </data>
+  <data name="Year-end Close" xml:space="preserve">
+    <value>Clôture de fin d'exercice</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>Net</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>EGP</value>
+  </data>
+</root>

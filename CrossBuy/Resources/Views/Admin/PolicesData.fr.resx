@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Policies Data" xml:space="preserve">
+    <value>Données des politiques</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Apps" xml:space="preserve">
+    <value>Applications</value>
+  </data>
+  <data name="Contacts" xml:space="preserve">
+    <value>Contacts</value>
+  </data>
+  <data name="Add Member" xml:space="preserve">
+    <value>Ajouter un membre</value>
+  </data>
+  <data name="New Campaign" xml:space="preserve">
+    <value>Nouvelle campagne</value>
+  </data>
+  <data name="Over 500 new products" xml:space="preserve">
+    <value>Plus de 500 nouveaux produits</value>
+  </data>
+  <data name="Product" xml:space="preserve">
+    <value>Produit</value>
+  </data>
+  <data name="Deposit" xml:space="preserve">
+    <value>Dépôt</value>
+  </data>
+  <data name="Agent" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="Requires Medical Certificate" xml:space="preserve">
+    <value>Certificat médical requis</value>
+  </data>
+  <data name="Meta Options" xml:space="preserve">
+    <value>Options Meta</value>
+  </data>
+  <data name="Meta Tag Title" xml:space="preserve">
+    <value>Titre de balise Meta</value>
+  </data>
+  <data name="Meta tag name" xml:space="preserve">
+    <value>Nom de la balise Meta</value>
+  </data>
+  <data name="Set a meta tag title. Recommended to be simple and precise keywords." xml:space="preserve">
+    <value>Définissez un titre de balise Meta. Il est recommandé d'utiliser des mots-clés simples et précis.</value>
+  </data>
+  <data name="Meta Tag Description" xml:space="preserve">
+    <value>Description de balise Meta</value>
+  </data>
+  <data name="Set a meta tag description to the category for increased SEO ranking." xml:space="preserve">
+    <value>Définissez une description de balise Meta pour la catégorie afin d'améliorer le référencement SEO.</value>
+  </data>
+  <data name="Meta Tag Keywords" xml:space="preserve">
+    <value>Mots-clés de balise Meta</value>
+  </data>
+  <data name="Set a list of keywords that the category is related to. Separate the keywords by adding a comma" xml:space="preserve">
+    <value>Définissez une liste de mots-clés liés à la catégorie. Séparez les mots-clés en ajoutant une virgule</value>
+  </data>
+  <data name="between each keyword." xml:space="preserve">
+    <value>entre chaque mot-clé.</value>
+  </data>
+  <data name="Automation" xml:space="preserve">
+    <value>Automatisation</value>
+  </data>
+  <data name="Product assignment method" xml:space="preserve">
+    <value>Méthode d'affectation des produits</value>
+  </data>
+  <data name="Manual" xml:space="preserve">
+    <value>Manuel</value>
+  </data>
+  <data name="Add products to this category one by one by manually selecting this category during product creation or update." xml:space="preserve">
+    <value>Ajoutez les produits à cette catégorie un par un en sélectionnant manuellement cette catégorie lors de la création ou de la mise à jour du produit.</value>
+  </data>
+  <data name="Automatic" xml:space="preserve">
+    <value>Automatique</value>
+  </data>
+  <data name="Products matched with the following conditions will be automatically assigned to this category." xml:space="preserve">
+    <value>Les produits correspondant aux conditions suivantes seront automatiquement affectés à cette catégorie.</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>Conditions</value>
+  </data>
+  <data name="Products must match:" xml:space="preserve">
+    <value>Les produits doivent correspondre à :</value>
+  </data>
+  <data name="All conditions" xml:space="preserve">
+    <value>Toutes les conditions</value>
+  </data>
+  <data name="Any conditions" xml:space="preserve">
+    <value>Une des conditions</value>
+  </data>
+  <data name="Product Title" xml:space="preserve">
+    <value>Titre du produit</value>
+  </data>
+  <data name="Product Tag" xml:space="preserve">
+    <value>Étiquette du produit</value>
+  </data>
+  <data name="Prodict Price" xml:space="preserve">
+    <value>Prix du produit</value>
+  </data>
+  <data name="is equal to" xml:space="preserve">
+    <value>est égal à</value>
+  </data>
+  <data name="is not equal to" xml:space="preserve">
+    <value>n'est pas égal à</value>
+  </data>
+  <data name="is greater than" xml:space="preserve">
+    <value>est supérieur à</value>
+  </data>
+  <data name="is less than" xml:space="preserve">
+    <value>est inférieur à</value>
+  </data>
+  <data name="starts with" xml:space="preserve">
+    <value>commence par</value>
+  </data>
+  <data name="ends with" xml:space="preserve">
+    <value>se termine par</value>
+  </data>
+  <data name="Add another condition" xml:space="preserve">
+    <value>Ajouter une autre condition</value>
+  </data>
+  <data name="Save Changes" xml:space="preserve">
+    <value>Enregistrer les modifications</value>
+  </data>
+  <data name="Please wait..." xml:space="preserve">
+    <value>Veuillez patienter...</value>
+  </data>
+  <data name="Add policy" xml:space="preserve">
+    <value>Ajouter une politique</value>
+  </data>
+  <data name="Leave policy" xml:space="preserve">
+    <value>Politique de congés</value>
+  </data>
+  <data name="Salary policy" xml:space="preserve">
+    <value>Politique salariale</value>
+  </data>
+  <data name="Select leave type" xml:space="preserve">
+    <value>Sélectionner le type de congé</value>
+  </data>
+  <data name="Annual leave" xml:space="preserve">
+    <value>Congé annuel</value>
+  </data>
+  <data name="Sick leave" xml:space="preserve">
+    <value>Congé maladie</value>
+  </data>
+  <data name="Emergency" xml:space="preserve">
+    <value>Urgence</value>
+  </data>
+  <data name="Entitlement days per year" xml:space="preserve">
+    <value>Jours de droit par an</value>
+  </data>
+  <data name="e.g. 30" xml:space="preserve">
+    <value>ex. 30</value>
+  </data>
+  <data name="Carry-over limit" xml:space="preserve">
+    <value>Limite de report</value>
+  </data>
+  <data name="Notice period before leave" xml:space="preserve">
+    <value>Délai de préavis avant le congé</value>
+  </data>
+  <data name="Requires medical certificate?" xml:space="preserve">
+    <value>Nécessite un certificat médical ?</value>
+  </data>
+  <data name="Financial item" xml:space="preserve">
+    <value>Élément financier</value>
+  </data>
+  <data name="e.g. housing allowance" xml:space="preserve">
+    <value>ex. indemnité de logement</value>
+  </data>
+  <data name="Value or percentage" xml:space="preserve">
+    <value>Valeur ou pourcentage</value>
+  </data>
+  <data name="e.g. 25% or 150 dinars" xml:space="preserve">
+    <value>ex. 25 % ou 150 dinars</value>
+  </data>
+  <data name="Subject to insurance" xml:space="preserve">
+    <value>Soumis à l'assurance</value>
+  </data>
+  <data name="Arabic name and English name are required." xml:space="preserve">
+    <value>Le nom en arabe et le nom en anglais sont requis.</value>
+  </data>
+  <data name="Save failed." xml:space="preserve">
+    <value>Échec de l'enregistrement.</value>
+  </data>
+  <data name="An error occurred during the request." xml:space="preserve">
+    <value>Une erreur s'est produite lors de la requête.</value>
+  </data>
+</root>

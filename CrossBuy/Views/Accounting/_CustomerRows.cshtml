@@ -1,0 +1,35 @@
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Customer>
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var outstanding = ViewBag.Outstanding as Dictionary<int, decimal> ?? new();
+}
+@foreach (var c in Model)
+{
+    <tr class="r" data-s="@c.Name @c.NameEn @c.TaxRegNo @c.Phone @c.Segment @c.ContactPerson"
+        data-id="@c.ID" data-name="@c.Name" data-nameen="@c.NameEn" data-tax="@c.TaxRegNo" data-credit="@c.CreditLimit"
+        data-terms="@c.PaymentTermsDays" data-phone="@c.Phone" data-email="@c.Email" data-contact="@c.ContactPerson"
+        data-segment="@c.Segment" data-address="@c.Address" data-shipping="@c.ShippingAddress" data-active="@(c.IsActive ? "1" : "0")">
+        <td class="fw-semibold text-gray-800">@(isAr ? c.Name : (c.NameEn ?? c.Name))<div class="text-muted fs-8">@c.TaxRegNo</div></td>
+        <td>@if (string.IsNullOrEmpty(c.Segment)) { <span class="text-muted">—</span> } else { <span class="badge badge-light-primary">@c.Segment</span> }</td>
+        <td class="text-muted">@(c.Phone ?? "—")</td>
+        <td class="text-muted">@(c.ContactPerson ?? "—")</td>
+        <td class="text-end">@(c.CreditLimit?.ToString("N2") ?? "—")</td>
+        <td>
+            @{ var used = outstanding.TryGetValue(c.ID, out var u) ? u : 0m; var lim = c.CreditLimit ?? 0m; var over = lim > 0 && used > lim; var pct = lim > 0 ? (int)Math.Min(100, Math.Max(0, used / lim * 100)) : 0; }
+            @if (lim <= 0) { <span class="text-muted fs-8">@Localizer["No limit"]</span> }
+            else {
+                <div class="d-flex justify-content-between fs-8 mb-1"><span class="@(over?"text-danger fw-bold":"text-gray-700")">@used.ToString("N0")</span><span class="text-muted">@((lim-used).ToString("N0"))</span></div>
+                <div class="progress h-5px w-100px"><div class="progress-bar bg-@(over?"danger":pct>=80?"warning":"success")" style="width:@(pct)%"></div></div>
+                @if (over) { <span class="badge badge-light-danger fs-9 mt-1">@Localizer["Over limit"]</span> }
+            }
+        </td>
+        <td class="text-center"><span class="badge badge-light-@(c.IsActive?"success":"secondary")">@(c.IsActive?SR["Active"]:SR["Inactive"])</span></td>
+        <td class="text-center">
+            <button class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]" onclick="custEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
+            <a href="@Url.Action("CustomerStatement","Accounting", new { id = c.ID })" class="btn btn-sm btn-icon btn-light" title="@Localizer["Statement"]"><i class="ki-outline ki-eye fs-6"></i></a>
+        </td>
+    </tr>
+}

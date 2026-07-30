@@ -1,0 +1,20 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<DeliveryRow>
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+@foreach (var g in Model)
+{
+    <tr>
+        <td class="fw-bold text-gray-900">@g.DeliveryNo</td>
+        <td class="text-muted">@g.DeliveryDate.ToString("yyyy-MM-dd")</td>
+        <td>@(g.PartyName == null ? "—" : (isAr ? g.PartyName : (g.PartyNameEn ?? g.PartyName)))</td>
+        <td class="text-muted">@(string.IsNullOrEmpty(g.WarehouseCode) ? "—" : g.WarehouseCode)</td>
+        <td class="text-muted">@(g.RefId != null ? ("#"+g.RefId) : "—")</td>
+        <td class="text-end fw-bold text-gray-800">@g.TotalCost.ToString("N2")</td>
+        <td class="text-center"><span class="badge badge-light-primary">@Localizer["Posted"]</span></td>
+        <td class="text-end"><a href="@Url.Action("DeliveryDetails", new { id = g.Id })" class="btn btn-icon btn-light-primary btn-sm" title="@SR["View"]"><i class="ki-outline ki-eye fs-6"></i></a></td>
+    </tr>
+}

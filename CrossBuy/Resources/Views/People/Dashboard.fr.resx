@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Welcome, {0} 👋" xml:space="preserve">
+    <value>Bienvenue, {0} 👋</value>
+  </data>
+  <data name="A quick look at your balances and requests" xml:space="preserve">
+    <value>Un aperçu rapide de vos soldes et demandes</value>
+  </data>
+  <data name="Total requests" xml:space="preserve">
+    <value>Total des demandes</value>
+  </data>
+  <data name="vs last month" xml:space="preserve">
+    <value>par rapport au mois dernier</value>
+  </data>
+  <data name="My pending" xml:space="preserve">
+    <value>Mes demandes en attente</value>
+  </data>
+  <data name="Approved this year" xml:space="preserve">
+    <value>Approuvées cette année</value>
+  </data>
+  <data name="Awaiting my approval" xml:space="preserve">
+    <value>En attente de mon approbation</value>
+  </data>
+  <data name="My team" xml:space="preserve">
+    <value>Mon équipe</value>
+  </data>
+  <data name="Leave Balances" xml:space="preserve">
+    <value>Soldes de congés</value>
+  </data>
+  <data name="Policy: " xml:space="preserve">
+    <value>Politique : </value>
+  </data>
+  <data name="You are not assigned to a leave policy yet." xml:space="preserve">
+    <value>Vous n'êtes pas encore affecté à une politique de congés.</value>
+  </data>
+  <data name="of {0} days" xml:space="preserve">
+    <value>sur {0} jours</value>
+  </data>
+  <data name="Remaining" xml:space="preserve">
+    <value>Restant</value>
+  </data>
+  <data name="Used: {0}" xml:space="preserve">
+    <value>Utilisé : {0}</value>
+  </data>
+  <data name="Recent requests" xml:space="preserve">
+    <value>Demandes récentes</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>Voir tout</value>
+  </data>
+  <data name="No requests" xml:space="preserve">
+    <value>Aucune demande</value>
+  </data>
+  <data name="Days" xml:space="preserve">
+    <value>Jours</value>
+  </data>
+  <data name="Requests distribution" xml:space="preserve">
+    <value>Répartition des demandes</value>
+  </data>
+  <data name="Manage your requests easily" xml:space="preserve">
+    <value>Gérez vos demandes facilement</value>
+  </data>
+  <data name="Submit a new leave request or track your status" xml:space="preserve">
+    <value>Soumettez une nouvelle demande de congé ou suivez son statut</value>
+  </data>
+  <data name="New leave request" xml:space="preserve">
+    <value>Nouvelle demande de congé</value>
+  </data>
+  <data name="Leave days" xml:space="preserve">
+    <value>Jours de congé</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Aujourd'hui</value>
+  </data>
+  <data name="Requests" xml:space="preserve">
+    <value>Demandes</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>En attente</value>
+  </data>
+  <data name="Approved" xml:space="preserve">
+    <value>Approuvée</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>Rejetée</value>
+  </data>
+  <data name="January" xml:space="preserve">
+    <value>Janvier</value>
+  </data>
+  <data name="February" xml:space="preserve">
+    <value>Février</value>
+  </data>
+  <data name="March" xml:space="preserve">
+    <value>Mars</value>
+  </data>
+  <data name="April" xml:space="preserve">
+    <value>Avril</value>
+  </data>
+  <data name="May" xml:space="preserve">
+    <value>Mai</value>
+  </data>
+  <data name="June" xml:space="preserve">
+    <value>Juin</value>
+  </data>
+  <data name="July" xml:space="preserve">
+    <value>Juillet</value>
+  </data>
+  <data name="August" xml:space="preserve">
+    <value>Août</value>
+  </data>
+  <data name="September" xml:space="preserve">
+    <value>Septembre</value>
+  </data>
+  <data name="October" xml:space="preserve">
+    <value>Octobre</value>
+  </data>
+  <data name="November" xml:space="preserve">
+    <value>Novembre</value>
+  </data>
+  <data name="December" xml:space="preserve">
+    <value>Décembre</value>
+  </data>
+  <data name="Sun" xml:space="preserve">
+    <value>Dim</value>
+  </data>
+  <data name="Mon" xml:space="preserve">
+    <value>Lun</value>
+  </data>
+  <data name="Tue" xml:space="preserve">
+    <value>Mar</value>
+  </data>
+  <data name="Wed" xml:space="preserve">
+    <value>Mer</value>
+  </data>
+  <data name="Thu" xml:space="preserve">
+    <value>Jeu</value>
+  </data>
+  <data name="Fri" xml:space="preserve">
+    <value>Ven</value>
+  </data>
+  <data name="Sat" xml:space="preserve">
+    <value>Sam</value>
+  </data>
+</root>

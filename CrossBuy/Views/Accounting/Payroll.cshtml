@@ -1,0 +1,152 @@
+@using CrossBuy.BL
+@model PayrollRunPreview
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var months = new[] { "", Localizer["Jan"].Value, Localizer["Feb"].Value, Localizer["Mar"].Value, Localizer["Apr"].Value, Localizer["May"].Value, Localizer["Jun"].Value, Localizer["Jul"].Value, Localizer["Aug"].Value, Localizer["Sep"].Value, Localizer["Oct"].Value, Localizer["Nov"].Value, Localizer["Dec"].Value };
+}
+
+<style>
+    /* Metronic zeroes the padding on a table's first/last cell (they sit flush with
+       the card-body edge). Restore it so the الصافي / الموظف columns aren't glued to the edge. */
+    #prTable > :not(caption) > * > *:first-child { padding-inline-start: 1.25rem; }
+    #prTable > :not(caption) > * > *:last-child { padding-inline-end: 1.25rem; }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Payroll Journal"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Payroll"]</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="card mb-5">
+                <div class="card-body py-4">
+                    <form method="get" class="d-flex flex-wrap align-items-end gap-3">
+                        <div>
+                            <label class="fw-semibold fs-7 text-muted mb-1 d-block">@Localizer["Year"]</label>
+                            <input type="number" name="year" class="form-control form-control-sm form-control-solid w-120px" value="@Model.Year" />
+                        </div>
+                        <div>
+                            <label class="fw-semibold fs-7 text-muted mb-1 d-block">@Localizer["Month"]</label>
+                            <select name="month" class="form-select form-select-sm form-select-solid w-150px">
+                                @for (var i = 1; i <= 12; i++)
+                                {
+                                    <option value="@i" selected="@(Model.Month == i)">@months[i]</option>
+                                }
+                            </select>
+                        </div>
+                        <button class="btn btn-sm btn-primary"><i class="ki-outline ki-magnifier fs-4"></i>@Localizer["Preview"]</button>
+                        <div class="ms-auto d-flex align-items-center gap-3">
+                            @if (Model.AlreadyPosted)
+                            {
+                                <span class="badge badge-light-primary fw-bold fs-7 py-2 px-3"><i class="ki-outline ki-check-circle fs-5 me-1"></i>@Localizer["Posted ({0})", Model.PostedEntryNo]</span>
+                            }
+                            else if (Model.Employees.Count > 0)
+                            {
+                                <form asp-action="PostPayroll" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Post the payroll journal?"]">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="year" value="@Model.Year" />
+                                    <input type="hidden" name="month" value="@Model.Month" />
+                                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-3"></i>@Localizer["Post journal"]</button>
+                                </form>
+                            }
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title">
+                        <div class="d-flex align-items-center position-relative my-1">
+                            <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                            <input type="text" id="prSearch" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search employee or cost center..."]" autocomplete="off" />
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-0 pb-5 px-10">
+                    @if (Model.Employees.Count == 0)
+                    {
+                        <div class="text-center py-15">
+                            <i class="ki-outline ki-people fs-3x text-muted mb-4"></i>
+                            <div class="fw-semibold text-muted">@Localizer["No computed payroll for this period"]</div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-row-dashed align-middle gy-4 mb-5" id="prTable" style="font-variant-numeric:tabular-nums;">
+                                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                    <tr>
+                                        <th>@SR["Employee"]</th>
+                                        <th>@Localizer["Cost Center"]</th>
+                                        <th class="text-end">@Localizer["Gross"]</th>
+                                        <th class="text-end">@Localizer["SI (emp)"]</th>
+                                        <th class="text-end">@SR["Tax"]</th>
+                                        <th class="text-end">@Localizer["Net"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var e in Model.Employees)
+                                    {
+                                        <tr class="pr-row" data-search="@e.Name @e.NameEn @e.CostCenterName">
+                                            <td class="fw-bold text-gray-900">@(isAr ? e.Name : e.NameEn)</td>
+                                            <td class="text-muted">@(e.CostCenterName ?? "—")</td>
+                                            <td class="text-end text-gray-800">@e.Gross.ToString("N2")</td>
+                                            <td class="text-end text-muted">@e.SiEmployee.ToString("N2")</td>
+                                            <td class="text-end text-muted">@e.Tax.ToString("N2")</td>
+                                            <td class="text-end fw-bold text-gray-900">@e.Net.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="fw-bolder fs-6" style="background:#e9f1ee;border-top:2px solid #13433a;">
+                                        <td colspan="2" class="text-end text-primary">@Localizer["Totals"]</td>
+                                        <td class="text-end text-primary">@Model.TotalGross.ToString("N2")</td>
+                                        <td class="text-end text-primary">@Model.TotalSiEmployee.ToString("N2")</td>
+                                        <td class="text-end text-primary">@Model.TotalTax.ToString("N2")</td>
+                                        <td class="text-end text-primary">@Model.TotalNet.ToString("N2")</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div id="prNoResult" class="text-center py-10 text-muted d-none">@Localizer["No matching results"]</div>
+                        <div class="text-muted fs-7 mt-4">
+                            <i class="ki-outline ki-information-5 fs-6 me-1 text-primary"></i>
+                            @Localizer["Journal: Dr salaries expense (split by cost center) / Cr payroll payable (+ tax & SI if any)."]
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var input = document.getElementById('prSearch'); if (!input) return;
+            var rows = Array.prototype.slice.call(document.querySelectorAll('#prTable tbody tr.pr-row'));
+            var noRes = document.getElementById('prNoResult');
+            input.addEventListener('input', function (e) {
+                var q = (e.target.value || '').trim().toLowerCase(); var any = false;
+                rows.forEach(function (r) {
+                    var hit = !q || (r.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1;
+                    r.style.display = hit ? '' : 'none'; if (hit) any = true;
+                });
+                if (noRes) noRes.classList.toggle('d-none', any);
+            });
+        })();
+    </script>
+}

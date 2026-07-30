@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="New promotion" xml:space="preserve">
+    <value>Nouvelle promotion</value>
+  </data>
+  <data name="Edit promotion" xml:space="preserve">
+    <value>Modifier la promotion</value>
+  </data>
+  <data name="Promotions" xml:space="preserve">
+    <value>Promotions</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Save promotion?" xml:space="preserve">
+    <value>Enregistrer la promotion ?</value>
+  </data>
+  <data name="Promotion details" xml:space="preserve">
+    <value>Détails de la promotion</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>Nom (EN)</value>
+  </data>
+  <data name="Discount type" xml:space="preserve">
+    <value>Type de remise</value>
+  </data>
+  <data name="Percent %" xml:space="preserve">
+    <value>Pourcentage %</value>
+  </data>
+  <data name="Fixed amount / unit" xml:space="preserve">
+    <value>Montant fixe / unité</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Valeur</value>
+  </data>
+  <data name="Amount currency" xml:space="preserve">
+    <value>Devise du montant</value>
+  </data>
+  <data name=" (functional)" xml:space="preserve">
+    <value> (fonctionnelle)</value>
+  </data>
+  <data name="Converted to the document currency on use." xml:space="preserve">
+    <value>Converti dans la devise du document lors de l'utilisation.</value>
+  </data>
+  <data name="Min qty" xml:space="preserve">
+    <value>Qté min</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>Priorité</value>
+  </data>
+  <data name="Valid from" xml:space="preserve">
+    <value>Valide à partir du</value>
+  </data>
+  <data name="Valid to" xml:space="preserve">
+    <value>Valide jusqu'au</value>
+  </data>
+  <data name="Targeting" xml:space="preserve">
+    <value>Ciblage</value>
+  </data>
+  <data name="Leave a field empty to match all. The promotion applies when every set field matches together." xml:space="preserve">
+    <value>Laissez un champ vide pour correspondre à tout. La promotion s'applique lorsque chaque champ renseigné correspond simultanément.</value>
+  </data>
+  <data name="Specific item" xml:space="preserve">
+    <value>Article spécifique</value>
+  </data>
+  <data name="Item category" xml:space="preserve">
+    <value>Catégorie d'article</value>
+  </data>
+  <data name="All categories" xml:space="preserve">
+    <value>Toutes les catégories</value>
+  </data>
+  <data name="Specific customer" xml:space="preserve">
+    <value>Client spécifique</value>
+  </data>
+  <data name="All customers" xml:space="preserve">
+    <value>Tous les clients</value>
+  </data>
+  <data name="Customer segment" xml:space="preserve">
+    <value>Segment de clients</value>
+  </data>
+  <data name="e.g. GOLD" xml:space="preserve">
+    <value>ex. GOLD</value>
+  </data>
+  <data name="All items" xml:space="preserve">
+    <value>Tous les articles</value>
+  </data>
+</root>

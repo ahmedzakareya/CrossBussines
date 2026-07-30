@@ -1,0 +1,97 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var employees = ViewBag.Employees as List<BranchEmployeeDto> ?? new();
+    var roles = ViewBag.Roles as List<BranchRoleDto> ?? new();
+    var roleDefs = ViewBag.RoleDefs as (string key, string ar, string en)[] ?? new (string, string, string)[0];
+    string RoleName(string k) { var r = roleDefs.FirstOrDefault(x => x.key == k); return r.key == null ? k : (isAr ? r.ar : r.en); }
+    string RoleColor(string k) => k switch { "pos-manager" => "primary", "pos-cashier" => "success", "pos-kitchen" => "warning", _ => "info" };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Cashier roles"]</h1>
+            <span class="text-muted fs-7">@Localizer["Assign branch employees to POS roles — setup only, over the existing permission system."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any()) { <div class="alert alert-warning"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["This company has no branches."]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-security-user fs-3x mb-3 d-block"></i>@Localizer["Select a branch to assign roles."]</div></div>
+        }
+        else
+        {
+            <div class="row g-5">
+                <div class="col-lg-5">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Assign role"]</h3></div></div>
+                        <div class="card-body">
+                            @if (!employees.Any())
+                            {
+                                <div class="alert alert-info fs-7">@Localizer["No employees linked to this branch. Add branch employees first."]</div>
+                            }
+                            else
+                            {
+                                <form asp-action="AssignPosRole" method="post" class="row g-3">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" />
+                                    <div class="col-12"><label class="required fw-semibold fs-8 mb-1">@SR["Employee"]</label>
+                                        <select name="employeeId" class="form-select form-select-solid form-select-sm" data-control="select2" required><option value="">@Localizer["Select employee"]</option>@foreach (var e in employees) { <option value="@e.Id">@e.Name</option> }</select></div>
+                                    <div class="col-12"><label class="required fw-semibold fs-8 mb-1">@Localizer["Role"]</label>
+                                        <select name="posRole" class="form-select form-select-solid form-select-sm" required>@foreach (var r in roleDefs) { <option value="@r.key">@(isAr ? r.ar : r.en)</option> }</select></div>
+                                    <div class="col-12"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Assign"]</button></div>
+                                    <div class="col-12 fs-8 text-muted">@Localizer["Waiter: open/add order. Kitchen: prep screen. Cashier: pay & close. Manager: all."]</div>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Assigned roles"]</h3></div><div class="card-toolbar"><span class="badge badge-light-primary">@roles.Count</span></div></div>
+                        <div class="card-body">
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle fs-7">
+                                <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Employee"]</th><th>@Localizer["Role"]</th><th></th></tr></thead>
+                                <tbody>
+                                    @if (!roles.Any()) { <tr><td colspan="3" class="text-muted text-center py-5">@Localizer["No roles assigned yet."]</td></tr> }
+                                    @foreach (var r in roles)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-gray-800">@r.EmployeeName</td>
+                                            <td><span class="badge badge-light-@RoleColor(r.PosRole)">@RoleName(r.PosRole)</span></td>
+                                            <td class="text-end"><form asp-action="RemovePosRole" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Remove role?"]">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@r.Id" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-4"></i></button></form></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+var base='@Url.Action("CashierRoles","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+</script>
+}

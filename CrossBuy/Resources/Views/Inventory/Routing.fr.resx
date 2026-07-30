@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Routing" xml:space="preserve">
+    <value>Gamme</value>
+  </data>
+  <data name="New operation" xml:space="preserve">
+    <value>Nouvelle opération</value>
+  </data>
+  <data name="No work centers yet. Add one first from the Work centers page." xml:space="preserve">
+    <value>Aucun poste de charge pour le moment. Ajoutez-en un d'abord depuis la page Postes de charge.</value>
+  </data>
+  <data name="Operations run in sequence. Operation time = (setup + run-per-unit × qty). Cost is computed automatically when a work order is created." xml:space="preserve">
+    <value>Les opérations s'exécutent en séquence. Temps d'opération = (réglage + temps unitaire × qté). Le coût est calculé automatiquement lors de la création d'un ordre de fabrication.</value>
+  </data>
+  <data name="Operation" xml:space="preserve">
+    <value>Opération</value>
+  </data>
+  <data name="Work center" xml:space="preserve">
+    <value>Poste de charge</value>
+  </data>
+  <data name="Setup (m)" xml:space="preserve">
+    <value>Réglage (min)</value>
+  </data>
+  <data name="Run/unit (m)" xml:space="preserve">
+    <value>Temps/unité (min)</value>
+  </data>
+  <data name="No operations yet." xml:space="preserve">
+    <value>Aucune opération pour le moment.</value>
+  </data>
+  <data name="Delete this operation?" xml:space="preserve">
+    <value>Supprimer cette opération ?</value>
+  </data>
+  <data name="Cost per unit" xml:space="preserve">
+    <value>Coût par unité</value>
+  </data>
+  <data name="Labor/unit" xml:space="preserve">
+    <value>Main-d'œuvre/unité</value>
+  </data>
+  <data name="Overhead/unit" xml:space="preserve">
+    <value>Frais généraux/unité</value>
+  </data>
+  <data name="Total/unit" xml:space="preserve">
+    <value>Total/unité</value>
+  </data>
+  <data name="These are prefilled into a new work order for this item (labor &amp; overhead) and remain editable while Draft." xml:space="preserve">
+    <value>Ces valeurs sont préremplies dans un nouvel ordre de fabrication pour cet article (main-d'œuvre &amp; frais généraux) et restent modifiables tant qu'il est au statut Brouillon.</value>
+  </data>
+  <data name="Sequence" xml:space="preserve">
+    <value>Séquence</value>
+  </data>
+  <data name="Operation name" xml:space="preserve">
+    <value>Nom de l'opération</value>
+  </data>
+  <data name="Setup (minutes, per order)" xml:space="preserve">
+    <value>Réglage (minutes, par ordre)</value>
+  </data>
+  <data name="Run per unit (minutes)" xml:space="preserve">
+    <value>Temps par unité (minutes)</value>
+  </data>
+  <data name="Edit operation" xml:space="preserve">
+    <value>Modifier l'opération</value>
+  </data>
+</root>

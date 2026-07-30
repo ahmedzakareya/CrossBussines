@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Opening balances (Go-Live)" xml:space="preserve">
+    <value>الأرصدة الافتتاحية (Go-Live)</value>
+  </data>
+  <data name="Opening balances" xml:space="preserve">
+    <value>الأرصدة الافتتاحية</value>
+  </data>
+  <data name="Finalize opening balances and lock further edits? Requires all checks to match." xml:space="preserve">
+    <value>تثبيت الأرصدة الافتتاحية ومنع أي تعديل لاحق؟ يتطلب تطابق كل الثوابت.</value>
+  </data>
+  <data name="Finalized" xml:space="preserve">
+    <value>مثبَّتة</value>
+  </data>
+  <data name="Finalize load" xml:space="preserve">
+    <value>تثبيت التحميل</value>
+  </data>
+  <data name="Opening balances are finalized — entry is locked. Corrections go through a normal journal entry." xml:space="preserve">
+    <value>تم تثبيت الأرصدة الافتتاحية — الإدخال مقفول. أي تصحيح يتم بقيد محاسبي عادي.</value>
+  </data>
+  <data name="Integrity checks" xml:space="preserve">
+    <value>تحقّق الثوابت</value>
+  </data>
+  <data name="All match" xml:space="preserve">
+    <value>الكل متطابق</value>
+  </data>
+  <data name="Mismatch" xml:space="preserve">
+    <value>توجد فروق</value>
+  </data>
+  <data name="Finalize is enabled only when all checks match." xml:space="preserve">
+    <value>التثبيت متاح فقط عندما تتطابق كل الثوابت.</value>
+  </data>
+  <data name="Entry log" xml:space="preserve">
+    <value>سجل الإدخال</value>
+  </data>
+  <data name="Kind" xml:space="preserve">
+    <value>النوع</value>
+  </data>
+  <data name="No entries yet" xml:space="preserve">
+    <value>لا توجد إدخالات بعد</value>
+  </data>
+  <data name="Enter opening balances" xml:space="preserve">
+    <value>إدخال الأرصدة الافتتاحية</value>
+  </data>
+  <data name="Cutoff" xml:space="preserve">
+    <value>تاريخ القطع</value>
+  </data>
+  <data name="Stock" xml:space="preserve">
+    <value>مخزون</value>
+  </data>
+  <data name="AR" xml:space="preserve">
+    <value>عملاء</value>
+  </data>
+  <data name="AP" xml:space="preserve">
+    <value>موردون</value>
+  </data>
+  <data name="Assets" xml:space="preserve">
+    <value>أصول ثابتة</value>
+  </data>
+  <data name="GL" xml:space="preserve">
+    <value>حسابات GL</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>تكلفة الوحدة</value>
+  </data>
+  <data name="Batch (opt)" xml:space="preserve">
+    <value>الدفعة (اختياري)</value>
+  </data>
+  <data name="Section" xml:space="preserve">
+    <value>السيكشن</value>
+  </data>
+  <data name="Rack (optional)" xml:space="preserve">
+    <value>الرف (اختياري)</value>
+  </data>
+  <data name="Add opening stock" xml:space="preserve">
+    <value>إضافة مخزون افتتاحي</value>
+  </data>
+  <data name="Open debit balance" xml:space="preserve">
+    <value>الرصيد المدين</value>
+  </data>
+  <data name="Add customer balance" xml:space="preserve">
+    <value>إضافة رصيد عميل</value>
+  </data>
+  <data name="Open credit balance" xml:space="preserve">
+    <value>الرصيد الدائن</value>
+  </data>
+  <data name="Add vendor balance" xml:space="preserve">
+    <value>إضافة رصيد مورد</value>
+  </data>
+  <data name="Asset name" xml:space="preserve">
+    <value>اسم الأصل</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>التكلفة</value>
+  </data>
+  <data name="Salvage" xml:space="preserve">
+    <value>الخردة</value>
+  </data>
+  <data name="Life (mo)" xml:space="preserve">
+    <value>العمر (شهور)</value>
+  </data>
+  <data name="Accum. dep @ cutoff" xml:space="preserve">
+    <value>مجمّع الإهلاك حتى القطع</value>
+  </data>
+  <data name="Original acquisition" xml:space="preserve">
+    <value>تاريخ الشراء الأصلي</value>
+  </data>
+  <data name="Add opening asset" xml:space="preserve">
+    <value>إضافة أصل افتتاحي</value>
+  </data>
+  <data name="Entry: Dr cost / Cr accumulated depreciation / Cr opening equity (NBV). Future depreciation continues on remaining life." xml:space="preserve">
+    <value>القيد: مدين تكلفة الأصل / دائن مجمّع الإهلاك (بالمجمّع) / دائن الرصيد الافتتاحي (بالقيمة الدفترية). يكمل الإهلاك على العمر المتبقي.</value>
+  </data>
+  <data name="Enter the remaining trial-balance accounts (cash/banks/loans/capital…). The system balances via the Opening Balance Equity account." xml:space="preserve">
+    <value>أدخل أرصدة باقي حسابات الميزان (نقدية/بنوك/قروض/رأس المال…). يوازن النظام تلقائيًا عبر حساب الرصيد الافتتاحي.</value>
+  </data>
+  <data name="Row" xml:space="preserve">
+    <value>سطر</value>
+  </data>
+  <data name="Post balances" xml:space="preserve">
+    <value>ترحيل الأرصدة</value>
+  </data>
+  <data name="Add a row with an amount" xml:space="preserve">
+    <value>أضف سطرًا بمبلغ</value>
+  </data>
+  <data name="Post these opening GL balances?" xml:space="preserve">
+    <value>ترحيل أرصدة الحسابات الافتتاحية؟</value>
+  </data>
+</root>

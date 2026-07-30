@@ -1,0 +1,343 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    int meId = ViewBag.MeId;
+    var openConv = ViewBag.OpenConv as int?;
+    var blank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Chat"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Communications"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="d-flex flex-column flex-lg-row">
+            <!--begin::Contacts sidebar-->
+            <div class="flex-column flex-lg-row-auto w-100 w-lg-300px w-xl-350px mb-10 mb-lg-0">
+                <div class="card card-flush">
+                    <div class="card-header pt-7" id="kt_chat_contacts_header">
+                        <div class="card-title w-100">
+                            <div class="d-flex align-items-center position-relative w-100 my-1">
+                                <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                                <input type="text" id="chatSearch" class="form-control form-control-solid w-100 ps-12" placeholder="@SR["Search"]" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="card-toolbar">
+                            <div class="me-n3">
+                                <button class="btn btn-sm btn-icon btn-light-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end" title="@Localizer["New"]"><i class="ki-outline ki-plus fs-2"></i></button>
+                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 fw-semibold w-200px py-3" data-kt-menu="true">
+                                    <div class="menu-item px-3"><a href="#" class="menu-link px-3" id="chatBtnNew"><i class="ki-outline ki-message-text-2 fs-5 me-2"></i>@Localizer["New chat"]</a></div>
+                                    <div class="menu-item px-3"><a href="#" class="menu-link px-3" id="chatBtnGroup"><i class="ki-outline ki-people fs-5 me-2"></i>@Localizer["New group"]</a></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-5">
+                        <div id="chatConvList" class="scroll-y" style="max-height:65vh;">
+                            <div class="text-center text-muted py-10 fs-7" id="chatConvEmpty">@Localizer["No conversations yet"]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Contacts sidebar-->
+
+            <!--begin::Messenger-->
+            <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10">
+                <div class="card" id="kt_chat_messenger">
+                    <div class="card-header" id="kt_chat_messenger_header">
+                        <div class="card-title">
+                            <div class="symbol symbol-40px symbol-circle me-3 d-none" id="chatHeadSym"><img id="chatHeadAvatar" src="@blank" alt="" /></div>
+                            <div class="d-flex justify-content-center flex-column">
+                                <span class="fs-4 fw-bold text-gray-900 me-1 mb-1 lh-1" id="chatTitle">@Localizer["Select a conversation"]</span>
+                                <div class="mb-0 lh-1"><span id="chatPresence" class="fs-7 fw-semibold text-muted"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" id="kt_chat_messenger_body">
+                        <div id="chatEmpty" class="d-flex flex-center flex-column py-20 text-muted">
+                            <i class="ki-outline ki-message-text-2 fs-5x text-primary mb-4"></i>
+                            <div class="fs-5 fw-semibold">@Localizer["Pick someone to start chatting"]</div>
+                        </div>
+                        <div id="chatScroll" class="scroll-y me-n5 pe-5 d-none" style="height:58vh;"></div>
+                        <div id="chatTyping" class="text-muted fs-8 fw-semibold mt-2" style="height:16px;"></div>
+                    </div>
+                    <div class="card-footer pt-4 d-none" id="chatFooter">
+                        <div id="chatReplyBar" class="d-none align-items-center bg-light-primary rounded p-2 mb-2">
+                            <i class="ki-outline ki-arrow-bottom-right fs-5 text-primary me-2"></i>
+                            <span class="fs-8 text-gray-700 flex-grow-1 text-truncate" id="chatReplyText"></span>
+                            <button type="button" class="btn btn-icon btn-sm" id="chatReplyCancel"><i class="ki-outline ki-cross fs-6"></i></button>
+                        </div>
+                        <textarea class="form-control form-control-flush mb-3" rows="1" id="chatInput" placeholder="@Localizer["Type a message"]"></textarea>
+                        <div class="d-flex flex-stack">
+                            <div class="d-flex align-items-center me-2">
+                                <label class="btn btn-sm btn-icon btn-active-light-primary mb-0" title="@Localizer["Attach"]">
+                                    <i class="ki-outline ki-paper-clip fs-2"></i>
+                                    <input type="file" id="chatAttach" class="d-none" />
+                                </label>
+                                <span id="chatAttachName" class="fs-8 text-muted ms-1"></span>
+                            </div>
+                            <button class="btn btn-primary" id="chatSend" type="button">@Localizer["Send"]</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Messenger-->
+        </div>
+    </div></div>
+</div>
+
+<!--begin::New chat modal-->
+<div class="modal fade" id="chatNewModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["New chat"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body">
+        <input type="text" id="dirSearch" class="form-control form-control-solid mb-4" placeholder="@SR["Search"]" autocomplete="off" />
+        <div id="dirList" class="scroll-y mh-350px"></div>
+    </div>
+</div></div></div>
+<!--end::New chat modal-->
+
+<!--begin::New group modal-->
+<div class="modal fade" id="chatGroupModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["New group"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body">
+        <label class="fw-semibold fs-7 mb-1">@Localizer["Group name"]</label>
+        <input type="text" id="grpTitle" class="form-control form-control-solid mb-4" />
+        <input type="text" id="grpSearch" class="form-control form-control-solid mb-3" placeholder="@SR["Search"]" autocomplete="off" />
+        <div id="grpList" class="scroll-y mh-300px"></div>
+    </div>
+    <div class="modal-footer py-3"><button class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary" id="grpCreate">@Localizer["Create"]</button></div>
+</div></div></div>
+<!--end::New group modal-->
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var isAr = @(isAr ? "true" : "false");
+    var meId = @meId;
+    var blank = '@blank';
+    var openConv = @(openConv?.ToString() ?? "null");
+    var cur = null, curHeader = null, dir = [], conn = null, replyTo = null, oldestId = null, loading = false;
+
+    var $ = function (id) { return document.getElementById(id); };
+    var convList = $('chatConvList'), convEmpty = $('chatConvEmpty');
+    var scroll = $('chatScroll'), emptyBox = $('chatEmpty'), footer = $('chatFooter');
+    var titleEl = $('chatTitle'), presenceEl = $('chatPresence'), typingEl = $('chatTyping');
+    var input = $('chatInput'), sendBtn = $('chatSend'), attach = $('chatAttach'), attachName = $('chatAttachName');
+    var headSym = $('chatHeadSym'), headAvatar = $('chatHeadAvatar');
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+    function timeStr(iso) { try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+    function post(url, data) {
+        var fd; if (data instanceof FormData) fd = data; else { fd = new FormData(); for (var k in data) if (data[k] != null) fd.append(k, data[k]); }
+        return fetch(url, { method: 'POST', credentials: 'same-origin', body: fd }).then(function (r) { return r.ok ? r.json() : null; });
+    }
+
+    // ---------- conversation list ----------
+    function convItemHtml(c) {
+        var av = c.avatar || blank;
+        var dot = c.kind === 'Direct' ? '<span class="badge badge-circle w-8px h-8px position-absolute bottom-0 end-0 ' + (c.online ? 'badge-success' : 'badge-secondary') + '"></span>' : '';
+        var unread = c.unread > 0 ? '<span class="badge badge-circle badge-danger ms-2">' + c.unread + '</span>' : '';
+        var icon = c.kind === 'Group'
+            ? '<span class="symbol-label bg-light-primary"><i class="ki-outline ki-people fs-2 text-primary"></i></span>'
+            : '<img src="' + av + '" alt="" />';
+        return '<div class="d-flex align-items-center p-3 rounded mb-1 cursor-pointer chat-conv ' + (cur === c.id ? 'bg-light-primary' : 'bg-hover-light') + '" data-id="' + c.id + '" data-kind="' + c.kind + '" data-title="' + esc(c.title) + '" data-avatar="' + esc(av) + '" data-online="' + (c.online ? 1 : 0) + '" data-other="' + (c.otherEmployeeId || '') + '">' +
+            '<div class="symbol symbol-40px symbol-circle position-relative me-3">' + icon + dot + '</div>' +
+            '<div class="flex-grow-1 min-w-0"><div class="d-flex flex-stack"><span class="fw-bold text-gray-900 text-truncate">' + esc(c.title) + '</span>' + unread + '</div>' +
+            '<div class="text-muted fs-8 text-truncate">' + esc(c.preview || '') + '</div></div></div>';
+    }
+    function loadConvs(then) {
+        fetch('/Chat/Conversations', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) {
+            window._convs = list;
+            renderConvs(list);
+            if (then) then(list);
+        });
+    }
+    function renderConvs(list) {
+        var q = ($('chatSearch').value || '').trim().toLowerCase();
+        var filtered = list.filter(function (c) { return !q || (c.title || '').toLowerCase().indexOf(q) !== -1; });
+        if (!filtered.length) { convList.innerHTML = ''; convList.appendChild(convEmpty); convEmpty.style.display = ''; return; }
+        convEmpty.style.display = 'none';
+        convList.innerHTML = filtered.map(convItemHtml).join('');
+        convList.querySelectorAll('.chat-conv').forEach(function (el) {
+            el.addEventListener('click', function () { openConversation(parseInt(el.getAttribute('data-id')), {
+                kind: el.getAttribute('data-kind'), title: el.getAttribute('data-title'), avatar: el.getAttribute('data-avatar'), online: el.getAttribute('data-online') === '1', other: parseInt(el.getAttribute('data-other')) || null
+            }); });
+        });
+    }
+    $('chatSearch').addEventListener('input', function () { if (window._convs) renderConvs(window._convs); });
+
+    // ---------- messages ----------
+    function reactionsHtml(m) {
+        if (!m.reactions || !m.reactions.length) return '';
+        return '<div class="d-flex gap-1 mt-1">' + m.reactions.map(function (r) {
+            return '<span class="badge ' + (r.mine ? 'badge-light-primary' : 'badge-light') + ' fs-8">' + r.emoji + ' ' + r.count + '</span>';
+        }).join('') + '</div>';
+    }
+    function attachHtml(m) {
+        if (!m.attachmentPath) return '';
+        if (m.attachmentType === 'image') return '<a href="' + m.attachmentPath + '" target="_blank"><img src="' + m.attachmentPath + '" class="rounded mw-250px mt-2" style="max-height:220px" /></a>';
+        return '<a href="' + m.attachmentPath + '" target="_blank" class="d-flex align-items-center bg-light rounded p-3 mt-2"><i class="ki-outline ki-file fs-2x text-primary me-3"></i><span class="fw-semibold text-gray-800">' + esc(m.attachmentName || 'file') + '</span></a>';
+    }
+    function msgHtml(m) {
+        var mine = m.senderId === meId;
+        var side = mine ? 'end' : 'start';
+        var bubbleBg = mine ? 'bg-light-primary' : 'bg-light-info';
+        var av = m.senderAvatar || blank;
+        var avatar = '<div class="symbol symbol-35px symbol-circle ' + (mine ? 'ms-3' : 'me-3') + '"><img src="' + av + '" alt="" /></div>';
+        var head = '<div class="d-flex align-items-center mb-1">' + (mine ? '' : avatar) +
+            '<div class="' + (mine ? 'me-3 text-end' : 'ms-0') + '"><span class="fs-6 fw-bold text-gray-900 me-1">' + (mine ? '@Localizer["You"]' : esc(m.senderName)) + '</span>' +
+            '<span class="text-muted fs-8">' + timeStr(m.createdAt) + (m.editedAt ? ' · @Localizer["edited"]' : '') + '</span></div>' + (mine ? avatar : '') + '</div>';
+        var content = m.deleted
+            ? '<div class="p-3 rounded bg-light text-muted fst-italic mw-lg-450px">@Localizer["Message deleted"]</div>'
+            : '<div class="p-4 rounded ' + bubbleBg + ' text-gray-900 fw-semibold mw-lg-450px text-' + side + '">' + (m.body ? esc(m.body).replace(/\n/g, '<br>') : '') + attachHtml(m) + '</div>';
+        var tools = m.deleted ? '' :
+            '<div class="chat-tools d-none gap-1 mt-1">' +
+              '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="👍">👍</button>' +
+              '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="❤️">❤️</button>' +
+              '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="😂">😂</button>' +
+              '<button class="btn btn-icon btn-xs btn-light re"><i class="ki-outline ki-arrow-bottom-right fs-7"></i></button>' +
+              (mine ? '<button class="btn btn-icon btn-xs btn-light ed"><i class="ki-outline ki-pencil fs-7"></i></button><button class="btn btn-icon btn-xs btn-light-danger dl"><i class="ki-outline ki-trash fs-7"></i></button>' : '') +
+            '</div>';
+        return '<div class="d-flex justify-content-' + side + ' mb-6 chat-msg" data-id="' + m.id + '" data-body="' + esc(m.body || '') + '" data-text="' + esc(m.body || (m.attachmentName || '')) + '">' +
+            '<div class="d-flex flex-column align-items-' + side + '">' + head + content + reactionsHtml(m) + tools + '</div></div>';
+    }
+    function bindMsg(el, m) {
+        el.addEventListener('mouseenter', function () { var t = el.querySelector('.chat-tools'); if (t) t.classList.remove('d-none'); t && t.classList.add('d-flex'); });
+        el.addEventListener('mouseleave', function () { var t = el.querySelector('.chat-tools'); if (t) { t.classList.add('d-none'); t.classList.remove('d-flex'); } });
+        el.querySelectorAll('.rx').forEach(function (b) { b.addEventListener('click', function () { post('/Chat/React', { id: el.getAttribute('data-id'), emoji: b.getAttribute('data-emoji') }); }); });
+        var re = el.querySelector('.re'); if (re) re.addEventListener('click', function () { setReply(el.getAttribute('data-id'), el.getAttribute('data-text')); });
+        var ed = el.querySelector('.ed'); if (ed) ed.addEventListener('click', function () { var nb = prompt('@Localizer["Edit message"]', el.getAttribute('data-body')); if (nb != null && nb.trim()) post('/Chat/Edit', { id: el.getAttribute('data-id'), body: nb.trim() }); });
+        var dl = el.querySelector('.dl'); if (dl) dl.addEventListener('click', function () { if (confirm('@Localizer["Delete message?"]')) post('/Chat/Delete', { id: el.getAttribute('data-id') }); });
+    }
+    function appendMsg(m, prepend) {
+        var wrap = document.createElement('div'); wrap.innerHTML = msgHtml(m); var el = wrap.firstChild;
+        if (prepend) scroll.insertBefore(el, scroll.firstChild); else scroll.appendChild(el);
+        bindMsg(el, m);
+        return el;
+    }
+    function scrollBottom() { scroll.scrollTop = scroll.scrollHeight; }
+
+    function openConversation(id, meta) {
+        if (conn && cur) { try { conn.invoke('LeaveConversation', cur); } catch (e) {} }
+        cur = id; curHeader = { kind: meta.kind, other: meta.other || null }; replyTo = null; $('chatReplyBar').classList.add('d-none'); oldestId = null;
+        emptyBox.classList.add('d-none'); scroll.classList.remove('d-none'); footer.classList.remove('d-none');
+        titleEl.textContent = meta.title || '';
+        headSym.classList.toggle('d-none', meta.kind === 'Group');
+        headAvatar.src = meta.avatar || blank;
+        presenceEl.innerHTML = meta.kind === 'Direct' ? ('<span class="badge badge-circle w-8px h-8px me-1 ' + (meta.online ? 'badge-success' : 'badge-secondary') + '"></span>' + (meta.online ? '@Localizer["Active"]' : '@Localizer["Offline"]')) : '@Localizer["Group"]';
+        scroll.innerHTML = '';
+        fetch('/Chat/Messages?c=' + id, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (msgs) {
+            msgs.forEach(function (m) { appendMsg(m, false); });
+            if (msgs.length) oldestId = msgs[0].id;
+            scrollBottom();
+        });
+        if (conn) { try { conn.invoke('JoinConversation', id); } catch (e) {} }
+        post('/Chat/MarkRead', { c: id }).then(function () { loadConvs(); if (window.__cbnbReload) window.__cbnbReload(); });
+        // update selected styling
+        convList.querySelectorAll('.chat-conv').forEach(function (el) { el.classList.toggle('bg-light-primary', parseInt(el.getAttribute('data-id')) === id); });
+    }
+
+    // infinite scroll up → load older
+    scroll.addEventListener('scroll', function () {
+        if (scroll.scrollTop < 40 && oldestId && !loading) {
+            loading = true; var keep = scroll.scrollHeight;
+            fetch('/Chat/Messages?c=' + cur + '&before=' + oldestId, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (msgs) {
+                msgs.reverse().forEach(function (m) { appendMsg(m, true); });
+                if (msgs.length) oldestId = msgs[msgs.length - 1].id;
+                scroll.scrollTop = scroll.scrollHeight - keep; loading = false;
+            });
+        }
+    });
+
+    // ---------- reply ----------
+    function setReply(id, text) { replyTo = id; $('chatReplyText').textContent = text; $('chatReplyBar').classList.remove('d-none'); $('chatReplyBar').classList.add('d-flex'); input.focus(); }
+    $('chatReplyCancel').addEventListener('click', function () { replyTo = null; $('chatReplyBar').classList.add('d-none'); });
+
+    // ---------- send ----------
+    function detectMentions(body) {
+        if (!body || !dir.length) return '';
+        var ids = [];
+        dir.forEach(function (d) { if (body.indexOf('@@' + d.name) !== -1) ids.push(d.id); });
+        return ids.join(',');
+    }
+    function doSend() {
+        if (!cur) return;
+        var body = input.value.trim();
+        var file = attach.files && attach.files[0];
+        if (!body && !file) return;
+        var fd = new FormData(); fd.append('c', cur); if (body) fd.append('body', body);
+        if (replyTo) fd.append('replyToId', replyTo);
+        var mids = detectMentions(body); if (mids) fd.append('mentionedIds', mids);
+        if (file) fd.append('file', file);
+        input.value = ''; attach.value = ''; attachName.textContent = ''; replyTo = null; $('chatReplyBar').classList.add('d-none');
+        post('/Chat/Send', fd).then(function (dto) { if (dto) { appendMsg(dto, false); scrollBottom(); loadConvs(); } });
+    }
+    sendBtn.addEventListener('click', doSend);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } else if (conn && cur) { try { conn.invoke('Typing', cur); } catch (x) {} } });
+    attach.addEventListener('change', function () { attachName.textContent = attach.files.length ? attach.files[0].name : ''; });
+
+    // ---------- directory / new chat / new group ----------
+    function loadDir(cb) { fetch('/Chat/Directory', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) { dir = list; if (cb) cb(list); }); }
+    function dirRowHtml(d, checkbox) {
+        var dot = '<span class="badge badge-circle w-8px h-8px ' + (d.online ? 'badge-success' : 'badge-secondary') + ' position-absolute bottom-0 end-0"></span>';
+        return '<div class="d-flex align-items-center p-2 rounded bg-hover-light cursor-pointer dir-row" data-id="' + d.id + '" data-name="' + esc(d.name) + '">' +
+            '<div class="symbol symbol-35px symbol-circle position-relative me-3"><img src="' + (d.avatar || blank) + '" alt="" />' + dot + '</div>' +
+            '<span class="fw-semibold text-gray-800 flex-grow-1">' + esc(d.name) + '</span>' +
+            (checkbox ? '<input type="checkbox" class="form-check-input grp-chk" value="' + d.id + '" />' : '') + '</div>';
+    }
+    var newModal = new bootstrap.Modal($('chatNewModal'));
+    var grpModal = new bootstrap.Modal($('chatGroupModal'));
+    $('chatBtnNew').addEventListener('click', function (e) { e.preventDefault(); loadDir(function (list) { renderDir('dirList', list, false); }); newModal.show(); });
+    $('dirSearch').addEventListener('input', function () { var q = this.value.toLowerCase(); renderDir('dirList', dir.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; }), false); });
+    $('chatBtnGroup').addEventListener('click', function (e) { e.preventDefault(); loadDir(function (list) { renderDir('grpList', list, true); }); grpModal.show(); });
+    $('grpSearch').addEventListener('input', function () { var q = this.value.toLowerCase(); renderDir('grpList', dir.filter(function (d) { return d.name.toLowerCase().indexOf(q) !== -1; }), true); });
+    function renderDir(containerId, list, checkbox) {
+        var c = $(containerId); c.innerHTML = list.map(function (d) { return dirRowHtml(d, checkbox); }).join('') || '<div class="text-muted text-center py-6 fs-7">—</div>';
+        if (!checkbox) c.querySelectorAll('.dir-row').forEach(function (el) { el.addEventListener('click', function () {
+            post('/Chat/StartDirect', { otherId: el.getAttribute('data-id') }).then(function (res) { newModal.hide(); loadConvs(function (l) { var m = l.find(function (x) { return x.id === res.id; }); openConversation(res.id, m || { kind: 'Direct', title: el.getAttribute('data-name') }); }); });
+        }); });
+    }
+    $('grpCreate').addEventListener('click', function () {
+        var title = $('grpTitle').value.trim(); if (!title) { $('grpTitle').focus(); return; }
+        var ids = Array.prototype.slice.call(document.querySelectorAll('.grp-chk:checked')).map(function (x) { return x.value; }).join(',');
+        post('/Chat/CreateGroup', { title: title, memberIds: ids }).then(function (res) { grpModal.hide(); loadConvs(function (l) { var m = l.find(function (x) { return x.id === res.id; }); openConversation(res.id, m || { kind: 'Group', title: title }); }); });
+    });
+
+    // ---------- realtime ----------
+    function startHub() {
+        if (!window.signalR) return;
+        conn = new signalR.HubConnectionBuilder().withUrl('/hubs/chat').withAutomaticReconnect().build();
+        conn.on('message', function (m) {
+            if (m.conversationId === cur) {
+                if (m.senderId !== meId) { appendMsg(m, false); scrollBottom(); post('/Chat/MarkRead', { c: cur }); }
+            }
+            loadConvs();
+        });
+        conn.on('edited', function (e) { if (e.conversationId === cur) { var el = scroll.querySelector('.chat-msg[data-id="' + e.id + '"] .rounded'); if (el) el.innerHTML = esc(e.body).replace(/\n/g, '<br>'); } });
+        conn.on('deleted', function (e) { if (e.conversationId === cur) { var el = scroll.querySelector('.chat-msg[data-id="' + e.id + '"]'); if (el) { var b = el.querySelector('.rounded'); if (b) { b.className = 'p-3 rounded bg-light text-muted fst-italic mw-lg-450px'; b.innerHTML = '@Localizer["Message deleted"]'; } } } });
+        conn.on('reaction', function (e) { if (e.conversationId === cur) { var el = scroll.querySelector('.chat-msg[data-id="' + e.id + '"]'); if (el) { var old = el.querySelector('.d-flex.gap-1'); var html = '<div class="d-flex gap-1 mt-1">' + e.reactions.map(function (r) { return '<span class="badge badge-light fs-8">' + r.emoji + ' ' + r.count + '</span>'; }).join('') + '</div>'; if (old) old.outerHTML = html; else el.querySelector('.d-flex.flex-column').insertAdjacentHTML('beforeend', html); } } });
+        conn.on('typing', function (e) { if (e.conversationId === cur) { typingEl.textContent = '@Localizer["typing..."]'; clearTimeout(window._typingT); window._typingT = setTimeout(function () { typingEl.textContent = ''; }, 2500); } });
+        conn.on('presence', function (e) { if (curHeader && curHeader.kind === 'Direct' && curHeader.other === e.employeeId) { presenceEl.innerHTML = '<span class="badge badge-circle w-8px h-8px me-1 ' + (e.online ? 'badge-success' : 'badge-secondary') + '"></span>' + (e.online ? '@Localizer["Active"]' : '@Localizer["Offline"]'); } loadConvs(); });
+        conn.on('conversation', function () { loadConvs(); });
+        conn.start().then(function () { if (cur) conn.invoke('JoinConversation', cur); }).catch(function () {});
+    }
+    if (window.signalR) startHub();
+    else { var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js'; s.onload = startHub; document.head.appendChild(s); }
+
+    // ---------- boot ----------
+    loadDir();
+    loadConvs(function (list) {
+        if (openConv) { var m = list.find(function (x) { return x.id === openConv; }); if (m) openConversation(openConv, m); }
+    });
+});
+</script>
+}

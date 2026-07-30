@@ -1,0 +1,83 @@
+<svg width="560" height="460" viewBox="0 0 560 460" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CrossBuy ERP">
+  <defs>
+    <linearGradient id="cb_card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f4f1ea"/>
+    </linearGradient>
+    <linearGradient id="cb_area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2e8b76" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#2e8b76" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="cb_gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0c64b"/>
+      <stop offset="1" stop-color="#d4a017"/>
+    </linearGradient>
+    <filter id="cb_sh" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#0a2c25" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- soft brand blobs -->
+  <circle cx="92" cy="86" r="120" fill="#ffffff" opacity="0.06"/>
+  <circle cx="486" cy="392" r="150" fill="#ffffff" opacity="0.05"/>
+
+  <!-- main dashboard card -->
+  <g filter="url(#cb_sh)">
+    <rect x="70" y="58" width="380" height="248" rx="20" fill="url(#cb_card)"/>
+  </g>
+  <!-- card header -->
+  <rect x="70" y="58" width="380" height="46" rx="20" fill="#13433a"/>
+  <rect x="70" y="84" width="380" height="20" fill="#13433a"/>
+  <circle cx="98" cy="81" r="6" fill="#f0c64b"/>
+  <circle cx="118" cy="81" r="6" fill="#ffffff" opacity="0.5"/>
+  <circle cx="138" cy="81" r="6" fill="#ffffff" opacity="0.3"/>
+  <rect x="330" y="74" width="98" height="14" rx="7" fill="#ffffff" opacity="0.18"/>
+
+  <!-- KPI chips -->
+  <rect x="92" y="124" width="104" height="46" rx="10" fill="#eef5f2"/>
+  <rect x="104" y="134" width="44" height="8" rx="4" fill="#9ab8ae"/>
+  <rect x="104" y="150" width="68" height="12" rx="6" fill="#13433a"/>
+  <rect x="208" y="124" width="104" height="46" rx="10" fill="#fbf3da"/>
+  <rect x="220" y="134" width="40" height="8" rx="4" fill="#cdb978"/>
+  <rect x="220" y="150" width="60" height="12" rx="6" fill="#d4a017"/>
+  <rect x="324" y="124" width="104" height="46" rx="10" fill="#eef5f2"/>
+  <rect x="336" y="134" width="48" height="8" rx="4" fill="#9ab8ae"/>
+  <rect x="336" y="150" width="56" height="12" rx="6" fill="#13433a"/>
+
+  <!-- area chart -->
+  <polyline points="92,278 92,236 140,248 188,210 236,224 284,184 332,200 380,160 428,176 428,278"
+            fill="url(#cb_area)"/>
+  <polyline points="92,236 140,248 188,210 236,224 284,184 332,200 380,160 428,176"
+            fill="none" stroke="#2e8b76" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="284" cy="184" r="5" fill="#ffffff" stroke="#2e8b76" stroke-width="3"/>
+  <circle cx="380" cy="160" r="5" fill="#ffffff" stroke="#d4a017" stroke-width="3"/>
+
+  <!-- floating bar-chart card -->
+  <g filter="url(#cb_sh)">
+    <rect x="300" y="250" width="186" height="150" rx="16" fill="#ffffff"/>
+  </g>
+  <rect x="320" y="270" width="70" height="10" rx="5" fill="#13433a"/>
+  <rect x="320" y="360" width="146" height="20" rx="6" fill="#f4f1ea"/>
+  <rect x="322" y="316" width="22" height="46" rx="5" fill="#9ab8ae"/>
+  <rect x="352" y="298" width="22" height="64" rx="5" fill="#2e8b76"/>
+  <rect x="382" y="328" width="22" height="34" rx="5" fill="#9ab8ae"/>
+  <rect x="412" y="286" width="22" height="76" rx="5" fill="url(#cb_gold)"/>
+  <rect x="442" y="312" width="22" height="50" rx="5" fill="#2e8b76"/>
+
+  <!-- inventory boxes -->
+  <g filter="url(#cb_sh)">
+    <rect x="78" y="300" width="150" height="104" rx="16" fill="#ffffff"/>
+  </g>
+  <rect x="96" y="322" width="46" height="40" rx="6" fill="#d4a017"/>
+  <path d="M96 322h46v13H96z" fill="#b88a12"/>
+  <rect x="150" y="334" width="40" height="28" rx="6" fill="#2e8b76"/>
+  <path d="M150 334h40v9h-40z" fill="#1f6253"/>
+  <rect x="96" y="374" width="94" height="9" rx="4.5" fill="#e4ded2"/>
+  <rect x="96" y="388" width="64" height="8" rx="4" fill="#eef0ec"/>
+
+  <!-- EGP coin badge -->
+  <circle cx="452" cy="120" r="34" fill="url(#cb_gold)" filter="url(#cb_sh)"/>
+  <circle cx="452" cy="120" r="34" fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2"/>
+  <text x="452" y="128" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="700"
+        fill="#13433a" text-anchor="middle">£</text>
+</svg>

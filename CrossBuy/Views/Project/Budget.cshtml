@@ -1,0 +1,80 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model BudgetReport
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var prj = Model.Project;
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+    bool saving = Model.TotalVariance >= 0;
+    var brand = "#13433a";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Budget vs actual"]</h1>
+            <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn))</span></div>
+        <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <!--begin::Summary counters (accounting-report style)-->
+        <div class="card mb-5"><div class="card-body py-8">
+            <div class="row">
+                <div class="col">
+                    <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                        <span class="fs-4 fw-semibold text-primary pb-1 px-2">@Localizer["Total estimated"]</span>
+                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalEstimated)" data-kt-countup-decimal-places="2">@Model.TotalEstimated.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                        <span class="fs-4 fw-semibold text-danger pb-1 px-2">@Localizer["Total actual"]</span>
+                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalActual)" data-kt-countup-decimal-places="2">@Model.TotalActual.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                        <span class="fs-4 fw-semibold pb-1 px-2 @(saving ? "" : "text-danger")" style="@(saving ? "color:#13433a" : "")">@Localizer["Total variance"]</span>
+                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center @(saving ? "" : "text-danger")" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalVariance)" data-kt-countup-decimal-places="2">@Model.TotalVariance.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+        </div></div>
+        <!--end::Summary-->
+
+        <div class="card card-flush"><div class="card-body pt-6 pb-4">
+            <div class="table-responsive"><table class="table table-row-dashed align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
+                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid @brand;"><tr>
+                    <th>@SR["Code"]</th><th>@Localizer["BOQ item"]</th><th class="text-end">@Localizer["Estimated"]</th>
+                    <th class="text-end">@Localizer["Actual"]</th><th class="text-end">@Localizer["Variance"]</th><th class="text-center">—</th></tr></thead>
+                <tbody>
+                @if (!Model.Lines.Any()) { <tr><td colspan="6" class="text-center text-muted py-8">@Localizer["No BOQ items"]</td></tr> }
+                @foreach (var l in Model.Lines)
+                {
+                    <tr>
+                        <td><span class="badge fs-8 fw-bold" style="background:#e9f1ee;color:@brand;">@(string.IsNullOrEmpty(l.Code) ? "—" : l.Code)</span></td>
+                        <td class="fw-bold text-gray-900">@l.Description</td>
+                        <td class="text-end">@l.EstimatedCost.ToString("N2")</td>
+                        <td class="text-end">@l.ActualCost.ToString("N2")</td>
+                        <td class="text-end fw-bold @(l.Variance >= 0 ? "text-primary" : "text-danger")">@l.Variance.ToString("N2")</td>
+                        <td class="text-center">@if (l.Over) { <span class="badge badge-light-danger">@Localizer["Over"]</span> } else { <span class="badge badge-light-primary">@Localizer["Saving"]</span> }</td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot>
+                    @if (Model.UnattributedActual != 0)
+                    {
+                        <tr class="text-muted"><td></td><td class="fst-italic">@Localizer["Unattributed actual (labor / general)"]</td><td class="text-end">—</td><td class="text-end">@Model.UnattributedActual.ToString("N2")</td><td class="text-end">—</td><td></td></tr>
+                    }
+                    <tr style="border-top:2px solid @brand;" class="fw-bold"><td></td><td>@Localizer["Total"]</td>
+                        <td class="text-end">@Model.TotalEstimated.ToString("N2")</td>
+                        <td class="text-end">@Model.TotalActual.ToString("N2")</td>
+                        <td class="text-end @(saving ? "text-primary" : "text-danger")">@Model.TotalVariance.ToString("N2")</td><td></td></tr>
+                </tfoot>
+            </table></div>
+            <div class="text-muted fs-8 mt-3">@Localizer["Estimated = BOQ cost breakdown · Actual (per item) = posted material issues attributed via BOQ item · Total actual (510104) also includes labor & unattributed material."]</div>
+        </div></div>
+    </div></div>
+</div>

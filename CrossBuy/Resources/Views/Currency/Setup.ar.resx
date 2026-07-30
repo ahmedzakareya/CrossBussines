@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Functional Currency Setup" xml:space="preserve">
+    <value>إعداد العملة الوظيفية</value>
+  </data>
+  <data name="Functional currency" xml:space="preserve">
+    <value>العملة الوظيفية</value>
+  </data>
+  <data name="Postings already exist — the functional currency is now stable and cannot be changed (changing it would require re-translating all balances)." xml:space="preserve">
+    <value>توجد قيود مُرحَّلة بالفعل — العملة الوظيفية أصبحت مستقرة ولا يمكن تغييرها (تغييرها يتطلب إعادة ترجمة كل الأرصدة).</value>
+  </data>
+  <data name="The functional currency is the currency of the books and financial statements. Set it now — it locks automatically after the first transaction." xml:space="preserve">
+    <value>العملة الوظيفية هي عملة الدفاتر والقوائم المالية. حدّدها الآن — ستُقفل تلقائيًا بعد أول معاملة.</value>
+  </data>
+  <data name="Company default currency" xml:space="preserve">
+    <value>عملة الشركة الافتراضية</value>
+  </data>
+  <data name="Set company default currency?" xml:space="preserve">
+    <value>ضبط عملة الشركة الافتراضية؟</value>
+  </data>
+  <data name="Locked: " xml:space="preserve">
+    <value>مقفلة: </value>
+  </data>
+  <data name="Functional currency per branch" xml:space="preserve">
+    <value>العملة الوظيفية لكل فرع</value>
+  </data>
+  <data name="Current currency" xml:space="preserve">
+    <value>العملة الحالية</value>
+  </data>
+  <data name="Set" xml:space="preserve">
+    <value>تعيين</value>
+  </data>
+  <data name="Locked after first transaction" xml:space="preserve">
+    <value>مقفلة بعد أول معاملة</value>
+  </data>
+  <data name="Set branch functional currency?" xml:space="preserve">
+    <value>ضبط عملة الفرع الوظيفية؟</value>
+  </data>
+  <data name="No branches — the company default currency is used." xml:space="preserve">
+    <value>لا توجد فروع — تُستخدم عملة الشركة الافتراضية.</value>
+  </data>
+</root>

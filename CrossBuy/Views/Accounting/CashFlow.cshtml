@@ -1,0 +1,135 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model CashFlowStatement
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var from = (DateTime)ViewBag.From; var to = (DateTime)ViewBag.To;
+    var up = Model.NetChange >= 0;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Cash Flow Statement"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted text-hover-primary">@SR["Accounting"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Cash Flow"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <form method="get" class="d-flex align-items-end gap-2">
+                <input type="date" name="from" value="@from.ToString("yyyy-MM-dd")" class="form-control form-control-solid form-control-sm w-150px" />
+                <input type="date" name="to" value="@to.ToString("yyyy-MM-dd")" class="form-control form-control-solid form-control-sm w-150px" />
+                <button class="btn btn-sm btn-primary">@SR["Show"]</button>
+            </form>
+            <button onclick="window.print()" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-4"></i>@SR["Print"]</button>
+        </div>
+    </div></div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <!--begin::Summary card-->
+        <div class="card mb-5 mb-xl-10">
+            <div class="card-body py-10">
+                <h2 class="mb-2">@Localizer["Cash Flow Statement"]</h2>
+                <p class="fs-6 fw-semibold text-gray-600 py-1 m-0">@Localizer["For the period"] @from.ToString("yyyy/MM/dd") &mdash; @Localizer["to"] @to.ToString("yyyy/MM/dd")</p>
+
+                @{ string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); }
+                <div class="row mt-6">
+                    <div class="col">
+                        <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                            <span class="fs-4 fw-semibold text-info pb-1 px-2">@Localizer["Cash at beginning"]</span>
+                            <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.BeginningCash)" data-kt-countup-decimal-places="2">@Model.BeginningCash.ToString("N2")</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                            <span class="fs-4 fw-semibold pb-1 px-2 @(up?"":"text-danger")" style="@(up?"color:#13433a":"")">@Localizer["Net change in cash"]</span>
+                            <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.NetChange)" data-kt-countup-decimal-places="2">@Model.NetChange.ToString("N2")</span>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                            <span class="fs-4 fw-semibold text-primary pb-1 px-2">@Localizer["Cash at end of period"]</span>
+                            <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.EndingCash)" data-kt-countup-decimal-places="2">@Model.EndingCash.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (up)
+                {
+                    <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#eaf3ef;border-color:#13433a !important;">
+                        <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#13433a;"><i class="ki-outline ki-chart-line-up fs-2x text-white"></i></span></span>
+                        <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                            <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                                <h4 class="text-gray-900 fw-bold mb-1">@SR["Net cash increased"]</h4>
+                                <div class="fs-6 text-gray-700">@SR["Cash increase detail"]</div>
+                            </div>
+                            <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#13433a;color:#fff;"><i class="ki-outline ki-arrow-up fs-6 text-white me-1"></i>@SR["Net change"]: @Model.NetChange.ToString("N2")</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mt-4">
+                        <span class="symbol symbol-45px me-5"><span class="symbol-label bg-danger"><i class="ki-outline ki-chart-line-down fs-2x text-white"></i></span></span>
+                        <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                            <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                                <h4 class="text-gray-900 fw-bold mb-1">@SR["Net cash decreased"]</h4>
+                                <div class="fs-6 text-gray-700">@SR["Cash decrease detail"]</div>
+                            </div>
+                            <span class="badge badge-danger fs-7 fw-bold px-4 py-2 flex-shrink-0"><i class="ki-outline ki-arrow-down fs-6 text-white me-1"></i>@SR["Net change"]: @Model.NetChange.ToString("N2")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <!--end::Summary card-->
+
+        <!--begin::Details card-->
+        <div class="card">
+            <div class="card-header card-header-stretch">
+                <div class="card-title"><h3>@Localizer["Cash Flow Statement"]</h3></div>
+            </div>
+            <div class="card-body px-0 pt-0 pb-4">
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                        <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th class="ps-9">@SR["Item"]</th><th class="text-end pe-9">@SR["Amount"]</th></tr></thead>
+                        <tbody class="fs-6 fw-semibold text-gray-700">
+                            <tr>
+                                <td class="ps-9"><i class="ki-outline ki-wallet fs-6 me-2 text-gray-500"></i>@Localizer["Cash at beginning"]</td>
+                                <td class="text-end pe-9 text-gray-900 fw-bold">@Model.BeginningCash.ToString("N2")</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@(isAr ? "تشغيلي" : "Operating")</span>@Localizer["Cash from operating activities"]</td>
+                                <td class="text-end pe-9 fw-bold @(Model.Operating>=0?"":"text-danger")" style="@(Model.Operating>=0?"color:#13433a":"")">@Model.Operating.ToString("N2")</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@(isAr ? "استثماري" : "Investing")</span>@Localizer["Cash from investing activities"]</td>
+                                <td class="text-end pe-9 fw-bold @(Model.Investing>=0?"":"text-danger")" style="@(Model.Investing>=0?"color:#13433a":"")">@Model.Investing.ToString("N2")</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@(isAr ? "تمويلي" : "Financing")</span>@Localizer["Cash from financing activities"]</td>
+                                <td class="text-end pe-9 fw-bold @(Model.Financing>=0?"":"text-danger")" style="@(Model.Financing>=0?"color:#13433a":"")">@Model.Financing.ToString("N2")</td>
+                            </tr>
+                            <tr style="border-top:1px solid #e9edf2;">
+                                <td class="ps-9 fw-bold text-gray-600">@Localizer["Net change in cash"]</td>
+                                <td class="text-end pe-9 fw-bolder @(up?"":"text-danger")" style="@(up?"color:#13433a":"")">@Model.NetChange.ToString("N2")</td>
+                            </tr>
+                            <tr style="background:#eaf3ef;">
+                                <td class="ps-9 fw-bold fs-5" style="color:#1f6253;">@Localizer["Cash at end of period"]</td>
+                                <td class="text-end pe-9 fw-bolder fs-4" style="color:#13433a;">@Model.EndingCash.ToString("N2")</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted fs-8 px-9 py-4 d-print-none">@Localizer["Cash movements are classified by the cash-flow category of the contra accounts."]</div>
+            </div>
+        </div>
+        <!--end::Details card-->
+    </div></div>
+</div>

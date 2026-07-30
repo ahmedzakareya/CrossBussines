@@ -1,0 +1,106 @@
+@using CrossBuy.Models.Context.Crm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+    var rules = ViewBag.Rules as List<CrmScoringRule> ?? new();
+    var st = ViewBag.Settings as CrmSettings ?? new();
+    var fields = new[] { ("Source", Localizer["Source"].Value), ("Segment", Localizer["Segment"].Value), ("Status", SR["Status"].Value), ("EstimatedValue", Localizer["Est. value"].Value) };
+    var ops = new[] { ("eq", Localizer["equals"].Value), ("contains", Localizer["contains"].Value), ("gte", Localizer["≥"].Value) };
+    string fNm(string f) => fields.FirstOrDefault(x => x.Item1 == f).Item2 ?? f;
+    string oNm(string o) => ops.FirstOrDefault(x => x.Item1 == o).Item2 ?? o;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Lead scoring & automation"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">CRM</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Scoring"]</li></ul></div>
+        <div class="d-flex gap-2">
+            <form asp-action="RecomputeScores" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Recompute scores for all leads?"]">@Html.AntiForgeryToken()
+                <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-arrows-circle fs-3"></i>@Localizer["Recompute scores"]</button></form>
+            <button type="button" class="btn btn-sm btn-primary" onclick="ruleNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New scoring rule"]</button>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
+        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
+
+        <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Settings"]</div></div>
+            <div class="card-body">
+                <form asp-action="SaveCrmSettings" method="post" class="row g-4 align-items-end" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save settings?"]">@Html.AntiForgeryToken()
+                    <div class="col-md-4"><div class="form-check form-switch"><input type="hidden" name="autoRouteLeads" value="false" /><input class="form-check-input" type="checkbox" name="autoRouteLeads" value="true" id="route" @(st.AutoRouteLeads ? "checked" : "")><label class="form-check-label fw-semibold ms-1 fs-7" for="route">@Localizer["Auto-route leads (round-robin to reps)"]</label></div></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Hot threshold"]</label><input type="number" name="hotScore" class="form-control form-control-solid" value="@st.HotScore" /></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Warm threshold"]</label><input type="number" name="warmScore" class="form-control form-control-solid" value="@st.WarmScore" /></div>
+                    <div class="col-md-2 d-flex"><button class="btn btn-primary w-100"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
+                </form>
+                <div class="text-muted fs-8 mt-2">@Localizer["Score ≥ Hot = hot, ≥ Warm = warm, otherwise cold."]</div>
+            </div>
+        </div>
+
+        <!--begin::Scoring rule modal-->
+        <div class="modal fade" id="ruleModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered mw-650px">
+                <div class="modal-content">
+                    <div class="modal-header py-4"><h2 class="fw-bold fs-4 m-0" id="formTitle">@Localizer["New scoring rule"]</h2>
+                        <div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+                    <div class="modal-body">
+                        <form asp-action="SaveScoringRule" method="post" class="row g-4" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save rule?"]">@Html.AntiForgeryToken()
+                            <input type="hidden" name="id" id="r_id" value="0" />
+                            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Name"]</label><input name="name" id="r_name" class="form-control form-control-solid" required /></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" id="r_nameEn" class="form-control form-control-solid" placeholder="@Localizer["Optional English name"]" /></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Field"]</label>
+                                <select name="field" id="r_field" class="form-select form-select-solid">@foreach (var f in fields) { <option value="@f.Item1">@f.Item2</option> }</select></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Operator"]</label>
+                                <select name="operator" id="r_op" class="form-select form-select-solid">@foreach (var o in ops) { <option value="@o.Item1">@o.Item2</option> }</select></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Value"]</label><input name="value" id="r_value" class="form-control form-control-solid" /></div>
+                            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Points"]</label><input type="number" name="points" id="r_points" class="form-control form-control-solid" value="10" /></div>
+                            <div class="col-md-6 d-flex align-items-center"><div class="form-check form-switch mt-6"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" id="r_active" value="true" checked><label class="form-check-label fw-semibold ms-1 fs-7" for="r_active">@SR["Active"]</label></div></div>
+                            <div class="col-12 d-flex justify-content-end gap-2"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary"><i class="ki-outline ki-check fs-4"></i>@SR["Save"]</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::Scoring rule modal-->
+
+        <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Rules"] (@rules.Count)</div></div>
+            <div class="card-body">
+                <div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Name"]</th><th>@Localizer["Condition"]</th><th class="text-center">@Localizer["Points"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
+                    <tbody>
+                    @foreach (var r in rules)
+                    {
+                        <tr data-id="@r.ID" data-name="@r.Name" data-nameen="@r.NameEn" data-field="@r.Field" data-op="@r.Operator" data-value="@r.Value" data-points="@r.Points" data-active="@(r.IsActive ? "true" : "false")" style="border-bottom:1px dashed #eef1f6;">
+                            <td class="ps-4 fw-bold text-gray-800">@(isEn ? (string.IsNullOrWhiteSpace(r.NameEn) ? r.Name : r.NameEn) : r.Name)</td>
+                            <td class="text-muted fs-7">@fNm(r.Field) @oNm(r.Operator) <span class="fw-bold text-gray-700">@r.Value</span></td>
+                            <td class="text-center"><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">+@r.Points</span></td>
+                            <td class="text-center"><span class="badge fw-bold" style="@(r.IsActive ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@(r.IsActive ? SR["Active"].Value : Localizer["Off"].Value)</span></td>
+                            <td class="text-end pe-4"><button class="btn btn-sm btn-icon btn-light-primary" onclick="ruleEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button></td>
+                        </tr>
+                    }
+                    @if (rules.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-8">@Localizer["No rules yet"]</td></tr> }
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+function ruleModal(){ return new bootstrap.Modal(document.getElementById('ruleModal')); }
+function ruleNew(){
+  document.getElementById('r_id').value='0'; document.getElementById('r_name').value=''; document.getElementById('r_nameEn').value='';
+  document.getElementById('r_field').selectedIndex=0; document.getElementById('r_op').selectedIndex=0;
+  document.getElementById('r_value').value=''; document.getElementById('r_points').value='10';
+  document.getElementById('r_active').checked=true;
+  document.getElementById('formTitle').textContent='@Localizer["New scoring rule"]'; ruleModal().show();
+}
+function ruleEdit(b){ var tr=b.closest('tr');
+  document.getElementById('r_id').value=tr.dataset.id; document.getElementById('r_name').value=tr.dataset.name; document.getElementById('r_nameEn').value=tr.dataset.nameen||'';
+  document.getElementById('r_field').value=tr.dataset.field; document.getElementById('r_op').value=tr.dataset.op;
+  document.getElementById('r_value').value=tr.dataset.value; document.getElementById('r_points').value=tr.dataset.points;
+  document.getElementById('r_active').checked=tr.dataset.active==='true';
+  document.getElementById('formTitle').textContent='@Localizer["Edit rule"]'+' #'+tr.dataset.id; ruleModal().show();
+}
+</script>
+}

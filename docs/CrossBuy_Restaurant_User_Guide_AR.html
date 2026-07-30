@@ -1,0 +1,456 @@
+<title>دليل مستخدم منظومة المطعم — CrossBuy</title>
+<meta charset="utf-8">
+<style>
+  :root{
+    --green:#13433a; --green2:#1f6253; --accent:#2f9e6e; --gold:#d4a017; --gold2:#f0c64b;
+    --soft:#e9f1ee; --ink:#16211e; --muted:#5e6f6a; --line:#dde7e3; --paper:#ffffff; --bg:#f3f6f5;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; background:var(--bg); color:var(--ink); direction:rtl;
+        font-family:"Segoe UI","Tajawal",Tahoma,system-ui,sans-serif; line-height:1.85; font-size:15px; }
+  .wrap{ max-width:1000px; margin:0 auto; padding:0 22px; }
+  .cover{ background:linear-gradient(135deg,#0c2e28,#1f6253 60%,#2f9e6e); color:#fff; padding:70px 0 56px; }
+  .cover .wrap{ display:flex; flex-direction:column; gap:10px; }
+  .logo{ display:flex; align-items:center; gap:12px; font-weight:800; font-size:1.4rem; letter-spacing:.5px; }
+  .logo .mark{ display:grid; grid-template-columns:1fr 1fr; gap:3px; }
+  .logo .mark span{ width:13px; height:13px; border-radius:3px; background:var(--gold2); }
+  .logo .mark span:nth-child(2),.logo .mark span:nth-child(3){ background:#fff; }
+  .cover h1{ font-size:2.6rem; margin:18px 0 4px; font-weight:800; }
+  .cover p{ margin:0; opacity:.92; font-size:1.05rem; max-width:660px; }
+  .cover .meta{ margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; }
+  .cover .meta span{ background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); padding:5px 14px; border-radius:20px; font-size:.82rem; }
+  .toc{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:22px 26px; margin:-34px 0 34px; box-shadow:0 12px 34px rgba(19,67,58,.10); }
+  .toc h2{ margin:0 0 12px; color:var(--green); font-size:1.05rem; }
+  .toc ol{ columns:2; column-gap:34px; margin:0; padding-inline-start:20px; }
+  .toc a{ color:var(--green2); text-decoration:none; }
+  .toc a:hover{ color:var(--gold); }
+  section{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:26px 30px; margin-bottom:22px; }
+  h2.sec{ color:var(--green); font-size:1.6rem; margin:0 0 4px; display:flex; align-items:center; gap:12px; }
+  h2.sec .n{ background:var(--green); color:#fff; min-width:38px; height:38px; padding:0 8px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:1.05rem; flex:none; }
+  .lead{ color:var(--muted); margin:2px 0 18px; }
+  h3{ color:var(--green2); font-size:1.18rem; margin:24px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--soft); }
+  h4{ color:var(--ink); font-size:1.02rem; margin:16px 0 6px; }
+  p{ margin:8px 0; }
+  ul,ol{ margin:8px 0; padding-inline-start:24px; }
+  li{ margin:4px 0; }
+  code{ background:var(--soft); color:var(--green); padding:1px 7px; border-radius:6px; font-family:"Consolas",monospace; font-size:.88em; direction:ltr; display:inline-block; }
+  strong{ color:var(--green2); }
+  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:0; margin:14px 0 6px; }
+  .flow .step{ background:var(--soft); color:var(--green); font-weight:700; padding:9px 18px; border-radius:8px; font-size:.9rem; white-space:nowrap; margin:3px 0; }
+  .flow .step.alt{ background:#fdf3d6; color:#8a6d12; }
+  .flow .arr{ color:var(--accent); font-weight:800; padding:0 8px; font-size:1.1rem; }
+  ol.steps{ counter-reset:s; list-style:none; padding:0; margin:12px 0; }
+  ol.steps>li{ counter-increment:s; position:relative; padding:8px 46px 8px 12px; margin:6px 0; background:#fafcfb; border:1px solid var(--line); border-radius:10px; }
+  ol.steps>li::before{ content:counter(s); position:absolute; right:10px; top:8px; width:26px; height:26px; background:var(--green); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.82rem; }
+  table{ width:100%; border-collapse:collapse; margin:12px 0; font-size:.92rem; }
+  th,td{ border:1px solid var(--line); padding:8px 10px; text-align:right; vertical-align:top; }
+  th{ background:var(--soft); color:var(--green); font-weight:700; }
+  .swatch{ display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:middle; margin-inline-start:4px; border:1px solid rgba(0,0,0,.15); }
+  .pill{ display:inline-block; background:var(--soft); color:var(--green); border-radius:20px; padding:2px 12px; font-size:.82rem; font-weight:700; }
+  .note,.tip,.warn{ border-radius:10px; padding:12px 16px; margin:14px 0; font-size:.92rem; border-inline-start:5px solid; }
+  .note{ background:#eef4ff; border-color:#3b7ddd; }
+  .tip{ background:#eafaf2; border-color:var(--accent); }
+  .warn{ background:#fff4e8; border-color:var(--gold); }
+  @media (max-width:680px){ .toc ol{ columns:1; } .cover h1{ font-size:2rem; } }
+  @media print{
+    body{ background:#fff; font-size:11.5px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .cover{ padding:40px 0; } section{ box-shadow:none; break-inside:avoid; border:none; border-top:2px solid var(--soft); border-radius:0; }
+    .toc{ box-shadow:none; } a{ color:var(--ink); } h2.sec,h3,h4{ break-after:avoid; }
+    table,.flow,ol.steps>li{ break-inside:avoid; }
+    @page{ size:A4; margin:14mm; }
+  }
+</style>
+
+<div class="cover"><div class="wrap">
+  <div class="logo"><span class="mark"><span></span><span></span><span></span><span></span></span> CrossBuy</div>
+  <h1>دليل منظومة المطعم</h1>
+  <p>دليل عملي للمستخدم النهائي — من التأسيس إلى التشغيل اليومي على الكاشير: القائمة، التصنيع، الطاولات، التوصيل، المطبخ، إغلاق اليوم، والعمل بلا إنترنت.</p>
+  <div class="meta"><span>إصدار 1.0</span><span>عربي</span><span>خطوة بخطوة بالأسماء والأزرار الفعلية</span></div>
+</div></div>
+
+<div class="wrap">
+
+<div class="toc">
+  <h2>المحتويات</h2>
+  <ol>
+    <li><a href="#s0">قبل أن تبدأ — الأدوار والدخول</a></li>
+    <li><a href="#s1">الجزء 1 — التأسيس (الأدمن مرة)</a></li>
+    <li><a href="#s2">الجزء 2 — القائمة والأصناف</a></li>
+    <li><a href="#s3">الجزء 3 — دورة التصنيع</a></li>
+    <li><a href="#s4">الجزء 4 — التشغيل اليومي (الكاشير)</a></li>
+    <li><a href="#s5">الجزء 5 — الطاولات والحجوزات</a></li>
+    <li><a href="#s6">الجزء 6 — التوصيل</a></li>
+    <li><a href="#s7">الجزء 7 — المطبخ (KDS)</a></li>
+    <li><a href="#s8">الجزء 8 — إغلاق اليوم</a></li>
+    <li><a href="#s9">الجزء 9 — المرتجعات والإلغاء</a></li>
+    <li><a href="#s10">الجزء 10 — العمل بلا نت</a></li>
+  </ol>
+</div>
+
+<section id="s0">
+  <h2 class="sec"><span class="n">٠</span> قبل أن تبدأ</h2>
+  <p class="lead">لمنظومة المطعم بيئتان منفصلتان، ولكل مستخدم دور يحدّد ما يراه ويفعله.</p>
+  <table>
+    <thead><tr><th>البيئة</th><th>لمن</th><th>كيف تصل إليها</th></tr></thead>
+    <tbody>
+      <tr><td><strong>لوحة الإدارة</strong> (شاشات الإعداد تحت قائمتَي «القاعة والقائمة» و«الإعداد»)</td><td>الأدمن / المدير</td><td>من القائمة الجانبية داخل النظام الرئيسي</td></tr>
+      <tr><td><strong>الكاشير المستقل</strong></td><td>الجرسون / الكاشير / المطبخ / المدير</td><td>من الرابط <code>/pos</code> — شاشة دخول منفصلة تمامًا</td></tr>
+    </tbody>
+  </table>
+  <h4>أدوار نقاط البيع (تُسنَد للموظف من شاشة «صلاحيات الكاشير»)</h4>
+  <ul>
+    <li><strong>جرسون</strong> — يفتح الطلب ويضيف الأصناف ويرسل للمطبخ (لا يستلم دفعًا).</li>
+    <li><strong>مطبخ</strong> — يرى شاشة المطبخ (KDS) ويحدّث حالات التحضير فقط.</li>
+    <li><strong>كاشير</strong> — كل ما سبق + الدفع والإقفال.</li>
+    <li><strong>مدير</strong> — كل الصلاحيات + المبيعات الحديثة والإلغاء والمرتجعات ومراجعة تعارضات المزامنة.</li>
+  </ul>
+  <div class="tip"><strong>مبدأ أساسي:</strong> الطلب المفتوح لا يُحدِث أي أثر محاسبي أو مخزوني. الخصم من المخزون والقيد المحاسبي يحدثان <strong>لحظة الدفع فقط</strong>.</div>
+</section>
+
+<section id="s1">
+  <h2 class="sec"><span class="n">١</span> التأسيس</h2>
+  <p class="lead">يفعله الأدمن مرة واحدة لكل فرع. كل هذه الشاشات تبدأ باختيار <strong>الشركة</strong> ثم <strong>الفرع</strong> من أعلى الصفحة — قائمة الفروع تبقى معطّلة حتى تختار شركة.</p>
+
+  <h3>١-١ تفعيل نظام المطعم ونوع النشاط والقدرات</h3>
+  <p><strong>الشاشة:</strong> «تأسيس منصة العمليات» — القائمة الجانبية ← القاعة والقائمة ← تأسيس منصة العمليات (المسار <code>/Pos/Setup</code>).</p>
+  <ol class="steps">
+    <li>اختر <strong>الشركة</strong> ثم <strong>الفرع</strong>. بعدها يظهر أعلى الصفحة زرّان: <strong>الصالات والمطابخ</strong> و<strong>رسم الطاولات</strong>، ويظهر «نوع النشاط الحالي».</li>
+    <li>في بطاقة <strong>نوع النشاط</strong> اضغط النوع المطلوب: <strong>مطعم</strong> · <strong>كافيه</strong> · <strong>هايبر ماركت</strong> · <strong>تجزئة</strong> — يظهر تأكيد «تفعيل نوع النشاط وإعادة ضبط القدرات لهذا الفرع؟» ← موافق. (اختيار «مطعم» يفعّل: طاولات + مطبخ + تصنيع/وصفات + إضافات + طلب عبر QR.)</li>
+    <li>في بطاقة <strong>القدرات المفعّلة</strong> فعّل/عطّل المفاتيح: <strong>طاولات · مطبخ · تصنيع/وصفات · إضافات (Modifiers) · طلب عبر QR · باركود · وزن</strong> ثم <strong>حفظ</strong>.</li>
+    <li>في بطاقة <strong>إعدادات البيع (POS)</strong> اضبط: <strong>مخزن البيع الافتراضي</strong> · <strong>قائمة الأسعار</strong> · <strong>رسم الخدمة %</strong> · <strong>العملة</strong> ثم <strong>حفظ إعدادات البيع</strong>.</li>
+  </ol>
+
+  <h3>١-٢ الصالات والمطابخ</h3>
+  <p><strong>الشاشة:</strong> «الصالات والمطابخ» (المسار <code>/Pos/Areas</code>).</p>
+  <ol class="steps">
+    <li>بطاقة <strong>الصالات</strong>: أدخل <strong>الكود</strong> و<strong>الاسم (عربي)</strong> (مطلوبان) + اختياريًا الاسم الإنجليزي والترتيب، ثم اضغط زرّ <strong>+</strong>.</li>
+    <li>بطاقة <strong>محطات التحضير</strong>: أدخل <strong>الكود</strong> و<strong>الاسم (عربي)</strong> واختر <strong>النوع</strong> (مطبخ · بار · مشويات · تحضير) ثم <strong>+</strong>.</li>
+    <li>للحذف: أيقونة السلة (تأكيد «حذف الصالة؟» / «حذف المحطة؟»).</li>
+  </ol>
+  <div class="note">توجيه أصناف القائمة إلى محطة بعينها يُضبَط لاحقًا من شاشة «الأصناف السريعة» (حقل «محطة المطبخ» لكل تبويب).</div>
+
+  <h3>١-٣ رسم الطاولات و QR</h3>
+  <p><strong>الشاشة:</strong> في القائمة اسمها «مخطط الطاولات» وعنوان صفحتها «رسم الطاولات» (المسار <code>/Pos/FloorPlan</code>).</p>
+  <ol class="steps">
+    <li>اختر <strong>الشركة</strong> ← <strong>الفرع</strong> ← <strong>الصالة</strong>.</li>
+    <li>بطاقة <strong>إضافة طاولة</strong>: أدخل <strong>الكود</strong> (مطلوب)، <strong>المقاعد</strong> (افتراضي 4)، <strong>الشكل</strong> (مربّع / دائري / مستطيل) ثم <strong>إضافة</strong>.</li>
+    <li><strong>اسحب</strong> الطاولة على اللوحة لتحديد موضعها — يُحفَظ تلقائيًا («تم حفظ مواضع الطاولات»)، أو اضغط <strong>حفظ المواضع</strong> يدويًا.</li>
+    <li>للتعديل: أيقونة القلم (نافذة <strong>تعديل الطاولة</strong>: الكود/المقاعد/الشكل ثم <strong>حفظ</strong>).</li>
+    <li>لرمز QR: أيقونة <strong>QR</strong> تعرض الرمز؛ ولإبطال القديم وإصدار جديد اضغط أيقونة <strong>تجديد QR</strong> («تجديد رمز QR (يُبطل القديم)؟»). للحذف: أيقونة السلة.</li>
+  </ol>
+
+  <h3>١-٤ أجهزة الكاشير (الدرج + ترقيم الإيصال)</h3>
+  <p><strong>الشاشة:</strong> «أجهزة الكاشير» — القائمة الجانبية ← الإعداد ← أجهزة الكاشير (المسار <code>/Pos/Terminals</code>).</p>
+  <ol class="steps">
+    <li>بطاقة <strong>إضافة جهاز</strong>: أدخل <strong>الكود</strong> (مطلوب، مثل <code>T1</code>) و<strong>الإسم</strong> (اختياري) و<strong>بادئة الإيصال</strong> (اختياري).</li>
+    <li><strong>خزنة الجهاز (الدرج)</strong>: اترك «إنشاء تلقائي (صندوق مستقل)» لينشئ النظام حساب نقدية مستقلًّا للجهاز، أو اختر حسابًا قائمًا.</li>
+    <li>تحت <strong>إعداد طباعة الإيصال</strong>: <strong>عرض الورق</strong> (80mm / 58mm) · <strong>عدد النسخ</strong> · <strong>اسم الطابعة</strong> (اختياري). فعّل مفتاح <strong>نشط</strong> ثم <strong>حفظ</strong>.</li>
+    <li>كل جهاز = خزنة مستقلة وتسلسل إيصال خاص (البادئة + الرقم التالي). الحذف يترك حساب الخزنة في الشجرة.</li>
+  </ol>
+  <div class="note">يمكن فتح/إغلاق الوردية من هنا أيضًا (النوع صباحي/مسائي + عهدة افتتاحية)، لكن المعتاد فتحها من الكاشير عند بدء اليوم.</div>
+
+  <h3>١-٥ طرق الدفع</h3>
+  <p><strong>الشاشة:</strong> «طرق الدفع» (المسار <code>/Pos/PaymentMethods</code>).</p>
+  <ol class="steps">
+    <li>بطاقة <strong>إضافة طريقة دفع</strong>: اكتب أو اختر <strong>الطريقة</strong> (نقدي / بطاقة / KNet / مدى / ميزة / آجل (على الحساب) / قسيمة).</li>
+    <li>أدخل <strong>اسم العرض</strong> (اختياري، مثل «كي-نت»).</li>
+    <li>اختر <strong>الحساب الوجهة</strong> — الإرشاد: نقدي ← الصندوق · بطاقة ← وسيط البطاقة · كي-نت ← وسيط كي-نت · آجل ← الذمم.</li>
+    <li>اضبط <strong>الترتيب</strong> ومفتاح <strong>نشط</strong> ثم <strong>حفظ</strong>.</li>
+  </ol>
+
+  <h3>١-٦ صلاحيات الكاشير (الأدوار)</h3>
+  <p><strong>الشاشة:</strong> في القائمة «صلاحيات الكاشير» وعنوان صفحتها «أدوار الكاشير» (المسار <code>/Pos/CashierRoles</code>).</p>
+  <ol class="steps">
+    <li>بطاقة <strong>تعيين دور</strong>: اختر <strong>الموظف</strong> واختر <strong>الدور</strong> (جرسون / مطبخ / كاشير / مدير) ثم <strong>تعيين</strong>.</li>
+    <li>لإلغاء دور: أيقونة <strong>×</strong> بجانبه («إلغاء الدور؟»).</li>
+  </ol>
+  <div class="warn">إن لم يظهر أي موظف: أضِف موظفين مرتبطين بالفرع أولًا من شاشة الموظفين.</div>
+</section>
+
+<section id="s2">
+  <h2 class="sec"><span class="n">٢</span> القائمة والأصناف</h2>
+  <p class="lead">تجهيز أزرار الكاشير، الإضافات، وطريقة توفير كل صنف في الفرع.</p>
+
+  <h3>٢-١ الأصناف السريعة والتبويبات</h3>
+  <p><strong>الشاشة:</strong> «الأصناف السريعة» — القائمة الجانبية ← القاعة والقائمة ← الأصناف السريعة (المسار <code>/Pos/QuickMenu</code>).</p>
+  <ol class="steps">
+    <li>اختر <strong>الشركة</strong> ← <strong>الفرع</strong>.</li>
+    <li>لإنشاء تبويب: بطاقة <strong>إضافة تبويب</strong> ← <strong>الاسم (عربي)</strong> (مطلوب) + اختياريًا الإنجليزي والترتيب و<strong>محطة المطبخ</strong> ثم <strong>إضافة</strong>.</li>
+    <li>لإضافة صنف داخل تبويب: <strong>إضافة صنف</strong> بجواره ← نافذة <strong>البحث عن صنف</strong> (فلترة بالمجموعة/الفئة/الباركود/الاسم) ← أشِّر ← <strong>حفظ وإضافة للتبويب</strong>. (وللإضافة بدون تبويب: <strong>ابحث واختر من الكتالوج</strong>.)</li>
+    <li><strong>كود PLU:</strong> في مربع <code>PLU</code> أسفل كل زرّ صنف اكتب الكود ثم اضغط علامة الصح.</li>
+    <li>لحذف زرّ صنف: <strong>×</strong> («حذف الزر؟»). لحذف تبويب: أيقونة السلة (أزراره تبقى «بدون تبويب»).</li>
+  </ol>
+
+  <h3>٢-٢ الإضافات (Modifiers)</h3>
+  <p><strong>الشاشة:</strong> «الإضافات (Modifiers)» (المسار <code>/Pos/Modifiers</code>) — على مستوى الشركة (لا اختيار فرع).</p>
+  <ol class="steps">
+    <li>بطاقة <strong>إضافة مجموعة</strong> ← <strong>الاسم (عربي)</strong> واختر <strong>النوع</strong>: «إضافة (اختياري، بسعر)» أو «بديل (إجباري، بلا سعر)»، واضبط <strong>أدنى/أقصى اختيار</strong> ثم <strong>حفـظ</strong>.</li>
+    <li>اختر المجموعة، ثم بطاقة <strong>الخيارات</strong>: <strong>اختر صنفًا</strong> (يربط الخيار بصنف مخزون) + <strong>اسم الخيار</strong> (اختياري) + <strong>الكمية المخصومة</strong> (افتراضي 1) + <strong>سعر إضافي</strong> (يُقفَل على صفر لمجموعات «بديل») + مفتاح <strong>افتراضي</strong> ثم <strong>إضافة</strong>.</li>
+    <li>بطاقة <strong>الأصناف المرتبطة بهذه المجموعة</strong> ← <strong>ربط أصناف</strong> ← أشِّر ← <strong>ربط المحدَّد</strong>.</li>
+  </ol>
+  <div class="note">عند البيع: خيار «بديل» لا يضيف سعرًا؛ خيار «إضافة» يضيف سعره ويُخصم الصنف المرتبط من المخزون بالكمية المخصومة.</div>
+
+  <h3>٢-٣ مصادر توفير الصنف للفرع (الطرق الأربع)</h3>
+  <p><strong>الشاشة:</strong> «مصادر توفير الأصناف» — القائمة الجانبية ← الإعداد ← مصادر توفير الأصناف (المسار <code>/Pos/ItemSourcing</code>). تظهر هنا فقط الأصناف المُضافة كأزرار سريعة للفرع.</p>
+  <table>
+    <thead><tr><th>الطريقة</th><th>متى تستخدمها</th><th>حقول إضافية مطلوبة</th></tr></thead>
+    <tbody>
+      <tr><td><strong>أمر تصنيع كامل</strong></td><td>الصنف يُصنَّع بأمر تشغيل كامل</td><td>يتطلب قائمة مواد (BOM) للصنف</td></tr>
+      <tr><td><strong>جاهز من فرع آخر</strong></td><td>يُحوَّل تامًّا من فرع مصدر</td><td>الفرع المصدر + توقيت التحويل (مُقدَّم / لحظة البيع)</td></tr>
+      <tr><td><strong>نصف-مصنّع من فرع + إكمال</strong></td><td>يأتي نصف-مصنّع ويُكمَّل هنا</td><td>الفرع المصدر + نصف-المصنّع (ضمن BOM الصنف التام) + توقيت التحويل</td></tr>
+      <tr><td><strong>وصفة عند البيع</strong></td><td>يُجمَّع من مكوّناته لحظة البيع</td><td>يتطلب قائمة مواد (BOM) للصنف</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li>اختر الطريقة لكل صنف ثم اضغط أيقونة الحفظ في السطر.</li>
+    <li>للطريقتين «جاهز من فرع آخر» و«نصف-مصنّع من فرع + إكمال» يظهر سطر أزرق <strong>تجهيز مسبق</strong>: أدخل <strong>الكمية</strong> (ولنصف-المصنّع: <strong>عمالة الإكمال</strong> و<strong>أوفرهيد</strong>) ثم <strong>تحويل من المصدر</strong> أو <strong>تحويل + إكمال</strong>.</li>
+  </ul>
+  <div class="note">للمراجعة السريعة: شاشة «نظرة عامة: مصادر التوفير» (المسار <code>/Pos/SourcingOverview</code>) تعرض كل فرع وأصنافه وطرق توفيرها — قراءة فقط.</div>
+</section>
+
+<section id="s3">
+  <h2 class="sec"><span class="n">٣</span> دورة التصنيع (تغذية المطعم)</h2>
+  <p class="lead">التصنيع في CrossBuy يقع تحت وحدة <strong>المخزون ← التصنيع</strong>، لا تحت قائمة المطعم.</p>
+
+  <h3>٣-١ الوصفة / قائمة المواد (BOM) والهالك</h3>
+  <p>الوصفة تُدخَل داخل <strong>بطاقة الصنف</strong> نفسها، في قسم <strong>المكوّنات (BOM)</strong>:</p>
+  <ol class="steps">
+    <li>فعّل خيار <strong>صنف مركّب (Kit)</strong> على الصنف.</li>
+    <li>في قسم <strong>المكوّنات (BOM)</strong> اضغط <strong>إضافة مكوّن</strong> لكل مكوّن، واملأ: <strong>المكوّن</strong> · <strong>الكمية</strong> · <strong>هالك %</strong> (نسبة إضافية لتغطية الفاقد) · <strong>الوحدة</strong>.</li>
+    <li>احفظ الصنف.</li>
+  </ol>
+
+  <h3>٣-٢ نوع التركيب وطريقة التصنيع</h3>
+  <ul>
+    <li><strong>نوع التركيب</strong>:
+      <ul>
+        <li><strong>حزمة بيع — تتفكّك عند البيع</strong>: الصنف لا يحمل رصيدًا؛ عند بيعه تُخصم مكوّناته.</li>
+        <li><strong>تجميع — برصيد مستقل</strong>: للصنف رصيد خاص يُنتَج بأمر تشغيل.</li>
+      </ul>
+    </li>
+    <li><strong>طريقة التصنيع</strong> (تظهر عند اختيار «تجميع»):
+      <ul>
+        <li><strong>أمر تشغيل بمراحل</strong>: تخطيط ← صرف مواد إلى الإنتاج تحت التشغيل ← استلام التام.</li>
+        <li><strong>إنتاج فوري</strong>: تُخصم المواد ويُنتَج الصنف بضغطة واحدة دون مراحل.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>٣-٣ أمر التشغيل (إنشاء ← إطلاق ← إكمال)</h3>
+  <p><strong>الشاشة:</strong> «أوامر التشغيل» (المسار <code>/Inventory/WorkOrders</code>)، وزرّ <strong>أمر تشغيل جديد</strong> (المسار <code>/Inventory/NewWorkOrder</code>).</p>
+  <div class="flow">
+    <span class="step">إنشاء الأمر</span><span class="arr">←</span>
+    <span class="step">إصدار (صرف للـ WIP)</span><span class="arr">←</span>
+    <span class="step">تنفيذ الإنتاج / إكمال</span><span class="arr">←</span>
+    <span class="step alt">القيد المحاسبي</span>
+  </div>
+  <h4>الإنشاء (في «أمر تشغيل جديد»)</h4>
+  <ul>
+    <li><strong>الصنف المُصنَّع (له قائمة مواد BOM)</strong> — تظهر فقط الأصناف التي لها مكوّنات.</li>
+    <li><strong>الكمية المطلوب إنتاجها</strong> · <strong>المخزن</strong> · <strong>بداية مخطّطة</strong> · <strong>نهاية مخطّطة</strong>.</li>
+    <li><strong>تكلفة العمالة (إجمالي)</strong> · <strong>أوفرهيد (إجمالي)</strong> · <strong>ملاحظات</strong> ثم <strong>إنشاء أمر التشغيل</strong>.</li>
+  </ul>
+  <h4>المراحل والأزرار (في تفاصيل الأمر)</h4>
+  <ul>
+    <li>والأمر <strong>مسودة</strong>: <strong>إصدار (صرف للـ WIP)</strong> · <strong>إكمال مباشر</strong> (صرف + إنتاج + قيد في خطوة) · <strong>إلغاء الأمر</strong>.</li>
+    <li>والأمر <strong>مُصدَر / قيد التشغيل</strong>: <strong>تنفيذ الإنتاج</strong> · <strong>إلغاء الأمر</strong> · نموذج <strong>إنتاج جزئي</strong> (كمية + خيار <strong>إقفال</strong> ثم <strong>إنتاج</strong>).</li>
+    <li>بعد الاكتمال يظهر رابط <strong>القيد</strong> لعرض القيد المحاسبي.</li>
+  </ul>
+  <p><strong>التكاليف:</strong> العمالة والأوفرهيد الإجماليان يُدخَلان عند الإنشاء أو في تعديل المسودة؛ وأسطر العمالة التفصيلية تُضاف أثناء التشغيل من بطاقة <strong>العمالة</strong>. بطاقة <strong>ملخّص التكلفة</strong> تعرض المواد + العمالة + الأوفرهيد + إجمالي التكلفة + تكلفة الوحدة المنتَجة.</p>
+
+  <h3>٣-٤ كيف يغذّي التصنيع البيع</h3>
+  <ul>
+    <li><strong>تام مُجهَّز مسبقًا:</strong> أمر تشغيل يُنتِج الصنف ويضيف رصيده للمخزن ← الكاشير يبيعه ويُخصم الصنف نفسه.</li>
+    <li><strong>تجميع عند البيع:</strong> بضبط مصدر التوفير على «وصفة عند البيع»، لا يحمل الصنف رصيدًا؛ لحظة البيع يُسجَّل إيرادًا وتُخصم مكوّنات وصفته (بالكمية × (1 + الهالك)) مع تكلفة المبيعات.</li>
+    <li><strong>حزمة بيع:</strong> الصنف المعرّف «حزمة بيع» يتفكّك عند البيع إلى مكوّناته وتُخصم هي.</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <h2 class="sec"><span class="n">٤</span> التشغيل اليومي (الكاشير)</h2>
+  <p class="lead">الرابط: <code>/pos</code>.</p>
+  <div class="flow">
+    <span class="step">دخول</span><span class="arr">←</span>
+    <span class="step">فتح وردية</span><span class="arr">←</span>
+    <span class="step">فتح طلب</span><span class="arr">←</span>
+    <span class="step">إضافة أصناف</span><span class="arr">←</span>
+    <span class="step">مطبخ</span><span class="arr">←</span>
+    <span class="step">استلام فوري</span><span class="arr">←</span>
+    <span class="step alt">طباعة</span>
+  </div>
+
+  <h3>٤-١ الدخول وفتح الوردية</h3>
+  <ol class="steps">
+    <li>شاشة <strong>نقطة البيع</strong>: أدخل <strong>اسم المستخدم</strong> و<strong>كلمة المرور</strong> ثم <strong>دخول</strong>.</li>
+    <li>شاشة <strong>اختر جهاز الكاشير</strong>: اضغط بطاقة جهازك. لو عليه <strong>وردية مفتوحة</strong> اضغط <strong>دخول</strong>؛ وإلا اختر <strong>وردية صباحية / مسائية</strong> وأدخل <strong>عهدة افتتاحية</strong> ثم <strong>فتح وردية ودخول</strong>.</li>
+  </ol>
+
+  <h3>٤-٢ فتح طلب (صالة / تيك-أواي / توصيل)</h3>
+  <p>في بطاقة <strong>الطلب الحالي</strong> مبدّل نوع الطلب: <strong>طلبات خارجية</strong> (تيك-أواي، الافتراضي) و<strong>الجلوس</strong> (صالة) — أو افتح الطلب مباشرة بالضغط على طاولة من لوحة <strong>الطاولات</strong>. التوصيل يُدار من لوحة التوصيل المنفصلة (الجزء 6).</p>
+  <p>البطاقة تعرض: <strong>الإجمالي</strong> · <strong>عدد الأصناف</strong> · <strong>عدد الأشخاص</strong> (بزرّي − / +) · <strong>العميل</strong> (افتراضي «عميل نقدي»)، وأزرار: <strong>اختر الطاولة · العميل · نقل · دمج · مطبخ</strong>.</p>
+
+  <h3>٤-٣ إضافة الأصناف والإضافات</h3>
+  <ol class="steps">
+    <li>من عمود <strong>الأصناف</strong> اضغط الصنف لإضافته (أو استخدم البحث والتبويبات و«كل الأصناف» و«الأكثر طلباً» و«المفضلة»).</li>
+    <li>لتغيير الكمية على السطر: <strong>−</strong> و<strong>+</strong>؛ للحذف: <strong>×</strong>.</li>
+    <li>للأصناف ذات الإضافات: تفتح نافذة الاختيار تلقائيًا ← اختر ثم <strong>أضف للطلب</strong> (لو هناك مجموعة إجبارية: «أكمل الاختيارات المطلوبة أولًا»).</li>
+  </ol>
+
+  <h3>٤-٤ الإرسال للمطبخ</h3>
+  <p>اضغط <strong>مطبخ</strong> لإرسال الأصناف الجديدة (توست «اتبعت للمطبخ»؛ إن لا جديد: «لا توجد أصناف جديدة للإرسال»). المُرسَل يظهر عليه وسم <strong>مطبخ</strong> ولا يُحذف.</p>
+
+  <h3>٤-٥ الدفع (نقدي / بطاقة / كي-نت + تقسيم + إكرامية)</h3>
+  <p>اضغط <strong>استلام فوري</strong> لتفتح نافذة <strong>الدفع</strong>:</p>
+  <ol class="steps">
+    <li>اختر طريقة الدفع (نقدي أولًا، ثم المُعرَّف للفرع مثل بطاقة/محفظة/كي-نت).</li>
+    <li><strong>إكرامية (اختياري):</strong> أدخل المبلغ واختر <strong>نقدي</strong> أو <strong>بطاقة</strong>.</li>
+    <li><strong>نقدي:</strong> أدخل المدفوع (لوحة الأرقام / المبالغ السريعة) ويظهر <strong>الباقي</strong>؛ <strong>تأكيد الدفع والطباعة</strong> يعرض «سلّم الباقي للزبون» ثم <strong>تم التسليم — ادفع واطبع</strong>.</li>
+    <li><strong>الدفع المتعدد:</strong> <strong>دفع بوسائل متعددة (تقسيم المبلغ)</strong> ← أضِف أسطر (وسيلة + مبلغ) بزرّ <strong>أضف وسيلة</strong> ويظهر <strong>المتبقّي</strong>.</li>
+    <li><strong>تقسيم بالتساوي (نقدي):</strong> صف «تقسيم بالتساوي» بزرّي − / + («نصيب كل شخص»).</li>
+    <li><strong>تقسيم بالأصناف (فاتورة لكل شخص):</strong> <strong>تقسيم بالأصناف</strong> ← حدّد <strong>عدد الفواتير</strong> ووزّع الأصناف ← <strong>دفع وإنشاء الفواتير (نقدي)</strong>.</li>
+  </ol>
+
+  <h3>٤-٦ الطباعة</h3>
+  <p>الإيصال الحراري يُطبع <strong>تلقائيًا</strong> بعد نجاح الدفع (لا زرّ منفصل): رقم الإيصال والجهاز والوردية والكاشير والتاريخ والإجماليات والضريبة والمدفوع والباقي و«شكرًا لزيارتكم».</p>
+</section>
+
+<section id="s5">
+  <h2 class="sec"><span class="n">٥</span> الطاولات والحجوزات</h2>
+
+  <h3>٥-١ لوحة الطاولات وحالاتها (على الكاشير)</h3>
+  <table>
+    <thead><tr><th>الحالة</th><th>اللون</th><th>المعنى</th></tr></thead>
+    <tbody>
+      <tr><td><strong>فارغة</strong></td><td><span class="swatch" style="background:#16a34a"></span> أخضر</td><td>متاحة</td></tr>
+      <tr><td><strong>مشغولة</strong></td><td><span class="swatch" style="background:#2f6fed"></span> أزرق</td><td>عليها طلب مفتوح</td></tr>
+      <tr><td><strong>بانتظار دفع</strong></td><td><span class="swatch" style="background:#8b5cf6"></span> بنفسجي</td><td>مشغولة أكثر من 60 دقيقة</td></tr>
+      <tr><td><strong>معلّقة</strong></td><td><span class="swatch" style="background:#f59e0b"></span> برتقالي</td><td>طلبها مُعلَّق</td></tr>
+      <tr><td><strong>محجوزة</strong></td><td><span class="swatch" style="background:#e5484d"></span> أحمر</td><td>عليها حجز</td></tr>
+      <tr><td><strong>تنظيف</strong></td><td><span class="swatch" style="background:#9aa4b2"></span> رمادي</td><td>قيد التنظيف</td></tr>
+      <tr><td><strong>مغلقة</strong></td><td><span class="swatch" style="background:#7b8794"></span> باهت</td><td>مغلقة</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><strong>فتح طلب على طاولة:</strong> اضغط طاولة فارغة ليُفتح طلب <strong>جلوس</strong>. الطاولة تتّسع لأكثر من طلب حتى عدد مقاعدها.</li>
+    <li><strong>ضبط الحالة يدويًا:</strong> من قائمة الطاولة أزرار: فارغة / محجوزة / تنظيف / مغلقة.</li>
+  </ul>
+
+  <h3>٥-٢ نقل / دمج (لا يوجد «تقسيم طاولة»)</h3>
+  <ul>
+    <li><strong>نقل:</strong> زرّ <strong>نقل</strong> — يختار طاولة فارغة لينقل إليها الطلب بعميله («تأكيد النقل» ← «تم نقل الطلب»).</li>
+    <li><strong>دمج:</strong> زرّ <strong>دمج</strong> — يختار طاولة مشغولة أخرى لضمّ طلبها في طلب واحد («تأكيد الدمج» ← «تم دمج الطاولتين»).</li>
+    <li><strong>تقسيم:</strong> لا يوجد تقسيم للطاولة على اللوحة — التقسيم يحدث عند <strong>الدفع</strong> فقط (بالتساوي أو بالأصناف، راجع 4-5).</li>
+  </ul>
+
+  <h3>٥-٣ الحجوزات</h3>
+  <p><strong>الشاشة:</strong> «الحجوزات» (المسار <code>/Pos/Reservations</code>).</p>
+  <ol class="steps">
+    <li>اختر الشركة ← الفرع، ثم من <strong>مخطط الصالة</strong> اضغط الطاولة (الحالات: متاحة/محجوزة/مشغولة).</li>
+    <li>نافذة <strong>حجز طاولة</strong>: اختر <strong>العميل</strong> (أو أضِفه سريعًا: اسم جديد + هاتف + Add)، حدّد <strong>التاريخ</strong> ثم <strong>الوقت</strong> (خانات: متاح/محجوز جزئيًا/ممتلئ)، <strong>مدة (د)</strong> (افتراضي 120)، <strong>أشخاص</strong> (افتراضي 2)، <strong>ملاحظات</strong> ثم <strong>حجز</strong>.</li>
+    <li>قائمة <strong>حجوزات اليوم والقادمة</strong>: الوقت/الطاولة/الضيف/الهاتف/الأشخاص والحالة (محجوز/وصل/ملغي/لم يحضر). للمحجوز أزرار «لم يحضر» و«إلغاء الحجز».</li>
+    <li><strong>الوصول ← طلب:</strong> من لوحة الطاولات في الكاشير اضغط الطاولة المحجوزة واختر «وصل» ليُفتح طلب <strong>جلوس</strong>، أو «لم يحضر».</li>
+  </ol>
+</section>
+
+<section id="s6">
+  <h2 class="sec"><span class="n">٦</span> التوصيل</h2>
+
+  <h3>٦-١ المناطق والرسوم</h3>
+  <p><strong>الشاشة:</strong> «مناطق ورسوم التوصيل» (المسار <code>/Pos/DeliveryZones</code>). أضِف <strong>المنطقة (عربي)</strong> (مطلوب) + اختياريًا الإنجليزي + <strong>رسم التوصيل</strong> (مطلوب) ثم <strong>إضافة</strong>. يمكن تفعيل/إيقاف/حذف كل منطقة.</p>
+
+  <h3>٦-٢ السائقون</h3>
+  <p><strong>الشاشة:</strong> «سائقو التوصيل» (المسار <code>/Pos/Drivers</code>). أضِف <strong>الاسم</strong> (مطلوب) + <strong>الهاتف</strong> ثم <strong>إضافة</strong>. يمكن تفعيل/إيقاف/حذف السائق.</p>
+
+  <h3>٦-٣ لوحة التوصيل وحالات التسليم</h3>
+  <p><strong>الشاشة:</strong> «لوحة التوصيل» — الكاشير المستقل (المسار <code>/pos/delivery</code>).</p>
+  <ol class="steps">
+    <li>كل بطاقة طلب تعرض حالة المطبخ (جديد / قيد التحضير / جاهز) ثم حالة التوصيل.</li>
+    <li><strong>تعيين سائق:</strong> اضغط <strong>اختر سائقًا</strong> واختر من القائمة (أو «بدون سائق» لإلغاء التعيين) ← تأكيد ← «تم تعيين السائق».</li>
+    <li>زرّ <strong>خرج للتوصيل</strong> — معطّل حتى تصبح حالة المطبخ <strong>جاهز</strong> (يظهر «لم يجهز بعد») ← تأكيد ← «خرج الطلب للتوصيل».</li>
+    <li>زرّ <strong>تُسلّم</strong> (بعد الخروج) ← تأكيد ← «تم تسليم الطلب». بعدها تظهر شارتان: <strong>تم التسليم</strong> و<strong>بانتظار الدفع</strong> (الدفع على الكاشير).</li>
+  </ol>
+</section>
+
+<section id="s7">
+  <h2 class="sec"><span class="n">٧</span> المطبخ (KDS)</h2>
+  <p><strong>الشاشة:</strong> «شاشة المطبخ» — الكاشير المستقل (المسار <code>/pos/kitchen</code>)، لأدوار المطبخ/المدير.</p>
+  <ol class="steps">
+    <li>أعلى الشاشة تبويبات <strong>المحطات</strong> (مطبخ/بار/مشويات/تحضير) + تبويب «الكل».</li>
+    <li>كل سطر صنف يعرض حالته كزرّ قائمة، والحالات تتقدّم: <strong>جديد</strong> ← <strong>قيد التحضير</strong> ← <strong>جاهز</strong>.</li>
+    <li>لتغيير الحالة: اضغط زرّ الحالة واختر التالية («تأكيد تغيير الحالة»): <strong>بدء التحضير</strong> ثم <strong>جاهز</strong>. السطر الجاهز يظهر مشطوبًا.</li>
+    <li>زرّ <strong>الكل جاهز</strong> على بطاقة الطلب يعلّم كل أسطر المحطة الظاهرة جاهزة دفعة واحدة.</li>
+  </ol>
+  <table>
+    <thead><tr><th>الحالة</th><th>اللون</th></tr></thead>
+    <tbody>
+      <tr><td><strong>جديد</strong></td><td>لون العلامة التجارية</td></tr>
+      <tr><td><strong>قيد التحضير</strong></td><td><span class="swatch" style="background:#f59e0b"></span> أصفر</td></tr>
+      <tr><td><strong>جاهز</strong></td><td><span class="swatch" style="background:#16a34a"></span> أخضر</td></tr>
+    </tbody>
+  </table>
+  <div class="note">الأصناف تصل للمطبخ عندما يضغط الكاشير/الجرسون <strong>مطبخ</strong>. التحديثات فورية بين الكاشير والمطبخ ولوحة التوصيل.</div>
+</section>
+
+<section id="s8">
+  <h2 class="sec"><span class="n">٨</span> إغلاق اليوم</h2>
+  <p><strong>تقرير Z وإغلاق الوردية</strong> — من الكاشير: قائمة المستخدم (أعلى) ← <strong>إغلاق الوردية (Z)</strong>.</p>
+  <ol class="steps">
+    <li>تفتح نافذة <strong>إغلاق الوردية (Z)</strong> وتعرض: الجهاز/الوردية، <strong>الطلبات</strong>، <strong>الإجمالي الفرعي</strong>، <strong>الخدمة</strong>، <strong>ض.ق.م</strong>، <strong>إجمالي المبيعات</strong>، تفصيل <strong>المدفوع</strong> بكل وسيلة، <strong>الإكراميات</strong>، و<strong>النقد المتوقّع</strong>.</li>
+    <li>أدخل <strong>النقد المعدود</strong> — يظهر <strong>الفرق</strong>: <strong>زيادة</strong> (أخضر) أو <strong>عجز</strong> (أحمر) أو صفر.</li>
+    <li><strong>طباعة</strong> — يطبع تقرير Z فقط دون إغلاق.</li>
+    <li><strong>إغلاق الوردية (Z)</strong> — تأكيد «إغلاق الوردية؟ لا يمكن التراجع.» ثم يغلق الوردية ويرحّل قيد فرق الدرج (إن وُجد فرق) ويطبع Z («أُغلقت الوردية»).</li>
+  </ol>
+</section>
+
+<section id="s9">
+  <h2 class="sec"><span class="n">٩</span> المرتجعات والإلغاء</h2>
+
+  <h3>٩-١ إلغاء طلب مفتوح (قبل الدفع)</h3>
+  <p>من شريط الكاشير السفلي اضغط <strong>إلغاء الفاتورة</strong> ← تأكيد «إلغاء الفاتورة؟» (نعم / رجوع) — يُلغى الطلب دون أي أثر محاسبي.</p>
+
+  <h3>٩-٢ إلغاء فاتورة مدفوعة بالكامل (مدير)</h3>
+  <ol class="steps">
+    <li>من قائمة المستخدم اضغط <strong>مبيعات حديثة</strong> — تفتح نافذة بآخر مبيعات الوردية/الجهاز.</li>
+    <li>على الفاتورة اضغط <strong>إلغاء الفاتورة</strong> ← تأكيد «إلغاء الفاتورة بالكامل (رد المبلغ + إرجاع المخزون)؟».</li>
+    <li>يعكس النظام كل شيء: يعيد المخزون + يعكس القيد + يخرج النقد؛ وتظهر الفاتورة بوسم <strong>ملغاة</strong>.</li>
+  </ol>
+
+  <h3>٩-٣ مرتجع جزئي (مدير)</h3>
+  <ol class="steps">
+    <li>في نافذة <strong>مبيعات حديثة</strong> اضغط <strong>مرتجع جزئي</strong> على الفاتورة.</li>
+    <li>في شاشة <strong>مرتجع جزئي</strong> حدّد لكل سطر الكمية المُرتجعة بزرّي <strong>−</strong> / <strong>+</strong> (بين 0 والكمية المباعة).</li>
+    <li>اضغط <strong>تأكيد الإرجاع</strong> (يتفعّل عند تحديد كمية ≥ 1) ← تأكيد «إرجاع الأصناف المحددة ورد المبلغ نقدًا؟» ← «تم إرجاع الأصناف».</li>
+  </ol>
+</section>
+
+<section id="s10">
+  <h2 class="sec"><span class="n">١٠</span> العمل بلا نت</h2>
+  <p class="lead">المنظومة تعمل كتطبيق قابل للتثبيت (PWA) وتستمر عند انقطاع الإنترنت.</p>
+
+  <h3>١٠-١ كيف تعرف أنك بلا نت وماذا يستمر</h3>
+  <ul>
+    <li><strong>المؤشر</strong> أعلى الكاشير: نقطة خضراء + <strong>متصل</strong>، أو نقطة حمراء + <strong>بلا نت</strong>. زرّ التحديث يحدّث نسخة القائمة المحفوظة محليًّا للعمل دون إنترنت.</li>
+    <li><strong>ما يستمر:</strong> فتح الطلب وإضافة الأصناف والإضافات وتغيير الكميات والحذف، <strong>والدفع</strong> أيضًا. يُطبع الإيصال برقم محلي (بادئة الجهاز + عدّاد محلي) مختلف عن رقم الفاتورة المحاسبي.</li>
+    <li><strong>قيد بلا نت:</strong> الدفع بوسيلة واحدة فقط (نقدي أو بطاقة)؛ التقسيم والدفع المتعدد يظهر لهما «متاح بلا نت: دفعة واحدة (نقدي/بطاقة) فقط».</li>
+    <li><strong>إغلاق الوردية بلا نت:</strong> يعمل ويُطبع Z محلي، ويُرحَّل قيد فرق الدرج على السيرفر عند عودة النت.</li>
+  </ul>
+
+  <h3>١٠-٢ المزامنة عند عودة النت</h3>
+  <p>بمجرد عودة الاتصال تُزامَن الطلبات تلقائيًا (وأيضًا عند فتح الشاشة وكل عدة دقائق): تُرحَّل الطلبات المدفوعة والإغلاقات بالترتيب (الأقدم أولًا)، ويُسنِد السيرفر أرقام الفواتير المحاسبية ويخصم المخزون ويُرحّل القيود. المزامنة آمنة من الازدواج (لا يُرحَّل الطلب نفسه مرتين).</p>
+
+  <h3>١٠-٣ مراجعة تعارضات المزامنة (المدير)</h3>
+  <p><strong>الشاشة:</strong> «مراجعة تعارضات المزامنة» — القائمة الجانبية ← الإعداد ← مراجعة تعارضات المزامنة (المسار <code>/Pos/SyncConflicts</code>).</p>
+  <ul>
+    <li>تعرض ملاحظات ظهرت أثناء ترحيل طلبات أوفلاين — <strong>لا تمنع البيع، للمراجعة والإقرار فقط</strong>.</li>
+    <li>أنواع التعارض: <strong>مخزون سالب</strong> (أحمر) · <strong>صنف غير نشط</strong> (أصفر) · <strong>فرق سعر</strong> (أزرق).</li>
+    <li>الأعمدة: النوع · الإيصال / الطلب · الصنف · التفصيل · أوفلاين · السيرفر · الحالة · التاريخ.</li>
+    <li>الحالة: <strong>مفتوح</strong> (أحمر) أو <strong>مُقَرّ</strong> (أخضر). زرّ <strong>عرض المُقَرَّة أيضًا / إخفاء المُقَرَّة</strong> يبدّل العرض.</li>
+    <li>لمراجعة تعارض: اضغط <strong>إقرار</strong> على السطر المفتوح.</li>
+  </ul>
+  <div class="tip">لا محاسبة تُحسَب على الجهاز في وضع أوفلاين؛ كل القيود تُرحَّل على السيرفر عند المزامنة عبر الخدمات القائمة، وتبقى ثوابت النظام المحاسبية سليمة.</div>
+</section>
+
+<p style="text-align:center;color:var(--muted);margin:26px 0;">— انتهى الدليل. للأسئلة التشغيلية راجع المدير أو مسؤول النظام. —</p>
+
+</div>

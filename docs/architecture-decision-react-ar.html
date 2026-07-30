@@ -1,0 +1,213 @@
+<title>قرار المعمارية: التحويل إلى React — CrossBuy ERP</title>
+<style>
+  :root{
+    --paper:#F4F6FA;
+    --ink:#14233B;
+    --muted:#5C6B82;
+    --line:#E2E8F2;
+    --card:#FFFFFF;
+    --accent:#1B84FF;
+    --navy:#0B2A4A;
+    --green:#17C653;
+    --amber:#F6A609;
+    --red:#E0506A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Segoe UI","Tahoma",system-ui,sans-serif;
+    direction:rtl;line-height:1.85;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding:0 20px 80px;}
+
+  /* hero */
+  .hero{
+    background:linear-gradient(135deg,var(--navy),#123E68);
+    color:#fff;border-radius:0 0 28px 28px;
+    padding:48px 36px 40px;margin-bottom:36px;
+    box-shadow:0 20px 50px rgba(11,42,74,.25);
+  }
+  .hero .kicker{font-size:13px;letter-spacing:2px;color:#8FC0FF;margin:0 0 12px;font-weight:700;}
+  .hero h1{font-size:30px;line-height:1.4;margin:0 0 14px;font-weight:800;}
+  .hero .verdict{
+    display:inline-flex;align-items:center;gap:10px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+    padding:10px 20px;border-radius:14px;font-size:18px;font-weight:800;margin-top:6px;
+  }
+  .hero .verdict .dot{width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(23,198,83,.25);}
+  .hero p{color:#CBDDF2;margin:16px 0 0;font-size:15px;}
+
+  .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;}
+  .meta span{background:rgba(255,255,255,.1);border-radius:20px;padding:5px 14px;font-size:12.5px;color:#DCE9F7;}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 28px;margin-bottom:20px;box-shadow:0 2px 14px rgba(20,35,59,.04);}
+  h2{font-size:21px;margin:0 0 6px;display:flex;align-items:center;gap:12px;font-weight:800;}
+  h2 .n{
+    flex:0 0 auto;width:34px;height:34px;border-radius:10px;background:var(--accent);color:#fff;
+    display:grid;place-items:center;font-size:15px;font-weight:800;
+  }
+  h2 .n.navy{background:var(--navy);}
+  .lead{color:var(--muted);margin:4px 0 18px;font-size:15px;}
+
+  ul{margin:0;padding-inline-start:22px;}
+  li{margin-bottom:9px;}
+  b{color:var(--navy);}
+
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14.5px;overflow:hidden;border-radius:12px;}
+  th,td{padding:12px 14px;text-align:right;border-bottom:1px solid var(--line);}
+  thead th{background:#EEF3FA;color:var(--navy);font-weight:800;font-size:13.5px;}
+  tbody tr:last-child td{border-bottom:none;}
+  .yes{color:var(--green);font-weight:800;}
+  .no{color:var(--red);font-weight:800;}
+  .mid{color:var(--amber);font-weight:800;}
+
+  /* architecture diagram */
+  .arch{background:#0E1B2E;border-radius:16px;padding:26px;color:#fff;text-align:center;margin-top:6px;}
+  .arch .api{display:inline-block;background:var(--accent);color:#fff;padding:14px 28px;border-radius:14px;font-weight:800;font-size:16px;box-shadow:0 10px 24px rgba(27,132,255,.4);}
+  .arch .api small{display:block;font-weight:500;font-size:12px;color:#D6E8FF;margin-top:3px;}
+  .arch .stem{width:2px;height:26px;background:#39537A;margin:6px auto;}
+  .arch .row{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin-top:6px;}
+  .arch .leaf{background:#15263D;border:1px solid #29405E;border-radius:12px;padding:14px 20px;min-width:150px;}
+  .arch .leaf .t{font-weight:800;font-size:15px;}
+  .arch .leaf .s{font-size:12px;color:#93A7C4;margin-top:3px;}
+  .arch .leaf.web .t{color:#7FB6FF;}
+  .arch .leaf.mob .t{color:#6FE0A0;}
+  .arch .leaf.future .t{color:#C9B3FF;}
+
+  /* phases */
+  .phase{display:flex;gap:16px;padding:16px 0;border-bottom:1px dashed var(--line);}
+  .phase:last-child{border-bottom:none;}
+  .phase .ph-n{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;}
+  .phase .ph-b h4{margin:2px 0 4px;font-size:16px;color:var(--navy);}
+  .phase .ph-b p{margin:0;color:var(--muted);font-size:14px;}
+
+  .callout{border-radius:14px;padding:16px 20px;margin-top:14px;font-size:14.5px;border-inline-start:5px solid;}
+  .callout.warn{background:#FFF8EC;border-color:var(--amber);}
+  .callout.good{background:#EAF9F0;border-color:var(--green);}
+  .callout b{color:var(--ink);}
+
+  .tldr{background:var(--navy);color:#fff;border:none;}
+  .tldr h2{color:#fff;}
+  .tldr h2 .n{background:#fff;color:var(--navy);}
+  .tldr li{color:#DCE9F7;}
+  .tldr b{color:#fff;}
+
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px;}
+  @media(max-width:560px){.hero{padding:34px 22px;}.hero h1{font-size:23px;}section{padding:20px 18px;}}
+</style>
+
+<div class="hero">
+  <p class="kicker">قرار معماري · CrossBuy ERP</p>
+  <h1>هل نُبقي النظام على ASP.NET MVC أم نحوّله إلى React؟</h1>
+  <div class="verdict"><span class="dot"></span> القرار: التحويل إلى React + واجهة برمجية (API)</div>
+  <p>لأن الهدف نظام ERP متكامل (موارد بشرية + حسابات كاملة + مخازن كاملة)، والبقاء على شاشات Razor المونوليثية لن يصمد أمام هذا الحجم.</p>
+  <div class="meta">
+    <span>الواجهة: React</span>
+    <span>الخادم: ASP.NET Core Web API</span>
+    <span>الموبايل: Flutter</span>
+    <span>مصدر واحد للبيانات</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section class="tldr">
+    <h2><span class="n">★</span> الخلاصة في 4 نقاط</h2>
+    <ul>
+      <li><b>القرار:</b> نحوّل الواجهة إلى <b>React</b>، ويبقى الخادم <b>ASP.NET Core</b> لكن كـ <b>Web API</b> (JSON) بدل صفحات Razor.</li>
+      <li><b>السبب:</b> الـ ERP = مئات الشاشات المعقّدة المتكرّرة العناصر؛ React يعيد استخدام المكوّنات، Razor المونوليثي لا.</li>
+      <li><b>الطريقة:</b> تحويل تدريجي موديول-بموديول (نمط Strangler)، <b>مش</b> إعادة كتابة دفعة واحدة.</li>
+      <li><b>المكسب:</b> نفس الـ API يخدم الويب (React) والموبايل (Flutter) ومستقبلًا التكاملات والتقارير — تُكتب قواعد العمل مرة واحدة.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">1</span> تقييم الوضع الحالي</h2>
+    <p class="lead">الشكل ممتاز (Metronic)، لكن البِنية تحت السطح هي مكمن الخطر مع التوسّع.</p>
+    <ul>
+      <li>الشاشة الواحدة قد تتجاوز <b>6000 سطر</b> فيها HTML + CSS + JavaScript مختلطين داخل ملف Razor واحد.</li>
+      <li>المنطق يعتمد على <b>الجلسات (Session)</b>، والاستجابات JSON تُكتب بشكل مخصّص لكل صفحة (غير موحّد).</li>
+      <li>إعادة استخدام المكوّنات شبه معدومة — كل شاشة تُبنى من الصفر تقريبًا.</li>
+      <li>تشابك منطق الواجهة مع الخادم يجعل الصيانة والتطوير المتوازي صعبًا كلما كبر الفريق والنظام.</li>
+    </ul>
+    <div class="callout warn">
+      <b>المعنى:</b> النظام يعمل جيدًا اليوم كـ <b>موديول HR أول</b>، لكن مضاعفته إلى حسابات ومخازن على نفس الأسلوب يضاعف الديون التقنية ويُبطئ كل إضافة لاحقة.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span> لماذا React مناسب لـ ERP تحديدًا؟</h2>
+    <p class="lead">ليست موضة — بل تطابق مع طبيعة أنظمة ERP.</p>
+    <ul>
+      <li><b>إعادة استخدام المكوّنات:</b> جداول البيانات، القوائم المنسدلة (Lookups)، منتقيات التاريخ، دورات الاعتماد — تُبنى مرة وتُستخدم في كل الموديولات. هذا جوهر الـ ERP.</li>
+      <li><b>شاشات كثيفة وتفاعلية:</b> فلاتر، تابات متعددة، تحقق فوري، تحديث لحظي — React يتعامل معها بسلاسة وأداء عالٍ.</li>
+      <li><b>فصل الاهتمامات:</b> منطق العمل والبيانات في الـ API، والواجهة منفصلة — أوضح وأأمن وأسهل اختبارًا.</li>
+      <li><b>تجربة مستخدم القوة:</b> المحاسب وأمين المخزن يقضون يومهم داخل النظام؛ تنقّل SPA السريع يرفع إنتاجيتهم.</li>
+      <li><b>نظام بيئي ناضج:</b> مكتبات بمستوى ERP (جداول متقدمة، إدارة حالة، نماذج، تقارير).</li>
+      <li><b>متوافق مع وضعك:</b> لديك بالفعل تطبيق React قائم (al-react) و API منفصل — التحويل يوحّد المسار بدل تشتيته.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span> مقارنة سريعة</h2>
+    <table>
+      <thead><tr><th>المعيار</th><th>البقاء على MVC/Razor</th><th>التحويل إلى React + API</th></tr></thead>
+      <tbody>
+        <tr><td>إعادة استخدام المكوّنات</td><td class="no">ضعيفة</td><td class="yes">عالية جدًا</td></tr>
+        <tr><td>قابلية التوسّع لـ ERP كامل</td><td class="no">صعبة</td><td class="yes">ممتازة</td></tr>
+        <tr><td>سرعة وتجربة الاستخدام</td><td class="mid">متوسطة</td><td class="yes">عالية (SPA)</td></tr>
+        <tr><td>مشاركة المنطق مع الموبايل</td><td class="no">لا</td><td class="yes">نعم (API واحد)</td></tr>
+        <tr><td>العمل الجماعي على الكود</td><td class="no">متشابك</td><td class="yes">معزول ومنظّم</td></tr>
+        <tr><td>تكلفة البداية</td><td class="yes">أقل</td><td class="mid">أعلى (استثمار)</td></tr>
+        <tr><td>تكلفة المدى الطويل</td><td class="no">تتصاعد</td><td class="yes">تنخفض</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2><span class="n navy">4</span> المعمارية المستهدفة</h2>
+    <p class="lead">مصدر واحد للحقيقة (الـ API) يخدم كل الواجهات.</p>
+    <div class="arch">
+      <div class="api">ASP.NET Core Web API<small>JWT · JSON · قواعد العمل · EF Core · SQL Server</small></div>
+      <div class="stem"></div>
+      <div class="row">
+        <div class="leaf web"><div class="t">React</div><div class="s">واجهة الويب (المتصفح)</div></div>
+        <div class="leaf mob"><div class="t">Flutter</div><div class="s">الموبايل (أندرويد / iOS)</div></div>
+        <div class="leaf future"><div class="t">تكاملات / تقارير</div><div class="s">مستقبلًا (BI · أنظمة أخرى)</div></div>
+      </div>
+    </div>
+    <div class="callout good">
+      <b>ملاحظة مهمة:</b> الـ API الذي بنيناه بالفعل للموبايل (تسجيل دخول · الملف · الهيكل الإداري) هو <b>نفسه</b> الذي ستستهلكه React — أي شغل في الـ API يخدم الويب والموبايل معًا.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n navy">5</span> خطة التحويل التدريجي (Strangler)</h2>
+    <p class="lead">لا لإعادة الكتابة دفعة واحدة — فهي أكثر أسباب فشل المشاريع.</p>
+    <div class="phase"><div class="ph-n">1</div><div class="ph-b"><h4>بناء طبقة الـ API أولًا</h4><p>توحيد المصادقة (JWT) وتغطية موديول HR بالكامل بـ endpoints منظّمة وموثّقة (Swagger).</p></div></div>
+    <div class="phase"><div class="ph-n">2</div><div class="ph-b"><h4>تحويل موديول HR كـ Proof of Concept في React</h4><p>إثبات النمط (شاشات، مكوّنات مشتركة، حالة) قبل التوسّع.</p></div></div>
+    <div class="phase"><div class="ph-n">3</div><div class="ph-b"><h4>بناء الموديولات الجديدة في React مباشرة</h4><p>الحسابات الكاملة والمخازن تُبنى React-first فوق نفس الـ API.</p></div></div>
+    <div class="phase"><div class="ph-n">4</div><div class="ph-b"><h4>الإحلال التدريجي</h4><p>يظل MVC القديم يعمل حتى تحل شاشات React محله موديولًا تلو الآخر، دون توقف للعمل.</p></div></div>
+  </section>
+
+  <section>
+    <h2><span class="n navy">6</span> المخاطر وكيف نتجنّبها</h2>
+    <ul>
+      <li><b>استثمار أكبر في البداية</b> → نوزّعه على مراحل، ونبدأ بالـ API الذي يخدم الموبايل أيضًا (عائد مزدوج).</li>
+      <li><b>منحنى تعلّم الفريق</b> → لديك فريق React قائم بالفعل (al-react)، فالفجوة محدودة.</li>
+      <li><b>إغراء إعادة الكتابة الكاملة</b> → ممنوع؛ نلتزم بالتحويل التدريجي.</li>
+      <li><b>ازدواج المنطق</b> → القاعدة الذهبية: كل قواعد العمل في الـ API فقط، الواجهات تعرض ولا تقرّر.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="n navy">7</span> قرارات ثابتة (لا تتغيّر)</h2>
+    <ul>
+      <li><b>الخادم يبقى C# / ASP.NET Core</b> — لا تحويل إلى Node؛ نحافظ على خبرة الفريق و EF Core ومنطق العمل الحالي.</li>
+      <li><b>قاعدة البيانات تبقى SQL Server</b> كما هي.</li>
+      <li><b>الموبايل يبقى Flutter</b> (يعمل بالفعل) — والويب React — والاثنان على API واحد.</li>
+    </ul>
+  </section>
+
+  <footer>وثيقة قرار معماري — CrossBuy ERP · للعرض على الفريق والإدارة</footer>
+</div>

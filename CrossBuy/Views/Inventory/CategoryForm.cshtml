@@ -1,0 +1,143 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Inventory
+@model ItemCategory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    bool isEdit = ViewBag.IsEdit ?? false;
+    var accounts = ViewBag.Accounts as List<AccountNode> ?? new();
+    var cats = ViewBag.Categories as List<ItemCategory> ?? new();
+    string AcctOpts(int? sel) => "<option value=\"\">—</option>" + string.Join("", accounts.Select(a =>
+        $"<option value=\"{a.Id}\"{(sel == a.Id ? " selected" : "")}>{a.Code} — {(isAr ? a.Name : a.NameEn)}</option>"));
+    var blank = Url.Content("~/Backend-assets/media/svg/files/blank-image.svg");
+    var hasIcon = !string.IsNullOrWhiteSpace(Model.StoreIcon);
+    var iconUrl = hasIcon ? Url.Content("~" + Model.StoreIcon!.Replace("\\", "/")) : blank;
+}
+<form id="kt_cat_form" class="d-flex flex-column flex-column-fluid" method="post" enctype="multipart/form-data" asp-action="@(isEdit ? "EditCategory" : "CreateCategory")" data-cb-confirm="@(isEdit ? "" : null)" data-cb-action="edit" data-cb-text="@Localizer["Save changes?"]">
+    @Html.AntiForgeryToken()
+    @if (isEdit) { <input type="hidden" name="id" value="@Model.ID" /> }
+
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? Localizer["Edit category"] : Localizer["Add category"])</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Categories","Inventory")" class="text-muted text-hover-primary">@Localizer["Categories"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@(isEdit ? Model.Code : Localizer["New"].Value)</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("Categories","Inventory")" class="btn btn-light">@SR["Cancel"]</a>
+            <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <div class="d-flex flex-column flex-lg-row">
+            <!--begin::Aside-->
+            <div class="d-flex flex-column gap-7 gap-lg-10 w-100 w-lg-300px mb-7 me-lg-10">
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@SR["Status"]</h2></div></div>
+                    <div class="card-body pt-0">
+                        <select name="IsActive" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                            <option value="true" selected="@Model.IsActive">@SR["Active"]</option>
+                            <option value="false" selected="@(!Model.IsActive)">@SR["Inactive"]</option>
+                        </select>
+                    </div>
+                </div>
+                <!--begin::Storefront image (same widget as the item thumbnail)-->
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Storefront image"]</h2></div></div>
+                    <div class="card-body text-center pt-0">
+                        <div class="image-input image-input-outline @(hasIcon ? "" : "image-input-placeholder")" data-kt-image-input="true">
+                            <div class="image-input-wrapper w-125px h-125px" style="background-image:url('@iconUrl');background-size:contain;background-repeat:no-repeat;background-position:center;"></div>
+                            <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="change" data-bs-toggle="tooltip" title="@Localizer["Change image"]">
+                                <i class="ki-outline ki-pencil fs-7"></i>
+                                <input type="file" name="iconFile" accept=".png, .jpg, .jpeg, .webp, .avif, .svg" />
+                            </label>
+                            <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="@SR["Cancel"]"><i class="ki-outline ki-cross fs-2"></i></span>
+                            <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="@Localizer["Remove image"]"><i class="ki-outline ki-cross fs-2"></i></span>
+                        </div>
+                        @if (isEdit) { <input type="hidden" name="StoreIcon" value="@Model.StoreIcon" /> }
+                        <div class="text-muted fs-7 mt-3">@Localizer["Shown on the storefront categories."]</div>
+                        <div class="mt-4 text-start">
+                            <label class="fw-semibold fs-7 mb-2 d-block">@Localizer["Items count (display)"]</label>
+                            <input type="number" name="StoreItemsCount" class="form-control form-control-solid" min="0" value="@Model.StoreItemsCount" />
+                        </div>
+                    </div>
+                </div>
+                <!--end::Storefront image-->
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Costing"]</h2></div></div>
+                    <div class="card-body pt-0">
+                        <label class="fw-semibold fs-6 mb-2">@Localizer["Default costing method"]</label>
+                        <select name="DefaultCostingMethod" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                            <option value="" selected="@string.IsNullOrEmpty(Model.DefaultCostingMethod)">@Localizer["Moving Average (default)"]</option>
+                            <option value="Moving" selected="@(Model.DefaultCostingMethod=="Moving")">@Localizer["Moving Average"]</option>
+                            <option value="FIFO" selected="@(Model.DefaultCostingMethod=="FIFO")">FIFO</option>
+                        </select>
+                        <div class="text-muted fs-7 mt-3">@Localizer["Items in this category inherit this method unless set on the item."]</div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Aside-->
+
+            <!--begin::Main-->
+            <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Category details"]</h2></div></div>
+                    <div class="card-body pt-0">
+                        <div class="row">
+                            <div class="col-md-4 mb-5"><label class="required fw-semibold fs-6 mb-2">@SR["Code"]</label><input name="Code" class="form-control form-control-solid" value="@Model.Code" required /></div>
+                            <div class="col-md-4 mb-5">
+                                <label class="required fw-semibold fs-6 mb-2">@Localizer["Level"]</label>
+                                <select id="catKind" name="Kind" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                                    <option value="Category" selected="@(Model.Kind!="Group")">@Localizer["Category (root)"]</option>
+                                    <option value="Group" selected="@(Model.Kind=="Group")">@Localizer["Group (under a category)"]</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-5" id="catParentWrap"><label class="fw-semibold fs-6 mb-2" id="catParentLbl">@Localizer["Parent category"]</label><select name="ParentId" id="catParent" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["— Root —"]</option>@foreach (var c in cats.Where(x => x.Kind != "Group")) { <option value="@c.ID" selected="@(Model.ParentId==c.ID)">@c.Code — @(isAr ? c.Name : c.NameEn)</option> }</select></div>
+                        </div>
+                        <div class="text-muted fs-7 mb-5">@Localizer["A Group inherits its GL account mapping from its parent Category when left empty."]</div>
+                        <div class="row">
+                            <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="Name" class="form-control form-control-solid" value="@Model.Name" required /></div>
+                            <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="NameEn" class="form-control form-control-solid" value="@Model.NameEn" required /></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["GL account mapping"]</h2></div></div>
+                    <div class="card-body pt-0">
+                        <div class="text-muted fs-7 mb-5">@Localizer["Used to auto-generate inventory journal entries (receipts, issues, COGS, adjustments)."]</div>
+                        <div class="row">
+                            <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Inventory account"]</label><select name="InventoryAccountId" class="form-select form-select-solid" data-control="select2">@Html.Raw(AcctOpts(Model.InventoryAccountId))</select></div>
+                            <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["COGS account"]</label><select name="CogsAccountId" class="form-select form-select-solid" data-control="select2">@Html.Raw(AcctOpts(Model.CogsAccountId))</select></div>
+                            <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Adjustment account"]</label><select name="AdjustmentAccountId" class="form-select form-select-solid" data-control="select2">@Html.Raw(AcctOpts(Model.AdjustmentAccountId))</select></div>
+                            <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["GRNI account"]</label><select name="GrniAccountId" class="form-select form-select-solid" data-control="select2">@Html.Raw(AcctOpts(Model.GrniAccountId))</select></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Main-->
+        </div>
+    </div></div>
+</form>
+<script>
+    (function () {
+        var kind = document.getElementById('catKind');
+        var parent = document.getElementById('catParent');
+        var lbl = document.getElementById('catParentLbl');
+        function sync() {
+            var isGroup = kind && kind.value === 'Group';
+            if (lbl) lbl.classList.toggle('required', !!isGroup);
+            if (parent) { parent.required = !!isGroup; parent.disabled = !isGroup; }
+        }
+        if (kind) { $(kind).on('change', sync); sync(); }
+    })();
+</script>

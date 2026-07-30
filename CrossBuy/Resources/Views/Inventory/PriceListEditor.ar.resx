@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Edit price list" xml:space="preserve">
+    <value>تعديل قائمة أسعار</value>
+  </data>
+  <data name="New price list" xml:space="preserve">
+    <value>قائمة أسعار جديدة</value>
+  </data>
+  <data name="Price lists" xml:space="preserve">
+    <value>قوائم الأسعار</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>الاسم (إنجليزي)</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>الأولوية</value>
+  </data>
+  <data name="Specific customer (blank = segment/all)" xml:space="preserve">
+    <value>عميل بعينه (فارغ = شريحة/الكل)</value>
+  </data>
+  <data name="Segment (blank = all)" xml:space="preserve">
+    <value>الشريحة (فارغ = كل العملاء)</value>
+  </data>
+  <data name="Wholesale" xml:space="preserve">
+    <value>جملة</value>
+  </data>
+  <data name="Retail" xml:space="preserve">
+    <value>تجزئة</value>
+  </data>
+  <data name="Valid from" xml:space="preserve">
+    <value>صالحة من</value>
+  </data>
+  <data name="Valid to" xml:space="preserve">
+    <value>صالحة حتى</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>افتراضية</value>
+  </data>
+  <data name="Pricing rules" xml:space="preserve">
+    <value>قواعد التسعير</value>
+  </data>
+  <data name="Pricing mode" xml:space="preserve">
+    <value>طريقة السعر</value>
+  </data>
+  <data name="Fixed price" xml:space="preserve">
+    <value>سعر ثابت</value>
+  </data>
+  <data name="Cost + markup" xml:space="preserve">
+    <value>تكلفة + هامش</value>
+  </data>
+  <data name="Min qty ≥" xml:space="preserve">
+    <value>حد الكمية ≥</value>
+  </data>
+  <data name="Override price" xml:space="preserve">
+    <value>سعر بديل (اختياري)</value>
+  </data>
+  <data name="Item price" xml:space="preserve">
+    <value>سعر الصنف</value>
+  </data>
+  <data name="Markup %" xml:space="preserve">
+    <value>هامش %</value>
+  </data>
+  <data name="Discount %" xml:space="preserve">
+    <value>خصم %</value>
+  </data>
+  <data name="Price is computed from the current cost (manufactured / average stock) × (1 + markup%) and converted to the document currency — a dynamic price that moves with the cost, not a fixed one." xml:space="preserve">
+    <value>السعر محسوب من التكلفة الحالية (تصنيع/متوسط مخزون) × (1 + الهامش٪) ويُحوَّل لعملة المستند — سعر متحرّك يتغيّر بتغيّر التكلفة، وليس ثابتًا.</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>الطريقة</value>
+  </data>
+  <data name="Min qty" xml:space="preserve">
+    <value>حد الكمية</value>
+  </data>
+  <data name="Price/Markup" xml:space="preserve">
+    <value>سعر/هامش</value>
+  </data>
+  <data name="Disc %" xml:space="preserve">
+    <value>خصم %</value>
+  </data>
+  <data name="No rules yet — add an item above" xml:space="preserve">
+    <value>لا توجد قواعد بعد — أضف صنفًا أعلاه</value>
+  </data>
+  <data name="Save changes?" xml:space="preserve">
+    <value>حفظ التعديلات؟</value>
+  </data>
+  <data name="Cost+markup" xml:space="preserve">
+    <value>تكلفة+هامش</value>
+  </data>
+  <data name="Fixed" xml:space="preserve">
+    <value>ثابت</value>
+  </data>
+  <data name="Search item…" xml:space="preserve">
+    <value>ابحث عن صنف…</value>
+  </data>
+  <data name="All customers / by segment" xml:space="preserve">
+    <value>كل العملاء / حسب الشريحة</value>
+  </data>
+</root>

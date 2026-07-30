@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Administrative Structure" xml:space="preserve">
+    <value>Structure administrative</value>
+  </data>
+  <data name="Official administrative unit" xml:space="preserve">
+    <value>Unité administrative officielle</value>
+  </data>
+  <data name="Manage the administrative structure — companies, branches, administrative entities" xml:space="preserve">
+    <value>Gérer la structure administrative — entreprises, succursales, entités administratives</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>Développer</value>
+  </data>
+  <data name="Collapse" xml:space="preserve">
+    <value>Réduire</value>
+  </data>
+  <data name="Search by name or entity type..." xml:space="preserve">
+    <value>Rechercher par nom ou type d'entité...</value>
+  </data>
+  <data name="All units" xml:space="preserve">
+    <value>Toutes les unités</value>
+  </data>
+  <data name="Tree" xml:space="preserve">
+    <value>Arborescence</value>
+  </data>
+  <data name="Org chart" xml:space="preserve">
+    <value>Organigramme</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Flux</value>
+  </data>
+  <data name="Tree view" xml:space="preserve">
+    <value>Vue arborescente</value>
+  </data>
+  <data name="Classic jsTree hierarchy" xml:space="preserve">
+    <value>Hiérarchie jsTree classique</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Par défaut</value>
+  </data>
+  <data name="3D org chart" xml:space="preserve">
+    <value>Organigramme 3D</value>
+  </data>
+  <data name="Drag to pan · Ctrl+wheel to zoom · double-click to focus an item" xml:space="preserve">
+    <value>Glisser pour déplacer · Ctrl+molette pour zoomer · double-clic pour cibler un élément</value>
+  </data>
+  <data name="Drag to pan" xml:space="preserve">
+    <value>Glisser pour déplacer</value>
+  </data>
+  <data name="Fullscreen" xml:space="preserve">
+    <value>Plein écran</value>
+  </data>
+  <data name="Legend" xml:space="preserve">
+    <value>Légende</value>
+  </data>
+  <data name="Administrative entity" xml:space="preserve">
+    <value>Entité administrative</value>
+  </data>
+  <data name="Structure summary" xml:space="preserve">
+    <value>Résumé de la structure</value>
+  </data>
+  <data name="entities" xml:space="preserve">
+    <value>entités</value>
+  </data>
+  <data name="Collapsible flow chart" xml:space="preserve">
+    <value>Organigramme repliable</value>
+  </data>
+  <data name="Click the arrow to collapse / expand branches" xml:space="preserve">
+    <value>Cliquez sur la flèche pour réduire / développer les branches</value>
+  </data>
+  <data name="Collapsible" xml:space="preserve">
+    <value>Repliable</value>
+  </data>
+  <data name="Org chart - fullscreen" xml:space="preserve">
+    <value>Organigramme - plein écran</value>
+  </data>
+  <data name="Zoom out" xml:space="preserve">
+    <value>Dézoomer</value>
+  </data>
+  <data name="Zoom in" xml:space="preserve">
+    <value>Zoomer</value>
+  </data>
+  <data name="Fit" xml:space="preserve">
+    <value>Ajuster</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Poste</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Niveau</value>
+  </data>
+  <data name="Failed to load parent data." xml:space="preserve">
+    <value>Échec du chargement des données parentes.</value>
+  </data>
+  <data name="An error occurred." xml:space="preserve">
+    <value>Une erreur s'est produite.</value>
+  </data>
+  <data name="Please fill in all required fields." xml:space="preserve">
+    <value>Veuillez remplir tous les champs obligatoires.</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>Enregistré</value>
+  </data>
+  <data name="Add failed" xml:space="preserve">
+    <value>Échec de l'ajout</value>
+  </data>
+  <data name="An error occurred" xml:space="preserve">
+    <value>Une erreur s'est produite</value>
+  </data>
+  <data name="Could not save the item." xml:space="preserve">
+    <value>Impossible d'enregistrer l'élément.</value>
+  </data>
+</root>

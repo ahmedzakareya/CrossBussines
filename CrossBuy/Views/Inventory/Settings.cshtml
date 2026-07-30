@@ -1,0 +1,98 @@
+@using CrossBuy.Models.Context.Inventory
+@model InventorySettings
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+}
+<form asp-action="SaveSettings" method="post" class="d-flex flex-column flex-column-fluid" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Save settings?"]">@Html.AntiForgeryToken()
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Inventory settings"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Settings"]</li></ul></div>
+        <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5">
+            <div class="col-lg-4">
+                <div class="card card-flush h-100">
+                    <div class="card-header"><div class="card-title d-flex align-items-center gap-3"><span class="symbol symbol-35px"><span class="symbol-label" style="background:#e9f1ee;"><i class="ki-outline ki-arrows-circle fs-2" style="color:#13433a;"></i></span></span><h2 class="m-0">@Localizer["Inter-branch transfer"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <label class="fw-semibold fs-6 mb-2">@Localizer["GL behavior when branches differ"]</label>
+                        <select name="interBranchTransferMode" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                            <option value="CostCenterPosting" selected="@(Model.InterBranchTransferMode != "NoGL")">@Localizer["Cost-center posting (recommended)"]</option>
+                            <option value="NoGL" selected="@(Model.InterBranchTransferMode == "NoGL")">@Localizer["No GL (cost-only relocation)"]</option>
+                        </select>
+                        <div class="text-muted fs-7 mt-3">@Localizer["When the two warehouses are in different branches: Cost-center posting moves value through a goods-in-transit account (so branch profitability is correct). No GL relocates qty/cost only. Same-branch transfers never post."]</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card card-flush h-100">
+                    <div class="card-header"><div class="card-title d-flex align-items-center gap-3"><span class="symbol symbol-35px"><span class="symbol-label" style="background:#e9f1ee;"><i class="ki-outline ki-trash fs-2" style="color:#13433a;"></i></span></span><h2 class="m-0">@Localizer["Write-off / damage"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <label class="fw-semibold fs-6 mb-2">@Localizer["How write-offs are recorded"]</label>
+                        <select name="writeOffMode" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                            <option value="SeparateDocument" selected="@(Model.WriteOffMode != "AdjustmentReason")">@Localizer["Separate write-off document (recommended)"]</option>
+                            <option value="AdjustmentReason" selected="@(Model.WriteOffMode == "AdjustmentReason")">@Localizer["Reason within a stock adjustment"]</option>
+                        </select>
+                        <div class="text-muted fs-7 mt-3">@Localizer["Separate document creates a numbered write-off doc (WOF-) with its own approval trail — preferred by auditors. Reason mode records it as a stock adjustment carrying the write-off reason. Both post the same entry: Dr write-off expense (510103) / Cr inventory (1103)."]</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card card-flush h-100">
+                    <div class="card-header"><div class="card-title d-flex align-items-center gap-3"><span class="symbol symbol-35px"><span class="symbol-label" style="background:#e9f1ee;"><i class="ki-outline ki-shield-tick fs-2" style="color:#13433a;"></i></span></span><h2 class="m-0">@Localizer["Approvals"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <label class="fw-semibold fs-6 mb-2">@Localizer["Document approval threshold"]</label>
+                        <input name="approvalThreshold" type="number" step="0.01" min="0" class="form-control form-control-solid w-250px" value="@Model.ApprovalThreshold.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                        <div class="text-muted fs-7 mt-3">@Localizer["Documents above this value require approval (used by the approvals task)."]</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card card-flush h-100">
+                    <div class="card-header"><div class="card-title d-flex align-items-center gap-3"><span class="symbol symbol-35px"><span class="symbol-label" style="background:#e9f1ee;"><i class="ki-outline ki-chart-line-up fs-2" style="color:#13433a;"></i></span></span><h2 class="m-0">@Localizer["Gross-margin floor (min price)"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="fw-semibold fs-6 mb-2">@Localizer["Mode"]</label>
+                                <select name="minMarginMode" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                                    <option value="Off" selected="@(Model.MinMarginMode != "Warn" && Model.MinMarginMode != "Block")">@Localizer["Off (no check)"]</option>
+                                    <option value="Warn" selected="@(Model.MinMarginMode == "Warn")">@Localizer["Warn (allow + notify)"]</option>
+                                    <option value="Block" selected="@(Model.MinMarginMode == "Block")">@Localizer["Block (reject)"]</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="fw-semibold fs-6 mb-2">@Localizer["Minimum margin %"]</label>
+                                <input name="minMarginPct" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@Model.MinMarginPct.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                            </div>
+                        </div>
+                        <div class="text-muted fs-7">@Localizer["On sales (order/invoice) the net sell price — converted to the functional currency — is compared to (current average cost × (1 + margin%)). Foreign documents are converted first, so the floor works in any invoice currency. Each item can override the % on its card. Items with no known cost are skipped (no false block). Quotations only warn."]</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card card-flush h-100">
+                    <div class="card-header"><div class="card-title d-flex align-items-center gap-3"><span class="symbol symbol-35px"><span class="symbol-label" style="background:#e9f1ee;"><i class="ki-outline ki-discount fs-2" style="color:#13433a;"></i></span></span><h2 class="m-0">@Localizer["Discount approval"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="fw-semibold fs-6 mb-2">@Localizer["Mode"]</label>
+                                <select name="discountApprovalMode" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                                    <option value="Off" selected="@(Model.DiscountApprovalMode != "Warn" && Model.DiscountApprovalMode != "Block")">@Localizer["Off"]</option>
+                                    <option value="Warn" selected="@(Model.DiscountApprovalMode == "Warn")">@Localizer["Warn"]</option>
+                                    <option value="Block" selected="@(Model.DiscountApprovalMode == "Block")">@Localizer["Block (needs manage)"]</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="fw-semibold fs-6 mb-2">@Localizer["Max line discount %"]</label>
+                                <input name="maxLineDiscountPct" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@Model.MaxLineDiscountPct.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                            </div>
+                        </div>
+                        <div class="text-muted fs-7">@Localizer["On saving a sales order/invoice: if any line's discount exceeds this ceiling, Warn allows + notifies, and Block rejects unless the user has manage authority (approval). Discount% = discount amount ÷ (price×qty)."]</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</form>

@@ -1,0 +1,154 @@
+@model CrossBuy.ViewModel.StoreCategoryPageVM
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@using System.Globalization
+@{
+    ViewData["Title"] = Model.Name;
+    Layout = "~/Views/Shared/_mainLayout.cshtml";
+    var inv = CultureInfo.InvariantCulture;
+    string Money(decimal v) => "$" + v.ToString("0.00", inv);
+    var blank = Url.Content("~/assets/imgs/shop/thumbnail-1.jpg");
+    string Img(string? p) => string.IsNullOrWhiteSpace(p) ? blank : p;
+}
+
+<main class="main">
+    <div class="page-header mt-30 mb-50">
+        <div class="container">
+            <div class="archive-header">
+                <div class="row align-items-center">
+                    <div class="col-xl-3">
+                        <h1 class="mb-15">@Model.Name</h1>
+                        <div class="breadcrumb">
+                            <a href="@Url.Action("Store","Home")" rel="nofollow">@Localizer["Home"]<i class="fi-rs-home mr-5"></i></a>
+                            <span></span> <a href="@Url.Action("Store","Home")">@Localizer["Store"]</a> <span></span> @Model.Name
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container mb-30">
+        <div class="row">
+            <div class="col-lg-4-5">
+                <div class="shop-product-fillter">
+                    <div class="totall-product">
+                        <p>@Localizer["We found"] <strong class="text-brand">@Model.Products.Count</strong> @Localizer["items for you!"]</p>
+                    </div>
+                    <div class="sort-by-product-area">
+                        <div class="sort-by-cover">
+                            <div class="sort-by-product-wrap">
+                                <div class="sort-by">
+                                    <span>@Localizer["Sort by"]:<i class="fi-rs-apps-sort"></i></span>
+                                </div>
+                                <div class="sort-by-dropdown-wrap">
+                                    <span> <i class="fi-rs-angle-small-down"></i> @Localizer["Featured"] </span>
+                                </div>
+                            </div>
+                            <div class="sort-by-dropdown">
+                                <ul>
+                                    <li><a class="active" href="#">@Localizer["Featured"]</a></li>
+                                    <li><a href="#">@Localizer["Price: Low to High"]</a></li>
+                                    <li><a href="#">@Localizer["Price: High to Low"]</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @if (Model.Products.Any())
+                {
+                    <div class="row product-grid">
+                        @foreach (var p in Model.Products)
+                        {
+                            <div class="col-lg-1-5 col-md-4 col-12 col-sm-6">
+                                <div class="product-cart-wrap mb-30">
+                                    <div class="product-img-action-wrap">
+                                        <div class="product-img product-img-zoom">
+                                            <a href="@Url.Action("Product","Store", new { id = p.Token })">
+                                                <img class="default-img" src="@Img(p.DefaultImage)" alt="@p.Name" />
+                                                <img class="hover-img" src="@Img(string.IsNullOrWhiteSpace(p.HoverImage) ? p.DefaultImage : p.HoverImage)" alt="@p.Name" />
+                                            </a>
+                                        </div>
+                                        <div class="product-action-1">
+                                            <a aria-label="@Localizer["Add To Wishlist"]" class="action-btn" href="shop-wishlist.html"><i class="fi-rs-heart"></i></a>
+                                            <a aria-label="@Localizer["Compare"]" class="action-btn" href="shop-compare.html"><i class="fi-rs-shuffle"></i></a>
+                                            <a aria-label="@Localizer["Quick view"]" class="action-btn" href="@Url.Action("Product","Store", new { id = p.Token })"><i class="fi-rs-eye"></i></a>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(p.Badge))
+                                        {
+                                            <div class="product-badges product-badges-position product-badges-mrg">
+                                                <span class="@p.Badge.ToLower()">@p.Badge</span>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="product-content-wrap">
+                                        <div class="product-category">
+                                            <a href="@Url.Action("Category","Store", new { id = Model.Token })">@p.Category</a>
+                                        </div>
+                                        <h2><a href="@Url.Action("Product","Store", new { id = p.Token })">@p.Name</a></h2>
+                                        <div class="product-rate-cover">
+                                            <div class="product-rate d-inline-block">
+                                                <div class="product-rating" style="width: @((int)(p.Rating * 20))%"></div>
+                                            </div>
+                                            <span class="font-small ml-5 text-muted"> (@p.Rating.ToString("0.0", inv))</span>
+                                        </div>
+                                        <div>
+                                            <span class="font-small text-muted">@Localizer["By"] <a href="vendor-details-1.html">@p.Vendor</a></span>
+                                        </div>
+                                        <div class="product-card-bottom">
+                                            <div class="product-price">
+                                                <span>@Money(p.Price)</span>
+                                                @if (p.OldPrice.HasValue)
+                                                {
+                                                    <span class="old-price">@Money(p.OldPrice.Value)</span>
+                                                }
+                                            </div>
+                                            <div class="add-cart">
+                                                <a class="add" href="@Url.Action("Product","Store", new { id = p.Token })"><i class="fi-rs-shopping-cart mr-5"></i>@SR["Add"] </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center p-50">
+                        <img src="~/assets/imgs/theme/icons/category-1.svg" alt="" style="width:64px;opacity:.4" />
+                        <p class="mt-20 text-muted">@Localizer["No products in this category yet."]</p>
+                        <a href="@Url.Action("Store","Home")" class="btn btn-sm">@Localizer["Back to store"]</a>
+                    </div>
+                }
+            </div>
+            <div class="col-lg-1-5 primary-sidebar sticky-sidebar">
+                @if (Model.Categories.Any())
+                {
+                    <div class="sidebar-widget widget-category-2 mb-30">
+                        <h5 class="section-title style-1 mb-30">@Localizer["Category"]</h5>
+                        <ul>
+                            @foreach (var c in Model.Categories)
+                            {
+                                <li>
+                                    <a href="@Url.Action("Category","Store", new { id = c.Token })">
+                                        @if (!string.IsNullOrWhiteSpace(c.Icon))
+                                        {
+                                            <img src="@Url.Content("~" + c.Icon.Replace("\\","/"))" alt="@c.Name" />
+                                        }
+                                        @c.Name</a><span class="count">@c.ItemsCount</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+                <div class="banner-img wow fadeIn mb-lg-0 animated d-lg-block d-none">
+                    <img src="~/assets/imgs/banner/banner-11.png" alt="" />
+                    <div class="banner-text">
+                        <span>@Localizer["Organic"]</span>
+                        <h4>@Localizer["Save 17% on Organic Juice"]</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

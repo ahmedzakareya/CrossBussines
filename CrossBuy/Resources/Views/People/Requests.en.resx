@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Approved" xml:space="preserve">
+    <value>Approved</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+  <data name="Salary certificate" xml:space="preserve">
+    <value>Salary certificate</value>
+  </data>
+  <data name="Employment letter" xml:space="preserve">
+    <value>Employment letter</value>
+  </data>
+  <data name="Experience letter" xml:space="preserve">
+    <value>Experience letter</value>
+  </data>
+  <data name="To whom it may concern" xml:space="preserve">
+    <value>To whom it may concern</value>
+  </data>
+  <data name="Letter" xml:space="preserve">
+    <value>Letter</value>
+  </data>
+  <data name="Permission" xml:space="preserve">
+    <value>Permission</value>
+  </data>
+  <data name="My Requests — letters &amp; permissions" xml:space="preserve">
+    <value>My Requests — letters &amp; permissions</value>
+  </data>
+  <data name="New request" xml:space="preserve">
+    <value>New request</value>
+  </data>
+  <data name="Request type" xml:space="preserve">
+    <value>Request type</value>
+  </data>
+  <data name="Hourly permission" xml:space="preserve">
+    <value>Hourly permission</value>
+  </data>
+  <data name="Letter type" xml:space="preserve">
+    <value>Letter type</value>
+  </data>
+  <data name="Addressee (optional)" xml:space="preserve">
+    <value>Addressee (optional)</value>
+  </data>
+  <data name="e.g. Bank" xml:space="preserve">
+    <value>e.g. Bank</value>
+  </data>
+  <data name="No payslip yet — the salary certificate will have no figures until the first payslip is posted." xml:space="preserve">
+    <value>No payslip yet — the salary certificate will have no figures until the first payslip is posted.</value>
+  </data>
+  <data name="Once approved, late minutes within this window are waived in attendance and payroll." xml:space="preserve">
+    <value>Once approved, late minutes within this window are waived in attendance and payroll.</value>
+  </data>
+  <data name="Reason / notes" xml:space="preserve">
+    <value>Reason / notes</value>
+  </data>
+  <data name="Awaiting your approval" xml:space="preserve">
+    <value>Awaiting your approval</value>
+  </data>
+  <data name="Request" xml:space="preserve">
+    <value>Request</value>
+  </data>
+  <data name="Requester" xml:space="preserve">
+    <value>Requester</value>
+  </data>
+  <data name="Decision" xml:space="preserve">
+    <value>Decision</value>
+  </data>
+  <data name="Approve?" xml:space="preserve">
+    <value>Approve?</value>
+  </data>
+  <data name="Reject?" xml:space="preserve">
+    <value>Reject?</value>
+  </data>
+  <data name="My requests" xml:space="preserve">
+    <value>My requests</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="No requests yet" xml:space="preserve">
+    <value>No requests yet</value>
+  </data>
+</root>

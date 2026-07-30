@@ -1,0 +1,336 @@
+<title>دليل مستخدم CrossBuy</title>
+<meta charset="utf-8">
+<style>
+  :root{
+    --green:#13433a; --green2:#1f6253; --accent:#2f9e6e; --gold:#d4a017; --gold2:#f0c64b;
+    --soft:#e9f1ee; --ink:#16211e; --muted:#5e6f6a; --line:#dde7e3; --paper:#ffffff; --bg:#f3f6f5;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; background:var(--bg); color:var(--ink); direction:rtl;
+        font-family:"Segoe UI","Tajawal",Tahoma,system-ui,sans-serif; line-height:1.85; font-size:15px; }
+  .wrap{ max-width:1000px; margin:0 auto; padding:0 22px; }
+  .cover{ background:linear-gradient(135deg,#0c2e28,#1f6253 60%,#2f9e6e); color:#fff; padding:70px 0 56px; }
+  .cover .wrap{ display:flex; flex-direction:column; gap:10px; }
+  .logo{ display:flex; align-items:center; gap:12px; font-weight:800; font-size:1.4rem; letter-spacing:.5px; }
+  .logo .mark{ display:grid; grid-template-columns:1fr 1fr; gap:3px; }
+  .logo .mark span{ width:13px; height:13px; border-radius:3px; background:var(--gold2); }
+  .logo .mark span:nth-child(2),.logo .mark span:nth-child(3){ background:#fff; }
+  .cover h1{ font-size:2.6rem; margin:18px 0 4px; font-weight:800; }
+  .cover p{ margin:0; opacity:.92; font-size:1.05rem; max-width:640px; }
+  .cover .meta{ margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; }
+  .cover .meta span{ background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); padding:5px 14px; border-radius:20px; font-size:.82rem; }
+  .toc{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:22px 26px; margin:-34px 0 34px; box-shadow:0 12px 34px rgba(19,67,58,.10); }
+  .toc h2{ margin:0 0 12px; color:var(--green); font-size:1.05rem; }
+  .toc ol{ columns:2; column-gap:34px; margin:0; padding-inline-start:20px; }
+  .toc a{ color:var(--green2); text-decoration:none; }
+  .toc a:hover{ color:var(--gold); }
+  section{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:26px 30px; margin-bottom:22px; }
+  h2.sec{ color:var(--green); font-size:1.6rem; margin:0 0 4px; display:flex; align-items:center; gap:12px; }
+  h2.sec .n{ background:var(--green); color:#fff; width:38px; height:38px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; font-size:1.05rem; flex:none; }
+  .lead{ color:var(--muted); margin:2px 0 18px; }
+  h3{ color:var(--green2); font-size:1.18rem; margin:24px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--soft); }
+  h4{ color:var(--ink); font-size:1.02rem; margin:16px 0 6px; }
+  p{ margin:8px 0; }
+  ul,ol{ margin:8px 0; padding-inline-start:24px; }
+  li{ margin:4px 0; }
+  code{ background:var(--soft); color:var(--green); padding:1px 7px; border-radius:6px; font-family:"Consolas",monospace; font-size:.88em; }
+  strong{ color:var(--green2); }
+  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:0; margin:14px 0 6px; }
+  .flow .step{ background:var(--soft); color:var(--green); font-weight:700; padding:9px 18px; border-radius:8px; font-size:.9rem; white-space:nowrap; }
+  .flow .step.alt{ background:#fdf3d6; color:#8a6d12; }
+  .flow .arr{ color:var(--accent); font-weight:800; padding:0 8px; font-size:1.1rem; }
+  ol.steps{ counter-reset:s; list-style:none; padding:0; margin:12px 0; }
+  ol.steps>li{ counter-increment:s; position:relative; padding:8px 46px 8px 12px; margin:6px 0; background:#fafcfb; border:1px solid var(--line); border-radius:10px; }
+  ol.steps>li::before{ content:counter(s); position:absolute; right:10px; top:8px; width:26px; height:26px; background:var(--green); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.82rem; }
+  table{ width:100%; border-collapse:collapse; margin:12px 0; font-size:.92rem; }
+  th,td{ border:1px solid var(--line); padding:8px 10px; text-align:right; }
+  th{ background:var(--soft); color:var(--green); font-weight:700; }
+  .ta th{ background:var(--green); color:#fff; }
+  .ta td:nth-child(2){ color:#1a7a4f; } .ta td:nth-child(3){ color:#b3471f; }
+  .note,.tip,.warn{ border-radius:10px; padding:12px 16px; margin:14px 0; font-size:.92rem; border-inline-start:5px solid; }
+  .note{ background:#eef4ff; border-color:#3b7ddd; }
+  .tip{ background:#eafaf2; border-color:var(--accent); }
+  .warn{ background:#fff4e8; border-color:var(--gold); }
+  @media (max-width:680px){ .toc ol{ columns:1; } .cover h1{ font-size:2rem; } }
+  @media print{
+    body{ background:#fff; font-size:11.5px; }
+    .cover{ padding:40px 0; } section{ box-shadow:none; break-inside:avoid; border:none; border-top:2px solid var(--soft); border-radius:0; }
+    .toc{ box-shadow:none; } a{ color:var(--ink); } h2.sec,h3,h4{ break-after:avoid; }
+    @page{ size:A4; margin:14mm; }
+  }
+</style>
+
+<div class="cover"><div class="wrap">
+  <div class="logo"><span class="mark"><span></span><span></span><span></span><span></span></span> CrossBuy</div>
+  <h1>دليل المستخدم</h1>
+  <p>نظام تخطيط موارد المؤسسة المتكامل — المخازن، المشتريات، المبيعات، المحاسبة، الموارد البشرية، وإدارة علاقات العملاء.</p>
+  <div class="meta"><span>إصدار 1.0</span><span>عربي</span><span>خرائط سير عمل + خطوات + منطق القيود</span></div>
+</div></div>
+
+<div class="wrap">
+<div class="toc">
+  <h2>المحتويات</h2>
+  <ol>
+    <li><a href="#intro">مقدمة وأساسيات الاستخدام</a></li>
+    <li><a href="#nav">التنقّل والبوابة والقوائم</a></li>
+    <li><a href="#inv">المخازن وإدارة الأصناف</a></li>
+    <li><a href="#p2p">المشتريات (الشراء حتى السداد)</a></li>
+    <li><a href="#o2c">المبيعات (الطلب حتى التحصيل)</a></li>
+    <li><a href="#pricing">محرّك التسعير</a></li>
+    <li><a href="#acc">المحاسبة والمالية</a></li>
+    <li><a href="#assets">الأصول الثابتة والضرائب</a></li>
+    <li><a href="#hr">الموارد البشرية</a></li>
+    <li><a href="#crm">إدارة علاقات العملاء (CRM)</a></li>
+    <li><a href="#gov">الحوكمة وفصل المهام</a></li>
+    <li><a href="#gl">كيف تتولّد القيود تلقائيًا</a></li>
+    <li><a href="#search">البحث المتقدّم والباركود والتصدير</a></li>
+    <li><a href="#notif">الإشعارات والتنبيهات</a></li>
+    <li><a href="#mc">العملات المتعددة</a></li>
+  </ol>
+</div>
+
+<section id="intro">
+  <h2 class="sec"><span class="n">1</span> مقدمة وأساسيات الاستخدام</h2>
+  <p class="lead">CrossBuy نظام ERP عربي متكامل يربط المخزون بالمشتريات والمبيعات والمحاسبة في دفتر واحد متّسق.</p>
+  <p>كل عملية تشغيلية (استلام بضاعة، بيع، صرف…) تُولِّد <strong>قيدًا محاسبيًا متوازنًا تلقائيًا</strong> وتُحدِّث رصيد المخزون لحظيًا — فلا حاجة لإدخال محاسبي يدوي مزدوج. ويضمن النظام دائمًا أن قيمة المخزون تساوي رصيد حساب المخزون، وأن ميزان المراجعة متوازن.</p>
+  <h3>تسجيل الدخول والصلاحيات</h3>
+  <ol class="steps">
+    <li>افتح النظام وأدخل اسم المستخدم وكلمة المرور.</li>
+    <li>تظهر <strong>شاشة اختيار النظام</strong> — اختر النظام المطلوب (مخازن / محاسبي / موظفين / إداري) حسب صلاحياتك.</li>
+    <li>لكل نظام قائمة جانبية خاصة، وتنتقل بينها من أيقونة الأنظمة أعلى الشاشة.</li>
+  </ol>
+  <div class="tip">لكل مستخدم صلاحيات محدّدة. إن لم تظهر لك شاشة أو زر، فالأرجح أنه خارج نطاق صلاحيتك — راجع مدير النظام.</div>
+</section>
+
+<section id="nav">
+  <h2 class="sec"><span class="n">2</span> التنقّل والبوابة والقوائم</h2>
+  <p>الشريط العلوي يحوي: شعار CrossBuy، البحث العام، التنبيهات، مبدّل اللغة (عربي/إنجليزي)، والملف الشخصي للخروج.</p>
+  <ul>
+    <li><strong>القائمة الجانبية</strong> مقسّمة لمجموعات (مثلًا في المخازن: عام · الحركات والأرصدة · العمليات · المشتريات والمبيعات · الحوكمة · التقارير). اضغط أي مجموعة لفتحها.</li>
+    <li><strong>بحث القائمة</strong> أعلى القائمة الجانبية للوصول السريع لأي شاشة.</li>
+    <li><strong>زر «فتح» (أيقونة العين)</strong> في كل صف بالجداول يفتح بطاقة/تفاصيل العنصر مباشرة.</li>
+  </ul>
+</section>
+
+<section id="inv">
+  <h2 class="sec"><span class="n">3</span> المخازن وإدارة الأصناف</h2>
+  <p class="lead">إدارة الأصناف والمخازن وحركة وأرصدة المخزون بالتكلفة الفعلية.</p>
+  <h3>إعداد البيانات الأساسية</h3>
+  <ol class="steps">
+    <li><strong>الوحدات</strong> (قطعة، كرتونة…) ثم <strong>الفئات</strong> (تصنيف الأصناف) — لازمة قبل إنشاء أي صنف.</li>
+    <li><strong>المخازن</strong> — أنشئ المخازن (رئيسي/عبور/تالف…) وحدّد الفرع وأمين المخزن.</li>
+    <li><strong>الأصناف</strong> — أضف الصنف بكوده واسمه (عربي/إنجليزي)، الباركود، الفئة، الوحدة، السعر، والنوع (مخزون/خدمة/أصل…).</li>
+  </ol>
+  <h3>بطاقة الصنف وتحليلاته</h3>
+  <p>افتح أي صنف لترى بطاقته: <strong>الرصيد الحالي</strong>، <strong>متوسط التكلفة</strong>، <strong>متوسط الشراء</strong>، آخر شراء/دخول/خروج، <strong>الرصيد لكل مخزن</strong> (المخازن ذات الرصيد غير الصفري فقط، مع نسبة كل مخزن من الإجمالي)، و<strong>رسم بياني</strong> لمنحنى الرصيد عبر الزمن.</p>
+  <h3>حركات المخزون</h3>
+  <p>كل دخول/خروج يُسجَّل في دفتر الحركة بتكلفته. الأنواع: رصيد افتتاحي، استلام، صرف، تسوية، شراء، بيع، تحويل بين المخازن، إعدام/تالف، تجميع (BOM).</p>
+  <div class="flow"><span class="step">رصيد افتتاحي</span><span class="arr">←</span><span class="step">استلام/شراء (+)</span><span class="arr">←</span><span class="step">صرف/بيع (−)</span><span class="arr">←</span><span class="step">الرصيد الحالي</span></div>
+  <h3>عمليات أخرى</h3>
+  <ul>
+    <li><strong>التحويلات بين المخازن</strong> — نقل كميات بين مخزنين (لا يغيّر القيمة الإجمالية للمخزون).</li>
+    <li><strong>الجرد والتسويات</strong> — كشف بأرصدة المخزن الفعلية مقابل الدفترية وترحيل الفروقات.</li>
+    <li><strong>الإعدام/التالف</strong> — إخراج بضاعة تالفة بقيمتها.</li>
+    <li><strong>الأرصدة الافتتاحية</strong> — إدخال أرصدة بداية التشغيل.</li>
+  </ul>
+</section>
+
+<section id="p2p">
+  <h2 class="sec"><span class="n">4</span> المشتريات — من الطلب حتى السداد</h2>
+  <p class="lead">دورة الشراء الكاملة مع المطابقة الثلاثية للحماية من الدفع الزائد.</p>
+  <div class="flow"><span class="step">أمر شراء</span><span class="arr">←</span><span class="step">إذن استلام</span><span class="arr">←</span><span class="step">فاتورة شراء</span><span class="arr">←</span><span class="step">سند دفع</span></div>
+  <ol class="steps">
+    <li><strong>أمر شراء (PO)</strong> — حدّد المورد والأصناف والكميات والأسعار.</li>
+    <li><strong>إذن استلام البضاعة</strong> — من أمر الشراء، عدّل الكميات المستلمة فعليًا. يدخل المخزون وتُسجَّل «بضاعة بفاتورة لم تَرِد» (GRNI).</li>
+    <li><strong>فاتورة الشراء</strong> — تحوّل أمر الشراء لفاتورة. وهنا تعمل <strong>المطابقة الثلاثية</strong>: تقارن المطلوب (الأمر) ↔ المستلم (الإذن) ↔ السعر ضمن سماحية (كمية 5٪، سعر 2٪)؛ ويُمنع الترحيل عند تجاوز السماحية.</li>
+    <li><strong>سند الدفع</strong> — سداد للمورد (مع إمكانية خصم وتحصيل WHT). المبالغ فوق حدّ الاعتماد تتطلّب موافقة رئيس الحسابات.</li>
+  </ol>
+  <h3>مرتجع الشراء (إشعار مدين)</h3>
+  <p>رد بضاعة للمورد: يخرج المخزون <strong>بتكلفته المتوسطة</strong> ويُصدر إشعار مدين يعكس حساب المورد — للحفاظ على دقّة قيمة المخزون.</p>
+  <div class="tip">المطابقة الثلاثية متاحة كتقرير من قائمة إجراءات أمر الشراء («المطابقة الثلاثية») لمراجعة الانحرافات قبل الفوترة.</div>
+</section>
+
+<section id="o2c">
+  <h2 class="sec"><span class="n">5</span> المبيعات — من الطلب حتى التحصيل</h2>
+  <p class="lead">دورة بيع كاملة تبدأ من عرض السعر وتنتهي بالتحصيل، مع فرض حدّ الائتمان.</p>
+  <div class="flow"><span class="step">عرض سعر</span><span class="arr">←</span><span class="step">أمر بيع</span><span class="arr">←</span><span class="step">إذن صرف/تسليم</span><span class="arr">←</span><span class="step">فاتورة بيع</span><span class="arr">←</span><span class="step">سند قبض</span></div>
+  <ol class="steps">
+    <li><strong>عرض سعر</strong> — يُرسَل للعميل بحالاته (مسودة/مُرسَل/مقبول/منتهٍ)، وعند القبول يُحوَّل لأمر بيع بضغطة.</li>
+    <li><strong>أمر بيع (SO)</strong> — تأكيد الطلب. يملأ السعر تلقائيًا من <strong>محرّك التسعير</strong> حسب شريحة العميل والكمية.</li>
+    <li><strong>إذن الصرف/التسليم</strong> — إخراج البضاعة من المخزن وتسجيل تكلفة المبيعات (COGS).</li>
+    <li><strong>فاتورة البيع</strong> — تُصدِر الفاتورة وتُرحِّل الإيراد والضريبة والذمم. <strong>يُمنع الإصدار إذا تجاوز (المستحق الحالي + الفاتورة) حدّ ائتمان العميل.</strong></li>
+    <li><strong>سند القبض</strong> — تحصيل من العميل نقدًا أو بنكيًا.</li>
+  </ol>
+  <h3>مرتجع البيع (إشعار دائن)</h3>
+  <p>رد بضاعة من العميل: يدخل المخزون مجددًا، ويُصدر إشعار دائن يعكس الإيراد والضريبة والذمم.</p>
+</section>
+
+<section id="pricing">
+  <h2 class="sec"><span class="n">6</span> محرّك التسعير</h2>
+  <p>يحدّد سعر البيع تلقائيًا في عروض الأسعار وأوامر/فواتير البيع بدل السعر الثابت.</p>
+  <ol class="steps">
+    <li>أنشئ <strong>قائمة أسعار</strong> (شاشة مستقلة) وحدّد لها: <strong>العملة</strong>، <strong>عميل بعينه</strong> أو شريحة (أو «كل العملاء»)، الأولوية، فترة الصلاحية. يمكنك <strong>نسخ</strong> قائمة قائمة كمسودة جديدة.</li>
+    <li>أضف <strong>قواعد التسعير</strong>: لكل صنف سعر بديل و/أو نسبة خصم، مع <strong>حدّ كمية</strong> (سعر مختلف عند كمية أكبر).</li>
+    <li>عند اختيار الصنف في شاشة البيع يُطبَّق السعر الأنسب حسب <strong>عملة المستند</strong> ثم الأولوية: <strong>عميل بعينه ← شريحته ← العامة</strong>، ثم الأعلى أولوية، ثم أكبر حدّ كمية مطابق.</li>
+  </ol>
+  <div class="note">السعر بالعملة الأجنبية <strong>مثبّت</strong> (يُكتب في القائمة، لا يُحسب من الجنيه). إذا لم توجد قائمة بعملة المستند، يعرض النظام سعرًا <strong>محوّلًا مؤقتًا</strong> من سعر الصنف الأساسي (إن فُعِّل إعداد «تحويل السعر الأساسي للمستندات الأجنبية») مع تنبيه، أو يطلب إدخالًا يدويًا. ويبقى السعر قابلًا للتعديل دائمًا.</div>
+
+  <h3>6-أ · العروض والخصومات الزمنية</h3>
+  <p>خصم إضافي محدود بفترة، يُطبَّق تلقائيًا فوق سعر القائمة عند البيع.</p>
+  <ol class="steps">
+    <li>من <strong>المخازن ← المشتريات والمبيعات ← العروض والخصومات ← عرض جديد</strong>.</li>
+    <li>اكتب <strong>الكود</strong> و<strong>الاسم</strong>، واختر <strong>نوع الخصم</strong>: <strong>نسبة %</strong> أو <strong>مبلغ ثابت لكل وحدة</strong>. لخصم المبلغ الثابت اختر <strong>عملته</strong> (الافتراضي عملة الفرع) — ويُحوَّل تلقائيًا لعملة الفاتورة عند التطبيق.</li>
+    <li>حدّد <strong>الاستهداف</strong> (اترك أيّه فارغًا ليطابق الكل): صنف بعينه، فئة أصناف، عميل، أو شريحة — ويُطبَّق عند تحقّق كل ما ملأته معًا.</li>
+    <li>اضبط <strong>حدّ الكمية</strong>، <strong>الأولوية</strong>، و<strong>فترة الصلاحية (من/إلى)</strong> ثم <strong>حفظ</strong>.</li>
+  </ol>
+  <div class="note">يُطبَّق <strong>عرض واحد فقط</strong> لكل سطر (الأكبر خصمًا، ثم الأعلى أولوية) — لا تتراكم العروض. ويُدمج مع خصم القائمة تسلسليًّا، ويبقى <strong>الحدّ الأدنى للربح</strong> (بند 6-ج) نافذًا فلا يخترقه العرض.</div>
+
+  <h3>6-ب · التسعير على أساس التكلفة + هامش (سعر متحرّك)</h3>
+  <p>بدل سعر ثابت، اجعل سطر قائمة الأسعار يحسب السعر من <strong>تكلفة الصنف الحالية + هامش%</strong>.</p>
+  <ol class="steps">
+    <li>في <strong>محرّر قائمة الأسعار</strong>، عند إضافة سطر اختر <strong>طريقة السعر = «تكلفة + هامش»</strong>.</li>
+    <li>أدخل نسبة <strong>الهامش %</strong> (يختفي حقل السعر الثابت) ثم <strong>إضافة</strong>. سيظهر تنبيه يوضّح أن السعر <strong>محسوب من التكلفة الحالية ويتغيّر بتغيّرها</strong> (سعر متحرّك لا ثابت).</li>
+    <li>مصدر التكلفة تلقائي: الصنف <strong>المصنَّع</strong> → تكلفته المعيارية من التصنيع (مواد + عمالة + أوفرهيد)؛ غير ذلك → <strong>متوسط تكلفة المخزون</strong>؛ وإن لم تتوفّر → التكلفة الافتتاحية.</li>
+  </ol>
+  <div class="note">على الفاتورة الأجنبية يُحسب السعر بعملة الفرع ثم يُحوَّل لعملة الفاتورة ويُقرَّب لعدد خاناتها. خصم القائمة والعروض يُطبَّقان فوقه أيضًا.</div>
+
+  <h3>6-ج · الحدّ الأدنى للربح (السعر الأدنى)</h3>
+  <p>حماية للربحية: يمنع/ينبّه عند بيع أقل من (التكلفة + هامش أدنى).</p>
+  <ol class="steps">
+    <li>من <strong>المخازن ← الإعدادات ← الحدّ الأدنى للربح</strong>: اختر <strong>الوضع</strong> — <strong>معطّل</strong> / <strong>تنبيه</strong> (يسمح ويُشعرك) / <strong>منع</strong> (يرفض المستند) — واكتب <strong>نسبة الهامش الأدنى %</strong>.</li>
+    <li>لتخصيص صنف بعينه: افتح <strong>بطاقة الصنف</strong> واملأ <strong>الحدّ الأدنى للربح % (تجاوز)</strong> — واتركه فارغًا لاستخدام النسبة العامة.</li>
+    <li>عند حفظ <strong>أمر بيع</strong> أو <strong>فاتورة بيع</strong>: إذا نزل صافي السعر (محوَّلًا لعملة الفرع) تحت (التكلفة × (1+الهامش%)) يظهر التنبيه أو يُرفض المستند حسب الوضع. الصنف بلا تكلفة معروفة يُستثنى (لا منع خاطئ). عروض الأسعار تُنبّه فقط.</li>
+  </ol>
+</section>
+
+<section id="acc">
+  <h2 class="sec"><span class="n">7</span> المحاسبة والمالية</h2>
+  <ul>
+    <li><strong>شجرة الحسابات</strong> — هيكل الحسابات (أصول/خصوم/حقوق ملكية/إيراد/مصروف) قابل للطيّ والتوسّع.</li>
+    <li><strong>القيود اليومية</strong> — قيود يدوية + كل القيود التلقائية من العمليات. الحالات: مسودة → ترحيل → (إمكانية عكس).</li>
+    <li><strong>الفترات المالية</strong> — إقفال الفترة يمنع الترحيل فيها.</li>
+    <li><strong>مراكز التكلفة والمشاريع</strong> — توزيع المصروفات تحليليًا.</li>
+    <li><strong>البنوك والخزائن</strong> — حسابات بنكية، تحويلات، وتسوية بنكية (مطابقة كشف الحساب).</li>
+    <li><strong>العملاء والموردون</strong> — كروت رئيسية موحّدة + كشوف حساب وأعمار ديون.</li>
+    <li><strong>القوائم المالية</strong> — قائمة الدخل، المركز المالي، التدفقات النقدية، وميزان المراجعة.</li>
+    <li><strong>الإقفال السنوي</strong> — ترحيل قيد الإقفال ونقل الأرباح، مع إمكانية إعادة الفتح.</li>
+    <li><strong>اللوحة التنفيذية</strong> — لوحة قيادة واحدة تجمع كل الوحدات: الإيراد وصافي الدخل والنقدية والعملاء والموردين وقيمة المخزون وخط أنابيب المبيعات وعدد الموظفين، مع <strong>مؤشرات محسوبة</strong> (هامش مجمل/صافي، نسبة التداول والنسبة السريعة، متوسط التحصيل DSO ومتوسط السداد DPO، رأس المال العامل) ورسوم لاتجاه الإيراد وأعمار الديون وخط الأنابيب وأعلى العملاء. تجدها أعلى قائمة «المحاسبة».</li>
+  </ul>
+  <div class="tip">«تحليلات العملاء» تعرض الإيراد والتكلفة و<strong>مجمل الربح والهامش٪</strong> لكل عميل وشريحة، وأعلى العملاء — لقياس ربحية العميل فعليًا. و«اللوحة التنفيذية» ترفع هذه المؤشرات لمستوى الشركة كلها في صفحة واحدة.</div>
+</section>
+
+<section id="assets">
+  <h2 class="sec"><span class="n">8</span> الأصول الثابتة والضرائب</h2>
+  <h3>الأصول الثابتة</h3>
+  <ul>
+    <li>تسجيل الأصل وقيد اقتنائه، تصنيف الأصول، احتساب وترحيل <strong>الإهلاك</strong> دوريًا، واستبعاد الأصول.</li>
+    <li>إمكانية <strong>رسملة أصل من المخزون</strong> (تحويل صنف إلى أصل ثابت).</li>
+  </ul>
+  <h3>الضرائب والفاتورة الإلكترونية</h3>
+  <ul>
+    <li>أكواد ضرائب (ق.م / خصم وتحصيل)، إقرارات ض.ق.م وتسويتها، وحالة الفاتورة الإلكترونية (ETA).</li>
+  </ul>
+</section>
+
+<section id="hr">
+  <h2 class="sec"><span class="n">9</span> الموارد البشرية</h2>
+  <ul>
+    <li><strong>الموظفون والهيكل الإداري</strong> والعقود والوثائق (مع تنبيهات انتهاء الصلاحية).</li>
+    <li><strong>الإجازات</strong> — سياسات، أرصدة، طلبات وموافقات، وترحيل الأرصدة بين السنوات.</li>
+    <li><strong>الحضور</strong> — سياسات الدوام والتأخير/الإضافي/الغياب.</li>
+    <li><strong>الرواتب</strong> — احتساب وترحيل الرواتب مع شرائح الضريبة والتأمينات، قسائم الرواتب، والصرف/التحويل للبنك.</li>
+    <li><strong>نهاية الخدمة</strong> — تسوية المستحقات ومكافأة نهاية الخدمة.</li>
+    <li><strong>الخدمة الذاتية (ESS)</strong> — طلبات الموظف وقسائمه.</li>
+  </ul>
+
+  <h3 class="sub">9-1 التوظيف (طلبات التوظيف والمستندات المطلوبة)</h3>
+  <p>مسار متكامل لتحويل المتقدّم إلى موظف فعلي دون إدخال مزدوج:</p>
+  <ul>
+    <li><strong>أنواع المستندات المطلوبة</strong> (الإدارة ← الموظفون والهيكل ← أنواع المستندات المطلوبة): كتالوج عام لأنواع المستندات، كلٌّ <em>إلزامي</em> أو <em>اختياري</em>. تُطبَّق كقائمة تحقق على كل طلب توظيف.</li>
+    <li><strong>لوحة طلبات التوظيف</strong> (الإدارة ← الموظفون والهيكل ← طلبات التوظيف): لوحة Kanban بأعمدة المراحل «جديد ← مراجعة ← مقابلة ← مقبول / مرفوض ← مُعيّن». <em>اسحب</em> بطاقة المتقدّم بين الأعمدة لتغيير المرحلة. زر «طلب جديد» يفتح معالج بيانات المتقدّم (٣ خطوات).</li>
+    <li><strong>تفاصيل الطلب</strong> (أيقونة العين على البطاقة): بيانات المتقدّم + أزرار تغيير المرحلة + <strong>قائمة التحقق للمستندات</strong> — كل نوع مطلوب يظهر ✅ مرفقًا أو ⬜ ناقصًا، مع رفع الملفات ومؤشّر اكتمال المستندات الإلزامية.</li>
+    <li><strong>التعيين</strong>: عند وصول الطلب إلى «مقبول» يظهر زر <strong>«تعيين»</strong> الذي يفتح <em>معالج الموظف مملوءًا مسبقًا</em> ببيانات المتقدّم؛ بعد استكمال الحقول المطلوبة (العنوان، الصورة، حساب المستخدم) والحفظ: يُنشأ الموظف، وتُرحَّل مستندات الطلب تلقائيًّا إلى خزنة مستندات الموظف، ويصبح الطلب «مُعيّن» مربوطًا بالموظف الناتج.</li>
+  </ul>
+</section>
+
+<section id="crm">
+  <h2 class="sec"><span class="n">10</span> إدارة علاقات العملاء (CRM)</h2>
+  <div class="flow"><span class="step">عميل محتمل</span><span class="arr">←</span><span class="step">فرصة</span><span class="arr">←</span><span class="step alt">خط الأنابيب</span><span class="arr">←</span><span class="step">عميل / عرض سعر</span></div>
+  <ul>
+    <li><strong>العملاء المحتملون (Leads)</strong> — تسجيل المهتمين ومصدرهم؛ و<strong>تحويل العميل المحتمل إلى عميل</strong> بضغطة.</li>
+    <li><strong>الفرص البيعية (Opportunities)</strong> — صفقات بمراحلها (استكشاف → تأهيل → عرض → تفاوض → ربح/خسارة) وقيمتها واحتمال إغلاقها.</li>
+    <li><strong>خط الأنابيب (Kanban)</strong> — لوحة بصرية اسحب فيها الفرصة بين الأعمدة لتغيير مرحلتها؛ كل عمود يعرض العدد وإجمالي القيمة.</li>
+    <li><strong>الأنشطة والمهام</strong> — مكالمات/اجتماعات/مهام بمواعيد استحقاق وإنجاز.</li>
+    <li><strong>الحملات التسويقية</strong> — تربط العملاء المحتملين والفرص بحملة، وتقيس <strong>العائد (ROI)</strong> = قيمة الصفقات الرابحة مقابل الميزانية.</li>
+  </ul>
+</section>
+
+<section id="gov">
+  <h2 class="sec"><span class="n">11</span> الحوكمة وفصل المهام</h2>
+  <ul>
+    <li><strong>الصلاحيات والأدوار</strong> — لكل مستخدم دور (رئيس حسابات/محاسب/أمين خزينة/مراجع…) يحدّد ما يمكنه عمله.</li>
+    <li><strong>فصل المهام (SoD)</strong> — مُنشئ المستند لا يعتمده بنفسه.</li>
+    <li><strong>حدود الاعتماد</strong> — المبالغ فوق حدّ معيّن تتطلّب موافقة أعلى.</li>
+    <li><strong>فحص السلامة اليومي</strong> — يتحقّق آليًا من ثبات المعادلات (قيمة المخزون = حساب المخزون، الذمم = الدفتر المساعد، ميزان متوازن) ويُخطر عند أي انحراف.</li>
+  </ul>
+</section>
+
+<section id="gl">
+  <h2 class="sec"><span class="n">12</span> كيف تتولّد القيود تلقائيًا</h2>
+  <p class="lead">للاطمئنان: أمثلة لأهم القيود التي يُنشئها النظام دون تدخّل يدوي.</p>
+  <h4>استلام بضاعة (قبل الفاتورة)</h4>
+  <table class="ta"><tr><th>الحساب</th><th>مدين</th><th>دائن</th></tr>
+    <tr><td>المخزون (1103)</td><td>قيمة الاستلام</td><td>—</td></tr>
+    <tr><td>بضاعة بفاتورة لم ترد GRNI (210203)</td><td>—</td><td>قيمة الاستلام</td></tr></table>
+  <h4>فاتورة بيع (بضريبة)</h4>
+  <table class="ta"><tr><th>الحساب</th><th>مدين</th><th>دائن</th></tr>
+    <tr><td>ذمم العملاء (1102)</td><td>الإجمالي</td><td>—</td></tr>
+    <tr><td>الإيراد</td><td>—</td><td>الصافي</td></tr>
+    <tr><td>ض.ق.م المستحقة (210201)</td><td>—</td><td>الضريبة</td></tr></table>
+  <h4>تسليم/صرف مبيعات (تكلفة المبيعات)</h4>
+  <table class="ta"><tr><th>الحساب</th><th>مدين</th><th>دائن</th></tr>
+    <tr><td>تكلفة المبيعات COGS</td><td>التكلفة</td><td>—</td></tr>
+    <tr><td>المخزون (1103)</td><td>—</td><td>التكلفة</td></tr></table>
+  <div class="note">كل قيد متوازن (مدين = دائن)، وكل حركة مخزون تقابلها حركة مساوية في حساب المخزون — لذا تبقى المعادلات سليمة دائمًا.</div>
+</section>
+
+<section id="search">
+  <h2 class="sec"><span class="n">13</span> البحث المتقدّم والباركود والتصدير</h2>
+  <ul>
+    <li><strong>بحث متعدد الوسوم</strong> في كل الجداول الكبيرة: اكتب أكثر من كلمة (كل كلمة تصبح وسمًا) فيظهر ما يطابق أيًّا منها، مع اقتراحات من قاعدة البيانات أثناء الكتابة. والبحث والصفحات تتم على الخادم لتحمّل ملايين السجلات.</li>
+    <li><strong>الباركود</strong> — في شاشات الإدخال، امسح باركود الصنف (أو اكتب رقمه + Enter) لإضافته للسطور فورًا. ومنتقي الأصناف يبحث على الخادم فلا يحمّل الكتالوج كاملًا.</li>
+    <li><strong>تصدير Excel</strong> — كل شاشة قائمة فيها زر «تصدير Excel» يصدّر النتائج <em>وفق نفس عوامل التصفية والبحث المطبّقة حاليًا</em> (لا الصفحة الظاهرة فقط) في ملف <code>.xlsx</code> منسّق ويدعم العربية.</li>
+  </ul>
+</section>
+
+<section id="notif">
+  <h2 class="sec"><span class="n">14</span> الإشعارات والتنبيهات</h2>
+  <p>أيقونة الجرس أعلى الشاشة تعرض الإشعارات الموجَّهة إليك لحظيًا (تحديث فوري عبر الاتصال الحيّ + تحقّق دوري). اضغطها لرؤية القائمة أو «تحديد الكل كمقروء». الإشعارات تصل للويب والموبايل في آنٍ واحد.</p>
+  <p>تُوجَّه الإشعارات حسب <strong>دورك الوظيفي</strong>، فلا يصلك إلا ما يخصّ عملك. أهم التنبيهات:</p>
+  <ul>
+    <li><strong>الموارد البشرية</strong> — تقديم طلب إجازة للمعتمِد التالي، واعتماد/رفض الطلب لمقدّمه، وتنبيه قرب انتهاء عقد/مستند.</li>
+    <li><strong>اعتماد المخزون</strong> — مستند بانتظار اعتمادك (أمر شراء/تحويل/جرد/إعدام)، ونتيجة الاعتماد لمقدّمه.</li>
+    <li><strong>المبيعات</strong> — <em>أمر بيع جديد</em> لأمناء المخازن لتجهيز التسليم، و<em>تسليم بضاعة جاهز للفوترة</em> للمحاسبة، و<em>فاتورة بيع جديدة</em> لرئيس الحسابات.</li>
+    <li><strong>المشتريات</strong> — <em>استلام بضاعة من مورد</em> للمحاسبة لمطابقة الفاتورة، و<em>فاتورة شراء جديدة</em> لرئيس الحسابات.</li>
+    <li><strong>الائتمان</strong> — تنبيه فوري للمحاسبة عند <em>رفض فاتورة لتجاوز حدّ ائتمان العميل</em>.</li>
+    <li><strong>CRM</strong> — <em>فرصة بيعية رابحة</em> و<em>تحويل عميل محتمل إلى عميل</em> للمحاسبة.</li>
+    <li><strong>الحوكمة</strong> — فشل فحص سلامة البيانات (عدم اتزان، فروق GRNI…) لمديري المخزون.</li>
+  </ul>
+  <p style="color:var(--muted)">ملاحظة للمسؤول: يعتمد توجيه إشعارات المبيعات/المشتريات/المالية على إسناد الأدوار المحاسبية (محاسب / رئيس حسابات…) للموظفين؛ بدون إسناد دور لن يكون لها مستلِم.</p>
+  </section>
+
+<section id="mc">
+  <h2 class="sec"><span class="n">15</span> العملات المتعددة</h2>
+  <p>يدعم النظام التعامل بعملات أجنبية مع إبقاء الدفاتر والقوائم المالية <strong>بعملة الفرع الوظيفية</strong>. كل مستند أجنبي يُخزَّن بمبلغين: الأصلي + المُحوَّل لعملة الفرع بسعر يوم المعاملة، والترحيل المحاسبي وقيمة المخزون دائمًا بعملة الفرع.</p>
+  <ul>
+    <li><strong>العملات وأسعار الصرف</strong> — شاشتان تحت «المحاسبة ← العملات وأسعار الصرف»: تعريف العملات (لكل عملة عدد خاناتها العشرية) وإدخال أسعار الصرف بثلاثة أنواع: <strong>شراء</strong> (لسداد الموردين)، <strong>بيع</strong> (لتحصيل العملاء)، <strong>مركزي</strong>. يُستخدم أحدث سعر سارٍ ≤ تاريخ المعاملة.</li>
+    <li><strong>العملة الوظيفية للفرع</strong> — تُحدَّد عند التأسيس و<strong>تُقفل بعد أول معاملة</strong> (تغييرها يتطلب إعادة ترجمة الأرصدة). الشركة لها عملة افتراضية ترثها الفروع.</li>
+    <li><strong>عملة المستند</strong> — كل فاتورة/سند يرث عملة الفرع، ويمكن تغييرها لكل مستند <em>بصلاحية</em> (currency-override) مع إظهار حقل سعر الصرف.</li>
+    <li><strong>فروق العملة المحقَّقة</strong> — عند التحصيل/السداد بسعر يختلف عن سعر الفاتورة، يُثبَت الفرق تلقائيًا كربح/خسارة فرق عملة محقق (حسابات 4902/5902)، مع ربط السداد بالفواتير (FIFO).</li>
+    <li><strong>فروق العملة غير المحقَّقة</strong> — شاشة «إعادة تقييم العملات» تعيد تقييم أرصدة العملاء/الموردين الأجنبية المفتوحة بسعر الإقفال، وتثبت الفرق (4903 ربح / 5903 خسارة) مع <strong>قيد عكس تلقائي في اليوم التالي</strong>.</li>
+  </ul>
+  <div class="tip">قيمة المخزون والقيود تبقى دائمًا بعملة الفرع — التحويل يتم لحظة إدخال المستند، فتظل كل موازين المراجعة والأرصدة متّسقة بعملة واحدة.</div>
+  <p style="text-align:center;color:var(--muted);margin-top:26px;border-top:1px solid var(--line);padding-top:16px;">© CrossBuy — دليل المستخدم. للطباعة PDF: من المتصفح اختر «طباعة» ثم «حفظ كـ PDF».</p>
+</section>
+</div>

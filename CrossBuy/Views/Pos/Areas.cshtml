@@ -1,0 +1,99 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var areas = ViewBag.Areas as List<DiningArea> ?? new();
+    var stations = ViewBag.Stations as List<KitchenStation> ?? new();
+    var stTypes = new[] { ("Kitchen", Localizer["Kitchen"].Value), ("Bar", Localizer["Bar"].Value), ("Grill", Localizer["Grill"].Value), ("Prep", Localizer["Prep"].Value) };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Dining areas & kitchen stations"]</h1>
+            <span class="text-muted fs-7">@Localizer["Branch dining areas and prep stations (prepares for kitchen routing later)."]</span></div>
+        @if (fB != null) { <a href="@Url.Action("FloorPlan","Pos", new { branchId = fB })" class="btn btn-light-primary"><i class="ki-outline ki-geolocation fs-2"></i>@Localizer["Floor plan"]</a> }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any())
+        {
+            <div class="alert alert-warning d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>
+                <span>@Localizer["This company has no branches — add one first from the Branches screen."]
+                    <a href="@Url.Action("BranchesList","Service")" class="fw-bold ms-1">@Localizer["Manage branches"]</a></span></div>
+        }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-information-5 fs-3x mb-3 d-block"></i>@Localizer["Select a branch."]</div></div>
+        }
+        else
+        {
+            <div class="row g-5">
+                <!-- dining areas -->
+                <div class="col-lg-6">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Dining areas"]</h3></div></div>
+                        <div class="card-body">
+                            <form asp-action="SaveDiningArea" method="post" class="row g-2 align-items-end mb-4">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="0" />
+                                <div class="col-2"><label class="fw-semibold fs-8 mb-1">@SR["Code"]</label><input name="code" class="form-control form-control-solid form-control-sm" required /></div>
+                                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (AR)"]</label><input name="name" class="form-control form-control-solid form-control-sm" required /></div>
+                                <div class="col-3"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Sort"]</label><input type="number" name="sort" value="0" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-1"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i></button></div>
+                            </form>
+                            <table class="table table-row-dashed align-middle fs-7"><thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>EN</th><th></th></tr></thead>
+                            <tbody>@foreach (var a in areas) {
+                                <tr><td class="fw-bold">@a.Code @if (!a.IsActive) { <span class="badge badge-light-danger">@Localizer["Off"]</span> }</td><td>@a.Name</td><td class="text-muted">@(string.IsNullOrWhiteSpace(a.NameEn) ? "—" : a.NameEn)</td>
+                                <td class="text-end"><form asp-action="DeleteDiningArea" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete area?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@a.ID" /><input type="hidden" name="branchId" value="@fB" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form></td></tr>
+                            }</tbody></table>
+                            @if (!areas.Any()) { <div class="text-center text-muted py-6">@Localizer["No areas yet."]</div> }
+                        </div>
+                    </div>
+                </div>
+                <!-- kitchen stations -->
+                <div class="col-lg-6">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Prep stations"]</h3></div></div>
+                        <div class="card-body">
+                            <form asp-action="SaveStation" method="post" class="row g-2 align-items-end mb-4">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="0" />
+                                <div class="col-2"><label class="fw-semibold fs-8 mb-1">@SR["Code"]</label><input name="code" class="form-control form-control-solid form-control-sm" required /></div>
+                                <div class="col-3"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (AR)"]</label><input name="name" class="form-control form-control-solid form-control-sm" required /></div>
+                                <div class="col-3"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-2"><label class="fw-semibold fs-8 mb-1">@SR["Type"]</label><select name="stationType" class="form-select form-select-solid form-select-sm">@foreach (var t in stTypes) { <option value="@t.Item1">@t.Item2</option> }</select></div>
+                                <div class="col-2"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i></button></div>
+                            </form>
+                            <table class="table table-row-dashed align-middle fs-7"><thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>EN</th><th>@SR["Type"]</th><th></th></tr></thead>
+                            <tbody>@foreach (var s in stations) {
+                                <tr><td class="fw-bold">@s.Code</td><td>@s.Name</td><td class="text-muted">@(string.IsNullOrWhiteSpace(s.NameEn) ? "—" : s.NameEn)</td><td><span class="badge badge-light-primary">@s.StationType</span></td>
+                                <td class="text-end"><form asp-action="DeleteStation" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete station?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@s.ID" /><input type="hidden" name="branchId" value="@fB" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form></td></tr>
+                            }</tbody></table>
+                            @if (!stations.Any()) { <div class="text-center text-muted py-6">@Localizer["No stations yet."]</div> }
+                            <div class="text-muted fs-8 mt-2">@Localizer["Item→station routing comes with the KDS screen later."]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+@section Scripts {
+<script>
+var base='@Url.Action("Areas","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+</script>
+}

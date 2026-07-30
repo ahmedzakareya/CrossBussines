@@ -1,0 +1,30 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<CampaignRow>
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    // brand-safe status palette: green = active/completed, red = cancelled, gray = planned/other (no mint)
+    string stStyle(string s) => s switch { "Active" or "Completed" => "background:#eaf3ef;color:#13433a;", "Cancelled" => "background:#fdeaea;color:#d92d20;", _ => "background:#f2f4f7;color:#475467;" };
+    string nm(string s) => s switch { "Planned" => Localizer["Planned"].Value, "Active" => SR["Active"].Value, "Completed" => Localizer["Completed"].Value, "Cancelled" => Localizer["Cancelled"].Value, _ => s };
+}
+@foreach (var c in Model)
+{
+    <tr data-id="@c.Id" data-name="@c.Name" data-nameen="@c.NameEn" data-channel="@c.Channel" data-status="@c.Status"
+        data-start="@(c.StartDate?.ToString("yyyy-MM-dd"))" data-end="@(c.EndDate?.ToString("yyyy-MM-dd"))" data-budget="@c.Budget" data-notes="@c.Notes" style="border-bottom:1px dashed #eef1f6;">
+        <td class="ps-4 fw-bold text-gray-800">@(isAr ? c.Name : (string.IsNullOrEmpty(c.NameEn) ? c.Name : c.NameEn))</td>
+        <td>@if (string.IsNullOrEmpty(c.Channel)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#f2f4f7;color:#475467;">@c.Channel</span> }</td>
+        <td class="text-muted fs-7">@(c.StartDate?.ToString("yyyy-MM-dd") ?? "—") → @(c.EndDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+        <td class="text-end text-muted">@c.Budget.ToString("N0")</td>
+        <td class="text-center">@c.Leads</td>
+        <td class="text-center">@c.Opps</td>
+        <td class="text-center"><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@c.Won</span></td>
+        <td class="text-end fw-bold">@c.WonValue.ToString("N0")</td>
+        <td class="text-end fw-bold" style="color:@(c.RoiPct == null ? "#a1a5b7" : (c.RoiPct >= 0 ? "#1f7d57" : "#d92d20"))">@(c.RoiPct == null ? "—" : (c.RoiPct + "%"))</td>
+        <td class="text-center"><span class="badge fw-bold" style="@stStyle(c.Status)">@nm(c.Status)</span></td>
+        <td class="text-center pe-4">
+            <a href="@Url.Action("CampaignDetail","Crm", new { id = c.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Members & ROI"]"><i class="ki-outline ki-chart-simple fs-6"></i></a>
+            <button class="btn btn-sm btn-icon btn-light-primary" title="@SR["Edit"]" onclick="campEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
+        </td>
+    </tr>
+}

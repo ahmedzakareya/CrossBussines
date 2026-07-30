@@ -1,0 +1,34 @@
+﻿* {
+    font-family: 'Cairo', sans-serif !important;
+}
+
+body {
+    font-family: 'Cairo' /* , sans-serif !important */;
+}
+
+html[lang="ar"], .rtl {
+    font-family: 'Cairo' /* , sans-serif !important */;
+}
+
+    html[lang="ar"] body, .rtl body {
+        direction: rtl;
+        text-align: right;
+    }
+
+html[lang="en"], body {
+    direction: ltr;
+    text-align: left;
+    font-family: 'Lato'
+}
+
+/* ===== RTL fix: product-detail quantity spinner =====
+   Theme positions the up/down arrows at right:8px (LTR). In RTL that overlaps
+   the number. Flip the arrows to the inline-end (left) and reserve space so the
+   number stays clear and centered with the arrows. */
+html[lang="ar"] .detail-qty > a { right: auto !important; left: 10px !important; }
+html[lang="ar"] .detail-extralink .detail-qty {
+    padding-right: 22px !important;
+    padding-left: 30px !important;
+    text-align: right;
+}
+html[lang="ar"] .detail-qty .qty-val { display: inline-block; min-width: 20px; }

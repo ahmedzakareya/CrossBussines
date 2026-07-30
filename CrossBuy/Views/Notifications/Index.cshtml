@@ -1,0 +1,152 @@
+@using CrossBuy.Models.Context.Admin
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Notification>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var q = ViewBag.Q as string;
+    var category = ViewBag.Category as string;
+    var unread = ViewBag.Unread as bool?;
+    int page = ViewBag.Page; int pages = ViewBag.Pages; int total = ViewBag.Total; int unreadCount = ViewBag.UnreadCount;
+    var categories = ViewBag.Categories as List<string> ?? new();
+    var catColor = new Dictionary<string, string> { ["HR"] = "primary", ["Sales"] = "success", ["Purchasing"] = "info", ["Inventory"] = "warning", ["Accounting"] = "success", ["CRM"] = "primary", ["Governance"] = "danger", ["Chat"] = "info", ["General"] = "secondary" };
+    string cc(string? c) => c != null && catColor.TryGetValue(c, out var v) ? v : "secondary";
+    string qs(int p) => $"?q={Uri.EscapeDataString(q ?? "")}&category={Uri.EscapeDataString(category ?? "")}&unread={(unread == true ? "true" : "")}&page={p}";
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@SR["Notifications"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Communications"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <span class="badge badge-light-danger fs-7 fw-bold">@unreadCount @Localizer["unread"]</span>
+            <button id="cbnbPrefs" class="btn btn-sm btn-light fw-bold" data-bs-toggle="modal" data-bs-target="#notifPrefsModal"><i class="ki-outline ki-setting-2 fs-4"></i>@Localizer["Preferences"]</button>
+            <button id="cbnbReadAll" class="btn btn-sm btn-light-primary fw-bold"><i class="ki-outline ki-check fs-4"></i>@Localizer["Mark all read"]</button>
+        </div>
+    </div></div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush">
+            <div class="card-header align-items-center py-5 gap-3">
+                <form method="get" class="d-flex flex-wrap align-items-center gap-3 w-100">
+                    <div class="d-flex align-items-center position-relative my-1">
+                        <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                        <input type="text" name="q" value="@q" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" />
+                    </div>
+                    <select name="category" class="form-select form-select-solid w-175px" data-control="select2" data-placeholder="@Localizer["All categories"]" onchange="this.form.submit()">
+                        <option value="">@Localizer["All categories"]</option>
+                        @foreach (var c in categories) { <option value="@c" selected="@(category == c)">@c</option> }
+                    </select>
+                    <label class="form-check form-switch form-check-custom form-check-solid">
+                        <input class="form-check-input" type="checkbox" name="unread" value="true" onchange="this.form.submit()" checked="@(unread == true)" />
+                        <span class="form-check-label fw-semibold ms-2">@Localizer["Unread only"]</span>
+                    </label>
+                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-filter fs-4"></i>@Localizer["Apply"]</button>
+                </form>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Count == 0)
+                {
+                    <div class="text-center text-muted py-15"><i class="ki-outline ki-notification-on fs-3x text-primary mb-3 d-block"></i>@Localizer["No notifications"]</div>
+                }
+                else
+                {
+                    foreach (var n in Model)
+                    {
+                        var title = (isAr ? n.TitleAr : n.TitleEn) ?? n.TitleEn ?? n.TitleAr ?? "";
+                        var body = (isAr ? n.BodyAr : n.BodyEn) ?? n.BodyEn ?? n.BodyAr ?? "";
+                        var color = cc(n.Category);
+                        var icon = string.IsNullOrEmpty(n.Icon) ? "ki-notification-status" : n.Icon;
+                        <div class="d-flex align-items-start p-4 rounded mb-3 border border-gray-200 cbnb-row @(n.IsRead ? "" : "bg-light-primary")" data-id="@n.ID" data-url="@n.Url" style="@(string.IsNullOrEmpty(n.Url) ? "" : "cursor:pointer;")">
+                            <span class="symbol symbol-40px me-4"><span class="symbol-label bg-light-@color"><i class="ki-outline @icon fs-2 text-@color"></i></span></span>
+                            <div class="flex-grow-1">
+                                <div class="d-flex flex-stack">
+                                    <span class="fw-bold text-gray-900">@title</span>
+                                    <span class="d-flex align-items-center gap-2">
+                                        @if (n.Category != null) { <span class="badge badge-light-@color fs-8">@n.Category</span> }
+                                        @if (n.Priority == "Critical") { <span class="badge badge-light-danger fs-8">@Localizer["Critical"]</span> } else if (n.Priority == "High") { <span class="badge badge-light-warning fs-8">@Localizer["High"]</span> }
+                                        @if (!n.IsRead) { <span class="bullet bullet-dot bg-danger h-8px w-8px"></span> }
+                                    </span>
+                                </div>
+                                <div class="text-muted fw-semibold fs-7 mt-1">@body</div>
+                                <div class="text-gray-400 fs-8 mt-1">@(n.CreatedAt?.ToString("yyyy-MM-dd HH:mm"))</div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            @if (pages > 1)
+            {
+                <div class="card-footer d-flex flex-stack flex-wrap gap-2">
+                    <span class="text-muted fs-7">@total @Localizer["notifications"]</span>
+                    <ul class="pagination mb-0">
+                        <li class="page-item @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@qs(page - 1)"><i class="ki-outline ki-@(isAr ? "right" : "left") fs-4"></i></a></li>
+                        @for (int p = Math.Max(1, page - 2); p <= Math.Min(pages, page + 2); p++)
+                        {
+                            <li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@qs(p)">@p</a></li>
+                        }
+                        <li class="page-item @(page >= pages ? "disabled" : "")"><a class="page-link" href="@qs(page + 1)"><i class="ki-outline ki-@(isAr ? "left" : "right") fs-4"></i></a></li>
+                    </ul>
+                </div>
+            }
+        </div>
+    </div></div>
+</div>
+
+<!--begin::Notification preferences modal-->
+<div class="modal fade" id="notifPrefsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["Notification preferences"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body">
+        <div id="prefsList" class="d-flex flex-column gap-3"></div>
+        <div class="text-muted fs-8 mt-4"><i class="ki-outline ki-information-5 fs-7 me-1"></i>@Localizer["Muting hides only low-priority alerts of that category."]</div>
+    </div>
+</div></div></div>
+<!--end::Notification preferences modal-->
+
+@section Scripts {
+<script>
+(function () {
+    // ---- preferences (mute) ----
+    var catLabels = { 'Chat': '@Localizer["Chat"]', 'CRM': '@Localizer["CRM"]' };
+    var prefsModal = document.getElementById('notifPrefsModal');
+    if (prefsModal) prefsModal.addEventListener('show.bs.modal', function () {
+        fetch('/Notifications/Prefs', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (res) {
+            var muted = res.muted || [];
+            document.getElementById('prefsList').innerHTML = (res.categories || []).map(function (c) {
+                var on = muted.indexOf(c) === -1;
+                return '<label class="form-check form-switch form-check-custom form-check-solid d-flex justify-content-between">' +
+                    '<span class="fw-semibold text-gray-800">' + (catLabels[c] || c) + '</span>' +
+                    '<input class="form-check-input prefs-chk" type="checkbox" data-cat="' + c + '"' + (on ? ' checked' : '') + '></label>';
+            }).join('');
+            document.querySelectorAll('.prefs-chk').forEach(function (chk) {
+                chk.addEventListener('change', function () {
+                    var fd = new FormData(); fd.append('category', chk.getAttribute('data-cat'));
+                    fetch('/Notifications/ToggleMute', { method: 'POST', credentials: 'same-origin', body: fd });
+                });
+            });
+        });
+    });
+
+    document.querySelectorAll('.cbnb-row').forEach(function (el) {
+        el.addEventListener('click', function () {
+            var id = el.getAttribute('data-id'); var url = el.getAttribute('data-url');
+            if (id) fetch('/api/notifications/' + id + '/read', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+            if (url) window.location.href = url;
+        });
+    });
+    var ra = document.getElementById('cbnbReadAll');
+    if (ra) ra.addEventListener('click', function () {
+        fetch('/api/notifications/read-all', { method: 'POST', credentials: 'same-origin' }).then(function () { window.location.reload(); });
+    });
+})();
+</script>
+}

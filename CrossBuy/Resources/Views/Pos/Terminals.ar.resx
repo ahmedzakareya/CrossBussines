@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Cashier terminals" xml:space="preserve">
+    <value>أجهزة الكاشير</value>
+  </data>
+  <data name="Each terminal = isolated drawer + own receipt sequence + shifts — setup only, no selling or GL." xml:space="preserve">
+    <value>كل جهاز = خزنة مستقلة + تسلسل أرقام خاص + ورديات — تأسيس فقط، لا بيع ولا قيد.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>لا توجد فروع لهذه الشركة.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>اختر الشركة</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>اختر الفرع</value>
+  </data>
+  <data name="Select a branch to manage cashier terminals." xml:space="preserve">
+    <value>اختر الفرع لإدارة أجهزة الكاشير.</value>
+  </data>
+  <data name="Add terminal" xml:space="preserve">
+    <value>إضافة جهاز</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Cashier 1" xml:space="preserve">
+    <value>كاشير 1</value>
+  </data>
+  <data name="Receipt prefix" xml:space="preserve">
+    <value>بادئة الإيصال</value>
+  </data>
+  <data name="auto: code + -" xml:space="preserve">
+    <value>تلقائي: الكود + -</value>
+  </data>
+  <data name="Terminal drawer" xml:space="preserve">
+    <value>خزنة الجهاز (الدرج)</value>
+  </data>
+  <data name="Auto-create (dedicated till)" xml:space="preserve">
+    <value>إنشاء تلقائي (صندوق مستقل)</value>
+  </data>
+  <data name="By default a dedicated child cash account is created under the main cash; or pick an existing one." xml:space="preserve">
+    <value>افتراضيًا يُنشأ حساب نقدية ابن مستقل تحت الصندوق الرئيسي؛ أو اختر حسابًا قائمًا.</value>
+  </data>
+  <data name="Receipt printing" xml:space="preserve">
+    <value>إعداد طباعة الإيصال</value>
+  </data>
+  <data name="Paper width" xml:space="preserve">
+    <value>عرض الورق</value>
+  </data>
+  <data name="Copies" xml:space="preserve">
+    <value>عدد النسخ</value>
+  </data>
+  <data name="Printer name (optional — for future ESC/POS bridge)" xml:space="preserve">
+    <value>اسم الطابعة (اختياري — لجسر ESC/POS لاحقًا)</value>
+  </data>
+  <data name="window.print uses the default printer" xml:space="preserve">
+    <value>يستخدم window.print الطابعة الافتراضية</value>
+  </data>
+  <data name="Branch terminals" xml:space="preserve">
+    <value>أجهزة الفرع</value>
+  </data>
+  <data name="No terminals yet." xml:space="preserve">
+    <value>لا أجهزة بعد.</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>موقوف</value>
+  </data>
+  <data name="Delete terminal? (its till account stays in the chart)" xml:space="preserve">
+    <value>حذف الجهاز؟ (حساب خزنته يبقى في الشجرة)</value>
+  </data>
+  <data name="Drawer" xml:space="preserve">
+    <value>الخزنة</value>
+  </data>
+  <data name="— none —" xml:space="preserve">
+    <value>— غير محدد —</value>
+  </data>
+  <data name="Receipt seq" xml:space="preserve">
+    <value>تسلسل الإيصال</value>
+  </data>
+  <data name="Shift open" xml:space="preserve">
+    <value>وردية مفتوحة</value>
+  </data>
+  <data name="Evening" xml:space="preserve">
+    <value>مسائي</value>
+  </data>
+  <data name="Morning" xml:space="preserve">
+    <value>صباحي</value>
+  </data>
+  <data name="Close shift?" xml:space="preserve">
+    <value>إغلاق الوردية؟</value>
+  </data>
+  <data name="Close shift" xml:space="preserve">
+    <value>إغلاق الوردية</value>
+  </data>
+  <data name="Opening float" xml:space="preserve">
+    <value>عهدة افتتاحية</value>
+  </data>
+  <data name="Open shift" xml:space="preserve">
+    <value>فتح وردية</value>
+  </data>
+  <data name="Edit terminal" xml:space="preserve">
+    <value>تعديل جهاز</value>
+  </data>
+</root>

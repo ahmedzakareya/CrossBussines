@@ -1,0 +1,122 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    int? fWh = ViewBag.FilterWarehouseId;
+    var bins = ViewBag.Bins as List<BinLocation> ?? new();
+    var sections = bins.Where(b => b.LocationType == "Section").OrderBy(b => b.Code).ToList();
+    var racksBySection = bins.Where(b => b.LocationType == "Rack").GroupBy(b => b.ParentId ?? 0).ToDictionary(g => g.Key, g => g.OrderBy(x => x.Code).ToList());
+}
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Warehouse sections / racks"]</h1>
+    <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Warehouses"]</li></ul></div>
+</div></div>
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    @if (TempData["InvErr"] != null) { <div class="alert alert-danger">@TempData["InvErr"]</div> }
+    <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
+        <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
+            <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+        <div class="col-md-7"><div class="text-muted fs-7">@Localizer["Split the warehouse into sections, each into racks (optional). Purely organizational/locational — accounting stays at warehouse level."]</div></div>
+    </div></div></div>
+
+    @if (fWh == null)
+    {
+        <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-information-5 fs-3x mb-3 d-block"></i>@Localizer["Select a warehouse to manage sections and racks."]</div></div>
+    }
+    else
+    {
+        <div class="row g-5">
+            <!-- add forms -->
+            <div class="col-lg-4">
+                <div class="card mb-5"><div class="card-header"><div class="card-title"><h3>@Localizer["Add section"]</h3></div></div>
+                    <div class="card-body">
+                        <form asp-action="SaveBinLocation" method="post">@Html.AntiForgeryToken()
+                            <input type="hidden" name="warehouseId" value="@fWh" /><input type="hidden" name="locationType" value="Section" />
+                            <div class="mb-3"><label class="required fw-semibold fs-7 mb-1">@SR["Code"]</label><input name="code" class="form-control form-control-solid" required /></div>
+                            <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" /></div>
+                            <button type="submit" class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add section"]</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Add rack"]</h3></div></div>
+                    <div class="card-body">
+                        @if (sections.Count == 0) { <div class="text-muted fs-7">@Localizer["Add a section first."]</div> }
+                        else
+                        {
+                            <form asp-action="SaveBinLocation" method="post">@Html.AntiForgeryToken()
+                                <input type="hidden" name="warehouseId" value="@fWh" /><input type="hidden" name="locationType" value="Rack" />
+                                <div class="mb-3"><label class="required fw-semibold fs-7 mb-1">@Localizer["Section"]</label>
+                                    <select name="parentId" class="form-select form-select-solid" data-control="select2" required>@foreach (var s in sections) { <option value="@s.ID">@s.Code@(string.IsNullOrEmpty(s.Name) ? "" : " — " + s.Name)</option>}</select></div>
+                                <div class="mb-3"><label class="required fw-semibold fs-7 mb-1">@SR["Code"]</label><input name="code" class="form-control form-control-solid" required /></div>
+                                <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" /></div>
+                                <button type="submit" class="btn btn-light-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add rack"]</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!-- tree -->
+            <div class="col-lg-8">
+                <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Structure"]</h3></div>
+                    <div class="card-toolbar"><span class="badge badge-light-primary fs-7">@sections.Count @Localizer["sections"]</span></div></div>
+                    <div class="card-body">
+                        @if (sections.Count == 0)
+                        {
+                            <div class="text-center text-muted py-15"><i class="ki-outline ki-abstract-26 fs-3x mb-3 d-block text-gray-400"></i>@Localizer["No sections yet — add one from the left."]</div>
+                        }
+                        @foreach (var sec in sections)
+                        {
+                            var rks = racksBySection.TryGetValue(sec.ID, out var rl) ? rl : new List<BinLocation>();
+                            <div class="border border-gray-300 border-dashed rounded p-4 mb-5">
+                                <!-- section header -->
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <span class="symbol symbol-45px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-abstract-26 fs-2 text-primary"></i></span></span>
+                                        <div>
+                                            <div class="fw-bold text-gray-900 fs-5">@sec.Code @if (!sec.IsActive) { <span class="badge badge-light-danger ms-2">@SR["Inactive"]</span> }</div>
+                                            <div class="text-muted fs-7">@sec.Name</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="badge badge-light-@(rks.Count > 0 ? "info" : "secondary") fs-8">@rks.Count @Localizer["racks"]</span>
+                                        <form asp-action="DeleteBinLocation" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete section?"]"><input type="hidden" name="id" value="@sec.ID" /><input type="hidden" name="warehouseId" value="@fWh" />@Html.AntiForgeryToken()<button class="btn btn-icon btn-sm btn-light-danger" title="@Localizer["Delete section"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                                    </div>
+                                </div>
+                                <!-- racks as chips -->
+                                <div class="separator separator-dashed my-4"></div>
+                                <div class="d-flex flex-wrap gap-3">
+                                    @if (rks.Count == 0)
+                                    {
+                                        <span class="text-muted fs-7 fst-italic">@Localizer["No racks (optional)"]</span>
+                                    }
+                                    @foreach (var rk in rks)
+                                    {
+                                        <span class="d-inline-flex align-items-center bg-light-primary text-gray-800 rounded px-3 py-2 fs-7">
+                                            <i class="ki-outline ki-row-horizontal fs-5 text-primary me-2"></i>
+                                            <span class="fw-semibold">@rk.Code</span>
+                                            @if (!string.IsNullOrEmpty(rk.Name)) { <span class="text-muted ms-2">@rk.Name</span> }
+                                            <form asp-action="DeleteBinLocation" method="post" class="d-inline ms-3" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete rack?"]"><input type="hidden" name="id" value="@rk.ID" /><input type="hidden" name="warehouseId" value="@fWh" />@Html.AntiForgeryToken()<button class="btn btn-icon btn-active-color-danger p-0 w-15px h-15px" title="@SR["Delete"]"><i class="ki-outline ki-cross fs-6"></i></button></form>
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div></div>
+@section Scripts {
+<script>
+jQuery(function ($) {
+    var url = '@Url.Action("WarehouseSections", "Inventory")';
+    var go = function () { var v = $('#whSel').val(); if (v) location.href = url + '?warehouseId=' + v; };
+    // select2 fires its own event via jQuery.trigger, so bind through jQuery (not addEventListener)
+    $('#whSel').on('change select2:select', go);
+});
+</script>
+}

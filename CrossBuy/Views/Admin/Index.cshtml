@@ -1,0 +1,362 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model AdminDashboardDto
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+    var monthsEn = new[] { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    string nm(string? a, string? b) => (isAr ? (a ?? b) : (b ?? a)) ?? "-";
+    var statusBadge = new[] { "warning", "success", "danger" };
+    var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value };
+    var attTotal = Model.AttPresent + Model.AttAbsent + Model.AttLeave;
+    int attPct(int v) => attTotal > 0 ? (int)Math.Round(100.0 * v / attTotal) : 0;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Human Resources"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["HR Dashboard"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a href="@Url.Action("Attendance","Admin")" class="btn btn-sm btn-light fw-bold">@Localizer["Attendance"]</a>
+                <a href="@Url.Action("EmployeesList","Admin")" class="btn btn-sm btn-primary fw-bold"><i class="ki-outline ki-people fs-3"></i>@Localizer["Employees"]</a>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            <!--begin::Row 1 — leave trend + workforce card-->
+            <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Leave requests"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@Localizer["Last 6 months"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body pt-0 px-3 pb-3">
+                            <div id="hr_trend_chart" class="min-h-auto" style="height:330px"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--begin::Workforce card (brand green)-->
+                <div class="col-xl-4">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#1f6253">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title">
+                                <span class="text-white fs-3 fw-bold me-2">@Localizer["Workforce"]</span>
+                            </h3>
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("EmployeesList","Admin")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex justify-content-between flex-column pt-1 px-0 pb-5">
+                            <div class="d-flex flex-wrap px-9 mb-4">
+                                <div class="rounded min-w-125px py-3 px-4 my-1 me-6" style="border:1px dashed rgba(255,255,255,0.3)">
+                                    <div class="text-white fs-2 fw-bold">@Model.TotalEmployees</div>
+                                    <div class="fw-semibold fs-7 text-white opacity-75">@Localizer["Total employees"]</div>
+                                </div>
+                                <div class="rounded min-w-125px py-3 px-4 my-1" style="border:1px dashed rgba(255,255,255,0.3)">
+                                    <div class="text-white fs-2 fw-bold">@Model.ActiveEmployees</div>
+                                    <div class="fw-semibold fs-7 text-white opacity-75">@Localizer["Active"]</div>
+                                </div>
+                            </div>
+                            <div class="px-9">
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Inactive"]</span><span class="fw-bold fs-7">@Model.InactiveEmployees</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["New hires this year"]</span><span class="fw-bold fs-7">@Model.NewHiresThisYear</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["On leave today"]</span><span class="fw-bold fs-7">@Model.OnLeaveToday</span></div>
+                                <div class="d-flex flex-stack text-white"><span class="fw-bold fs-7">@Localizer["Pending approvals"]</span><span class="fw-bold fs-7">@Model.PendingLeaves</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Workforce-->
+            </div>
+            <!--end::Row 1-->
+
+            <!--begin::Row 2 — stat cards-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                @{
+                    var stats = new (string label, string value, string icon, string color, string badge, string badgeColor)[] {
+                        (Localizer["Total employees"].Value, Model.TotalEmployees.ToString(), "ki-people", "primary", $"{Model.ActiveEmployees} {Localizer["active"].Value}", "primary"),
+                        (Localizer["New hires this year"].Value, Model.NewHiresThisYear.ToString(), "ki-abstract-26", "info", Model.Year.ToString(), "info"),
+                        (Localizer["Pending approvals"].Value, Model.PendingLeaves.ToString(), "ki-time", "warning", Localizer["Pending"].Value, "warning"),
+                        (Localizer["On leave today"].Value, Model.OnLeaveToday.ToString(), "ki-airplane", "success", Localizer["Today"].Value, "success"),
+                        (Localizer["Documents expiring"].Value, Model.ExpiringSoonCount.ToString(), "ki-shield-cross", "danger", Model.ExpiredDocs > 0 ? $"{Model.ExpiredDocs} {Localizer["expired"].Value}" : Localizer["60 days"].Value, "danger"),
+                        (Localizer["Present days this month"].Value, Model.AttPresent.ToString(), "ki-check-circle", "dark", monthsAr.Length > 0 ? (isAr ? monthsAr[DateTime.UtcNow.Month] : monthsEn[DateTime.UtcNow.Month]) : "", "dark"),
+                    };
+                }
+                @foreach (var s in stats)
+                {
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card h-100">
+                            <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                                <div class="d-flex flex-stack w-100 mb-4">
+                                    <div class="symbol symbol-40px">
+                                        <span class="symbol-label bg-light-@s.color"><i class="ki-outline @s.icon fs-2x text-@s.color"></i></span>
+                                    </div>
+                                    <span class="badge badge-light-@s.badgeColor fs-8 fw-bold">@s.badge</span>
+                                </div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2">@s.value</span>
+                                <div class="m-0 mt-2"><span class="fw-semibold fs-7 text-gray-500">@s.label</span></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <!--end::Row 2-->
+
+            <!--begin::Row 3 — recent leaves + headcount by job title-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Recent leave requests"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-6">@Model.PendingLeaves @Localizer["pending"] · @Model.ApprovedLeavesYtd @Localizer["approved this year"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Attendance","Admin")" class="btn btn-sm btn-light">@SR["View"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                <thead>
+                                    <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                        <th>@Localizer["Employee"]</th><th>@SR["Type"]</th>
+                                        <th>@SR["From"]</th><th>@SR["To"]</th>
+                                        <th class="text-center">@Localizer["Days"]</th><th class="text-center">@SR["Status"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.RecentLeaves.Count == 0)
+                                    {
+                                        <tr><td colspan="6" class="text-center text-muted py-10">@Localizer["No requests"]</td></tr>
+                                    }
+                                    @foreach (var e in Model.RecentLeaves)
+                                    {
+                                        var bc = statusBadge[e.Status];
+                                        <tr>
+                                            <td class="min-w-150px">
+                                                <div class="position-relative ps-5">
+                                                    <div class="position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-@bc"></div>
+                                                    <span class="d-block fw-bold text-gray-900">@e.EmployeeName</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-gray-700 fw-semibold">@nm(e.TypeAr, e.TypeEn)</td>
+                                            <td class="text-muted fw-semibold">@e.StartDate.ToString("yyyy/MM/dd")</td>
+                                            <td class="text-muted fw-semibold">@e.EndDate.ToString("yyyy/MM/dd")</td>
+                                            <td class="text-center fw-bold text-gray-800">@e.Days</td>
+                                            <td class="text-center"><span class="badge badge-light-@bc">@statusText[e.Status]</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Headcount by job title"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["Top titles"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between pt-2 pb-5">
+                            @if (Model.ByJobTitle.Count == 0)
+                            {
+                                <div class="text-center text-muted py-15">@SR["NoData"]</div>
+                            }
+                            else
+                            {
+                                var barColors = new[] { "primary", "success", "info", "warning", "danger", "dark" };
+                                var idx = 0;
+                                foreach (var e in Model.ByJobTitle)
+                                {
+                                    var bc = barColors[idx % barColors.Length]; idx++;
+                                    <div class="d-flex flex-stack mb-2">
+                                        <span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@nm(e.NameAr, e.NameEn)</span>
+                                        <span class="text-gray-900 fw-bold me-3">@e.Count</span>
+                                    </div>
+                                    <div class="d-flex align-items-center w-100 mb-4">
+                                        <div class="progress h-6px w-100 me-2 bg-light-@bc"><div class="progress-bar bg-@bc" style="width:@(e.Pct)%"></div></div>
+                                        <span class="text-gray-500 fw-semibold fs-7">@e.Pct%</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 3-->
+
+            <!--begin::Row 4 — attendance + expiring docs + holidays-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <!--begin::Attendance-->
+                <div class="col-xl-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Attendance this month"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@(isAr ? monthsAr[DateTime.UtcNow.Month] : monthsEn[DateTime.UtcNow.Month]) @Model.Year</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Attendance","Admin")" class="btn btn-sm btn-light">@SR["View"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="d-flex flex-stack py-2"><span class="text-gray-600 fw-semibold"><span class="bullet bullet-dot bg-success me-2"></span>@Localizer["Present"]</span><span class="fw-bold text-gray-900">@Model.AttPresent</span></div>
+                            <div class="progress h-6px mb-3"><div class="progress-bar bg-success" style="width:@attPct(Model.AttPresent)%"></div></div>
+                            <div class="d-flex flex-stack py-2"><span class="text-gray-600 fw-semibold"><span class="bullet bullet-dot bg-danger me-2"></span>@Localizer["Absent"]</span><span class="fw-bold text-gray-900">@Model.AttAbsent</span></div>
+                            <div class="progress h-6px mb-3"><div class="progress-bar bg-danger" style="width:@attPct(Model.AttAbsent)%"></div></div>
+                            <div class="d-flex flex-stack py-2"><span class="text-gray-600 fw-semibold"><span class="bullet bullet-dot bg-info me-2"></span>@Localizer["On leave"]</span><span class="fw-bold text-gray-900">@Model.AttLeave</span></div>
+                            <div class="progress h-6px mb-3"><div class="progress-bar bg-info" style="width:@attPct(Model.AttLeave)%"></div></div>
+                            <div class="separator separator-dashed my-2"></div>
+                            <div class="d-flex flex-stack py-2"><span class="text-gray-800 fw-bold">@Localizer["Late arrivals"]</span><span class="fw-bold fs-5 text-warning">@Model.AttLate</span></div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Attendance-->
+                <!--begin::Expiring documents-->
+                <div class="col-xl-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Expiring documents"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["Next 60 days"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("DocExpiryAlerts","Admin")" class="btn btn-sm btn-light">@SR["View"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (Model.ExpiringDocs.Count == 0)
+                            {
+                                <div class="text-center text-muted py-10"><i class="ki-outline ki-shield-tick fs-3x text-primary mb-2 d-block"></i>@Localizer["Nothing expiring soon"]</div>
+                            }
+                            else
+                            {
+                                foreach (var d in Model.ExpiringDocs)
+                                {
+                                    var overdue = d.DaysLeft < 0;
+                                    <div class="d-flex align-items-center mb-4">
+                                        <span class="symbol symbol-35px me-3"><span class="symbol-label bg-light-@(overdue ? "danger" : "warning")"><i class="ki-outline @(d.Kind == "Contract" ? "ki-document" : "ki-address-book") fs-4 text-@(overdue ? "danger" : "warning")"></i></span></span>
+                                        <div class="d-flex flex-column flex-grow-1">
+                                            <span class="fw-bold text-gray-900 fs-7">@d.EmployeeName</span>
+                                            <span class="text-muted fw-semibold fs-8">@d.Label · @d.Date.ToString("yyyy/MM/dd")</span>
+                                        </div>
+                                        <span class="badge badge-light-@(overdue ? "danger" : "warning") fw-bold">@(overdue ? Localizer["Overdue"].Value : $"{d.DaysLeft} {Localizer["days"].Value}")</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <!--end::Expiring documents-->
+                <!--begin::Upcoming holidays-->
+                <div class="col-xl-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Upcoming holidays"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["Official"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("HolidaysList","Admin")" class="btn btn-sm btn-light">@SR["View"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (Model.UpcomingHolidays.Count == 0)
+                            {
+                                <div class="text-center text-muted py-10">@Localizer["No upcoming holidays"]</div>
+                            }
+                            else
+                            {
+                                foreach (var h in Model.UpcomingHolidays)
+                                {
+                                    <div class="d-flex align-items-center mb-4">
+                                        <span class="symbol symbol-40px me-3"><span class="symbol-label" style="background:#eaf3ef;"><span class="fw-bold" style="color:#13433a;">@h.Date.Day</span></span></span>
+                                        <div class="d-flex flex-column flex-grow-1">
+                                            <span class="fw-bold text-gray-900 fs-7">@nm(h.NameAr, h.NameEn)</span>
+                                            <span class="text-muted fw-semibold fs-8">@h.Date.ToString("yyyy/MM/dd")</span>
+                                        </div>
+                                        <span class="badge badge-light-primary fw-bold">@((h.Date.Date - DateTime.UtcNow.Date).Days) @Localizer["days"]</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <!--end::Upcoming holidays-->
+            </div>
+            <!--end::Row 4-->
+
+            <!--begin::Row 5 — quick access-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-12">
+                    <div class="card card-flush">
+                        <div class="card-header pt-7"><h3 class="card-title fw-bold text-gray-900">@Localizer["Quick Access"]</h3></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3">
+                                @{
+                                    var links = new (string action, string label, string icon, string color)[] {
+                                        ("EmployeesList", Localizer["Employees"].Value, "ki-people", "primary"),
+                                        ("AdministrativeStructure", Localizer["Org structure"].Value, "ki-abstract-26", "info"),
+                                        ("JobTitlesList", Localizer["Job titles"].Value, "ki-briefcase", "success"),
+                                        ("AdministrativeBodiesCompanyList", Localizer["Administrative bodies"].Value, "ki-bank", "dark"),
+                                        ("HrDocuments", Localizer["Contracts & documents"].Value, "ki-document", "warning"),
+                                        ("DocExpiryAlerts", Localizer["Expiry alerts"].Value, "ki-notification-status", "danger"),
+                                        ("LeaveTypesList", Localizer["Leave types"].Value, "ki-calendar-tick", "primary"),
+                                        ("Polices", Localizer["Policies"].Value, "ki-shield-tick", "info"),
+                                        ("HolidaysList", Localizer["Official holidays"].Value, "ki-calendar", "success"),
+                                        ("Attendance", Localizer["Attendance"].Value, "ki-time", "warning"),
+                                        ("Appraisals", Localizer["Performance appraisal"].Value, "ki-medal-star", "dark"),
+                                        ("TrainingCourses", Localizer["Training"].Value, "ki-teacher", "primary"),
+                                    };
+                                }
+                                @foreach (var l in links)
+                                {
+                                    <div class="col-6 col-md-3 col-xl-2">
+                                        <a href="@Url.Action(l.action,"Admin")" class="d-flex flex-column flex-center bg-hover-light rounded h-100 py-5 border border-gray-200 text-decoration-none">
+                                            <i class="ki-outline @l.icon fs-2x text-@l.color mb-2"></i>
+                                            <span class="fs-8 fw-semibold text-gray-800 text-center px-1">@l.label</span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 5-->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!window.ApexCharts) return;
+            var isAr = @(isAr ? "true" : "false");
+            var months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LeaveMonthly.Select(m => (isAr ? monthsAr : monthsEn)[m.Month] + " " + m.Year)));
+            var counts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LeaveMonthly.Select(m => m.Count)));
+            new ApexCharts(document.querySelector('#hr_trend_chart'), {
+                chart: { type: 'area', height: 330, fontFamily: 'inherit', toolbar: { show: false } },
+                series: [{ name: '@Localizer["Leave requests"]', data: counts }],
+                colors: ['#13433a'],
+                xaxis: { categories: months, labels: { style: { colors: '#99A1B7' } } },
+                yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return Math.round(v); } } },
+                stroke: { curve: 'smooth', width: 3 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.05 } },
+                dataLabels: { enabled: false }, legend: { show: false },
+                grid: { borderColor: '#E4E6EF', strokeDashArray: 4 }
+            }).render();
+        })();
+    </script>
+}

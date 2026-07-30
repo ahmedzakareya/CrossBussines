@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Employee Registration" xml:space="preserve">
+    <value>تسجيل موظف</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="New Employee" xml:space="preserve">
+    <value>موظف جديد</value>
+  </data>
+  <data name="Basic data" xml:space="preserve">
+    <value>البيانات الأساسية</value>
+  </data>
+  <data name="Personal info" xml:space="preserve">
+    <value>معلومات شخصية</value>
+  </data>
+  <data name="Assignment" xml:space="preserve">
+    <value>التعيين</value>
+  </data>
+  <data name="Company &amp; role" xml:space="preserve">
+    <value>الشركة والدور</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>السياسة</value>
+  </data>
+  <data name="Leave &amp; salary" xml:space="preserve">
+    <value>الإجازات والراتب</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>المراجعة</value>
+  </data>
+  <data name="Confirm &amp; save" xml:space="preserve">
+    <value>التأكيد والحفظ</value>
+  </data>
+  <data name="Basic employee data" xml:space="preserve">
+    <value>البيانات الأساسية للموظف</value>
+  </data>
+  <data name="Enter personal and contact information for the new employee." xml:space="preserve">
+    <value>أدخل المعلومات الشخصية وبيانات الاتصال للموظف الجديد.</value>
+  </data>
+  <data name="Photo" xml:space="preserve">
+    <value>الصورة</value>
+  </data>
+  <data name="Change photo" xml:space="preserve">
+    <value>تغيير الصورة</value>
+  </data>
+  <data name="Remove photo" xml:space="preserve">
+    <value>إزالة الصورة</value>
+  </data>
+  <data name="First name" xml:space="preserve">
+    <value>الاسم الأول</value>
+  </data>
+  <data name="e.g. Ahmed" xml:space="preserve">
+    <value>مثال: أحمد</value>
+  </data>
+  <data name="Last name" xml:space="preserve">
+    <value>اسم العائلة</value>
+  </data>
+  <data name="e.g. Al-Rashidi" xml:space="preserve">
+    <value>مثال: الراشدي</value>
+  </data>
+  <data name="Full name" xml:space="preserve">
+    <value>الاسم الكامل</value>
+  </data>
+  <data name="auto-filled" xml:space="preserve">
+    <value>يُملأ تلقائيًا</value>
+  </data>
+  <data name="Generated from first + last name" xml:space="preserve">
+    <value>يُولَّد من الاسم الأول + اسم العائلة</value>
+  </data>
+  <data name="name@company.com" xml:space="preserve">
+    <value>name@company.com</value>
+  </data>
+  <data name="Phone number" xml:space="preserve">
+    <value>رقم الهاتف</value>
+  </data>
+  <data name="+966 5x xxx xxxx" xml:space="preserve">
+    <value>+966 5x xxx xxxx</value>
+  </data>
+  <data name="Gender" xml:space="preserve">
+    <value>الجنس</value>
+  </data>
+  <data name="Select gender" xml:space="preserve">
+    <value>اختر الجنس</value>
+  </data>
+  <data name="Male" xml:space="preserve">
+    <value>ذكر</value>
+  </data>
+  <data name="Female" xml:space="preserve">
+    <value>أنثى</value>
+  </data>
+  <data name="Marital status" xml:space="preserve">
+    <value>الحالة الاجتماعية</value>
+  </data>
+  <data name="Select marital status" xml:space="preserve">
+    <value>اختر الحالة الاجتماعية</value>
+  </data>
+  <data name="Single" xml:space="preserve">
+    <value>أعزب</value>
+  </data>
+  <data name="Married" xml:space="preserve">
+    <value>متزوج</value>
+  </data>
+  <data name="Divorced" xml:space="preserve">
+    <value>مطلّق</value>
+  </data>
+  <data name="Widowed" xml:space="preserve">
+    <value>أرمل</value>
+  </data>
+  <data name="Date of birth" xml:space="preserve">
+    <value>تاريخ الميلاد</value>
+  </data>
+  <data name="Date of joining" xml:space="preserve">
+    <value>تاريخ الالتحاق</value>
+  </data>
+  <data name="Employee home address" xml:space="preserve">
+    <value>عنوان سكن الموظف</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>اختر الشركة</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>اختر الفرع</value>
+  </data>
+  <data name="Select job title" xml:space="preserve">
+    <value>اختر المسمى الوظيفي</value>
+  </data>
+  <data name="Manufacturing hour rate" xml:space="preserve">
+    <value>معدل ساعة التصنيع</value>
+  </data>
+  <data name="optional — used to cost labor on work orders" xml:space="preserve">
+    <value>اختياري — يُستخدم لتحميل العمالة على أوامر التشغيل</value>
+  </data>
+  <data name="Used to cost the employee's labor on work orders. If left blank, it is derived from the base salary ÷ standard hours." xml:space="preserve">
+    <value>يُستخدم لتحميل عمالة الموظف على أوامر التشغيل. إن تُرك فارغًا يُشتق من الراتب الأساسي ÷ الساعات المعيارية.</value>
+  </data>
+  <data name="Select department" xml:space="preserve">
+    <value>اختر الإدارة</value>
+  </data>
+  <data name="Administrative structure" xml:space="preserve">
+    <value>الهيكل الإداري</value>
+  </data>
+  <data name="Select structure node" xml:space="preserve">
+    <value>اختر عقدة الهيكل</value>
+  </data>
+  <data name="Search node…" xml:space="preserve">
+    <value>ابحث عن عقدة…</value>
+  </data>
+  <data name="Placement preview" xml:space="preserve">
+    <value>معاينة التنسيب</value>
+  </data>
+  <data name="Step 1 of 4" xml:space="preserve">
+    <value>الخطوة 1 من 4</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>متابعة</value>
+  </data>
+  <data name="Organization assignment" xml:space="preserve">
+    <value>التعيين التنظيمي</value>
+  </data>
+  <data name="Select the company, branch, department and position in the administrative structure." xml:space="preserve">
+    <value>اختر الشركة والفرع والإدارة والمنصب في الهيكل الإداري.</value>
+  </data>
+  <data name="Step 2 of 4" xml:space="preserve">
+    <value>الخطوة 2 من 4</value>
+  </data>
+  <data name="Policy selection" xml:space="preserve">
+    <value>اختيار السياسة</value>
+  </data>
+  <data name="Click on a policy to select it and view its full details." xml:space="preserve">
+    <value>انقر على سياسة لتحديدها وعرض تفاصيلها الكاملة.</value>
+  </data>
+  <data name="Loading policies…" xml:space="preserve">
+    <value>جارٍ تحميل السياسات…</value>
+  </data>
+  <data name="Step 3 of 4" xml:space="preserve">
+    <value>الخطوة 3 من 4</value>
+  </data>
+  <data name="Review &amp; confirmation" xml:space="preserve">
+    <value>المراجعة والتأكيد</value>
+  </data>
+  <data name="Review all employee data carefully before saving." xml:space="preserve">
+    <value>راجع جميع بيانات الموظف بعناية قبل الحفظ.</value>
+  </data>
+  <data name="Joining date" xml:space="preserve">
+    <value>تاريخ الالتحاق</value>
+  </data>
+  <data name="Step 4 of 4" xml:space="preserve">
+    <value>الخطوة 4 من 4</value>
+  </data>
+  <data name="Save employee" xml:space="preserve">
+    <value>حفظ الموظف</value>
+  </data>
+  <data name="Select…" xml:space="preserve">
+    <value>اختر…</value>
+  </data>
+  <data name="No policies available." xml:space="preserve">
+    <value>لا توجد سياسات متاحة.</value>
+  </data>
+  <data name="Failed to load policies." xml:space="preserve">
+    <value>فشل تحميل السياسات.</value>
+  </data>
+  <data name="No structure available." xml:space="preserve">
+    <value>لا يوجد هيكل متاح.</value>
+  </data>
+  <data name="Select a policy to preview its details." xml:space="preserve">
+    <value>اختر سياسة لمعاينة تفاصيلها.</value>
+  </data>
+  <data name="No leave policies defined." xml:space="preserve">
+    <value>لا توجد سياسات إجازات معرّفة.</value>
+  </data>
+  <data name="Leave rule" xml:space="preserve">
+    <value>قاعدة إجازة</value>
+  </data>
+  <data name="Days / year" xml:space="preserve">
+    <value>أيام / سنة</value>
+  </data>
+  <data name="Carry-over max" xml:space="preserve">
+    <value>الحد الأقصى للترحيل</value>
+  </data>
+  <data name="Notice days" xml:space="preserve">
+    <value>أيام الإشعار</value>
+  </data>
+  <data name="Medical certificate required" xml:space="preserve">
+    <value>شهادة طبية مطلوبة</value>
+  </data>
+  <data name="No salary policies defined." xml:space="preserve">
+    <value>لا توجد سياسات رواتب معرّفة.</value>
+  </data>
+  <data name="Salary rule #" xml:space="preserve">
+    <value>قاعدة راتب #</value>
+  </data>
+  <data name="Housing" xml:space="preserve">
+    <value>السكن</value>
+  </data>
+  <data name="Transport" xml:space="preserve">
+    <value>النقل</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>أخرى</value>
+  </data>
+  <data name="Base Salary" xml:space="preserve">
+    <value>الراتب الأساسي</value>
+  </data>
+  <data name="Gross Total" xml:space="preserve">
+    <value>الإجمالي</value>
+  </data>
+  <data name="Deduction rates" xml:space="preserve">
+    <value>معدلات الخصم</value>
+  </data>
+  <data name="Overtime" xml:space="preserve">
+    <value>العمل الإضافي</value>
+  </data>
+  <data name="Late / min" xml:space="preserve">
+    <value>تأخير / دقيقة</value>
+  </data>
+  <data name="Absence / day" xml:space="preserve">
+    <value>غياب / يوم</value>
+  </data>
+  <data name="Tax rate" xml:space="preserve">
+    <value>معدل الضريبة</value>
+  </data>
+  <data name="Social insurance" xml:space="preserve">
+    <value>التأمينات الاجتماعية</value>
+  </data>
+  <data name="Employee share" xml:space="preserve">
+    <value>حصة الموظف</value>
+  </data>
+  <data name="Company share" xml:space="preserve">
+    <value>حصة الشركة</value>
+  </data>
+  <data name="Paid on day" xml:space="preserve">
+    <value>يُدفع في يوم</value>
+  </data>
+  <data name="No attendance policies defined." xml:space="preserve">
+    <value>لا توجد سياسات حضور معرّفة.</value>
+  </data>
+  <data name="Sun" xml:space="preserve">
+    <value>الأحد</value>
+  </data>
+  <data name="Mon" xml:space="preserve">
+    <value>الإثنين</value>
+  </data>
+  <data name="Tue" xml:space="preserve">
+    <value>الثلاثاء</value>
+  </data>
+  <data name="Wed" xml:space="preserve">
+    <value>الأربعاء</value>
+  </data>
+  <data name="Thu" xml:space="preserve">
+    <value>الخميس</value>
+  </data>
+  <data name="Fri" xml:space="preserve">
+    <value>الجمعة</value>
+  </data>
+  <data name="Sat" xml:space="preserve">
+    <value>السبت</value>
+  </data>
+  <data name="Break" xml:space="preserve">
+    <value>استراحة</value>
+  </data>
+  <data name="min" xml:space="preserve">
+    <value>دقيقة</value>
+  </data>
+  <data name="No break configured" xml:space="preserve">
+    <value>لا توجد استراحة مُعدّة</value>
+  </data>
+  <data name="Permissions" xml:space="preserve">
+    <value>الأذونات</value>
+  </data>
+  <data name="Max/day" xml:space="preserve">
+    <value>الحد الأقصى/اليوم</value>
+  </data>
+  <data name="Max/month" xml:space="preserve">
+    <value>الحد الأقصى/الشهر</value>
+  </data>
+  <data name="Per request" xml:space="preserve">
+    <value>لكل طلب</value>
+  </data>
+  <data name="Requires approval" xml:space="preserve">
+    <value>يتطلب موافقة</value>
+  </data>
+  <data name="Deduct if exceeded" xml:space="preserve">
+    <value>خصم عند التجاوز</value>
+  </data>
+  <data name="Attendance rule #" xml:space="preserve">
+    <value>قاعدة حضور #</value>
+  </data>
+  <data name="hrs / day" xml:space="preserve">
+    <value>ساعة / يوم</value>
+  </data>
+  <data name="Working days" xml:space="preserve">
+    <value>أيام العمل</value>
+  </data>
+  <data name="Thresholds &amp; penalties" xml:space="preserve">
+    <value>الحدود والعقوبات</value>
+  </data>
+  <data name="Grace min" xml:space="preserve">
+    <value>دقائق السماح</value>
+  </data>
+  <data name="Warnings" xml:space="preserve">
+    <value>التحذيرات</value>
+  </data>
+  <data name="Absent days" xml:space="preserve">
+    <value>أيام الغياب</value>
+  </data>
+  <data name="Deduct" xml:space="preserve">
+    <value>خصم</value>
+  </data>
+  <data name="Leaves" xml:space="preserve">
+    <value>الإجازات</value>
+  </data>
+  <data name="Salary" xml:space="preserve">
+    <value>الراتب</value>
+  </data>
+  <data name="Attendance" xml:space="preserve">
+    <value>الحضور</value>
+  </data>
+  <data name="Loading policy details…" xml:space="preserve">
+    <value>جارٍ تحميل تفاصيل السياسة…</value>
+  </data>
+  <data name="No details available." xml:space="preserve">
+    <value>لا توجد تفاصيل متاحة.</value>
+  </data>
+  <data name="Failed to load policy details." xml:space="preserve">
+    <value>فشل تحميل تفاصيل السياسة.</value>
+  </data>
+  <data name="Employee photo" xml:space="preserve">
+    <value>صورة الموظف</value>
+  </data>
+  <data name="Personal information" xml:space="preserve">
+    <value>المعلومات الشخصية</value>
+  </data>
+  <data name="Structure node" xml:space="preserve">
+    <value>عقدة الهيكل</value>
+  </data>
+  <data name="Policy &amp; dates" xml:space="preserve">
+    <value>السياسة والتواريخ</value>
+  </data>
+  <data name="Please review and complete all required fields before saving." xml:space="preserve">
+    <value>يرجى مراجعة وإكمال جميع الحقول المطلوبة قبل الحفظ.</value>
+  </data>
+  <data name="Saved successfully" xml:space="preserve">
+    <value>تم الحفظ بنجاح</value>
+  </data>
+  <data name="Employee has been saved successfully." xml:space="preserve">
+    <value>تم حفظ الموظف بنجاح.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>موافق</value>
+  </data>
+  <data name="Employee saved successfully." xml:space="preserve">
+    <value>تم حفظ الموظف بنجاح.</value>
+  </data>
+  <data name="Save failed. Please try again." xml:space="preserve">
+    <value>فشل الحفظ. يرجى المحاولة مرة أخرى.</value>
+  </data>
+  <data name="Save failed" xml:space="preserve">
+    <value>فشل الحفظ</value>
+  </data>
+  <data name="An unexpected error occurred while saving." xml:space="preserve">
+    <value>حدث خطأ غير متوقع أثناء الحفظ.</value>
+  </data>
+  <data name="First name is required." xml:space="preserve">
+    <value>الاسم الأول مطلوب.</value>
+  </data>
+  <data name="Last name is required." xml:space="preserve">
+    <value>اسم العائلة مطلوب.</value>
+  </data>
+  <data name="Email is required." xml:space="preserve">
+    <value>البريد الإلكتروني مطلوب.</value>
+  </data>
+  <data name="Please enter a valid email address." xml:space="preserve">
+    <value>يرجى إدخال بريد إلكتروني صالح.</value>
+  </data>
+  <data name="Only JPG, JPEG, PNG files allowed." xml:space="preserve">
+    <value>يُسمح فقط بملفات JPG وJPEG وPNG.</value>
+  </data>
+  <data name="Maximum allowed image size is 2 MB." xml:space="preserve">
+    <value>الحد الأقصى المسموح لحجم الصورة هو 2 ميجابايت.</value>
+  </data>
+  <data name="Please select a company." xml:space="preserve">
+    <value>يرجى اختيار شركة.</value>
+  </data>
+  <data name="Please select a job title." xml:space="preserve">
+    <value>يرجى اختيار مسمى وظيفي.</value>
+  </data>
+  <data name="Please select a department." xml:space="preserve">
+    <value>يرجى اختيار إدارة.</value>
+  </data>
+  <data name="Please select administrative structure." xml:space="preserve">
+    <value>يرجى اختيار الهيكل الإداري.</value>
+  </data>
+  <data name="Please select a policy." xml:space="preserve">
+    <value>يرجى اختيار سياسة.</value>
+  </data>
+</root>

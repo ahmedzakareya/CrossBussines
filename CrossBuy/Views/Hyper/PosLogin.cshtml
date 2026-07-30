@@ -1,0 +1,101 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+	Layout = null;
+	var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+@* HM-0: hypermarket lane sign-in — a clone of the restaurant cashier sign-in (Views/PosApp/Login.cshtml). Only the
+   form target (/hyper/pos/login) and the hyper copy differ. Do NOT hand-author — it mirrors the existing screen. *@
+<html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
+<head>
+	<base href="../../../" />
+	<title>CrossBuy — @(isAr ? "هايبر ماركت" : "Hypermarket")</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
+	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+	@if (isAr)
+	{
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
+		<style>body { font-family: 'Arial', sans-serif; } html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }</style>
+	}
+	else
+	{
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+	}
+	<style>
+		.cb-btn-brand { background-color: #13433a; color: #fff; font-weight: 700; border: 0; }
+		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #1f6253; color: #fff; }
+	</style>
+	<script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
+</head>
+<body id="kt_body" class="app-blank">
+	<script>var defaultThemeMode = "light"; var themeMode; if (document.documentElement) { if (document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if (localStorage.getItem("data-bs-theme") !== null) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+	<div class="d-flex flex-column flex-root" id="kt_app_root">
+		<div class="d-flex flex-column flex-lg-row flex-column-fluid">
+			<div class="d-flex flex-column flex-lg-row-fluid w-lg-50 p-10 order-2 order-lg-1">
+				<div class="d-flex flex-center flex-column flex-lg-row-fluid">
+					<div class="w-lg-500px p-10">
+						<form method="post" action="/hyper/pos/login">
+							@Html.AntiForgeryToken()
+							<div class="text-center mb-11">
+								<h1 class="text-gray-900 fw-bolder mb-3">@(isAr ? "الهايبر ماركت" : "Hypermarket")</h1>
+								<div class="text-gray-500 fw-semibold fs-6">@(isAr ? "دخول الكاشير — مستقل" : "Cashier sign-in — standalone")</div>
+							</div>
+							@if (TempData["PosErr"] != null)
+							{
+								<div class="alert alert-danger d-flex align-items-center mb-9">
+									<i class="ki-outline ki-information-5 fs-2 me-3"></i>@TempData["PosErr"]
+								</div>
+							}
+							<div class="fv-row mb-8">
+								<input type="text" name="username" placeholder="@(isAr ? "اسم المستخدم" : "Username")" autocomplete="username" autofocus required class="form-control bg-transparent" />
+							</div>
+							<div class="fv-row mb-3">
+								<input type="password" name="password" placeholder="@SR["Password"]" autocomplete="current-password" required class="form-control bg-transparent" />
+							</div>
+							<div class="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8">
+								<div></div>
+								<span class="text-gray-500"><i class="ki-outline ki-shield-tick fs-6 me-1"></i>@(isAr ? "يتطلّب صلاحية كاشير على فرع هايبر — منفصل عن لوحة الإدارة." : "Requires a POS role on a hypermarket branch — separate from the admin panel.")</span>
+							</div>
+							<div class="d-grid mb-10">
+								<button type="submit" class="btn cb-btn-brand w-100">@(isAr ? "تسجيل الدخول" : "Sign in")</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #1f6253 0%, #13433a 45%, #0c2e28 100%);">
+				<div class="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
+					<a href="/hyper/pos/login" class="mb-0 mb-lg-12">
+						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" />
+					</a>
+					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-cashier.svg" alt="Hypermarket" />
+					<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">@(isAr ? "كاشير الهايبر ماركت" : "Hypermarket Cashier")</h1>
+					<div class="d-none d-lg-block text-white fs-base text-center">
+						@if (isAr)
+						{
+							<text>ممرّ مستقل بسلسلة فواتير خاصة —</text>
+							<br /><span class="text-warning fw-bold">هيكل HM-0 فقط</span> <text>بلا بيع في هذه المرحلة.</text>
+						}
+						else
+						{
+							<text>A standalone lane with its own receipt series —</text>
+							<br /><span class="text-warning fw-bold">HM-0 scaffold only</span> <text>no selling at this stage.</text>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>var hostUrl = "~/Backend-assets/";</script>
+	<script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
+	<script src="~/Backend-assets/js/scripts.bundle.js"></script>
+</body>
+</html>

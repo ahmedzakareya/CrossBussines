@@ -1,0 +1,124 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Admin
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var emps = ViewBag.Employees as List<CrossBuy.ViewModel.EmployeeListItemDto> ?? new();
+    var recs = ViewBag.Records as List<AttendanceRecord> ?? new();
+    var names = emps.ToDictionary(e => e.ID, e => isAr ? (e.FullName ?? "") : (string.IsNullOrEmpty(e.FullNameEn) ? e.FullName : e.FullNameEn));
+    int y = ViewBag.Year; int m = ViewBag.Month;
+    // brand-safe status badge styling (green family + red only for Absent; no mint/yellow/blue)
+    string stStyle(string s) => s switch {
+        "Present" => "background:#eaf3ef;color:#13433a;",
+        "Leave"   => "background:#e9f1ee;color:#1f6253;",
+        "Absent"  => "background:#fdeaea;color:#d92d20;",
+        "Late"    => "background:#f2f4f7;color:#475467;",
+        _          => "background:#f2f4f7;color:#667085;" };
+    string stName(string s) => s switch { "Present" => Localizer["Present"].Value, "Late" => Localizer["Late"].Value, "Absent" => Localizer["Absent"].Value, "Holiday" => Localizer["Holiday"].Value, "RestDay" => Localizer["Rest"].Value, "Leave" => Localizer["Leave"].Value, _ => s };
+    ViewData["Title"] = Localizer["Record attendance"].Value;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Record attendance"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Attendance","Admin", new { year = y, month = m })" class="text-muted text-hover-primary">@Localizer["Attendance"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Entry"]</li></ul>
+        </div>
+        <a href="@Url.Action("Attendance","Admin", new { year = y, month = m })" class="btn btn-light">@Localizer["Monthly summary"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
+        <div class="row g-5">
+            <div class="col-lg-4">
+                <div class="card card-flush"><div class="card-header pt-6"><div class="card-title"><h2 class="fw-bold">@Localizer["Record a day"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <form asp-action="SaveAttendance" method="post" class="row g-4">@Html.AntiForgeryToken()
+                            <div class="col-12"><label class="required fw-semibold fs-7 mb-1">@SR["Employee"]</label>
+                                <select name="employeeId" class="form-select form-select-solid" data-control="select2" required>@foreach (var e in emps) { <option value="@e.ID">@(isAr ? e.FullName : (string.IsNullOrEmpty(e.FullNameEn) ? e.FullName : e.FullNameEn))</option> }</select></div>
+                            <div class="col-12"><label class="required fw-semibold fs-7 mb-1">@SR["Date"]</label><input name="workDate" type="text" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+                            <div class="col-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Check-in"]</label><input name="checkIn" type="text" class="form-control form-control-solid" placeholder="08:00" /></div>
+                            <div class="col-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Check-out"]</label><input name="checkOut" type="text" class="form-control form-control-solid" placeholder="17:00" /></div>
+                            <div class="col-12"><label class="fw-semibold fs-7 mb-1">@Localizer["Source"]</label>
+                                <select name="source" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="Manual">@Localizer["Manual"]</option><option value="Web">@Localizer["Web"]</option><option value="Device">@Localizer["Device"]</option><option value="Mobile">@Localizer["Mobile"]</option></select></div>
+                            <div class="col-12"><label class="fw-semibold fs-7 mb-1">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
+                            <div class="col-12 text-end"><button class="btn btn-primary"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button></div>
+                        </form>
+                        <div class="text-muted fs-8 mt-3">@Localizer["Late = check-in − (start + grace); overtime = check-out − end; computed from the attendance policy, with holidays/rest/leave excluded."]</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card card-flush">
+                    <div class="card-header pt-6">
+                        <div class="card-title"><h2 class="fw-bold">@Localizer["Month records"] (@y/@m.ToString("00"))</h2></div>
+                        <div class="card-toolbar">
+                            <div class="d-flex align-items-center position-relative">
+                                <i class="ki-outline ki-magnifier fs-4 position-absolute ms-3"></i>
+                                <input type="text" id="monthRecordsSearch" class="form-control form-control-solid w-250px ps-11" placeholder="@SR["Search"]" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-2"><div class="table-responsive">
+                        <table id="monthRecordsTable" class="table align-middle fs-7 gy-2 mb-0" style="font-variant-numeric:tabular-nums;">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th>@SR["Date"]</th><th class="text-center">@Localizer["In"]</th><th class="text-center">@Localizer["Out"]</th><th class="text-center">@Localizer["Late"]</th><th class="text-center">@Localizer["OT"]</th><th class="text-center">@Localizer["Hrs"]</th><th class="text-center pe-4">@SR["Status"]</th></tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                            @foreach (var r in recs)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-gray-900">@(names.TryGetValue(r.EmployeeID, out var n) ? n : ("#"+r.EmployeeID))</td>
+                                    <td class="text-muted" data-order="@r.WorkDate.ToString("yyyy-MM-dd")">@r.WorkDate.ToString("yyyy-MM-dd") <span class="text-muted fs-8">@r.WorkDate.ToString("ddd")</span></td>
+                                    <td class="text-center">@(r.CheckIn?.ToString("HH:mm") ?? "—")</td>
+                                    <td class="text-center">@(r.CheckOut?.ToString("HH:mm") ?? "—")</td>
+                                    <td class="text-center @(r.LateMinutes>0?"fw-bold text-gray-900":"text-gray-400")">@r.LateMinutes</td>
+                                    <td class="text-center @(r.OvertimeMinutes>0?"fw-bold":"text-gray-400")" style="@(r.OvertimeMinutes>0?"color:#1f6253;":"")">@r.OvertimeMinutes</td>
+                                    <td class="text-center">@r.WorkedHours.ToString("0.##")</td>
+                                    <td class="text-center pe-4"><span class="badge fw-bold" style="@stStyle(r.Status)">@stName(r.Status)</span></td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
+<script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js"></script>
+<style>
+    #monthRecordsTable_wrapper .dataTables_paginate .paginate_button.current,
+    #monthRecordsTable_wrapper .dataTables_paginate .paginate_button.current:hover { background:#1f6253 !important; border-color:#1f6253 !important; color:#fff !important; }
+    #monthRecordsTable_wrapper .dataTables_paginate .paginate_button:hover { color:#1f6253 !important; }
+    #monthRecordsTable_wrapper .dataTables_info { color:#a1a5b7; padding-top:1rem; }
+    #monthRecordsTable tbody tr { border-bottom:1px dashed #eef1f6; }
+</style>
+<script>
+(function () {
+    if (!(window.jQuery && jQuery.fn && jQuery.fn.DataTable)) return;
+    var $t = jQuery('#monthRecordsTable');
+    if (!$t.length || jQuery.fn.dataTable.isDataTable($t)) return;
+    var isAr = @(isAr ? "true" : "false");
+    var dt = $t.DataTable({
+        info: true,
+        order: [[1, 'desc']],
+        pageLength: 10,
+        lengthChange: false,
+        columnDefs: [{ orderable: false, targets: [7] }],
+        dom: "t<'d-flex flex-stack flex-wrap align-items-center mt-4'ip>",
+        language: {
+            emptyTable: '@Localizer["No records this month"]',
+            zeroRecords: '@Localizer["No matching records"]',
+            info: isAr ? 'عرض _START_ إلى _END_ من _TOTAL_' : 'Showing _START_ to _END_ of _TOTAL_',
+            infoEmpty: isAr ? 'لا سجلات' : 'No records',
+            infoFiltered: isAr ? '(مُرشّح من _MAX_)' : '(filtered from _MAX_)',
+            paginate: { previous: '‹', next: '›' }
+        }
+    });
+    var box = document.getElementById('monthRecordsSearch');
+    if (box) box.addEventListener('keyup', function (e) { dt.search(e.target.value).draw(); });
+})();
+</script>
+}

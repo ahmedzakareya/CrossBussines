@@ -1,0 +1,136 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var nbIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<!--begin::Notifications (Communication Hub — real bell, shared across all lanes)-->
+<div class="app-navbar-item ms-2 ms-lg-4">
+    <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary position-relative w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
+        <i class="ki-outline ki-notification-on fs-1"></i>
+        <span id="cbnb_badge" class="badge badge-danger position-absolute fs-9 fw-bold p-0 d-flex align-items-center justify-content-center" style="display:none; top:-2px; inset-inline-end:2px; width:18px; height:18px; min-width:18px; border-radius:50%;">0</span>
+    </div>
+    <div class="menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px" data-kt-menu="true">
+        <div class="d-flex flex-stack px-7 py-4 border-bottom border-gray-200" style="background:#1f6253;border-radius:.475rem .475rem 0 0;">
+            <span class="fw-bold fs-6 text-white">@SR["Notifications"]</span>
+            <a href="#" id="cbnb_readall" class="fs-7 text-white opacity-75 fw-semibold">@Localizer["Mark all read"]</a>
+        </div>
+        <div id="cbnb_list" class="scroll-y mh-350px">
+            <div class="text-center text-muted py-10 fs-7" id="cbnb_empty">@Localizer["No notifications"]</div>
+        </div>
+        <div class="d-flex flex-center py-3 border-top border-gray-200">
+            <a href="@Url.Action("Index","Notifications")" class="fs-7 text-primary fw-semibold">@Localizer["View all"]</a>
+        </div>
+    </div>
+</div>
+<!--end::Notifications-->
+
+<script>
+(function () {
+    if (window.__cbnbInit) return; window.__cbnbInit = true;
+    var isAr = @(nbIsAr ? "true" : "false");
+
+    function boot() {
+        var badge = document.getElementById('cbnb_badge');
+        var list = document.getElementById('cbnb_list');
+        var empty = document.getElementById('cbnb_empty');
+        if (!badge || !list) return;
+        var unread = 0, maxId = 0;
+
+        function setBadge(n) {
+            unread = n;
+            if (n > 0) { badge.style.display = ''; badge.textContent = n > 99 ? '99+' : n; }
+            else { badge.style.display = 'none'; }
+        }
+        function when(iso) { try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+        function itemHtml(n) {
+            var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
+            var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+            var icon = n.icon || 'ki-notification-status';
+            var bg = n.isRead ? '' : 'bg-light-primary';
+            var cur = (n.url ? ' style="cursor:pointer"' : '');
+            return '<div class="cbnb-item d-flex align-items-start px-7 py-4 border-bottom border-gray-100 ' + bg + '"' +
+                ' data-id="' + n.id + '" data-url="' + (n.url || '') + '"' + cur + '>' +
+                '<span class="symbol symbol-35px me-3"><span class="symbol-label bg-light"><i class="ki-outline ' + icon + ' fs-3 text-primary"></i></span></span>' +
+                '<div class="flex-grow-1"><div class="fw-bold fs-7 text-gray-900">' + title + '</div>' +
+                '<div class="fs-8 text-muted">' + body + '</div>' +
+                '<div class="fs-9 text-gray-400 mt-1">' + when(n.createdAt) + '</div></div></div>';
+        }
+        function bindItems() {
+            list.querySelectorAll('.cbnb-item').forEach(function (el) {
+                if (el.__bound) return; el.__bound = true;
+                el.addEventListener('click', function () {
+                    var id = el.getAttribute('data-id'); var url = el.getAttribute('data-url');
+                    if (id) fetch('/api/notifications/' + id + '/read', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
+                    if (!el.classList.contains('bg-light-primary')) { } else { el.classList.remove('bg-light-primary'); setBadge(Math.max(0, unread - 1)); }
+                    if (url) window.location.href = url;
+                });
+            });
+        }
+        function render(items) {
+            if (!items || !items.length) { if (empty) empty.style.display = ''; list.innerHTML = ''; if (empty) list.appendChild(empty); return; }
+            if (empty) empty.style.display = 'none';
+            list.innerHTML = items.map(itemHtml).join('');
+            bindItems();
+        }
+        function prepend(n) {
+            if (empty) empty.style.display = 'none';
+            list.insertAdjacentHTML('afterbegin', itemHtml(n));
+            bindItems();
+            setBadge(unread + 1);
+        }
+        function toastFor(n) {
+            if (!window.toastr) return;
+            var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
+            var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+            var lvl = (n.priority === 'Critical') ? 'error' : (n.priority === 'High') ? 'warning' : 'info';
+            toastr[lvl](body, title, { timeOut: 6000, positionClass: isAr ? 'toast-top-left' : 'toast-top-right' });
+        }
+        function apply(res, toastNew) {
+            if (toastNew && res.data) res.data.filter(function (n) { return n.id > maxId; }).forEach(toastFor);
+            render(res.data);
+            setBadge(res.unread || 0);
+            if (res.data && res.data.length && res.data[0].id > maxId) maxId = res.data[0].id;
+        }
+        function load(toastNew) {
+            fetch('/api/notifications', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (res) { if (res && res.success) apply(res, toastNew); })
+                .catch(function () {});
+        }
+        load(false);
+        setInterval(function () { load(true); }, 15000);
+
+        var readAll = document.getElementById('cbnb_readall');
+        if (readAll) readAll.addEventListener('click', function (e) {
+            e.preventDefault();
+            fetch('/api/notifications/read-all', { method: 'POST', credentials: 'same-origin' }).then(function () {
+                setBadge(0);
+                list.querySelectorAll('.bg-light-primary').forEach(function (el) { el.classList.remove('bg-light-primary'); });
+            });
+        });
+
+        function connectHub() {
+            if (!window.signalR) return;
+            try {
+                var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notifications').withAutomaticReconnect().build();
+                conn.on('notification', function (n) {
+                    if (n && n.id && n.id <= maxId) return;
+                    if (n && n.id) maxId = n.id;
+                    prepend(n); toastFor(n);
+                });
+                conn.start().catch(function () {});
+            } catch (e) {}
+        }
+        if (window.signalR) { connectHub(); }
+        else {
+            var s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js';
+            s.onload = connectHub; s.onerror = function () {}; // polling still covers it
+            document.head.appendChild(s);
+        }
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+})();
+</script>

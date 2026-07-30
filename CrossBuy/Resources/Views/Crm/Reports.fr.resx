@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CRM 360° reports" xml:space="preserve">
+    <value>Rapports CRM 360°</value>
+  </data>
+  <data name="Leads" xml:space="preserve">
+    <value>Prospects</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>Chaud</value>
+  </data>
+  <data name="Warm" xml:space="preserve">
+    <value>Tiède</value>
+  </data>
+  <data name="Pipeline (weighted)" xml:space="preserve">
+    <value>Pipeline (pondéré)</value>
+  </data>
+  <data name="open" xml:space="preserve">
+    <value>ouvert</value>
+  </data>
+  <data name="Won" xml:space="preserve">
+    <value>Gagné</value>
+  </data>
+  <data name="Win rate" xml:space="preserve">
+    <value>Taux de réussite</value>
+  </data>
+  <data name="Open tickets" xml:space="preserve">
+    <value>Tickets ouverts</value>
+  </data>
+  <data name="SLA breached" xml:space="preserve">
+    <value>SLA non respecté</value>
+  </data>
+  <data name="Lead funnel" xml:space="preserve">
+    <value>Entonnoir de prospects</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="No data" xml:space="preserve">
+    <value>Aucune donnée</value>
+  </data>
+  <data name="Pipeline by stage" xml:space="preserve">
+    <value>Pipeline par étape</value>
+  </data>
+  <data name="Stage" xml:space="preserve">
+    <value>Étape</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Valeur</value>
+  </data>
+  <data name="No open opportunities" xml:space="preserve">
+    <value>Aucune opportunité ouverte</value>
+  </data>
+  <data name="Won / Lost" xml:space="preserve">
+    <value>Gagné / Perdu</value>
+  </data>
+  <data name="Open activities" xml:space="preserve">
+    <value>Activités ouvertes</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Overdue" xml:space="preserve">
+    <value>En retard</value>
+  </data>
+  <data name="Campaigns" xml:space="preserve">
+    <value>Campagnes</value>
+  </data>
+  <data name="Budget" xml:space="preserve">
+    <value>Budget</value>
+  </data>
+  <data name="Campaign ROI" xml:space="preserve">
+    <value>ROI de campagne</value>
+  </data>
+  <data name="Rep performance" xml:space="preserve">
+    <value>Performance des commerciaux</value>
+  </data>
+  <data name="Rep" xml:space="preserve">
+    <value>Commercial</value>
+  </data>
+  <data name="Opps" xml:space="preserve">
+    <value>Opps</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Contacted" xml:space="preserve">
+    <value>Contacté</value>
+  </data>
+  <data name="Qualified" xml:space="preserve">
+    <value>Qualifié</value>
+  </data>
+  <data name="Converted" xml:space="preserve">
+    <value>Converti</value>
+  </data>
+  <data name="Lost" xml:space="preserve">
+    <value>Perdu</value>
+  </data>
+  <data name="Prospecting" xml:space="preserve">
+    <value>Prospection</value>
+  </data>
+  <data name="Qualification" xml:space="preserve">
+    <value>Qualification</value>
+  </data>
+  <data name="Proposal" xml:space="preserve">
+    <value>Proposition</value>
+  </data>
+  <data name="Negotiation" xml:space="preserve">
+    <value>Négociation</value>
+  </data>
+</root>

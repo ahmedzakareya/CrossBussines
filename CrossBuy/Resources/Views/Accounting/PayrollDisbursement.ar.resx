@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Jan" xml:space="preserve">
+    <value>يناير</value>
+  </data>
+  <data name="Feb" xml:space="preserve">
+    <value>فبراير</value>
+  </data>
+  <data name="Mar" xml:space="preserve">
+    <value>مارس</value>
+  </data>
+  <data name="Apr" xml:space="preserve">
+    <value>أبريل</value>
+  </data>
+  <data name="May" xml:space="preserve">
+    <value>مايو</value>
+  </data>
+  <data name="Jun" xml:space="preserve">
+    <value>يونيو</value>
+  </data>
+  <data name="Jul" xml:space="preserve">
+    <value>يوليو</value>
+  </data>
+  <data name="Aug" xml:space="preserve">
+    <value>أغسطس</value>
+  </data>
+  <data name="Sep" xml:space="preserve">
+    <value>سبتمبر</value>
+  </data>
+  <data name="Oct" xml:space="preserve">
+    <value>أكتوبر</value>
+  </data>
+  <data name="Nov" xml:space="preserve">
+    <value>نوفمبر</value>
+  </data>
+  <data name="Dec" xml:space="preserve">
+    <value>ديسمبر</value>
+  </data>
+  <data name="Payroll disbursement &amp; remittance" xml:space="preserve">
+    <value>صرف الرواتب والتوريد</value>
+  </data>
+  <data name="Disbursement" xml:space="preserve">
+    <value>صرف الرواتب</value>
+  </data>
+  <data name="No payroll posted for {0} {1} yet. Post it first from «Payroll run»." xml:space="preserve">
+    <value>لم يُرحَّل قيد رواتب لشهر {0} {1} بعد. رحّله أولًا من «قيد الرواتب».</value>
+  </data>
+  <data name="Net salaries" xml:space="preserve">
+    <value>صافي الرواتب</value>
+  </data>
+  <data name="Due" xml:space="preserve">
+    <value>مستحق</value>
+  </data>
+  <data name="Remitted" xml:space="preserve">
+    <value>موَرَّد</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>ج.م</value>
+  </data>
+  <data name="Pay from" xml:space="preserve">
+    <value>الدفع من</value>
+  </data>
+  <data name="Remit date" xml:space="preserve">
+    <value>تاريخ التوريد</value>
+  </data>
+  <data name="Pay date" xml:space="preserve">
+    <value>تاريخ الصرف</value>
+  </data>
+  <data name="Dr 2103 Payroll payable / Cr bank or cash" xml:space="preserve">
+    <value>مدين 2103 رواتب مستحقة / دائن البنك أو الخزينة</value>
+  </data>
+  <data name="Disburse payroll and clear the payable account?" xml:space="preserve">
+    <value>تأكيد صرف الرواتب وتصفية الحساب المستحق؟</value>
+  </data>
+  <data name="Disburse" xml:space="preserve">
+    <value>صرف الرواتب</value>
+  </data>
+  <data name="Disbursed; payable cleared." xml:space="preserve">
+    <value>تم الصرف وتصفية الحساب المستحق.</value>
+  </data>
+  <data name="Income tax" xml:space="preserve">
+    <value>ضريبة كسب العمل</value>
+  </data>
+  <data name="Dr 210205 Tax payable / Cr bank" xml:space="preserve">
+    <value>مدين 210205 ضريبة مستحقة / دائن البنك</value>
+  </data>
+  <data name="Remit to authority" xml:space="preserve">
+    <value>توريد للمصلحة</value>
+  </data>
+  <data name="Remitted to tax authority." xml:space="preserve">
+    <value>تم التوريد لمصلحة الضرائب.</value>
+  </data>
+  <data name="Social insurance" xml:space="preserve">
+    <value>التأمينات الاجتماعية</value>
+  </data>
+  <data name="Dr 210204 SI payable / Cr bank (both shares)" xml:space="preserve">
+    <value>مدين 210204 تأمينات مستحقة / دائن البنك (حصتا الموظف والشركة)</value>
+  </data>
+  <data name="Remit to authority (SI)" xml:space="preserve">
+    <value>توريد للتأمينات</value>
+  </data>
+  <data name="Remitted to social insurance." xml:space="preserve">
+    <value>تم التوريد للتأمينات الاجتماعية.</value>
+  </data>
+  <data name="No bank or cash account. Create one under «Banks &amp; cash» first." xml:space="preserve">
+    <value>لا يوجد حساب بنك أو خزينة. أنشئ واحدًا من «البنوك والنقدية» أولًا.</value>
+  </data>
+</root>

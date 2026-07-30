@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Save changes?" xml:space="preserve">
+    <value>Enregistrer les modifications ?</value>
+  </data>
+  <data name="Edit category" xml:space="preserve">
+    <value>Modifier la catégorie</value>
+  </data>
+  <data name="Add category" xml:space="preserve">
+    <value>Ajouter une catégorie</value>
+  </data>
+  <data name="Categories" xml:space="preserve">
+    <value>Catégories</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Costing" xml:space="preserve">
+    <value>Valorisation des coûts</value>
+  </data>
+  <data name="Default costing method" xml:space="preserve">
+    <value>Méthode de valorisation par défaut</value>
+  </data>
+  <data name="Moving Average (default)" xml:space="preserve">
+    <value>Coût moyen mobile (par défaut)</value>
+  </data>
+  <data name="Moving Average" xml:space="preserve">
+    <value>Coût moyen mobile</value>
+  </data>
+  <data name="Items in this category inherit this method unless set on the item." xml:space="preserve">
+    <value>Les articles de cette catégorie héritent de cette méthode sauf si elle est définie sur l'article.</value>
+  </data>
+  <data name="Category details" xml:space="preserve">
+    <value>Détails de la catégorie</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Niveau</value>
+  </data>
+  <data name="Category (root)" xml:space="preserve">
+    <value>Catégorie (racine)</value>
+  </data>
+  <data name="Group (under a category)" xml:space="preserve">
+    <value>Groupe (sous une catégorie)</value>
+  </data>
+  <data name="Parent category" xml:space="preserve">
+    <value>Catégorie parente</value>
+  </data>
+  <data name="— Root —" xml:space="preserve">
+    <value>— Racine —</value>
+  </data>
+  <data name="A Group inherits its GL account mapping from its parent Category when left empty." xml:space="preserve">
+    <value>Un Groupe hérite de son mappage de compte GL de sa Catégorie parente lorsqu'il est laissé vide.</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>Nom (AR)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>Nom (EN)</value>
+  </data>
+  <data name="GL account mapping" xml:space="preserve">
+    <value>Mappage de compte GL</value>
+  </data>
+  <data name="Used to auto-generate inventory journal entries (receipts, issues, COGS, adjustments)." xml:space="preserve">
+    <value>Utilisé pour générer automatiquement les écritures de journal de stock (réceptions, sorties, COGS, ajustements).</value>
+  </data>
+  <data name="Inventory account" xml:space="preserve">
+    <value>Compte de stock</value>
+  </data>
+  <data name="COGS account" xml:space="preserve">
+    <value>Compte COGS</value>
+  </data>
+  <data name="Adjustment account" xml:space="preserve">
+    <value>Compte d'ajustement</value>
+  </data>
+  <data name="GRNI account" xml:space="preserve">
+    <value>Compte GRNI</value>
+  </data>
+</root>

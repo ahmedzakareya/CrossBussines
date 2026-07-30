@@ -1,0 +1,94 @@
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Currency>
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Currencies"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Currencies"]</li>
+            </ul>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="curNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New currency"]</button>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="alert alert-light-primary border border-primary border-dashed d-flex align-items-center p-4 mb-5">
+            <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+            <span class="fs-7 text-gray-700">@Localizer["Each currency has its own decimal places (USD 2, KWD 3) — used when displaying amounts in that currency."]</span>
+        </div>
+        <div class="card"><div class="card-header border-0 pt-6">
+            <div class="card-title"><div class="d-flex align-items-center position-relative my-1">
+                <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                <input type="text" id="s" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search..."]" autocomplete="off" />
+            </div></div>
+        </div>
+        <div class="card-body pt-0"><div class="table-responsive">
+            <table class="table table-row-bordered align-middle gy-3" id="t">
+                <thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+                    <th>@SR["Code"]</th><th>@Localizer["Symbol"]</th><th>@SR["Name"]</th>
+                    <th class="text-center">@Localizer["Decimals"]</th><th class="text-end">@SR["Actions"]</th>
+                </tr></thead>
+                <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr class="r" data-s="@c.Code @c.Name @c.NameEn">
+                        <td class="fw-bold text-gray-800">@c.Code</td>
+                        <td class="text-gray-700">@c.Symbol</td>
+                        <td class="fw-semibold text-gray-800">@(isAr ? c.Name : (c.NameEn ?? c.Name))</td>
+                        <td class="text-center"><span class="badge badge-light-primary">@c.DecimalPlaces</span></td>
+                        <td class="text-end">
+                            <button class="btn btn-icon btn-light-primary btn-sm"
+                                    data-id="@c.ID" data-code="@c.Code" data-symbol="@c.Symbol" data-name="@c.Name" data-nameen="@c.NameEn" data-dp="@c.DecimalPlaces"
+                                    onclick="curEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@Localizer["No currencies"]</td></tr> }
+                </tbody>
+            </table>
+        </div></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="mNew" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="SaveCurrency" method="post" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save currency?"]">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="f_id" value="0" />
+        <div class="modal-header"><h2 class="fw-bold" id="mTitle">@Localizer["New currency"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8"><div class="row">
+            <div class="col-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Code (ISO)"]</label><input name="code" id="f_code" class="form-control form-control-solid" maxlength="5" required /></div>
+            <div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Symbol"]</label><input name="symbol" id="f_symbol" class="form-control form-control-solid" /></div>
+            <div class="col-12 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="name" id="f_name" class="form-control form-control-solid" required /></div>
+            <div class="col-8 mb-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" id="f_nameen" class="form-control form-control-solid" /></div>
+            <div class="col-4 mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Decimals"]</label><input name="decimalPlaces" id="f_dp" type="number" min="0" max="4" value="2" class="form-control form-control-solid" required /></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+(function(){
+    var i=document.getElementById('s'); var rows=[].slice.call(document.querySelectorAll('#t tbody tr.r'));
+    i.addEventListener('input',function(e){ var q=(e.target.value||'').trim().toLowerCase();
+        rows.forEach(function(r){ r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none'; }); });
+})();
+var modal; function v(id,val){document.getElementById(id).value=(val==null?'':val);}
+function curNew(){ document.getElementById('mTitle').textContent='@Localizer["New currency"]';
+    v('f_id','0');v('f_code','');v('f_symbol','');v('f_name','');v('f_nameen','');v('f_dp','2');
+    document.getElementById('f_code').removeAttribute('readonly');
+    modal=modal||new bootstrap.Modal(document.getElementById('mNew')); modal.show(); }
+function curEdit(b){ document.getElementById('mTitle').textContent='@Localizer["Edit currency"]';
+    v('f_id',b.getAttribute('data-id'));v('f_code',b.getAttribute('data-code'));v('f_symbol',b.getAttribute('data-symbol'));
+    v('f_name',b.getAttribute('data-name'));v('f_nameen',b.getAttribute('data-nameen'));v('f_dp',b.getAttribute('data-dp'));
+    modal=modal||new bootstrap.Modal(document.getElementById('mNew')); modal.show(); }
+</script>
+}

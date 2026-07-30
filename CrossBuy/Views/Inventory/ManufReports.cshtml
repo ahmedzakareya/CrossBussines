@@ -1,0 +1,74 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutManufacturing.cshtml";
+    var rep = ViewBag.Report as ManufReport ?? new();
+    DateTime from = ViewBag.From, to = ViewBag.To;
+    string varCls(decimal v) => v > 0 ? "text-danger" : (v < 0 ? "text-primary" : "text-muted");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Manufacturing reports"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@SR["Manufacturing"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Reports"]</li></ul></div>
+        <form method="get" class="d-flex align-items-end gap-2">
+            <div><label class="fw-semibold fs-8 text-muted mb-1 d-block">@SR["From"]</label><input type="date" name="from" value="@from.ToString("yyyy-MM-dd")" class="form-control form-control-sm form-control-solid" /></div>
+            <div><label class="fw-semibold fs-8 text-muted mb-1 d-block">@SR["To"]</label><input type="date" name="to" value="@to.ToString("yyyy-MM-dd")" class="form-control form-control-sm form-control-solid" /></div>
+            <button class="btn btn-sm btn-primary"><i class="ki-outline ki-magnifier fs-3"></i>@Localizer["Run"]</button>
+        </form>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 mb-2">
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body py-4"><span class="text-muted fs-8 d-block">@Localizer["WOs completed"]</span><span class="fs-2 fw-bolder text-gray-900">@rep.WosCompleted</span></div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body py-4"><span class="text-muted fs-8 d-block">@Localizer["Produced value"]</span><span class="fs-2 fw-bolder text-primary">@rep.TotProducedValue.ToString("N2")</span></div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body py-4"><span class="text-muted fs-8 d-block">@Localizer["Materials"]</span><span class="fs-3 fw-bold text-gray-800">@rep.TotMaterial.ToString("N2")</span></div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body py-4"><span class="text-muted fs-8 d-block">@Localizer["Labor + OH"]</span><span class="fs-3 fw-bold text-gray-800">@((rep.TotLabor + rep.TotOverhead).ToString("N2"))</span></div></div></div>
+        </div>
+
+        <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Production cost & variance vs standard"]</div></div>
+            <div class="card-body py-3">
+                <div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                    <thead><tr class="fw-bold fs-8 text-muted text-uppercase"><th>@Localizer["WO"]</th><th>@SR["Item"]</th><th class="text-end">@Localizer["Produced"]</th><th class="text-end">@Localizer["Mat."]</th><th class="text-end">@Localizer["Labor"]</th><th class="text-end">@Localizer["OH"]</th><th class="text-end">@SR["Total"]</th><th class="text-end">@Localizer["Unit"]</th><th class="text-end">@Localizer["Std"]</th><th class="text-end">@Localizer["Var."]</th></tr></thead>
+                    <tbody>
+                    @if (!rep.Lines.Any()) { <tr><td colspan="10" class="text-center text-muted py-6">@Localizer["No completed work orders in this period."]</td></tr> }
+                    @foreach (var l in rep.Lines)
+                    {
+                        <tr>
+                            <td class="fw-bold"><a href="@Url.Action("WorkOrderDetails","Inventory", new { id = l.Id })" class="text-hover-primary">@l.WoNo</a><div class="fs-8 text-muted">@(l.CompletedAt?.ToString("yyyy-MM-dd"))</div></td>
+                            <td class="fw-semibold text-gray-800">@l.ItemCode<div class="fs-8 text-muted">@l.ItemName</div></td>
+                            <td class="text-end">@l.Qty.ToString("N2")</td>
+                            <td class="text-end">@l.Material.ToString("N2")</td>
+                            <td class="text-end">@l.Labor.ToString("N2")</td>
+                            <td class="text-end">@l.Overhead.ToString("N2")</td>
+                            <td class="text-end fw-bold">@l.Total.ToString("N2")</td>
+                            <td class="text-end fw-bold text-primary">@l.UnitCost.ToString("N2")</td>
+                            <td class="text-end text-muted">@(l.StdUnitCost > 0 ? l.StdUnitCost.ToString("N2") : "—")</td>
+                            <td class="text-end fw-bold @varCls(l.VarUnitCost)">@(l.StdUnitCost > 0 ? (l.VarUnitCost > 0 ? "+" : "") + l.VarUnitCost.ToString("N2") : "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                    @if (rep.Lines.Any())
+                    {
+                        <tfoot><tr class="fw-bolder fs-7 border-top"><td colspan="3">@SR["Total"]</td><td class="text-end">@rep.TotMaterial.ToString("N2")</td><td class="text-end">@rep.TotLabor.ToString("N2")</td><td class="text-end">@rep.TotOverhead.ToString("N2")</td><td class="text-end">@rep.TotProducedValue.ToString("N2")</td><td colspan="3"></td></tr></tfoot>
+                    }
+                </table></div>
+                <div class="text-muted fs-8 mt-2">@Localizer["Variance = actual − standard unit cost (positive = over standard). Standard is indicative using current component avg cost and may differ from time of completion."]</div>
+            </div>
+        </div>
+
+        <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Work-center load"]</div></div>
+            <div class="card-body py-3">
+                <div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                    <thead><tr class="fw-bold fs-8 text-muted text-uppercase"><th>@Localizer["Work center"]</th><th class="text-end">@Localizer["Minutes"]</th><th class="text-end">@Localizer["Hours"]</th><th class="text-end">@Localizer["Labor cost"]</th><th class="text-end">@Localizer["Overhead"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
+                    <tbody>
+                    @if (!rep.Load.Any()) { <tr><td colspan="6" class="text-center text-muted py-6">@Localizer["No routings for items produced in this period."]</td></tr> }
+                    @foreach (var w in rep.Load)
+                    {
+                        <tr><td class="fw-semibold text-gray-800">@w.WorkCenterName</td><td class="text-end">@w.Minutes.ToString("N1")</td><td class="text-end text-muted">@((w.Minutes / 60m).ToString("N2"))</td><td class="text-end">@w.LaborCost.ToString("N2")</td><td class="text-end">@w.OverheadCost.ToString("N2")</td><td class="text-end fw-bold">@w.TotalCost.ToString("N2")</td></tr>
+                    }
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
+    </div></div>
+</div>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Modifiers" xml:space="preserve">
+    <value>Modifiers</value>
+  </data>
+  <data name="Reusable option groups attached to items — setup only, no stock deduction now." xml:space="preserve">
+    <value>Reusable option groups attached to items — setup only, no stock deduction now.</value>
+  </data>
+  <data name="Edit group" xml:space="preserve">
+    <value>Edit group</value>
+  </data>
+  <data name="Add group" xml:space="preserve">
+    <value>Add group</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>Name (AR)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>Name (EN)</value>
+  </data>
+  <data name="AddOn (optional, priced)" xml:space="preserve">
+    <value>AddOn (optional, priced)</value>
+  </data>
+  <data name="Choice (mandatory, no price)" xml:space="preserve">
+    <value>Choice (mandatory, no price)</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="Max (0=∞)" xml:space="preserve">
+    <value>Max (0=∞)</value>
+  </data>
+  <data name="Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Choice = one mandatory free alternative. AddOn = optional priced extras." xml:space="preserve">
+    <value>Choice = one mandatory free alternative. AddOn = optional priced extras.</value>
+  </data>
+  <data name="Groups" xml:space="preserve">
+    <value>Groups</value>
+  </data>
+  <data name="No groups yet." xml:space="preserve">
+    <value>No groups yet.</value>
+  </data>
+  <data name="Delete the group with its options and links?" xml:space="preserve">
+    <value>Delete the group with its options and links?</value>
+  </data>
+  <data name="Select a group to manage its options and attach it to items." xml:space="preserve">
+    <value>Select a group to manage its options and attach it to items.</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="Option" xml:space="preserve">
+    <value>Option</value>
+  </data>
+  <data name="Linked item" xml:space="preserve">
+    <value>Linked item</value>
+  </data>
+  <data name="Qty deducted" xml:space="preserve">
+    <value>Qty deducted</value>
+  </data>
+  <data name="Extra price" xml:space="preserve">
+    <value>Extra price</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="No options yet." xml:space="preserve">
+    <value>No options yet.</value>
+  </data>
+  <data name="Delete option?" xml:space="preserve">
+    <value>Delete option?</value>
+  </data>
+  <data name="Option name" xml:space="preserve">
+    <value>Option name</value>
+  </data>
+  <data name="optional — item name" xml:space="preserve">
+    <value>optional — item name</value>
+  </data>
+  <data name="Pick item" xml:space="preserve">
+    <value>Pick item</value>
+  </data>
+  <data name="Choice has no price" xml:space="preserve">
+    <value>Choice has no price</value>
+  </data>
+  <data name="Choice group: extra price is always zero." xml:space="preserve">
+    <value>Choice group: extra price is always zero.</value>
+  </data>
+  <data name="Items using this group" xml:space="preserve">
+    <value>Items using this group</value>
+  </data>
+  <data name="Attach items" xml:space="preserve">
+    <value>Attach items</value>
+  </data>
+  <data name="This group is not attached to any item yet." xml:space="preserve">
+    <value>This group is not attached to any item yet.</value>
+  </data>
+  <data name="Detach?" xml:space="preserve">
+    <value>Detach?</value>
+  </data>
+  <data name="Search for item" xml:space="preserve">
+    <value>Search for item</value>
+  </data>
+  <data name="Barcode + Enter" xml:space="preserve">
+    <value>Barcode + Enter</value>
+  </data>
+  <data name="Item name/code" xml:space="preserve">
+    <value>Item name/code</value>
+  </data>
+  <data name="Barcode" xml:space="preserve">
+    <value>Barcode</value>
+  </data>
+  <data name="No results." xml:space="preserve">
+    <value>No results.</value>
+  </data>
+  <data name="Attach selected" xml:space="preserve">
+    <value>Attach selected</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>EGP</value>
+  </data>
+  <data name="Choice" xml:space="preserve">
+    <value>Choice</value>
+  </data>
+  <data name="AddOn" xml:space="preserve">
+    <value>AddOn</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="Attach items to group" xml:space="preserve">
+    <value>Attach items to group</value>
+  </data>
+  <data name="Pick linked item" xml:space="preserve">
+    <value>Pick linked item</value>
+  </data>
+  <data name="Select an item" xml:space="preserve">
+    <value>Select an item</value>
+  </data>
+</root>

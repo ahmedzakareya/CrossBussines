@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Opening balances (Go-Live)" xml:space="preserve">
+    <value>Soldes d'ouverture (Go-Live)</value>
+  </data>
+  <data name="Opening balances" xml:space="preserve">
+    <value>Soldes d'ouverture</value>
+  </data>
+  <data name="Finalize opening balances and lock further edits? Requires all checks to match." xml:space="preserve">
+    <value>Finaliser les soldes d'ouverture et verrouiller les modifications ultérieures ? Nécessite que tous les contrôles concordent.</value>
+  </data>
+  <data name="Finalized" xml:space="preserve">
+    <value>Finalisé</value>
+  </data>
+  <data name="Finalize load" xml:space="preserve">
+    <value>Finaliser le chargement</value>
+  </data>
+  <data name="Opening balances are finalized — entry is locked. Corrections go through a normal journal entry." xml:space="preserve">
+    <value>Les soldes d'ouverture sont finalisés — la saisie est verrouillée. Les corrections passent par une écriture comptable normale.</value>
+  </data>
+  <data name="Integrity checks" xml:space="preserve">
+    <value>Contrôles d'intégrité</value>
+  </data>
+  <data name="All match" xml:space="preserve">
+    <value>Tout concorde</value>
+  </data>
+  <data name="Mismatch" xml:space="preserve">
+    <value>Écart</value>
+  </data>
+  <data name="Finalize is enabled only when all checks match." xml:space="preserve">
+    <value>La finalisation n'est activée que lorsque tous les contrôles concordent.</value>
+  </data>
+  <data name="Entry log" xml:space="preserve">
+    <value>Journal des saisies</value>
+  </data>
+  <data name="Kind" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="No entries yet" xml:space="preserve">
+    <value>Aucune saisie pour l'instant</value>
+  </data>
+  <data name="Enter opening balances" xml:space="preserve">
+    <value>Saisir les soldes d'ouverture</value>
+  </data>
+  <data name="Cutoff" xml:space="preserve">
+    <value>Date de coupure</value>
+  </data>
+  <data name="Stock" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="AR" xml:space="preserve">
+    <value>AR</value>
+  </data>
+  <data name="AP" xml:space="preserve">
+    <value>AP</value>
+  </data>
+  <data name="Assets" xml:space="preserve">
+    <value>Actifs</value>
+  </data>
+  <data name="GL" xml:space="preserve">
+    <value>GL</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>Qté</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>Coût unitaire</value>
+  </data>
+  <data name="Batch (opt)" xml:space="preserve">
+    <value>Lot (fac.)</value>
+  </data>
+  <data name="Section" xml:space="preserve">
+    <value>Section</value>
+  </data>
+  <data name="Rack (optional)" xml:space="preserve">
+    <value>Rayon (facultatif)</value>
+  </data>
+  <data name="Add opening stock" xml:space="preserve">
+    <value>Ajouter un stock d'ouverture</value>
+  </data>
+  <data name="Open debit balance" xml:space="preserve">
+    <value>Solde d'ouverture</value>
+  </data>
+  <data name="Add customer balance" xml:space="preserve">
+    <value>Ajouter un solde client</value>
+  </data>
+  <data name="Open credit balance" xml:space="preserve">
+    <value>Solde d'ouverture</value>
+  </data>
+  <data name="Add vendor balance" xml:space="preserve">
+    <value>Ajouter un solde fournisseur</value>
+  </data>
+  <data name="Asset name" xml:space="preserve">
+    <value>Nom de l'actif</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Catégorie</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Coût</value>
+  </data>
+  <data name="Salvage" xml:space="preserve">
+    <value>Valeur résiduelle</value>
+  </data>
+  <data name="Life (mo)" xml:space="preserve">
+    <value>Durée (mois)</value>
+  </data>
+  <data name="Accum. dep @ cutoff" xml:space="preserve">
+    <value>Amort. cumulé à la coupure</value>
+  </data>
+  <data name="Original acquisition" xml:space="preserve">
+    <value>Acquisition d'origine</value>
+  </data>
+  <data name="Add opening asset" xml:space="preserve">
+    <value>Ajouter un actif d'ouverture</value>
+  </data>
+  <data name="Entry: Dr cost / Cr accumulated depreciation / Cr opening equity (NBV). Future depreciation continues on remaining life." xml:space="preserve">
+    <value>Écriture : Dr coût / Cr amortissement cumulé / Cr capitaux propres d'ouverture (VNC). L'amortissement futur se poursuit sur la durée restante.</value>
+  </data>
+  <data name="Enter the remaining trial-balance accounts (cash/banks/loans/capital…). The system balances via the Opening Balance Equity account." xml:space="preserve">
+    <value>Saisissez les comptes restants de la balance générale (caisse/banques/emprunts/capital…). Le système équilibre via le compte de capitaux propres d'ouverture.</value>
+  </data>
+  <data name="Row" xml:space="preserve">
+    <value>Ligne</value>
+  </data>
+  <data name="Post balances" xml:space="preserve">
+    <value>Comptabiliser les soldes</value>
+  </data>
+  <data name="Add a row with an amount" xml:space="preserve">
+    <value>Ajouter une ligne avec un montant</value>
+  </data>
+  <data name="Post these opening GL balances?" xml:space="preserve">
+    <value>Comptabiliser ces soldes d'ouverture GL ?</value>
+  </data>
+</root>

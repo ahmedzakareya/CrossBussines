@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Human Resources" xml:space="preserve"><value>الموارد البشرية</value></data>
+  <data name="Home" xml:space="preserve"><value>الرئيسية</value></data>
+  <data name="HR Dashboard" xml:space="preserve"><value>لوحة الموارد البشرية</value></data>
+  <data name="Attendance" xml:space="preserve"><value>الحضور والانصراف</value></data>
+  <data name="Employees" xml:space="preserve"><value>الموظفون</value></data>
+  <data name="Leave requests" xml:space="preserve"><value>طلبات الإجازات</value></data>
+  <data name="Last 6 months" xml:space="preserve"><value>آخر 6 شهور</value></data>
+  <data name="Workforce" xml:space="preserve"><value>القوى العاملة</value></data>
+  <data name="Total employees" xml:space="preserve"><value>إجمالي الموظفين</value></data>
+  <data name="Active" xml:space="preserve"><value>نشط</value></data>
+  <data name="Inactive" xml:space="preserve"><value>غير نشط</value></data>
+  <data name="New hires this year" xml:space="preserve"><value>تعيينات هذا العام</value></data>
+  <data name="On leave today" xml:space="preserve"><value>في إجازة اليوم</value></data>
+  <data name="Pending approvals" xml:space="preserve"><value>بانتظار الاعتماد</value></data>
+  <data name="active" xml:space="preserve"><value>نشط</value></data>
+  <data name="Pending" xml:space="preserve"><value>معلّق</value></data>
+  <data name="Approved" xml:space="preserve"><value>معتمد</value></data>
+  <data name="Rejected" xml:space="preserve"><value>مرفوض</value></data>
+  <data name="Today" xml:space="preserve"><value>اليوم</value></data>
+  <data name="Documents expiring" xml:space="preserve"><value>مستندات قرب انتهاؤها</value></data>
+  <data name="expired" xml:space="preserve"><value>منتهية</value></data>
+  <data name="60 days" xml:space="preserve"><value>60 يومًا</value></data>
+  <data name="Present days this month" xml:space="preserve"><value>أيام الحضور هذا الشهر</value></data>
+  <data name="Recent leave requests" xml:space="preserve"><value>أحدث طلبات الإجازات</value></data>
+  <data name="pending" xml:space="preserve"><value>معلّق</value></data>
+  <data name="approved this year" xml:space="preserve"><value>معتمدة هذا العام</value></data>
+  <data name="Employee" xml:space="preserve"><value>الموظف</value></data>
+  <data name="Days" xml:space="preserve"><value>الأيام</value></data>
+  <data name="No requests" xml:space="preserve"><value>لا توجد طلبات</value></data>
+  <data name="Headcount by job title" xml:space="preserve"><value>التوزيع حسب المسمى الوظيفي</value></data>
+  <data name="Top titles" xml:space="preserve"><value>أعلى المسميات</value></data>
+  <data name="Attendance this month" xml:space="preserve"><value>حضور هذا الشهر</value></data>
+  <data name="Present" xml:space="preserve"><value>حاضر</value></data>
+  <data name="Absent" xml:space="preserve"><value>غائب</value></data>
+  <data name="On leave" xml:space="preserve"><value>في إجازة</value></data>
+  <data name="Late arrivals" xml:space="preserve"><value>التأخيرات</value></data>
+  <data name="Expiring documents" xml:space="preserve"><value>مستندات قرب انتهاؤها</value></data>
+  <data name="Next 60 days" xml:space="preserve"><value>خلال 60 يومًا القادمة</value></data>
+  <data name="Nothing expiring soon" xml:space="preserve"><value>لا شيء قرب الانتهاء</value></data>
+  <data name="Overdue" xml:space="preserve"><value>متأخّر</value></data>
+  <data name="days" xml:space="preserve"><value>يوم</value></data>
+  <data name="Upcoming holidays" xml:space="preserve"><value>العطلات القادمة</value></data>
+  <data name="Official" xml:space="preserve"><value>رسمية</value></data>
+  <data name="No upcoming holidays" xml:space="preserve"><value>لا عطلات قادمة</value></data>
+  <data name="Quick Access" xml:space="preserve"><value>وصول سريع</value></data>
+  <data name="Org structure" xml:space="preserve"><value>الهيكل التنظيمي</value></data>
+  <data name="Job titles" xml:space="preserve"><value>المسميات الوظيفية</value></data>
+  <data name="Administrative bodies" xml:space="preserve"><value>الجهات الإدارية</value></data>
+  <data name="Contracts &amp; documents" xml:space="preserve"><value>المستندات والعقود</value></data>
+  <data name="Expiry alerts" xml:space="preserve"><value>تنبيهات الانتهاء</value></data>
+  <data name="Leave types" xml:space="preserve"><value>أنواع الإجازات</value></data>
+  <data name="Policies" xml:space="preserve"><value>السياسات</value></data>
+  <data name="Official holidays" xml:space="preserve"><value>العطلات الرسمية</value></data>
+  <data name="Performance appraisal" xml:space="preserve"><value>تقييم الأداء</value></data>
+  <data name="Training" xml:space="preserve"><value>التدريب</value></data>
+</root>

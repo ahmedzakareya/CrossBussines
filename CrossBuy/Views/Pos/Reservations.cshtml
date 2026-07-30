@@ -1,0 +1,357 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var reservations = ViewBag.Reservations as List<ReservationDto> ?? new();
+    string Badge(string s) => s switch { "Booked" => "primary", "Arrived" => "success", "Cancelled" => "secondary", "NoShow" => "danger", _ => "light" };
+    string StatusT(string s) => s switch { "Booked" => Localizer["Booked"].Value, "Arrived" => Localizer["Arrived"].Value, "Cancelled" => Localizer["Cancelled"].Value, "NoShow" => Localizer["No-show"].Value, _ => s };
+}
+<style>
+    /* SAME table/chair design as the Floor-plan editor (Pos/FloorPlan) — wood top + realistic armchairs. */
+    .rz-floor{position:relative;overflow:auto;border:1px solid #e6eaef;border-radius:16px;background:linear-gradient(160deg,#faf7f1,#f1ece3);min-height:300px;padding:10px}
+    .rz-stage{position:relative;transform-origin:0 0}
+    .rz-tbl{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+        background:repeating-linear-gradient(91deg,rgba(120,80,38,.045) 0 3px,rgba(120,80,38,0) 3px 10px),linear-gradient(160deg,#ecd4ac,#dcb888);
+        border:3px solid #16a34a;color:#4a3620;box-shadow:0 6px 16px rgba(80,55,25,.28);cursor:pointer;user-select:none;transition:box-shadow .15s ease,transform .15s ease}
+    .rz-tbl.rz-square{border-radius:22px}.rz-tbl.rz-rect{border-radius:18px}.rz-tbl.rz-round{border-radius:50%}
+    .rz-tbl:hover{box-shadow:0 10px 24px rgba(80,55,25,.35);transform:translateY(-2px);z-index:5}
+    .rz-code{font-weight:800;font-size:1.5rem;color:#3a2a18;line-height:1}
+    .rz-pill{font-size:10px;font-weight:800;color:#fff;border-radius:999px;padding:1px 11px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    .rz-cap{font-size:9.5px;color:#3a2a18;background:rgba(255,255,255,.65);border-radius:7px;padding:0 7px;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .rz-rbadge{font-size:9px;font-weight:800;color:#fff;background:#7e3ff2;border-radius:7px;padding:1px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2);white-space:nowrap}
+    .rz-chair{position:absolute;background:#e9e3d4;border:2px solid #2f4a42;border-radius:16px 16px 9px 9px;box-shadow:0 2px 5px rgba(40,35,25,.22);pointer-events:none}
+    .rz-chair::before{content:"";position:absolute;top:3px;left:6px;right:6px;height:8px;background:#d6ccb6;border-radius:6px}
+    /* time SLOTS — one field per time; colour shows how many chairs are booked (free/partial/full) */
+    #rzSlots .rz-slot{border:1px solid #dfe3ea;border-radius:9px;padding:.4rem .55rem;cursor:pointer;text-align:center;min-width:96px;background:#fff;display:flex;flex-direction:column;gap:1px;line-height:1.15;transition:all .12s}
+    #rzSlots .rz-slot>span:first-child{font-weight:700;font-size:.9rem}
+    #rzSlots .rz-slot .rz-seat{font-size:.72rem;font-weight:600;display:flex;gap:2px;justify-content:center;flex-wrap:wrap;min-height:11px}
+    /* one little seat per chair — coloured red if that chair is booked, green if free */
+    #rzSlots .rz-seat .rz-dot{width:9px;height:9px;border-radius:3px 3px 1px 1px;display:inline-block}
+    #rzSlots .rz-seat .rz-dot.fr{background:#16a34a}
+    #rzSlots .rz-seat .rz-dot.bk{background:#e5484d}
+    #rzSlots .rz-slot.free{border-color:#c3e6d4;color:#16a34a}
+    #rzSlots .rz-slot.free:hover{background:#16a34a;color:#fff;border-color:#16a34a}
+    #rzSlots .rz-slot.free.active{background:#13433a;color:#fff;border-color:#13433a;box-shadow:0 0 0 3px rgba(19,67,58,.2)}
+    #rzSlots .rz-slot.partial{border-color:#f6c000;color:#a17a00;background:#fff8e1;cursor:not-allowed}
+    #rzSlots .rz-slot.full{border-color:#e5484d;color:#e5484d;background:#fdecec;cursor:not-allowed}
+    #rzSlots .rz-slot.past{opacity:.45;cursor:not-allowed}
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Reservations"]</h1>
+            <span class="text-muted fs-7">@Localizer["Click any table on the floor to book it for a time — operational, no accounting effect."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any()) { <div class="alert alert-warning"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["This company has no branches."]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-calendar-8 fs-3x mb-3 d-block"></i>@Localizer["Select a branch to view the floor and manage reservations."]</div></div>
+        }
+        else
+        {
+            <div class="card mb-5">
+                <div class="card-header"><div class="card-title"><h3 class="m-0">@Localizer["Floor plan"]</h3></div>
+                    <div class="card-toolbar"><ul class="nav nav-pills gap-2" id="rzAreaTabs"></ul></div></div>
+                <div class="card-body">
+                    <div class="d-flex gap-4 mb-3 fs-8 text-muted flex-wrap">
+                        <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#16a34a"></span> @Localizer["Available"]</span>
+                        <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#e5484d"></span> @Localizer["Reserved"]</span>
+                        <span><span class="d-inline-block rounded-circle" style="width:11px;height:11px;background:#2f6fed"></span> @Localizer["Occupied"]</span>
+                    </div>
+                    <div class="rz-floor" id="rzFloor"></div>
+                    <div class="text-muted fs-8 mt-2">@Localizer["Click any table to book it for a time — an occupied table can be booked for later (time-overlap is prevented)."]</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><div class="card-title"><h3>@Localizer["Today & upcoming"]</h3></div></div>
+                <div class="card-body">
+                    <table class="table table-row-dashed align-middle fs-7">
+                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Time"]</th><th>@Localizer["Table"]</th><th>@Localizer["Guest"]</th><th>@SR["Phone"]</th><th class="text-center">@Localizer["Party"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var r in reservations)
+                        {
+                            <tr>
+                                <td class="fw-bold text-gray-800">@r.ReservedAt.ToString("MM/dd HH:mm") <span class="text-muted fs-8">(@r.DurationMinutes@Localizer["m"])</span></td>
+                                <td><span class="badge badge-light-primary">@r.TableCode</span></td>
+                                <td class="text-gray-800">@(string.IsNullOrWhiteSpace(r.CustomerName) ? r.GuestName : r.CustomerName)</td>
+                                <td class="text-muted">@(string.IsNullOrWhiteSpace(r.GuestPhone) ? "—" : r.GuestPhone)</td>
+                                <td class="text-center">@r.PartySize</td>
+                                <td class="text-center"><span class="badge badge-light-@Badge(r.Status)">@StatusT(r.Status)</span></td>
+                                <td class="text-end">
+                                    @if (r.Status == "Booked")
+                                    {
+                                        <form asp-action="SetReservationStatus" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Mark as no-show?"]">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@r.Id" /><input type="hidden" name="status" value="NoShow" />
+                                            <button class="btn btn-icon btn-sm btn-light-warning me-1" title="@Localizer["No-show"]"><i class="ki-outline ki-user-cross fs-5"></i></button>
+                                        </form>
+                                        <form asp-action="SetReservationStatus" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Cancel reservation?"]">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@r.Id" /><input type="hidden" name="status" value="Cancelled" />
+                                            <button class="btn btn-icon btn-sm btn-light-danger" title="@SR["Cancel"]"><i class="ki-outline ki-cross fs-5"></i></button>
+                                        </form>
+                                    }
+                                    else { <span class="text-muted">—</span> }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    @if (!reservations.Any()) { <div class="text-center text-muted py-6">@Localizer["No today/upcoming reservations."]</div> }
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+<!-- Reservation modal: pick customer + date/time (flatpickr) + party → book -->
+<div class="modal fade" id="rzModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header d-flex flex-column align-items-stretch gap-1"><div class="d-flex justify-content-between align-items-center w-100"><h3 class="modal-title">@Localizer["Reserve table"] <span id="rzTblCode" class="badge badge-light-primary ms-2"></span></h3>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div id="rzTblNote" class="text-warning fw-semibold fs-8" style="display:none"></div></div>
+    <form asp-action="SaveReservation" method="post" id="rzForm">
+        @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="0" />
+        <input type="hidden" name="tableId" id="rzTableId" /><input type="hidden" name="customerId" id="rzCustomerId" />
+        <input type="hidden" name="guestName" id="rzGuestName" /><input type="hidden" name="guestPhone" id="rzGuestPhone" />
+        <div class="modal-body">
+            <div class="mb-4">
+                <label class="required fw-semibold fs-7 mb-1">@SR["Customer"]</label>
+                @* no data-control="select2" — Metronic auto-init would make a plain (no-AJAX) select2; we init AJAX below *@
+                <select id="rzCust" class="form-select form-select-solid" data-placeholder="@Localizer["Search by name or phone…"]" style="width:100%"><option></option></select>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                    <span class="text-muted fs-8">@Localizer["Not found?"]</span>
+                    <input type="text" id="rzNewName" class="form-control form-control-sm form-control-solid" style="max-width:150px" placeholder="@Localizer["New name"]" />
+                    <input type="text" id="rzNewPhone" class="form-control form-control-sm form-control-solid" style="max-width:130px" placeholder="@SR["Phone"]" />
+                    <button type="button" id="rzAddCust" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-4"></i>@SR["Add"]</button>
+                </div>
+            </div>
+            <input type="hidden" name="reservedAt" id="rzReservedAt" />
+            <div class="mb-3"><label class="required fw-semibold fs-8 mb-1">@T("التاريخ","Date")</label>
+                <input id="rzDate" type="text" class="form-control form-control-solid form-control-sm" placeholder="@T("اختر التاريخ","Pick a date")" /></div>
+            <div class="mb-3"><label class="required fw-semibold fs-8 mb-1">@T("الوقت","Time")</label>
+                <div id="rzSlots" class="d-flex flex-wrap gap-2"></div>
+                <div class="d-flex gap-3 flex-wrap fs-8 text-muted mt-2 align-items-center">
+                    <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#16a34a"></span> @T("متاح","Free")</span>
+                    <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#f6c000"></span> @T("محجوز جزئيًا","Partly booked")</span>
+                    <span><span class="d-inline-block rounded-circle" style="width:10px;height:10px;background:#e5484d"></span> @T("ممتلئ","Full")</span>
+                    <span class="ms-auto">@T("الرقم = كراسي محجوزة ⁄ مقاعد الطاولة","number = booked chairs ⁄ table seats")</span>
+                </div></div>
+            <div class="row g-3">
+                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@T("مدة (د)","Dur (m)")</label><input name="durationMinutes" id="rzDur" type="number" min="15" step="15" value="120" class="form-control form-control-solid form-control-sm" /></div>
+                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@T("أشخاص","Party")</label><input name="partySize" id="rzParty" type="number" min="1" value="2" class="form-control form-control-solid form-control-sm" /></div>
+                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@T("ملاحظات","Notes")</label><input name="notes" class="form-control form-control-solid form-control-sm" /></div>
+            </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+            <button type="submit" id="rzSubmit" class="btn btn-primary" disabled><i class="ki-outline ki-check fs-3"></i>@Localizer["Book"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+var base='@Url.Action("Reservations","Pos")', fB=@(fB?.ToString() ?? "0");
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+</script>
+@if (fB != null)
+{
+<script>
+(function(){
+    var floorUrl='@Url.Action("FloorData","Pos")?branchId=@fB', searchUrl='@Url.Action("CustomerSearch","Pos")', addUrl='@Url.Action("CustomerQuickAdd","Pos")';
+    var eventsUrl='@Url.Action("ReservationEvents","Pos")?branchId=@fB';
+    var token=document.querySelector('input[name="__RequestVerificationToken"]').value;
+    var halls=[], curArea=null, resvByTable={};
+    function todayStr(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+    var floor=document.getElementById('rzFloor'), tabs=document.getElementById('rzAreaTabs');
+    var isAr=@(isAr ? "true" : "false");
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    function labelOf(s){return {Available:'@Localizer["Available"]',Reserved:'@Localizer["Reserved"]',Occupied:'@Localizer["Occupied"]'}[s]||'@Localizer["Available"]';}
+    function hallName(h){return (!isAr && h.nameEn) ? h.nameEn : (h.name||'');}
+    function custLabel(n){return (n==='عميل نقدي (كاشير)') ? '@Localizer["Walk-in"]' : (n||'');}
+    function colOf(s){return s==='Occupied'?'#2f6fed':(s==='Reserved'?'#e5484d':'#16a34a');}
+    function renderTabs(){
+        tabs.innerHTML=halls.map(function(h){return '<li class="nav-item"><button type="button" class="nav-link'+(h.id===curArea?' active':'')+'" data-a="'+h.id+'">'+esc(hallName(h))+'</button></li>';}).join('');
+    }
+    var CW=46, CH=42, COV=8, PITCH=58;
+    function chairAt(el,cx,cy,rot,occCol){var c=document.createElement('div');c.className='rz-chair';c.style.width=CW+'px';c.style.height=CH+'px';c.style.left=(cx-CW/2)+'px';c.style.top=(cy-CH/2)+'px';c.style.transform='rotate('+rot+'deg)';if(occCol){c.style.background=occCol;c.style.borderColor=occCol;}el.appendChild(c);}
+    function placeSide(el,side,n,w,h,st){for(var i=0;i<n;i++){var t=(i+1)/(n+1); var oc=(st.ci++ < st.occN)?st.col:null;
+        if(side==='top')chairAt(el,w*t,-(CH/2-COV),0,oc);
+        else if(side==='bottom')chairAt(el,w*t,h+(CH/2-COV),180,oc);
+        else if(side==='left')chairAt(el,-(CH/2-COV),h*t,-90,oc);
+        else chairAt(el,w+(CH/2-COV),h*t,90,oc);}}
+    function layoutTable(el,occN,occCol){
+        var seats=parseInt(el.getAttribute('data-seats'))||0, shape=el.getAttribute('data-shape')||'Square';
+        var st={ci:0, occN:occN||0, col:occCol||'#2f6fed'};
+        [].slice.call(el.querySelectorAll('.rz-chair')).forEach(function(c){c.remove();});
+        if(shape==='Round'){
+            var d=Math.max(110,74+seats*13); el.style.width=d+'px'; el.style.height=d+'px';
+            var R=d/2+(CH/2-COV);
+            for(var i=0;i<seats;i++){var a=-90+i*360/seats, ar=a*Math.PI/180; chairAt(el,d/2+R*Math.cos(ar),d/2+R*Math.sin(ar),a+90,(i<st.occN)?st.col:null);}
+            return;
+        }
+        var top=0,bot=0,left=0,right=0;
+        if(seats<=4){ if(seats>=1)top=1; if(seats>=2)bot=1; if(seats>=3)left=1; if(seats>=4)right=1; }
+        else { top=Math.ceil(seats/2); bot=seats-top; }
+        var longMax=Math.max(top,bot,1), shortMax=Math.max(left,right,1);
+        var w=Math.max(104,longMax*PITCH+20), h=Math.max(104,(seats<=4?Math.max(longMax,shortMax):shortMax)*PITCH+20);
+        if(seats<=4){ var sq=Math.max(w,h); w=sq; h=sq; }
+        el.style.width=w+'px'; el.style.height=h+'px';
+        placeSide(el,'top',top,w,h,st); placeSide(el,'bottom',bot,w,h,st); placeSide(el,'left',left,w,h,st); placeSide(el,'right',right,w,h,st);
+    }
+    function renderFloor(){
+        if(!halls.length){floor.style.height='auto';floor.innerHTML='<div class="text-center text-muted py-10"><i class="ki-outline ki-geolocation fs-2x d-block mb-2"></i>@Localizer["No tables for this branch — add them in «Floor plan»."]</div>';return;}
+        var h=halls.filter(function(x){return x.id===curArea;})[0]; var ts=h?h.tables:[];
+        if(!ts.length){floor.style.height='auto';floor.innerHTML='<div class="text-center text-muted py-10">@Localizer["No tables in this area."]</div>';return;}
+        floor.style.height='auto'; floor.innerHTML='<div class="rz-stage" id="rzStage"></div>';
+        var stage=document.getElementById('rzStage');
+        ts.forEach(function(t){
+            var s=t.status, col=colOf(s), occ=(s==='Occupied'), res=(s==='Reserved');
+            var shp=t.shape==='Round'?'rz-round':(t.shape==='Rect'?'rz-rect':'rz-square');
+            var cap = res ? ('<span class="rz-cap">'+(t.reservedAt?esc(t.reservedAt)+' · ':'')+esc(t.reservedFor||'')+'</span>') : (occ ? ('<span class="rz-cap">'+esc(custLabel(t.customerName))+'</span>') : '');
+            var el=document.createElement('div');
+            el.className='rz-tbl '+shp;
+            el.setAttribute('data-id',t.id); el.setAttribute('data-code',t.code); el.setAttribute('data-status',s);
+            el.setAttribute('data-seats',t.seats); el.setAttribute('data-shape',t.shape||'Square');
+            el.style.left=Math.round(t.x)+'px'; el.style.top=Math.round(t.y)+'px'; el.style.borderColor=col;
+            var rq=resvByTable[t.id];   // upcoming reservations TODAY on this table → visible badge on the floor
+            var rbadge = (rq&&rq.length) ? ('<span class="rz-rbadge">'+'@T("حجوزات","bookings")'+' '+rq.length+' · '+esc(rq[0])+'</span>') : '';
+            el.innerHTML='<span class="rz-code">'+esc(t.code)+'</span><span class="rz-pill" style="background:'+col+'">'+labelOf(s)+'</span>'+cap+rbadge;
+            stage.appendChild(el);
+            layoutTable(el, occ ? Math.max(1, Math.min(t.guests || 1, t.seats)) : 0, '#2f6fed');
+        });
+        var maxX=0,maxY=0;
+        [].slice.call(stage.children).forEach(function(el){ maxX=Math.max(maxX,el.offsetLeft+el.offsetWidth); maxY=Math.max(maxY,el.offsetTop+el.offsetHeight); });
+        maxX+=56; maxY+=56; stage.style.width=maxX+'px'; stage.style.height=maxY+'px';
+        var fw=(floor.clientWidth||floor.getBoundingClientRect().width||900)-24;
+        var fit=Math.min(1,(fw>0?fw:900)/maxX); if(!isFinite(fit)||fit<=0)fit=1;
+        stage.style.transform='scale('+fit+')';
+        floor.style.height=Math.round(maxY*fit+20)+'px';
+    }
+    tabs.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;curArea=parseInt(b.getAttribute('data-a'));renderTabs();renderFloor();});
+    floor.addEventListener('click',function(e){
+        var c=e.target.closest('.rz-tbl');if(!c)return;
+        openModal(parseInt(c.getAttribute('data-id')), c.getAttribute('data-code'), c.getAttribute('data-status'), c.getAttribute('data-seats'));
+    });
+    // today's upcoming reservations per table → floor badges (so a new booking is visible on the plan immediately)
+    function loadResv(){
+        fetch(eventsUrl,{headers:{'X-Requested-With':'fetch'},cache:'no-store'}).then(function(r){return r.json();}).then(function(evs){
+            resvByTable={}; var ds=todayStr(), now=Date.now();
+            (evs||[]).forEach(function(e){ var p=e.extendedProps||{}; if((e.start||'').slice(0,10)===ds && p.status==='Booked' && new Date(e.end||e.start).getTime()>=now){
+                var tid=p.tableId; (resvByTable[tid]=resvByTable[tid]||[]).push((e.start||'').slice(11,16)); }});
+            for(var k in resvByTable){ resvByTable[k].sort(); }
+            renderFloor();
+        }).catch(function(){});
+    }
+    function load(){
+        fetch(floorUrl,{headers:{'X-Requested-With':'fetch'},cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+            halls=(j&&j.ok&&j.halls)?j.halls:[]; curArea=halls.length?halls[0].id:null; renderTabs(); renderFloor(); loadResv();
+        }).catch(function(){ halls=[]; renderTabs(); renderFloor(); });
+    }
+    load();
+    window.addEventListener('load',function(){ setTimeout(renderFloor,60); });
+    var rzt=null; window.addEventListener('resize',function(){ clearTimeout(rzt); rzt=setTimeout(renderFloor,150); });
+
+    // ---- reservation modal: DATE field (flatpickr) + TIME slots coloured by booked chairs ----
+    var modalEl=document.getElementById('rzModal'), M=(window.bootstrap&&bootstrap.Modal)?new bootstrap.Modal(modalEl):null;
+    var elTblId=document.getElementById('rzTableId'), elTblCode=document.getElementById('rzTblCode'), elNote=document.getElementById('rzTblNote'),
+        elReserved=document.getElementById('rzReservedAt'), slotsBox=document.getElementById('rzSlots'),
+        elCid=document.getElementById('rzCustomerId'), elGName=document.getElementById('rzGuestName'), elGPhone=document.getElementById('rzGuestPhone'),
+        elSubmit=document.getElementById('rzSubmit'), elDate=document.getElementById('rzDate');
+    var selTableId=null, selTableCode=null, selSeats=0, selStart=null;
+    function pad(n){ return ('0'+n).slice(-2); }
+    function isoLocal(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }
+    // Metronic flatpickr — DATE ONLY. The time is picked from the coloured slots below.
+    var fpDate = (typeof flatpickr === 'function') ? flatpickr(elDate, {
+        dateFormat:'Y-m-d', altInput:true, altFormat: isAr?'j F Y':'d M Y', minDate:'today', disableMobile:true,
+        locale:(isAr && window.flatpickr && flatpickr.l10ns && flatpickr.l10ns.ar)?'ar':'default',
+        onChange:function(){ buildSlots(); }
+    }) : null;
+    function curDateStr(){ if(fpDate&&fpDate.selectedDates[0]){var d=fpDate.selectedDates[0];return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());} return elDate.value||''; }
+    function updateSubmit(){ if(elSubmit)elSubmit.disabled=!(selStart && elCid.value); }
+    // one field per time; colour = how many chairs booked on this table at that time (free/partial/full)
+    function buildSlots(){
+        var dateStr=curDateStr(); selStart=null; elReserved.value=''; updateSubmit();
+        if(!dateStr||!selTableId){ slotsBox.innerHTML=''; return; }
+        slotsBox.innerHTML='<span class="text-muted fs-8">@T("جارٍ التحميل…","Loading…")</span>';
+        fetch(eventsUrl+'&tableId='+selTableId,{headers:{'X-Requested-With':'fetch'},cache:'no-store'}).then(function(r){return r.json();}).then(function(evs){
+            var busy=(evs||[]).filter(function(e){var st=(e.extendedProps||{}).status;return (e.start||'').slice(0,10)===dateStr&&st!=='Cancelled'&&st!=='NoShow';})
+                .map(function(e){return {s:new Date(e.start).getTime(), e:new Date(e.end||e.start).getTime(), party:((e.extendedProps||{}).party)||0};});
+            var now=Date.now(); slotsBox.innerHTML='';
+            for(var h=8;h<24;h++){ for(var m=0;m<60;m+=30){
+                var t=new Date(dateStr+'T'+pad(h)+':'+pad(m)+':00'), tm=t.getTime();
+                var booked=busy.filter(function(b){return tm>=b.s&&tm<b.e;}).reduce(function(a,b){return a+(b.party||0);},0);
+                var past=(tm<now&&booked===0), cls;
+                if(booked>0){ cls=(selSeats&&booked>=selSeats)?'full':'partial'; }
+                else if(past){ cls='past'; }
+                else { cls='free'; }
+                // colour each chair: red = booked, green = free (clamped to the table's seat count)
+                var seatHtml;
+                if(past){ seatHtml='—'; }
+                else if(selSeats>0){ var b2=Math.min(booked,selSeats), dots=''; for(var i=0;i<selSeats;i++){ dots+='<i class="rz-dot '+(i<b2?'bk':'fr')+'"></i>'; } seatHtml=dots; }
+                else { seatHtml=(booked>0?booked:'0'); }
+                var chip=document.createElement('div'); chip.className='rz-slot '+cls;
+                chip.innerHTML='<span>'+new Intl.DateTimeFormat(isAr?'ar-EG':'en-US',{hour:'numeric',minute:'2-digit'}).format(t)+'</span><span class="rz-seat">'+seatHtml+'</span>';
+                if(cls==='free'){ chip.setAttribute('data-t',isoLocal(t)); chip.addEventListener('click',function(){pickSlot(this);}); }
+                slotsBox.appendChild(chip);
+            }}
+        }).catch(function(){ slotsBox.innerHTML='<span class="text-danger fs-8">@T("تعذّر التحميل","Failed to load")</span>'; });
+    }
+    function pickSlot(chip){
+        [].slice.call(slotsBox.querySelectorAll('.rz-slot.active')).forEach(function(x){x.classList.remove('active');});
+        chip.classList.add('active'); selStart=new Date(chip.getAttribute('data-t')); elReserved.value=chip.getAttribute('data-t'); updateSubmit();
+    }
+    var $cust = window.jQuery ? jQuery('#rzCust') : null;
+    if ($cust) {
+        $cust.select2({
+            dropdownParent: jQuery('#rzModal'), placeholder: $cust.data('placeholder'), allowClear: true, minimumInputLength: 1, width: '100%',
+            language: { inputTooShort: function(){return '@T("اكتب للبحث…","Type to search…")';}, searching: function(){return '@T("جارٍ البحث…","Searching…")';}, noResults: function(){return '@T("لا نتائج","No results")';} },
+            ajax: { url: searchUrl, dataType: 'json', delay: 250, headers: { 'X-Requested-With': 'fetch' },
+                data: function(p){ return { q: p.term }; },
+                processResults: function(d){ return { results: (d.customers||[]).map(function(c){ return { id: c.id, text: c.name + (c.phone ? (' — ' + c.phone) : ''), name: c.name, phone: c.phone }; }) }; } }
+        });
+        $cust.on('select2:select', function(e){ var d=e.params.data; elCid.value=d.id; elGName.value=d.name||d.text||''; elGPhone.value=d.phone||''; updateSubmit(); });
+        $cust.on('select2:clear', function(){ elCid.value=''; elGName.value=''; elGPhone.value=''; updateSubmit(); });
+    }
+    function clearCust(){ if($cust){ $cust.val(null).trigger('change'); } elCid.value=''; elGName.value=''; elGPhone.value=''; updateSubmit(); }
+    function openModal(id, code, status, seats){
+        selTableId=id; selTableCode=code; selSeats=parseInt(seats)||0; selStart=null; elReserved.value='';
+        elTblId.value=id; elTblCode.textContent=code+(selSeats?(' · '+selSeats+' '+'@T("مقعد","seats")'):''); clearCust();
+        if(elNote){ elNote.textContent = (status==='Occupied') ? '@T("الطاولة مشغولة الآن — الحجز لوقت لاحق","Occupied now — booking for a later time")' : (status==='Reserved' ? '@T("عليها حجز آخر — الأوقات المحجوزة ملوّنة بالأسفل","Has another reservation — booked times are coloured below")' : ''); elNote.style.display = elNote.textContent ? '' : 'none'; }
+        if(fpDate){ fpDate.setDate(new Date(), true); } else { var d=new Date(); elDate.value=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); buildSlots(); }
+        if(M)M.show();
+    }
+    document.getElementById('rzAddCust').addEventListener('click',function(){
+        var name=document.getElementById('rzNewName').value.trim(); if(!name){return;}
+        var fd=new FormData();fd.append('__RequestVerificationToken',token);fd.append('name',name);fd.append('phone',document.getElementById('rzNewPhone').value.trim());
+        fetch(addUrl,{method:'POST',body:fd,headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){
+            if(j&&j.ok&&j.customer){ var c=j.customer;
+                if($cust){ var opt=new Option(c.name+(c.phone?(' — '+c.phone):''), c.id, true, true); $cust.append(opt).trigger('change'); }
+                elCid.value=c.id; elGName.value=c.name||''; elGPhone.value=c.phone||''; updateSubmit();
+                document.getElementById('rzNewName').value=''; document.getElementById('rzNewPhone').value='';
+            }
+        });
+    });
+})();
+</script>
+}
+}

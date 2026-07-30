@@ -1,0 +1,80 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var campaigns = ViewBag.Campaigns as List<(int id, string name)> ?? new();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Leads"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">@SR["CRM"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Leads"]</li></ul></div>
+        <button class="btn btn-sm btn-primary" onclick="leadNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New lead"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
+        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-7"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (name / company / phone / source)"]</label>
+                <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Status"]</label>
+                <select id="f_status" class="form-select form-select-solid cb-filter" data-control="select2" data-hide-search="true"><option value="">@SR["All"]</option><option value="New">@Localizer["New"]</option><option value="Contacted">@Localizer["Contacted"]</option><option value="Qualified">@Localizer["Qualified"]</option><option value="Converted">@Localizer["Converted"]</option><option value="Lost">@Localizer["Lost"]</option></select></div>
+            <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+        </div></div></div>
+
+        <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+            <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+            <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@SR["Name"]</th><th>@SR["Phone"]</th><th>@Localizer["Source"]</th><th class="text-end">@Localizer["Est. value"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@Localizer["Score"]</th><th class="text-center">@SR["Actions"]</th></tr></thead>
+                <tbody id="rows"></tbody>
+            </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@Localizer["No leads"]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="mNew" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+    <form asp-action="SaveLead" method="post" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save lead details?"]">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="f_id" value="0" />
+        <div class="modal-header"><h2 class="fw-bold" id="mTitle">@Localizer["New lead"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8"><div class="row">
+            <div class="col-md-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Name"]</label><input name="name" id="f_name" class="form-control form-control-solid" required /></div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" id="f_nameEn" class="form-control form-control-solid" /></div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Company"]</label><input name="company" id="f_company" class="form-control form-control-solid" /></div>
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Phone"]</label><input name="phone" id="f_phone" class="form-control form-control-solid" /></div>
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Email"]</label><input name="email" id="f_email" class="form-control form-control-solid" /></div>
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Source"]</label><input name="source" id="f_source" class="form-control form-control-solid" placeholder="@Localizer["Website / Referral"]" /></div>
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Segment"]</label><input name="segment" id="f_segment" class="form-control form-control-solid" /></div>
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Est. value"]</label><input name="estimatedValue" id="f_value" type="number" step="0.01" class="form-control form-control-solid" value="0" /></div>
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Status"]</label><select name="status" id="f_status_m" class="form-select form-select-solid"><option value="New">@Localizer["New"]</option><option value="Contacted">@Localizer["Contacted"]</option><option value="Qualified">@Localizer["Qualified"]</option><option value="Lost">@Localizer["Lost"]</option></select></div>
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Campaign"]</label><select name="campaignId" id="f_campaign" class="form-select form-select-solid"><option value="">@Localizer["None"]</option>@foreach (var cm in campaigns) { <option value="@cm.id">@cm.name</option> }</select></div>
+            <div class="col-md-12 mb-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><textarea name="notes" id="f_notes" class="form-control form-control-solid" rows="2"></textarea></div>
+            @await Html.PartialAsync("_CrmCustomFields", (List<CrossBuy.Models.Context.Crm.CrmCustomField>)(ViewBag.CustomFields ?? new List<CrossBuy.Models.Context.Crm.CrmCustomField>()))
+        </div><input type="hidden" name="customFieldsJson" class="cf-json" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+cbServerList({ url:'@Url.Action("LeadsData","Crm")', exportUrl:'@Url.Action("LeadsExport","Crm")', isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); } });
+var modal; function v(id,val){document.getElementById(id).value=val||'';}
+// ---- CRM custom fields (3-7b) ----
+function cfClear(){ document.querySelectorAll('#mNew .cf-input').forEach(function(el){ if(el.type==='checkbox') el.checked=false; else el.value=''; }); }
+function cfLoad(entityType,id){ cfClear(); if(!id||id==='0')return;
+  fetch('@Url.Action("EntityCustomValues","Crm")?entityType='+entityType+'&id='+id).then(function(r){return r.json();}).then(function(d){
+    (d||[]).forEach(function(x){ var el=document.querySelector('#mNew .cf-input[data-cf="'+x.fieldId+'"]'); if(!el)return; if(el.type==='checkbox') el.checked=(x.value==='true'); else el.value=x.value||''; }); }); }
+(function(){ var f=document.querySelector('#mNew form'); if(f) f.addEventListener('submit',function(){ var arr=[]; document.querySelectorAll('#mNew .cf-input').forEach(function(el){ arr.push({fieldId:parseInt(el.getAttribute('data-cf')), value: el.type==='checkbox'?(el.checked?'true':'false'):el.value}); }); var j=document.querySelector('#mNew .cf-json'); if(j) j.value=JSON.stringify(arr); }); })();
+function leadNew(){ document.getElementById('mTitle').textContent='@Localizer["New lead"]';
+  v('f_id','0');v('f_name','');v('f_nameEn','');v('f_company','');v('f_phone','');v('f_email','');v('f_source','');v('f_segment','');v('f_value','0');document.getElementById('f_status_m').value='New';v('f_campaign','');v('f_notes','');cfClear();
+  modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show(); }
+function leadEdit(btn){ var r=btn.closest('tr'); document.getElementById('mTitle').textContent='@Localizer["Edit lead"]';
+  v('f_id',r.getAttribute('data-id'));v('f_name',r.getAttribute('data-name'));v('f_nameEn',r.getAttribute('data-nameen')||'');v('f_company',r.getAttribute('data-company'));v('f_phone',r.getAttribute('data-phone'));v('f_email',r.getAttribute('data-email'));v('f_source',r.getAttribute('data-source'));v('f_segment',r.getAttribute('data-segment'));v('f_value',r.getAttribute('data-value'));document.getElementById('f_status_m').value=r.getAttribute('data-status')||'New';v('f_campaign',r.getAttribute('data-campaign'));v('f_notes',r.getAttribute('data-notes'));cfLoad('Lead',r.getAttribute('data-id'));
+  modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show(); }
+</script>
+}

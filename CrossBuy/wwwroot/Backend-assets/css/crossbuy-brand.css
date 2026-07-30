@@ -1,0 +1,211 @@
+/* ============================================================
+   CrossBuy brand identity — overrides Metronic's blue primary
+   with the "ledger green + gold" palette across the whole app.
+   Loaded AFTER style.bundle(.rtl).css so it wins the cascade.
+   Palette: deep #13433a · mid #1f6253 · light #e9f1ee · gold #d4a017 / #f0c64b
+   ============================================================ */
+:root,
+[data-bs-theme="light"] {
+    --bs-primary: #13433a;
+    --bs-primary-rgb: 19, 67, 58;
+    --bs-primary-active: #1f6253;
+    --bs-primary-light: #e9f1ee;
+    --bs-primary-inverse: #ffffff;
+    --bs-primary-clarity: rgba(19, 67, 58, 0.2);
+    --bs-primary-text-emphasis: #13433a;
+    --bs-primary-bg-subtle: #e9f1ee;
+    --bs-primary-border-subtle: #bcd6cd;
+    --bs-link-color: #1f6253;
+    --bs-link-color-rgb: 31, 98, 83;
+    --bs-link-hover-color: #13433a;
+    --bs-component-active-bg: #13433a;
+    --kt-primary: #13433a;
+    --kt-primary-active: #1f6253;
+    --kt-primary-light: #e9f1ee;
+    --kt-primary-inverse: #ffffff;
+    --kt-text-primary: #13433a;
+}
+
+/* ---- solid primary buttons / backgrounds ---- */
+.btn.btn-primary,
+.btn-primary {
+    --bs-btn-bg: #13433a;
+    --bs-btn-border-color: #13433a;
+    --bs-btn-hover-bg: #1f6253;
+    --bs-btn-hover-border-color: #1f6253;
+    --bs-btn-active-bg: #0c2e28;
+    --bs-btn-active-border-color: #0c2e28;
+    --bs-btn-disabled-bg: #13433a;
+    --bs-btn-disabled-border-color: #13433a;
+    background-color: #13433a;
+    border-color: #13433a;
+    color: #fff;
+}
+.btn.btn-primary:hover, .btn.btn-primary:focus, .btn.btn-primary:active,
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+    background-color: #1f6253 !important;
+    border-color: #1f6253 !important;
+    color: #fff !important;
+}
+.bg-primary { background-color: #13433a !important; }
+.text-primary { color: #13433a !important; }
+.border-primary { border-color: #13433a !important; }
+
+/* ---- soft "light-primary" variants (buttons, badges, backgrounds) ---- */
+.btn.btn-light-primary,
+.btn-light-primary {
+    --bs-btn-color: #13433a;
+    --bs-btn-bg: #e9f1ee;
+    --bs-btn-border-color: #e9f1ee;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #13433a;
+    --bs-btn-hover-border-color: #13433a;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #13433a;
+    color: #13433a;
+    background-color: #e9f1ee;
+    border-color: #e9f1ee;
+}
+.btn.btn-light-primary:hover, .btn-light-primary:hover,
+.btn.btn-active-light-primary:hover {
+    color: #fff !important;
+    background-color: #13433a !important;
+    border-color: #13433a !important;
+}
+.bg-light-primary { background-color: #e9f1ee !important; }
+.badge-light-primary { color: #13433a; background-color: #e9f1ee; }
+.badge-primary { background-color: #13433a; color: #fff; }
+
+/* ---- text / links ---- */
+.text-active-primary.active, .text-hover-primary:hover, a.text-hover-primary:hover { color: #13433a !important; }
+.link-primary { color: #1f6253; }
+.link-primary:hover { color: #13433a; }
+
+/* ================= sidebar menu — CrossBuy branded ================= */
+/* base links: rounded, comfortable */
+.app-sidebar .menu .menu-link{ border-radius:10px; font-weight:600; transition:background-color .15s ease, color .15s ease; }
+.app-sidebar .menu > .menu-item > .menu-link,
+.app-sidebar .menu .cb-cat > .menu-link{ font-weight:700; color:#3b4a45; }
+/* category icons + arrows in brand tone */
+.app-sidebar .menu .menu-icon i{ color:#7c9a90; transition:color .15s ease; }
+.app-sidebar .menu .menu-arrow:after{ color:#9fb3ab; }
+.app-sidebar .menu .bullet{ background:#c4d6cf; }
+
+/* hover (any non-active link) */
+.app-sidebar .menu .menu-link:hover:not(.active){ background-color:#eef4f1 !important; color:#13433a !important; }
+.app-sidebar .menu .menu-link:hover:not(.active) .menu-icon i,
+.app-sidebar .menu .menu-link:hover:not(.active) .menu-title{ color:#13433a !important; }
+
+/* open/expanded category (here/show) → green title + icon */
+.app-sidebar .menu .menu-item.here > .menu-link,
+.app-sidebar .menu .cb-cat.here > .menu-link,
+.app-sidebar .menu .cb-cat.show > .menu-link{ color:#13433a !important; }
+.app-sidebar .menu .menu-item.here > .menu-link .menu-icon i,
+.app-sidebar .menu .cb-cat.here > .menu-link .menu-icon i,
+.app-sidebar .menu .cb-cat.show > .menu-link .menu-icon i{ color:#1f6253 !important; }
+
+/* ACTIVE leaf item → solid green pill with gold bullet (the signature) */
+.app-sidebar .menu .menu-link.active{
+    background:linear-gradient(135deg,#1f6253,#13433a) !important;
+    color:#fff !important;
+    box-shadow:0 8px 20px rgba(19,67,58,.30);
+}
+.app-sidebar .menu .menu-link.active .menu-title,
+.app-sidebar .menu .menu-link.active .menu-icon i{ color:#fff !important; }
+.app-sidebar .menu .menu-link.active .bullet{ background:#f0c64b !important; box-shadow:0 0 0 3px rgba(240,198,75,.25); }
+/* selected/hover must be the SAME height as a normal item — only color differs, never the box.
+   force identical padding & line-height across normal, hover AND active so no state is taller. */
+.app-sidebar .menu .menu-link,
+.app-sidebar .menu .menu-link:hover,
+.app-sidebar .menu .menu-link.active{ padding-top:.65rem !important; padding-bottom:.65rem !important; min-height:0 !important; line-height:1.4 !important; }
+/* WIDTH: the selected pill must fill the same horizontal space as the hover highlight.
+   force full width + zero horizontal margin + identical horizontal padding on BOTH states. */
+.app-sidebar .menu .menu-link:hover:not(.active),
+.app-sidebar .menu .menu-link.active{
+    display:flex !important; width:100% !important;
+    margin-inline:0 !important;
+    padding-inline-start:1rem !important; padding-inline-end:1rem !important;
+    box-shadow:none !important;
+}
+
+/* ---- Systems quick-switch (bottom of menu): colored dots + current-system highlight ---- */
+.app-sidebar .menu .cb-dot{ width:11px; height:11px; border-radius:50%; display:inline-block; }
+.app-sidebar .menu .menu-link.cb-sys{ padding-top:.5rem !important; padding-bottom:.5rem !important; border-radius:8px; }
+.app-sidebar .menu .menu-link.cb-sys:hover:not(.active){ background:#f3f7f5 !important; }
+/* current system = subtle light highlight (NOT the heavy green leaf-pill) */
+.app-sidebar .menu .menu-link.cb-sys.active{ background:#eef4f1 !important; box-shadow:inset 3px 0 0 #13433a !important; }
+.app-sidebar .menu .menu-link.cb-sys.active .menu-title{ color:#13433a !important; font-weight:700 !important; }
+.app-sidebar .menu .menu-heading{ letter-spacing:.6px; }
+
+/* in-menu search box: brand focus */
+#kt_app_sidebar_menu .form-control:focus, #mainMenuSearch:focus{ border-color:#6e9c90; }
+
+/* ---- nav tabs / line tabs active ---- */
+.nav-line-tabs .nav-item .nav-link.active,
+.nav-line-tabs .nav-item .nav-link:hover:not(.disabled) { border-bottom-color: #13433a; color: #13433a; }
+
+/* ---- form controls focus + checks ---- */
+.form-check-input:checked { background-color: #13433a; border-color: #13433a; }
+.form-check-input:focus, .form-control:focus, .form-select:focus { border-color: #6e9c90; box-shadow: 0 0 0 .25rem rgba(19,67,58,.15); }
+.form-control.form-control-solid:focus, .form-select.form-select-solid:focus { border-color: #6e9c90; }
+
+/* ---- select2 selected-option checkmark: fix RTL placement (was floating above the text) ----
+   the option needs position:relative so the absolute ✓ centers within the row; in RTL move it to the trailing (left) edge */
+.select2-container--bootstrap5 .select2-dropdown .select2-results__option.select2-results__option--selected{ position: relative !important; }
+[dir="rtl"] .select2-container--bootstrap5 .select2-dropdown .select2-results__option.select2-results__option--selected{ padding-left: 2.25rem; padding-right: 1rem; }
+[dir="rtl"] .select2-container--bootstrap5 .select2-dropdown .select2-results__option.select2-results__option--selected:after{ right: auto !important; left: 1.25rem !important; }
+
+/* ---- select2 (used widely for dropdowns) ---- */
+.select2-container--bootstrap5 .select2-results__option--highlighted[aria-selected],
+.select2-container--bootstrap5 .select2-results__option[aria-selected="true"] { background-color: #13433a; color: #fff; }
+
+/* ---- Tagify multi-search field (brand green tags) ---- */
+.tagify{ --tag-bg:#e9f1ee; --tag-text-color:#13433a; --tag-remove-btn-color:#13433a; --tags-focus-border-color:#6e9c90; border-color:#e1e3ea; }
+.tagify__tag > div { color:#13433a; }
+.tagify__tag__removeBtn{ opacity:.85; pointer-events:auto; z-index:2; }
+.tagify__tag__removeBtn:hover{ opacity:1; background:#13433a; color:#fff; }
+.tagify__dropdown{ z-index:1056; }
+.tagify__dropdown .tagify__dropdown__item--active,
+.tagify__dropdown .tagify__dropdown__item:hover{ background:#e9f1ee; color:#13433a; }
+
+/* ---- progress / spinner / active accents ---- */
+.progress-bar { background-color: #13433a; }
+.spinner-border.text-primary, .text-primary .spinner-border { color: #13433a !important; }
+
+/* ---- page-heading accent already green in app; keep gold as the secondary accent ---- */
+.text-gold { color: #d4a017 !important; }
+.bg-gold { background-color: #d4a017 !important; }
+
+/* ============================================================================
+   Mobile fix: wide datatables must scroll INSIDE their card, not stretch the
+   whole layout off-screen. Flex items default to min-width:auto (they won't
+   shrink below their content width) — so a wide table pushes the page wider
+   than the viewport. Setting min-width:0 down the flex chain lets the content
+   shrink, and the .table-responsive wrapper then provides the internal scroll.
+   ============================================================================ */
+.app-wrapper, .app-main, .app-content, .app-container,
+.card, .card-body, .tab-content, .tab-pane, .row > [class*="col"] { min-width: 0; }
+.table-responsive { max-width: 100%; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 991.98px) {
+    /* let wide tables size to their CONTENT and scroll horizontally inside .table-responsive,
+       instead of squeezing all columns into the screen (which overlaps the Arabic headers). */
+    .table-responsive > table th, .table-responsive > table td { white-space: nowrap; }
+    /* never let the page body itself scroll sideways (the scroll lives inside .table-responsive) */
+    #kt_app_content, #kt_app_content > .app-container { overflow-x: clip; }
+}
+
+/* ===== CrossBuy brand — flatpickr (date picker) popup, applied app-wide ===== */
+.flatpickr-calendar { font-family: inherit !important; border: 1px solid #dde0e5 !important; border-radius: 12px !important; box-shadow: 0 8px 28px rgba(15,23,42,.10) !important; }
+.flatpickr-months .flatpickr-month, .flatpickr-current-month input.cur-year, .flatpickr-current-month .flatpickr-monthDropdown-months, .flatpickr-weekday { color: #1f6253 !important; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.inRange { background: #1f7d57 !important; border-color: #1f7d57 !important; color: #fff !important; }
+.flatpickr-day:hover, .flatpickr-day.prevMonthDay:hover, .flatpickr-day.nextMonthDay:hover { background: #eaf3ef !important; color: #1f7d57 !important; }
+.flatpickr-day.today { border-color: #1f7d57 !important; }
+.flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill: #1f7d57 !important; }
+
+/* date-field calendar icon → brand green (beats any theme !important on the glyph) */
+.cb-cal-ic, .cb-cal-ic::before, i.cb-cal-ic::before { color: #1f7d57 !important; }
+
+/* ===== CrossBuy brand — form-select dropdown chevron → brand green (no gray icons) ===== */
+.form-select, .form-select.form-select-solid {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2313433a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+}

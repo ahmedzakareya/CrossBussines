@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Delivery zones &amp; fees" xml:space="preserve">
+    <value>Zones de livraison &amp; frais</value>
+  </data>
+  <data name="Branch delivery zones and per-zone fee — frozen on the order, billed at payment. Setup only, no accounting effect." xml:space="preserve">
+    <value>Zones de livraison de la succursale et frais par zone — figés sur la commande, facturés au paiement. Configuration uniquement, sans effet comptable.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>Cette société n'a aucune succursale.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Sélectionner une société</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Sélectionner une succursale</value>
+  </data>
+  <data name="Select a branch to manage delivery zones." xml:space="preserve">
+    <value>Sélectionnez une succursale pour gérer les zones de livraison.</value>
+  </data>
+  <data name="Zones" xml:space="preserve">
+    <value>Zones</value>
+  </data>
+  <data name="Zone (AR)" xml:space="preserve">
+    <value>Zone (AR)</value>
+  </data>
+  <data name="Zone (EN)" xml:space="preserve">
+    <value>Zone (EN)</value>
+  </data>
+  <data name="Delivery fee" xml:space="preserve">
+    <value>Frais de livraison</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>Zone</value>
+  </data>
+  <data name="Fee" xml:space="preserve">
+    <value>Frais</value>
+  </data>
+  <data name="Deactivate zone?" xml:space="preserve">
+    <value>Désactiver la zone ?</value>
+  </data>
+  <data name="Activate zone?" xml:space="preserve">
+    <value>Activer la zone ?</value>
+  </data>
+  <data name="Deactivate" xml:space="preserve">
+    <value>Désactiver</value>
+  </data>
+  <data name="Activate" xml:space="preserve">
+    <value>Activer</value>
+  </data>
+  <data name="Delete zone?" xml:space="preserve">
+    <value>Supprimer la zone ?</value>
+  </data>
+  <data name="No zones yet." xml:space="preserve">
+    <value>Aucune zone pour le moment.</value>
+  </data>
+</root>

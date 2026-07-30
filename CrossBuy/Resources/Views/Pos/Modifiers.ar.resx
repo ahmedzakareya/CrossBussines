@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Modifiers" xml:space="preserve">
+    <value>الإضافات (Modifiers)</value>
+  </data>
+  <data name="Reusable option groups attached to items — setup only, no stock deduction now." xml:space="preserve">
+    <value>مجموعات خيارات قابلة لإعادة الاستخدام تُربط بالأصناف — إعداد فقط، بلا خصم مخزون الآن.</value>
+  </data>
+  <data name="Edit group" xml:space="preserve">
+    <value>تعديل المجموعة</value>
+  </data>
+  <data name="Add group" xml:space="preserve">
+    <value>إضافة مجموعة</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>الاسم (عربي)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>الاسم (إنجليزي)</value>
+  </data>
+  <data name="AddOn (optional, priced)" xml:space="preserve">
+    <value>إضافة (اختياري، بسعر)</value>
+  </data>
+  <data name="Choice (mandatory, no price)" xml:space="preserve">
+    <value>بديل (إجباري، بلا سعر)</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>أدنى اختيار</value>
+  </data>
+  <data name="Max (0=∞)" xml:space="preserve">
+    <value>أقصى اختيار (0=غير محدود)</value>
+  </data>
+  <data name="Sort" xml:space="preserve">
+    <value>الترتيب</value>
+  </data>
+  <data name="Choice = one mandatory free alternative. AddOn = optional priced extras." xml:space="preserve">
+    <value>«بديل» = خيار إجباري واحد بلا سعر (مثل مشروب العرض). «إضافة» = خيارات اختيارية بسعر (جبنة/بطاطس زيادة).</value>
+  </data>
+  <data name="Groups" xml:space="preserve">
+    <value>المجموعات</value>
+  </data>
+  <data name="No groups yet." xml:space="preserve">
+    <value>لا مجموعات بعد.</value>
+  </data>
+  <data name="Delete the group with its options and links?" xml:space="preserve">
+    <value>حذف المجموعة وكل خياراتها وروابطها؟</value>
+  </data>
+  <data name="Select a group to manage its options and attach it to items." xml:space="preserve">
+    <value>اختر مجموعة من اليسار لإدارة خياراتها وربطها بالأصناف.</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>خيارات</value>
+  </data>
+  <data name="Option" xml:space="preserve">
+    <value>الخيار</value>
+  </data>
+  <data name="Linked item" xml:space="preserve">
+    <value>الصنف المرتبط</value>
+  </data>
+  <data name="Qty deducted" xml:space="preserve">
+    <value>الكمية المخصومة</value>
+  </data>
+  <data name="Extra price" xml:space="preserve">
+    <value>سعر إضافي</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>افتراضي</value>
+  </data>
+  <data name="No options yet." xml:space="preserve">
+    <value>لا خيارات بعد.</value>
+  </data>
+  <data name="Delete option?" xml:space="preserve">
+    <value>حذف الخيار؟</value>
+  </data>
+  <data name="Option name" xml:space="preserve">
+    <value>اسم الخيار</value>
+  </data>
+  <data name="optional — item name" xml:space="preserve">
+    <value>اختياري — يأخذ اسم الصنف</value>
+  </data>
+  <data name="Pick item" xml:space="preserve">
+    <value>اختر صنفًا</value>
+  </data>
+  <data name="Choice has no price" xml:space="preserve">
+    <value>البديل بلا سعر</value>
+  </data>
+  <data name="Choice group: extra price is always zero." xml:space="preserve">
+    <value>مجموعة «بديل»: السعر الإضافي = صفر دائمًا.</value>
+  </data>
+  <data name="Items using this group" xml:space="preserve">
+    <value>الأصناف المرتبطة بهذه المجموعة</value>
+  </data>
+  <data name="Attach items" xml:space="preserve">
+    <value>ربط أصناف</value>
+  </data>
+  <data name="This group is not attached to any item yet." xml:space="preserve">
+    <value>هذه المجموعة غير مرتبطة بأي صنف بعد.</value>
+  </data>
+  <data name="Detach?" xml:space="preserve">
+    <value>فك الربط؟</value>
+  </data>
+  <data name="Search for item" xml:space="preserve">
+    <value>البحث عن صنف</value>
+  </data>
+  <data name="Barcode + Enter" xml:space="preserve">
+    <value>باركود ثم Enter</value>
+  </data>
+  <data name="Item name/code" xml:space="preserve">
+    <value>اسم/كود الصنف</value>
+  </data>
+  <data name="Barcode" xml:space="preserve">
+    <value>الباركود</value>
+  </data>
+  <data name="No results." xml:space="preserve">
+    <value>لا نتائج.</value>
+  </data>
+  <data name="Attach selected" xml:space="preserve">
+    <value>ربط المحدَّد</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>ج.م</value>
+  </data>
+  <data name="Choice" xml:space="preserve">
+    <value>بديل (إجباري)</value>
+  </data>
+  <data name="AddOn" xml:space="preserve">
+    <value>إضافة (اختياري)</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>اختيار</value>
+  </data>
+  <data name="Attach items to group" xml:space="preserve">
+    <value>ربط أصناف بالمجموعة</value>
+  </data>
+  <data name="Pick linked item" xml:space="preserve">
+    <value>اختر الصنف المرتبط</value>
+  </data>
+  <data name="Select an item" xml:space="preserve">
+    <value>حدّد صنفًا</value>
+  </data>
+</root>

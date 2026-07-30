@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Floor plan" xml:space="preserve">
+    <value>Floor plan</value>
+  </data>
+  <data name="Drag tables to position them, then save. Each table has a QR for ordering later." xml:space="preserve">
+    <value>Drag tables to position them, then save. Each table has a QR for ordering later.</value>
+  </data>
+  <data name="Save layout" xml:space="preserve">
+    <value>Save layout</value>
+  </data>
+  <data name="This company has no branches — add one first from the Branches screen." xml:space="preserve">
+    <value>This company has no branches — add one first from the Branches screen.</value>
+  </data>
+  <data name="Manage branches" xml:space="preserve">
+    <value>Manage branches</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Select company</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Select branch</value>
+  </data>
+  <data name="Dining area" xml:space="preserve">
+    <value>Dining area</value>
+  </data>
+  <data name="Select a branch first" xml:space="preserve">
+    <value>Select a branch first</value>
+  </data>
+  <data name="No areas — add them in Areas &amp; stations." xml:space="preserve">
+    <value>No areas — add them in Areas &amp; stations.</value>
+  </data>
+  <data name="Drag to move · hover to delete" xml:space="preserve">
+    <value>Drag to move · hover to delete</value>
+  </data>
+  <data name="Delete table" xml:space="preserve">
+    <value>Delete table</value>
+  </data>
+  <data name="Center" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="Grid" xml:space="preserve">
+    <value>Grid</value>
+  </data>
+  <data name="Zoom out" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="Zoom in" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="Add table" xml:space="preserve">
+    <value>Add table</value>
+  </data>
+  <data name="Seats" xml:space="preserve">
+    <value>Seats</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>Shape</value>
+  </data>
+  <data name="Tables" xml:space="preserve">
+    <value>Tables</value>
+  </data>
+  <data name="seats" xml:space="preserve">
+    <value>seats</value>
+  </data>
+  <data name="Regenerate QR (invalidates the old one)?" xml:space="preserve">
+    <value>Regenerate QR (invalidates the old one)?</value>
+  </data>
+  <data name="Regenerate QR" xml:space="preserve">
+    <value>Regenerate QR</value>
+  </data>
+  <data name="Delete table?" xml:space="preserve">
+    <value>Delete table?</value>
+  </data>
+  <data name="No tables yet." xml:space="preserve">
+    <value>No tables yet.</value>
+  </data>
+  <data name="Edit table" xml:space="preserve">
+    <value>Edit table</value>
+  </data>
+  <data name="Scan to open the order (later)." xml:space="preserve">
+    <value>Scan to open the order (later).</value>
+  </data>
+  <data name="Square" xml:space="preserve">
+    <value>Square</value>
+  </data>
+  <data name="Round" xml:space="preserve">
+    <value>Round</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>Rect</value>
+  </data>
+</root>

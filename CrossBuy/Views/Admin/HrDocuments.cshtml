@@ -1,0 +1,296 @@
+@using CrossBuy.Models.Context.Admin
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var emps = ViewBag.Employees as List<CrossBuy.ViewModel.EmployeeListItemDto> ?? new();
+    int? selEmp = ViewBag.SelectedEmployee as int?;
+    var contracts = ViewBag.Contracts as List<EmploymentContract> ?? new();
+    var documents = ViewBag.Documents as List<EmployeeDocument> ?? new();
+    var cFileCounts = ViewBag.ContractFileCounts as Dictionary<int, int> ?? new();
+    var dFileCounts = ViewBag.DocumentFileCounts as Dictionary<int, int> ?? new();
+    int cCount(int id) => cFileCounts.TryGetValue(id, out var n) ? n : 0;
+    int dCount(int id) => dFileCounts.TryGetValue(id, out var n) ? n : 0;
+    string empName(CrossBuy.ViewModel.EmployeeListItemDto e) => isAr ? (e.FullName ?? "") : (string.IsNullOrEmpty(e.FullNameEn) ? e.FullName : e.FullNameEn) ?? "";
+    var ctypes = new[] { "Permanent", "FixedTerm", "Probation", "PartTime" };
+    var dtypes = new[] { "NationalId", "Passport", "Qualification", "Contract", "Insurance", "WorkPermit", "Other" };
+    string ctName(string v) => v switch { "Permanent" => Localizer["Permanent"].Value, "FixedTerm" => Localizer["Fixed-term"].Value, "Probation" => Localizer["Probation"].Value, "PartTime" => Localizer["Part-time"].Value, _ => v };
+    string dtName(string v) => v switch { "NationalId" => Localizer["National ID"].Value, "Passport" => Localizer["Passport"].Value, "Qualification" => Localizer["Qualification"].Value, "Contract" => Localizer["Contract"].Value, "Insurance" => Localizer["Insurance"].Value, "WorkPermit" => Localizer["Work permit"].Value, "Other" => Localizer["Other"].Value, _ => v };
+
+    // Summary metrics (only meaningful once an employee is chosen)
+    var activeContracts = contracts.Count(c => c.Status != "Terminated" && (!c.EndDate.HasValue || c.EndDate.Value.Date >= DateTime.Today));
+    var expiredContracts = contracts.Count(c => c.Status != "Terminated" && c.EndDate.HasValue && c.EndDate.Value.Date < DateTime.Today);
+    var expiredDocs = documents.Count(d => d.ExpiryDate.HasValue && d.ExpiryDate.Value.Date < DateTime.Today);
+    var soonDocs = documents.Count(d => d.ExpiryDate.HasValue && d.ExpiryDate.Value.Date >= DateTime.Today && d.ExpiryDate.Value.Date <= DateTime.Today.AddDays(60));
+    var attention = expiredContracts + expiredDocs + soonDocs;
+    var selName = selEmp.HasValue ? emps.FirstOrDefault(e => e.ID == selEmp.Value) : null;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Employee contracts & documents"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Admin")" class="text-muted text-hover-primary">@Localizer["Home"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["HR"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Employee contracts & documents"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3 d-print-none">
+            <a href="@Url.Action("DocExpiryAlerts","Admin")" class="btn btn-sm btn-light-warning"><i class="ki-outline ki-notification-status fs-4"></i>@Localizer["Document & contract expiry alerts"]</a>
+            @if (selEmp.HasValue) { <button onclick="window.print()" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-4"></i>@SR["Print"]</button> }
+        </div>
+    </div></div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrErr"] != null)
+        {
+            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+                <span class="symbol symbol-45px me-5"><span class="symbol-label bg-danger"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold"><div class="fs-6 text-gray-700">@TempData["HrErr"]</div></div></div>
+            </div>
+        }
+
+        <!--begin::Summary card-->
+        <div class="card mb-5 mb-xl-10">
+            <div class="card-body py-10">
+                <div class="d-flex flex-stack flex-wrap gap-4 mb-2">
+                    <div>
+                        <h2 class="mb-1">@Localizer["Employee contracts & documents"]</h2>
+                        <p class="fs-6 fw-semibold text-gray-600 m-0">
+                            @if (selName != null) { <span>@empName(selName)</span> }
+                            else { <span>@Localizer["Pick an employee to manage contracts & documents."]</span> }
+                        </p>
+                    </div>
+                    <form method="get" class="d-flex flex-column">
+                        <label class="fw-semibold fs-8 text-muted mb-1">@SR["Employee"]</label>
+                        <select name="employeeId" class="form-select form-select-solid w-300px" data-control="select2" data-placeholder="@Localizer["Select employee…"]" onchange="this.form.submit()">
+                            <option value=""></option>
+                            @foreach (var e in emps) { <option value="@e.ID" selected="@(selEmp == e.ID)">@empName(e)</option> }
+                        </select>
+                    </form>
+                </div>
+
+                @if (selEmp.HasValue)
+                {
+                    <div class="row mt-6">
+                        <div class="col-6 col-lg-3">
+                            <div class="card card-dashed flex-center min-w-125px my-3 p-6">
+                                <span class="fs-4 fw-semibold text-primary pb-1 px-2">@Localizer["Contracts"]</span>
+                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@contracts.Count">@contracts.Count</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="card card-dashed flex-center min-w-125px my-3 p-6">
+                                <span class="fs-4 fw-semibold text-primary pb-1 px-2">@Localizer["Active contracts"]</span>
+                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@activeContracts">@activeContracts</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="card card-dashed flex-center min-w-125px my-3 p-6">
+                                <span class="fs-4 fw-semibold text-primary pb-1 px-2">@Localizer["Document vault"]</span>
+                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@documents.Count">@documents.Count</span>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="card card-dashed flex-center min-w-125px my-3 p-6">
+                                <span class="fs-4 fw-semibold @(attention > 0 ? "text-warning" : "text-primary") pb-1 px-2">@Localizer["Needs attention"]</span>
+                                <span class="fs-lg-2tx fw-bold d-flex justify-content-center @(attention > 0 ? "text-warning" : "")" data-kt-countup="true" data-kt-countup-value="@attention">@attention</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (attention == 0)
+                    {
+                        <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#eaf3ef;border-color:#13433a !important;">
+                            <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#13433a;"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
+                            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                                    <h4 class="text-gray-900 fw-bold mb-1">@Localizer["All contracts & documents are valid"]</h4>
+                                    <div class="fs-6 text-gray-700">@Localizer["Nothing is expired or expiring within the next 60 days."]</div>
+                                </div>
+                                <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#13433a;color:#fff;"><i class="ki-outline ki-check fs-6 text-white me-1"></i>@SR["Active"]</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-6 mt-4">
+                            <span class="symbol symbol-45px me-5"><span class="symbol-label bg-warning"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                                    <h4 class="text-gray-900 fw-bold mb-1">@Localizer["Some items need attention"]</h4>
+                                    <div class="fs-6 text-gray-700">@Localizer["{0} expired and {1} expiring within 60 days.", expiredContracts + expiredDocs, soonDocs]</div>
+                                </div>
+                                <span class="badge badge-warning fs-7 fw-bold px-4 py-2 flex-shrink-0">@attention</span>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <!--end::Summary card-->
+
+        @if (selEmp.HasValue)
+        {
+            <div class="row g-5 g-xl-10">
+                <!--begin::Contracts-->
+                <div class="col-xl-6">
+                    <div class="card h-100">
+                        <div class="card-header border-0 pt-6">
+                            <div class="card-title"><h2 class="fw-bold">@Localizer["Contracts"]</h2></div>
+                        </div>
+                        <div class="card-body pt-0 pb-5">
+                            <div class="table-responsive">
+                                <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                                    <thead>
+                                        <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                            <th class="ps-4">@SR["Type"]</th>
+                                            <th>@SR["From"]</th>
+                                            <th>@SR["To"]</th>
+                                            <th>@SR["Status"]</th>
+                                            <th class="text-end pe-4"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="fs-6 fw-semibold text-gray-700">
+                                        @foreach (var c in contracts)
+                                        {
+                                            var expired = c.EndDate.HasValue && c.EndDate.Value.Date < DateTime.Today && c.Status != "Terminated";
+                                            <tr style="border-bottom:1px dashed #eef1f6;">
+                                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:#1f6253;">@ctName(c.ContractType)</span></td>
+                                                <td>@c.StartDate.ToString("yyyy-MM-dd")</td>
+                                                <td>@(c.EndDate?.ToString("yyyy-MM-dd") ?? Localizer["Open"].Value)</td>
+                                                <td>@if (c.Status == "Terminated") { <span class="badge badge-light-dark">@Localizer["Terminated"]</span> } else if (expired) { <span class="badge badge-light-danger">@Localizer["Expired"]</span> } else { <span class="badge badge-light-primary">@SR["Active"]</span> }</td>
+                                                <td class="text-end pe-4">
+                                                    @{ var cc = cCount(c.ID); }
+                                                    <button type="button" class="btn btn-icon btn-light-primary btn-sm me-1 position-relative cb-gallery" data-cb-kind="Contract" data-cb-id="@c.ID" data-cb-title="@(ctName(c.ContractType)) — @c.StartDate.ToString("yyyy-MM-dd")" title="@Localizer["Attachments"]"><i class="ki-outline ki-paper-clip fs-5"></i>@if (cc > 0) { <span class="badge badge-circle badge-success position-absolute top-0 start-100 translate-middle" style="font-size:.65rem;min-width:16px;height:16px;">@cc</span> }</button>
+                                                    <form asp-action="DeleteContract" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete contract?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.ID" /><input type="hidden" name="employeeId" value="@selEmp" /><button class="btn btn-icon btn-light-danger btn-sm"><i class="ki-outline ki-trash fs-6"></i></button></form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (!contracts.Any()) { <div class="text-center text-muted py-8">@Localizer["No contracts."]</div> }
+
+                            <div class="separator separator-dashed my-6"></div>
+                            <form asp-action="SaveContract" method="post" enctype="multipart/form-data">@Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="0" /><input type="hidden" name="employeeId" value="@selEmp" />
+                                <div class="row g-4">
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@SR["Type"]</label><select name="contractType" class="form-select form-select-sm form-select-solid" data-control="select2" data-hide-search="true">@foreach (var t in ctypes){<option value="@t">@ctName(t)</option>}</select></div>
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@SR["Status"]</label><select name="status" class="form-select form-select-sm form-select-solid" data-control="select2" data-hide-search="true"><option value="Active">@SR["Active"]</option><option value="Terminated">@Localizer["Terminated"]</option></select></div>
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@Localizer["Start"]</label><input name="startDate" type="text" class="form-control form-control-sm form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@Localizer["End"]</label><input name="endDate" type="text" class="form-control form-control-sm form-control-solid" data-control="flatpickr" placeholder="@Localizer["blank = permanent"]" /></div>
+                                    <div class="col-12"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@SR["Notes"]</label><input name="notes" class="form-control form-control-sm form-control-solid" /></div>
+                                    <div class="col-12"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@Localizer["Contract files (optional)"]</label><input name="files" type="file" multiple class="form-control form-control-sm form-control-solid" /></div>
+                                </div>
+                                <button class="btn btn-sm btn-primary w-100 mt-4"><i class="ki-outline ki-plus fs-4"></i>@Localizer["Add contract"]</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Contracts-->
+
+                <!--begin::Documents-->
+                <div class="col-xl-6">
+                    <div class="card h-100">
+                        <div class="card-header border-0 pt-6">
+                            <div class="card-title"><h2 class="fw-bold">@Localizer["Document vault"]</h2></div>
+                        </div>
+                        <div class="card-body pt-0 pb-5">
+                            <div class="table-responsive">
+                                <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                                    <thead>
+                                        <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                            <th class="ps-4">@SR["Type"]</th>
+                                            <th>@SR["Number"]</th>
+                                            <th>@Localizer["Expiry"]</th>
+                                            <th class="text-end pe-4"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="fs-6 fw-semibold text-gray-700">
+                                        @foreach (var d in documents)
+                                        {
+                                            var exp = d.ExpiryDate.HasValue && d.ExpiryDate.Value.Date < DateTime.Today;
+                                            var soon = d.ExpiryDate.HasValue && !exp && d.ExpiryDate.Value.Date <= DateTime.Today.AddDays(60);
+                                            <tr style="border-bottom:1px dashed #eef1f6;">
+                                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:#1f6253;">@dtName(d.DocType)</span></td>
+                                                <td class="@(string.IsNullOrEmpty(d.DocNumber) ? "text-gray-300" : "")">@(string.IsNullOrEmpty(d.DocNumber) ? "—" : d.DocNumber)</td>
+                                                <td>@if (d.ExpiryDate.HasValue) { <span class="@(exp ? "badge badge-light-danger" : soon ? "badge badge-light-secondary" : "")">@d.ExpiryDate.Value.ToString("yyyy-MM-dd")</span> } else { <span class="text-gray-300">—</span> }</td>
+                                                <td class="text-end pe-4">
+                                                    @{ var dc = dCount(d.ID); }
+                                                    <button type="button" class="btn btn-icon btn-light-primary btn-sm me-1 position-relative cb-gallery" data-cb-kind="Document" data-cb-id="@d.ID" data-cb-title="@(dtName(d.DocType))@(string.IsNullOrEmpty(d.DocNumber) ? "" : " — " + d.DocNumber)" title="@Localizer["Attachments"]"><i class="ki-outline ki-paper-clip fs-5"></i>@if (dc > 0) { <span class="badge badge-circle badge-success position-absolute top-0 start-100 translate-middle" style="font-size:.65rem;min-width:16px;height:16px;">@dc</span> }</button>
+                                                    <form asp-action="DeleteDocument" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete document?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="employeeId" value="@selEmp" /><button class="btn btn-icon btn-light-danger btn-sm"><i class="ki-outline ki-trash fs-6"></i></button></form>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (!documents.Any()) { <div class="text-center text-muted py-8">@Localizer["No documents."]</div> }
+
+                            <div class="separator separator-dashed my-6"></div>
+                            <form asp-action="SaveDocument" method="post" enctype="multipart/form-data">@Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="0" /><input type="hidden" name="employeeId" value="@selEmp" />
+                                <div class="row g-4">
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@SR["Type"]</label><select name="docType" class="form-select form-select-sm form-select-solid" data-control="select2" data-hide-search="true">@foreach (var t in dtypes){<option value="@t">@dtName(t)</option>}</select></div>
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@SR["Number"]</label><input name="docNumber" class="form-control form-control-sm form-control-solid" /></div>
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@Localizer["Issue date"]</label><input name="issueDate" type="text" class="form-control form-control-sm form-control-solid" data-control="flatpickr" /></div>
+                                    <div class="col-md-6"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@Localizer["Expiry date"]</label><input name="expiryDate" type="text" class="form-control form-control-sm form-control-solid" data-control="flatpickr" /></div>
+                                    <div class="col-12"><label class="fw-semibold fs-8 text-muted mb-1 d-block">@Localizer["Files (optional)"]</label><input name="files" type="file" multiple class="form-control form-control-sm form-control-solid" /></div>
+                                </div>
+                                <button class="btn btn-sm btn-primary w-100 mt-4"><i class="ki-outline ki-plus fs-4"></i>@Localizer["Add document"]</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Documents-->
+            </div>
+        }
+    </div></div>
+</div>
+
+@{ ViewData["GalleryManage"] = true; ViewData["GalleryEmployeeId"] = selEmp; }
+@await Html.PartialAsync("_HrDocGallery")
+
+@section Scripts {
+<script>
+(function () {
+    // --- Metronic date pickers (flatpickr) ---
+    if (window.flatpickr) {
+        document.querySelectorAll('#kt_app_content input[data-control="flatpickr"]').forEach(function (el) {
+            if (el._flatpickr) return;
+            flatpickr(el, {
+                dateFormat: 'Y-m-d',                 // value the controller parses
+                defaultDate: el.value || null,
+                allowInput: true,
+                disableMobile: true,
+                locale: { firstDayOfWeek: 6 }        // week starts Saturday
+            });
+        });
+    }
+    // --- Metronic dropdowns (select2) — only if the layout didn't already init them ---
+    if (window.jQuery && jQuery.fn.select2) {
+        jQuery('#kt_app_content select[data-control="select2"]').each(function () {
+            if (this.classList.contains('select2-hidden-accessible')) return;
+            var hide = this.getAttribute('data-hide-search') === 'true';
+            jQuery(this).select2({ width: '100%', minimumResultsForSearch: hide ? Infinity : 0 });
+        });
+    }
+    // --- Animated counters (countUp) ---
+    var Ctor = (window.countUp && window.countUp.CountUp) ? window.countUp.CountUp : (window.CountUp || null);
+    if (Ctor) {
+        document.querySelectorAll('#kt_app_content [data-kt-countup="true"]').forEach(function (el) {
+            if (el.getAttribute('data-kt-initialized') === '1') return;   // layout already animated it
+            var val = parseFloat(el.getAttribute('data-kt-countup-value')) || 0;
+            var c = new Ctor(el, val, { duration: 1.2 });
+            if (!c.error) { c.start(); el.setAttribute('data-kt-initialized', '1'); }
+        });
+    }
+})();
+</script>
+}

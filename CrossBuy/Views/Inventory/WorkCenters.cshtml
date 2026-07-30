@@ -1,0 +1,68 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutManufacturing.cshtml";
+    var list = ViewBag.WorkCenters as List<ManufWorkCenter> ?? new();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Work centers"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@SR["Manufacturing"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Work centers"]</li></ul></div>
+        <button class="btn btn-primary" onclick="wcEdit(0)"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New work center"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["InvMsg"] != null) { <div class="alert alert-success">@TempData["InvMsg"]</div> }
+        @if (TempData["InvErr"] != null) { <div class="alert alert-danger">@TempData["InvErr"]</div> }
+        <div class="card"><div class="card-body py-3">
+            <div class="text-muted fs-8 mb-3">@Localizer["A work center is a machine or station with an hourly labor and overhead rate. Used in routings to compute time-based cost automatically."]</div>
+            <div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                <thead><tr class="fw-bold fs-7 text-muted text-uppercase"><th>@SR["Code"]</th><th>@SR["Name"]</th><th class="text-end">@Localizer["Labor/hr"]</th><th class="text-end">@Localizer["Overhead/hr"]</th><th>@SR["Status"]</th><th></th></tr></thead>
+                <tbody>
+                @if (!list.Any()) { <tr><td colspan="6" class="text-center text-muted py-6">@Localizer["No work centers yet."]</td></tr> }
+                @foreach (var w in list)
+                {
+                    <tr>
+                        <td class="fw-semibold">@w.Code</td>
+                        <td>@w.Name</td>
+                        <td class="text-end">@w.CostPerHour.ToString("N4")</td>
+                        <td class="text-end">@w.OverheadPerHour.ToString("N4")</td>
+                        <td>@if (w.IsActive) { <span class="badge badge-light-primary">@SR["Active"]</span> } else { <span class="badge badge-light-danger">@SR["Inactive"]</span> }</td>
+                        <td class="text-end"><button class="btn btn-sm btn-light" onclick='wcEdit(@w.ID, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(w.Code)), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(w.Name)), @w.CostPerHour, @w.OverheadPerHour, @(w.IsActive ? "true" : "false"))'>@SR["Edit"]</button></td>
+                    </tr>
+                }
+                </tbody>
+            </table></div>
+        </div></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="wcModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <form asp-action="SaveWorkCenter" method="post">@Html.AntiForgeryToken()
+        <div class="modal-header"><h3 class="modal-title" id="wcTitle">@Localizer["Work center"]</h3><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body row g-4">
+            <input type="hidden" name="id" id="wc_id" value="0" />
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Code"]</label><input name="code" id="wc_code" class="form-control form-control-solid" /></div>
+            <div class="col-md-8"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Name"]</label><input name="name" id="wc_name" class="form-control form-control-solid" required /></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Labor cost/hour"]</label><input type="number" step="0.0001" min="0" name="costPerHour" id="wc_cost" class="form-control form-control-solid" value="0" /></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Overhead/hour"]</label><input type="number" step="0.0001" min="0" name="overheadPerHour" id="wc_oh" class="form-control form-control-solid" value="0" /></div>
+            <div class="col-12"><label class="form-check form-switch form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isActive" id="wc_active" value="true" checked /><span class="form-check-label fw-semibold">@SR["Active"]</span></label></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+function wcEdit(id, code, name, cost, oh, active){
+  document.getElementById('wc_id').value = id;
+  document.getElementById('wc_code').value = code || '';
+  document.getElementById('wc_name').value = name || '';
+  document.getElementById('wc_cost').value = cost || 0;
+  document.getElementById('wc_oh').value = oh || 0;
+  document.getElementById('wc_active').checked = (id===0) ? true : !!active;
+  document.getElementById('wcTitle').textContent = id===0 ? '@Localizer["New work center"]' : '@Localizer["Edit work center"]';
+  new bootstrap.Modal(document.getElementById('wcModal')).show();
+}
+</script>
+}

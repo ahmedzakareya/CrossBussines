@@ -1,0 +1,68 @@
+@using CrossBuy.Controllers
+@using CrossBuy.Models.Context.Inventory
+@model List<InvReportRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    int? fWh = ViewBag.FilterWarehouseId; int days = ViewBag.Days ?? 60;
+    decimal grand = ViewBag.GrandTotal ?? 0m;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Slow-moving items"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Reports","Inventory")" class="text-muted text-hover-primary">@Localizer["Reports"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Slow-moving"]</li></ul></div>
+        <button onclick="window.print()" class="btn btn-light"><i class="ki-outline ki-printer fs-2"></i>@SR["Print"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <!--begin::Filter card-->
+        <div class="card card-flush mb-5"><div class="card-body py-5">
+            <div class="row g-4 align-items-end">
+                <div class="col-md-5">
+                    <label class="fw-semibold fs-7 text-muted mb-2"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@SR["Search"]</label>
+                    <input type="text" id="s" class="form-control form-control-solid" placeholder="@SR["Search"]" autocomplete="off" />
+                </div>
+                <div class="col-md-3">
+                    <label class="fw-semibold fs-7 text-muted mb-2">@Localizer["Idle ≥"]</label>
+                    <select id="daysSel" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                        @foreach (var d in new[] { 30, 60, 90, 180 }) { <option value="@d" selected="@(days==d)">@d @Localizer["days"]</option> }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="fw-semibold fs-7 text-muted mb-2">@SR["Warehouse"]</label>
+                    <select id="whFilter" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["All WH"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code</option> }</select>
+                </div>
+            </div>
+        </div></div>
+        <!--end::Filter card-->
+        <div class="card card-flush">
+            <div class="card-body pt-6">
+                <div class="table-responsive">
+                <table class="table align-middle gy-3 mb-0" id="t" style="font-variant-numeric:tabular-nums;">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th>@Localizer["WH"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Value"]</th><th class="text-end">@Localizer["Last move"]</th><th class="text-center pe-4">@Localizer["Idle days"]</th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var r in Model)
+                    {
+                        <tr data-s="@r.ItemCode @r.ItemName @r.Warehouse" style="border-bottom:1px dashed #eef1f6;">
+                            <td class="ps-4 fw-bold text-gray-900">@r.ItemCode</td><td>@r.ItemName</td><td class="text-muted">@r.Warehouse</td>
+                            <td class="text-end">@r.Qty.ToString("0.##")</td><td class="text-end fw-bold">@r.Value.ToString("N2")</td>
+                            <td class="text-end text-muted">@(r.LastMovement?.ToString("yyyy-MM-dd") ?? Localizer["never"].Value)</td>
+                            <td class="text-center pe-4"><span class="badge fw-bold" style="@(r.Days>=180?"background:#fdeaea;color:#d92d20;":(r.Days>=90?"background:#f2f4f7;color:#475467;":"background:#f2f4f7;color:#98a2b3;"))">@(r.Days>=9999?"∞":r.Days.ToString())</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                    <tfoot><tr class="fw-bolder fs-5" style="border-top:2px solid #13433a;"><td colspan="4" class="text-end ps-4" style="color:#1f6253;">@Localizer["Stagnant value"]</td><td class="text-end" style="color:#13433a;">@grand.ToString("N2")</td><td colspan="2" class="pe-4"></td></tr></tfoot>
+                </table>
+                </div>
+                @if (Model.Count == 0) { <div class="text-center text-muted py-10">@Localizer["No slow-moving items for this criterion"]</div> }
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>(function(){var s=document.getElementById('s'),wf=document.getElementById('whFilter'),ds=document.getElementById('daysSel'),rows=[].slice.call(document.querySelectorAll('#t tbody tr'));
+ function go(){location.href='?days='+(ds?ds.value:60)+'&warehouseId='+(wf&&wf.value?wf.value:'');}
+ if(s)s.addEventListener('input',function(){var q=(s.value||'').trim().toLowerCase();rows.forEach(function(r){r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none';});});
+ [ds,wf].forEach(function(el){if(!el)return; if(window.jQuery){jQuery(el).on('change',go);} else {el.addEventListener('change',go);}});})();</script>
+}

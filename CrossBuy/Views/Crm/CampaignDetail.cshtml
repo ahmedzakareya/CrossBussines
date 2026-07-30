@@ -1,0 +1,135 @@
+@using CrossBuy.BL
+@model CampaignDetail
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var members = ViewBag.Members as List<MemberRow> ?? new();
+    var lists = ViewBag.Lists as List<(int id, string name)> ?? new();
+    var statuses = new[] { ("Targeted", "مستهدَف", "Targeted"), ("Sent", "أُرسل", "Sent"), ("Opened", "فُتح", "Opened"), ("Responded", "استجاب", "Responded"), ("Converted", "تحوّل", "Converted") };
+    string statName(string s) => statuses.FirstOrDefault(x => x.Item1 == s) is var f && f.Item1 != null ? (isAr ? f.Item2 : f.Item3) : s;
+    string statColor(string s) => s switch { "Converted" => "success", "Responded" => "primary", "Opened" => "info", "Sent" => "warning", _ => "secondary" };
+    string typeName(string t) => t switch { "Lead" => Localizer["Lead"].Value, "Account" => SR["Account"].Value, "Contact" => Localizer["Contact"].Value, _ => t };
+    var cid = Model.Campaign.ID;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isAr ? Model.Campaign.Name : (string.IsNullOrEmpty(Model.Campaign.NameEn) ? Model.Campaign.Name : Model.Campaign.NameEn))</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Campaigns","Crm")" class="text-muted text-hover-primary">@Localizer["Campaigns"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Members & ROI"]</li>
+            </ul>
+        </div>
+        <a href="@Url.Action("Campaigns","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
+        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
+
+        <!--begin::ROI cards-->
+        <div class="row g-5 mb-5">
+            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body text-center py-6">
+                <div class="fs-7 text-muted mb-1">@Localizer["Cost (budget)"]</div><div class="fs-2 fw-bold text-gray-900">@Model.Cost.ToString("N0")</div></div></div></div>
+            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body text-center py-6">
+                <div class="fs-7 text-muted mb-1">@Localizer["Revenue (won)"]</div><div class="fs-2 fw-bold text-primary">@Model.WonValue.ToString("N0")</div></div></div></div>
+            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body text-center py-6">
+                <div class="fs-7 text-muted mb-1">@Localizer["ROI"]</div>
+                <div class="fs-2 fw-bold @(Model.RoiPct == null ? "text-muted" : (Model.RoiPct >= 0 ? "text-primary" : "text-danger"))">@(Model.RoiPct == null ? "—" : Model.RoiPct + "%")</div></div></div></div>
+            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body text-center py-6">
+                <div class="fs-7 text-muted mb-1">@Localizer["Cost / won"]</div><div class="fs-2 fw-bold text-gray-900">@(Model.CostPerWon == null ? "—" : Model.CostPerWon.Value.ToString("N0"))</div></div></div></div>
+        </div>
+        <!--begin::Funnel-->
+        <div class="card mb-5"><div class="card-body py-5"><div class="d-flex flex-wrap gap-8 align-items-center">
+            <div><div class="fs-8 text-muted">@Localizer["Members"]</div><div class="fw-bold fs-3 text-gray-900">@Model.Members</div></div>
+            @foreach (var s in statuses)
+            {
+                var cnt = Model.ByStatus.TryGetValue(s.Item1, out var n) ? n : 0;
+                <div><div class="fs-8 text-muted">@(isAr ? s.Item2 : s.Item3)</div><span class="badge badge-light-@statColor(s.Item1) fs-6">@cnt</span></div>
+            }
+            <div class="ms-auto"><div class="fs-8 text-muted">@Localizer["Response rate"]</div><div class="fw-bold fs-4 text-primary">@(Model.ResponseRatePct == null ? "—" : Model.ResponseRatePct + "%")</div></div>
+            <div><div class="fs-8 text-muted">@Localizer["Leads / Opps / Won"]</div><div class="fw-bold fs-5 text-gray-800">@Model.Leads / @Model.Opps / @Model.Won</div></div>
+        </div></div></div>
+
+        <!--begin::Add member-->
+        <div class="card mb-5"><div class="card-body py-5">
+            <div class="row g-5">
+                <div class="col-lg-7">
+                    <div class="fw-bold fs-6 mb-3">@Localizer["Add member"]</div>
+                    <form asp-action="AddCampaignMember" method="post" class="row g-3 align-items-end" id="addMemberForm">@Html.AntiForgeryToken()
+                        <input type="hidden" name="campaignId" value="@cid" /><input type="hidden" name="memberName" id="m_name" />
+                        <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Type"]</label>
+                            <select id="m_type" name="entityType" class="form-select form-select-solid form-select-sm">
+                                <option value="Account">@SR["Account"]</option><option value="Lead">@Localizer["Lead"]</option><option value="Contact">@Localizer["Contact"]</option>
+                            </select></div>
+                        <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Member"]</label>
+                            <select id="m_entity" name="entityId" class="form-select form-select-solid" style="width:100%"></select></div>
+                        <div class="col-md-3"><button class="btn btn-primary btn-sm w-100"><i class="ki-outline ki-plus fs-4"></i>@SR["Add"]</button></div>
+                    </form>
+                </div>
+                <div class="col-lg-5 border-start-lg">
+                    <div class="fw-bold fs-6 mb-3">@Localizer["Import from list"]</div>
+                    <form asp-action="AddListToCampaign" method="post" class="row g-3 align-items-end" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Add all list members to the campaign?"]">@Html.AntiForgeryToken()
+                        <input type="hidden" name="campaignId" value="@cid" />
+                        <div class="col-md-8"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["List"]</label>
+                            <select name="listId" class="form-select form-select-solid form-select-sm" required>
+                                <option value="">@Localizer["Choose a list…"]</option>
+                                @foreach (var l in lists) { <option value="@l.id">@l.name</option> }
+                            </select></div>
+                        <div class="col-md-4"><button class="btn btn-light-primary btn-sm w-100"><i class="ki-outline ki-down fs-4"></i>@Localizer["Import"]</button></div>
+                    </form>
+                </div>
+            </div>
+        </div></div>
+
+        <!--begin::Members-->
+        <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Campaign members"] (@members.Count)</div></div>
+            <div class="card-body">
+                <div class="table-responsive"><table class="table table-row-bordered align-middle gy-2">
+                    <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@Localizer["Member"]</th><th>@SR["Type"]</th><th style="width:180px">@SR["Status"]</th><th>@Localizer["RespondedOn"]</th><th class="text-end" style="width:60px"></th></tr></thead>
+                    <tbody>
+                    @foreach (var m in members)
+                    {
+                        <tr>
+                            <td class="fw-bold text-gray-800">@(m.MemberName ?? ("#" + m.EntityId))</td>
+                            <td><span class="badge badge-light-dark">@typeName(m.EntityType)</span></td>
+                            <td>
+                                <form asp-action="UpdateMemberStatus" method="post" class="d-inline">@Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@m.Id" /><input type="hidden" name="campaignId" value="@cid" />
+                                    <select name="status" class="form-select form-select-sm form-select-solid badge-light-@statColor(m.Status)" onchange="this.form.submit()">
+                                        @foreach (var s in statuses) { <option value="@s.Item1" selected="@(m.Status == s.Item1)">@(isAr ? s.Item2 : s.Item3)</option> }
+                                    </select>
+                                </form>
+                            </td>
+                            <td class="text-muted fs-7">@(m.RespondedAt?.ToString("yyyy-MM-dd") ?? "—")</td>
+                            <td class="text-end"><form asp-action="RemoveCampaignMember" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Remove this member?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@m.Id" /><input type="hidden" name="campaignId" value="@cid" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-6"></i></button></form></td>
+                        </tr>
+                    }
+                    @if (members.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-8">@Localizer["No members yet"]</td></tr> }
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var pickUrl='@Url.Action("EntityPickData","Crm")';
+  if(window.jQuery){
+    var $e=jQuery('#m_entity');
+    function bind(){
+      $e.empty().select2({
+        placeholder:'@Localizer["Search…"]', allowClear:true, minimumInputLength:1,
+        ajax:{ url:pickUrl, dataType:'json', delay:250, data:function(p){ return { type: jQuery('#m_type').val(), term:p.term }; }, processResults:function(d){ return { results:d.results }; } }
+      });
+    }
+    bind();
+    jQuery('#m_type').on('change', function(){ bind(); });
+    $e.on('select2:select', function(e){ document.getElementById('m_name').value = e.params.data.text || ''; });
+  }
+})();
+</script>
+}

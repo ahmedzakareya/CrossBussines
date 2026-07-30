@@ -1,0 +1,207 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+	Layout = null;
+}
+<!-- Cashier sign-in — a VERBATIM copy of the accounting sign-in (Views/Account/Login.cshtml): identical head bundle,
+     two-column auth layout, brand button, footer + language menu. Only the form target (/pos/login), the copy, and the
+     aside hero image differ (cashier context). Do NOT hand-author this screen — it mirrors the accounting login. -->
+<html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
+<!--begin::Head-->
+<head>
+	<base href="../../../" />
+	<title>CrossBuy — @Localizer["Point of Sale"]</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
+	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+	<!--begin::Fonts(mandatory for all pages)-->
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+	<!--end::Fonts-->
+	<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
+	@if ((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"))
+	{
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
+		<style>
+			body { font-family: 'Arial', sans-serif; }
+			html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
+		</style>
+	}
+	else
+	{
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+	}
+	<style>
+		/* CrossBuy brand button — overrides Metronic blue primary on the sign-in page (both AR & EN) */
+		.cb-btn-brand { background-color: #13433a; color: #fff; font-weight: 700; border: 0; }
+		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #1f6253; color: #fff; }
+	</style>
+	<!--end::Global Stylesheets Bundle-->
+	<script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
+</head>
+<!--end::Head-->
+<!--begin::Body-->
+<body id="kt_body" class="app-blank">
+	<!--begin::Theme mode setup on page load-->
+	<script>var defaultThemeMode = "light"; var themeMode; if (document.documentElement) { if (document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if (localStorage.getItem("data-bs-theme") !== null) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+	<!--end::Theme mode setup on page load-->
+	<!--begin::Root-->
+	<div class="d-flex flex-column flex-root" id="kt_app_root">
+		<!--begin::Authentication - Sign-in -->
+		<div class="d-flex flex-column flex-lg-row flex-column-fluid">
+			<!--begin::Body-->
+			<div class="d-flex flex-column flex-lg-row-fluid w-lg-50 p-10 order-2 order-lg-1">
+				<!--begin::Form-->
+				<div class="d-flex flex-center flex-column flex-lg-row-fluid">
+					<!--begin::Wrapper-->
+					<div class="w-lg-500px p-10">
+						<!--begin::Form-->
+						<form method="post" action="/pos/login">
+							@Html.AntiForgeryToken()
+							<!--begin::Heading-->
+							<div class="text-center mb-11">
+								<!--begin::Title-->
+								<h1 class="text-gray-900 fw-bolder mb-3">@Localizer["Point of Sale"]</h1>
+								<!--end::Title-->
+								<!--begin::Subtitle-->
+								<div class="text-gray-500 fw-semibold fs-6">@Localizer["Cashier sign-in — standalone"]</div>
+								<!--end::Subtitle=-->
+							</div>
+							<!--begin::Heading-->
+							@if (TempData["PosErr"] != null)
+							{
+								<!--begin::Alert-->
+								<div class="alert alert-danger d-flex align-items-center mb-9">
+									<i class="ki-outline ki-information-5 fs-2 me-3"></i>@TempData["PosErr"]
+								</div>
+								<!--end::Alert-->
+							}
+							<!--begin::Input group=-->
+							<div class="fv-row mb-8">
+								<!--begin::Username-->
+								<input type="text" name="username" placeholder="@Localizer["Username"]" autocomplete="username" autofocus required class="form-control bg-transparent" />
+								<!--end::Username-->
+							</div>
+							<!--end::Input group=-->
+							<div class="fv-row mb-3">
+								<!--begin::Password-->
+								<input type="password" name="password" placeholder="@SR["Password"]" autocomplete="current-password" required class="form-control bg-transparent" />
+								<!--end::Password-->
+							</div>
+							<!--end::Input group=-->
+							<!--begin::Wrapper-->
+							<div class="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-8">
+								<div></div>
+								<!--begin::Notice-->
+								<span class="text-gray-500"><i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["Requires a POS role — separate from the admin panel."]</span>
+								<!--end::Notice-->
+							</div>
+							<!--end::Wrapper-->
+							<!--begin::Submit button-->
+							<div class="d-grid mb-10">
+								<button type="submit" class="btn cb-btn-brand w-100">@Localizer["Sign in"]</button>
+							</div>
+							<!--end::Submit button-->
+						</form>
+						<!--end::Form-->
+					</div>
+					<!--end::Wrapper-->
+				</div>
+				<!--end::Form-->
+				<!--begin::Footer-->
+				<div class="w-lg-500px d-flex flex-stack px-10 mx-auto">
+					<!--begin::Languages-->
+					<div class="me-10">
+						<!--begin::Toggle-->
+						<button class="btn btn-flex btn-link btn-color-gray-700 btn-active-color-primary rotate fs-base" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start" data-kt-menu-offset="0px, 0px">
+							<img data-kt-element="current-lang-flag" class="w-20px h-20px rounded me-3" src="@Url.Content((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "~/Backend-assets/media/flags/saudi-arabia.svg" : (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "~/Backend-assets/media/flags/france.svg" : "~/Backend-assets/media/flags/united-states.svg")" alt="" />
+							<span data-kt-element="current-lang-name" class="me-1">@((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "العربية" : (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "Français" : "English")</span>
+							<span class="d-flex flex-center rotate-180">
+								<i class="ki-outline ki-down fs-5 text-muted m-0"></i>
+							</span>
+						</button>
+						<!--end::Toggle-->
+						<!--begin::Menu-->
+						<div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold w-200px py-4 fs-7" data-kt-menu="true" id="kt_auth_lang_menu">
+							<div class="menu-item px-3">
+								<a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="en" asp-route-returnUrl="@Context.Request.Path" class="menu-link d-flex px-5 @((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar" && System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "fr") ? "active" : "")" data-kt-lang="English">
+									<span class="symbol symbol-20px me-4"><img data-kt-element="lang-flag" class="rounded-1" src="~/Backend-assets/media/flags/united-states.svg" alt="" /></span>
+									<span data-kt-element="lang-name">English</span>
+								</a>
+							</div>
+							<div class="menu-item px-3">
+								<a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="ar" asp-route-returnUrl="@Context.Request.Path" class="menu-link d-flex px-5 @((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "active" : "")" data-kt-lang="العربية">
+									<span class="symbol symbol-20px me-4"><img data-kt-element="lang-flag" class="rounded-1" src="~/Backend-assets/media/flags/saudi-arabia.svg" alt="" /></span>
+									<span data-kt-element="lang-name">العربية</span>
+								</a>
+							</div>
+							<div class="menu-item px-3">
+								<a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="fr" asp-route-returnUrl="@Context.Request.Path" class="menu-link d-flex px-5 @((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "active" : "")" data-kt-lang="Français">
+									<span class="symbol symbol-20px me-4"><img data-kt-element="lang-flag" class="rounded-1" src="~/Backend-assets/media/flags/france.svg" alt="" /></span>
+									<span data-kt-element="lang-name">Français</span>
+								</a>
+							</div>
+						</div>
+						<!--end::Menu-->
+					</div>
+					<!--end::Languages-->
+				</div>
+				<!--end::Footer-->
+			</div>
+			<!--end::Body-->
+			<!--begin::Aside-->
+			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #1f6253 0%, #13433a 45%, #0c2e28 100%);">
+				<!--begin::Content-->
+				<div class="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
+					<!--begin::Logo-->
+					<a href="/pos/login" class="mb-0 mb-lg-12">
+						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" />
+					</a>
+					<!--end::Logo-->
+					<!--begin::Image (cashier / restaurant POS)-->
+					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-cashier.svg" alt="@Localizer["Point of Sale"]" />
+					<!--end::Image-->
+					<!--begin::Title-->
+					<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">@((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "كاشير المطعم" : "Restaurant Cashier")</h1>
+					<!--end::Title-->
+					<!--begin::Text-->
+					<div class="d-none d-lg-block text-white fs-base text-center">
+						@if (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar")
+						{
+							<text>افتح الطلبات، أرسِل للمطبخ، واستلم الدفع —</text>
+							<br /><span class="text-warning fw-bold">فاتورة ومخزون وقيد تلقائيًا</span> <text>عند كل عملية بيع.</text>
+						}
+						else
+						{
+							<text>Open orders, send to the kitchen, and take payment —</text>
+							<br /><span class="text-warning fw-bold">invoice, stock &amp; ledger automatically</span> <text>on every sale.</text>
+						}
+					</div>
+					<!--end::Text-->
+				</div>
+				<!--end::Content-->
+			</div>
+			<!--end::Aside-->
+		</div>
+		<!--end::Authentication - Sign-in-->
+	</div>
+	<!--end::Root-->
+	<!--begin::Javascript-->
+	<script>var hostUrl = "~/Backend-assets/";</script>
+	<script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
+	<script src="~/Backend-assets/js/scripts.bundle.js"></script>
+	<!--end::Javascript-->
+</body>
+<!--end::Body-->
+</html>
+
+<script>
+	document.querySelectorAll('[data-kt-lang]').forEach(link => {
+		link.addEventListener('click', function (e) { e.preventDefault(); window.location.href = this.href; });
+	});
+</script>

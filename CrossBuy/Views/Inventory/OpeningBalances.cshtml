@@ -1,0 +1,173 @@
+@using CrossBuy.Models.Context.Inventory
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var ctl = ViewBag.Control as OpeningBalanceControl;
+    var locked = ctl?.Finalized == true;
+    var checks = ViewBag.Checks as List<OpeningCheck> ?? new();
+    var log = ViewBag.Log as List<OpeningBalance> ?? new();
+    var items = ViewBag.Items as List<Item> ?? new();
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    var custs = ViewBag.Customers as List<Customer> ?? new();
+    var vends = ViewBag.Vendors as List<Vendor> ?? new();
+    var accounts = ViewBag.Accounts as List<AccountNode> ?? new();
+    var cats = ViewBag.AssetCategories as List<AssetCategory> ?? new();
+    var cutoff = (string)ViewBag.Cutoff;
+    string kindName(string k) => k switch { "Stock" => Localizer["Stock"].Value, "AR" => Localizer["AR"].Value, "AP" => Localizer["AP"].Value, "Asset" => Localizer["Assets"].Value, "GL" => Localizer["GL"].Value, _ => k };
+    var allOk = checks.All(c => c.Ok);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Opening balances (Go-Live)"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Opening balances"]</li></ul></div>
+        @if (locked) { <span class="badge badge-light-primary fs-6 py-2 px-3"><i class="ki-outline ki-lock-2 fs-4 me-1"></i>@Localizer["Finalized"]</span> }
+        else {
+            <form asp-action="OpFinalize" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Finalize opening balances and lock further edits? Requires all checks to match."]">@Html.AntiForgeryToken()
+                <button class="btn btn-success @(allOk ? "" : "disabled")" @(allOk ? "" : "disabled")><i class="ki-outline ki-lock fs-2"></i>@Localizer["Finalize load"]</button>
+            </form>
+        }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (locked) { <div class="alert alert-light-success d-flex align-items-center"><i class="ki-outline ki-lock-2 fs-2 me-3"></i><span>@Localizer["Opening balances are finalized — entry is locked. Corrections go through a normal journal entry."]</span></div> }
+
+        <div class="row g-5">
+            <!-- ===== integrity report ===== -->
+            <div class="col-lg-5">
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-6"><div class="card-title"><h2 class="fw-bold">@Localizer["Integrity checks"]</h2></div>
+                        <div class="card-toolbar"><span class="badge badge-light-@(allOk ? "success" : "danger") fs-7 py-2 px-3">@(allOk ? Localizer["All match"] : Localizer["Mismatch"])</span></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @foreach (var c in checks)
+                        {
+                            <div class="d-flex align-items-center justify-content-between py-3 border-bottom">
+                                <span class="fw-semibold text-gray-700"><i class="ki-outline @(c.Ok ? "ki-check-circle text-primary" : "ki-cross-circle text-danger") fs-4 me-2"></i>@(isAr ? c.Name : (string.IsNullOrEmpty(c.NameEn) ? c.Name : c.NameEn))</span>
+                                <span class="fw-bold fs-7 @(c.Ok ? "text-gray-700" : "text-danger")">@c.A.ToString("N2") / @c.B.ToString("N2")</span>
+                            </div>
+                        }
+                        <div class="text-muted fs-7 mt-3">@Localizer["Finalize is enabled only when all checks match."]</div>
+                    </div>
+                </div>
+                <div class="card card-flush">
+                    <div class="card-header pt-6"><div class="card-title"><h2 class="fw-bold">@Localizer["Entry log"]</h2></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive">
+                        <table class="table align-middle table-row-dashed fs-7 gy-2">
+                            <thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@Localizer["Kind"]</th><th>@SR["Description"]</th><th class="text-end">@SR["Amount"]</th></tr></thead>
+                            <tbody class="fw-semibold text-gray-700">
+                            @foreach (var o in log) { <tr><td><span class="badge badge-light-primary">@kindName(o.Kind)</span></td><td class="text-muted">@o.Description</td><td class="text-end fw-bold">@o.Amount.ToString("N2")</td></tr> }
+                            @if (log.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-8">@Localizer["No entries yet"]</td></tr> }
+                            </tbody>
+                        </table>
+                    </div></div>
+                </div>
+            </div>
+
+            <!-- ===== entry forms ===== -->
+            <div class="col-lg-7">
+                <div class="card card-flush">
+                    <div class="card-header pt-6"><div class="card-title"><h2 class="fw-bold">@Localizer["Enter opening balances"]</h2></div>
+                        <div class="card-toolbar"><div class="d-flex align-items-center gap-2"><span class="fs-7 text-muted">@Localizer["Cutoff"]</span><input type="text" id="cutoff" class="form-control form-control-solid form-control-sm w-150px" data-control="flatpickr" value="@cutoff" @(locked ? "disabled" : "") /></div></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <ul class="nav nav-tabs nav-line-tabs fs-6 mb-4">
+                            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#t_stock">@Localizer["Stock"]</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t_ar">@Localizer["AR"]</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t_ap">@Localizer["AP"]</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t_asset">@Localizer["Assets"]</a></li>
+                            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t_gl">@Localizer["GL"]</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <!-- STOCK -->
+                            <div class="tab-pane fade show active" id="t_stock">
+                                <form asp-action="OpAddStock" method="post" class="row g-3 oform">@Html.AntiForgeryToken()<input type="hidden" name="cutoff" class="cuf" />
+                                    <div class="col-md-6"><label class="required fs-7 fw-semibold">@SR["Item"]</label><select name="itemId" class="form-select form-select-solid" data-control="select2" required>@foreach (var i in items) { <option value="@i.ID">@i.ItemCode — @(isAr ? i.Name : (string.IsNullOrEmpty(i.NameEn) ? i.Name : i.NameEn))</option> }</select></div>
+                                    <div class="col-md-6"><label class="required fs-7 fw-semibold">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                                    <div class="col-md-4"><label class="required fs-7 fw-semibold">@Localizer["Qty"]</label><input name="qty" type="number" step="0.0001" min="0" class="form-control form-control-solid" required /></div>
+                                    <div class="col-md-4"><label class="required fs-7 fw-semibold">@Localizer["Unit cost"]</label><input name="unitCost" type="number" step="0.0001" min="0" class="form-control form-control-solid" required /></div>
+                                    <div class="col-md-4"><label class="fs-7 fw-semibold">@Localizer["Batch (opt)"]</label><input name="batchNo" class="form-control form-control-solid" /></div>
+                                    <div class="col-md-6"><label class="fs-7 fw-semibold">@Localizer["Section"]</label><select class="form-select form-select-solid opSec"><option value="">—</option></select></div>
+                                    <div class="col-md-6"><label class="fs-7 fw-semibold">@Localizer["Rack (optional)"]</label><select class="form-select form-select-solid opRack"><option value="">—</option></select></div>
+                                    <input type="hidden" name="binLocationId" class="opBin" />
+                                    <div class="col-12 text-end"><button class="btn btn-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add opening stock"]</button></div>
+                                </form>
+                            </div>
+                            <!-- AR -->
+                            <div class="tab-pane fade" id="t_ar">
+                                <form asp-action="OpAddAr" method="post" class="row g-3 oform">@Html.AntiForgeryToken()<input type="hidden" name="cutoff" class="cuf" />
+                                    <div class="col-md-8"><label class="required fs-7 fw-semibold">@SR["Customer"]</label><select name="customerId" class="form-select form-select-solid" data-control="select2" required>@foreach (var c in custs) { <option value="@c.ID">@(isAr ? c.Name : (c.NameEn ?? c.Name))</option> }</select></div>
+                                    <div class="col-md-4"><label class="required fs-7 fw-semibold">@Localizer["Open debit balance"]</label><input name="amount" type="number" step="0.01" min="0" class="form-control form-control-solid" required /></div>
+                                    <div class="col-12 text-end"><button class="btn btn-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add customer balance"]</button></div>
+                                </form>
+                            </div>
+                            <!-- AP -->
+                            <div class="tab-pane fade" id="t_ap">
+                                <form asp-action="OpAddAp" method="post" class="row g-3 oform">@Html.AntiForgeryToken()<input type="hidden" name="cutoff" class="cuf" />
+                                    <div class="col-md-8"><label class="required fs-7 fw-semibold">@SR["Vendor"]</label><select name="vendorId" class="form-select form-select-solid" data-control="select2" required>@foreach (var v in vends) { <option value="@v.ID">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select></div>
+                                    <div class="col-md-4"><label class="required fs-7 fw-semibold">@Localizer["Open credit balance"]</label><input name="amount" type="number" step="0.01" min="0" class="form-control form-control-solid" required /></div>
+                                    <div class="col-12 text-end"><button class="btn btn-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add vendor balance"]</button></div>
+                                </form>
+                            </div>
+                            <!-- ASSET -->
+                            <div class="tab-pane fade" id="t_asset">
+                                <form asp-action="OpAddAsset" method="post" class="row g-3 oform">@Html.AntiForgeryToken()<input type="hidden" name="cutoff" class="cuf" />
+                                    <div class="col-md-6"><label class="required fs-7 fw-semibold">@Localizer["Asset name"]</label><input name="name" class="form-control form-control-solid" required /></div>
+                                    <div class="col-md-6"><label class="fs-7 fw-semibold">@Localizer["Category"]</label><select name="categoryId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var c in cats) { <option value="@c.ID">@(isAr ? c.Name : (c.NameEn ?? c.Name))</option> }</select></div>
+                                    <div class="col-md-3"><label class="required fs-7 fw-semibold">@Localizer["Cost"]</label><input name="cost" type="number" step="0.01" min="0" class="form-control form-control-solid" required /></div>
+                                    <div class="col-md-3"><label class="fs-7 fw-semibold">@Localizer["Salvage"]</label><input name="salvageValue" type="number" step="0.01" min="0" value="0" class="form-control form-control-solid" /></div>
+                                    <div class="col-md-3"><label class="required fs-7 fw-semibold">@Localizer["Life (mo)"]</label><input name="usefulLifeMonths" type="number" min="1" value="60" class="form-control form-control-solid" required /></div>
+                                    <div class="col-md-3"><label class="required fs-7 fw-semibold">@Localizer["Accum. dep @ cutoff"]</label><input name="openingAccumDep" type="number" step="0.01" min="0" value="0" class="form-control form-control-solid" required /></div>
+                                    <div class="col-md-4"><label class="required fs-7 fw-semibold">@Localizer["Original acquisition"]</label><input name="acquisitionDate" type="text" class="form-control form-control-solid" data-control="flatpickr" required /></div>
+                                    <div class="col-12 text-end"><button class="btn btn-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add opening asset"]</button></div>
+                                    <div class="col-12"><div class="text-muted fs-8">@Localizer["Entry: Dr cost / Cr accumulated depreciation / Cr opening equity (NBV). Future depreciation continues on remaining life."]</div></div>
+                                </form>
+                            </div>
+                            <!-- GL -->
+                            <div class="tab-pane fade" id="t_gl">
+                                <form asp-action="OpAddGl" method="post" id="glForm">@Html.AntiForgeryToken()<input type="hidden" name="cutoff" class="cuf" /><input type="hidden" name="linesJson" id="glLines" />
+                                    <div class="text-muted fs-7 mb-2">@Localizer["Enter the remaining trial-balance accounts (cash/banks/loans/capital…). The system balances via the Opening Balance Equity account."]</div>
+                                    <div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-muted text-uppercase"><th style="min-width:220px">@SR["Account"]</th><th style="width:140px" class="text-end">@SR["Debit"]</th><th style="width:140px" class="text-end">@SR["Credit"]</th><th style="width:40px"></th></tr></thead><tbody id="glRows"></tbody></table></div>
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" id="glAdd" class="btn btn-sm btn-light-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-plus fs-4"></i>@Localizer["Row"]</button>
+                                        <button type="button" id="glSave" class="btn btn-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-check fs-3"></i>@Localizer["Post balances"]</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+var ACC=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a=>new{a.Id,a.Code,name=(isAr?a.Name:(string.IsNullOrEmpty(a.NameEn)?a.Name:a.NameEn))})));
+// ---- opening-stock section/rack (location) ----
+(function(){var form=document.querySelector('#t_stock form');if(!form)return;var wh=form.querySelector('[name="warehouseId"]'),it=form.querySelector('[name="itemId"]'),sec=form.querySelector('.opSec'),rack=form.querySelector('.opRack'),bin=form.querySelector('.opBin');var binsUrl='@Url.Action("WarehouseBinsData","Inventory")';var BINS={sections:[],racks:[],itemDefaults:{}};
+function updBin(){bin.value=rack.value||sec.value||'';}
+function fillSec(){var cur=sec.value;var o='<option value="">—</option>';BINS.sections.forEach(function(s){o+='<option value="'+s.id+'"'+(cur==s.id?' selected':'')+'>'+s.code+(s.name?(' — '+s.name):'')+'</option>';});sec.innerHTML=o;}
+function fillRacks(){var s=sec.value,cur=rack.value,o='<option value="">—</option>';BINS.racks.forEach(function(r){if(String(r.sectionId)===String(s))o+='<option value="'+r.id+'"'+(cur==r.id?' selected':'')+'>'+r.code+(r.name?(' — '+r.name):'')+'</option>';});rack.innerHTML=o;}
+function applyDef(){var id=it.value;var d=id?BINS.itemDefaults[String(id)]:null;if(d&&d.sectionId){sec.value=d.sectionId;fillRacks();if(d.rackId)rack.value=d.rackId;}updBin();}
+function load(){if(!wh.value){BINS={sections:[],racks:[],itemDefaults:{}};fillSec();fillRacks();updBin();return;}fetch(binsUrl+'?warehouseId='+wh.value,{headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){BINS=j;fillSec();fillRacks();applyDef();});}
+if(window.jQuery){jQuery(wh).on('change select2:select',load);jQuery(it).on('change select2:select',applyDef);}else{wh.addEventListener('change',load);it.addEventListener('change',applyDef);}
+sec.addEventListener('change',function(){fillRacks();updBin();});rack.addEventListener('change',updBin);
+if(wh.value)load();})();
+var MSG_ROW=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add a row with an amount"].Value));
+// copy the shared cutoff into every form before submit
+var cutEl=document.getElementById('cutoff');
+[].slice.call(document.querySelectorAll('.cuf')).forEach(function(h){ h.value=cutEl?cutEl.value:''; });
+document.addEventListener('submit',function(){ [].slice.call(document.querySelectorAll('.cuf')).forEach(function(h){ h.value=cutEl?cutEl.value:''; }); });
+// GL line editor
+function aopts(){var o='<option value="">—</option>';ACC.forEach(function(a){o+='<option value="'+a.id+'">'+a.code+' — '+a.name+'</option>';});return o;}
+var glRows=document.getElementById('glRows');
+function glAddRow(){if(!glRows)return;var tr=document.createElement('tr');tr.innerHTML='<td><select class="form-select form-select-solid form-select-sm acc">'+aopts()+'</select></td><td><input type="number" step="0.01" min="0" class="form-control form-control-solid form-control-sm text-end dr" value="0"></td><td><input type="number" step="0.01" min="0" class="form-control form-control-solid form-control-sm text-end cr" value="0"></td><td class="text-center"><button type="button" class="btn btn-icon btn-light-danger btn-sm del"><i class="ki-outline ki-trash fs-5"></i></button></td>';glRows.appendChild(tr);}
+var glAdd=document.getElementById('glAdd'); if(glAdd)glAdd.addEventListener('click',glAddRow);
+if(glRows){glRows.addEventListener('click',function(e){if(e.target.closest('.del'))e.target.closest('tr').remove();});glAddRow();}
+var glSave=document.getElementById('glSave');
+if(glSave)glSave.addEventListener('click',function(){var arr=[];[].slice.call(glRows.querySelectorAll('tr')).forEach(function(tr){var acc=tr.querySelector('.acc').value,dr=parseFloat(tr.querySelector('.dr').value)||0,cr=parseFloat(tr.querySelector('.cr').value)||0;if(acc&&(dr>0||cr>0))arr.push({accountId:parseInt(acc),debit:dr,credit:cr});});if(!arr.length){alert(MSG_ROW);return;}CB.confirm({type:'generic', text:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Post these opening GL balances?"].Value))}).then(function(ok){if(!ok)return;document.getElementById('glLines').value=JSON.stringify(arr);document.getElementById('glForm').submit();});});
+</script>
+}

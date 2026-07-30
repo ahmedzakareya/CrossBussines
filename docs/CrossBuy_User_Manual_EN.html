@@ -1,0 +1,342 @@
+<meta charset="utf-8" />
+<title>CrossBuy User Manual</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#13433a; --mid:#1f6253; --soft:#e9f1ee; --gold:#d4a017; --gold-soft:#fbf3da;
+    --paper:#faf8f3; --card:#ffffff; --line:#e4ded2; --line-strong:#cdb978; --text:#243b35; --muted:#7c8c86;
+  }
+  *{box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  @page{ size:A4; margin:14mm 12mm; }
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--text);font-family:'Inter',system-ui,Arial,sans-serif;direction:ltr;text-align:left;line-height:1.75}
+  a{color:var(--mid);text-decoration:none}
+  .wrap{display:grid;grid-template-columns:280px 1fr;max-width:1280px;margin:0 auto}
+  .cover{grid-column:1/-1;background:radial-gradient(120% 130% at 15% 10%,var(--mid) 0%,var(--ink) 48%,#0c2e28 100%);color:#fff;padding:54px 48px;border-bottom:5px solid var(--gold)}
+  .cover .badge{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 16px;font-weight:700;font-size:14px;margin-bottom:18px}
+  .cover h1{margin:0 0 8px;font-size:44px;font-weight:900;letter-spacing:-.5px}
+  .cover p{margin:0;font-size:18px;opacity:.9;max-width:640px}
+  .cover .meta{margin-top:22px;font-size:13px;opacity:.75}
+  .cover .gold{color:#f0c64b}
+  nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:#fff;border-inline-end:1px solid var(--line);padding:24px 18px}
+  nav.toc .t{font-weight:800;color:var(--ink);font-size:13px;text-transform:uppercase;letter-spacing:.5px;margin:18px 0 6px;opacity:.6}
+  nav.toc a{display:block;padding:7px 12px;border-radius:8px;color:var(--text);font-size:14.5px;font-weight:600}
+  nav.toc a:hover{background:var(--soft);color:var(--ink)}
+  main{padding:40px 48px;min-width:0}
+  section{margin-bottom:40px;scroll-margin-top:20px}
+  h2{font-size:28px;font-weight:900;color:var(--ink);margin:48px 0 8px;padding-bottom:12px;border-bottom:2px solid var(--line-strong);display:flex;align-items:center;gap:12px}
+  h2 .n{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:10px;background:var(--ink);color:#fff;font-size:18px;flex:none}
+  h3{font-size:20px;font-weight:800;color:var(--mid);margin:30px 0 6px;display:flex;align-items:center;gap:8px}
+  h3::before{content:"";width:9px;height:9px;border-radius:2px;background:var(--gold);display:inline-block}
+  p{margin:6px 0 12px}
+  .lead{font-size:17px;color:var(--mid);font-weight:600}
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0}
+  ol.steps li{counter-increment:s;position:relative;padding:10px 14px 10px 52px;margin:8px 0;background:#fff;border:1px solid var(--line);border-radius:10px}
+  ol.steps li::before{content:counter(s);position:absolute;inset-inline-start:12px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:7px;background:var(--soft);color:var(--ink);font-weight:800;display:grid;place-items:center;font-size:14px}
+  ul.plain{list-style:none;padding:0;margin:10px 0}
+  ul.plain li{position:relative;padding:7px 0 7px 22px;margin:3px 0}
+  ul.plain li::before{content:"◆";color:var(--gold);position:absolute;inset-inline-start:0;font-size:11px;top:11px}
+  .path{background:var(--soft);border-inline-start:4px solid var(--mid);border-radius:0 8px 8px 0;padding:8px 14px;font-size:14.5px;margin:10px 0}
+  .path b{color:var(--ink)}
+  .note{background:var(--gold-soft);border:1px solid var(--line-strong);border-radius:10px;padding:12px 16px;margin:14px 0;font-size:14.5px}
+  .note .tag{display:inline-block;background:var(--gold);color:#3a2c05;font-weight:800;font-size:12px;border-radius:6px;padding:2px 9px;margin-inline-end:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .card-x{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card-x h4{margin:0 0 6px;color:var(--ink);font-size:16px;font-weight:800}
+  .card-x p{margin:0;font-size:14px;color:var(--muted)}
+  .map{display:flex;flex-wrap:wrap;align-items:stretch;margin:18px 0;padding:18px;background:#fff;border:1px dashed var(--line-strong);border-radius:14px}
+  .map .node{background:linear-gradient(180deg,#fff,var(--soft));border:1.5px solid var(--mid);border-radius:12px;padding:10px 16px;min-width:130px;text-align:center;font-weight:800;color:var(--ink);display:flex;flex-direction:column;justify-content:center}
+  .map .node small{display:block;font-weight:600;color:var(--muted);font-size:12px;margin-top:3px}
+  .map .node.gold{border-color:var(--gold);background:linear-gradient(180deg,#fff,var(--gold-soft))}
+  .map .node.ink{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .map .node.ink small{color:#cfe0da}
+  .map .sep{display:flex;align-items:center;padding:0 10px;color:var(--gold);font-size:26px;font-weight:900}
+  .ta{display:inline-grid;grid-template-columns:1fr 1fr;border:1.6px solid var(--ink);border-radius:10px;overflow:hidden;min-width:300px;margin:8px 8px 8px 0;vertical-align:top;font-size:14px}
+  .ta .cap{grid-column:1/-1;background:var(--ink);color:#fff;font-weight:800;padding:7px 12px;text-align:center}
+  .ta .hd{background:var(--soft);font-weight:800;color:var(--ink);padding:5px 12px;text-align:center;border-bottom:1px solid var(--line)}
+  .ta .hd.cr{border-inline-start:1px solid var(--line)}
+  .ta .cell{padding:7px 12px;min-height:34px}
+  .ta .cell.cr{border-inline-start:1px solid var(--line);color:#9a3b3b}
+  .ta .cell.dr{color:#1f6253}
+  .tahint{font-size:13px;color:var(--muted);margin:0 0 16px}
+  table.t{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  table.t th{background:var(--ink);color:#fff;padding:9px 12px;text-align:left;font-weight:700}
+  table.t td{padding:8px 12px;border-bottom:1px solid var(--line)}
+  table.t tr:nth-child(even){background:#fff}
+  .pill{display:inline-block;background:var(--soft);color:var(--ink);border-radius:6px;padding:1px 8px;font-size:13px;font-weight:700}
+  @media(max-width:920px){.wrap{grid-template-columns:1fr}nav.toc{display:none}main{padding:24px}.grid2{grid-template-columns:1fr}}
+  @media print{nav.toc{display:none}.wrap{grid-template-columns:1fr}.cover{padding:32px}}
+</style>
+
+<div class="wrap">
+  <header class="cover">
+    <div class="badge">📘 User Manual · CrossBuy ERP</div>
+    <h1>CrossBuy <span class="gold">User Manual</span></h1>
+    <p>One platform to run your business — Accounting, Inventory, HR and Sales — on a single ledger engine that posts every entry balanced automatically, in Arabic and English.</p>
+    <div class="meta">Living document · updated with every feature · Arabic edition: <span class="gold">CrossBuy_User_Manual.html</span></div>
+  </header>
+
+  <nav class="toc">
+    <div class="t">Contents</div>
+    <a href="#over">0 · Overview & system map</a>
+    <a href="#nav">1 · Sign-in & navigation</a>
+    <a href="#hr">2 · Human Resources</a>
+    <a href="#acc">3 · Accounting & finance</a>
+    <a href="#inv">4 · Inventory & supply</a>
+    <a href="#sales">5 · Sales & purchasing</a>
+    <a href="#gov">6 · Governance & invariants</a>
+    <a href="#golive">7 · Opening balances & go-live</a>
+    <a href="#reports">8 · Reports & insights</a>
+    <div class="t">Quick reference</div>
+    <a href="#accounts">Key accounts</a>
+    <a href="#glossary">Glossary</a>
+  </nav>
+
+  <main>
+    <section id="over">
+      <h2><span class="n">0</span>Overview & system map</h2>
+      <p class="lead">Before you start: every module talks to Accounting automatically. You never hand-key entries for daily operations — the system writes them balanced and guards their invariants.</p>
+      <h3>Module map</h3>
+      <div class="map">
+        <div class="node ink">Human Resources<small>employees · payroll · leave</small></div>
+        <div class="sep">→</div>
+        <div class="node">Inventory<small>items · movements · cost</small></div>
+        <div class="sep">→</div>
+        <div class="node">Sales & Purchasing<small>quotes · orders · invoices</small></div>
+        <div class="sep">→</div>
+        <div class="node gold">Accounting<small>journal engine · GL</small></div>
+      </div>
+      <p>Each arrow means “feeds entries into.” Any operation (payroll run, goods receipt, sales invoice) reaches Accounting as a balanced entry.</p>
+      <div class="grid2">
+        <div class="card-x"><h4>Everything is connected</h4><p>Inventory, payroll and sales post their own entries via one engine (JournalEntryService). No manual entries for these.</p></div>
+        <div class="card-x"><h4>Invariants never break</h4><p>Inventory value = the inventory GL account · customer/vendor controls = their subledgers · the trial balance always balances. A daily integrity check guards them.</p></div>
+        <div class="card-x"><h4>Two languages</h4><p>Every screen is Arabic/English with correct alignment (RTL/LTR). Switch language from the menu footer or header.</p></div>
+        <div class="card-x"><h4>Roles & governance</h4><p>Inventory and accounting roles, segregation of duties, and approval thresholds for large amounts. Open until the first role is assigned.</p></div>
+        <div class="card-x"><h4>Confirm, then notify</h4><p>Every edit, save, approve, reject, delete or post first shows a branded <b>confirmation dialog</b> (green for approve/save, red for reject/delete). Nothing runs until you confirm — and after it runs, a <b>toast notification</b> reports success or failure.</p></div>
+      </div>
+    </section>
+
+    <section id="nav">
+      <h2><span class="n">1</span>Sign-in & navigation</h2>
+      <h3>Sign in</h3>
+      <ol class="steps">
+        <li>Open the system, enter your username and password, and click “Sign in.”</li>
+        <li>You land in your portal by role: the back-office (admin staff) or the employee self-service portal.</li>
+      </ol>
+      <h3>Side menu</h3>
+      <p>Each module has its own menu, organized into <b>collapsible categories</b>. Click a category to open it; the active item is highlighted. Use “Search menu” to jump to any screen.</p>
+      <div class="note"><span class="tag">Open any record</span>Every table has a direct <b>“Open” 👁</b> button on its row that opens the record’s card/detail immediately.</div>
+      <div class="note"><span class="tag">Employee portal</span>Shows only the employee’s own links: profile, leaves, payslips and attendance — not the admin menu.</div>
+    </section>
+
+    <section id="hr">
+      <h2><span class="n">2</span>Human Resources</h2>
+      <p class="lead">From the employee file to the monthly payslip and final settlement — with leave, attendance and documents in between.</p>
+      <h3>Employees, structure & documents</h3>
+      <ol class="steps">
+        <li>“Employees”: add the employee and their personal/job data (title, branch, department, joining date) and photo.</li>
+        <li>“Org structure”: build the tree Company ← Branch ← Department ← Employee. It drives the approval manager and the cost center automatically.</li>
+        <li>“Contracts & documents”: record contracts (start/end dates) and classified documents (ID/passport/qualification/insurance) with expiry dates. “Expiry alerts” shows what’s due and can notify owners.</li>
+      </ol>
+      <h3>Leave cycle</h3>
+      <div class="map">
+        <div class="node">Leave request<small>employee</small></div>
+        <div class="sep">→</div>
+        <div class="node">Approval chain<small>climbs the tree</small></div>
+        <div class="sep">→</div>
+        <div class="node">Balance deducted<small>work days only</small></div>
+        <div class="sep">→</div>
+        <div class="node gold">Encashment / provision<small>when needed</small></div>
+      </div>
+      <ul class="plain">
+        <li>Only work days are counted (rest days & official holidays excluded), and the balance is checked.</li>
+        <li><b>Encashment:</b> pay unused days as cash (Dr leave-encashment expense / Cr bank); deducted from the balance.</li>
+        <li><b>Provision:</b> a liability for earned-but-untaken leave; only the difference is posted.</li>
+        <li><b>Annual carry-over:</b> unused balance carried into next year, capped by the policy limit.</li>
+      </ul>
+      <h3>Payroll cycle</h3>
+      <div class="map">
+        <div class="node">Attendance<small>late/overtime/absence</small></div>
+        <div class="sep">→</div>
+        <div class="node">Payroll calc<small>base+allow−deductions</small></div>
+        <div class="sep">→</div>
+        <div class="node ink">Payroll entry<small>auto-balanced</small></div>
+        <div class="sep">→</div>
+        <div class="node">Payslips + payout<small>staff & authorities</small></div>
+      </div>
+      <div class="ta"><div class="cap">Payroll entry</div><div class="hd dr">Debit</div><div class="hd cr">Credit</div>
+        <div class="cell dr">Salaries expense 520101<br>Employer SI 520102</div>
+        <div class="cell cr">Net payable 2103<br>Tax 210205<br>Social insurance 210204</div></div>
+      <p class="tahint">Income tax uses configurable progressive brackets (personal exemption + insurable-wage limits) from “Payroll tax & insurance.”</p>
+      <ul class="plain">
+        <li><b>Payslips:</b> one per employee (earnings/deductions/net); the employee views and prints it from their portal.</li>
+        <li><b>Disbursement & remittance:</b> clears net 2103 via bank, and remits tax 210205 and SI 210204 to the authorities.</li>
+      </ul>
+      <h3>Termination & final settlement</h3>
+      <p>Pick the employee and termination date; the system computes service years, leave value and a suggested end-of-service gratuity. Posting creates a balanced entry (Dr settlement expenses / Cr bank), deactivates the employee and closes the contract automatically.</p>
+      <h3>Employee self-service</h3>
+      <p class="path">Employee portal → <b>My payslips · My attendance · My leaves · My profile</b></p>
+      <p>The employee sees their payslips across months (view/print) and a monthly attendance summary with the daily log — their own data only.</p>
+    </section>
+
+    <section id="acc">
+      <h2><span class="n">3</span>Accounting & finance</h2>
+      <p class="lead">The general ledger, the customer/vendor/bank cycles and the reports — all on one journal engine.</p>
+      <h3>Essentials</h3>
+      <ul class="plain">
+        <li><b>Chart of accounts:</b> create/edit accounts; a collapsible tree with search. Control accounts aren’t posted to manually.</li>
+        <li><b>Journals:</b> a balanced manual entry (for non-automated ops); the system rejects unbalanced or closed-period entries.</li>
+        <li><b>Cost centers & fiscal periods:</b> centers from the org tree, periods opened/closed to block posting by date.</li>
+      </ul>
+      <h3>Order-to-cash (customers)</h3>
+      <div class="map">
+        <div class="node gold">Quotation<small>optional</small></div>
+        <div class="sep">→</div>
+        <div class="node">Sales order</div>
+        <div class="sep">→</div>
+        <div class="node">Delivery<small>stock out + COGS</small></div>
+        <div class="sep">→</div>
+        <div class="node">Sales invoice<small>revenue + VAT</small></div>
+        <div class="sep">→</div>
+        <div class="node ink">Receipt</div>
+      </div>
+      <div class="ta"><div class="cap">Sales invoice</div><div class="hd dr">Debit</div><div class="hd cr">Credit</div>
+        <div class="cell dr">Accounts receivable 1102</div><div class="cell cr">Sales revenue<br>Output VAT 210201</div></div>
+      <div class="ta"><div class="cap">Receipt</div><div class="hd dr">Debit</div><div class="hd cr">Credit</div>
+        <div class="cell dr">Bank / cash</div><div class="cell cr">Accounts receivable 1102</div></div>
+      <p class="tahint">The customer card holds full details (phone/email/contact/segment/credit limit/addresses), editable from the same screen. “AR aging” shows the aging buckets.</p>
+      <h3>Procure-to-pay (vendors)</h3>
+      <div class="map">
+        <div class="node">Purchase order</div>
+        <div class="sep">→</div>
+        <div class="node">Goods receipt<small>stock in + GRNI</small></div>
+        <div class="sep">→</div>
+        <div class="node">Purchase invoice<small>clears GRNI + input VAT</small></div>
+        <div class="sep">→</div>
+        <div class="node ink">Payment<small>with WHT if any</small></div>
+      </div>
+      <div class="ta"><div class="cap">Goods receipt</div><div class="hd dr">Debit</div><div class="hd cr">Credit</div>
+        <div class="cell dr">Inventory 1103</div><div class="cell cr">GRNI 210203</div></div>
+      <div class="ta"><div class="cap">Payment</div><div class="hd dr">Debit</div><div class="hd cr">Credit</div>
+        <div class="cell dr">Accounts payable 2101</div><div class="cell cr">Bank<br>Withholding tax 210202</div></div>
+      <h3>Banks, assets, tax & closing</h3>
+      <ul class="plain">
+        <li><b>Banks & cash:</b> bank accounts and cash boxes, transfers between them, and bank reconciliation against the statement.</li>
+        <li><b>Fixed assets:</b> categories, assets, periodic depreciation and disposal. Buying an “Asset”-type item auto-capitalizes it.</li>
+        <li><b>Tax:</b> tax codes, periodic VAT returns, and e-invoice (ETA) status.</li>
+        <li><b>Statements & closing:</b> trial balance and financial statements, plus a year-end close that moves profit to retained earnings.</li>
+      </ul>
+    </section>
+
+    <section id="inv">
+      <h2><span class="n">4</span>Inventory & supply</h2>
+      <h3>Master data</h3>
+      <ul class="plain">
+        <li>“Categories”: map each category’s accounts (inventory, COGS, adjustment, GRNI) — items inherit them.</li>
+        <li>“Items”: code/barcode/UoM/type, multiple units and conversions, and composite (Kit) items. The item card shows analytics: last operation/purchase, average purchase & cost, last in/out dates, and a balance-over-time chart.</li>
+      </ul>
+      <h3>Inventory & costing cycle</h3>
+      <div class="map">
+        <div class="node">Receipt<small>+ qty & cost</small></div>
+        <div class="sep">→</div>
+        <div class="node ink">Item ledger<small>moving avg / FIFO</small></div>
+        <div class="sep">→</div>
+        <div class="node">Issue<small>− at computed cost</small></div>
+        <div class="sep">→</div>
+        <div class="node gold">Auto entry<small>Dr/Cr 1103</small></div>
+      </div>
+      <ul class="plain">
+        <li>Batch, expiry and serial tracking; issues auto-pick the nearest expiry (FEFO) and block expired stock.</li>
+        <li>Inter-warehouse transfers, stock counts & adjustments, write-offs (Dr write-off expense / Cr inventory), and landed costs that spread freight/duty onto item cost.</li>
+      </ul>
+    </section>
+
+    <section id="sales">
+      <h2><span class="n">5</span>Sales & purchasing</h2>
+      <h3>Quotations</h3>
+      <div class="map">
+        <div class="node">Quotation<small>draft</small></div>
+        <div class="sep">→</div>
+        <div class="node">Sent / Accepted</div>
+        <div class="sep">→</div>
+        <div class="node ink">Convert to order<small>once</small></div>
+      </div>
+      <ol class="steps">
+        <li>Create a quotation for the customer with its lines and validity (“valid until” date).</li>
+        <li>Change its status (sent/accepted/rejected), or click “Convert to order” — a sales order is created with the same lines and linked to the quote.</li>
+        <li>Each quote has an “Open” 👁 button to view its lines and status.</li>
+      </ol>
+      <div class="note"><span class="tag">Reminder</span>Open any document (order/invoice/note) from its list and click “View” 👁 to see its lines, value and the link to its journal entry.</div>
+    </section>
+
+    <section id="gov">
+      <h2><span class="n">6</span>Governance & invariants</h2>
+      <h3>Approvals & segregation of duties</h3>
+      <div class="map">
+        <div class="node">Create document</div>
+        <div class="sep">→</div>
+        <div class="node gold">Above threshold?<small>configurable</small></div>
+        <div class="sep">→</div>
+        <div class="node">Another approver<small>creator ≠ approver</small></div>
+        <div class="sep">→</div>
+        <div class="node ink">Execute</div>
+      </div>
+      <ul class="plain">
+        <li><b>Accounting roles:</b> Chief Accountant / Accountant / Cashier / Auditor — actions gated by role.</li>
+        <li><b>Inventory roles:</b> Warehouse keeper (their branch) / Purchasing / Inventory manager / Auditor.</li>
+        <li><b>Approval threshold:</b> large journals/payments require the Chief Accountant; a creator can’t approve their own entry.</li>
+      </ul>
+      <h3>Period lock & integrity guard</h3>
+      <ul class="plain">
+        <li>Any movement dated in a closed period is rejected with a clear message.</li>
+        <li>An integrity reconciliation (and a daily check) verifies all invariants and alerts the owner before any drift accumulates.</li>
+      </ul>
+    </section>
+
+    <section id="golive">
+      <h2><span class="n">7</span>Opening balances & go-live</h2>
+      <ol class="steps">
+        <li>Set the cut-off date, then enter: stock (item×warehouse×qty×cost), customer & vendor balances, fixed assets (cost and accumulated depreciation), and the remaining trial-balance accounts.</li>
+        <li>All balances offset against an “Opening balance equity” clearing account (3301) that must net to zero.</li>
+        <li>“Verify” checks: stock=1103, customer/vendor controls=subledgers, trial balance balanced, and 3301=0. Then “Finalize” locks entry.</li>
+      </ol>
+      <div class="note"><span class="tag">After finalize</span>The system runs daily operations on top of these balances, with invariants guarded from day one.</div>
+    </section>
+
+    <section id="reports">
+      <h2><span class="n">8</span>Reports & insights</h2>
+      <ul class="plain">
+        <li><b>Financial reports:</b> trial balance, income statement, balance sheet, aging.</li>
+        <li><b>Inventory reports:</b> valuation, slow-moving items, shortages, batches/expiry.</li>
+        <li><b>AI insights:</b> journal anomaly detection, cash-flow forecast, and inventory analysis — surfaced as suggestions to review.</li>
+      </ul>
+    </section>
+
+    <section id="accounts">
+      <h2><span class="n">★</span>Key accounts</h2>
+      <table class="t"><thead><tr><th>Code</th><th>Account</th><th>Use</th></tr></thead><tbody>
+        <tr><td><span class="pill">1102</span></td><td>Accounts receivable (control)</td><td>= sum of customer subledgers</td></tr>
+        <tr><td><span class="pill">1103</span></td><td>Inventory</td><td>= actual inventory value</td></tr>
+        <tr><td><span class="pill">1201/1202</span></td><td>Fixed assets / accum. depreciation</td><td>assets & depreciation</td></tr>
+        <tr><td><span class="pill">2101</span></td><td>Accounts payable (control)</td><td>= sum of vendor subledgers</td></tr>
+        <tr><td><span class="pill">2103</span></td><td>Payroll payable</td><td>net pay before disbursement</td></tr>
+        <tr><td><span class="pill">210203</span></td><td>Goods received not invoiced (GRNI)</td><td>goods received without invoice</td></tr>
+        <tr><td><span class="pill">210204/210205</span></td><td>SI / payroll-tax payable</td><td>deductions remitted to authorities</td></tr>
+        <tr><td><span class="pill">210201/110401</span></td><td>Output / input VAT</td><td>value-added tax</td></tr>
+        <tr><td><span class="pill">3301</span></td><td>Opening balance equity (clearing)</td><td>go-live — nets to zero</td></tr>
+      </tbody></table>
+    </section>
+
+    <section id="glossary">
+      <h2><span class="n">📖</span>Glossary</h2>
+      <ul class="plain">
+        <li><b>GRNI:</b> goods received whose invoice hasn’t arrived yet.</li>
+        <li><b>FEFO:</b> issue the nearest-expiry stock first.</li>
+        <li><b>Moving average / FIFO:</b> the two inventory costing methods.</li>
+        <li><b>Segregation of duties (SoD):</b> the document creator can’t approve it.</li>
+        <li><b>Cost center:</b> an organizational unit expenses are attributed to.</li>
+      </ul>
+    </section>
+  </main>
+</div>

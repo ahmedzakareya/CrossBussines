@@ -1,0 +1,37 @@
+@using CrossBuy.Models.Context.Admin
+@model List<Appraisal>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutPeople.cshtml";
+    var cycleNames = ViewBag.CycleNames as Dictionary<int, string> ?? new();
+    var managers = ViewBag.Managers as Dictionary<int, string> ?? new();
+    // brand-safe status styling (green family + gray; no yellow/mint) — 0 Draft / 1 Awaiting / 2 Acknowledged
+    var statusStyle = new[] { "background:#f2f4f7;color:#98a2b3;", "background:#e9f1ee;color:#1f6253;", "background:#eaf3ef;color:#13433a;" };
+    var statusText = new[] { SR["Draft"].Value, Localizer["Awaiting you"].Value, Localizer["Acknowledged"].Value };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid">
+        <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["My appraisals"]</h1>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["ReqMsg"] != null) { <div class="alert alert-success">@TempData["ReqMsg"]</div> }
+        @if (TempData["ReqErr"] != null) { <div class="alert alert-danger">@TempData["ReqErr"]</div> }
+        <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Cycle"]</th><th>@Localizer["Appraiser"]</th><th class="text-center">@Localizer["Score"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
+            <tbody class="fw-semibold text-gray-700">
+            @if (!Model.Any()) { <tr><td colspan="5" class="text-center text-muted py-8">@Localizer["No appraisals"]</td></tr> }
+            @foreach (var a in Model)
+            {
+                <tr style="border-bottom:1px dashed #eef1f6;">
+                    <td class="ps-4 fw-bold text-gray-900">@(cycleNames.TryGetValue(a.CycleId, out var cn) ? cn : ("#" + a.CycleId))</td>
+                    <td class="text-muted fs-7">@(managers.TryGetValue(a.ManagerEmployeeID, out var mn) ? mn : "—")</td>
+                    <td class="text-center fw-bolder" style="color:#13433a;">@a.TotalScore.ToString("0.#")%</td>
+                    <td class="text-center"><span class="badge fw-bold" style="@statusStyle[a.Status]">@statusText[a.Status]</span></td>
+                    <td class="text-end pe-4"><a href="@Url.Action("MyAppraisal","People", new { id = a.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-eye fs-6"></i>@SR["View"]</a></td>
+                </tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>

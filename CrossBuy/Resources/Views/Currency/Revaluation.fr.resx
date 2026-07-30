@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="FX Revaluation" xml:space="preserve">
+    <value>Réévaluation de change</value>
+  </data>
+  <data name="Unrealized FX" xml:space="preserve">
+    <value>Change latent</value>
+  </data>
+  <data name="Open foreign AR/AP balances are revalued at the closing rate; the unrealized difference (4903 gain / 5903 loss) is posted with an automatic reversal the next day — so the control-account balance is not permanently affected." xml:space="preserve">
+    <value>Les soldes clients/fournisseurs en devise étrangère ouverts sont réévalués au taux de clôture ; la différence latente (gain 4903 / perte 5903) est comptabilisée avec une contre-passation automatique le lendemain — de sorte que le solde du compte de contrôle n'est pas affecté de façon permanente.</value>
+  </data>
+  <data name="As-of (period end)" xml:space="preserve">
+    <value>À la date (fin de période)</value>
+  </data>
+  <data name="Rate type" xml:space="preserve">
+    <value>Type de taux</value>
+  </data>
+  <data name="Central" xml:space="preserve">
+    <value>Central</value>
+  </data>
+  <data name="Buy" xml:space="preserve">
+    <value>Achat</value>
+  </data>
+  <data name="Sell" xml:space="preserve">
+    <value>Vente</value>
+  </data>
+  <data name="Preview" xml:space="preserve">
+    <value>Aperçu</value>
+  </data>
+  <data name="Revaluation preview" xml:space="preserve">
+    <value>Aperçu de la réévaluation</value>
+  </data>
+  <data name="Post revaluation + auto-reversal?" xml:space="preserve">
+    <value>Comptabiliser la réévaluation + contre-passation automatique ?</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>Tiers</value>
+  </data>
+  <data name="Cur" xml:space="preserve">
+    <value>Dev</value>
+  </data>
+  <data name="Foreign bal." xml:space="preserve">
+    <value>Solde dev.</value>
+  </data>
+  <data name="Book base" xml:space="preserve">
+    <value>Base comptable</value>
+  </data>
+  <data name="Closing rate" xml:space="preserve">
+    <value>Taux de clôture</value>
+  </data>
+  <data name="Revalued" xml:space="preserve">
+    <value>Réévalué</value>
+  </data>
+  <data name="Diff" xml:space="preserve">
+    <value>Écart</value>
+  </data>
+  <data name="Receivable" xml:space="preserve">
+    <value>Créance</value>
+  </data>
+  <data name="Payable" xml:space="preserve">
+    <value>Dette</value>
+  </data>
+  <data name="No open foreign balances at this date" xml:space="preserve">
+    <value>Aucun solde en devise étrangère ouvert à cette date</value>
+  </data>
+  <data name="Net AR / AP diff" xml:space="preserve">
+    <value>Écart net clients / fournisseurs</value>
+  </data>
+  <data name="Past runs" xml:space="preserve">
+    <value>Exécutions passées</value>
+  </data>
+  <data name="As-of" xml:space="preserve">
+    <value>À la date</value>
+  </data>
+  <data name="Rate" xml:space="preserve">
+    <value>Taux</value>
+  </data>
+  <data name="AR diff" xml:space="preserve">
+    <value>Écart clients</value>
+  </data>
+  <data name="AP diff" xml:space="preserve">
+    <value>Écart fournisseurs</value>
+  </data>
+  <data name="JE / Reversal" xml:space="preserve">
+    <value>Écriture / Contre-passation</value>
+  </data>
+  <data name="No runs yet" xml:space="preserve">
+    <value>Aucune exécution pour le moment</value>
+  </data>
+</root>

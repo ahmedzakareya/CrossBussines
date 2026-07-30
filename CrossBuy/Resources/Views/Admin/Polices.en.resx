@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Policies" xml:space="preserve">
+    <value>Policies</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Apps" xml:space="preserve">
+    <value>Apps</value>
+  </data>
+  <data name="eCommerce" xml:space="preserve">
+    <value>eCommerce</value>
+  </data>
+  <data name="Catalog" xml:space="preserve">
+    <value>Catalog</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Attachment" xml:space="preserve">
+    <value>Attachment</value>
+  </data>
+  <data name="No items added" xml:space="preserve">
+    <value>No items added</value>
+  </data>
+  <data name="Search..." xml:space="preserve">
+    <value>Search...</value>
+  </data>
+  <data name="Permission details" xml:space="preserve">
+    <value>Permission details</value>
+  </data>
+  <data name="Permission status" xml:space="preserve">
+    <value>Permission status</value>
+  </data>
+  <data name="Requests / day" xml:space="preserve">
+    <value>Requests / day</value>
+  </data>
+  <data name="Minutes / request" xml:space="preserve">
+    <value>Minutes / request</value>
+  </data>
+  <data name="Approval" xml:space="preserve">
+    <value>Approval</value>
+  </data>
+  <data name="Permission types" xml:space="preserve">
+    <value>Permission types</value>
+  </data>
+  <data name="Rest of day" xml:space="preserve">
+    <value>Rest of day</value>
+  </data>
+  <data name="Do you want to edit this policy data?" xml:space="preserve">
+    <value>Do you want to edit this policy data?</value>
+  </data>
+  <data name="No data for this type in the table" xml:space="preserve">
+    <value>No data for this type in the table</value>
+  </data>
+  <data name="Showing" xml:space="preserve">
+    <value>Showing</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>of</value>
+  </data>
+  <data name="leave type" xml:space="preserve">
+    <value>leave type</value>
+  </data>
+  <data name="Do you want to edit this salary policy data?" xml:space="preserve">
+    <value>Do you want to edit this salary policy data?</value>
+  </data>
+  <data name="Loading ..." xml:space="preserve">
+    <value>Loading ...</value>
+  </data>
+  <data name="Failed to load types" xml:space="preserve">
+    <value>Failed to load types</value>
+  </data>
+  <data name="Connection error" xml:space="preserve">
+    <value>Connection error</value>
+  </data>
+  <data name="Do you want to edit this leave policy data?" xml:space="preserve">
+    <value>Do you want to edit this leave policy data?</value>
+  </data>
+  <data name="Blue: actual working hours after deducting the break" xml:space="preserve">
+    <value>Blue: actual working hours after deducting the break</value>
+  </data>
+  <data name="Orange: break duration within the work schedule" xml:space="preserve">
+    <value>Orange: break duration within the work schedule</value>
+  </data>
+  <data name="Light blue: total grace period before and after work" xml:space="preserve">
+    <value>Light blue: total grace period before and after work</value>
+  </data>
+  <data name="Gray: time outside the work range during the day" xml:space="preserve">
+    <value>Gray: time outside the work range during the day</value>
+  </data>
+  <data name="Select time" xml:space="preserve">
+    <value>Select time</value>
+  </data>
+  <data name="24-hour system - no clock dial" xml:space="preserve">
+    <value>24-hour system - no clock dial</value>
+  </data>
+  <data name="Hour" xml:space="preserve">
+    <value>Hour</value>
+  </data>
+  <data name="Minute" xml:space="preserve">
+    <value>Minute</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>Minutes</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="You must enable permission and fill its required data correctly" xml:space="preserve">
+    <value>You must enable permission and fill its required data correctly</value>
+  </data>
+  <data name="Late" xml:space="preserve">
+    <value>Late</value>
+  </data>
+  <data name="Early leave" xml:space="preserve">
+    <value>Early leave</value>
+  </data>
+  <data name="During work" xml:space="preserve">
+    <value>During work</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Permission data complete" xml:space="preserve">
+    <value>Permission data complete</value>
+  </data>
+  <data name="Permission data needs completion" xml:space="preserve">
+    <value>Permission data needs completion</value>
+  </data>
+  <data name="Not required" xml:space="preserve">
+    <value>Not required</value>
+  </data>
+</root>

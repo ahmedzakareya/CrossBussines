@@ -1,0 +1,393 @@
+@using System.Globalization
+@using CrossBuy.ViewModel
+@using System.Text.Json
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var employeeJson = Context.Session.GetString("Employee");
+    var employee = employeeJson != null ? JsonSerializer.Deserialize<EmployeeViewModel>(employeeJson) : null;
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var path = Context.Request.Path.Value ?? "";
+    string active(string action) => path.Equals(Url.Action(action, "People"), StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    var avatar = (employee != null && !string.IsNullOrWhiteSpace(employee.ProfileImage))
+        ? Url.Content("~" + employee.ProfileImage.Replace("\\", "/"))
+        : Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+}
+<!DOCTYPE html>
+<html lang="@Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName" dir="@(Thread.CurrentThread.CurrentCulture.TextInfo.IsRightToLeft ? "rtl" : "ltr")">
+
+<head>
+    <title>@Localizer["People Portal"] - CrossBuy</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+    <link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
+    @if (isAr)
+    {
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <style>
+            html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }
+            html[lang="ar"] .btn, html[lang="ar"] input, html[lang="ar"] select, html[lang="ar"] textarea,
+            html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3, html[lang="ar"] h4, html[lang="ar"] h5, html[lang="ar"] h6 { font-family: 'Cairo', sans-serif; }
+        </style>
+    }
+    else
+    {
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+    }
+</head>
+
+<body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-hoverable="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" class="app-default" data-kt-app-page-loading="on">
+    <script>var defaultThemeMode = "light"; var themeMode; if ( document.documentElement ) { if ( document.documentElement.hasAttribute("data-bs-theme-mode")) { themeMode = document.documentElement.getAttribute("data-bs-theme-mode"); } else { if ( localStorage.getItem("data-bs-theme") !== null ) { themeMode = localStorage.getItem("data-bs-theme"); } else { themeMode = defaultThemeMode; } } if (themeMode === "system") { themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } document.documentElement.setAttribute("data-bs-theme", themeMode); }</script>
+
+    <div class="page-loader flex-column">
+        <span class="spinner-border text-primary" role="status"></span>
+        <span class="text-muted fs-6 fw-semibold mt-5">@Localizer["Loading..."]</span>
+    </div>
+
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <!--begin::Header-->
+            <div id="kt_app_header" class="app-header d-flex flex-column flex-stack">
+                <div class="d-flex flex-stack flex-grow-1">
+                    <div class="app-header-logo d-flex align-items-center ps-lg-12" id="kt_app_header_logo">
+                        <div id="kt_app_sidebar_toggle" class="app-sidebar-toggle btn btn-sm btn-icon bg-body btn-color-gray-500 btn-active-color-primary w-30px h-30px ms-n2 me-4 d-none d-lg-flex" data-kt-toggle="true" data-kt-toggle-state="active" data-kt-toggle-target="body" data-kt-toggle-name="app-sidebar-minimize">
+                            <i class="ki-outline ki-abstract-14 fs-3 mt-1"></i>
+                        </div>
+                        <div class="btn btn-icon btn-active-color-primary w-35px h-35px ms-3 me-2 d-flex d-lg-none" id="kt_app_sidebar_mobile_toggle">
+                            <i class="ki-outline ki-abstract-14 fs-2"></i>
+                        </div>
+                        <a href="@Url.Action("Profile", "People")" class="app-sidebar-logo">
+                            <img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" />
+                        </a>
+                        <span class="badge badge-light-primary fw-bold fs-7 ms-3 d-none d-md-inline-flex align-items-center">
+                            <i class="ki-outline ki-profile-user fs-6 me-1 text-primary"></i>@Localizer["People Portal"]
+                        </span>
+                    </div>
+                    <!--begin::Navbar-->
+                    <div class="app-navbar flex-grow-1 justify-content-end" id="kt_app_header_navbar">
+                        <!--begin::Switch portal-->
+                        <div class="app-navbar-item ms-2 ms-lg-4">
+                            <a href="@Url.Action("Choose", "Portal")" class="btn btn-sm btn-light-primary fw-bold" data-bs-toggle="tooltip" title="@Localizer["Switch portal"]">
+                                <i class="ki-outline ki-arrows-circle fs-4"></i>
+                                <span class="d-none d-lg-inline">@Localizer["Switch"]</span>
+                            </a>
+                        </div>
+                        <!--end::Switch portal-->
+                        <!--begin::Notifications (cloned from the original Metronic navbar item)-->
+                        <div class="app-navbar-item ms-2 ms-lg-4">
+                            <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary position-relative w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
+                                <i class="ki-outline ki-notification-on fs-1"></i>
+                                <span id="ppl_notif_badge" class="badge badge-danger position-absolute fs-9 fw-bold p-0 d-flex align-items-center justify-content-center" style="display:none; top:-2px; inset-inline-end:2px; width:18px; height:18px; min-width:18px; border-radius:50%;">0</span>
+                            </div>
+                            <div class="menu menu-sub menu-sub-dropdown menu-column w-350px" data-kt-menu="true">
+                                <div class="d-flex flex-stack px-7 py-4 border-bottom border-gray-200">
+                                    <span class="fw-bold fs-6 text-gray-900">@SR["Notifications"]</span>
+                                    <a href="#" id="ppl_notif_readall" class="fs-7 text-primary fw-semibold">@Localizer["Mark all read"]</a>
+                                </div>
+                                <div id="ppl_notif_list" class="scroll-y mh-350px">
+                                    <div class="text-center text-muted py-10 fs-7" id="ppl_notif_empty">@Localizer["No notifications"]</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Notifications-->
+                        <!--begin::User menu-->
+                        <div class="app-navbar-item ms-2 ms-lg-6 me-lg-6" id="kt_header_user_menu_toggle">
+                            <div class="cursor-pointer symbol symbol-circle symbol-35px symbol-lg-40px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
+                                <img src="@avatar" alt="user" />
+                            </div>
+                            <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-275px" data-kt-menu="true">
+                                <div class="menu-item px-3">
+                                    <div class="menu-content d-flex align-items-center px-3">
+                                        <div class="symbol symbol-50px me-5">
+                                            <img alt="Logo" src="@avatar" />
+                                        </div>
+                                        <div class="d-flex flex-column">
+                                            <div class="fw-bold d-flex align-items-center fs-5">@(isAr ? employee?.FullName : employee?.FullNameEn)</div>
+                                            <span class="fw-semibold text-muted fs-7">@employee?.Email</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="separator my-2"></div>
+                                <div class="menu-item px-5">
+                                    <a href="@Url.Action("Profile", "People")" class="menu-link px-5">@Localizer["My Profile"]</a>
+                                </div>
+                                <div class="menu-item px-5" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-placement="left-start" data-kt-menu-offset="-15px, 0">
+                                    <a href="#" class="menu-link px-5">
+                                        <span class="menu-title position-relative">@SR["Language"]
+                                            <span class="fs-8 rounded bg-light px-3 py-2 position-absolute translate-middle-y top-50 end-0">@((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "العربية" : (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "Français" : "English")</span>
+                                        </span>
+                                    </a>
+                                    <div class="menu-sub menu-sub-dropdown w-175px py-4">
+                                        <div class="menu-item px-3">
+                                            <a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="en" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="menu-link d-flex px-5 @((!isAr && System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "fr") ? "active" : "")">
+                                                <span class="symbol symbol-20px me-4"><img class="rounded-1" src="~/Backend-assets/media/flags/united-states.svg" alt="" /></span>
+                                                <span>English</span>
+                                            </a>
+                                        </div>
+                                        <div class="menu-item px-3">
+                                            <a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="ar" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="menu-link d-flex px-5 @(isAr ? "active" : "")">
+                                                <span class="symbol symbol-20px me-4"><img class="rounded-1" src="~/Backend-assets/media/flags/saudi-arabia.svg" alt="" /></span>
+                                                <span>العربية</span>
+                                            </a>
+                                        </div>
+                                        <div class="menu-item px-3">
+                                            <a asp-controller="Account" asp-action="SetLanguage" asp-route-culture="fr" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="menu-link d-flex px-5 @((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr") ? "active" : "")">
+                                                <span class="symbol symbol-20px me-4"><img class="rounded-1" src="~/Backend-assets/media/flags/france.svg" alt="" /></span>
+                                                <span>Français</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="separator my-2"></div>
+                                <div class="menu-item px-5">
+                                    <a href="@Url.Action("Logout", "Account")" class="menu-link px-5">@Localizer["Sign Out"]</a>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::User menu-->
+                        <div class="app-navbar-item ms-2 ms-lg-6 ms-n2 me-3 d-flex d-lg-none">
+                            <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary w-35px h-35px" id="kt_app_sidebar_mobile_toggle">
+                                <i class="ki-outline ki-burger-menu-2 fs-2"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Navbar-->
+                </div>
+                <div class="app-header-separator"></div>
+            </div>
+            <!--end::Header-->
+
+            <!--begin::Wrapper-->
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <!--begin::Sidebar-->
+                <div id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="250px" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
+                    <div id="kt_app_sidebar_wrapper" class="app-sidebar-wrapper">
+                        <div class="hover-scroll-y my-5 my-lg-2 mx-4" data-kt-scroll="true" data-kt-scroll-activate="{default: false, lg: true}" data-kt-scroll-height="auto" data-kt-scroll-dependencies="#kt_app_header" data-kt-scroll-wrappers="#kt_app_sidebar_wrapper" data-kt-scroll-offset="5px">
+                            <div id="kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false" class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary px-3 mb-5">
+                                <div class="menu-item pt-5">
+                                    <div class="menu-content">
+                                        <span class="menu-heading fw-bold text-uppercase fs-7">@Localizer["Self Service"]</span>
+                                    </div>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("Dashboard")" href="@Url.Action("Dashboard", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-element-11 fs-2"></i></span>
+                                        <span class="menu-title">@SR["Dashboard"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("Profile")" href="@Url.Action("Profile", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-profile-circle fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["My Profile"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("Structure")" href="@Url.Action("Structure", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-abstract-26 fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["Org Structure"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("Leaves")" href="@Url.Action("Leaves", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-calendar-tick fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["Leaves"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("Payslips")" href="@Url.Action("Payslips", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-dollar fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["My Payslips"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("Attendance")" href="@Url.Action("Attendance", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-time fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["My Attendance"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("Requests")" href="@Url.Action("Requests", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-document fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["My Requests"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("MyAppraisals")" href="@Url.Action("MyAppraisals", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-award fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["My Appraisals"]</span>
+                                    </a>
+                                </div>
+                                <div class="menu-item">
+                                    <a class="menu-link @active("MyTrainings")" href="@Url.Action("MyTrainings", "People")">
+                                        <span class="menu-icon"><i class="ki-outline ki-teacher fs-2"></i></span>
+                                        <span class="menu-title">@Localizer["My Trainings"]</span>
+                                    </a>
+                                </div>
+                            </div></div></div></div>
+                <!--end::Sidebar-->
+
+                <!--begin::Main-->
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    @RenderBody()
+                    <div id="kt_app_footer" class="app-footer">
+                        <div class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
+                            <div class="text-gray-900 order-2 order-md-1">
+                                <span class="text-muted fw-semibold me-1">@DateTime.Now.Year&copy;</span>
+                                <span class="text-gray-800">CrossBuy</span>
+                            </div>
+                            <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
+                                <li class="menu-item"><span class="menu-link px-2">@Localizer["People Portal"]</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Main-->
+            </div>
+            <!--end::Wrapper-->
+        </div>
+    </div>
+
+    <script>var hostUrl = "~/Backend-assets/";</script>
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
+    <script src="~/Backend-assets/js/scripts.bundle.js"></script>
+    <script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js"></script>
+    <script src="~/Backend-assets/js/widgets.bundle.js"></script>
+    <script src="~/assets/js/app.ajax.js"></script>
+    <script src="~/Backend-assets/js/crossbuy-confirm.js" asp-append-version="true"></script>
+    @await Html.PartialAsync("_CbToastr")
+    <!--begin::Notifications (SignalR)-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script>
+        (function () {
+            var isAr = @(isAr ? "true" : "false");
+            var badge = document.getElementById('ppl_notif_badge');
+            var list = document.getElementById('ppl_notif_list');
+            var empty = document.getElementById('ppl_notif_empty');
+            var unread = 0;
+
+            // ---- toast (matches success/info/warning/error style) ----
+            var style = document.createElement('style');
+            style.textContent =
+                '#ppl_toasts{position:fixed;top:80px;inset-inline-end:20px;z-index:3000;display:flex;flex-direction:column;gap:10px;width:340px;max-width:90vw}' +
+                '.ppl-toast{display:flex;align-items:flex-start;gap:12px;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.13);padding:14px 16px;transition:opacity .2s}' +
+                '.ppl-toast .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;font-size:18px;font-weight:700}' +
+                '.ppl-toast.success .ic{background:#2f9e6e}.ppl-toast.info .ic{background:#1f6253}.ppl-toast.warning .ic{background:#d4a017}.ppl-toast.error .ic{background:#D9214E}' +
+                '.ppl-toast .tt{font-weight:700;color:#181C32;font-size:14px}.ppl-toast .ms{color:#5E6278;font-size:12.5px;margin-top:2px}' +
+                '.ppl-toast .cl{cursor:pointer;color:#99A1B7;font-size:20px;line-height:1;background:none;border:0;padding:0}';
+            document.head.appendChild(style);
+            var toastWrap = document.createElement('div');
+            toastWrap.id = 'ppl_toasts';
+            document.body.appendChild(toastWrap);
+
+            function pplToast(level, title, msg) {
+                var icons = { success: '✓', info: 'i', warning: '!', error: '✕' };
+                var el = document.createElement('div');
+                el.className = 'ppl-toast ' + level;
+                el.innerHTML = '<div class="ic"></div><div style="flex:1"><div class="tt"></div><div class="ms"></div></div><button class="cl">&times;</button>';
+                el.querySelector('.ic').textContent = icons[level] || 'i';
+                el.querySelector('.tt').textContent = title || '';
+                el.querySelector('.ms').textContent = msg || '';
+                function close() { el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 220); }
+                el.querySelector('.cl').addEventListener('click', close);
+                toastWrap.appendChild(el);
+                setTimeout(close, 6000);
+            }
+
+            function setBadge(n) {
+                unread = n;
+                if (n > 0) { badge.style.display = ''; badge.textContent = n > 99 ? '99+' : n; }
+                else { badge.style.display = 'none'; }
+            }
+            function timeAgo(iso) {
+                try { var d = new Date(iso); return d.toLocaleString(); } catch (e) { return ''; }
+            }
+            function itemHtml(n) {
+                var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
+                var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+                var icon = n.type === 'leave_approved' ? 'ki-check-circle text-primary'
+                    : n.type === 'leave_rejected' ? 'ki-cross-circle text-danger'
+                    : 'ki-calendar-tick text-primary';
+                var bg = n.isRead ? '' : 'bg-light-primary';
+                return '<div class="d-flex align-items-start px-7 py-4 border-bottom border-gray-100 ' + bg + '">' +
+                    '<span class="symbol symbol-35px me-3"><span class="symbol-label bg-light"><i class="ki-outline ' + icon + ' fs-3"></i></span></span>' +
+                    '<div class="flex-grow-1"><div class="fw-bold fs-7 text-gray-900">' + title + '</div>' +
+                    '<div class="fs-8 text-muted">' + body + '</div>' +
+                    '<div class="fs-9 text-gray-400 mt-1">' + timeAgo(n.createdAt) + '</div></div></div>';
+            }
+            function render(items) {
+                if (!items || !items.length) { return; }
+                if (empty) empty.style.display = 'none';
+                list.innerHTML = items.map(itemHtml).join('');
+            }
+            function prepend(n) {
+                if (empty) empty.style.display = 'none';
+                list.insertAdjacentHTML('afterbegin', itemHtml(n));
+                setBadge(unread + 1);
+            }
+
+            var maxId = 0;
+            function toastFor(n) {
+                var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
+                var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
+                var level = n.type === 'leave_approved' ? 'success'
+                    : n.type === 'leave_rejected' ? 'error'
+                    : 'info';
+                pplToast(level, title, body);
+            }
+            function apply(res, toastNew) {
+                if (toastNew && res.data) {
+                    res.data.filter(function (n) { return n.id > maxId; }).forEach(toastFor);
+                }
+                render(res.data);
+                setBadge(res.unread || 0);
+                if (res.data && res.data.length && res.data[0].id > maxId) maxId = res.data[0].id;
+            }
+            function loadNotifs(toastNew) {
+                fetch('/api/notifications', { credentials: 'same-origin' })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (res) { if (res && res.success) apply(res, toastNew); })
+                    .catch(function () {});
+            }
+            // initial load + polling fallback (works even across server instances)
+            loadNotifs(false);
+            setInterval(function () { loadNotifs(true); }, 15000);
+
+            // mark all read
+            var readAll = document.getElementById('ppl_notif_readall');
+            if (readAll) readAll.addEventListener('click', function (e) {
+                e.preventDefault();
+                fetch('/api/notifications/read-all', { method: 'POST', credentials: 'same-origin' })
+                    .then(function () {
+                        setBadge(0);
+                        list.querySelectorAll('.bg-light-primary').forEach(function (el) { el.classList.remove('bg-light-primary'); });
+                    });
+            });
+
+            // realtime
+            if (window.signalR) {
+                var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notifications').withAutomaticReconnect().build();
+                conn.on('notification', function (n) {
+                    if (n && n.id && n.id <= maxId) return; // already shown by polling
+                    if (n && n.id) maxId = n.id;
+                    prepend(n);
+                    toastFor(n);
+                });
+                conn.start().catch(function (err) { console.warn('notif hub:', err); });
+            }
+        })();
+    </script>
+    <!--end::Notifications-->
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

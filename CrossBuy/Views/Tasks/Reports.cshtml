@@ -1,0 +1,167 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+    var r = (string)(ViewBag.R ?? "summary");
+    var from = ((DateTime)ViewBag.From).ToString("yyyy-MM-dd");
+    var to = ((DateTime)ViewBag.To).ToString("yyyy-MM-dd");
+    ViewData["Title"] = T("تقارير المهام", "Task reports");
+    Func<string,string,string,string> pill = (key,ar,en) => $"<a href=\"{Url.Action("Reports","Tasks",new{r=key})}\" class=\"nav-link {(r==key?"active":"")}\">{(isAr?ar:en)}</a>";
+    Func<string, string> pl = p => p switch { "Low" => T("منخفضة","Low"), "High" => T("عالية","High"), "Urgent" => T("عاجلة","Urgent"), _ => T("عادية","Normal") };
+    Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "primary" };
+}
+<style>
+    /* brand-green visual identity for the Task-reports tabs + money accents */
+    .nav-pill-custom .nav-link { color: #1f6253; font-weight: 600; border: 1px solid transparent; }
+    .nav-pill-custom .nav-link:hover { background: #eaf3ef; color: #13433a; }
+    .nav-pill-custom .nav-link.active { background: #13433a !important; color: #fff !important; }
+    .rep-amount { color: #13433a !important; }
+</style>
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("تقارير المهام","Task reports")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@SR["Tasks"]</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@SR["Reports"]</li>
+        </ul>
+    </div>
+    <button type="button" class="btn btn-sm" style="background:#eaf3ef;color:#13433a;" onclick="window.print()"><i class="ki-outline ki-printer fs-4"></i>@T("طباعة","Print")</button>
+</div></div>
+<!--end::Toolbar-->
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    <!--begin::Report selector-->
+    <div class="card card-flush mb-5"><div class="card-body py-4">
+        <ul class="nav nav-pills nav-pill-custom flex-wrap gap-2">
+            @Html.Raw(pill("summary","ملخّص المهام","Summary"))
+            @Html.Raw(pill("overdue","المتأخرة","Overdue"))
+            @Html.Raw(pill("productivity","إنتاجية الموظفين","Productivity"))
+            @Html.Raw(pill("cost-project","تكلفة المشاريع","Project cost"))
+            @Html.Raw(pill("cost-wo","تكلفة أوامر التشغيل","WO cost"))
+            @Html.Raw(pill("billable","الساعات القابلة للفوترة","Billable per customer"))
+            @Html.Raw(pill("auto","المهام المولّدة تلقائيًّا","Auto-generated"))
+            <a href="@Url.Action("HoursReport","Tasks")" class="nav-link">@T("تقرير الساعات (المرتبات)","Hours (payroll)")</a>
+        </ul>
+    </div></div>
+    <!--end::Report selector-->
+
+    @if (r == "summary")
+    {
+        var mine = ViewBag.Mine as TaskStatusSummary ?? new();
+        var team = ViewBag.Team as TaskStatusSummary ?? new();
+        <div class="row g-5">
+            @foreach (var (title, s) in new[] { (T("مهامي","My tasks"), mine), (T("مهام الفريق","Team tasks"), team) })
+            {
+                <div class="col-md-6"><div class="card h-100"><div class="card-header border-0 pt-6"><div class="card-title fw-bold">@title</div></div>
+                    <div class="card-body pt-2"><div class="row g-3">
+                        @foreach (var (lbl, val, col) in new[] { (T("جديدة","New"), s.New, "primary"), (T("شغّالة","In progress"), s.InProgress, "info"), (T("خلصت","Done"), s.Done, "success"), (T("متأخرة","Overdue"), s.Overdue, "danger") })
+                        {
+                            <div class="col-6"><div class="d-flex flex-stack bg-light-@col rounded p-4">
+                                <span class="fw-semibold text-gray-700">@lbl</span><span class="fs-2 fw-bold text-@col">@val</span>
+                            </div></div>
+                        }
+                        <div class="col-12"><div class="d-flex flex-stack border border-gray-300 rounded p-4">
+                            <span class="fw-bold text-gray-800">@T("الإجمالي","Total")</span><span class="fs-2 fw-bold text-gray-900">@s.Total</span>
+                        </div></div>
+                    </div></div>
+                </div></div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card"><div class="card-body pt-6">
+        @if (r == "overdue")
+        {
+            var rows = ViewBag.Data as List<OverdueTaskRow> ?? new();
+            <table class="table table-row-bordered align-middle gy-3 fs-7">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("المهمة","Task")</th><th class="w-150px">@T("المسؤول","Assignee")</th><th class="w-120px">@T("الأولوية","Priority")</th><th class="w-140px">@T("ميعاد التسليم","Due")</th><th class="w-120px">@T("متأخّرة (أيام)","Late (days)")</th></tr></thead>
+                <tbody>
+                    @if (!rows.Any()) { <tr><td colspan="5" class="text-center text-muted py-10">@T("لا مهام متأخرة 🎉","No overdue tasks 🎉")</td></tr> }
+                    @foreach (var x in rows)
+                    {
+                        <tr><td class="fw-bold text-gray-800">@x.Title</td><td>@x.Assignee</td><td><span class="badge badge-light-@pc(x.Priority)">@pl(x.Priority)</span></td><td class="text-danger fw-bold">@x.Due.ToString("yyyy-MM-dd")</td><td><span class="badge badge-light-danger">@x.DaysLate</span></td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else if (r == "productivity")
+        {
+            var rows = ViewBag.Data as List<ProductivityRow> ?? new();
+            <form method="get" asp-action="Reports" class="d-flex align-items-end gap-3 mb-5"><input type="hidden" name="r" value="productivity" />
+                <div><label class="form-label fs-8 text-muted mb-1">@T("من","From")</label>
+                    <div class="position-relative">
+                        <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3" style="color:#13433a !important;"></i>
+                        <input type="text" name="from" id="rep_from" value="@from" class="form-control form-control-solid ps-10 w-160px" autocomplete="off" />
+                    </div>
+                </div>
+                <div><label class="form-label fs-8 text-muted mb-1">@T("إلى","To")</label>
+                    <div class="position-relative">
+                        <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3" style="color:#13433a !important;"></i>
+                        <input type="text" name="to" id="rep_to" value="@to" class="form-control form-control-solid ps-10 w-160px" autocomplete="off" />
+                    </div>
+                </div>
+                <button type="submit" class="btn" style="background:#13433a;color:#fff;"><i class="ki-outline ki-magnifier fs-5" style="color:#fff !important;"></i>@T("عرض","Show")</button>
+            </form>
+            <table class="table table-row-bordered align-middle gy-3 fs-7">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("الموظف","Employee")</th><th class="w-150px text-end">@T("الساعات","Hours")</th><th class="w-150px text-end">@T("مهام مكتملة","Completed")</th><th class="w-150px text-end">@T("مهام مفتوحة","Open")</th></tr></thead>
+                <tbody>
+                    @if (!rows.Any()) { <tr><td colspan="4" class="text-center text-muted py-10">@T("لا بيانات في الفترة","No data in this period")</td></tr> }
+                    @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.Employee</td><td class="text-end fw-bold">@x.Hours.ToString("0.##")</td><td class="text-end">@x.Completed</td><td class="text-end text-muted">@x.Open</td></tr> }
+                </tbody>
+            </table>
+        }
+        else if (r == "cost-project" || r == "cost-wo")
+        {
+            var rows = ViewBag.Data as List<CostRow> ?? new();
+            var head = r == "cost-project" ? T("المشروع","Project") : T("أمر التشغيل","Work order");
+            <table class="table table-row-bordered align-middle gy-3 fs-7">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@head</th><th class="w-150px text-end">@T("الساعات","Hours")</th><th class="w-175px text-end">@T("التكلفة التقريرية","Est. cost")</th></tr></thead>
+                <tbody>
+                    @if (!rows.Any()) { <tr><td colspan="3" class="text-center text-muted py-10">@T("لا مهام مربوطة","No linked tasks")</td></tr> }
+                    @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.RefLabel</td><td class="text-end">@x.Hours.ToString("0.##")</td><td class="text-end fw-bold">@x.Cost.ToString("0.##")</td></tr> }
+                    @if (rows.Any()) { <tr class="fw-bold"><td class="text-gray-900">@T("الإجمالي","Total")</td><td class="text-end">@rows.Sum(z=>z.Hours).ToString("0.##")</td><td class="text-end">@rows.Sum(z=>z.Cost).ToString("0.##")</td></tr> }
+                </tbody>
+            </table>
+            <div class="text-muted fs-8 mt-2">@T("تكلفة تقريرية (ساعات × تكلفة الساعة) — عرض فقط.","Estimated cost (hours × hourly cost) — display only.")</div>
+        }
+        else if (r == "billable")
+        {
+            var rows = ViewBag.Data as List<BillableCustomerRow> ?? new();
+            <table class="table table-row-bordered align-middle gy-3 fs-7">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("العميل","Customer")</th><th class="w-175px text-end">@T("ساعات غير مفوترة","Uninvoiced hours")</th><th class="w-175px text-end">@T("المبلغ","Amount")</th></tr></thead>
+                <tbody>
+                    @if (!rows.Any()) { <tr><td colspan="3" class="text-center text-muted py-10">@T("لا ساعات قابلة للفوترة","No billable hours")</td></tr> }
+                    @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.Customer</td><td class="text-end">@x.Hours.ToString("0.##")</td><td class="text-end fw-bold rep-amount">@x.Amount.ToString("0.##")</td></tr> }
+                    @if (rows.Any()) { <tr class="fw-bold"><td class="text-gray-900">@T("الإجمالي","Total")</td><td class="text-end">@rows.Sum(z=>z.Hours).ToString("0.##")</td><td class="text-end rep-amount">@rows.Sum(z=>z.Amount).ToString("0.##")</td></tr> }
+                </tbody>
+            </table>
+        }
+        else if (r == "auto")
+        {
+            var rows = ViewBag.Data as List<AutoTaskRow> ?? new();
+            <table class="table table-row-bordered align-middle gy-3 fs-7">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("المهمة","Task")</th><th class="w-150px">@T("الحالة","Status")</th><th class="w-225px">@T("مفتاح القاعدة","Rule key")</th><th class="w-160px">@T("التاريخ","Created")</th></tr></thead>
+                <tbody>
+                    @if (!rows.Any()) { <tr><td colspan="4" class="text-center text-muted py-10">@T("لا مهام مولّدة تلقائيًّا","No auto-generated tasks")</td></tr> }
+                    @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.Title</td><td><span class="badge badge-light">@x.Status</span></td><td class="text-muted"><code>@x.RuleKey</code></td><td class="text-muted">@x.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td></tr> }
+                </tbody>
+            </table>
+        }
+        </div></div>
+    }
+</div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!window.flatpickr) return;
+            var o = { dateFormat: "Y-m-d", allowInput: true, disableMobile: true };
+            flatpickr("#rep_from", o); flatpickr("#rep_to", o);
+        })();
+    </script>
+}
+

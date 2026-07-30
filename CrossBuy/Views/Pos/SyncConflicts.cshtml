@@ -1,0 +1,75 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+    var rows = ViewBag.Conflicts as List<CrossBuy.BL.SyncConflictDto> ?? new();
+    bool includeAck = ViewBag.IncludeAck == true;
+    Func<string, string> tl = t => t switch
+    {
+        "NegativeStock" => T("مخزون سالب", "Negative stock"),
+        "InactiveItem" => T("صنف غير نشط", "Inactive item"),
+        "PriceDiff" => T("فرق سعر", "Price difference"),
+        _ => t
+    };
+    Func<string, string> tc = t => t switch { "NegativeStock" => "danger", "InactiveItem" => "warning", "PriceDiff" => "info", _ => "secondary" };
+    var openCount = rows.Count(r => r.Status == "Open");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@T("مراجعة تعارضات المزامنة", "Sync conflict review")</h1>
+            <span class="text-muted fs-7">@T("ملاحظات ظهرت أثناء ترحيل طلبات أوفلاين. لا تمنع البيع — للمراجعة والإقرار فقط.", "Anomalies noticed while replaying offline orders. Non-blocking — for review and acknowledgement only.")</span></div>
+        <a asp-action="SyncConflicts" asp-route-includeAcknowledged="@(!includeAck)" class="btn btn-sm btn-light-primary">
+            <i class="ki-outline ki-@(includeAck ? "eye-slash" : "eye") fs-4"></i>@(includeAck ? T("إخفاء المُقَرَّة", "Hide acknowledged") : T("عرض المُقَرَّة أيضًا", "Show acknowledged too"))
+        </a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (!rows.Any())
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-shield-tick fs-3x mb-3 d-block text-primary"></i>@T("لا توجد تعارضات. كل الطلبات المُرحَّلة سليمة.", "No conflicts. All replayed orders are clean.")</div></div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-header"><div class="card-title"><h3>@T("التعارضات", "Conflicts")</h3>
+                    @if (openCount > 0) { <span class="badge badge-light-danger ms-3">@openCount @T("مفتوح", "open")</span> }</div></div>
+                <div class="card-body py-4">
+                    <table class="table table-row-dashed align-middle fs-7">
+                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8">
+                            <th>@T("النوع", "Type")</th><th>@T("الإيصال / الطلب", "Receipt / order")</th><th>@T("الصنف", "Item")</th>
+                            <th>@T("التفصيل", "Detail")</th><th class="text-end">@T("أوفلاين", "Offline")</th><th class="text-end">@T("السيرفر", "Server")</th>
+                            <th>@T("الحالة", "Status")</th><th class="text-muted">@T("التاريخ", "Date")</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var r in rows)
+                        {
+                            <tr class="@(r.Status == "Open" ? "" : "opacity-50")">
+                                <td><span class="badge badge-light-@tc(r.ConflictType)">@tl(r.ConflictType)</span></td>
+                                <td>@(!string.IsNullOrWhiteSpace(r.ReceiptNo) ? r.ReceiptNo : (r.OrderId?.ToString() ?? "—"))</td>
+                                <td class="fw-bold text-gray-800">@(r.ItemName ?? "—")</td>
+                                <td class="text-gray-700">@r.Detail</td>
+                                <td class="text-end">@(r.OfflineValue?.ToString("0.##") ?? "—")</td>
+                                <td class="text-end">@(r.ServerValue?.ToString("0.##") ?? "—")</td>
+                                <td>@if (r.Status == "Open") { <span class="badge badge-light-danger">@T("مفتوح", "Open")</span> } else { <span class="badge badge-light-primary">@T("مُقَرّ", "Acknowledged")</span> }</td>
+                                <td class="text-muted fs-8">@r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="text-end">
+                                    @if (r.Status == "Open")
+                                    {
+                                        <form asp-action="AckSyncConflict" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@r.Id" />
+                                            <input type="hidden" name="includeAcknowledged" value="@includeAck.ToString().ToLower()" />
+                                            <button type="submit" class="btn btn-sm btn-light-primary py-1"><i class="ki-outline ki-check fs-5"></i>@T("إقرار", "Acknowledge")</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>

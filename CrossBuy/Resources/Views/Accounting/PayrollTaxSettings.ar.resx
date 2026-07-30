@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Payroll tax &amp; insurance" xml:space="preserve">
+    <value>ضريبة الرواتب والتأمينات</value>
+  </data>
+  <data name="Payroll tax" xml:space="preserve">
+    <value>ضريبة الرواتب</value>
+  </data>
+  <data name="Calculation settings" xml:space="preserve">
+    <value>إعدادات الحساب</value>
+  </data>
+  <data name="Annual personal exemption" xml:space="preserve">
+    <value>الإعفاء الشخصي السنوي</value>
+  </data>
+  <data name="Min insurable wage (monthly)" xml:space="preserve">
+    <value>الحد الأدنى للأجر التأميني (شهري)</value>
+  </data>
+  <data name="Max insurable wage (monthly)" xml:space="preserve">
+    <value>الحد الأقصى للأجر التأميني (شهري)</value>
+  </data>
+  <data name="0 = no limit." xml:space="preserve">
+    <value>صفر = بلا حد.</value>
+  </data>
+  <data name="Deduct employee SI before tax" xml:space="preserve">
+    <value>خصم حصة الموظف من التأمين قبل حساب الضريبة</value>
+  </data>
+  <data name="Standard monthly hours (manufacturing)" xml:space="preserve">
+    <value>الساعات المعيارية الشهرية (للتصنيع)</value>
+  </data>
+  <data name="Used to derive an employee's manufacturing hour-rate = base salary ÷ these hours (when no explicit rate is set)." xml:space="preserve">
+    <value>تُستخدم لاشتقاق سعر ساعة عمالة التصنيع للموظف = الراتب الأساسي ÷ هذه الساعات (عند عدم تحديد سعر صريح).</value>
+  </data>
+  <data name="Save settings" xml:space="preserve">
+    <value>حفظ الإعدادات</value>
+  </data>
+  <data name="Add bracket" xml:space="preserve">
+    <value>إضافة شريحة</value>
+  </data>
+  <data name="Order" xml:space="preserve">
+    <value>الترتيب</value>
+  </data>
+  <data name="Rate %" xml:space="preserve">
+    <value>النسبة %</value>
+  </data>
+  <data name="From (annual)" xml:space="preserve">
+    <value>من (سنوي)</value>
+  </data>
+  <data name="To (annual)" xml:space="preserve">
+    <value>إلى (سنوي)</value>
+  </data>
+  <data name="blank = open" xml:space="preserve">
+    <value>اتركه فارغًا = مفتوح</value>
+  </data>
+  <data name="Income-tax brackets (progressive, annual)" xml:space="preserve">
+    <value>شرائح ضريبة كسب العمل (تصاعدية، سنوية)</value>
+  </data>
+  <data name="Rate" xml:space="preserve">
+    <value>النسبة</value>
+  </data>
+  <data name="open" xml:space="preserve">
+    <value>مفتوح</value>
+  </data>
+  <data name="Delete bracket?" xml:space="preserve">
+    <value>حذف الشريحة؟</value>
+  </data>
+  <data name="No brackets — the flat policy rate is used until brackets are added." xml:space="preserve">
+    <value>لا توجد شرائح — تُستخدم النسبة المسطّحة في لائحة الراتب حتى تُضاف شرائح.</value>
+  </data>
+  <data name="Taxable base = (monthly gross × 12) − employee SI (if enabled) − personal exemption. Tax computed annually then ÷ 12." xml:space="preserve">
+    <value>الوعاء الضريبي = (الإجمالي الشهري × 12) − حصة الموظف من التأمين (إن فُعّلت) − الإعفاء الشخصي. تُحسب الضريبة سنويًا ثم ÷ 12.</value>
+  </data>
+</root>

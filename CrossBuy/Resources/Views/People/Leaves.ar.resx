@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Leaves" xml:space="preserve">
+    <value>الإجازات</value>
+  </data>
+  <data name="People" xml:space="preserve">
+    <value>بوابة الموظفين</value>
+  </data>
+  <data name="New Request" xml:space="preserve">
+    <value>طلب جديد</value>
+  </data>
+  <data name="My Requests" xml:space="preserve">
+    <value>طلباتي</value>
+  </data>
+  <data name="For Approval" xml:space="preserve">
+    <value>للاعتماد</value>
+  </data>
+  <data name="No leave requests yet" xml:space="preserve">
+    <value>لا توجد طلبات إجازة بعد</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>أيام</value>
+  </data>
+  <data name="No requests awaiting your approval" xml:space="preserve">
+    <value>لا توجد طلبات بانتظار اعتمادك</value>
+  </data>
+  <data name="Requested by" xml:space="preserve">
+    <value>مقدّم الطلب</value>
+  </data>
+  <data name="Note (optional)" xml:space="preserve">
+    <value>ملاحظة (اختياري)</value>
+  </data>
+  <data name="Reject this leave request?" xml:space="preserve">
+    <value>رفض طلب الإجازة؟</value>
+  </data>
+  <data name="Approve this leave request?" xml:space="preserve">
+    <value>اعتماد طلب الإجازة؟</value>
+  </data>
+  <data name="New Leave Request" xml:space="preserve">
+    <value>طلب إجازة جديد</value>
+  </data>
+  <data name="Select leave type" xml:space="preserve">
+    <value>اختر نوع الإجازة</value>
+  </data>
+  <data name="Select date" xml:space="preserve">
+    <value>اختر التاريخ</value>
+  </data>
+  <data name="Reason (optional)" xml:space="preserve">
+    <value>السبب (اختياري)</value>
+  </data>
+  <data name="Approval chain:" xml:space="preserve">
+    <value>سلسلة الاعتماد:</value>
+  </data>
+  <data name="L" xml:space="preserve">
+    <value>م</value>
+  </data>
+  <data name="Rest days are not counted — working days selected: " xml:space="preserve">
+    <value>أيام الراحة لا تُحتسب — أيام العمل المختارة: </value>
+  </data>
+  <data name="day(s)" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>معلّق</value>
+  </data>
+  <data name="Approved" xml:space="preserve">
+    <value>موافَق عليه</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+</root>

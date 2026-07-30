@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Dining areas &amp; kitchen stations" xml:space="preserve">
+    <value>Salles &amp; postes de cuisine</value>
+  </data>
+  <data name="Branch dining areas and prep stations (prepares for kitchen routing later)." xml:space="preserve">
+    <value>Salles de la succursale et postes de préparation (prépare le routage vers la cuisine ultérieurement).</value>
+  </data>
+  <data name="Floor plan" xml:space="preserve">
+    <value>Plan de salle</value>
+  </data>
+  <data name="This company has no branches — add one first from the Branches screen." xml:space="preserve">
+    <value>Cette société n'a aucune succursale — ajoutez-en une d'abord depuis l'écran Succursales.</value>
+  </data>
+  <data name="Manage branches" xml:space="preserve">
+    <value>Gérer les succursales</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Sélectionner une société</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Sélectionner une succursale</value>
+  </data>
+  <data name="Select a branch." xml:space="preserve">
+    <value>Sélectionnez une succursale.</value>
+  </data>
+  <data name="Dining areas" xml:space="preserve">
+    <value>Salles</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>Nom (AR)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>Nom (EN)</value>
+  </data>
+  <data name="Sort" xml:space="preserve">
+    <value>Ordre</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Inactif</value>
+  </data>
+  <data name="Delete area?" xml:space="preserve">
+    <value>Supprimer la salle ?</value>
+  </data>
+  <data name="No areas yet." xml:space="preserve">
+    <value>Aucune salle pour le moment.</value>
+  </data>
+  <data name="Prep stations" xml:space="preserve">
+    <value>Postes de préparation</value>
+  </data>
+  <data name="Delete station?" xml:space="preserve">
+    <value>Supprimer le poste ?</value>
+  </data>
+  <data name="No stations yet." xml:space="preserve">
+    <value>Aucun poste pour le moment.</value>
+  </data>
+  <data name="Item→station routing comes with the KDS screen later." xml:space="preserve">
+    <value>Le routage article→poste sera disponible avec l'écran KDS ultérieurement.</value>
+  </data>
+  <data name="Kitchen" xml:space="preserve">
+    <value>Cuisine</value>
+  </data>
+  <data name="Bar" xml:space="preserve">
+    <value>Bar</value>
+  </data>
+  <data name="Grill" xml:space="preserve">
+    <value>Gril</value>
+  </data>
+  <data name="Prep" xml:space="preserve">
+    <value>Préparation</value>
+  </data>
+</root>

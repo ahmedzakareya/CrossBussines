@@ -1,0 +1,235 @@
+@using CrossBuy.Models.Context.Admin
+@model JobApplication
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var jobTitles = ViewBag.JobTitles as List<JobTitle> ?? new();
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    var countries = ViewBag.Countries as List<CountriesLookup> ?? new();
+    var departments = ViewBag.Departments as List<Hierarchical> ?? new();
+    bool isEdit = Model.ID > 0;
+    string dob = Model.DateOfBirth?.ToString("yyyy-MM-dd") ?? "";
+    string sel(string a, string? b) => a == b ? "selected" : "";
+}
+<style>
+    .image-input-placeholder { background-image: url('/Backend-assets/media/svg/files/blank-image.svg'); }
+    [data-bs-theme="dark"] .image-input-placeholder { background-image: url('/Backend-assets/media/svg/files/blank-image-dark.svg'); }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading fw-bold fs-3 m-0">@(isEdit ? Localizer["Edit application"] : Localizer["New application"])</h1>
+            <span class="text-muted fs-7">@Localizer["Applicant details"]</span>
+        </div>
+        <a href="@Url.Action("Applications","Admin")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Job applications"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card">
+            <div class="card-body py-8">
+                <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="appStepper" data-kt-stepper="true">
+                    <!--begin::Nav-->
+                    <div class="d-flex flex-row-auto w-100 w-xl-300px">
+                        <div class="stepper-nav flex-cente">
+                            <div class="stepper-item current" data-kt-stepper-element="nav">
+                                <div class="stepper-wrapper d-flex align-items-center mb-8">
+                                    <div class="stepper-icon w-40px h-40px"><i class="ki-outline ki-user stepper-check fs-2"></i><span class="stepper-number">1</span></div>
+                                    <div class="stepper-label"><h3 class="stepper-title">@Localizer["Personal info"]</h3><div class="stepper-desc fw-semibold">@Localizer["Name, contact, identity"]</div></div>
+                                </div>
+                            </div>
+                            <div class="stepper-item" data-kt-stepper-element="nav">
+                                <div class="stepper-wrapper d-flex align-items-center mb-8">
+                                    <div class="stepper-icon w-40px h-40px"><i class="ki-outline ki-briefcase stepper-check fs-2"></i><span class="stepper-number">2</span></div>
+                                    <div class="stepper-label"><h3 class="stepper-title">@Localizer["Position applied for"]</h3><div class="stepper-desc fw-semibold">@Localizer["Role, branch, department"]</div></div>
+                                </div>
+                            </div>
+                            <div class="stepper-item" data-kt-stepper-element="nav">
+                                <div class="stepper-wrapper d-flex align-items-center">
+                                    <div class="stepper-icon w-40px h-40px"><i class="ki-outline ki-check stepper-check fs-2"></i><span class="stepper-number">3</span></div>
+                                    <div class="stepper-label"><h3 class="stepper-title">@Localizer["Review & notes"]</h3><div class="stepper-desc fw-semibold">@Localizer["Confirm & save"]</div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Nav-->
+
+                    <!--begin::Form-->
+                    <form asp-action="SaveApplication" method="post" enctype="multipart/form-data" class="d-flex flex-column flex-row-fluid" id="appForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ID" value="@Model.ID" />
+
+                        <!--begin::Step 1-->
+                        <div class="current" data-kt-stepper-element="content">
+                            <div class="w-100">
+                                <!--begin::Avatar (Metronic image-input — mirrors the employee wizard)-->
+                                <div class="mb-8">
+                                    <label class="fs-6 fw-semibold mb-3 d-block">@Localizer["Photo (optional)"]</label>
+                                    <div class="image-input image-input-outline @(string.IsNullOrWhiteSpace(Model.PhotoPath) ? "image-input-placeholder" : "")" data-kt-image-input="true">
+                                        <div class="image-input-wrapper w-125px h-125px" style="background-image: url('@(!string.IsNullOrWhiteSpace(Model.PhotoPath) ? Url.Content("~" + Model.PhotoPath.Replace("\\", "/")) : Url.Content("~/Backend-assets/media/svg/files/blank-image.svg"))')"></div>
+                                        <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="change" data-bs-toggle="tooltip" title="@Localizer["Change photo"]">
+                                            <i class="ki-outline ki-pencil fs-7"></i>
+                                            <input type="file" name="photo" accept=".png, .jpg, .jpeg" />
+                                        </label>
+                                        <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="@SR["Cancel"]"><i class="ki-outline ki-cross fs-2"></i></span>
+                                        <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="@Localizer["Remove photo"]"><i class="ki-outline ki-cross fs-2"></i></span>
+                                    </div>
+                                </div>
+                                <!--end::Avatar-->
+                                <div class="row g-6">
+                                    <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@Localizer["First name"]</label><input name="FirstName" class="form-control form-control-solid" value="@Model.FirstName" /></div>
+                                    <div class="col-md-6"><label class="required fs-6 fw-semibold mb-2">@Localizer["Last name"]</label><input name="LastName" class="form-control form-control-solid" value="@Model.LastName" /></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Full name (English)"]</label><input name="FullNameEn" class="form-control form-control-solid" value="@Model.FullNameEn" /></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Email"]</label><input name="Email" type="email" class="form-control form-control-solid" value="@Model.Email" /></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Phone"]</label><input name="PhoneNumber" class="form-control form-control-solid" value="@Model.PhoneNumber" /></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Date of birth"]</label><input name="DateOfBirth" id="dob" class="form-control form-control-solid" autocomplete="off" value="@dob" /></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Gender"]</label>
+                                        <select name="Gender" class="form-select form-select-solid" data-control="select2" data-placeholder="—"><option value=""></option>
+                                            <option value="Male" selected="@(Model.Gender == "Male")">@Localizer["Male"]</option>
+                                            <option value="Female" selected="@(Model.Gender == "Female")">@Localizer["Female"]</option></select></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Marital status"]</label>
+                                        <select name="MaritalStatus" class="form-select form-select-solid" data-control="select2" data-placeholder="—"><option value=""></option>
+                                            <option value="Single" selected="@(Model.MaritalStatus == "Single")">@Localizer["Single"]</option>
+                                            <option value="Married" selected="@(Model.MaritalStatus == "Married")">@Localizer["Married"]</option></select></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Country"]</label>
+                                        <select name="CountryID" class="form-select form-select-solid" data-control="select2" data-placeholder="—"><option value=""></option>
+                                            @foreach (var c in countries) { <option value="@c.ID" selected="@(Model.CountryID == c.ID)">@(isAr ? c.CountryNameAr : c.CountryName)</option> }</select></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Address"]</label><input name="Address" class="form-control form-control-solid" value="@Model.Address" /></div>
+                                </div>
+                                <div class="d-flex flex-stack pt-10">
+                                    <div></div>
+                                    <button type="button" class="btn btn-primary" data-kt-stepper-action="next">@Localizer["Continue"] <i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-3 ms-1"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Step 1-->
+
+                        <!--begin::Step 2-->
+                        <div data-kt-stepper-element="content">
+                            <div class="w-100">
+                                <div class="row g-6">
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Job title"]</label>
+                                        <select name="JobTitleID" class="form-select form-select-solid" data-control="select2" data-placeholder="—"><option value=""></option>
+                                            @foreach (var t in jobTitles) { <option value="@t.ID" selected="@(Model.JobTitleID == t.ID)">@(isAr ? t.TitleAr : (string.IsNullOrEmpty(t.Title) ? t.TitleAr : t.Title))</option> }</select></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Company"]</label>
+                                        <select name="EmpCompanyID" id="companySel" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["Select company first"]"><option value=""></option>
+                                            @foreach (var c in companies) { <option value="@c.CompanyID" selected="@(Model.EmpCompanyID == c.CompanyID)">@(isAr ? c.ComoanyNameAr : c.CompanyName)</option> }</select></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Branch"]</label>
+                                        <select name="BranchID" id="branchSel" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["Select the company to load its branches"]"><option value=""></option></select>
+                                        <div class="form-text text-warning d-none" id="noBranchHint"><i class="ki-outline ki-information-5 fs-7 me-1"></i>@Localizer["No branches for this company — pick from the org structure below."]</div></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Department"]</label>
+                                        <select name="DepartmentID" id="departSel" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["Select the company to load its structure"]"><option value=""></option></select></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Employment type"]</label>
+                                        <select name="EmploymentType" class="form-select form-select-solid" data-control="select2" data-placeholder="—"><option value=""></option>
+                                            <option value="FullTime" selected="@(Model.EmploymentType == "FullTime")">@Localizer["Full-time"]</option>
+                                            <option value="PartTime" selected="@(Model.EmploymentType == "PartTime")">@Localizer["Part-time"]</option>
+                                            <option value="Contract" selected="@(Model.EmploymentType == "Contract")">@Localizer["Contract"]</option></select></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Expected salary"]</label><input name="ExpectedSalary" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@(Model.ExpectedSalary?.ToString(System.Globalization.CultureInfo.InvariantCulture))" /></div>
+                                    <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Source"]</label><input name="Source" class="form-control form-control-solid" value="@Model.Source" /></div>
+                                </div>
+                                <div class="d-flex flex-stack pt-10">
+                                    <button type="button" class="btn btn-light" data-kt-stepper-action="previous"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-3 me-1"></i>@Localizer["Back"]</button>
+                                    <button type="button" class="btn btn-primary" data-kt-stepper-action="next">@Localizer["Continue"] <i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-3 ms-1"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Step 2-->
+
+                        <!--begin::Step 3-->
+                        <div data-kt-stepper-element="content">
+                            <div class="w-100">
+                                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-8">
+                                    <i class="ki-outline ki-information-5 fs-2tx text-primary me-4"></i>
+                                    <div class="d-flex flex-column"><span class="fw-bold fs-6 text-gray-800">@Localizer["Almost done"]</span><span class="fs-7 text-muted">@Localizer["Save the applicant, then attach documents and move them through the pipeline from the board."]</span></div>
+                                </div>
+                                <div class="row g-6">
+                                    <div class="col-md-12"><label class="fs-6 fw-semibold mb-2">@Localizer["Notes"]</label><textarea name="Notes" class="form-control form-control-solid" rows="4">@Model.Notes</textarea></div>
+                                </div>
+                                <div class="d-flex flex-stack pt-10">
+                                    <button type="button" class="btn btn-light" data-kt-stepper-action="previous"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-3 me-1"></i>@Localizer["Back"]</button>
+                                    <button type="submit" id="appSaveBtn" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Step 3-->
+                    </form>
+                    <!--end::Form-->
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    if (typeof flatpickr !== 'undefined') { var d = document.getElementById('dob'); if (d) flatpickr(d, { dateFormat: "Y-m-d", locale: { firstDayOfWeek: 6 }, allowInput: true }); }
+    // Manual stepper (KTStepper isn't loaded in this layout — same approach as the employee wizard).
+    var el = document.getElementById('appStepper');
+    if (!el) return;
+    var contents = el.querySelectorAll('[data-kt-stepper-element="content"]');
+    var navs = el.querySelectorAll('[data-kt-stepper-element="nav"]');
+    var cur = 0;
+    function show(i) {
+        cur = Math.max(0, Math.min(contents.length - 1, i));
+        contents.forEach(function (s, idx) { s.classList.toggle('current', idx === cur); });
+        navs.forEach(function (n, idx) { n.classList.toggle('current', idx === cur); n.classList.toggle('completed', idx < cur); });
+        try { document.getElementById('kt_app_content').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { }
+    }
+    el.querySelectorAll('[data-kt-stepper-action="next"]').forEach(function (b) { b.addEventListener('click', function (e) { e.preventDefault(); show(cur + 1); }); });
+    el.querySelectorAll('[data-kt-stepper-action="previous"]').forEach(function (b) { b.addEventListener('click', function (e) { e.preventDefault(); show(cur - 1); }); });
+    show(0);
+
+    // bulletproof save: submit the form programmatically so nothing on the page (FormValidation, etc.) can intercept the click.
+    var form = document.getElementById('appForm'), saveBtn = document.getElementById('appSaveBtn');
+    if (saveBtn && form) saveBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var fn = (document.querySelector('[name=FirstName]') || {}).value, ln = (document.querySelector('[name=LastName]') || {}).value;
+        if (!fn || !fn.trim() || !ln || !ln.trim()) { show(0); if (window.CB && CB.toast) CB.toast.error('@SR["FillRequiredFields"]'); return; }
+        if (window.HTMLFormElement && HTMLFormElement.prototype.submit) HTMLFormElement.prototype.submit.call(form); else form.submit();
+    });
+
+    // cascade: company → branches + org structure (departments). If no branch → surface the hierarchy.
+    var companySel = document.getElementById('companySel');
+    var branchSel = document.getElementById('branchSel'), departSel = document.getElementById('departSel');
+    var noBranchHint = document.getElementById('noBranchHint');
+    var initialBranch = '@(Model.BranchID?.ToString() ?? "")', initialDept = '@(Model.DepartmentID?.ToString() ?? "")';
+    function repopulate(sel, opts, keepVal) {
+        if (!sel) return;
+        var $s = window.jQuery ? jQuery(sel) : null;
+        var html = '<option value=""></option>';
+        (opts || []).forEach(function (o) { html += '<option value="' + o.id + '"' + (('' + o.id) === ('' + (keepVal || '')) ? ' selected' : '') + '>' + o.name + '</option>'; });
+        sel.innerHTML = html;
+        if ($s && $s.hasClass('select2-hidden-accessible')) $s.trigger('change');
+    }
+    function loadFor(companyId, keepBranch, keepDept) {
+        if (!companyId) { repopulate(branchSel, [], ''); repopulate(departSel, [], ''); if (noBranchHint) noBranchHint.classList.add('d-none'); return; }
+        // branches
+        fetch('/Admin/GetBranches?companyId=' + companyId).then(function (r) { return r.json(); })
+            .then(function (res) {
+                var list = res && res.ok && res.data ? res.data : [];
+                repopulate(branchSel, list, keepBranch);
+                if (noBranchHint) noBranchHint.classList.toggle('d-none', list.length > 0);   // show hint only when no branch
+            }).catch(function () { repopulate(branchSel, [], ''); });
+        // org structure (departments) — GetHierarchicals returns HierarchicalDto (h_ID / h_Name / h_NameEn)
+        fetch('/Admin/GetHierarchicals?companyId=' + companyId).then(function (r) { return r.json(); })
+            .then(function (data) {
+                var arr = Array.isArray(data) ? data : (data && data.data ? data.data : []);
+                var opts = arr.map(function (o) {
+                    var id = o.h_ID != null ? o.h_ID : (o.H_ID != null ? o.H_ID : o.id);
+                    var name = o.h_Name || o.H_Name || o.name || o.h_NameEn || '';
+                    return { id: id, name: name };
+                }).filter(function (o) { return o.id != null; });
+                repopulate(departSel, opts, keepDept);
+            }).catch(function () { repopulate(departSel, [], ''); });
+    }
+    if (companySel) {
+        var onCompany = function () { loadFor(companySel.value, '', ''); };
+        if (window.jQuery) jQuery(companySel).on('change select2:select', onCompany); else companySel.addEventListener('change', onCompany);
+        if (companySel.value) loadFor(companySel.value, initialBranch, initialDept);   // preserve on edit
+    }
+})();
+</script>
+}

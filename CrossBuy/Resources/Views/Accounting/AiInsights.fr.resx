@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AI Insights" xml:space="preserve">
+    <value>Analyses IA</value>
+  </data>
+  <data name="AI analytics" xml:space="preserve">
+    <value>Analytique IA</value>
+  </data>
+  <data name="Suggestions for review only" xml:space="preserve">
+    <value>Suggestions à des fins de révision uniquement</value>
+  </data>
+  <data name="AI service is currently unavailable" xml:space="preserve">
+    <value>Le service IA est actuellement indisponible</value>
+  </data>
+  <data name="Make sure the Python AI service is running on port 8000." xml:space="preserve">
+    <value>Assurez-vous que le service IA Python est en cours d'exécution sur le port 8000.</value>
+  </data>
+  <data name="Flagged of" xml:space="preserve">
+    <value>Signalés sur</value>
+  </data>
+  <data name="Projected balance (90d)" xml:space="preserve">
+    <value>Solde projeté (90 j)</value>
+  </data>
+  <data name="Slow-moving items" xml:space="preserve">
+    <value>Articles à rotation lente</value>
+  </data>
+  <data name="Dead-stock value" xml:space="preserve">
+    <value>Valeur du stock mort</value>
+  </data>
+  <data name="Journal anomalies" xml:space="preserve">
+    <value>Anomalies d'écritures</value>
+  </data>
+  <data name="Duplicates" xml:space="preserve">
+    <value>Doublons</value>
+  </data>
+  <data name="Severity" xml:space="preserve">
+    <value>Gravité</value>
+  </data>
+  <data name="Entry" xml:space="preserve">
+    <value>Écriture</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Motif</value>
+  </data>
+  <data name="No anomalies found" xml:space="preserve">
+    <value>Aucune anomalie trouvée</value>
+  </data>
+  <data name="Cash-flow projection" xml:space="preserve">
+    <value>Projection des flux de trésorerie</value>
+  </data>
+  <data name="Negative-balance risk" xml:space="preserve">
+    <value>Risque de solde négatif</value>
+  </data>
+  <data name="Opening cash" xml:space="preserve">
+    <value>Trésorerie d'ouverture</value>
+  </data>
+  <data name="Expected inflow" xml:space="preserve">
+    <value>Entrées attendues</value>
+  </data>
+  <data name="Expected outflow" xml:space="preserve">
+    <value>Sorties attendues</value>
+  </data>
+  <data name="Min projected balance" xml:space="preserve">
+    <value>Solde projeté minimum</value>
+  </data>
+  <data name="Projected end balance" xml:space="preserve">
+    <value>Solde final projeté</value>
+  </data>
+  <data name="Inventory alerts" xml:space="preserve">
+    <value>Alertes de stock</value>
+  </data>
+  <data name="Stockout" xml:space="preserve">
+    <value>Rupture de stock</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>En stock</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Valeur</value>
+  </data>
+  <data name="Reorder" xml:space="preserve">
+    <value>Réapprovisionner</value>
+  </data>
+  <data name="No alerts" xml:space="preserve">
+    <value>Aucune alerte</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>Élevée</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Moyenne</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Faible</value>
+  </data>
+  <data name="Slow" xml:space="preserve">
+    <value>Lent</value>
+  </data>
+</root>

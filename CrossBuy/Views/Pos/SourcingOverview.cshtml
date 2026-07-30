@@ -1,0 +1,54 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+    var rows = ViewBag.Overview as List<CrossBuy.BL.SourcingOverviewRow> ?? new();
+    Func<string, string> ml = m => m switch
+    {
+        "WorkOrder" => T("أمر تصنيع كامل", "Full work order"),
+        "FinishedFromBranch" => T("جاهز من فرع آخر", "Finished from branch"),
+        "SemiFromBranchComplete" => T("نصف-مصنّع + إكمال", "Semi + finish"),
+        "RecipeAtSale" => T("وصفة عند البيع", "Recipe at sale"),
+        _ => m
+    };
+    Func<string, string> mc = m => m switch { "WorkOrder" => "primary", "FinishedFromBranch" => "info", "SemiFromBranchComplete" => "warning", "RecipeAtSale" => "success", _ => "secondary" };
+    var byBranch = rows.GroupBy(r => new { r.BranchId, r.BranchName }).OrderBy(g => g.Key.BranchName).ToList();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@T("نظرة عامة: مصادر توفير الأصناف", "Item sourcing overview")</h1>
+            <span class="text-muted fs-7">@T("لكل فرع: أصنافه وطريقة توفير كلٍّ منها ومصادرها. قراءة فقط.", "Per branch: each item, its sourcing method and sources. Read-only.")</span></div>
+        <a asp-action="ItemSourcing" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-4"></i>@T("تعديل الإعداد", "Edit setup")</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (!rows.Any())
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-abstract-26 fs-3x mb-3 d-block"></i>@T("لا توجد مصادر توفير مُعرَّفة بعد.", "No item sourcing configured yet.")</div></div>
+        }
+        else
+        {
+            @foreach (var g in byBranch)
+            {
+                <div class="card mb-5"><div class="card-header"><div class="card-title"><h3>@g.Key.BranchName <span class="text-muted fs-7 ms-2">(@g.Count())</span></h3></div></div>
+                <div class="card-body py-4">
+                    <table class="table table-row-dashed align-middle fs-7">
+                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@T("الصنف", "Item")</th><th>@T("طريقة التوفير", "Method")</th><th>@T("الفرع المصدر", "Source branch")</th><th>@T("نصف-المصنّع", "Semi-finished")</th><th>@T("التوقيت", "Timing")</th></tr></thead>
+                        <tbody>
+                        @foreach (var r in g.OrderBy(x => x.ItemCode))
+                        {
+                            <tr>
+                                <td class="fw-bold text-gray-800">@r.ItemName<div class="text-muted fs-8">@r.ItemCode</div></td>
+                                <td><span class="badge badge-light-@mc(r.Method)">@ml(r.Method)</span></td>
+                                <td>@(string.IsNullOrWhiteSpace(r.SourceBranchName) ? "—" : r.SourceBranchName)</td>
+                                <td>@(string.IsNullOrWhiteSpace(r.SemiName) ? "—" : r.SemiName)</td>
+                                <td class="text-muted">@(r.TransferTiming == "AtSale" ? T("لحظة البيع", "At sale") : (r.TransferTiming == "Prepaid" ? T("مُقدَّم", "Prepaid") : "—"))</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div></div>
+            }
+        }
+    </div></div>
+</div>

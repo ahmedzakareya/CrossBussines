@@ -1,0 +1,1017 @@
+﻿@model CrossBuy.ViewModel.PoliciesDto
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    ViewData["Title"] = Localizer["Policies Data"].Value;
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+}
+@Html.AntiForgeryToken()
+<input type="hidden" asp-for="ID" />
+
+<div class="d-flex flex-column flex-column-fluid">
+	<!--begin::Toolbar-->
+	<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+		<!--begin::Toolbar container-->
+		<div id="kt_app_toolbar_container" class="app-container container-fluid d-flex align-items-stretch">
+			<!--begin::Toolbar wrapper-->
+			<div class="app-toolbar-wrapper d-flex flex-stack flex-wrap gap-4 w-100">
+				<!--begin::Page title-->
+				<div class="page-title d-flex flex-column justify-content-center gap-1 me-3">
+					<!--begin::Title-->
+					<h1 class="page-heading d-flex flex-column justify-content-center text-gray-900 fw-bold fs-3 m-0">@CrossBuy.Resources.SharedResources.Policies</h1>
+					<!--end::Title-->
+					<!--begin::Breadcrumb-->
+					<ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+						<!--begin::Item-->
+						<li class="breadcrumb-item text-muted">
+							<a href="index.html" class="text-muted text-hover-primary">@Localizer["Home"]</a>
+						</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item">
+							<span class="bullet bg-gray-500 w-5px h-2px"></span>
+						</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item text-muted">@Localizer["Apps"]</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item">
+							<span class="bullet bg-gray-500 w-5px h-2px"></span>
+						</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item text-muted">@Localizer["Contacts"]</li>
+						<!--end::Item-->
+					</ul>
+					<!--end::Breadcrumb-->
+				</div>
+				<!--end::Page title-->
+				<!--begin::Actions-->
+				<div class="d-flex align-items-center gap-2 gap-lg-3">
+
+					<a href="#" class="btn btn-flex btn-outline btn-color-gray-700 btn-active-color-primary bg-body h-40px fs-7 fw-bold" data-bs-toggle="modal" data-bs-target="#kt_modal_view_users">@Localizer["Add Member"]</a>
+					<a href="#" class="btn btn-flex btn-primary h-40px fs-7 fw-bold" data-bs-toggle="modal" data-bs-target="#kt_modal_create_campaign">@Localizer["New Campaign"]</a>
+				</div>
+				<!--end::Actions-->
+			</div>
+			<!--end::Toolbar wrapper-->
+		</div>
+		<!--end::Toolbar container-->
+	</div>
+	<!--end::Toolbar-->
+	<!--begin::Content-->
+	<div id="kt_app_content" class="app-content flex-column-fluid">
+		<!--begin::Content container-->
+		<div id="kt_app_content_container" class="app-container container-fluid">
+
+			<!--begin::Content-->
+			<div id="kt_account_settings_profile_details" class="collapse show">
+				<!--begin::Form-->
+				<form id="kt_account_profile_details_form" class="form">
+					<!--begin::Card body-->
+					<div class="card-body border-top p-9">
+
+						<div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+							<!--begin::General options-->
+						
+
+							<div class="card ">
+								<div class="card-header collapsible cursor-pointer rotate" data-bs-toggle="collapse" data-bs-target="#kt_docs_card_collapsible">
+									<h3 class="card-title text-primary fw-bold">@CrossBuy.Resources.SharedResources.MainPolicyData</h3>
+									<div class="card-toolbar rotate-180">
+										<i class="ki-duotone ki-down fs-1"></i>
+									</div>
+								</div>
+								<div id="kt_docs_card_collapsible" class="collapse show">
+									<div class="card-body">
+										<!--begin::Row-->
+										<div class="row row-cols-1 row-cols-sm-2 rol-cols-md-1 row-cols-lg-2">
+											<!--begin::Col-->
+											<div class="col">
+												<!-- Name (Arabic) -->
+												<div class="fv-row mb-6">
+													<!-- Label -->
+													<label class="fs-6 fw-semibold form-label mt-3">
+														<span class="required">@CrossBuy.Resources.SharedResources.NameAr</span>
+													</label>
+													<!-- Input -->
+													<input asp-for="NameAr"
+														   class="form-control"
+														   placeholder="@CrossBuy.Resources.SharedResources.NameAr" />
+													<span class="text-danger" asp-validation-for="NameAr"></span>
+												</div>
+
+											</div>
+											<!--end::Col-->
+											<!--begin::Col-->
+											<div class="col">
+												<!-- Name (English) -->
+												<div class="fv-row mb-6">
+													<label class="fs-6 fw-semibold form-label mt-3">
+														<span class="required">@CrossBuy.Resources.SharedResources.NameEn</span>
+													</label>
+													<input asp-for="NameEn"
+														   class="form-control"
+														   placeholder="@CrossBuy.Resources.SharedResources.NameEn" />
+													<span class="text-danger" asp-validation-for="NameEn"></span>
+												</div>
+
+											</div>
+											<!--end::Col-->
+										
+										</div>
+
+										<!--begin::Row-->
+										<div class="row mb-12">
+
+											<!-- Notes -->
+											<div class="fv-row mb-6">
+												<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
+													<span>@CrossBuy.Resources.SharedResources.Notes</span>
+													<span class="ms-1" data-bs-toggle="tooltip" title="...">
+														<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
+													</span>
+												</label>
+
+												<textarea asp-for="Notes"
+														  class="form-control"
+														  placeholder="@CrossBuy.Resources.SharedResources.Notes"
+														  style="height:100px"></textarea>
+												<span class="text-danger" asp-validation-for="Notes"></span>
+											</div>
+
+										</div>
+										<!--end::Row-->
+										<!--end::Row-->
+									</div>
+
+									<div class="card-footer text-center">
+										<button type="button" class="btn btn-primary ms-2" id="btnSavePolicy">
+											<i class="ki-outline ki-save-2 fs-2"></i> @CrossBuy.Resources.SharedResources.Save
+										</button>
+										<button type="button" class="btn btn-light-primary" data-bs-toggle="modal" data-bs-target="#kt_policy_modal">
+											<i class="ki-outline ki-cloud-add fs-2"></i> @CrossBuy.Resources.SharedResources.New
+										</button>
+									</div>
+
+
+								</div>
+							</div>
+
+
+							<div class="card mb-5 mb-xl-8">
+								<!--begin::Header-->
+								<div class="card-header border-0 pt-5">
+									<h3 class="card-title align-items-start flex-column">
+										<span class="card-label fw-bold fs-3 mb-1">@CrossBuy.Resources.SharedResources.LeavePolicesList</span>
+										<span class="text-muted mt-1 fw-semibold fs-7">@Localizer["Over 500 new products"]</span>
+									</h3>
+									<div class="card-toolbar">
+										
+
+										<button type="button" class="btn btn-light-primary" data-bs-toggle="modal" data-bs-target="#kt_policy_modal">
+											<i class="ki-outline ki-cloud-add fs-2"></i> @CrossBuy.Resources.SharedResources.New
+										</button>
+									</div>
+								</div>
+								<!--end::Header-->
+								<!--begin::Body-->
+								<div class="card-body py-3">
+									<!--begin::Table container-->
+									<div class="table-responsive">
+										<!--begin::Table-->
+										<table class="table align-middle gs-0 gy-4">
+											<!--begin::Table head-->
+											<thead>
+												<tr class="fw-bold text-muted bg-light">
+													<th class="ps-4 min-w-325px rounded-start">@Localizer["Product"]</th>
+													<th class="min-w-125px">@SR["Price"]</th>
+													<th class="min-w-125px">@Localizer["Deposit"]</th>
+													<th class="min-w-200px">@Localizer["Agent"]</th>
+													<th class="min-w-150px">@SR["Status"]</th>
+													<th class="min-w-200px text-end rounded-end"></th>
+												</tr>
+											</thead>
+											<!--end::Table head-->
+											<!--begin::Table body-->
+											<tbody>
+												<tr>
+													<td>
+														<div class="d-flex align-items-center">
+															<div class="symbol symbol-50px me-5">
+																<img src="assets/media/stock/600x400/img-26.jpg" class="" alt="" />
+															</div>
+															<div class="d-flex justify-content-start flex-column">
+																<a href="#" class="text-gray-900 fw-bold text-hover-primary mb-1 fs-6">Sant Extreanet Solution</a>
+																<span class="text-muted fw-semibold text-muted d-block fs-7">HTML, JS, ReactJS</span>
+															</div>
+														</div>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$2,790</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Paid</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$520</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Rejected</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">Bradly Beal</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Insurance</span>
+													</td>
+													<td>
+														<span class="badge badge-light-primary fs-7 fw-bold">Approved</span>
+													</td>
+													<td class="text-end">
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-switch fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-pencil fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
+															<i class="ki-outline ki-trash fs-2"></i>
+														</a>
+													</td>
+												</tr>
+												<tr>
+													<td>
+														<div class="d-flex align-items-center">
+															<div class="symbol symbol-50px me-5">
+																<img src="assets/media/stock/600x400/img-3.jpg" class="" alt="" />
+															</div>
+															<div class="d-flex justify-content-start flex-column">
+																<a href="#" class="text-gray-900 fw-bold text-hover-primary mb-1 fs-6">Telegram Development</a>
+																<span class="text-muted fw-semibold text-muted d-block fs-7">C#, ASP.NET, MS SQL</span>
+															</div>
+														</div>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$4,790</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Paid</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$240</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Rejected</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">Chris Thompson</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">NBA Player</span>
+													</td>
+													<td>
+														<span class="badge badge-light-danger fs-7 fw-bold">In Progress</span>
+													</td>
+													<td class="text-end">
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-switch fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-pencil fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
+															<i class="ki-outline ki-trash fs-2"></i>
+														</a>
+													</td>
+												</tr>
+												<tr>
+													<td>
+														<div class="d-flex align-items-center">
+															<div class="symbol symbol-50px me-5">
+																<img src="assets/media/stock/600x400/img-9.jpg" class="" alt="" />
+															</div>
+															<div class="d-flex justify-content-start flex-column">
+																<a href="#" class="text-gray-900 fw-bold text-hover-primary mb-1 fs-6">Payroll Application</a>
+																<span class="text-muted fw-semibold text-muted d-block fs-7">PHP, Laravel, VueJS</span>
+															</div>
+														</div>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$4,390</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Paid</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$593</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Rejected</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">Zoey McGee</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Ruby Developer</span>
+													</td>
+													<td>
+														<span class="badge badge-light-primary fs-7 fw-bold">Success</span>
+													</td>
+													<td class="text-end">
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-switch fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-pencil fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
+															<i class="ki-outline ki-trash fs-2"></i>
+														</a>
+													</td>
+												</tr>
+												<tr>
+													<td>
+														<div class="d-flex align-items-center">
+															<div class="symbol symbol-50px me-5">
+																<img src="assets/media/stock/600x400/img-18.jpg" class="" alt="" />
+															</div>
+															<div class="d-flex justify-content-start flex-column">
+																<a href="#" class="text-gray-900 fw-bold text-hover-primary mb-1 fs-6">HR Management System</a>
+																<span class="text-muted fw-semibold text-muted d-block fs-7">Python, PostgreSQL, ReactJS</span>
+															</div>
+														</div>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$7,990</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Paid</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$980</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Rejected</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">Brandon Ingram</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Insurance</span>
+													</td>
+													<td>
+														<span class="badge badge-light-primary fs-7 fw-bold">Rejected</span>
+													</td>
+													<td class="text-end">
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-switch fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-pencil fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
+															<i class="ki-outline ki-trash fs-2"></i>
+														</a>
+													</td>
+												</tr>
+												<tr>
+													<td>
+														<div class="d-flex align-items-center">
+															<div class="symbol symbol-50px me-5">
+																<img src="assets/media/stock/600x400/img-8.jpg" class="" alt="" />
+															</div>
+															<div class="d-flex justify-content-start flex-column">
+																<a href="#" class="text-gray-900 fw-bold text-hover-primary mb-1 fs-6">Telegram Mobile</a>
+																<span class="text-muted fw-semibold text-muted d-block fs-7">HTML, JS, ReactJS</span>
+															</div>
+														</div>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$5,790</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Paid</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">$750</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Rejected</span>
+													</td>
+													<td>
+														<a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">Natali Trump</a>
+														<span class="text-muted fw-semibold text-muted d-block fs-7">Insurance</span>
+													</td>
+													<td>
+														<span class="badge badge-light-secondary fs-7 fw-bold">Approved</span>
+													</td>
+													<td class="text-end">
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-switch fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+															<i class="ki-outline ki-pencil fs-2"></i>
+														</a>
+														<a href="#" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
+															<i class="ki-outline ki-trash fs-2"></i>
+														</a>
+													</td>
+												</tr>
+											</tbody>
+											<!--end::Table body-->
+										</table>
+										<!--end::Table-->
+									</div>
+									<!--end::Table container-->
+								</div>
+								<!--begin::Body-->
+							</div>
+							<!--end::General options-->
+							<div class="card ">
+								<div class="card-header collapsible cursor-pointer rotate" data-bs-toggle="collapse" data-bs-target="#kt_docs_card_collapsible">
+									<h3 class="card-title text-primary fw-bold">@CrossBuy.Resources.SharedResources.MainPolicyData</h3>
+									<div class="card-toolbar rotate-180">
+										<i class="ki-duotone ki-down fs-1"></i>
+									</div>
+								</div>
+								<div id="kt_docs_card_collapsible" class="collapse show">
+									<div class="card-body">
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label w-100">@CrossBuy.Resources.SharedResources.TypesOfLeaves</label>
+												<select class="form-select form-select" data-control="select2" id="CompanyID" name="CompanyID" data-placeholder="@CrossBuy.Resources.SharedResources.ChooseItem">
+													<option value="" selected disabled hidden>@CrossBuy.Resources.SharedResources.ChooseItem</option>
+													@* @foreach (var item in Model.companies)
+													{
+														if ((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"))
+														{
+															<option value="@item.CompanyID">@item.CompanyNameAr</option>
+														}
+														else
+														{
+															<option value="@item.CompanyID">@item.CompanyName</option>
+														}
+													} *@
+												</select>
+											</div>
+
+											<div class="col-md-6">
+												<label class="form-label w-100">@CrossBuy.Resources.SharedResources.EntitlementDaysPerYear</label>
+												<input type="number" class="form-control" name="EntitlementDaysPerYear" placeholder="@CrossBuy.Resources.SharedResources.EntitlementDaysPerYear" />
+											</div>
+										</div>
+
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label w-100">@CrossBuy.Resources.SharedResources.CarryOverLimit</label>
+												<input type="number" class="form-control" name="CarryOverLimit" placeholder="@CrossBuy.Resources.SharedResources.CarryOverLimit" />
+											</div>
+
+											<div class="col-md-6">
+												<label class="form-label w-100">@CrossBuy.Resources.SharedResources.NoticePeriodDays</label>
+												<input type="number" class="form-control" name="NoticePeriodDays" placeholder="@CrossBuy.Resources.SharedResources.NoticePeriodDays" />
+											</div>
+										</div>
+
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label w-100">@Localizer["Requires Medical Certificate"]</label>
+												<input type="hidden" name="RequiresMedicalCertificate" value="false">
+												<div class="form-check form-switch">
+													<input class="form-check-input" type="checkbox" id="RequiresMedicalCertificate" name="RequiresMedicalCertificate" value="true">
+													<label class="form-check-label" for="RequiresMedicalCertificate">@SR["Yes"]</label>
+												</div>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col-12 text-end">
+												<button type="submit" class="btn btn-primary fs-1 w-100 py-3">
+													<i class="fas fa-plus-circle me-1"></i> @SR["Add"]
+												</button>
+											</div>
+										</div>
+										
+									</div>
+									<div class="card-footer">
+									</div>
+								</div>
+							</div>
+							<!--begin::Meta options-->
+							<div class="card card-flush py-4">
+								<!--begin::Card header-->
+								<div class="card-header">
+									<div class="card-title">
+										<h2>@Localizer["Meta Options"]</h2>
+									</div>
+								</div>
+								<!--end::Card header-->
+								<!--begin::Card body-->
+								<div class="card-body pt-0">
+									<!--begin::Input group-->
+									<div class="mb-10">
+										<!--begin::Label-->
+										<label class="form-label">@Localizer["Meta Tag Title"]</label>
+										<!--end::Label-->
+										<!--begin::Input-->
+										<input type="text" class="form-control mb-2" name="meta_title" placeholder="@Localizer["Meta tag name"]" />
+										<!--end::Input-->
+										<!--begin::Description-->
+										<div class="text-muted fs-7">@Localizer["Set a meta tag title. Recommended to be simple and precise keywords."]</div>
+										<!--end::Description-->
+									</div>
+									<!--end::Input group-->
+									<!--begin::Input group-->
+									<div class="mb-10">
+										<!--begin::Label-->
+										<label class="form-label">@Localizer["Meta Tag Description"]</label>
+										<!--end::Label-->
+										<!--begin::Editor-->
+										<div id="kt_ecommerce_add_category_meta_description" name="kt_ecommerce_add_category_meta_description" class="min-h-100px mb-2"></div>
+										<!--end::Editor-->
+										<!--begin::Description-->
+										<div class="text-muted fs-7">@Localizer["Set a meta tag description to the category for increased SEO ranking."]</div>
+										<!--end::Description-->
+									</div>
+									<!--end::Input group-->
+									<!--begin::Input group-->
+									<div>
+										<!--begin::Label-->
+										<label class="form-label">@Localizer["Meta Tag Keywords"]</label>
+										<!--end::Label-->
+										<!--begin::Editor-->
+										<input id="kt_ecommerce_add_category_meta_keywords" name="kt_ecommerce_add_category_meta_keywords" class="form-control mb-2" />
+										<!--end::Editor-->
+										<!--begin::Description-->
+										<div class="text-muted fs-7">
+											@Localizer["Set a list of keywords that the category is related to. Separate the keywords by adding a comma"]
+											<code>,</code>@Localizer["between each keyword."]
+										</div>
+										<!--end::Description-->
+									</div>
+									<!--end::Input group-->
+								</div>
+								<!--end::Card header-->
+							</div>
+							<!--end::Meta options-->
+							<!--begin::Automation-->
+							<div class="card card-flush py-4">
+								<!--begin::Card header-->
+								<div class="card-header">
+									<div class="card-title">
+										<h2>@Localizer["Automation"]</h2>
+									</div>
+								</div>
+								<!--end::Card header-->
+								<!--begin::Card body-->
+								<div class="card-body pt-0">
+									<!--begin::Input group-->
+									<div>
+										<!--begin::Label-->
+										<label class="form-label mb-5">@Localizer["Product assignment method"]</label>
+										<!--end::Label-->
+										<!--begin::Methods-->
+										<!--begin::Input row-->
+										<div class="d-flex fv-row">
+											<!--begin::Radio-->
+											<div class="form-check form-check-custom form-check-solid">
+												<!--begin::Input-->
+												<input class="form-check-input me-3" name="method" type="radio" value="0" id="kt_ecommerce_add_category_automation_0" checked='checked' />
+												<!--end::Input-->
+												<!--begin::Label-->
+												<label class="form-check-label" for="kt_ecommerce_add_category_automation_0">
+													<div class="fw-bold text-gray-800">@Localizer["Manual"]</div>
+													<div class="text-gray-600">@Localizer["Add products to this category one by one by manually selecting this category during product creation or update."]</div>
+												</label>
+												<!--end::Label-->
+											</div>
+											<!--end::Radio-->
+										</div>
+										<!--end::Input row-->
+										<div class='separator separator-dashed my-5'></div>
+										<!--begin::Input row-->
+										<div class="d-flex fv-row">
+											<!--begin::Radio-->
+											<div class="form-check form-check-custom form-check-solid">
+												<!--begin::Input-->
+												<input class="form-check-input me-3" name="method" type="radio" value="1" id="kt_ecommerce_add_category_automation_1" />
+												<!--end::Input-->
+												<!--begin::Label-->
+												<label class="form-check-label" for="kt_ecommerce_add_category_automation_1">
+													<div class="fw-bold text-gray-800">@Localizer["Automatic"]</div>
+													<div class="text-gray-600">@Localizer["Products matched with the following conditions will be automatically assigned to this category."]</div>
+												</label>
+												<!--end::Label-->
+											</div>
+											<!--end::Radio-->
+										</div>
+										<!--end::Input row-->
+										<!--end::Methods-->
+									</div>
+									<!--end::Input group-->
+									<!--begin::Input group-->
+									<div class="d-none mt-10" data-kt-ecommerce-catalog-add-category="auto-options">
+										<!--begin::Label-->
+										<label class="form-label">@Localizer["Conditions"]</label>
+										<!--end::Label-->
+										<!--begin::Conditions-->
+										<div class="d-flex flex-wrap align-items-center text-gray-600 gap-5 mb-7">
+											<span>@Localizer["Products must match:"]</span>
+											<!--begin::Radio-->
+											<div class="form-check form-check-custom form-check-solid">
+												<input class="form-check-input" type="radio" name="conditions" value="" id="all_conditions" checked="checked" />
+												<label class="form-check-label" for="all_conditions">@Localizer["All conditions"]</label>
+											</div>
+											<!--end::Radio-->
+											<!--begin::Radio-->
+											<div class="form-check form-check-custom form-check-solid">
+												<input class="form-check-input" type="radio" name="conditions" value="" id="any_conditions" />
+												<label class="form-check-label" for="any_conditions">@Localizer["Any conditions"]</label>
+											</div>
+											<!--end::Radio-->
+										</div>
+										<!--end::Conditions-->
+										<!--begin::Repeater-->
+										<div id="kt_ecommerce_add_category_conditions">
+											<!--begin::Form group-->
+											<div class="form-group">
+												<div data-repeater-list="kt_ecommerce_add_category_conditions" class="d-flex flex-column gap-3">
+													<div data-repeater-item="" class="form-group d-flex flex-wrap align-items-center gap-5">
+														<!--begin::Select2-->
+														<div class="w-100 w-md-200px">
+															<select class="form-select" name="condition_type" data-placeholder="Select an option" data-kt-ecommerce-catalog-add-category="condition_type">
+																<option></option>
+																<option value="title">@Localizer["Product Title"]</option>
+																<option value="tag" selected="selected">@Localizer["Product Tag"]</option>
+																<option value="price">@Localizer["Prodict Price"]</option>
+															</select>
+														</div>
+														<!--end::Select2-->
+														<!--begin::Select2-->
+														<div class="w-100 w-md-200px">
+															<select class="form-select" name="condition_equals" data-placeholder="Select an option" data-kt-ecommerce-catalog-add-category="condition_equals">
+																<option></option>
+																<option value="equal" selected="selected">@Localizer["is equal to"]</option>
+																<option value="notequal">@Localizer["is not equal to"]</option>
+																<option value="greater">@Localizer["is greater than"]</option>
+																<option value="less">@Localizer["is less than"]</option>
+																<option value="starts">@Localizer["starts with"]</option>
+																<option value="ends">@Localizer["ends with"]</option>
+															</select>
+														</div>
+														<!--end::Select2-->
+														<!--begin::Input-->
+														<input type="text" class="form-control mw-100 w-200px" name="condition_label" placeholder="" />
+														<!--end::Input-->
+														<!--begin::Button-->
+														<button type="button" data-repeater-delete="" class="btn btn-sm btn-icon btn-light-danger">
+															<i class="ki-outline ki-cross fs-2"></i>
+														</button>
+														<!--end::Button-->
+													</div>
+												</div>
+											</div>
+											<!--end::Form group-->
+											<!--begin::Form group-->
+											<div class="form-group mt-5">
+												<!--begin::Button-->
+												<button type="button" data-repeater-create="" class="btn btn-sm btn-light-primary">
+													<i class="ki-outline ki-plus fs-2"></i>@Localizer["Add another condition"]
+												</button>
+												<!--end::Button-->
+											</div>
+											<!--end::Form group-->
+										</div>
+										<!--end::Repeater-->
+									</div>
+									<!--end::Input group-->
+								</div>
+								<!--end::Card header-->
+							</div>
+							<!--end::Automation-->
+							<div class="d-flex justify-content-end">
+								<!--begin::Button-->
+								<a href="apps/ecommerce/catalog/products.html" id="kt_ecommerce_add_product_cancel" class="btn btn-light me-5">@SR["Cancel"]</a>
+								<!--end::Button-->
+								<!--begin::Button-->
+								<button type="submit" id="kt_ecommerce_add_category_submit" class="btn btn-primary">
+									<span class="indicator-label">@Localizer["Save Changes"]</span>
+									<span class="indicator-progress">
+										@Localizer["Please wait..."]
+										<span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+									</span>
+								</button>
+								<!--end::Button-->
+							</div>
+						</div>
+						
+
+					</div>
+					<!--end::Card body-->
+
+				
+					<!--begin::Actions-->
+					<div class="card-footer d-flex justify-content-end py-6 px-9">
+						<button type="reset" class="btn btn-light btn-active-light-primary me-2">@CrossBuy.Resources.SharedResources.Cancel</button>
+						<button type="submit" class="btn btn-primary" id="kt_account_profile_details_submit">@CrossBuy.Resources.SharedResources.Save</button>
+					</div>
+					<!--end::Actions-->
+					<!--begin::Modal - Policy Details-->
+					<!--begin::Modal-->
+					<div class="modal fade" id="kt_policy_modal" tabindex="-1" aria-hidden="true">
+						<div class="modal-dialog modal-xl modal-dialog-centered">
+							<div class="modal-content">
+								<!--begin::Modal header-->
+								<div class="modal-header">
+									<h2 class="fw-bold">@Localizer["Add policy"]</h2>
+									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+								<!--end::Modal header-->
+								<!--begin::Modal body-->
+								<div class="modal-body py-10 px-lg-17">
+
+									<!--begin::Policy Type Switcher-->
+									<div class="d-flex justify-content-center mb-10">
+										<div class="nav-group nav-group-outline" data-kt-buttons="true">
+											<button type="button"
+													class="btn btn-color-gray-500 btn-active btn-active-primary px-6 py-3 me-2 active"
+													data-policy="leave">
+												@Localizer["Leave policy"]
+											</button>
+											<button type="button"
+													class="btn btn-color-gray-500 btn-active btn-active-primary px-6 py-3"
+													data-policy="salary">
+												@Localizer["Salary policy"]
+											</button>
+										</div>
+									</div>
+									<!--end::Policy Type Switcher-->
+									<!--begin::Leave Policy Section-->
+									<div id="leave_policy_section" class="policy-section">
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label">@SR["LeaveType"]</label>
+												<select class="form-select" data-control="select2" name="LeaveType">
+													<option value="" selected disabled hidden>@Localizer["Select leave type"]</option>
+													<option value="Annual">@Localizer["Annual leave"]</option>
+													<option value="Sick">@Localizer["Sick leave"]</option>
+													<option value="Emergency">@Localizer["Emergency"]</option>
+												</select>
+											</div>
+											<div class="col-md-6">
+												<label class="form-label">@Localizer["Entitlement days per year"]</label>
+												<input type="number" class="form-control" name="EntitlementDays" placeholder="@Localizer["e.g. 30"]" />
+											</div>
+										</div>
+
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label">@Localizer["Carry-over limit"]</label>
+												<input type="number" class="form-control" name="CarryOverLimit" />
+											</div>
+											<div class="col-md-6">
+												<label class="form-label">@Localizer["Notice period before leave"]</label>
+												<input type="number" class="form-control" name="NoticePeriodDays" />
+											</div>
+										</div>
+
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label">@Localizer["Requires medical certificate?"]</label>
+												<input type="hidden" name="RequiresMedicalCertificate" value="false">
+												<div class="form-check form-switch">
+													<input class="form-check-input" type="checkbox" id="RequiresMedicalCertificate" name="RequiresMedicalCertificate" value="true">
+													<label class="form-check-label" for="RequiresMedicalCertificate">@SR["Yes"]</label>
+												</div>
+											</div>
+										</div>
+									</div>
+									<!--end::Leave Policy Section-->
+									<!--begin::Salary Policy Section-->
+									<div id="salary_policy_section" class="policy-section d-none">
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label">@Localizer["Financial item"]</label>
+												<input type="text" class="form-control" name="SalaryItem" placeholder="@Localizer["e.g. housing allowance"]" />
+											</div>
+											<div class="col-md-6">
+												<label class="form-label">@Localizer["Value or percentage"]</label>
+												<input type="text" class="form-control" name="SalaryValue" placeholder="@Localizer["e.g. 25% or 150 dinars"]" />
+											</div>
+										</div>
+
+										<div class="row mb-10">
+											<div class="col-md-6">
+												<label class="form-label">@Localizer["Subject to insurance"]</label>
+												<select class="form-select" name="IsInsurable">
+													<option value="true">@SR["Yes"]</option>
+													<option value="false">@SR["No"]</option>
+												</select>
+											</div>
+										</div>
+									</div>
+									<!--end::Salary Policy Section-->
+
+								</div>
+								<!--end::Modal body-->
+								<!--begin::Modal footer-->
+								<div class="modal-footer">
+									<button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+									<button type="submit" class="btn btn-primary">@SR["Save"]</button>
+								</div>
+								<!--end::Modal footer-->
+							</div>
+						</div>
+					</div>
+					<!--end::Modal-->
+					<!--begin::Script-->
+					<script>
+						document.querySelectorAll('[data-kt-buttons="true"] button').forEach(btn => {
+							btn.addEventListener('click', function () {
+								// Toggle active class
+								document.querySelectorAll('[data-kt-buttons="true"] button').forEach(b => b.classList.remove('active'));
+								this.classList.add('active');
+
+								// Toggle content
+								const selected = this.getAttribute('data-policy');
+								document.querySelectorAll('.policy-section').forEach(section => section.classList.add('d-none'));
+								document.getElementById(`${selected}_policy_section`).classList.remove('d-none');
+							});
+						});
+					</script>
+					<!--end::Script-->
+					<!--end::Modal-->
+
+				</form>
+				<!--end::Form-->
+				<script>
+					/* Policies AJAX: save (POST) + reload (GET) + toastr */
+					/* Comments are in English only. */
+					(function ($) {
+						if (!$) return;
+
+						// --- endpoints ---
+						var endpointSave = '@Url.Action("SaveMainPolices", "Admin", new { area = "Admin" })';
+						var endpointGet  = '@Url.Action("GetPolicy", "Admin", new { area = "Admin" })';
+
+						// --- elements ---
+						var $form       = $('#kt_account_profile_details_form');
+						var $btnSubmit1 = $('#kt_ecommerce_add_category_submit');
+						var $btnSubmit2 = $('#kt_account_profile_details_submit');
+						var $btnSave    = $('#btnSavePolicy');
+						var busy = false;
+
+						// --- notifications ---
+						function ok(msg){ if (window.toastr) toastr.success(msg); else alert(msg); }
+						function err(msg){ if (window.toastr) toastr.error(msg); else alert(msg); }
+
+						// Case-insensitive field getter
+						function get(obj, Upper, lower) {
+							return (obj && (obj[Upper] != null ? obj[Upper] : obj[lower]));
+						}
+
+						// --- helpers ---
+						function applyToForm(item) {
+							if (!item) return;
+
+							var id     = parseInt(get(item, 'ID', 'id') || 0, 10) || 0;
+							var nameAr = get(item, 'NameAr', 'nameAr') || '';
+							var nameEn = get(item, 'NameEn', 'nameEn') || '';
+							var notes  = get(item, 'Notes',  'notes')  || '';
+
+							$('[name="ID"]').val(id);
+							$('[name="NameAr"]').val(nameAr);
+							$('[name="NameEn"]').val(nameEn);
+							$('[name="Notes"]').val(notes);
+						}
+
+						function gatherModel() {
+							return {
+								ID: parseInt(($('[name="ID"]').val() || '0'), 10) || 0,
+								NameAr: ($('[name="NameAr"]').val() || '').trim(),
+								NameEn: ($('[name="NameEn"]').val() || '').trim(),
+								Notes:  ($('[name="Notes"]').val()  || '').trim()
+							};
+						}
+
+						function getToken() {
+							return $form.find('input[name="__RequestVerificationToken"]').val() || '';
+						}
+
+						function lockBtn($btn, labelHtml) {
+							if (!$btn || !$btn.length) return { restore: function(){} };
+							var old = $btn.html();
+							$btn.prop('disabled', true)
+								.html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + (labelHtml || old));
+							return { restore: function(){ $btn.prop('disabled', false).html(old); } };
+						}
+
+						function updateUrlId(id) {
+							if (!id) return;
+							var u = new URL(window.location.href);
+							u.searchParams.set('id', String(id));
+							window.history.replaceState({}, '', u.toString());
+						}
+
+						function loadById(id) {
+							if (!id) return $.Deferred().resolve().promise();
+							return $.ajax({
+								url: endpointGet + '?id=' + id,
+								type: 'GET',
+								dataType: 'json'
+							}).done(function (res) {
+								if (res && res.ok && res.data && res.data.item) applyToForm(res.data.item);
+							});
+						}
+
+						// --- save ---
+						function save(model, $btnToLock) {
+							if (busy) return;
+							busy = true;
+
+							if (!model.NameAr || !model.NameEn) {
+								err('@Localizer["Arabic name and English name are required."]');
+								busy = false; return;
+							}
+
+							var lock = lockBtn(($btnToLock && $btnToLock.length) ? $btnToLock : $btnSubmit1, '@CrossBuy.Resources.SharedResources.Save');
+							var token = getToken();
+
+							var req = (window.Ajax && typeof Ajax.sendJson === 'function')
+								? Ajax.sendJson(endpointSave, model)              // send model directly
+								: $.ajax({
+									url: endpointSave,
+									type: 'POST',
+									data: JSON.stringify(model),
+									contentType: 'application/json; charset=utf-8',
+									dataType: 'json',
+									headers: token ? { 'RequestVerificationToken': token } : {}
+								});
+
+							req.done(function (res) {
+								if (res && res.ok) {
+									// Fill immediately from echo
+									if (res.data && res.data.item) applyToForm(res.data.item);
+
+									// Safe id extraction (supports string/number and camel/pascal case)
+									var id = 0;
+									if (res && res.data) {
+										var item = res.data.item || {};
+										var rawId = (res.data.id != null ? res.data.id : (item.ID != null ? item.ID : item.id));
+										id = parseInt(rawId, 10) || 0;
+									}
+
+									if (id) updateUrlId(id);
+
+									// Reload from DB to reflect canonical values, then success toast
+									loadById(id).always(function () {
+										ok(res.message || '@CrossBuy.Resources.SharedResources.Success');
+									});
+								} else {
+									var msg = (res && res.message) || '@Localizer["Save failed."]';
+									if (res && res.errors && Array.isArray(res.errors) && res.errors.length) {
+										msg += '\n- ' + res.errors.join('\n- ');
+									}
+									err(msg);
+								}
+							}).fail(function (xhr) {
+								var msg = '@Localizer["An error occurred during the request."]';
+								try { var j = xhr.responseJSON; if (j && j.message) msg = j.message; } catch(e){}
+								err(msg);
+							}).always(function () {
+								lock.restore();
+								busy = false;
+							});
+						}
+
+						// --- bindings ---
+						$form.on('submit', function (e) {
+							e.preventDefault();
+							var model = gatherModel();
+							var $active = $(document.activeElement).closest('button[type="submit"]');
+							save(model, $active.length ? $active : $btnSubmit1);
+						});
+
+						if ($btnSave.length) {
+							$btnSave.on('click', function (e) {
+								e.preventDefault();
+								save(gatherModel(), $btnSave);
+							});
+						}
+
+						// --- preload on page open if id exists ---
+						(function () {
+							var u = new URL(window.location.href);
+							var id = parseInt(u.searchParams.get('id') || '0', 10);
+							if (id) loadById(id);
+						})();
+
+						// --- toastr defaults (optional) ---
+						if (window.toastr) {
+							toastr.options = {
+								closeButton: true,
+								progressBar: true,
+								newestOnTop: true,
+								timeOut: 3000,
+								positionClass: 'toast-top-center'
+							};
+						}
+					})(window.jQuery);
+				</script>
+
+
+
+
+
+
+			</div>
+			<!--end::Content-->
+
+		</div>
+		<!--end::Content container-->
+	</div>
+	<!--end::Content-->
+</div>
+
+
+
+
+
+
+
+
+

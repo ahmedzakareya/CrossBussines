@@ -1,0 +1,82 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var drivers = ViewBag.Drivers as List<Driver> ?? new();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Delivery drivers"]</h1>
+            <span class="text-muted fs-7">@Localizer["Branch drivers assignable to delivery orders — setup only, no accounting effect."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any()) { <div class="alert alert-warning"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["This company has no branches."]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-scooter fs-3x mb-3 d-block"></i>@Localizer["Select a branch to manage drivers."]</div></div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-header"><div class="card-title"><h3>@Localizer["Drivers"]</h3></div></div>
+                <div class="card-body">
+                    <form asp-action="SaveDriver" method="post" class="row g-2 align-items-end mb-5">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="0" />
+                        <div class="col-md-5"><label class="required fw-semibold fs-8 mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid form-control-sm" required /></div>
+                        <div class="col-md-4"><label class="fw-semibold fs-8 mb-1">@SR["Phone"]</label><input name="phone" class="form-control form-control-solid form-control-sm" /></div>
+                        <div class="col-md-3"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div>
+                    </form>
+                    <table class="table table-row-dashed align-middle fs-7">
+                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Name"]</th><th>@SR["Phone"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var d in drivers)
+                        {
+                            <tr>
+                                <td class="fw-bold text-gray-800">@d.Name</td>
+                                <td class="text-muted">@(string.IsNullOrWhiteSpace(d.Phone) ? "—" : d.Phone)</td>
+                                <td class="text-center"><span class="badge badge-light-@(d.IsActive ? "success" : "secondary")">@(d.IsActive ? SR["Active"].Value : SR["Inactive"].Value)</span></td>
+                                <td class="text-end">
+                                    <form asp-action="SaveDriver" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@(d.IsActive ? Localizer["Deactivate driver?"].Value : Localizer["Activate driver?"].Value)">
+                                        @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="name" value="@d.Name" /><input type="hidden" name="phone" value="@d.Phone" /><input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLower())" />
+                                        <button class="btn btn-icon btn-sm btn-light-@(d.IsActive ? "warning" : "success") me-1" title="@(d.IsActive ? Localizer["Deactivate"].Value : Localizer["Activate"].Value)"><i class="ki-outline ki-@(d.IsActive ? "cross" : "check") fs-5"></i></button>
+                                    </form>
+                                    <form asp-action="DeleteDriver" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete driver?"]">
+                                        @Html.AntiForgeryToken()<input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="branchId" value="@fB" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    @if (!drivers.Any()) { <div class="text-center text-muted py-6">@Localizer["No drivers yet."]</div> }
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+@section Scripts {
+<script>
+var base='@Url.Action("Drivers","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+</script>
+}

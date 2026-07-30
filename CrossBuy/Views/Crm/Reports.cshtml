@@ -1,0 +1,100 @@
+@using CrossBuy.BL
+@model CrmReport
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    string stNm(string s) => Localizer[s].Value;
+    string oppNm(string s) => Localizer[s].Value;
+    var totalLeads = Model.LeadsByStatus.Values.Sum();
+    string Raw(decimal v) => v.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["CRM 360° reports"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">CRM</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">360°</li></ul></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <!--begin::KPI cards-->
+        <div class="row g-3 g-xl-5 mb-5">
+            @{ var tkAlert = Model.TicketsBreached > 0; }
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
+                <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@totalLeads">@totalLeads</span><span class="fs-7 text-muted mt-2">@Localizer["Leads"]</span><span class="fs-8 text-muted mt-1">@Localizer["Hot"] @Model.LeadsHot · @Localizer["Warm"] @Model.LeadsWarm</span></div>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-user-square fs-2x" style="color:#13433a;"></i></span></span>
+            </div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
+                <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.PipelineWeighted)">@Model.PipelineWeighted.ToString("N0")</span><span class="fs-7 text-muted mt-2">@Localizer["Pipeline (weighted)"]</span><span class="fs-8 text-muted mt-1">@Model.OppOpen @Localizer["open"]</span></div>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-chart-line-up fs-2x" style="color:#13433a;"></i></span></span>
+            </div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
+                <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.WonValue)">@Model.WonValue.ToString("N0")</span><span class="fs-7 text-muted mt-2">@Localizer["Won"]</span><span class="fs-8 text-muted mt-1">@Localizer["Win rate"] @(Model.WinRatePct == null ? "—" : Model.WinRatePct + "%")</span></div>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-medal-star fs-2x" style="color:#13433a;"></i></span></span>
+            </div></div></div>
+            <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
+                <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold lh-1" style="color:@(tkAlert?"#d92d20":"#1a1a1a")" data-kt-countup="true" data-kt-countup-value="@Model.TicketsOpen">@Model.TicketsOpen</span><span class="fs-7 text-muted mt-2">@Localizer["Open tickets"]</span><span class="fs-8 mt-1" style="color:@(tkAlert?"#d92d20":"#99a1b7")">@Model.TicketsBreached @Localizer["SLA breached"]</span></div>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:@(tkAlert?"#fdeaea":"#eaf3ef");"><i class="ki-outline ki-questionnaire-tablet fs-2x" style="color:@(tkAlert?"#d92d20":"#13433a");"></i></span></span>
+            </div></div></div>
+        </div>
+
+        <div class="row g-5 mb-5">
+            <!--begin::Lead funnel-->
+            <div class="col-lg-6"><div class="card h-100"><div class="card-header"><div class="card-title fw-bold">@Localizer["Lead funnel"]</div></div>
+                <div class="card-body"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-2" style="font-variant-numeric:tabular-nums;">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th>@SR["Status"]</th><th class="text-end">@Localizer["Count"]</th><th class="text-end">%</th></tr></thead>
+                    <tbody>
+                    @foreach (var kv in Model.LeadsByStatus.OrderByDescending(x => x.Value))
+                    {
+                        var pct = totalLeads > 0 ? Math.Round((decimal)kv.Value / totalLeads * 100, 1) : 0;
+                        <tr><td class="fw-semibold text-gray-800">@stNm(kv.Key)</td><td class="text-end fw-bold">@kv.Value</td><td class="text-end text-muted">@pct%</td></tr>
+                    }
+                    @if (totalLeads == 0) { <tr><td colspan="3" class="text-center text-muted py-6">@Localizer["No data"]</td></tr> }
+                    </tbody>
+                </table></div></div></div></div>
+
+            <!--begin::Pipeline by stage-->
+            <div class="col-lg-6"><div class="card h-100"><div class="card-header"><div class="card-title fw-bold">@Localizer["Pipeline by stage"]</div></div>
+                <div class="card-body"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-2" style="font-variant-numeric:tabular-nums;">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th>@Localizer["Stage"]</th><th class="text-center">@Localizer["Count"]</th><th class="text-end">@Localizer["Value"]</th></tr></thead>
+                    <tbody>
+                    @foreach (var p in Model.Pipeline)
+                    {
+                        <tr><td class="fw-semibold text-gray-800">@oppNm(p.Stage)</td><td class="text-center">@p.Count</td><td class="text-end fw-bold">@p.Amount.ToString("N0")</td></tr>
+                    }
+                    @if (Model.Pipeline.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-6">@Localizer["No open opportunities"]</td></tr> }
+                    </tbody>
+                    <tfoot><tr class="fw-bold border-top"><td>@Localizer["Won / Lost"]</td><td class="text-center text-primary">@Model.OppWon</td><td class="text-end text-danger">@Model.OppLost</td></tr></tfoot>
+                </table></div></div></div></div>
+        </div>
+
+        <div class="row g-5 mb-5">
+            <!--begin::Activities + campaigns-->
+            <div class="col-lg-6"><div class="card h-100"><div class="card-body py-5">
+                <div class="d-flex flex-wrap gap-8">
+                    <div><div class="fs-8 text-muted">@Localizer["Open activities"]</div><div class="fw-bold fs-3 text-gray-900">@Model.ActOpen</div></div>
+                    <div><div class="fs-8 text-muted">@Localizer["Done"]</div><div class="fw-bold fs-3 text-primary">@Model.ActDone</div></div>
+                    <div><div class="fs-8 text-muted">@Localizer["Overdue"]</div><div class="fw-bold fs-3 @(Model.ActOverdue>0?"text-danger":"text-gray-900")">@Model.ActOverdue</div></div>
+                </div>
+                <div class="separator my-4"></div>
+                <div class="d-flex flex-wrap gap-8">
+                    <div><div class="fs-8 text-muted">@Localizer["Campaigns"]</div><div class="fw-bold fs-3 text-gray-900">@Model.CampaignCount</div></div>
+                    <div><div class="fs-8 text-muted">@Localizer["Budget"]</div><div class="fw-bold fs-4 text-gray-800">@Model.CampaignBudget.ToString("N0")</div></div>
+                    <div><div class="fs-8 text-muted">@Localizer["Campaign ROI"]</div><div class="fw-bold fs-4 @(Model.CampaignRoiPct==null?"text-muted":(Model.CampaignRoiPct>=0?"text-primary":"text-danger"))">@(Model.CampaignRoiPct==null?"—":Model.CampaignRoiPct+"%")</div></div>
+                </div>
+            </div></div></div>
+
+            <!--begin::Top reps-->
+            <div class="col-lg-6"><div class="card h-100"><div class="card-header"><div class="card-title fw-bold">@Localizer["Rep performance"]</div></div>
+                <div class="card-body"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-2" style="font-variant-numeric:tabular-nums;">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th>@Localizer["Rep"]</th><th class="text-center">@Localizer["Leads"]</th><th class="text-center">@Localizer["Opps"]</th><th class="text-end">@Localizer["Won"]</th></tr></thead>
+                    <tbody>
+                    @foreach (var o in Model.Owners)
+                    {
+                        <tr><td class="fw-semibold text-gray-800">@o.Name</td><td class="text-center">@o.Leads</td><td class="text-center">@o.OpenOpps</td><td class="text-end fw-bold text-primary">@o.WonValue.ToString("N0")</td></tr>
+                    }
+                    @if (Model.Owners.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-6">@Localizer["No data"]</td></tr> }
+                    </tbody>
+                </table></div></div></div></div>
+        </div>
+    </div></div>
+</div>

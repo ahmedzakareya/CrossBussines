@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Jan" xml:space="preserve">
+    <value>janv.</value>
+  </data>
+  <data name="Feb" xml:space="preserve">
+    <value>févr.</value>
+  </data>
+  <data name="Mar" xml:space="preserve">
+    <value>mars</value>
+  </data>
+  <data name="Apr" xml:space="preserve">
+    <value>avr.</value>
+  </data>
+  <data name="May" xml:space="preserve">
+    <value>mai</value>
+  </data>
+  <data name="Jun" xml:space="preserve">
+    <value>juin</value>
+  </data>
+  <data name="Jul" xml:space="preserve">
+    <value>juil.</value>
+  </data>
+  <data name="Aug" xml:space="preserve">
+    <value>août</value>
+  </data>
+  <data name="Sep" xml:space="preserve">
+    <value>sept.</value>
+  </data>
+  <data name="Oct" xml:space="preserve">
+    <value>oct.</value>
+  </data>
+  <data name="Nov" xml:space="preserve">
+    <value>nov.</value>
+  </data>
+  <data name="Dec" xml:space="preserve">
+    <value>déc.</value>
+  </data>
+  <data name="Payroll disbursement &amp; remittance" xml:space="preserve">
+    <value>Décaissement &amp; versement de la paie</value>
+  </data>
+  <data name="Disbursement" xml:space="preserve">
+    <value>Décaissement</value>
+  </data>
+  <data name="No payroll posted for {0} {1} yet. Post it first from «Payroll run»." xml:space="preserve">
+    <value>Aucune paie comptabilisée pour {0} {1}. Comptabilisez-la d'abord depuis «Exécution de la paie».</value>
+  </data>
+  <data name="Net salaries" xml:space="preserve">
+    <value>Salaires nets</value>
+  </data>
+  <data name="Due" xml:space="preserve">
+    <value>Dû</value>
+  </data>
+  <data name="Remitted" xml:space="preserve">
+    <value>Versé</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>EGP</value>
+  </data>
+  <data name="Pay from" xml:space="preserve">
+    <value>Payer depuis</value>
+  </data>
+  <data name="Remit date" xml:space="preserve">
+    <value>Date de versement</value>
+  </data>
+  <data name="Pay date" xml:space="preserve">
+    <value>Date de paiement</value>
+  </data>
+  <data name="Dr 2103 Payroll payable / Cr bank or cash" xml:space="preserve">
+    <value>Débit 2103 Paie à payer / Crédit banque ou caisse</value>
+  </data>
+  <data name="Disburse payroll and clear the payable account?" xml:space="preserve">
+    <value>Décaisser la paie et solder le compte à payer ?</value>
+  </data>
+  <data name="Disburse" xml:space="preserve">
+    <value>Décaisser</value>
+  </data>
+  <data name="Disbursed; payable cleared." xml:space="preserve">
+    <value>Décaissé ; compte à payer soldé.</value>
+  </data>
+  <data name="Income tax" xml:space="preserve">
+    <value>Impôt sur le revenu</value>
+  </data>
+  <data name="Dr 210205 Tax payable / Cr bank" xml:space="preserve">
+    <value>Débit 210205 Taxe à payer / Crédit banque</value>
+  </data>
+  <data name="Remit to authority" xml:space="preserve">
+    <value>Verser à l'administration</value>
+  </data>
+  <data name="Remitted to tax authority." xml:space="preserve">
+    <value>Versé à l'administration fiscale.</value>
+  </data>
+  <data name="Social insurance" xml:space="preserve">
+    <value>Assurance sociale</value>
+  </data>
+  <data name="Dr 210204 SI payable / Cr bank (both shares)" xml:space="preserve">
+    <value>Débit 210204 AS à payer / Crédit banque (les deux parts)</value>
+  </data>
+  <data name="Remit to authority (SI)" xml:space="preserve">
+    <value>Verser à l'administration</value>
+  </data>
+  <data name="Remitted to social insurance." xml:space="preserve">
+    <value>Versé à l'assurance sociale.</value>
+  </data>
+  <data name="No bank or cash account. Create one under «Banks &amp; cash» first." xml:space="preserve">
+    <value>Aucun compte bancaire ou de caisse. Créez-en un d'abord dans «Banques &amp; caisse».</value>
+  </data>
+</root>

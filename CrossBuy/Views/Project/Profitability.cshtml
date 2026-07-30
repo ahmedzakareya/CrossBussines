@@ -1,0 +1,86 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<ProjectPnlRow>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    DateTime from = ViewBag.From, to = ViewBag.To;
+    decimal totRev = Model.Sum(r => r.Revenue), totCost = Model.Sum(r => r.Cost), totProfit = Model.Sum(r => r.Profit);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Project profitability"]</h1>
+        <a href="@Url.Action("Projects","Project")" class="btn btn-light">@Localizer["Projects"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush mb-5"><div class="card-body py-5"><form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["From"]</label>
+                <div class="d-flex align-items-center position-relative">
+                    <i class="ki-outline ki-calendar-8 fs-4 position-absolute ms-4" style="color:#13433a;"></i>
+                    <input name="from" id="prf_from" value="@from.ToString("yyyy-MM-dd")" class="form-control form-control-solid js-prf-date ps-12" autocomplete="off" />
+                </div></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["To"]</label>
+                <div class="d-flex align-items-center position-relative">
+                    <i class="ki-outline ki-calendar-8 fs-4 position-absolute ms-4" style="color:#13433a;"></i>
+                    <input name="to" id="prf_to" value="@to.ToString("yyyy-MM-dd")" class="form-control form-control-solid js-prf-date ps-12" autocomplete="off" />
+                </div></div>
+            <div class="col-md-2"><button class="btn btn-light-primary w-100"><i class="ki-outline ki-magnifier fs-3"></i>@SR["Show"]</button></div>
+        </form></div></div>
+
+        @{ bool profit = totProfit >= 0; string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture); }
+        <div class="card mb-5"><div class="card-body py-8">
+            <div class="row">
+                <div class="col">
+                    <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                        <span class="fs-4 fw-semibold text-primary pb-1 px-2">@Localizer["Total revenue"]</span>
+                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(totRev)" data-kt-countup-decimal-places="2">@totRev.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                        <span class="fs-4 fw-semibold text-danger pb-1 px-2">@Localizer["Total cost"]</span>
+                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(totCost)" data-kt-countup-decimal-places="2">@totCost.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card card-dashed flex-center min-w-175px my-3 p-6">
+                        <span class="fs-4 fw-semibold pb-1 px-2 @(profit ? "" : "text-danger")" style="@(profit ? "color:#13433a" : "")">@Localizer["Net profit"]</span>
+                        <span class="fs-lg-2tx fw-bold d-flex justify-content-center @(profit ? "" : "text-danger")" data-kt-countup="true" data-kt-countup-value="@Raw(totProfit)" data-kt-countup-decimal-places="2">@totProfit.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+        </div></div>
+
+        <div class="card card-flush"><div class="card-body pt-6 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@SR["Code"]</th><th>@Localizer["Project"]</th><th class="text-end">@Localizer["Revenue"]</th><th class="text-end">@Localizer["Cost"]</th><th class="text-end">@Localizer["Profit"]</th><th class="text-center">@Localizer["Margin%"]</th><th class="text-end">@Localizer["Budget"]</th></tr></thead>
+            <tbody>
+            @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-8">@Localizer["No project data in this range"]</td></tr> }
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td><span class="badge fs-8 fw-bold" style="background:#e9f1ee;color:#13433a;">@r.Code</span></td>
+                    <td class="fw-bold text-gray-900">@r.Name</td>
+                    <td class="text-end fw-semibold text-primary">@r.Revenue.ToString("N2")</td>
+                    <td class="text-end text-danger">@r.Cost.ToString("N2")</td>
+                    <td class="text-end fw-bold @(r.Profit >= 0 ? "text-primary" : "text-danger")">@r.Profit.ToString("N2")</td>
+                    <td class="text-center fw-bold text-gray-800">@r.MarginPct.ToString("0.#")%</td>
+                    <td class="text-end text-muted">@(r.Budget.HasValue ? r.Budget.Value.ToString("N2") : "—")</td>
+                </tr>
+            }
+            </tbody>
+        </table></div>
+        <div class="text-muted fs-8 mt-3">@Localizer["Revenue = net credit on 4xxx · Cost = net debit on 5xxx (incl. 520108/520109 for manufacturing) — for project-tagged entries."]</div>
+        </div></div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    if (typeof flatpickr === 'undefined') return;
+    document.querySelectorAll('.js-prf-date').forEach(function (el) {
+        flatpickr(el, { dateFormat: "Y-m-d", locale: { firstDayOfWeek: 6 }, allowInput: true });
+    });
+})();
+</script>
+}

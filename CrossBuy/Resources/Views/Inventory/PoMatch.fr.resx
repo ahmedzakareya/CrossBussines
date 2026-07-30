@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Three-way match" xml:space="preserve">
+    <value>Rapprochement à trois voies</value>
+  </data>
+  <data name="Purchase orders" xml:space="preserve">
+    <value>Bons de commande</value>
+  </data>
+  <data name="Match" xml:space="preserve">
+    <value>Rapprochement</value>
+  </data>
+  <data name="Back to PO" xml:space="preserve">
+    <value>Retour au bon de commande</value>
+  </data>
+  <data name="Not received yet — three-way match applies once a goods receipt is posted." xml:space="preserve">
+    <value>Pas encore reçu — le rapprochement à trois voies s'applique une fois qu'une réception de marchandises est comptabilisée.</value>
+  </data>
+  <data name="Match passed ✔" xml:space="preserve">
+    <value>Rapprochement réussi ✔</value>
+  </data>
+  <data name="Variance beyond tolerance ✘" xml:space="preserve">
+    <value>Écart au-delà de la tolérance ✘</value>
+  </data>
+  <data name="Tolerance: qty" xml:space="preserve">
+    <value>Tolérance : qté</value>
+  </data>
+  <data name="price" xml:space="preserve">
+    <value>prix</value>
+  </data>
+  <data name="Ordered" xml:space="preserve">
+    <value>Commandé</value>
+  </data>
+  <data name="Received" xml:space="preserve">
+    <value>Reçu</value>
+  </data>
+  <data name="PO price" xml:space="preserve">
+    <value>Prix du bon de commande</value>
+  </data>
+  <data name="Recv. cost" xml:space="preserve">
+    <value>Coût de réception</value>
+  </data>
+  <data name="Qty var%" xml:space="preserve">
+    <value>Écart qté%</value>
+  </data>
+  <data name="Price var%" xml:space="preserve">
+    <value>Écart prix%</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Variance" xml:space="preserve">
+    <value>Écart</value>
+  </data>
+  <data name="No stock lines to match" xml:space="preserve">
+    <value>Aucune ligne de stock à rapprocher</value>
+  </data>
+</root>

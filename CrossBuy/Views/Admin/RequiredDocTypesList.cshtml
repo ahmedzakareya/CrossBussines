@@ -1,0 +1,220 @@
+@model List<CrossBuy.Models.Context.Admin.RequiredDocumentType>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    ViewData["Title"] = Localizer["Required documents"].Value;
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Required documents"]</h1>
+                <span class="text-muted fs-7">@Localizer["The checklist applied to every job application — mandatory vs optional."]</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" onclick="openDocTypeModal(0)">
+                <i class="ki-outline ki-plus fs-2"></i> @SR["New"]
+            </button>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="card card-flush">
+                <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+                    <div class="card-title">
+                        <div class="d-flex align-items-center position-relative my-1">
+                            <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                            <input type="text" id="docSearch" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" />
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed fs-6 gy-4" id="docTable">
+                            <thead>
+                                <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                                    <th class="min-w-250px">@SR["Name"]</th>
+                                    <th class="text-center min-w-100px">@Localizer["Requirement"]</th>
+                                    <th class="text-center min-w-90px">@SR["Status"]</th>
+                                    <th class="text-center w-80px">@Localizer["Order"]</th>
+                                    <th class="text-end min-w-100px">@SR["Actions"]</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fw-semibold text-gray-600">
+                                @if (Model != null && Model.Any())
+                                {
+                                    foreach (var t in Model)
+                                    {
+                                        <tr data-search="@((t.Name + " " + t.NameEn).ToLower())">
+                                            <td class="d-flex flex-column">
+                                                <span class="text-gray-900 fw-bold">@nm(t.Name, t.NameEn)</span>
+                                                <span class="text-muted fs-7">@(isAr ? t.NameEn : t.Name)</span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (t.IsMandatory) { <span class="badge badge-light-danger">@Localizer["Mandatory"]</span> }
+                                                else { <span class="badge badge-light-secondary">@Localizer["Optional"]</span> }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (t.IsActive) { <span class="badge badge-light-primary">@Localizer["Active"]</span> }
+                                                else { <span class="badge badge-light-secondary">@Localizer["Inactive"]</span> }
+                                            </td>
+                                            <td class="text-center text-muted">@t.SortOrder</td>
+                                            <td class="text-end">
+                                                <a href="javascript:void(0);" onclick="openDocTypeModal(@t.ID)" class="btn btn-icon btn-color-muted btn-bg-light btn-active-color-primary btn-sm me-2" title="@SR["Edit"]">
+                                                    <i class="ki-outline ki-pencil fs-4"></i>
+                                                </a>
+                                                <a href="javascript:void(0);" onclick="deleteDocType(@t.ID)" class="btn btn-icon btn-color-muted btn-bg-light btn-active-color-danger btn-sm" title="@SR["Delete"]">
+                                                    <i class="ki-outline ki-trash fs-4"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model == null || !Model.Any())
+                    {
+                        <div class="text-center text-muted py-10">@Localizer["No document types yet"]</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--begin::Modal-->
+<div class="modal fade" id="docTypeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-600px">
+        <div class="modal-content rounded">
+            <div class="modal-header pb-0 border-0 justify-content-end">
+                <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+            </div>
+            <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+                <form id="docTypeForm" class="form" action="#">
+                    <input type="hidden" id="docId" value="0" />
+                    <div class="mb-10 text-center">
+                        <h1 class="mb-3 text-primary" id="docModalTitle">@SR["New"]</h1>
+                    </div>
+                    <div class="row mb-6">
+                        <div class="col-md-6 fv-row">
+                            <label class="fs-6 fw-semibold mb-2"><span class="required">@SR["NameAr"]</span></label>
+                            <input type="text" class="form-control form-control-solid" name="doc_name_ar" id="docNameAr" placeholder="@SR["NameAr"]" />
+                        </div>
+                        <div class="col-md-6 fv-row">
+                            <label class="fs-6 fw-semibold mb-2">@SR["NameEn"]</label>
+                            <input type="text" class="form-control form-control-solid" name="doc_name_en" id="docNameEn" placeholder="@SR["NameEn"]" />
+                        </div>
+                    </div>
+                    <div class="row mb-6 align-items-center">
+                        <div class="col-md-4 fv-row">
+                            <label class="fs-6 fw-semibold mb-2">@Localizer["Order"]</label>
+                            <input type="number" min="0" class="form-control form-control-solid" id="docSort" value="0" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-check form-switch form-check-custom form-check-solid mt-8">
+                                <input class="form-check-input" type="checkbox" id="docMandatory" checked />
+                                <span class="form-check-label fw-semibold">@Localizer["Mandatory"]</span>
+                            </label>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-check form-switch form-check-custom form-check-solid mt-8">
+                                <input class="form-check-input" type="checkbox" id="docActive" checked />
+                                <span class="form-check-label fw-semibold">@Localizer["Active"]</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button type="reset" class="btn btn-light me-3" data-bs-dismiss="modal">@SR["Cancel"]</button>
+                        <button type="button" class="btn btn-primary" id="docSaveBtn">@SR["Save"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Modal-->
+
+@section Scripts {
+<script>
+(function () {
+    // real client-side search
+    var search = document.getElementById('docSearch');
+    if (search) search.addEventListener('input', function () {
+        var q = this.value.trim().toLowerCase();
+        document.querySelectorAll('#docTable tbody tr').forEach(function (tr) {
+            tr.style.display = (!q || (tr.getAttribute('data-search') || '').indexOf(q) >= 0) ? '' : 'none';
+        });
+    });
+
+    window.openDocTypeModal = function (id) {
+        document.getElementById('docTypeForm').reset();
+        document.getElementById('docId').value = 0;
+        document.getElementById('docMandatory').checked = true;
+        document.getElementById('docActive').checked = true;
+        if (id > 0) {
+            $.getJSON('/Admin/GetRequiredDocTypeById', { id: id }, function (r) {
+                if (r.success) {
+                    document.getElementById('docId').value = r.data.id;
+                    document.getElementById('docNameAr').value = r.data.nameAr || '';
+                    document.getElementById('docNameEn').value = r.data.nameEn || '';
+                    document.getElementById('docSort').value = r.data.sortOrder || 0;
+                    document.getElementById('docMandatory').checked = !!r.data.isMandatory;
+                    document.getElementById('docActive').checked = !!r.data.isActive;
+                    document.getElementById('docModalTitle').textContent = '@SR["Edit"]';
+                    $('#docTypeModal').modal('show');
+                } else { CB.toast.error(r.message || '@Localizer["Failed to load data."]'); }
+            });
+        } else {
+            document.getElementById('docModalTitle').textContent = '@SR["New"]';
+            $('#docTypeModal').modal('show');
+        }
+    };
+
+    document.getElementById('docSaveBtn').addEventListener('click', function () {
+        var nameAr = document.getElementById('docNameAr').value.trim();
+        if (!nameAr) { CB.toast.error('@SR["FillRequiredFields"]'); return; }
+        var data = {
+            ID: parseInt(document.getElementById('docId').value) || 0,
+            NameAr: nameAr,
+            NameEn: document.getElementById('docNameEn').value.trim(),
+            IsMandatory: document.getElementById('docMandatory').checked,
+            IsActive: document.getElementById('docActive').checked,
+            SortOrder: parseInt(document.getElementById('docSort').value) || 0
+        };
+        var send = function () {
+            $.ajax({
+                type: 'POST', url: '/Admin/SaveRequiredDocType',
+                data: JSON.stringify(data), contentType: 'application/json; charset=utf-8',
+                success: function (r) {
+                    if (r.success) { CB.toast.success('@SR["Success"]'); $('#docTypeModal').modal('hide'); setTimeout(function () { location.reload(); }, 800); }
+                    else { CB.toast.error(r.message || '@Localizer["An error occurred while saving."]'); }
+                },
+                error: function () { CB.toast.error('@Localizer["An error occurred while sending."]'); }
+            });
+        };
+        if (data.ID > 0) { CB.confirm({ type: 'edit' }).then(function (ok) { if (ok) send(); }); } else { send(); }
+    });
+
+    window.deleteDocType = function (id) {
+        CB.confirm({ type: 'delete' }).then(function (ok) {
+            if (!ok) return;
+            $.ajax({
+                type: 'POST', url: '/Admin/DeleteRequiredDocType', data: { id: id },
+                success: function (r) {
+                    if (r.success) { CB.toast.success('@SR["Success"]'); setTimeout(function () { location.reload(); }, 800); }
+                    else { CB.toast.error(r.message || '@Localizer["An error occurred while saving."]'); }
+                },
+                error: function () { CB.toast.error('@Localizer["An error occurred while sending."]'); }
+            });
+        });
+    };
+})();
+</script>
+}

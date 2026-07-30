@@ -1,0 +1,91 @@
+@using CrossBuy.Models.Context.Crm
+@model CrmAccount
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isEdit = Model.ID > 0;
+    var customerName = ViewBag.CustomerName as string;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var acctDisplayName = !isAr && !string.IsNullOrWhiteSpace(Model.NameEn) ? Model.NameEn! : Model.Name;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? acctDisplayName : Localizer["New account"].Value)</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Accounts","Crm")" class="text-muted text-hover-primary">@Localizer["Accounts"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isEdit ? ("#" + Model.ID) : Localizer["New"].Value)</li></ul></div>
+        <a href="@Url.Action("Accounts","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (isEdit && Model.CustomerId.HasValue)
+        {
+            <div class="alert alert-light-success border border-success border-dashed d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-check-circle fs-2 text-primary me-3"></i>
+                <span class="fs-7 text-gray-700">@Localizer["Linked to a financial customer"]: <strong>@customerName</strong> (#@Model.CustomerId)</span></div>
+        }
+        else if (isEdit)
+        {
+            <div class="alert alert-light-primary border border-primary border-dashed d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+                <span class="fs-7 text-gray-700">@Localizer["Prospect account — a financial customer is created/linked automatically when the first opportunity is won."]</span></div>
+        }
+
+        <!--begin::Account form-->
+        <form asp-action="SaveAccount" method="post" data-cb-confirm data-cb-action="@(isEdit ? "edit" : "save")" data-cb-text="@Localizer["Save account?"]">@Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.ID" />
+            <div class="card mb-5"><div class="card-body py-6"><div class="row g-4">
+                <div class="col-md-5"><label class="required fw-semibold fs-7 text-muted mb-1">@Localizer["Account name"]</label><input name="name" class="form-control form-control-solid" value="@Model.Name" required /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" value="@Model.NameEn" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Industry"]</label><input name="industry" class="form-control form-control-solid" value="@Model.Industry" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Industry (EN)"]</label><input name="industryEn" class="form-control form-control-solid" value="@Model.IndustryEn" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Phone"]</label><input name="phone" class="form-control form-control-solid" value="@Model.Phone" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Email"]</label><input name="email" class="form-control form-control-solid" value="@Model.Email" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Website"]</label><input name="website" class="form-control form-control-solid" value="@Model.Website" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Segment"]</label><input name="segment" class="form-control form-control-solid" value="@Model.Segment" placeholder="VIP / @Localizer["Wholesale"]" /></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Address"]</label><input name="address" class="form-control form-control-solid" value="@Model.Address" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Source"]</label><input name="source" class="form-control form-control-solid" value="@Model.Source" /></div>
+                <div class="col-md-3 d-flex align-items-end"><div class="form-check form-switch"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" value="true" id="isActive" @(Model.IsActive ? "checked" : "")><label class="form-check-label fw-semibold ms-2" for="isActive">@SR["Active"]</label></div></div>
+                <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Notes"]</label><textarea name="notes" class="form-control form-control-solid" rows="2">@Model.Notes</textarea></div>
+            </div></div></div>
+            <div class="d-flex justify-content-end gap-2 mb-5"><a href="@Url.Action("Accounts","Crm")" class="btn btn-light">@SR["Cancel"]</a><button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
+        </form>
+        <!--end::Account form-->
+
+        @if (isEdit)
+        {
+            <!--begin::Contacts-->
+            <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Contacts"]</div></div>
+                <div class="card-body">
+                    <form asp-action="SaveContact" method="post" class="row g-3 align-items-end mb-5 bg-light-primary rounded p-4">@Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="0" /><input type="hidden" name="accountId" value="@Model.ID" />
+                        <div class="col-md-3"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" required /></div>
+                        <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" /></div>
+                        <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Title"]</label><input name="title" class="form-control form-control-solid" /></div>
+                        <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Title (EN)"]</label><input name="titleEn" class="form-control form-control-solid" /></div>
+                        <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Phone"]</label><input name="phone" class="form-control form-control-solid" /></div>
+                        <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Email"]</label><input name="email" class="form-control form-control-solid" /></div>
+                        <div class="col-md-3 d-flex align-items-end gap-2"><div class="form-check form-switch"><input type="hidden" name="isPrimary" value="false" /><input class="form-check-input" type="checkbox" name="isPrimary" value="true" id="prim"><label class="form-check-label fw-semibold ms-1 fs-8" for="prim">@Localizer["Primary"]</label></div><button class="btn btn-primary btn-sm"><i class="ki-outline ki-plus fs-4"></i></button></div>
+                    </form>
+                    <div class="table-responsive"><table class="table table-row-bordered align-middle gy-2">
+                        <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@SR["Name"]</th><th>@Localizer["Title"]</th><th>@SR["Phone"]</th><th>@SR["Email"]</th><th class="text-center">@Localizer["Primary"]</th><th class="text-end"></th></tr></thead>
+                        <tbody>
+                        @{ var cIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"; }
+                        @foreach (var c in Model.Contacts)
+                        {
+                            <tr>
+                                <td class="fw-bold text-gray-800">@(!cIsAr && !string.IsNullOrWhiteSpace(c.NameEn) ? c.NameEn : c.Name)</td><td>@(!cIsAr && !string.IsNullOrWhiteSpace(c.TitleEn) ? c.TitleEn : c.Title)</td><td class="text-muted">@c.Phone</td><td class="text-muted">@c.Email</td>
+                                <td class="text-center">@if (c.IsPrimary) { <i class="ki-outline ki-check-circle fs-4 text-primary"></i> }</td>
+                                <td class="text-end"><form asp-action="DeleteContact" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete contact?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.ID" /><input type="hidden" name="accountId" value="@Model.ID" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-6"></i></button></form></td>
+                            </tr>
+                        }
+                        @if (Model.Contacts.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-6">@Localizer["No contacts"]</td></tr> }
+                        </tbody>
+                    </table></div>
+                </div>
+            </div>
+            <!--end::Contacts-->
+
+            @if (ViewBag.Timeline != null)
+            {
+                @await Html.PartialAsync("_Timeline", (List<Activity>)ViewBag.Timeline)
+            }
+        }
+    </div></div>
+</div>

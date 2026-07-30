@@ -1,0 +1,12 @@
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    ViewData["Title"] = Localizer["Home Page"].Value;
+}
+<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
+
+<div class="text-center">
+    <h1 class="display-4">@Localizer["Welcome"]</h1>
+    <h1 class="display-4" style="font-family:Cairo">@Localizer["Welcome (Arabic)"]</h1>
+    <p>@Localizer["Learn about"] <a href="https://learn.microsoft.com/aspnet/core">@Localizer["building Web apps with ASP.NET Core"]</a>.</p>
+</div>

@@ -1,0 +1,392 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+<style>
+    /* merge the quick-add (+) button flush with the dropdown. Plain select is handled by Bootstrap's input-group;
+       this only fixes the select2 box (fill the row + flatten the corner facing the button). */
+    .cbqa-ig{flex-wrap:nowrap;align-items:stretch}
+    /* width:1% + min-width:0 = the canonical Bootstrap input-group form-control trick, needed because select2 is a <span>
+       not a real .form-control: it lets the box GROW to fill the row yet SHRINK below its (nowrap) text so long option
+       text truncates with an ellipsis instead of overflowing the frame. */
+    .cbqa-ig>.select2-container{flex:1 1 auto;width:1%!important;min-width:0}
+    .cbqa-ig>.select2-container .select2-selection{height:100%!important;display:flex;align-items:center;border-start-end-radius:0;border-end-end-radius:0}
+    .cbqa-ig>.select2-container .select2-selection__rendered{flex:1 1 auto;min-width:0}
+    /* the + button takes the SAME height as the dropdown (no fixed btn-icon height) */
+    .cbqa-ig>.btn{align-self:stretch;height:auto;min-height:0;width:42px;padding:0;display:flex;align-items:center;justify-content:center}
+    /* keyboard-shortcuts help — brand identity (#13433a) + correct RTL alignment */
+    #cbqaScModal .modal-header{background:#13433a}
+    #cbqaScModal .modal-header .modal-title,#cbqaScModal .modal-header h2{color:#fff}
+    #cbqaScModal .modal-header .btn-icon i{color:#fff}
+    #cbqaScModal .sc-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem .1rem;border-bottom:1px dashed #e6eaef}
+    #cbqaScModal .sc-row:last-child{border-bottom:0}
+    #cbqaScModal .sc-keys{display:inline-flex;align-items:center;gap:.3rem;flex-direction:row}
+    #cbqaScModal .cbqa-kbd{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 10px;border-radius:8px;background:#13433a;color:#fff;font-weight:700;font-size:.82rem;line-height:1;box-shadow:0 2px 0 rgba(19,67,58,.35);font-family:inherit}
+    #cbqaScModal .sc-sep{color:#a1a5b7;font-weight:600}
+    /* barcode column in line grids — its own narrow column so every row stays on one line */
+    #rows .cb-bc-cell{min-width:150px;vertical-align:middle}
+    #rows .cb-bc-cell .cb-bc{min-width:130px}
+    /* line-grid numeric fields were far too narrow (digits clipped) — give them a comfortable width + tighter padding */
+    #rows input.q,#rows input.tax{min-width:90px!important}
+    #rows input.p,#rows input.disc{min-width:120px!important}
+    #rows input.text-end{padding-inline:.55rem}
+    /* totals summary card (matches the reference: soft colored rows + icon tiles) */
+    .cb-totals{max-width:400px;margin-inline-start:auto;border:0;box-shadow:0 3px 18px rgba(20,30,60,.05)}
+    .cb-totals .symbol-label{padding:0}
+    .cb-totals .cb-tot-row + .cb-tot-row{border-top:1px solid rgba(0,0,0,.06)}
+    .cb-totals .cb-tot-div{width:1px;height:18px;background:rgba(0,0,0,.08);flex:0 0 auto}
+</style>
+@* Reusable inline "quick add" for master-data dropdowns on document screens — standard Metronic modal.
+   Include once, then per select:
+     CBQuickAdd.attach('select[name=vendorId]', { title, url, fields:[{name,label,required,placeholder}], requiredMsg, addedMsg });
+     CBQuickAdd.attachIframe(select, { title, url });   // opens the ORIGINAL screen in a modal (heavy master data)
+   attach() POSTs the fields (+ antiforgery) and expects { ok, id, name }, then appends the option SELECTED. *@
+<div class="modal fade" id="cbqaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h2 class="fw-bold" id="cbqaTitle"></h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-6 px-8"><div id="cbqaBody" class="d-flex flex-column gap-4"></div>
+        <div id="cbqaErr" class="text-danger fs-7 mt-3 d-none"></div></div>
+    <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+        <button type="button" class="btn btn-primary" id="cbqaSave"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
+</div></div></div>
+@* large modal that hosts the ORIGINAL screen (e.g. new item) inside an iframe — for "heavy" master data *@
+<div class="modal fade" id="cbqaFrameModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content" style="height:88vh">
+    <div class="modal-header py-4"><h2 class="fw-bold" id="cbqaFrameTitle"></h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body p-0"><iframe id="cbqaFrame" src="about:blank" style="width:100%;height:100%;border:0"></iframe></div>
+</div></div></div>
+@* keyboard shortcuts help (opens with the ? key or the toolbar button) — brand-styled, RTL-correct *@
+<div class="modal fade" id="cbqaScModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content">
+    <div class="modal-header py-4"><h2 class="fw-bold m-0">@SR["Keyboard shortcuts"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body py-4 px-8">
+        <div class="sc-row"><span class="fw-semibold text-gray-800">@SR["Save"]</span><span dir="ltr" class="sc-keys"><span class="cbqa-kbd">F1</span><span class="sc-sep">/</span><span class="cbqa-kbd">Ctrl</span><span class="sc-sep">+</span><span class="cbqa-kbd">S</span></span></div>
+        <div class="sc-row"><span class="fw-semibold text-gray-800">@SR["Add line"]</span><span dir="ltr" class="sc-keys"><span class="cbqa-kbd">F4</span></span></div>
+        <div class="sc-row"><span class="fw-semibold text-gray-800">@SR["New item"]</span><span dir="ltr" class="sc-keys"><span class="cbqa-kbd">F3</span></span></div>
+        <div class="sc-row"><span class="fw-semibold text-gray-800">@SR["New warehouse"]</span><span dir="ltr" class="sc-keys"><span class="cbqa-kbd">F6</span></span></div>
+        <div class="sc-row"><span class="fw-semibold text-gray-800">@SR["New vendor / customer"]</span><span dir="ltr" class="sc-keys"><span class="cbqa-kbd">F7</span></span></div>
+    </div>
+</div></div></div>
+<script>
+window.CBQuickAdd=(function(){
+    var L={ add:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Add"].Value)),
+        req:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Fill the required fields"].Value)),
+        added:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Added"].Value)),
+        fail:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Could not add"].Value)),
+        conn:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Connection error"].Value)),
+        newVendor:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["New vendor"].Value)),
+        newCustomer:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["New customer"].Value)),
+        vendorAdded:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Vendor added"].Value)),
+        customerAdded:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Customer added"].Value)),
+        fName:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Name"].Value)),
+        fNameEn:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Name (EN)"].Value)),
+        fTax:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Tax reg. no."].Value)),
+        nameReq:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Name is required"].Value)),
+        newWarehouse:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["New warehouse"].Value)),
+        warehouseAdded:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Warehouse added"].Value)),
+        codeReq:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Code and name are required"].Value)),
+        fCode:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Code"].Value)),
+        vendorUrl:'@Url.Action("VendorQuickAdd","Accounting")', customerUrl:'@Url.Action("CustomerQuickAdd","Accounting")',
+        warehouseUrl:'@Url.Action("WarehouseQuickAdd","Inventory")',
+        newItem:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["New item"].Value)),
+        itemUrl:'@Url.Action("CreateItem","Inventory")?embed=true',
+        shortcuts:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Shortcuts"].Value)),
+        scTitle:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Keyboard shortcuts"].Value)),
+        bcPh:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Scan / type barcode then Enter"].Value)),
+        bcCol:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Barcode"].Value)),
+        bcNotFound:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["No item with this barcode"].Value)),
+        totSub:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Subtotal"].Value)),
+        totVat:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["VAT"].Value)),
+        totSubVat:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Subtotal + VAT"].Value)),
+        totTotal:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Total"].Value)),
+        scanUrl:'@Url.Action("ScanBarcode","Inventory")' };
+    var modalEl=document.getElementById('cbqaModal'), M=null;
+    var titleEl=document.getElementById('cbqaTitle'), bodyEl=document.getElementById('cbqaBody'), errEl=document.getElementById('cbqaErr'), saveBtn=document.getElementById('cbqaSave');
+    var cur=null;
+    function modal(){ if(!M && window.bootstrap && bootstrap.Modal) M=new bootstrap.Modal(modalEl); return M; }
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    function tokenVal(){var t=document.querySelector('input[name="__RequestVerificationToken"]');return t?t.value:'';}
+    function showErr(m){errEl.textContent=m;errEl.classList.remove('d-none');}
+    function openModal(select, opts){
+        cur={select:select, opts:opts};
+        titleEl.textContent=opts.title||L.add;
+        errEl.classList.add('d-none'); errEl.textContent='';
+        bodyEl.innerHTML=(opts.fields||[]).map(function(f){
+            return '<div><label class="fw-semibold fs-6 mb-2'+(f.required?' required':'')+'">'+esc(f.label||f.name)+'</label>'+
+                '<input class="form-control form-control-solid cbqa-f" data-f="'+esc(f.name)+'" placeholder="'+esc(f.placeholder||'')+'" /></div>';
+        }).join('');
+        var m=modal(); if(m)m.show();
+        setTimeout(function(){var first=bodyEl.querySelector('.cbqa-f'); if(first)first.focus();},300);
+    }
+    function doSave(){
+        if(!cur)return; var opts=cur.opts, select=cur.select;
+        var fd=new FormData(); fd.append('__RequestVerificationToken', tokenVal());
+        var vals={}, missing=false;
+        [].slice.call(bodyEl.querySelectorAll('.cbqa-f')).forEach(function(inp){var n=inp.getAttribute('data-f'), v=inp.value.trim(); vals[n]=v; fd.append(n,v);});
+        (opts.fields||[]).forEach(function(f){ if(f.required && !vals[f.name]) missing=true; });
+        if(missing){ showErr(opts.requiredMsg||L.req); return; }
+        saveBtn.disabled=true;
+        fetch(opts.url,{method:'POST',body:fd,headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){
+            saveBtn.disabled=false;
+            if(j&&j.ok){
+                var opt=new Option(j.name, j.id, true, true); select.appendChild(opt);
+                if(window.jQuery && jQuery(select).data('select2')){ jQuery(select).val(String(j.id)).trigger('change'); }
+                else { select.value=String(j.id); select.dispatchEvent(new Event('change',{bubbles:true})); }
+                var m=modal(); if(m)m.hide();
+                if(window.CB && CB.toast && CB.toast.success) CB.toast.success(opts.addedMsg||L.added);
+            } else { showErr((j&&j.error)||L.fail); }
+        }).catch(function(){ saveBtn.disabled=false; showErr(L.conn); });
+    }
+    if(saveBtn) saveBtn.addEventListener('click', doSave);
+    if(bodyEl) bodyEl.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doSave(); } });
+    // put a (+) button next to a select (handles plain + select2) and return it
+    function addBtn(el, title, onClick){
+        if(!el || el.getAttribute('data-cbqa')) return null;
+        el.setAttribute('data-cbqa','1');
+        var btn=document.createElement('button'); btn.type='button'; btn.className='btn btn-icon btn-light-primary flex-shrink-0'; btn.title=title||L.add;
+        btn.innerHTML='<i class="ki-outline ki-plus fs-3"></i>';
+        var s2 = (window.jQuery && jQuery(el).data('select2')) ? el.parentNode.querySelector(':scope > .select2-container') : null;
+        var wrap=document.createElement('div'); wrap.className='input-group flex-nowrap cbqa-ig';
+        if(s2){
+            // merge the + with the select2 box (keep the hidden <select> beside its container so select2 stays intact)
+            s2.parentNode.insertBefore(wrap, s2); wrap.appendChild(el); wrap.appendChild(s2); wrap.appendChild(btn);
+        } else {
+            el.parentNode.insertBefore(wrap, el); wrap.appendChild(el); wrap.appendChild(btn);
+        }
+        btn.addEventListener('click', onClick); return btn;
+    }
+    function attach(sel, opts){
+        var el=(typeof sel==='string')?document.querySelector(sel):sel; if(!el) return null;
+        return addBtn(el, opts.title, function(){ openModal(el, opts); });
+    }
+    // heavy variant → open the ORIGINAL screen inside an iframe modal; it postMessages the new record back
+    var frameEl=document.getElementById('cbqaFrameModal'), FM=null, frameCb=null;
+    var iframe=document.getElementById('cbqaFrame'), frameTitle=document.getElementById('cbqaFrameTitle');
+    function frameModal(){ if(!FM && window.bootstrap && bootstrap.Modal) FM=new bootstrap.Modal(frameEl); return FM; }
+    function attachIframe(sel, opts){
+        var el=(typeof sel==='string')?document.querySelector(sel):sel; if(!el) return;
+        addBtn(el, opts.title, function(){ openIframe(opts.url, opts.title, function(rec){
+            var opt=new Option(rec.name, rec.id, true, true); el.appendChild(opt);
+            if(window.jQuery && jQuery(el).data('select2')){ jQuery(el).val(String(rec.id)).trigger('change'); }
+            else { el.value=String(rec.id); el.dispatchEvent(new Event('change',{bubbles:true})); }
+        }); });
+    }
+    function openIframe(url, title, cb){
+        frameCb=cb||null; if(frameTitle)frameTitle.textContent=title||L.add;
+        if(iframe)iframe.src=url; var m=frameModal(); if(m)m.show();
+    }
+    window.addEventListener('message', function(e){
+        var d=e.data||{};
+        if(d.cbQuickAdd){ var m=frameModal(); if(m)m.hide(); if(iframe)iframe.src='about:blank';
+            if(frameCb){ try{ frameCb(d.cbQuickAdd); }catch(_){} }
+            if(window.CB && CB.toast && CB.toast.success) CB.toast.success(L.added); frameCb=null; }
+        else if(d.cbQuickAddCancel){ var m2=frameModal(); if(m2)m2.hide(); if(iframe)iframe.src='about:blank'; frameCb=null; }
+    });
+    // AUTO-WIRE: any screen that includes this partial gets a "+" on its Vendor / Customer / Warehouse dropdowns
+    var vFields=[{name:'name',label:L.fName,required:true},{name:'nameEn',label:L.fNameEn},{name:'taxRegNo',label:L.fTax}];
+    var wFields=[{name:'code',label:L.fCode,required:true},{name:'name',label:L.fName,required:true},{name:'nameEn',label:L.fNameEn}];
+    function autoInit(){
+        [].slice.call(document.querySelectorAll('select[name="vendorId"]:not([data-cbqa])')).forEach(function(el){
+            var b=attach(el, { title:L.newVendor, url:L.vendorUrl, fields:vFields, requiredMsg:L.nameReq, addedMsg:L.vendorAdded }); if(b)b.classList.add('cbqa-party'); });
+        [].slice.call(document.querySelectorAll('select[name="customerId"]:not([data-cbqa])')).forEach(function(el){
+            var b=attach(el, { title:L.newCustomer, url:L.customerUrl, fields:vFields, requiredMsg:L.nameReq, addedMsg:L.customerAdded }); if(b)b.classList.add('cbqa-party'); });
+        [].slice.call(document.querySelectorAll('select[name="warehouseId"]:not([data-cbqa]), select[name="fromWarehouseId"]:not([data-cbqa]), select[name="toWarehouseId"]:not([data-cbqa])')).forEach(function(el){
+            var b=attach(el, { title:L.newWarehouse, url:L.warehouseUrl, fields:wFields, requiredMsg:L.codeReq, addedMsg:L.warehouseAdded }); if(b)b.classList.add('cbqa-wh'); });
+        // "New item" button (#newItem) → opens the ORIGINAL item screen in a modal; on save adds a line with the item.
+        // Relies on the screen's global addRow()/cbItemSelectSet()/calc() (the shared line-editor pattern).
+        var ni=document.getElementById('newItem');
+        if(ni && !ni.getAttribute('data-cbqa')){ ni.setAttribute('data-cbqa','1');
+            ni.addEventListener('click', function(){ openIframe(L.itemUrl, L.newItem, function(rec){
+                if(typeof window.addRow==='function'){ window.addRow();
+                    var tr=document.querySelector('#rows tr:last-child'), it=tr&&tr.querySelector('.it');
+                    if(it && typeof window.cbItemSelectSet==='function'){ window.cbItemSelectSet(it, {id:rec.id, code:rec.code, name:rec.name, price:0, cost:0}); }
+                    if(typeof window.calc==='function') window.calc();
+                } }); });
+        }
+        setupShortcuts();
+        wrapAddRow();
+        setupTotals();
+    }
+    // ===== totals card (replaces the cramped "sub / tax / total" cell with a Metronic summary card) =====
+    function fmtMoney(n){ n=parseFloat(n)||0; return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    function totRow(c,bg,tile,icon,label,key){
+        return '<div class="d-flex align-items-center px-2 py-3 cb-tot-row">'
+             +   '<span class="symbol symbol-30px me-3"><span class="symbol-label bg-transparent"><i class="ki-outline ki-'+icon+' fs-4" style="color:'+c+'"></i></span></span>'
+             +   '<span class="fs-7 fw-semibold flex-grow-1" style="color:'+c+'">'+label+'</span>'
+             +   '<span class="mx-3 cb-tot-div"></span>'
+             +   '<span class="fs-6 fw-bold '+key+'" style="color:'+c+';direction:ltr">0.00</span>'
+             + '</div>'; }
+    function setupTotals(){
+        var tot=document.getElementById('tot'); if(!tot || tot.getAttribute('data-cbtot')) return;
+        if((tot.textContent||'').indexOf('/')<0) return;   // only the sub/tax/total grids
+        tot.setAttribute('data-cbtot','1');
+        var footRow=tot.closest('tr'); if(footRow) footRow.style.display='none';   // hide the cramped cell (kept in DOM so calc still writes to it)
+        var table=tot.closest('table'), host=(table&&table.closest('.card'))||table; if(!host||!host.parentNode) return;
+        var card=document.createElement('div');
+        card.className='card cb-totals mt-4';
+        card.innerHTML='<div class="card-body p-4">'
+            + totRow('#2f6fed','#eef3fc','rgba(47,111,237,.14)','bill',    L.totSub,    'cb-t-sub')
+            + totRow('#1e9e57','#edf7f0','rgba(30,158,87,.14)', 'percentage',L.totVat+' <span class="cb-t-rate"></span>','cb-t-vat')
+            + totRow('#ef8a1e','#fdf3e6','rgba(239,138,30,.14)','calculator',L.totSubVat,'cb-t-subvat')
+            + totRow('#6141d6','#f2eefb','rgba(97,65,214,.14)', 'wallet',    L.totTotal,  'cb-t-total')
+            + '</div>';
+        card.querySelector('.cb-tot-row:last-child').classList.remove('mb-2');
+        host.parentNode.insertBefore(card, host.nextSibling);
+        var render=function(){ var p=(tot.textContent||'').split('/').map(function(x){return parseFloat(x)||0;});
+            var sub=p[0]||0, tax=p[1]||0, total=(p.length>2?p[2]:sub+tax);
+            card.querySelector('.cb-t-sub').textContent=fmtMoney(sub);
+            card.querySelector('.cb-t-vat').textContent=fmtMoney(tax);
+            card.querySelector('.cb-t-subvat').textContent=fmtMoney(sub+tax);
+            card.querySelector('.cb-t-total').textContent=fmtMoney(total);
+            var pct=sub>0?(tax/sub*100):0; pct=Math.round(pct*100)/100;
+            card.querySelector('.cb-t-rate').textContent=(pct%1===0?pct:pct.toFixed(2))+'%';
+        };
+        render();
+        if(window.MutationObserver){ new MutationObserver(render).observe(tot,{childList:true,characterData:true,subtree:true}); }
+    }
+    // ===== keyboard shortcuts (standard for invoice/document screens) =====
+    // F1 save · F4 add line · F3 new item · F6 new warehouse · F7 new vendor/customer · Ctrl+S save
+    var SC={ save:'F1', addLine:'F4', item:'F3', wh:'F6', party:'F7' };
+    function tag(el, key){ if(el && !el.getAttribute('data-sc')){ el.setAttribute('data-sc',key); el.title=((el.getAttribute('title')||el.textContent||'').trim()+' ('+key+')').trim(); } }
+    function openSc(){ var el=document.getElementById('cbqaScModal'); if(el && window.bootstrap && bootstrap.Modal){ bootstrap.Modal.getOrCreateInstance(el).show(); } }
+    function setupShortcuts(){
+        tag(document.getElementById('save'), SC.save);
+        tag(document.getElementById('add'), SC.addLine);
+        tag(document.getElementById('newItem'), SC.item);
+        [].slice.call(document.querySelectorAll('.cbqa-wh')).forEach(function(b){ tag(b, SC.wh); });
+        [].slice.call(document.querySelectorAll('.cbqa-party')).forEach(function(b){ tag(b, SC.party); });
+        // put a small "Shortcuts" button next to Save so the list is discoverable
+        var save=document.getElementById('save');
+        if(save && !document.getElementById('cbqaScBtn')){
+            var b=document.createElement('button'); b.type='button'; b.id='cbqaScBtn'; b.className='btn btn-sm btn-light';
+            b.innerHTML=L.shortcuts+' <span class="badge badge-circle badge-light-primary ms-1">?</span>'; b.title=L.scTitle;
+            b.addEventListener('click', openSc); save.parentNode.insertBefore(b, save);
+        }
+    }
+    function click(el){ if(el && !el.disabled){ el.click(); return true; } return false; }
+    var scBound=false;
+    function bindShortcuts(){ if(scBound)return; scBound=true;
+        document.addEventListener('keydown', function(e){
+            if(e.altKey) return; var k=e.key;
+            if(k==='F1'){ e.preventDefault(); click(document.getElementById('save')); }
+            else if(k==='F4'){ e.preventDefault(); click(document.getElementById('add')); }
+            else if(k==='F3'){ e.preventDefault(); click(document.getElementById('newItem')); }
+            else if(k==='F6'){ e.preventDefault(); click(document.querySelector('.cbqa-wh')); }
+            else if(k==='F7'){ e.preventDefault(); click(document.querySelector('.cbqa-party')); }
+            else if((e.ctrlKey||e.metaKey) && (k==='s'||k==='S')){ e.preventDefault(); click(document.getElementById('save')); }
+            else if(k==='?'){ e.preventDefault(); openSc(); }
+        });
+    }
+    bindShortcuts();
+
+    // ===== barcode-first line entry (invoice/document grids) =====
+    // New row → cursor in a barcode field. Type + Enter: valid → fill the item + jump to next field; invalid → Swal + stop.
+    // Enter moves field→field; Enter on the last field opens a new row.
+    var NAVSEL='.cb-bc,.wh,.d,.q,.u,.p,.disc,.tax,.acc,.cc';
+    // focus targets, one per field: inputs, PLAIN selects, and each select2's focusable box (.select2-selection).
+    // Drop the hidden <select> of a select2 (.select2-hidden-accessible) so a select2 field isn't counted twice.
+    function rowNav(row){ return [].slice.call(row.querySelectorAll(NAVSEL)).filter(function(el){
+        if(el.offsetParent===null || el.disabled) return false;
+        if(el.tagName==='INPUT') return true;
+        if(el.tagName==='SELECT') return !el.classList.contains('select2-hidden-accessible');
+        if(el.tagName==='SPAN') return el.classList.contains('select2-selection');   // the keyboard-focusable select2 box
+        return false; }); }
+    // the underlying <select> for a select2 box (same cell)
+    function s2select(el){ var td=el.closest && el.closest('td'); return td ? td.querySelector('select') : null; }
+    // ---- keyboard control of an in-row select2 (unit etc.): we drive the open list ourselves (arrows/Enter),
+    //      because this Metronic select2 build doesn't respond to keyboard on its own. Focus stays on the box. ----
+    var cbOpenS2=null;
+    function s2results(){ return [].slice.call(document.querySelectorAll('.select2-container--open .select2-results__option')); }
+    function s2valOf(o){ var p=(o.id||'').split('-'); return p[p.length-1]; }   // select2 result id ends with the option value
+    function s2hlIndex(){ var r=s2results(),i; for(i=0;i<r.length;i++) if(r[i].classList.contains('select2-results__option--highlighted')) return i;
+        for(i=0;i<r.length;i++) if(r[i].getAttribute('aria-selected')==='true') return i; return 0; }
+    function s2setHl(idx){ var r=s2results(); if(!r.length)return; if(idx<0)idx=0; if(idx>=r.length)idx=r.length-1;
+        r.forEach(function(o,i){ o.classList.toggle('select2-results__option--highlighted', i===idx); }); if(r[idx].scrollIntoView) r[idx].scrollIntoView({block:'nearest'}); }
+    function s2move(d){ s2setHl(s2hlIndex()+d); }
+    function s2commit(){ var r=s2results(), i=s2hlIndex(); if(cbOpenS2 && r[i]){ jQuery(cbOpenS2.sel).val(s2valOf(r[i])).trigger('change'); } s2closeAdvance(); }
+    function s2closeAdvance(){ var box=cbOpenS2 && cbOpenS2.box; if(cbOpenS2){ try{ jQuery(cbOpenS2.sel).select2('close'); }catch(_){} } cbOpenS2=null; if(box) focusNext(box); }
+    function focusEl(el){ if(!el) return;
+        if(el.classList && el.classList.contains('select2-selection')){                 // land on a unit/master → open the list so the user picks by keyboard
+            var sel=s2select(el);
+            if(sel && window.jQuery && jQuery(sel).data('select2')){ try{
+                jQuery(sel).select2('open'); el.focus(); cbOpenS2={sel:sel,box:el};
+                setTimeout(function(){ s2setHl(s2hlIndex()); },0);   // highlight the current value
+                return; }catch(_){} }
+        }
+        el.focus(); if(el.select && el.tagName==='INPUT') el.select(); }
+    function focusNext(el){ var row=el.closest('tr'); if(!row)return; var nav=rowNav(row), i=nav.indexOf(el); if(i<0)return;
+        var n=i+1;
+        if(n<nav.length) focusEl(nav[n]); else if(typeof window.addRow==='function') window.addRow(); }
+    function bcLookup(inp){
+        var bc=(inp.value||'').trim(); if(!bc)return;
+        fetch(L.scanUrl+'?barcode='+encodeURIComponent(bc),{headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json();}).then(function(d){
+            var row=inp.closest('tr'); if(!row)return;
+            if(d&&d.ok){
+                var it=row.querySelector('.it');
+                if(it && typeof window.cbItemSelectSet==='function'){ window.cbItemSelectSet(it, {id:d.id,code:d.code,name:d.name,nameEn:d.nameEn,price:d.salesPrice,cost:d.cost}); }
+                // pre-fill the unit with the item's base unit (user can still change it when nav lands there)
+                if(d.matchedUomId){ var u=row.querySelector('.u'); if(u){ if(window.jQuery && jQuery(u).data('select2')){ jQuery(u).val(String(d.matchedUomId)).trigger('change'); } else { u.value=String(d.matchedUomId); u.dispatchEvent(new Event('change',{bubbles:true})); } } }
+                if(typeof window.calc==='function') window.calc();
+                var nav=rowNav(row), bi=nav.indexOf(inp); if(bi+1<nav.length) focusEl(nav[bi+1]);   // → next field
+            } else {
+                if(window.Swal) Swal.fire({icon:'error',title:L.bcNotFound,text:bc,buttonsStyling:false,customClass:{confirmButton:'btn btn-primary'}});
+                else alert(L.bcNotFound+': '+bc);
+                inp.select();   // stay on the barcode field, no new row
+            }
+        }).catch(function(){});
+    }
+    // barcode gets its OWN first column (single-line row), not stacked over the item
+    function enhanceRow(row){
+        if(!row || row.getAttribute('data-cbbc')) return null;
+        if(!row.querySelector('.it')) return null;   // only rows with an item picker
+        row.setAttribute('data-cbbc','1');
+        var td=document.createElement('td'); td.className='cb-bc-cell';
+        var inp=document.createElement('input');
+        inp.className='form-control form-control-solid form-control-sm cb-bc'; inp.setAttribute('placeholder', L.bcPh); inp.setAttribute('autocomplete','off');
+        var pv=row.getAttribute('data-cb-bcval'); if(pv) inp.value=pv;   // recall the item barcode (edit mode prefill)
+        td.appendChild(inp); row.insertBefore(td, row.firstChild); return inp;
+    }
+    function addBarcodeColumn(){
+        var body=document.getElementById('rows'); var table=body&&body.closest('table'); if(!table) return;
+        var thr=table.querySelector('thead tr');
+        if(thr && !thr.querySelector('.cb-bc-h')){ var th=document.createElement('th'); th.className='cb-bc-h'; th.style.minWidth='150px'; th.textContent=L.bcCol; thr.insertBefore(th, thr.firstChild); }
+        var foot=table.querySelector('tfoot tr td[colspan]');
+        if(foot && !foot.getAttribute('data-cbbumped')){ foot.setAttribute('data-cbbumped','1'); foot.colSpan=(parseInt(foot.getAttribute('colspan'))||1)+1; }
+    }
+    var addWrapped=false;
+    function wrapAddRow(){
+        if(addWrapped || typeof window.addRow!=='function' || !document.getElementById('rows')) return; addWrapped=true;
+        // if the user picks an in-row select2 with the MOUSE, advance to the next field too (keyboard picks are handled in the keydown route)
+        if(window.jQuery && !window._cbS2Adv){ window._cbS2Adv=true;
+            jQuery(document).on('select2:select', function(ev){ var el=ev.target;
+                if(cbOpenS2) return;   // keyboard path already advances
+                if(!el || !el.closest || !el.closest('#rows tr')) return;
+                var td=el.closest('td'), box=td && td.querySelector('.select2-selection');
+                if(box) setTimeout(function(){ focusNext(box); }, 40); }); }
+        addBarcodeColumn();
+        var orig=window.addRow;
+        window.addRow=function(){ var r=orig.apply(this,arguments); var row=document.querySelector('#rows tr:last-child'); var inp=enhanceRow(row); if(inp) setTimeout(function(){ focusEl(inp); },30); return r; };
+        // robust: any <tr> added by ANY path (the manual "Add line" button binds the screen's LOCAL addRow, not our wrapped window.addRow) still gets a barcode cell
+        if(window.MutationObserver){ new MutationObserver(function(muts){ muts.forEach(function(m){ [].slice.call(m.addedNodes).forEach(function(n){
+            if(n.nodeType===1 && n.tagName==='TR'){ var inp=enhanceRow(n); if(inp) setTimeout(function(){ focusEl(inp); },30); } }); }); }).observe(document.getElementById('rows'),{childList:true}); }
+        // enhance the row(s) already present (the screen adds one on init)
+        [].slice.call(document.querySelectorAll('#rows tr')).forEach(enhanceRow);
+    }
+    document.addEventListener('keydown', function(e){
+        var t=e.target; if(!t||!t.classList) return;
+        // an in-row select2 list is open on the focused box → we drive it: arrows move, Enter picks + advances, Esc keeps + advances
+        if(cbOpenS2 && document.activeElement===cbOpenS2.box){
+            if(e.key==='ArrowDown'){ e.preventDefault(); e.stopImmediatePropagation(); s2move(1); return; }
+            if(e.key==='ArrowUp'){ e.preventDefault(); e.stopImmediatePropagation(); s2move(-1); return; }
+            if(e.key==='Enter'){ e.preventDefault(); e.stopImmediatePropagation(); s2commit(); return; }
+            if(e.key==='Escape'){ e.preventDefault(); e.stopImmediatePropagation(); s2closeAdvance(); return; }
+        }
+        if(e.key!=='Enter') return;
+        if(t.classList.contains('cb-bc')){ e.preventDefault(); bcLookup(t); return; }
+        // a closed select2 box → Enter moves to the next field
+        if(t.classList.contains('select2-selection') && t.closest && t.closest('#rows tr')){ e.preventDefault(); e.stopImmediatePropagation(); focusNext(t); return; }
+        var plain = t.tagName==='INPUT' || (t.tagName==='SELECT' && !t.classList.contains('select2-hidden-accessible'));
+        if(plain && t.closest && t.closest('#rows tr') && t.matches && t.matches(NAVSEL)){ e.preventDefault(); focusNext(t); }
+    }, true);
+
+    // run after Metronic has initialised select2 (DOMContentLoaded), then again on load as a safety net
+    if(document.readyState!=='loading') setTimeout(autoInit,350); else document.addEventListener('DOMContentLoaded', function(){ setTimeout(autoInit,350); });
+    window.addEventListener('load', function(){ setTimeout(autoInit,150); });
+    return { attach: attach, attachIframe: attachIframe, openIframe: openIframe, open: openModal, autoInit: autoInit };
+})();
+</script>

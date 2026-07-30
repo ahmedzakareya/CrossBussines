@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="Manufacturing" xml:space="preserve">
+    <value>التصنيع</value>
+  </data>
+  <data name="Manufacturing dashboard" xml:space="preserve">
+    <value>لوحة التصنيع</value>
+  </data>
+  <data name="Production output" xml:space="preserve">
+    <value>إنتاج التصنيع</value>
+  </data>
+  <data name="Last 6 months — completed value" xml:space="preserve">
+    <value>آخر 6 أشهر — القيمة المكتملة</value>
+  </data>
+  <data name="Production this month" xml:space="preserve">
+    <value>إنتاج هذا الشهر</value>
+  </data>
+  <data name="Produced value" xml:space="preserve">
+    <value>القيمة المنتَجة</value>
+  </data>
+  <data name="Completed WOs" xml:space="preserve">
+    <value>أوامر مكتملة</value>
+  </data>
+  <data name="Open WIP" xml:space="preserve">
+    <value>تحت التشغيل المفتوح</value>
+  </data>
+  <data name="Active orders" xml:space="preserve">
+    <value>أوامر نشطة</value>
+  </data>
+  <data name="Total produced value" xml:space="preserve">
+    <value>إجمالي القيمة المنتَجة</value>
+  </data>
+  <data name="Work orders" xml:space="preserve">
+    <value>أوامر التشغيل</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>مكتمل</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>ملغاة</value>
+  </data>
+  <data name="Released" xml:space="preserve">
+    <value>مُصدَر</value>
+  </data>
+  <data name="In progress" xml:space="preserve">
+    <value>قيد التنفيذ</value>
+  </data>
+  <data name="Recent work orders" xml:space="preserve">
+    <value>أحدث أوامر التشغيل</value>
+  </data>
+  <data name="Latest 10" xml:space="preserve">
+    <value>أحدث 10</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>عرض الكل</value>
+  </data>
+  <data name="WO" xml:space="preserve">
+    <value>الأمر</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>التكلفة</value>
+  </data>
+  <data name="No work orders yet" xml:space="preserve">
+    <value>لا توجد أوامر تشغيل بعد</value>
+  </data>
+  <data name="Cost breakdown" xml:space="preserve">
+    <value>تفصيل التكلفة</value>
+  </data>
+  <data name="Completed orders" xml:space="preserve">
+    <value>الأوامر المكتملة</value>
+  </data>
+  <data name="No completed orders yet" xml:space="preserve">
+    <value>لا توجد أوامر مكتملة بعد</value>
+  </data>
+  <data name="Material" xml:space="preserve">
+    <value>المواد</value>
+  </data>
+  <data name="Labor" xml:space="preserve">
+    <value>العمالة</value>
+  </data>
+  <data name="Overhead" xml:space="preserve">
+    <value>أعباء إضافية</value>
+  </data>
+  <data name="Top manufactured items" xml:space="preserve">
+    <value>أعلى الأصناف تصنيعًا</value>
+  </data>
+  <data name="Quick Access" xml:space="preserve">
+    <value>وصول سريع</value>
+  </data>
+  <data name="New work order" xml:space="preserve">
+    <value>أمر تشغيل جديد</value>
+  </data>
+  <data name="Production planning" xml:space="preserve">
+    <value>تخطيط الإنتاج</value>
+  </data>
+  <data name="Quick assembly" xml:space="preserve">
+    <value>تجميع سريع</value>
+  </data>
+  <data name="Work centers" xml:space="preserve">
+    <value>مراكز العمل</value>
+  </data>
+  <data name="Items &amp; BOMs" xml:space="preserve">
+    <value>الأصناف وقوائم المواد</value>
+  </data>
+  <data name="Units" xml:space="preserve">
+    <value>وحدات القياس</value>
+  </data>
+  <data name="Reports" xml:space="preserve">
+    <value>التقارير</value>
+  </data>
+</root>

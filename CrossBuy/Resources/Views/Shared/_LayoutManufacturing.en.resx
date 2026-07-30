@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Warehouse System" xml:space="preserve">
+    <value>Warehouse System</value>
+  </data>
+  <data name="Search..." xml:space="preserve">
+    <value>Search...</value>
+  </data>
+  <data name="Users" xml:space="preserve">
+    <value>Users</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Projects</value>
+  </data>
+  <data name="Recently Searched:" xml:space="preserve">
+    <value>Recently Searched:</value>
+  </data>
+  <data name="Show search preferences" xml:space="preserve">
+    <value>Show search preferences</value>
+  </data>
+  <data name="Show more search options" xml:space="preserve">
+    <value>Show more search options</value>
+  </data>
+  <data name="No result found" xml:space="preserve">
+    <value>No result found</value>
+  </data>
+  <data name="Please try again with a different query" xml:space="preserve">
+    <value>Please try again with a different query</value>
+  </data>
+  <data name="Advanced Search" xml:space="preserve">
+    <value>Advanced Search</value>
+  </data>
+  <data name="Contains the word" xml:space="preserve">
+    <value>Contains the word</value>
+  </data>
+  <data name="Orders" xml:space="preserve">
+    <value>Orders</value>
+  </data>
+  <data name="Assigned to" xml:space="preserve">
+    <value>Assigned to</value>
+  </data>
+  <data name="Collaborators" xml:space="preserve">
+    <value>Collaborators</value>
+  </data>
+  <data name="Has attachment" xml:space="preserve">
+    <value>Has attachment</value>
+  </data>
+  <data name="Any" xml:space="preserve">
+    <value>Any</value>
+  </data>
+  <data name="Within the next" xml:space="preserve">
+    <value>Within the next</value>
+  </data>
+  <data name="Within the last" xml:space="preserve">
+    <value>Within the last</value>
+  </data>
+  <data name="Between" xml:space="preserve">
+    <value>Between</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Lenght" xml:space="preserve">
+    <value>Lenght</value>
+  </data>
+  <data name="Days" xml:space="preserve">
+    <value>Days</value>
+  </data>
+  <data name="Weeks" xml:space="preserve">
+    <value>Weeks</value>
+  </data>
+  <data name="Months" xml:space="preserve">
+    <value>Months</value>
+  </data>
+  <data name="Years" xml:space="preserve">
+    <value>Years</value>
+  </data>
+  <data name="Search Preferences" xml:space="preserve">
+    <value>Search Preferences</value>
+  </data>
+  <data name="Targets" xml:space="preserve">
+    <value>Targets</value>
+  </data>
+  <data name="Affiliate Programs" xml:space="preserve">
+    <value>Affiliate Programs</value>
+  </data>
+  <data name="Referrals" xml:space="preserve">
+    <value>Referrals</value>
+  </data>
+  <data name="Save Changes" xml:space="preserve">
+    <value>Save Changes</value>
+  </data>
+  <data name="Alerts" xml:space="preserve">
+    <value>Alerts</value>
+  </data>
+  <data name="Updates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="View All" xml:space="preserve">
+    <value>View All</value>
+  </data>
+  <data name="Get Pro Access" xml:space="preserve">
+    <value>Get Pro Access</value>
+  </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>Upgrade</value>
+  </data>
+  <data name="Quick Links" xml:space="preserve">
+    <value>Quick Links</value>
+  </data>
+  <data name="Administration" xml:space="preserve">
+    <value>Administration</value>
+  </data>
+  <data name="My Profile" xml:space="preserve">
+    <value>My Profile</value>
+  </data>
+  <data name="My Projects" xml:space="preserve">
+    <value>My Projects</value>
+  </data>
+  <data name="My Subscription" xml:space="preserve">
+    <value>My Subscription</value>
+  </data>
+  <data name="Billing" xml:space="preserve">
+    <value>Billing</value>
+  </data>
+  <data name="Payments" xml:space="preserve">
+    <value>Payments</value>
+  </data>
+  <data name="Statements" xml:space="preserve">
+    <value>Statements</value>
+  </data>
+  <data name="View your statements" xml:space="preserve">
+    <value>View your statements</value>
+  </data>
+  <data name="My Statements" xml:space="preserve">
+    <value>My Statements</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Account Settings" xml:space="preserve">
+    <value>Account Settings</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Support" xml:space="preserve">
+    <value>Support</value>
+  </data>
+  <data name="Purchase" xml:space="preserve">
+    <value>Purchase</value>
+  </data>
+  <data name="Calendar" xml:space="preserve">
+    <value>Calendar</value>
+  </data>
+  <data name="Messages" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+  <data name="Products" xml:space="preserve">
+    <value>Products</value>
+  </data>
+  <data name="Activity Logs" xml:space="preserve">
+    <value>Activity Logs</value>
+  </data>
+  <data name="View All Activities" xml:space="preserve">
+    <value>View All Activities</value>
+  </data>
+  <data name="Contacts" xml:space="preserve">
+    <value>Contacts</value>
+  </data>
+  <data name="Add Contact" xml:space="preserve">
+    <value>Add Contact</value>
+  </data>
+  <data name="Invite Contacts" xml:space="preserve">
+    <value>Invite Contacts</value>
+  </data>
+  <data name="Specify a contact email to send an invitation" xml:space="preserve">
+    <value>Specify a contact email to send an invitation</value>
+  </data>
+  <data name="Groups" xml:space="preserve">
+    <value>Groups</value>
+  </data>
+  <data name="Create Group" xml:space="preserve">
+    <value>Create Group</value>
+  </data>
+  <data name="Invite Members" xml:space="preserve">
+    <value>Invite Members</value>
+  </data>
+  <data name="Coming soon" xml:space="preserve">
+    <value>Coming soon</value>
+  </data>
+  <data name="Type a message" xml:space="preserve">
+    <value>Type a message</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Shopping Cart" xml:space="preserve">
+    <value>Shopping Cart</value>
+  </data>
+  <data name="Sub total" xml:space="preserve">
+    <value>Sub total</value>
+  </data>
+  <data name="Pleace Order" xml:space="preserve">
+    <value>Pleace Order</value>
+  </data>
+  <data name="Upgrade a Plan" xml:space="preserve">
+    <value>Upgrade a Plan</value>
+  </data>
+  <data name="If you need more info, please check" xml:space="preserve">
+    <value>If you need more info, please check</value>
+  </data>
+  <data name="Pricing Guidelines" xml:space="preserve">
+    <value>Pricing Guidelines</value>
+  </data>
+  <data name="Monthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="Annual" xml:space="preserve">
+    <value>Annual</value>
+  </data>
+  <data name="Contact Us" xml:space="preserve">
+    <value>Contact Us</value>
+  </data>
+  <data name="Upgrade Plan" xml:space="preserve">
+    <value>Upgrade Plan</value>
+  </data>
+  <data name="Please wait..." xml:space="preserve">
+    <value>Please wait...</value>
+  </data>
+  <data name="Browse Users" xml:space="preserve">
+    <value>Browse Users</value>
+  </data>
+  <data name="If you need more info, please check out our" xml:space="preserve">
+    <value>If you need more info, please check out our</value>
+  </data>
+  <data name="Users Directory" xml:space="preserve">
+    <value>Users Directory</value>
+  </data>
+  <data name="Search Users" xml:space="preserve">
+    <value>Search Users</value>
+  </data>
+  <data name="Invite Collaborators To Your Project" xml:space="preserve">
+    <value>Invite Collaborators To Your Project</value>
+  </data>
+  <data name="Search by username, full name or email..." xml:space="preserve">
+    <value>Search by username, full name or email...</value>
+  </data>
+  <data name="Recently searched:" xml:space="preserve">
+    <value>Recently searched:</value>
+  </data>
+  <data name="Add Selected Users" xml:space="preserve">
+    <value>Add Selected Users</value>
+  </data>
+  <data name="No users found" xml:space="preserve">
+    <value>No users found</value>
+  </data>
+  <data name="Try to search by username, full name or email..." xml:space="preserve">
+    <value>Try to search by username, full name or email...</value>
+  </data>
+  <data name="Invite a Friend" xml:space="preserve">
+    <value>Invite a Friend</value>
+  </data>
+  <data name="If you need more info, please check out" xml:space="preserve">
+    <value>If you need more info, please check out</value>
+  </data>
+  <data name="FAQ Page" xml:space="preserve">
+    <value>FAQ Page</value>
+  </data>
+  <data name="Invite Gmail Contacts" xml:space="preserve">
+    <value>Invite Gmail Contacts</value>
+  </data>
+  <data name="or" xml:space="preserve">
+    <value>or</value>
+  </data>
+  <data name="Type or paste emails here" xml:space="preserve">
+    <value>Type or paste emails here</value>
+  </data>
+  <data name="Your Invitations" xml:space="preserve">
+    <value>Your Invitations</value>
+  </data>
+  <data name="Guest" xml:space="preserve">
+    <value>Guest</value>
+  </data>
+  <data name="Owner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="Can Edit" xml:space="preserve">
+    <value>Can Edit</value>
+  </data>
+  <data name="Adding Users by Team Members" xml:space="preserve">
+    <value>Adding Users by Team Members</value>
+  </data>
+  <data name="If you need more info, please check budget planning" xml:space="preserve">
+    <value>If you need more info, please check budget planning</value>
+  </data>
+  <data name="Allowed" xml:space="preserve">
+    <value>Allowed</value>
+  </data>
+</root>

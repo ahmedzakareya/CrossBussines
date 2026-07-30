@@ -1,0 +1,66 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<ProjectLaborRow>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var prj = ViewBag.Project as Project;
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    decimal totCost = Model.Where(r => !r.Posted).Sum(r => r.Cost);
+    decimal postedCost = Model.Where(r => r.Posted).Sum(r => r.Cost);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Project labor"]</h1>
+            <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn))</span></div>
+        <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <div class="alert alert-light-primary d-flex align-items-center">
+            <i class="ki-outline ki-information-5 fs-2 me-3"></i>
+            <span>@Localizer["On post: Dr project execution cost (510104) / Cr salaries (520101) — actual salary reclassified into project cost, tagged to the project. Cost = timesheet hours × hourly cost."]</span>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Project tasks & labor"]</h3></div>
+            <div class="card-body pt-2">
+                @if (!Model.Any()) { <div class="text-muted fs-6 py-6 text-center">@Localizer["No project tasks. Link tasks to this project to track labor."]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle" style="font-variant-numeric:tabular-nums;">
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th>@Localizer["Task"]</th><th class="text-end">@Localizer["Hours"]</th><th class="text-end">@Localizer["Labor cost"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold text-gray-900">@r.Title</td>
+                                <td class="text-end">@r.Hours.ToString("0.##")</td>
+                                <td class="text-end fw-bold">@r.Cost.ToString("N2")</td>
+                                <td class="text-center">
+                                    @if (r.Posted) { <span class="badge badge-light-primary">@Localizer["Posted"]</span> }
+                                    else { <span class="badge badge-light-secondary">@Localizer["Not posted"]</span> }
+                                </td>
+                                <td class="text-end">
+                                    @if (!r.Posted && r.Cost > 0)
+                                    {
+                                        <form asp-action="PostLabor" method="post" class="d-inline" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Post labor for this task?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.TaskId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check fs-4"></i>@Localizer["Post labor"]</button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody></table></div>
+                    <div class="d-flex flex-wrap gap-6 justify-content-end border-top pt-5 mt-2">
+                        <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Unposted labor cost"]</div><div class="fs-3 fw-bold text-warning">@totCost.ToString("N2")</div></div>
+                        <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Posted labor cost"]</div><div class="fs-3 fw-bold text-primary">@postedCost.ToString("N2")</div></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>

@@ -1,0 +1,138 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var cats = ViewBag.Categories as List<ItemCategory> ?? new();
+    var units = ViewBag.Units as List<UnitOfMeasure> ?? new();
+    var itemTypes = new (string v, string ar, string en)[] {
+        ("Stockable","صنف مخزون","Stockable"),("NonStockable","مستهلك","Non-stockable"),
+        ("Service","خدمة","Service"),("Asset","أصل","Asset") };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@SR["Items"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@SR["Items"]</li></ul></div>
+        <a href="@Url.Action("CreateItem","Inventory")" class="btn btn-primary @(cats.Count==0||units.Count==0?"disabled":"")"><i class="ki-outline ki-plus fs-2"></i>@Localizer["Add Product"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (cats.Count == 0 || units.Count == 0) { <div class="alert alert-light-warning">@Localizer["Add at least one category and one unit before creating items."]</div> }
+
+        <!--begin::Advanced search-->
+        <div class="card card-flush mb-5"><div class="card-body py-5">
+            <div class="row g-4 align-items-end">
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (code / name / barcode)"]</label>
+                    <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Category"]</label>
+                    <select id="f_cat" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["All categories"]"><option value="">@Localizer["All categories"]</option>@foreach (var c in cats) { <option value="@c.ID">@c.Code — @(isAr ? c.Name : c.NameEn)</option> }</select></div>
+                <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Type"]</label>
+                    <select id="f_type" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="">@SR["All"]</option>@foreach (var t in itemTypes) { <option value="@t.v">@(isAr ? t.ar : t.en)</option> }</select></div>
+                <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Status"]</label>
+                    <select id="f_status" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="">@SR["All"]</option><option value="active">@SR["Active"]</option><option value="inactive">@SR["Inactive"]</option></select></div>
+                <div class="col-md-1"><button type="button" id="f_reset" class="btn btn-light w-100" title="@SR["Reset"]"><i class="ki-outline ki-arrows-circle fs-3"></i></button></div>
+            </div>
+        </div></div>
+        <!--end::Advanced search-->
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center py-4"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+                <div class="card-toolbar"><div class="d-flex align-items-center gap-2"><button type="button" id="f_export" class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0"><i class="ki-outline ki-file-down fs-4"></i>@Localizer["Export Excel"]</button><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-responsive">
+                <table class="table align-middle table-row-dashed fs-6 gy-4" id="kt_inventory_items_table">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                        <th class="min-w-200px ps-4">@Localizer["Product"]</th><th class="text-end min-w-100px">SKU</th><th class="text-end min-w-125px">@Localizer["Barcode"]</th><th class="text-end min-w-90px">@SR["Price"]</th><th class="text-end min-w-90px">@SR["Type"]</th><th class="text-end min-w-90px">@SR["Status"]</th><th class="text-end min-w-70px">@SR["Actions"]</th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-600" id="itemsBody"></tbody>
+                </table>
+                </div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@Localizer["No matching results"]</div>
+                <!--begin::Pager-->
+                <div class="d-flex flex-stack flex-wrap pt-5">
+                    <div class="fs-7 text-muted" id="pageInfo"></div>
+                    <ul class="pagination" id="pager"></ul>
+                </div>
+                <!--end::Pager-->
+            </div>
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+  var body = document.getElementById('itemsBody');
+  var loading = document.getElementById('loadingRow'), empty = document.getElementById('emptyRow');
+  var pager = document.getElementById('pager'), pageInfo = document.getElementById('pageInfo'), resultCount = document.getElementById('resultCount');
+  var q = document.getElementById('f_q'), cat = document.getElementById('f_cat'), type = document.getElementById('f_type'), status = document.getElementById('f_status'), size = document.getElementById('f_size');
+  var page = 1, pages = 1, total = 0, timer = null;
+  var url = '@Url.Action("ItemsData","Inventory")';
+  var isAr = @(isAr ? "true" : "false");
+  var search = cbTagify(q, { suggestUrl: '@Url.Action("ItemsSuggest","Inventory")', onChange: function(){ reload(); } });
+
+  function params(){
+    var p = new URLSearchParams();
+    var terms = search.terms(); if (terms) p.set('q', terms);
+    if (cat.value) p.set('categoryId', cat.value);
+    if (type.value) p.set('type', type.value);
+    if (status.value) p.set('active', status.value === 'active' ? 'true' : 'false');
+    p.set('page', page); p.set('pageSize', size.value || '25');
+    return p.toString();
+  }
+  function load(){
+    loading.classList.remove('d-none'); empty.classList.add('d-none'); body.innerHTML = '';
+    fetch(url + '?' + params(), { headers: { 'X-Requested-With': 'fetch' } })
+      .then(function(r){ total = parseInt(r.headers.get('X-Total')||'0'); page = parseInt(r.headers.get('X-Page')||'1'); pages = parseInt(r.headers.get('X-Pages')||'1'); return r.text(); })
+      .then(function(html){
+        loading.classList.add('d-none');
+        body.innerHTML = html;
+        empty.classList.toggle('d-none', total !== 0);
+        resultCount.textContent = '@(Localizer["{0} results"].Value)'.replace('{0}', total.toLocaleString());
+        renderPager();
+      })
+      .catch(function(){ loading.classList.add('d-none'); empty.classList.remove('d-none'); });
+  }
+  function pageInfoText(){
+    if (total === 0) { pageInfo.textContent=''; return; }
+    var ps = parseInt(size.value||'25'); var from = (page-1)*ps + 1; var to = Math.min(page*ps, total);
+    pageInfo.textContent = from + '–' + to + ' @Localizer["of"] ' + total.toLocaleString();
+  }
+  function btn(label, p, disabled, active){
+    var li = document.createElement('li'); li.className = 'page-item' + (disabled?' disabled':'') + (active?' active':'');
+    var a = document.createElement('a'); a.className='page-link'; a.href='#'; a.innerHTML=label;
+    if (!disabled && !active) a.addEventListener('click', function(e){ e.preventDefault(); page=p; load(); window.scrollTo({top:0,behavior:'smooth'}); });
+    li.appendChild(a); return li;
+  }
+  function renderPager(){
+    pageInfoText(); pager.innerHTML='';
+    if (pages <= 1) return;
+    pager.appendChild(btn('<i class="ki-outline ki-' + (isAr?'right':'left') + '"></i>', page-1, page<=1, false));
+    var start = Math.max(1, page-2), end = Math.min(pages, start+4); start = Math.max(1, end-4);
+    if (start > 1) { pager.appendChild(btn('1', 1, false, page===1)); if (start>2) pager.appendChild(btn('…', 0, true, false)); }
+    for (var i=start; i<=end; i++) pager.appendChild(btn(String(i), i, false, i===page));
+    if (end < pages) { if (end<pages-1) pager.appendChild(btn('…', 0, true, false)); pager.appendChild(btn(String(pages), pages, false, page===pages)); }
+    pager.appendChild(btn('<i class="ki-outline ki-' + (isAr?'left':'right') + '"></i>', page+1, page>=pages, false));
+  }
+  function reload(){ page=1; load(); }
+  function debounced(){ clearTimeout(timer); timer=setTimeout(reload, 300); }
+
+  [cat, type, status, size].forEach(function(el){
+    if (window.jQuery && jQuery(el).data('select2')) jQuery(el).on('change', reload);
+    else el.addEventListener('change', reload);
+  });
+  document.getElementById('f_reset').addEventListener('click', function(){
+    search.clear(); [cat,type,status].forEach(function(el){ el.value=''; if(window.jQuery&&jQuery(el).data('select2')) jQuery(el).val('').trigger('change.select2'); }); reload();
+  });
+  document.getElementById('f_export').addEventListener('click', function(){
+    var p = new URLSearchParams(); var t = search.terms(); if (t) p.set('q', t);
+    if (cat.value) p.set('categoryId', cat.value); if (type.value) p.set('type', type.value);
+    if (status.value) p.set('active', status.value === 'active' ? 'true' : 'false');
+    window.location = '@Url.Action("ItemsExport","Inventory")?' + p.toString();
+  });
+  load();
+})();
+</script>
+}

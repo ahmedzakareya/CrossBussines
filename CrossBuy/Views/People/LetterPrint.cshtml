@@ -1,0 +1,84 @@
+@using CrossBuy.Models.Context.Admin
+@model EmployeeRequest
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = null;
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var emp = ViewBag.Employee as CrossBuy.ViewModel.EmployeeViewModel;
+    var ent = ViewBag.Entity as CrossBuy.Models.Context.Admin.Employee;
+    var company = ViewBag.Company as CrossBuy.Models.Context.Admin.Companies;
+    var jobTitle = ViewBag.JobTitle as CrossBuy.Models.Context.Admin.JobTitle;
+    var slip = ViewBag.Payslip as CrossBuy.Models.Context.Admin.Payslip;
+    var empName = isAr ? emp?.FullName : (emp?.FullNameEn ?? emp?.FullName);
+    var compName = isAr ? (company?.ComoanyNameAr ?? company?.CompanyName) : (company?.CompanyName ?? company?.ComoanyNameAr);
+    var jt = isAr ? jobTitle?.TitleAr : (jobTitle?.Title ?? jobTitle?.TitleAr);
+    var join = ent?.DateOfJoining;
+    var addr = string.IsNullOrWhiteSpace(Model.Addressee) ? Localizer["To whom it may concern"].Value : Model.Addressee!;
+    string money(decimal v) => v.ToString("N2");
+}
+<!doctype html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+<meta charset="utf-8" />
+<title>@Localizer["Letter"] — @empName</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Arial, sans-serif; color:#1b1b1f; max-width:800px; margin:32px auto; padding:0 28px; line-height:1.9; }
+  .hdr { display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2b6cb0; padding-bottom:14px; margin-bottom:28px; }
+  .hdr h2 { margin:0; color:#2b6cb0; }
+  .meta { color:#666; font-size:13px; }
+  h1 { text-align:center; font-size:20px; margin:26px 0; }
+  .body { font-size:16px; }
+  table.sal { width:100%; border-collapse:collapse; margin:18px 0; }
+  table.sal td { border:1px solid #ddd; padding:8px 12px; }
+  table.sal td.k { background:#f5f7fa; font-weight:600; width:45%; }
+  .sign { margin-top:56px; display:flex; justify-content:space-between; }
+  .noprint { margin:24px 0; text-align:center; }
+  @@media print { .noprint { display:none; } body { margin:0; } }
+</style>
+</head>
+<body>
+  <div class="hdr">
+    <h2>@(compName ?? "CrossBuy")</h2>
+    <div class="meta">@SR["Date"]: @Model.DecisionAt?.ToString("yyyy-MM-dd")<br>@Localizer["Ref"]: HR-L-@Model.ID</div>
+  </div>
+
+  <h1>@addr</h1>
+
+  <div class="body">
+    @if (Model.LetterType == "Salary")
+    {
+        <p>@Localizer["This is to certify that {0} is employed with us as {1} since {2:yyyy-MM-dd}, with the following monthly salary:", empName, jt, join]</p>
+        @if (slip != null)
+        {
+            <table class="sal">
+                <tr><td class="k">@Localizer["Base salary"]</td><td>@money(slip.BaseSalary)</td></tr>
+                <tr><td class="k">@Localizer["Allowances"]</td><td>@money(slip.Allowances)</td></tr>
+                <tr><td class="k">@Localizer["Gross earnings"]</td><td>@money(slip.GrossEarnings)</td></tr>
+                <tr><td class="k">@Localizer["Net salary"]</td><td><b>@money(slip.Net)</b></td></tr>
+                <tr><td class="k">@Localizer["For month"]</td><td>@slip.Month / @slip.Year</td></tr>
+            </table>
+        }
+        else { <p><i>@Localizer["No posted payslip yet."]</i></p> }
+    }
+    else if (Model.LetterType == "Experience")
+    {
+        <p>@Localizer["This is to certify that {0} has worked with us as {1} from {2:yyyy-MM-dd} to date, demonstrating competence and commitment.", empName, jt, join]</p>
+    }
+    else
+    {
+        <p>@Localizer["This is to certify that {0} is employed with us as {1} since {2:yyyy-MM-dd}. This letter is issued upon their request.", empName, jt, join]</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Reason)) { <p>@Localizer["Purpose"]: @Model.Reason</p> }
+  </div>
+
+  <div class="sign">
+    <div>@SR["HumanResources"]<br>@(compName)</div>
+    <div>@Localizer["Signature & stamp"]</div>
+  </div>
+
+  <div class="noprint">
+    <button onclick="window.print()" style="padding:10px 26px;font-size:15px;background:#2b6cb0;color:#fff;border:0;border-radius:6px;cursor:pointer;">@SR["Print"]</button>
+  </div>
+</body>
+</html>

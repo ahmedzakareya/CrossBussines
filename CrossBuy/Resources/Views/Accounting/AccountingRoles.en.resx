@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Accounting roles" xml:space="preserve">
+    <value>Accounting roles</value>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="Assign role" xml:space="preserve">
+    <value>Assign role</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="Chief Accountant" xml:space="preserve">
+    <value>Chief Accountant</value>
+  </data>
+  <data name="Accountant" xml:space="preserve">
+    <value>Accountant</value>
+  </data>
+  <data name="Cashier" xml:space="preserve">
+    <value>Cashier</value>
+  </data>
+  <data name="Auditor (read)" xml:space="preserve">
+    <value>Auditor (read)</value>
+  </data>
+  <data name="Assign" xml:space="preserve">
+    <value>Assign</value>
+  </data>
+  <data name="Approval threshold" xml:space="preserve">
+    <value>Approval threshold</value>
+  </data>
+  <data name="Threshold (EGP)" xml:space="preserve">
+    <value>Threshold (EGP)</value>
+  </data>
+  <data name="Journals/payments at or above this amount need ChiefAccountant approval (and SoD: a creator can't approve own). 0 = off." xml:space="preserve">
+    <value>Journals/payments at or above this amount need ChiefAccountant approval (and SoD: a creator can't approve own). 0 = off.</value>
+  </data>
+  <data name="Save threshold" xml:space="preserve">
+    <value>Save threshold</value>
+  </data>
+  <data name="Chief" xml:space="preserve">
+    <value>Chief</value>
+  </data>
+  <data name="Full access incl. period close, large-entry approval &amp; roles." xml:space="preserve">
+    <value>Full access incl. period close, large-entry approval &amp; roles.</value>
+  </data>
+  <data name="Post journals &amp; invoices + receipts/payments." xml:space="preserve">
+    <value>Post journals &amp; invoices + receipts/payments.</value>
+  </data>
+  <data name="Receipts, payments &amp; cash transfers only." xml:space="preserve">
+    <value>Receipts, payments &amp; cash transfers only.</value>
+  </data>
+  <data name="Auditor" xml:space="preserve">
+    <value>Auditor</value>
+  </data>
+  <data name="Read-only." xml:space="preserve">
+    <value>Read-only.</value>
+  </data>
+  <data name="Remove role?" xml:space="preserve">
+    <value>Remove role?</value>
+  </data>
+  <data name="No roles assigned — accounting is open until the first role is set." xml:space="preserve">
+    <value>No roles assigned — accounting is open until the first role is set.</value>
+  </data>
+</root>

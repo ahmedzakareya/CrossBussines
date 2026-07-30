@@ -1,0 +1,120 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    int? fWh = ViewBag.FilterWarehouseId;
+    var rows = ViewBag.Rows as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var recon = ViewBag.Recon as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+    <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Rack stock"]</h1>
+    <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Movements & balances"]</li></ul></div>
+    @if (fWh != null)
+    {
+        <form asp-action="InitializeBinStock" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Distribute current item balances onto their default locations?"]">
+            @Html.AntiForgeryToken()<input type="hidden" name="warehouseId" value="@fWh" />
+            <button class="btn btn-light-primary"><i class="ki-outline ki-arrows-circle fs-2"></i>@Localizer["Initialize from defaults"]</button>
+        </form>
+    }
+</div></div>
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
+        <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
+            <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+        <div class="col-md-7"><div class="text-muted fs-7">@Localizer["Per-item quantity on each rack — built automatically from located movements. Quantity only, no value/GL."]</div></div>
+    </div></div></div>
+
+    @if (fWh == null)
+    {
+        <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-information-5 fs-3x mb-3 d-block"></i>@Localizer["Select a warehouse to view rack stock."]</div></div>
+    }
+    else
+    {
+        <div class="row g-5">
+            <!-- rack balances -->
+            <div class="col-lg-8">
+                <div class="card"><div class="card-header align-items-center py-5"><div class="card-title"><h3>@Localizer["Rack balances"]</h3></div>
+                    <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="s" class="form-control form-control-solid form-control-sm w-250px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
+                    <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-7 gy-3" id="t">
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@Localizer["Location"]</th><th class="min-w-150px">@SR["Item"]</th><th style="width:120px" class="text-end">@Localizer["Qty"]</th><th style="width:220px">@Localizer["Count / move"]</th></tr></thead>
+                        <tbody class="fw-semibold text-gray-700">
+                        @foreach (var r in rows)
+                        {
+                            <tr data-s="@r.BinCode @r.ItemCode @r.ItemName">
+                                <td><span class="badge badge-light-@(r.BinType == "Rack" ? "primary" : "info")">@r.BinCode</span> <span class="text-muted">@r.BinName</span></td>
+                                <td class="fw-bold text-gray-800">@r.ItemCode <span class="text-muted fw-normal">@r.ItemName</span></td>
+                                <td class="text-end fw-bold">@(((decimal)r.QtyOnHand).ToString("0.##"))</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <form asp-action="SetBinCount" method="post" class="d-flex gap-1" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Save this rack count?"]">@Html.AntiForgeryToken()
+                                            <input type="hidden" name="warehouseId" value="@fWh" /><input type="hidden" name="binLocationId" value="@r.BinLocationId" /><input type="hidden" name="itemId" value="@r.ItemId" />
+                                            <input type="number" step="0.0001" min="0" name="countedQty" class="form-control form-control-solid form-control-sm w-90px text-end" value="@(((decimal)r.QtyOnHand).ToString(System.Globalization.CultureInfo.InvariantCulture))" />
+                                            <button class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Save count"]"><i class="ki-outline ki-check fs-4"></i></button>
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-icon btn-light-primary js-move" title="@Localizer["Move to another location"]"
+                                                data-item="@r.ItemId" data-from="@r.BinLocationId" data-max="@(((decimal)r.QtyOnHand).ToString(System.Globalization.CultureInfo.InvariantCulture))" data-label="@r.ItemCode @r.BinCode"><i class="ki-outline ki-arrow-right-left fs-4"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    @if (!rows.Any()) { <div class="text-center text-muted py-10">@(Localizer["No rack stock yet — use \"Initialize from defaults\" or post located movements."])</div> }
+                    </div></div>
+                </div>
+            </div>
+            <!-- reconciliation -->
+            <div class="col-lg-4">
+                <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Reconciliation"]</h3></div></div>
+                    <div class="card-body pt-2"><div class="text-muted fs-8 mb-3">@(Localizer["Rack-located vs warehouse total. \"Unlocated\" = qty with no location."])</div>
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle fs-8"><thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@SR["Item"]</th><th class="text-end">@Localizer["Racks"]</th><th class="text-end">@Localizer["WH"]</th><th class="text-end">@Localizer["Unloc."]</th></tr></thead>
+                    <tbody class="fw-semibold">
+                    @foreach (var x in recon)
+                    {
+                        decimal un = (decimal)x.Total - (decimal)x.Located;
+                        <tr><td class="fw-bold text-gray-800">@x.ItemCode</td><td class="text-end">@(((decimal)x.Located).ToString("0.##"))</td><td class="text-end">@(((decimal)x.Total).ToString("0.##"))</td>
+                            <td class="text-end @(un < 0 ? "text-danger fw-bold" : (un > 0 ? "text-warning" : "text-muted"))">@un.ToString("0.##")</td></tr>
+                    }
+                    </tbody></table></div>
+                    @if (!recon.Any()) { <div class="text-center text-muted py-8">—</div> }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div></div>
+
+<!-- relocate modal -->
+<div class="modal fade" id="moveModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="RelocateBin" method="post">@Html.AntiForgeryToken()<input type="hidden" name="warehouseId" value="@fWh" />
+        <div class="modal-header"><h3 class="modal-title">@Localizer["Move between locations"]</h3><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-3 text-muted fs-7" id="mvLabel"></div>
+            <input type="hidden" name="itemId" id="mvItem" /><input type="hidden" name="fromBinId" id="mvFrom" />
+            <div class="mb-4"><label class="required fw-semibold fs-7 mb-1">@Localizer["To location"]</label><select name="toBinId" id="mvTo" class="form-select form-select-solid" required></select></div>
+            <div class="mb-2"><label class="required fw-semibold fs-7 mb-1">@Localizer["Qty"]</label><input type="number" step="0.0001" min="0" name="qty" id="mvQty" class="form-control form-control-solid" required /><div class="text-muted fs-8 mt-1" id="mvMax"></div></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button type="submit" class="btn btn-primary">@Localizer["Move"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+var whSel=document.getElementById('whSel');
+if(whSel){var go=function(){var v=whSel.value||'';location.href='@Url.Action("RackBalances","Inventory")'+(v?('?warehouseId='+v):'');};if(window.jQuery){jQuery(whSel).on('change select2:select',go);}else{whSel.addEventListener('change',go);}}
+var s=document.getElementById('s');if(s)s.addEventListener('input',function(){var q=(s.value||'').trim().toLowerCase();[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(r){r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none';});});
+var ALL_BINS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize((ViewBag.ActiveBins as List<CrossBuy.Models.Context.Inventory.BinLocation> ?? new()).Select(b=>new{id=b.ID,code=b.Code,name=b.Name,type=b.LocationType})));
+[].slice.call(document.querySelectorAll('.js-move')).forEach(function(btn){btn.addEventListener('click',function(){
+  document.getElementById('mvItem').value=btn.getAttribute('data-item');
+  document.getElementById('mvFrom').value=btn.getAttribute('data-from');
+  document.getElementById('mvLabel').textContent=btn.getAttribute('data-label');
+  var max=btn.getAttribute('data-max');document.getElementById('mvMax').textContent='@Localizer["Available"]: '+max;document.getElementById('mvQty').setAttribute('max',max);document.getElementById('mvQty').value=max;
+  var from=btn.getAttribute('data-from');
+  document.getElementById('mvTo').innerHTML=ALL_BINS.filter(function(b){return String(b.id)!==String(from);}).map(function(b){return '<option value="'+b.id+'">'+(b.type==='Rack'?'— ':'')+b.code+(b.name?(' ('+b.name+')'):'')+'</option>';}).join('');
+  if(window.bootstrap){new bootstrap.Modal(document.getElementById('moveModal')).show();}
+});});
+</script>
+}

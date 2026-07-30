@@ -1,0 +1,27 @@
+@using CrossBuy.Controllers
+@model List<MovementRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string srcName(string? s) => s switch {
+        "Opening" => Localizer["Opening"].Value, "Receipt" => Localizer["Receipt"].Value,
+        "Issue" => Localizer["Issue"].Value, "Adjustment" => Localizer["Adjustment"].Value,
+        "PurchaseInvoice" => Localizer["Purchase"].Value, "SalesInvoice" => Localizer["Sale"].Value,
+        _ => s ?? "—" };
+}
+@foreach (var m in Model)
+{
+    <tr>
+        <td class="text-muted">@m.MovementDate.ToString("yyyy-MM-dd")</td>
+        <td><a href="@Url.Action("ItemLedger","Inventory", new { itemId = m.ItemId })" class="text-gray-800 text-hover-primary fw-bold">@(m.ItemCode + " — " + (isAr ? m.ItemName : (string.IsNullOrEmpty(m.ItemNameEn) ? m.ItemName : m.ItemNameEn)))</a></td>
+        <td class="text-muted">@(string.IsNullOrEmpty(m.WarehouseCode) ? "—" : m.WarehouseCode)</td>
+        <td class="text-muted">@(string.IsNullOrEmpty(m.BinLocationCode) ? "—" : m.BinLocationCode)</td>
+        <td class="text-center"><span class="badge badge-light-@(m.Direction==1?"success":"danger")">@srcName(m.SourceType)</span></td>
+        <td class="text-end fw-bold text-primary">@(m.Direction==1 ? m.QtyBase.ToString("0.##") : "—")</td>
+        <td class="text-end fw-bold text-danger">@(m.Direction==-1 ? m.QtyBase.ToString("0.##") : "—")</td>
+        <td class="text-end text-muted">@m.UnitCost.ToString("0.00")</td>
+        <td class="text-end fw-bold text-gray-800">@m.TotalCost.ToString("0.00")</td>
+        <td class="text-center">@if (m.JournalEntryId != null) { <span class="badge badge-light-primary">#@m.JournalEntryId</span> } else { <span class="text-muted">—</span> }</td>
+    </tr>
+}

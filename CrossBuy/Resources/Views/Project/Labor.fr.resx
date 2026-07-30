@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Project labor" xml:space="preserve"><value>Main-d'oeuvre projet</value></data>
+  <data name="Projects" xml:space="preserve"><value>Projets</value></data>
+  <data name="Task" xml:space="preserve"><value>Tâche</value></data>
+  <data name="Hours" xml:space="preserve"><value>Heures</value></data>
+  <data name="Labor cost" xml:space="preserve"><value>Coût main-d'oeuvre</value></data>
+  <data name="Posted" xml:space="preserve"><value>Comptabilisé</value></data>
+  <data name="Not posted" xml:space="preserve"><value>Non comptabilisé</value></data>
+  <data name="Post labor" xml:space="preserve"><value>Comptabiliser</value></data>
+  <data name="Post labor for this task?" xml:space="preserve"><value>Comptabiliser la main-d'oeuvre de cette tâche ?</value></data>
+  <data name="No project tasks. Link tasks to this project to track labor." xml:space="preserve"><value>Aucune tâche liée au projet. Liez des tâches au projet pour suivre la main-d'oeuvre.</value></data>
+  <data name="On post: Dr project execution cost (510104) / Cr salaries (520101) — actual salary reclassified into project cost, tagged to the project. Cost = timesheet hours × hourly cost." xml:space="preserve"><value>À la comptabilisation : Débit coût exécution projets (510104) / Crédit salaires (520101) — salaire réel reclassé en coût projet, affecté au projet. Coût = heures × coût horaire.</value></data>
+  <data name="Project tasks &amp; labor" xml:space="preserve"><value>Tâches du projet et main-d'oeuvre</value></data>
+  <data name="Unposted labor cost" xml:space="preserve"><value>Coût M.O. non comptabilisé</value></data>
+  <data name="Posted labor cost" xml:space="preserve"><value>Coût M.O. comptabilisé</value></data>
+</root>

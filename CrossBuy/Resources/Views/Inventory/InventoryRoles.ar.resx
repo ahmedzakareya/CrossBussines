@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Inventory roles" xml:space="preserve">
+    <value>أدوار وصلاحيات المخزون</value>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>الأدوار</value>
+  </data>
+  <data name="Assign role" xml:space="preserve">
+    <value>تعيين دور</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>اختر</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>الدور</value>
+  </data>
+  <data name="Branch scope (keeper)" xml:space="preserve">
+    <value>نطاق الفرع (لأمين المخزن)</value>
+  </data>
+  <data name="All branches" xml:space="preserve">
+    <value>كل الفروع</value>
+  </data>
+  <data name="Assign" xml:space="preserve">
+    <value>تعيين</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>مدير المخزون</value>
+  </data>
+  <data name="Full access incl. settings &amp; roles." xml:space="preserve">
+    <value>كل الصلاحيات + الإعدادات والأدوار.</value>
+  </data>
+  <data name="Keeper" xml:space="preserve">
+    <value>أمين مخزن</value>
+  </data>
+  <data name="Documents for his branch warehouses only." xml:space="preserve">
+    <value>مستندات مخازن فرعه فقط.</value>
+  </data>
+  <data name="Purchasing" xml:space="preserve">
+    <value>مسؤول مشتريات</value>
+  </data>
+  <data name="Purchase orders &amp; receipts." xml:space="preserve">
+    <value>أوامر الشراء والاستلام.</value>
+  </data>
+  <data name="Auditor" xml:space="preserve">
+    <value>مراجع</value>
+  </data>
+  <data name="Read-only." xml:space="preserve">
+    <value>قراءة فقط.</value>
+  </data>
+  <data name="Assigned roles" xml:space="preserve">
+    <value>الأدوار المعيّنة</value>
+  </data>
+  <data name="Remove role?" xml:space="preserve">
+    <value>حذف الدور؟</value>
+  </data>
+  <data name="No roles assigned — system is open until the first role is set." xml:space="preserve">
+    <value>لا توجد أدوار معيّنة — النظام مفتوح للجميع حتى تُعيّن أول دور.</value>
+  </data>
+</root>

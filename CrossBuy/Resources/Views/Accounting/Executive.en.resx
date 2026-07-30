@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Executive Dashboard" xml:space="preserve">
+    <value>Executive Dashboard</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Cross-module overview" xml:space="preserve">
+    <value>Cross-module overview</value>
+  </data>
+  <data name="Customer analytics" xml:space="preserve">
+    <value>Customer analytics</value>
+  </data>
+  <data name="Revenue vs Expense" xml:space="preserve">
+    <value>Revenue vs Expense</value>
+  </data>
+  <data name="Last 6 months" xml:space="preserve">
+    <value>Last 6 months</value>
+  </data>
+  <data name="MoM" xml:space="preserve">
+    <value>MoM</value>
+  </data>
+  <data name="Revenue" xml:space="preserve">
+    <value>Revenue</value>
+  </data>
+  <data name="Expense" xml:space="preserve">
+    <value>Expense</value>
+  </data>
+  <data name="Key Ratios" xml:space="preserve">
+    <value>Key Ratios</value>
+  </data>
+  <data name="Gross margin" xml:space="preserve">
+    <value>Gross margin</value>
+  </data>
+  <data name="Net margin" xml:space="preserve">
+    <value>Net margin</value>
+  </data>
+  <data name="Working capital" xml:space="preserve">
+    <value>Working capital</value>
+  </data>
+  <data name="Current ratio" xml:space="preserve">
+    <value>Current ratio</value>
+  </data>
+  <data name="Quick ratio" xml:space="preserve">
+    <value>Quick ratio</value>
+  </data>
+  <data name="DSO (days)" xml:space="preserve">
+    <value>DSO (days)</value>
+  </data>
+  <data name="DPO (days)" xml:space="preserve">
+    <value>DPO (days)</value>
+  </data>
+  <data name="Prospecting" xml:space="preserve">
+    <value>Prospecting</value>
+  </data>
+  <data name="Qualification" xml:space="preserve">
+    <value>Qualification</value>
+  </data>
+  <data name="Proposal" xml:space="preserve">
+    <value>Proposal</value>
+  </data>
+  <data name="Negotiation" xml:space="preserve">
+    <value>Negotiation</value>
+  </data>
+  <data name="Won" xml:space="preserve">
+    <value>Won</value>
+  </data>
+  <data name="Lost" xml:space="preserve">
+    <value>Lost</value>
+  </data>
+  <data name="Revenue {0}" xml:space="preserve">
+    <value>Revenue {0}</value>
+  </data>
+  <data name="Rev" xml:space="preserve">
+    <value>Rev</value>
+  </data>
+  <data name="Net Income {0}" xml:space="preserve">
+    <value>Net Income {0}</value>
+  </data>
+  <data name="Profit" xml:space="preserve">
+    <value>Profit</value>
+  </data>
+  <data name="Loss" xml:space="preserve">
+    <value>Loss</value>
+  </data>
+  <data name="Cash &amp; Banks" xml:space="preserve">
+    <value>Cash &amp; Banks</value>
+  </data>
+  <data name="Liquid" xml:space="preserve">
+    <value>Liquid</value>
+  </data>
+  <data name="Receivables" xml:space="preserve">
+    <value>Receivables</value>
+  </data>
+  <data name="AR" xml:space="preserve">
+    <value>AR</value>
+  </data>
+  <data name="Payables" xml:space="preserve">
+    <value>Payables</value>
+  </data>
+  <data name="AP" xml:space="preserve">
+    <value>AP</value>
+  </data>
+  <data name="Inventory Value" xml:space="preserve">
+    <value>Inventory Value</value>
+  </data>
+  <data name="Stock" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="Aging — AR vs AP" xml:space="preserve">
+    <value>Aging — AR vs AP</value>
+  </data>
+  <data name="Receivable" xml:space="preserve">
+    <value>Receivable</value>
+  </data>
+  <data name="Payable" xml:space="preserve">
+    <value>Payable</value>
+  </data>
+  <data name="Sales Pipeline" xml:space="preserve">
+    <value>Sales Pipeline</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Top Customers" xml:space="preserve">
+    <value>Top Customers</value>
+  </data>
+  <data name="By revenue" xml:space="preserve">
+    <value>By revenue</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>View all</value>
+  </data>
+  <data name="Margin" xml:space="preserve">
+    <value>Margin</value>
+  </data>
+  <data name="Margin %" xml:space="preserve">
+    <value>Margin %</value>
+  </data>
+  <data name="Outstanding" xml:space="preserve">
+    <value>Outstanding</value>
+  </data>
+  <data name="No customer data yet" xml:space="preserve">
+    <value>No customer data yet</value>
+  </data>
+  <data name="Headcount" xml:space="preserve">
+    <value>Headcount</value>
+  </data>
+  <data name="Open Leads" xml:space="preserve">
+    <value>Open Leads</value>
+  </data>
+  <data name="Won Value" xml:space="preserve">
+    <value>Won Value</value>
+  </data>
+  <data name="Fixed Assets NBV" xml:space="preserve">
+    <value>Fixed Assets NBV</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>EGP</value>
+  </data>
+  <data name="Receivable (customers)" xml:space="preserve">
+    <value>Receivable (customers)</value>
+  </data>
+  <data name="Payable (vendors)" xml:space="preserve">
+    <value>Payable (vendors)</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>Net</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>Count</value>
+  </data>
+  <data name="Cumulative pct" xml:space="preserve">
+    <value>Cumulative %</value>
+  </data>
+</root>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Manufacturing" xml:space="preserve">
+    <value>Manufacturing</value>
+  </data>
+  <data name="Manufacturing dashboard" xml:space="preserve">
+    <value>Manufacturing dashboard</value>
+  </data>
+  <data name="Production output" xml:space="preserve">
+    <value>Production output</value>
+  </data>
+  <data name="Last 6 months — completed value" xml:space="preserve">
+    <value>Last 6 months — completed value</value>
+  </data>
+  <data name="Production this month" xml:space="preserve">
+    <value>Production this month</value>
+  </data>
+  <data name="Produced value" xml:space="preserve">
+    <value>Produced value</value>
+  </data>
+  <data name="Completed WOs" xml:space="preserve">
+    <value>Completed WOs</value>
+  </data>
+  <data name="Open WIP" xml:space="preserve">
+    <value>Open WIP</value>
+  </data>
+  <data name="Active orders" xml:space="preserve">
+    <value>Active orders</value>
+  </data>
+  <data name="Total produced value" xml:space="preserve">
+    <value>Total produced value</value>
+  </data>
+  <data name="Work orders" xml:space="preserve">
+    <value>Work orders</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Released" xml:space="preserve">
+    <value>Released</value>
+  </data>
+  <data name="In progress" xml:space="preserve">
+    <value>In progress</value>
+  </data>
+  <data name="Recent work orders" xml:space="preserve">
+    <value>Recent work orders</value>
+  </data>
+  <data name="Latest 10" xml:space="preserve">
+    <value>Latest 10</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>View all</value>
+  </data>
+  <data name="WO" xml:space="preserve">
+    <value>WO</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Cost</value>
+  </data>
+  <data name="No work orders yet" xml:space="preserve">
+    <value>No work orders yet</value>
+  </data>
+  <data name="Cost breakdown" xml:space="preserve">
+    <value>Cost breakdown</value>
+  </data>
+  <data name="Completed orders" xml:space="preserve">
+    <value>Completed orders</value>
+  </data>
+  <data name="No completed orders yet" xml:space="preserve">
+    <value>No completed orders yet</value>
+  </data>
+  <data name="Material" xml:space="preserve">
+    <value>Material</value>
+  </data>
+  <data name="Labor" xml:space="preserve">
+    <value>Labor</value>
+  </data>
+  <data name="Overhead" xml:space="preserve">
+    <value>Overhead</value>
+  </data>
+  <data name="Top manufactured items" xml:space="preserve">
+    <value>Top manufactured items</value>
+  </data>
+  <data name="Quick Access" xml:space="preserve">
+    <value>Quick Access</value>
+  </data>
+  <data name="New work order" xml:space="preserve">
+    <value>New work order</value>
+  </data>
+  <data name="Production planning" xml:space="preserve">
+    <value>Production planning</value>
+  </data>
+  <data name="Quick assembly" xml:space="preserve">
+    <value>Quick assembly</value>
+  </data>
+  <data name="Work centers" xml:space="preserve">
+    <value>Work centers</value>
+  </data>
+  <data name="Items &amp; BOMs" xml:space="preserve">
+    <value>Items &amp; BOMs</value>
+  </data>
+  <data name="Units" xml:space="preserve">
+    <value>Units</value>
+  </data>
+  <data name="Reports" xml:space="preserve">
+    <value>Reports</value>
+  </data>
+</root>

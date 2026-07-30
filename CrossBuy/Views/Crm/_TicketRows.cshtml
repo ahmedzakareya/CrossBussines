@@ -1,0 +1,29 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<TicketRow>
+@{
+    var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+    // brand-safe: red = urgent, amber = high/pending, green = normal/active/resolved, gray = low/closed (no blue/yellow/mint)
+    string prStyle(string p) => p switch { "Urgent" => "background:#fdeaea;color:#d92d20;", "High" => "background:#fef3e2;color:#b96a00;", "Low" => "background:#f2f4f7;color:#475467;", _ => "background:#eaf3ef;color:#13433a;" };
+    string prNm(string p) => p switch { "Urgent" => Localizer["Urgent"].Value, "High" => Localizer["High"].Value, "Low" => Localizer["Low"].Value, "Normal" => Localizer["Normal"].Value, _ => p };
+    string stStyle(string s) => s switch { "Pending" => "background:#fef3e2;color:#b96a00;", "Closed" => "background:#f2f4f7;color:#475467;", _ => "background:#eaf3ef;color:#13433a;" };
+    string stNm(string s) => s switch { "New" => Localizer["New"].Value, "Open" => Localizer["Open"].Value, "Pending" => Localizer["Pending"].Value, "Resolved" => Localizer["Resolved"].Value, "Closed" => Localizer["Closed"].Value, _ => s };
+}
+@foreach (var t in Model)
+{
+    <tr style="border-bottom:1px dashed #eef1f6;">
+        <td class="ps-4 text-muted fw-bold">#@t.Id</td>
+        <td class="fw-bold text-gray-800">@(isEn ? (string.IsNullOrWhiteSpace(t.SubjectEn) ? t.Subject : t.SubjectEn) : t.Subject)</td>
+        <td class="text-muted">@(t.AccountName ?? "—")</td>
+        <td class="text-center"><span class="badge fw-bold" style="@prStyle(t.Priority)">@prNm(t.Priority)</span></td>
+        <td class="text-center"><span class="badge fw-bold" style="@stStyle(t.Status)">@stNm(t.Status)</span></td>
+        <td class="text-center">
+            @if (t.FrBreached) { <span class="badge fw-bold" style="background:#fdeaea;color:#d92d20;" title="@Localizer["First-response breached"]">FR</span> }
+            @if (t.ResBreached) { <span class="badge fw-bold ms-1" style="background:#fdeaea;color:#d92d20;" title="@Localizer["Resolution breached"]">RES</span> }
+            @if (!t.FrBreached && !t.ResBreached) { <i class="ki-outline ki-check-circle fs-4" style="color:#13433a;" title="@Localizer["Within SLA"]"></i> }
+        </td>
+        <td class="text-muted fs-7">@(t.CreatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+        <td class="text-end pe-4"><a href="@Url.Action("TicketEditor","Crm", new { id = t.Id })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["OpenDetail"]"><i class="ki-outline ki-eye fs-6"></i></a></td>
+    </tr>
+}

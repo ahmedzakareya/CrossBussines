@@ -1,0 +1,42 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<JournalListItem>
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string desc(JournalListItem e) => !isAr && !string.IsNullOrWhiteSpace(e.DescriptionEn) ? e.DescriptionEn! : (e.Description ?? "—");
+    // brand-safe status palette: green = posted, gray = draft/reversed, amber-caution = submitted (no mint/yellow/blue)
+    string StatusStyle(string s) => s switch { "Posted" => "background:#eaf3ef;color:#13433a;", "Submitted" => "background:#fef3e2;color:#b96a00;", "Reversed" => "background:#fdeaea;color:#d92d20;", _ => "background:#f2f4f7;color:#475467;" };
+    string StatusText(string s) => s switch { "Posted" => Localizer["Posted"].Value, "Draft" => SR["Draft"].Value, "Submitted" => Localizer["Submitted"].Value, "Reversed" => Localizer["Reversed"].Value, _ => s };
+}
+@foreach (var e in Model)
+{
+    <tr class="j-row" style="border-bottom:1px dashed #eef1f6;">
+        <td class="ps-4 fw-bold text-gray-800">@(e.EntryNo ?? "—")</td>
+        <td class="text-muted">@e.EntryDate.ToString("yyyy/MM/dd")</td>
+        <td><span class="badge fw-bold" style="background:#f2f4f7;color:#475467;">@e.JournalType</span></td>
+        <td class="text-gray-700">@desc(e)</td>
+        <td class="text-end fw-bold">@e.Total.ToString("N2")</td>
+        <td class="text-center"><span class="badge fw-bold" style="@StatusStyle(e.Status)">@StatusText(e.Status)</span></td>
+        <td class="text-center pe-4">
+            <a href="@Url.Action("JournalEntry","Accounting", new { id = e.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-6"></i></a>
+            @if (e.Status == "Draft")
+            {
+                <form asp-action="PostJournal" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Post this entry?"]">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@e.Id" />
+                    <button class="btn btn-sm btn-light-primary py-1 px-3"><i class="ki-outline ki-check fs-5"></i>@SR["Post"]</button>
+                </form>
+            }
+            else if (e.Status == "Posted")
+            {
+                <form asp-action="ReverseJournal" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Reverse this entry?"]">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@e.Id" />
+                    <button class="btn btn-sm btn-light-danger py-1 px-3"><i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Reverse"]</button>
+                </form>
+            }
+            else { <span class="text-muted">—</span> }
+        </td>
+    </tr>
+}

@@ -1,0 +1,35 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<MaintenanceDueRow>
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    int days = ViewBag.Days ?? 30;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Maintenance due"]</h1>
+        <form method="get" class="d-flex align-items-end gap-2"><div><label class="fw-semibold fs-8 text-muted">@Localizer["Within (days)"]</label><input name="days" type="number" value="@days" class="form-control form-control-solid form-control-sm w-100px" /></div><button class="btn btn-sm text-white" style="background:#13433a;">@SR["Show"]</button></form>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush"><div class="card-body pt-6 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Asset"]</th><th>@Localizer["Maintenance"]</th><th>@SR["Type"]</th><th>@Localizer["Due"]</th><th class="text-center">@Localizer["Days"]</th><th class="text-end">@Localizer["Est. cost"]</th><th class="text-end"></th></tr></thead>
+            <tbody>
+            @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-10">@Localizer["No maintenance due in this window"]</td></tr> }
+            @foreach (var r in Model)
+            {
+                var overdue = r.DaysLeft < 0;
+                <tr>
+                    <td class="fw-bold text-gray-900">@r.AssetName</td>
+                    <td class="text-gray-800">@r.Title</td>
+                    <td class="text-muted fs-7">@r.Type</td>
+                    <td>@if (overdue) { <span class="badge badge-light-danger fw-bold">@r.NextDueDate.ToString("yyyy-MM-dd")</span> } else { <span class="badge fw-bold" style="background:#eaf3ef;color:#1f6253;">@r.NextDueDate.ToString("yyyy-MM-dd")</span> }</td>
+                    <td class="text-center @(overdue ? "text-danger fw-bold" : "text-muted")">@(overdue ? Localizer["overdue "].Value + (-r.DaysLeft) : r.DaysLeft.ToString())</td>
+                    <td class="text-end @(r.EstimatedCost.HasValue ? "fw-bold text-gray-900" : "text-gray-300")">@(r.EstimatedCost.HasValue ? r.EstimatedCost.Value.ToString("N2") : "—")</td>
+                    <td class="text-end"><a href="@Url.Action("FixedAssetDetail","Accounting", new { id = r.AssetId })" class="btn btn-sm" style="background:#eaf3ef;color:#13433a;">@Localizer["Open asset"]</a></td>
+                </tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>

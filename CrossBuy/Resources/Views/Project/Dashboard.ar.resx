@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>  <data name="Total projects" xml:space="preserve">
+    <value>إجمالي المشاريع</value>
+  </data>
+  <data name="Quick Access" xml:space="preserve">
+    <value>وصول سريع</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>مكتمل</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>التكلفة</value>
+  </data>
+  <data name="Material issues" xml:space="preserve">
+    <value>صرف المواد</value>
+  </data>
+  <data name="Contract portfolio" xml:space="preserve">
+    <value>محفظة العقود</value>
+  </data>
+  <data name="Subcontracts" xml:space="preserve">
+    <value>مقاولو الباطن</value>
+  </data>
+  <data name="Recent projects" xml:space="preserve">
+    <value>أحدث المشاريع</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>المشاريع</value>
+  </data>
+  <data name="Profitability" xml:space="preserve">
+    <value>الربحية</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>لوحة التحكم</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="On hold" xml:space="preserve">
+    <value>معلّق</value>
+  </data>
+  <data name="Delivered" xml:space="preserve">
+    <value>مُسلّم</value>
+  </data>
+  <data name="active" xml:space="preserve">
+    <value>نشط</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>ملغى</value>
+  </data>
+  <data name="Negative" xml:space="preserve">
+    <value>سلبي</value>
+  </data>
+  <data name="Top projects by value" xml:space="preserve">
+    <value>أعلى المشاريع قيمةً</value>
+  </data>
+  <data name="In progress" xml:space="preserve">
+    <value>قيد التنفيذ</value>
+  </data>
+  <data name="Total budget" xml:space="preserve">
+    <value>إجمالي الموازنة</value>
+  </data>
+  <data name="Revenue" xml:space="preserve">
+    <value>الإيراد</value>
+  </data>
+  <data name="Projects &amp; Contracting" xml:space="preserve">
+    <value>المشاريع والمقاولات</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>المشروع</value>
+  </data>
+  <data name="Profit" xml:space="preserve">
+    <value>الربح</value>
+  </data>
+  <data name="Advances" xml:space="preserve">
+    <value>الدفعات المقدمة</value>
+  </data>
+  <data name="Customer" xml:space="preserve">
+    <value>العميل</value>
+  </data>
+  <data name="Total contract value" xml:space="preserve">
+    <value>إجمالي قيمة العقود</value>
+  </data>
+  <data name="Contract value" xml:space="preserve">
+    <value>قيمة العقد</value>
+  </data>
+  <data name="Progress billing" xml:space="preserve">
+    <value>المستخلصات</value>
+  </data>
+  <data name="Positive" xml:space="preserve">
+    <value>إيجابي</value>
+  </data>
+  <data name="Projects by status" xml:space="preserve">
+    <value>المشاريع حسب الحالة</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>الإجمالي</value>
+  </data>
+</root>

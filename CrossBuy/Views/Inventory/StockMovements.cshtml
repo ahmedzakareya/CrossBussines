@@ -1,0 +1,58 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    int? fWh = ViewBag.FilterWarehouseId;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Stock movements"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Movements"]</li></ul></div>
+        <a href="@Url.Action("NewMovement","Inventory")" class="btn btn-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New movement"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (item / type / warehouse)"]</label>
+                <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Warehouse"]</label>
+                <select id="f_wh" class="form-select form-select-solid cb-filter" data-control="select2" data-placeholder="@Localizer["All warehouses"]"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+            <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+        </div></div></div>
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center py-4"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+                <div class="card-toolbar"><div class="d-flex align-items-center gap-2"><button type="button" id="f_export" class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0"><i class="ki-outline ki-file-down fs-4"></i>@Localizer["Export Excel"]</button><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-responsive">
+                <table class="table align-middle table-row-dashed fs-6 gy-4" id="t">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                        <th class="min-w-100px">@SR["Date"]</th><th class="min-w-200px">@SR["Item"]</th><th class="min-w-120px">@SR["Warehouse"]</th><th class="min-w-100px">@Localizer["Location"]</th>
+                        <th class="text-center min-w-90px">@SR["Type"]</th><th class="text-end min-w-90px">@Localizer["In"]</th><th class="text-end min-w-90px">@Localizer["Out"]</th>
+                        <th class="text-end min-w-90px">@Localizer["Unit cost"]</th><th class="text-end min-w-100px">@Localizer["Value"]</th><th class="text-center min-w-60px">@Localizer["JE"]</th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                </table>
+                </div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@Localizer["No matching movements"]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+var sl = cbServerList({ url:'@Url.Action("StockMovementsData","Inventory")', suggestUrl:'@Url.Action("ItemsSuggest","Inventory")', isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ var w=document.getElementById('f_wh'); if(w&&w.value)p.set('warehouseId',w.value); } });
+document.getElementById('f_export').addEventListener('click', function(){
+  var p=new URLSearchParams(); var t=(sl.search&&sl.search.terms)?sl.search.terms():''; if(t)p.set('q',t);
+  var w=document.getElementById('f_wh'); if(w&&w.value)p.set('warehouseId',w.value);
+  window.location='@Url.Action("StockMovementsExport","Inventory")?'+p.toString();
+});
+</script>
+}

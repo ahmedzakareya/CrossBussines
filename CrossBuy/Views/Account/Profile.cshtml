@@ -1,0 +1,60 @@
+@using CrossBuy.ViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model EmployeeViewModel
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = isAr ? "الملف الشخصي" : "My Profile";
+    string img = !string.IsNullOrWhiteSpace(Model.ProfileImage) ? Url.Content("~" + Model.ProfileImage.Replace("\\", "/")) : Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+    string job = ViewBag.JobTitle as string;
+    string branch = ViewBag.Branch as string;
+    string D(DateTime? x) => x?.ToString("yyyy/MM/dd") ?? "—";
+    string V(string s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isAr ? "الملف الشخصي" : "My Profile")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@(isAr ? "حسابي" : "My Account")</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isAr ? "الملف الشخصي" : "Profile")</li></ul></div>
+        <a href="@Url.Action("Settings","Account")" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-gear fs-4"></i>@(isAr ? "إعدادات الحساب" : "Account settings")</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5">
+            <div class="card-body p-9">
+                <div class="d-flex flex-wrap flex-sm-nowrap align-items-center">
+                    <div class="symbol symbol-100px symbol-circle me-7 mb-4">
+                        <img src="@img" alt="@Model.FullName" style="object-fit:cover;" />
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                            <span class="text-gray-900 fw-bold fs-2">@(isAr ? Model.FullName : (string.IsNullOrWhiteSpace(Model.FullNameEn) ? Model.FullName : Model.FullNameEn))</span>
+                            <span class="badge fw-bold fs-8 px-2 py-1" style="background:#e9f1ee;color:#13433a;">@(isAr ? "احترافي" : "Professional")</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-4 text-muted fw-semibold fs-6">
+                            @if (!string.IsNullOrWhiteSpace(job)) { <span class="d-flex align-items-center"><i class="ki-outline ki-briefcase fs-5 me-1" style="color:#13433a;"></i>@job</span> }
+                            @if (!string.IsNullOrWhiteSpace(branch)) { <span class="d-flex align-items-center"><i class="ki-outline ki-geolocation fs-5 me-1" style="color:#13433a;"></i>@branch</span> }
+                            <span class="d-flex align-items-center"><i class="ki-outline ki-sms fs-5 me-1" style="color:#13433a;"></i>@V(Model.Email)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title"><h3 class="fw-bold">@(isAr ? "بيانات الموظف" : "Employee details")</h3></div></div>
+            <div class="card-body pt-2 pb-6">
+                <div class="row gy-4">
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "رقم الموظف" : "Employee no.")</div><div class="fw-bold text-gray-900">@Model.ID</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "المسمى الوظيفي" : "Job title")</div><div class="fw-bold text-gray-900">@V(job)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "الفرع" : "Branch")</div><div class="fw-bold text-gray-900">@V(branch)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@SR["Email"]</div><div class="fw-bold text-gray-900">@V(Model.Email)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "الهاتف" : "Phone")</div><div class="fw-bold text-gray-900">@V(Model.PhoneNumber)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "العنوان" : "Address")</div><div class="fw-bold text-gray-900">@V(Model.Address)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "النوع" : "Gender")</div><div class="fw-bold text-gray-900">@V(Model.Gender)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "الحالة الاجتماعية" : "Marital status")</div><div class="fw-bold text-gray-900">@V(Model.MaritalStatus)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "تاريخ الميلاد" : "Date of birth")</div><div class="fw-bold text-gray-900">@D(Model.DateOfBirth)</div></div>
+                    <div class="col-md-4"><div class="fs-7 text-muted">@(isAr ? "تاريخ التعيين" : "Date of joining")</div><div class="fw-bold text-gray-900">@D(Model.DateOfJoining)</div></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>

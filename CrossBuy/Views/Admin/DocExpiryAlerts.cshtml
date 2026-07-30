@@ -1,0 +1,65 @@
+@model List<CrossBuy.BL.ExpiryItem>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    int days = ViewBag.Days;
+    string ctName(string v) => v switch { "Permanent" => Localizer["Permanent"].Value, "FixedTerm" => Localizer["Fixed-term"].Value, "Probation" => Localizer["Probation"].Value, "PartTime" => Localizer["Part-time"].Value, _ => v };
+    string dtName(string v) => v switch { "NationalId" => Localizer["National ID"].Value, "Passport" => Localizer["Passport"].Value, "Qualification" => Localizer["Qualification"].Value, "Contract" => Localizer["Contract"].Value, "Insurance" => Localizer["Insurance"].Value, "WorkPermit" => Localizer["Work permit"].Value, "Other" => Localizer["Other"].Value, _ => v };
+    string itemLabel(CrossBuy.BL.ExpiryItem i) => i.Kind == "Contract" ? ctName(i.Label) : dtName(i.Label);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Document & contract expiry alerts"]</h1>
+        <form method="get" class="d-flex gap-2 align-items-center">
+            <label class="fw-semibold fs-7">@Localizer["Within"]</label>
+            <select name="days" class="form-select form-select-sm form-select-solid w-auto" onchange="this.form.submit()">
+                @foreach (var d in new[]{30,60,90,180}){<option value="@d" selected="@(d==days)">@d @Localizer["days"]</option>}
+            </select>
+        </form>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush"><div class="card-body pt-6">
+            <div class="d-flex flex-stack mb-5">
+                <div class="text-muted fs-7">@Localizer["Items expired or expiring within {0} days.", days]</div>
+                @if (Model.Any())
+                {
+                    <form asp-action="NotifyExpiring" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Notify each affected employee?"]">@Html.AntiForgeryToken()
+                        <input type="hidden" name="days" value="@days" />
+                        <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-notification-status fs-4"></i>@Localizer["Send reminders"]</button>
+                    </form>
+                }
+            </div>
+            @if (!Model.Any())
+            {
+                <div class="text-center text-muted py-15"><i class="ki-outline ki-check-circle fs-3x text-primary mb-3 d-block"></i>@Localizer["Nothing expired or expiring."]</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                <table class="table align-middle table-row-dashed fs-6 gy-3">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase"><th>@SR["Employee"]</th><th>@SR["Item"]</th><th>@SR["Date"]</th><th>@Localizer["Remaining"]</th><th class="text-end">@SR["Actions"]</th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var i in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold text-gray-800">@i.EmployeeName</td>
+                            <td><span class="badge @(i.Kind == "Contract" ? "badge-light-primary" : "badge-light-primary") me-2">@(i.Kind == "Contract" ? Localizer["Contract"] : Localizer["Document"])</span>@itemLabel(i)</td>
+                            <td>@i.Date.ToString("yyyy-MM-dd")</td>
+                            <td>@if (i.DaysLeft < 0) { <span class="badge badge-light-danger">@Localizer["{0}d ago", -i.DaysLeft]</span> } else if (i.DaysLeft <= 30) { <span class="badge badge-light-secondary">@i.DaysLeft @Localizer["d"]</span> } else { <span class="badge badge-light">@i.DaysLeft @Localizer["d"]</span> }</td>
+                            <td class="text-end">
+                                @if (i.FileCount > 0) { <button type="button" class="btn btn-icon btn-light-primary btn-sm me-1 position-relative cb-gallery" data-cb-kind="@i.Kind" data-cb-id="@i.RefId" data-cb-title="@itemLabel(i) — @i.EmployeeName" title="@Localizer["Attachments"]"><i class="ki-outline ki-paper-clip fs-5"></i><span class="badge badge-circle badge-success position-absolute top-0 start-100 translate-middle" style="font-size:.65rem;min-width:16px;height:16px;">@i.FileCount</span></button> } else { <button type="button" class="btn btn-icon btn-light btn-sm me-1" disabled title="@Localizer["No file attached"]"><i class="ki-outline ki-paper-clip fs-5 text-gray-400"></i></button> }
+                                <a href="@Url.Action("HrDocuments","Admin", new { employeeId = i.EmployeeId })" class="btn btn-icon btn-light-secondary btn-sm" title="@Localizer["Manage"]"><i class="ki-outline ki-arrow-right fs-6"></i></a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                </div>
+            }
+        </div></div>
+    </div></div>
+</div>
+
+@{ ViewData["GalleryManage"] = false; }
+@await Html.PartialAsync("_HrDocGallery")

@@ -1,0 +1,46 @@
+@{
+    // derive from the SAME culture the localizer uses for text, so direction (dir + which Metronic bundle) never diverges from the text language
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>@ViewData["Title"] · CrossBuy POS</title>
+    <link rel="shortcut icon" href="~/favicon.ico" />
+    <!-- POS-9a: PWA (installable cashier + offline shell) -->
+    <link rel="manifest" href="~/pos.webmanifest" />
+    <meta name="theme-color" content="#13433a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- same fonts as the admin app -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" />
+    <!-- same Metronic bundles + brand as the admin (RTL-aware) -->
+    @if (isAr)
+    {
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
+    }
+    else
+    {
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
+    }
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* full-screen shell; the cashier dark theme + layout live in pos-cashier.css (scoped under .posx) */
+        html, body { height: 100%; }
+        body { font-family: 'Cairo', sans-serif; overflow: hidden; margin: 0; }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="bg-light">
+    @RenderBody()
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
+    <script src="~/Backend-assets/js/scripts.bundle.js"></script>
+    <script src="~/Backend-assets/plugins/signalr.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

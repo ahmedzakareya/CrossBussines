@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Save settings?" xml:space="preserve">
+    <value>حفظ الإعدادات؟</value>
+  </data>
+  <data name="Inventory settings" xml:space="preserve">
+    <value>إعدادات المخزون</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>الإعدادات</value>
+  </data>
+  <data name="Inter-branch transfer" xml:space="preserve">
+    <value>التحويل بين الفروع</value>
+  </data>
+  <data name="GL behavior when branches differ" xml:space="preserve">
+    <value>الترحيل المحاسبي عند اختلاف الفرع</value>
+  </data>
+  <data name="Cost-center posting (recommended)" xml:space="preserve">
+    <value>ترحيل بين مراكز التكلفة (موصى به)</value>
+  </data>
+  <data name="No GL (cost-only relocation)" xml:space="preserve">
+    <value>بدون قيد (نقل بالتكلفة فقط)</value>
+  </data>
+  <data name="When the two warehouses are in different branches: Cost-center posting moves value through a goods-in-transit account (so branch profitability is correct). No GL relocates qty/cost only. Same-branch transfers never post." xml:space="preserve">
+    <value>عند اختلاف فرع المخزنين: «ترحيل بين مراكز التكلفة» ينقل القيمة عبر حساب مخزون عبور (مدين عبور/دائن مخزون بمركز المصدر، ثم مدين مخزون/دائن عبور بمركز الوجهة) فتظهر ربحية الفروع صحيحة. «بدون قيد» ينقل الكمية والتكلفة فقط. التحويل داخل نفس الفرع لا يولّد قيدًا في الحالتين.</value>
+  </data>
+  <data name="Write-off / damage" xml:space="preserve">
+    <value>الإعدام / التلف</value>
+  </data>
+  <data name="How write-offs are recorded" xml:space="preserve">
+    <value>طريقة تسجيل الإعدام</value>
+  </data>
+  <data name="Separate write-off document (recommended)" xml:space="preserve">
+    <value>مستند إعدام مستقل (موصى به)</value>
+  </data>
+  <data name="Reason within a stock adjustment" xml:space="preserve">
+    <value>سبب ضمن تسوية الجرد</value>
+  </data>
+  <data name="Separate document creates a numbered write-off doc (WOF-) with its own approval trail — preferred by auditors. Reason mode records it as a stock adjustment carrying the write-off reason. Both post the same entry: Dr write-off expense (510103) / Cr inventory (1103)." xml:space="preserve">
+    <value>«مستند مستقل» يُنشئ مستند إعدام بترقيمه الخاص (WOF-) ومساره في الاعتماد — يفضّله المدقّقون. «سبب ضمن التسوية» يسجّله كتسوية جرد تحمل سبب الإعدام دون مستند منفصل. في الحالتين القيد واحد: مدين مصروف الإعدام (510103) / دائن المخزون (1103).</value>
+  </data>
+  <data name="Approvals" xml:space="preserve">
+    <value>الموافقات</value>
+  </data>
+  <data name="Document approval threshold" xml:space="preserve">
+    <value>حد الاعتماد للمستندات</value>
+  </data>
+  <data name="Documents above this value require approval (used by the approvals task)." xml:space="preserve">
+    <value>المستندات التي تتجاوز قيمتها هذا الحد تتطلب موافقة (يُفعّل في مرحلة الصلاحيات والموافقات).</value>
+  </data>
+  <data name="Gross-margin floor (min price)" xml:space="preserve">
+    <value>الحدّ الأدنى للربح (السعر الأدنى)</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>الوضع</value>
+  </data>
+  <data name="Off (no check)" xml:space="preserve">
+    <value>معطّل (بدون فحص)</value>
+  </data>
+  <data name="Warn (allow + notify)" xml:space="preserve">
+    <value>تنبيه (يسمح مع إشعار)</value>
+  </data>
+  <data name="Block (reject)" xml:space="preserve">
+    <value>منع (يرفض المستند)</value>
+  </data>
+  <data name="Minimum margin %" xml:space="preserve">
+    <value>هامش الربح الأدنى %</value>
+  </data>
+  <data name="On sales (order/invoice) the net sell price — converted to the functional currency — is compared to (current average cost × (1 + margin%)). Foreign documents are converted first, so the floor works in any invoice currency. Each item can override the % on its card. Items with no known cost are skipped (no false block). Quotations only warn." xml:space="preserve">
+    <value>عند البيع (أمر بيع/فاتورة) يُقارَن صافي سعر البيع — محوّلًا للعملة الوظيفية — بـ (متوسط التكلفة الحالي × (1 + الهامش%)). المستند الأجنبي يُحوَّل قبل المقارنة فيعمل الحدّ مهما كانت عملة الفاتورة. يمكن تجاوز النسبة لكل صنف من بطاقة الصنف. الأصناف بلا تكلفة معروفة تُستثنى (لا منع خاطئ). عروض الأسعار تُنبّه فقط.</value>
+  </data>
+  <data name="Discount approval" xml:space="preserve">
+    <value>اعتماد الخصم</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>معطّل</value>
+  </data>
+  <data name="Warn" xml:space="preserve">
+    <value>تنبيه</value>
+  </data>
+  <data name="Block (needs manage)" xml:space="preserve">
+    <value>منع (يتطلب صلاحية الإدارة)</value>
+  </data>
+  <data name="Max line discount %" xml:space="preserve">
+    <value>أقصى خصم للسطر %</value>
+  </data>
+  <data name="On saving a sales order/invoice: if any line's discount exceeds this ceiling, Warn allows + notifies, and Block rejects unless the user has manage authority (approval). Discount% = discount amount ÷ (price×qty)." xml:space="preserve">
+    <value>عند حفظ أمر بيع/فاتورة: إذا تجاوز خصم أي سطر هذا الحدّ، «تنبيه» يسمح ويُشعر، و«منع» يرفض المستند إلا لمن يملك صلاحية الإدارة (اعتماد). الخصم% = مبلغ الخصم ÷ (السعر×الكمية).</value>
+  </data>
+</root>

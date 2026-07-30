@@ -1,0 +1,181 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model ProgressEditModel
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var prj = ViewBag.Project as Project ?? Model.Project;
+    var measurements = ViewBag.Measurements as List<ProjectProgress> ?? new();
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    string iv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    bool locked = Model.Status == "Confirmed";
+    string dis = locked ? "disabled" : "";
+    string StatusBadge(string s) => s == "Confirmed" ? "success" : "warning";
+}
+<style>
+    /* REUSED BOQ inline-lines pattern (.cb-2row): labels above each cell, wraps to 2 rows per item (no cramped scroll) */
+    .cb-2row thead{display:none}
+    .cb-2row #rows tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem .75rem;padding:.9rem .5rem;border-bottom:1px solid var(--bs-gray-200)}
+    .cb-2row #rows tr:last-child{border-bottom:0}
+    .cb-2row #rows tr.over-boq{background:var(--bs-light-warning)}
+    .cb-2row #rows td{display:flex;flex-direction:column;justify-content:flex-end;border:0!important;padding:0!important}
+    .cb-2row #rows td::before{content:attr(data-l);font-size:.72rem;line-height:1;color:var(--bs-gray-500);font-weight:600;margin-bottom:.35rem;min-height:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cb-2row #rows td.cb-desc{grid-column:span 2}
+    .cb-2row #rows td .form-control{min-width:0!important;width:100%!important;height:42px}
+    .cb-2row #rows td .lt{display:flex;align-items:center;justify-content:center;height:42px;background:var(--bs-gray-100);border-radius:.475rem;font-weight:700;padding:0 .5rem;text-align:center}
+    .cb-2row #rows td .lt.lt-start{justify-content:flex-start;font-weight:600}
+</style>
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Execution & progress"]</h1>
+            <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn)) @(prj?.ContractValue != null ? "· " + Localizer["Contract value"].Value + ": " + prj!.ContractValue!.Value.ToString("N2") : "")</span></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+            <a href="@Url.Action("Progress","Project", new { id = prj?.ID })" class="btn btn-light-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New measurement"]</a>
+            @if (!locked) { <button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button> }
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <!--begin::Measurements list-->
+        <div class="card mb-5">
+            <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Measurements"]</h3></div>
+            <div class="card-body pt-2">
+                @if (!measurements.Any()) { <div class="text-muted fs-6 py-3">@Localizer["No measurements yet"]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-bordered align-middle">
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase">
+                            <th>#</th><th>@Localizer["Measurement date"]</th><th class="text-end">@Localizer["Overall progress"]</th>
+                            <th class="text-end">@Localizer["Executed value"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var mrow in measurements)
+                        {
+                            <tr class="@(mrow.ID == Model.MeasurementId ? "bg-light-primary" : "")">
+                                <td class="fw-bold">@mrow.MeasurementNo</td>
+                                <td>@mrow.MeasurementDate.ToString("yyyy-MM-dd")</td>
+                                <td class="text-end fw-bold">@mrow.OverallPercent.ToString("N2")%</td>
+                                <td class="text-end">@mrow.ExecutedValue.ToString("N2")</td>
+                                <td class="text-center"><span class="badge badge-light-@StatusBadge(mrow.Status)">@Localizer[mrow.Status]</span></td>
+                                <td class="text-center text-nowrap">
+                                    <a href="@Url.Action("Progress","Project", new { id = prj?.ID, m = mrow.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></a>
+                                    @if (mrow.Status == "Draft")
+                                    {
+                                        <form asp-action="ConfirmProgress" method="post" class="d-inline" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Confirm measurement?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@mrow.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Confirm"]"><i class="ki-outline ki-check fs-5"></i></button></form>
+                                        <form asp-action="DeleteProgress" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete measurement?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@mrow.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody></table></div>
+                }
+            </div>
+        </div>
+        <!--end::Measurements list-->
+
+        <!--begin::Measurement editor-->
+        <form asp-action="SaveProgress" method="post" id="fEditor">@Html.AntiForgeryToken()
+            <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+            <input type="hidden" name="measurementId" value="@Model.MeasurementId" />
+            <input type="hidden" name="rowsJson" id="rowsJson" />
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title fw-bold">@Localizer["Measurement"] #@Model.MeasurementNo
+                        @if (locked) { <span class="badge badge-light-primary ms-2">@Localizer["Confirmed"]</span> }</h3>
+                </div>
+                <div class="card-body">
+                    @if (locked) { <div class="alert alert-info">@Localizer["This measurement is confirmed (read-only)"]</div> }
+                    <div class="row mb-4">
+                        <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@Localizer["Measurement date"]</label>
+                            <input name="measurementDate" id="prg_date" class="form-control form-control-solid js-prg-date" autocomplete="off" value="@Model.MeasurementDate.ToString("yyyy-MM-dd")" @dis /></div>
+                        <div class="col-md-9"><label class="fw-semibold fs-6 mb-2">@Localizer["Note"]</label>
+                            <input name="note" class="form-control form-control-solid" value="@Model.Note" @dis /></div>
+                    </div>
+                    @if (!Model.HasBoq) { <div class="alert alert-warning">@Localizer["No BOQ — enter overall project %"]</div> }
+
+                    <div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr><th></th></tr></thead>
+                        <tbody id="rows">
+                        @foreach (var l in Model.Lines)
+                        {
+                            <tr data-boqid="@(l.BoqItemId?.ToString() ?? "")" data-bq="@iv(l.BoqQty)" data-up="@iv(l.UnitPrice)" data-bv="@iv(l.BoqValue)" data-pe="@iv(l.PrevExecutedValue)">
+                                <td data-l="@Localizer["Code"]"><span class="lt">@(string.IsNullOrEmpty(l.Code) ? "—" : l.Code)</span></td>
+                                <td data-l="@SR["Description"]" class="cb-desc"><span class="lt lt-start">@l.Description</span></td>
+                                <td data-l="@Localizer["Unit"]"><span class="lt">@(string.IsNullOrEmpty(l.Unit) ? "—" : l.Unit)</span></td>
+                                <td data-l="@Localizer["BOQ qty"]"><span class="lt">@l.BoqQty.ToString("N2")</span></td>
+                                <td data-l="@Localizer["BOQ value"]"><span class="lt">@l.BoqValue.ToString("N2")</span></td>
+                                <td data-l="@Localizer["Previous"]"><span class="lt">@l.PrevExecutedValue.ToString("N2")</span></td>
+                                <td data-l="@Localizer["Executed qty (cumulative)"]"><input type="number" step="0.01" min="0" class="form-control form-control-solid cum text-end" value="@iv(l.CumulativeQty)" @dis /></td>
+                                <td data-l="@Localizer["Manual %"]"><input type="number" step="0.01" min="0" max="100" class="form-control form-control-solid man text-end" value="@(l.ManualPercent.HasValue ? iv(l.ManualPercent.Value) : "")" @dis /></td>
+                                <td data-l="@Localizer["Progress %"]"><span class="lt pct">0.00</span></td>
+                                <td data-l="@Localizer["Executed value"]"><span class="lt exec">0.00</span></td>
+                                <td data-l="@Localizer["Period value"]"><span class="lt period">0.00</span></td>
+                            </tr>
+                        }
+                        </tbody></table></div>
+
+                    <!--begin::Live totals bar-->
+                    <div class="d-flex flex-wrap gap-6 justify-content-end border-top pt-5 mt-3">
+                        <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Overall progress"]</div><div class="fs-2 fw-bold text-primary" id="totPct">0.00%</div></div>
+                        <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Executed value"]</div><div class="fs-2 fw-bold" id="totExec">0.00</div></div>
+                        <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Period value"]</div><div class="fs-2 fw-bold text-primary" id="totPeriod">0.00</div></div>
+                    </div>
+                    <!--end::Live totals bar-->
+                </div>
+            </div>
+        </form>
+        <!--end::Measurement editor-->
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    if (typeof flatpickr !== 'undefined') { flatpickr(document.getElementById('prg_date'), { dateFormat: "Y-m-d", locale: { firstDayOfWeek: 6 }, allowInput: true }); }
+    function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+    function round2(n) { return Math.round(n * 100) / 100; }
+    function money(n) { return round2(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function calc() {
+        var sExec = 0, sBoq = 0, sPrev = 0;
+        document.querySelectorAll('#rows tr').forEach(function (tr) {
+            var bq = num(tr.dataset.bq), up = num(tr.dataset.up), bv = num(tr.dataset.bv), pe = num(tr.dataset.pe);
+            var cum = num(tr.querySelector('.cum').value);
+            var manEl = tr.querySelector('.man'); var manRaw = manEl.value.trim();
+            var pct, exec;
+            if (manRaw !== '') { pct = Math.min(Math.max(num(manRaw), 0), 100); exec = round2(pct / 100 * bv); }
+            else { pct = bq > 0 ? Math.min(round2(cum / bq * 100), 100) : 0; exec = round2(Math.min(cum, bq) * up); }
+            var period = round2(exec - pe);
+            tr.querySelector('.pct').textContent = pct.toFixed(2) + '%';
+            tr.querySelector('.exec').textContent = money(exec);
+            tr.querySelector('.period').textContent = money(period);
+            tr.classList.toggle('over-boq', bq > 0 && cum > bq);
+            sExec += exec; sBoq += bv; sPrev += pe;
+        });
+        document.getElementById('totPct').textContent = (sBoq > 0 ? round2(sExec / sBoq * 100) : 0).toFixed(2) + '%';
+        document.getElementById('totExec').textContent = money(sExec);
+        document.getElementById('totPeriod').textContent = money(sExec - sPrev);
+    }
+    var rows = document.getElementById('rows');
+    if (rows) rows.addEventListener('input', calc);
+    var saveBtn = document.getElementById('save');
+    if (saveBtn) saveBtn.addEventListener('click', function () {
+        var out = [];
+        document.querySelectorAll('#rows tr').forEach(function (tr) {
+            var cum = num(tr.querySelector('.cum').value);
+            var manRaw = tr.querySelector('.man').value.trim();
+            if (cum === 0 && manRaw === '') return;   // skip untouched
+            out.push({ boqItemId: tr.dataset.boqid ? parseInt(tr.dataset.boqid) : null, cumulativeQty: cum, manualPercent: manRaw === '' ? null : num(manRaw) });
+        });
+        document.getElementById('rowsJson').value = JSON.stringify(out);
+        var f = document.getElementById('fEditor');
+        if (window.CB && CB.submitForm) CB.submitForm(f, { type: 'save' }); else f.submit();
+    });
+    calc();
+})();
+</script>
+}

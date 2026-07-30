@@ -1,0 +1,149 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Project>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string d(DateTime? x) => x?.ToString("yyyy-MM-dd") ?? "";
+    string inv2(decimal? v) => v?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
+    var customers = ViewBag.Customers as List<Customer> ?? new();
+    var activityTypes = ViewBag.ActivityTypes as List<ProjectActivityType> ?? new();
+    var costCenters = ViewBag.CostCenters as List<CostCenter> ?? new();
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    var custName = customers.ToDictionary(c => c.ID, c => nm(c.Name, c.NameEn));
+    var actName = activityTypes.ToDictionary(a => a.ID, a => nm(a.Name, a.NameEn));
+    var statuses = new[] { "Draft", "Active", "OnHold", "Completed", "Cancelled" };
+    string statusBadge(string? s) => s switch { "Active" => "success", "Completed" => "primary", "OnHold" => "warning", "Cancelled" => "danger", _ => "secondary" };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Projects"]</h1>
+            <span class="text-muted fs-7">@Localizer["Analytic dimension on entries — does not change posting logic."]</span></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("ActivityTypes","Project")" class="btn btn-light"><i class="ki-outline ki-abstract-26 fs-2"></i>@Localizer["Activity types"]</a>
+            <a href="@Url.Action("Profitability","Project")" class="btn btn-light-primary"><i class="ki-outline ki-chart-simple fs-2"></i>@Localizer["Profitability"]</a>
+            <button type="button" class="btn btn-primary" onclick="prjNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New project"]</button>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+            <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>@Localizer["Customer"]</th><th>@Localizer["Activity type"]</th><th>@Localizer["Period"]</th><th class="text-end">@Localizer["Contract value"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@SR["Actions"]</th></tr></thead>
+            <tbody>
+            @if (!Model.Any()) { <tr><td colspan="8" class="text-center text-muted py-10">@Localizer["No projects"]</td></tr> }
+            @foreach (var p in Model)
+            {
+                <tr data-id="@p.ID" data-code="@p.Code" data-name="@p.Name" data-nameen="@p.NameEn"
+                    data-customer="@p.CustomerId" data-location="@p.Location" data-activity="@p.ActivityTypeId"
+                    data-cc="@p.CostCenterId" data-start="@d(p.StartDate)" data-end="@d(p.EndDate)"
+                    data-contract="@inv2(p.ContractValue)" data-budget="@inv2(p.Budget)"
+                    data-advance="@inv2(p.AdvancePercent)" data-retention="@inv2(p.RetentionPercent)"
+                    data-status="@p.Status" data-active="@(p.IsActive ? "1" : "0")">
+                    <td class="fw-bold">@p.Code</td>
+                    <td>@nm(p.Name, p.NameEn)</td>
+                    <td class="text-muted fs-7">@(p.CustomerId.HasValue && custName.ContainsKey(p.CustomerId.Value) ? custName[p.CustomerId.Value] : "—")</td>
+                    <td class="text-muted fs-7">@(p.ActivityTypeId.HasValue && actName.ContainsKey(p.ActivityTypeId.Value) ? actName[p.ActivityTypeId.Value] : "—")</td>
+                    <td class="text-muted fs-7">@(d(p.StartDate) == "" ? "—" : d(p.StartDate)) → @(d(p.EndDate) == "" ? "∞" : d(p.EndDate))</td>
+                    <td class="text-end">@(p.ContractValue.HasValue ? p.ContractValue.Value.ToString("N2") : "—")</td>
+                    <td class="text-center"><span class="badge badge-light-@statusBadge(p.Status)">@(string.IsNullOrEmpty(p.Status) ? "—" : Localizer[p.Status].Value)</span></td>
+                    <td class="text-center text-nowrap">
+                        <a href="@Url.Action("Boq","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Bill of Quantities (BOQ)"]"><i class="ki-outline ki-questionnaire-tablet fs-5"></i></a>
+                        <a href="@Url.Action("Progress","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Execution & progress"]"><i class="ki-outline ki-chart-line-up fs-5"></i></a>
+                        <a href="@Url.Action("Billing","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-warning me-1" title="@Localizer["Progress billing"]"><i class="ki-outline ki-bill fs-5"></i></a>
+                        <a href="@Url.Action("MaterialIssues","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-dark me-1" title="@Localizer["Material issue"]"><i class="ki-outline ki-parcel fs-5"></i></a>
+                        <a href="@Url.Action("Labor","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Project labor"]"><i class="ki-outline ki-people fs-5"></i></a>
+                        <a href="@Url.Action("Budget","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Budget vs actual"]"><i class="ki-outline ki-chart-pie-simple fs-5"></i></a>
+                        <a href="@Url.Action("Subcontracts","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Subcontractors"]"><i class="ki-outline ki-handcart fs-5"></i></a>
+                        <a href="@Url.Action("VariationOrders","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-warning me-1" title="@Localizer["Variation orders"]"><i class="ki-outline ki-arrows-loop fs-5"></i></a>
+                        <a href="@Url.Action("EquipmentDepreciation","Project", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-dark me-1" title="@Localizer["Equipment depreciation"]"><i class="ki-outline ki-delivery-24 fs-5"></i></a>
+                        <button type="button" class="btn btn-sm btn-icon btn-light-primary me-1" onclick="prjEdit(this)" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>
+                        <form asp-action="DeleteProject" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete project?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>
+
+<!--begin::Project modal-->
+<div class="modal fade" id="mPrj" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+    <form asp-action="SaveProject" method="post" data-cb-confirm data-cb-action="edit" data-cb-confirm-if="#prj_id" data-cb-text="@Localizer["Save changes?"]">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="prj_id" value="0" />
+        <div class="modal-header"><h2 class="fw-bold" id="prjTitle">@Localizer["New project"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8"><div class="row">
+            <div class="col-md-4 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Code"]</label><input name="code" id="prj_code" class="form-control form-control-solid" required /></div>
+            <div class="col-md-4 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Name"]</label><input name="name" id="prj_name" class="form-control form-control-solid" required /></div>
+            <div class="col-md-4 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" id="prj_nameEn" class="form-control form-control-solid" required /></div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Customer"]</label>
+                <select name="customerId" id="prj_customer" class="form-select form-select-solid" data-control="select2" data-placeholder="—" data-dropdown-parent="#mPrj">
+                    <option value="">—</option>
+                    @foreach (var c in customers) { <option value="@c.ID">@nm(c.Name, c.NameEn)</option> }
+                </select></div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Location"]</label><input name="location" id="prj_location" class="form-control form-control-solid" /></div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Activity type"]</label>
+                <select name="activityTypeId" id="prj_activity" class="form-select form-select-solid" data-control="select2" data-placeholder="—" data-dropdown-parent="#mPrj">
+                    <option value="">—</option>
+                    @foreach (var a in activityTypes) { <option value="@a.ID">@nm(a.Name, a.NameEn)</option> }
+                </select>
+                @if (!activityTypes.Any()) { <div class="form-text"><a href="@Url.Action("ActivityTypes","Project")">@Localizer["Define activity types first"]</a></div> }
+            </div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Cost center (optional)"]</label>
+                <select name="costCenterId" id="prj_cc" class="form-select form-select-solid" data-control="select2" data-placeholder="—" data-dropdown-parent="#mPrj">
+                    <option value="">—</option>
+                    @foreach (var c in costCenters) { <option value="@c.ID">@c.Code — @nm(c.Name, c.NameEn)</option> }
+                </select></div>
+            <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Start"]</label><input name="startDate" id="prj_start" class="form-control form-control-solid js-prj-date" autocomplete="off" /></div>
+            <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["End"]</label><input name="endDate" id="prj_end" class="form-control form-control-solid js-prj-date" autocomplete="off" /></div>
+            <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Contract value"]</label><input name="contractValue" id="prj_contract" type="number" step="0.01" class="form-control form-control-solid" /></div>
+            <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Budget (optional)"]</label><input name="budget" id="prj_budget" type="number" step="0.01" class="form-control form-control-solid" /></div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Status"]</label>
+                <select name="status" id="prj_status" class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-dropdown-parent="#mPrj">
+                    @foreach (var s in statuses) { <option value="@s">@Localizer[s]</option> }
+                </select></div>
+            <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Advance %"]</label><input name="advancePercent" id="prj_advance" type="number" step="0.01" min="0" max="100" class="form-control form-control-solid" /></div>
+            <div class="col-md-3 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Retention %"]</label><input name="retentionPercent" id="prj_retention" type="number" step="0.01" min="0" max="100" class="form-control form-control-solid" /></div>
+            <div class="col-md-6 mb-4 d-flex align-items-end"><input type="hidden" name="isActive" value="false" /><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="prj_active" checked /><label class="form-check-label fw-semibold ms-2" for="prj_active">@SR["Active"]</label></div></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+<!--end::Project modal-->
+
+@section Scripts {
+<script>
+(function () {
+    if (typeof flatpickr !== 'undefined') {
+        document.querySelectorAll('.js-prj-date').forEach(function (el) { flatpickr(el, { dateFormat: "Y-m-d", locale: { firstDayOfWeek: 6 }, allowInput: true }); });
+    }
+})();
+var prjModal;
+function pval(id, v) { document.getElementById(id).value = v || ''; }
+function psel(id, v) { var el = document.getElementById(id); if (!el) return; el.value = v || ''; if (window.jQuery && jQuery(el).data('select2')) jQuery(el).trigger('change'); }
+function prjShow() { prjModal = prjModal || new bootstrap.Modal(document.getElementById('mPrj')); prjModal.show(); }
+function prjNew() {
+    document.getElementById('prjTitle').textContent = '@Localizer["New project"]';
+    pval('prj_id', '0'); pval('prj_code', ''); pval('prj_name', ''); pval('prj_nameEn', '');
+    pval('prj_location', ''); pval('prj_start', ''); pval('prj_end', ''); pval('prj_contract', ''); pval('prj_budget', '');
+    pval('prj_advance', ''); pval('prj_retention', '');
+    psel('prj_customer', ''); psel('prj_activity', ''); psel('prj_cc', ''); psel('prj_status', 'Draft');
+    document.getElementById('prj_active').checked = true;
+    prjShow();
+}
+function prjEdit(btn) {
+    var r = btn.closest('tr'); var g = function (k) { return r.getAttribute('data-' + k) || ''; };
+    document.getElementById('prjTitle').textContent = '@Localizer["Edit project"]';
+    pval('prj_id', g('id')); pval('prj_code', g('code')); pval('prj_name', g('name')); pval('prj_nameEn', g('nameen'));
+    pval('prj_location', g('location')); pval('prj_start', g('start')); pval('prj_end', g('end'));
+    pval('prj_contract', g('contract')); pval('prj_budget', g('budget'));
+    pval('prj_advance', g('advance')); pval('prj_retention', g('retention'));
+    psel('prj_customer', g('customer')); psel('prj_activity', g('activity')); psel('prj_cc', g('cc')); psel('prj_status', g('status') || 'Draft');
+    document.getElementById('prj_active').checked = g('active') === '1';
+    prjShow();
+}
+</script>
+}

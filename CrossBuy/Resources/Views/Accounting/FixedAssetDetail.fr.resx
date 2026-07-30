@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Fixed Assets" xml:space="preserve">
+    <value>Immobilisations</value>
+  </data>
+  <data name="Acquisition JV" xml:space="preserve">
+    <value>Écriture d'acquisition</value>
+  </data>
+  <data name="Dispose" xml:space="preserve">
+    <value>Céder</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Coût</value>
+  </data>
+  <data name="Accum. depreciation" xml:space="preserve">
+    <value>Amortissement cumulé</value>
+  </data>
+  <data name="Net book value" xml:space="preserve">
+    <value>Valeur nette comptable</value>
+  </data>
+  <data name="Monthly depreciation" xml:space="preserve">
+    <value>Amortissement mensuel</value>
+  </data>
+  <data name="Depreciated" xml:space="preserve">
+    <value>Amorti</value>
+  </data>
+  <data name="Acquired" xml:space="preserve">
+    <value>Acquis</value>
+  </data>
+  <data name="Useful life" xml:space="preserve">
+    <value>Durée de vie utile</value>
+  </data>
+  <data name="mo" xml:space="preserve">
+    <value>mois</value>
+  </data>
+  <data name="Salvage value" xml:space="preserve">
+    <value>Valeur résiduelle</value>
+  </data>
+  <data name="Disposed on" xml:space="preserve">
+    <value>Cédé le</value>
+  </data>
+  <data name="Proceeds" xml:space="preserve">
+    <value>Produit de cession</value>
+  </data>
+  <data name="Disposal JV" xml:space="preserve">
+    <value>Écriture de cession</value>
+  </data>
+  <data name="Depreciation history" xml:space="preserve">
+    <value>Historique des amortissements</value>
+  </data>
+  <data name="Period" xml:space="preserve">
+    <value>Période</value>
+  </data>
+  <data name="Accumulated" xml:space="preserve">
+    <value>Cumulé</value>
+  </data>
+  <data name="No depreciation yet" xml:space="preserve">
+    <value>Aucun amortissement pour l'instant</value>
+  </data>
+  <data name="Scheduled maintenance" xml:space="preserve">
+    <value>Maintenance planifiée</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Titre</value>
+  </data>
+  <data name="Every (months)" xml:space="preserve">
+    <value>Tous les (mois)</value>
+  </data>
+  <data name="Next due" xml:space="preserve">
+    <value>Prochaine échéance</value>
+  </data>
+  <data name="Est. cost" xml:space="preserve">
+    <value>Coût estimé</value>
+  </data>
+  <data name="Every" xml:space="preserve">
+    <value>Tous les</value>
+  </data>
+  <data name="Last done" xml:space="preserve">
+    <value>Dernière réalisation</value>
+  </data>
+  <data name="No maintenance schedules" xml:space="preserve">
+    <value>Aucun programme de maintenance</value>
+  </data>
+  <data name="Delete schedule?" xml:space="preserve">
+    <value>Supprimer le programme ?</value>
+  </data>
+  <data name="Log a performed maintenance" xml:space="preserve">
+    <value>Enregistrer une maintenance effectuée</value>
+  </data>
+  <data name="No schedule" xml:space="preserve">
+    <value>Aucun programme</value>
+  </data>
+  <data name="Pay from (opt.)" xml:space="preserve">
+    <value>Payer depuis (opt.)</value>
+  </data>
+  <data name="Record only" xml:space="preserve">
+    <value>Enregistrer seulement</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Projet</value>
+  </data>
+  <data name="GL" xml:space="preserve">
+    <value>GL</value>
+  </data>
+  <data name="No maintenance records" xml:space="preserve">
+    <value>Aucun enregistrement de maintenance</value>
+  </data>
+  <data name="Fully dep." xml:space="preserve">
+    <value>Entièrement amorti</value>
+  </data>
+  <data name="Disposed" xml:space="preserve">
+    <value>Cédé</value>
+  </data>
+  <data name="Dispose asset" xml:space="preserve">
+    <value>Céder l'immobilisation</value>
+  </data>
+  <data name="Current net book value" xml:space="preserve">
+    <value>Valeur nette comptable actuelle</value>
+  </data>
+  <data name="Disposal date" xml:space="preserve">
+    <value>Date de cession</value>
+  </data>
+  <data name="Received into" xml:space="preserve">
+    <value>Reçu dans</value>
+  </data>
+  <data name="Dispose &amp; post" xml:space="preserve">
+    <value>Céder &amp; comptabiliser</value>
+  </data>
+</root>

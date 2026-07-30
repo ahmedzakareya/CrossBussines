@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Welcome, {0} 👋" xml:space="preserve">
+    <value>مرحبًا، {0} 👋</value>
+  </data>
+  <data name="A quick look at your balances and requests" xml:space="preserve">
+    <value>نظرة سريعة على رصيدك وطلباتك</value>
+  </data>
+  <data name="Total requests" xml:space="preserve">
+    <value>إجمالي الطلبات</value>
+  </data>
+  <data name="vs last month" xml:space="preserve">
+    <value>مقارنة بالشهر الماضي</value>
+  </data>
+  <data name="My pending" xml:space="preserve">
+    <value>طلباتي المعلّقة</value>
+  </data>
+  <data name="Approved this year" xml:space="preserve">
+    <value>معتمَدة هذه السنة</value>
+  </data>
+  <data name="Awaiting my approval" xml:space="preserve">
+    <value>بانتظار اعتمادي</value>
+  </data>
+  <data name="My team" xml:space="preserve">
+    <value>حجم فريقي</value>
+  </data>
+  <data name="Leave Balances" xml:space="preserve">
+    <value>رصيد الإجازات</value>
+  </data>
+  <data name="Policy: " xml:space="preserve">
+    <value>اللائحة: </value>
+  </data>
+  <data name="You are not assigned to a leave policy yet." xml:space="preserve">
+    <value>لم يتم تسكينك على لائحة إجازات بعد.</value>
+  </data>
+  <data name="of {0} days" xml:space="preserve">
+    <value>من {0} يوم</value>
+  </data>
+  <data name="Remaining" xml:space="preserve">
+    <value>المتبقي</value>
+  </data>
+  <data name="Used: {0}" xml:space="preserve">
+    <value>المستهلك: {0}</value>
+  </data>
+  <data name="Recent requests" xml:space="preserve">
+    <value>أحدث الطلبات</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>عرض الكل</value>
+  </data>
+  <data name="No requests" xml:space="preserve">
+    <value>لا توجد طلبات</value>
+  </data>
+  <data name="Days" xml:space="preserve">
+    <value>المدة</value>
+  </data>
+  <data name="Requests distribution" xml:space="preserve">
+    <value>توزيع الطلبات</value>
+  </data>
+  <data name="Manage your requests easily" xml:space="preserve">
+    <value>إدارة طلباتك بسهولة</value>
+  </data>
+  <data name="Submit a new leave request or track your status" xml:space="preserve">
+    <value>قدّم طلب إجازة جديد أو تابع حالتك</value>
+  </data>
+  <data name="New leave request" xml:space="preserve">
+    <value>طلب إجازة جديد</value>
+  </data>
+  <data name="Leave days" xml:space="preserve">
+    <value>أيام إجازة</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>اليوم</value>
+  </data>
+  <data name="Requests" xml:space="preserve">
+    <value>الطلبات</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>معلّق</value>
+  </data>
+  <data name="Approved" xml:space="preserve">
+    <value>موافَق</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="January" xml:space="preserve">
+    <value>يناير</value>
+  </data>
+  <data name="February" xml:space="preserve">
+    <value>فبراير</value>
+  </data>
+  <data name="March" xml:space="preserve">
+    <value>مارس</value>
+  </data>
+  <data name="April" xml:space="preserve">
+    <value>أبريل</value>
+  </data>
+  <data name="May" xml:space="preserve">
+    <value>مايو</value>
+  </data>
+  <data name="June" xml:space="preserve">
+    <value>يونيو</value>
+  </data>
+  <data name="July" xml:space="preserve">
+    <value>يوليو</value>
+  </data>
+  <data name="August" xml:space="preserve">
+    <value>أغسطس</value>
+  </data>
+  <data name="September" xml:space="preserve">
+    <value>سبتمبر</value>
+  </data>
+  <data name="October" xml:space="preserve">
+    <value>أكتوبر</value>
+  </data>
+  <data name="November" xml:space="preserve">
+    <value>نوفمبر</value>
+  </data>
+  <data name="December" xml:space="preserve">
+    <value>ديسمبر</value>
+  </data>
+  <data name="Sun" xml:space="preserve">
+    <value>أحد</value>
+  </data>
+  <data name="Mon" xml:space="preserve">
+    <value>إثنين</value>
+  </data>
+  <data name="Tue" xml:space="preserve">
+    <value>ثلاثاء</value>
+  </data>
+  <data name="Wed" xml:space="preserve">
+    <value>أربعاء</value>
+  </data>
+  <data name="Thu" xml:space="preserve">
+    <value>خميس</value>
+  </data>
+  <data name="Fri" xml:space="preserve">
+    <value>جمعة</value>
+  </data>
+  <data name="Sat" xml:space="preserve">
+    <value>سبت</value>
+  </data>
+</root>

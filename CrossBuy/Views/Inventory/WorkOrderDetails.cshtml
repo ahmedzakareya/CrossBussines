@@ -1,0 +1,219 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model ManufWorkOrder
+@{
+    Layout = "~/Views/Shared/_LayoutManufacturing.cshtml";
+    var comps = ViewBag.Components as List<ManufWorkOrderComponent> ?? new();
+    var compNames = ViewBag.CompNames as Dictionary<int, string> ?? new();
+    var itemName = ViewBag.ItemName as string;
+    var whName = ViewBag.WarehouseName as string;
+    var labor = ViewBag.Labor as List<ManufWorkOrderLabor> ?? new();
+    var laborEmpNames = ViewBag.LaborEmpNames as Dictionary<int, string> ?? new();
+    var employees = ViewBag.Employees as System.Collections.IEnumerable;
+    var whtCodes = ViewBag.WhtCodes as System.Collections.IEnumerable;
+    var currencies = ViewBag.Currencies as System.Collections.IEnumerable;
+    int functionalCcy = ViewBag.FunctionalCurrencyId ?? 0;
+    var cashAccounts = ViewBag.CashAccounts as System.Collections.IEnumerable;
+    string stCls(string s) => s switch { "Released" => "info", "InProgress" => "primary", "Completed" => "success", "Cancelled" => "danger", _ => "secondary" };
+    bool isDraft = Model.Status == "Draft";
+    bool isReleased = Model.Status == "Released" || Model.Status == "InProgress";
+    bool isDone = Model.Status == "Completed" || Model.Status == "Closed";
+    var laborTotal = labor.Sum(l => l.Amount);
+    var total = Model.MaterialCost + laborTotal + Model.LaborCost + Model.OverheadCost;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(Model.WoNo ?? ("#" + Model.ID)) <span class="badge badge-light-@stCls(Model.Status) ms-2 fs-7">@(Model.Status == "Draft" ? SR["Draft"] : Localizer[Model.Status])</span></h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("WorkOrders","Inventory")" class="text-muted text-hover-primary">@Localizer["Work orders"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@itemName</li></ul></div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="@Url.Action("WorkOrders","Inventory")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
+            <a href="@Url.Action("Routing","Inventory", new { itemId = Model.ItemId })" class="btn btn-light-primary"><i class="ki-outline ki-route fs-2"></i>@Localizer["Routing"]</a>
+            @if (isDraft)
+            {
+                <form asp-action="ReleaseWorkOrder" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Release? Materials will be issued to WIP."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-info"><i class="ki-outline ki-entrance-right fs-2"></i>@Localizer["Release (issue to WIP)"]</button></form>
+                <form asp-action="CompleteWorkOrder" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Complete directly? Issue materials, produce the item and post the JE in one step."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-success"><i class="ki-outline ki-check-circle fs-2"></i>@Localizer["Complete directly"]</button></form>
+                <form asp-action="CancelWorkOrder" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Cancel this work order?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-light-danger">@Localizer["Cancel WO"]</button></form>
+            }
+            @if (isReleased)
+            {
+                <form asp-action="CompleteWorkOrder" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Complete? Materials will be consumed, the item produced and the JE posted."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-success"><i class="ki-outline ki-check-circle fs-2"></i>@Localizer["Complete production"]</button></form>
+                <form asp-action="CancelWorkOrder" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Cancel this work order?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-light-danger">@Localizer["Cancel WO"]</button></form>
+                <form asp-action="ProducePartial" method="post" class="d-flex align-items-center gap-2 bg-light-primary rounded px-3 py-2" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Produce at standard cost? (on finalize the variance posts to 520109)"]">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" />
+                    <span class="fw-semibold fs-7">@Localizer["Partial"]</span>
+                    <input name="qty" type="number" step="0.01" min="0" class="form-control form-control-solid form-control-sm w-90px" placeholder="@Localizer["qty"]" />
+                    <label class="form-check form-check-sm mb-0"><input type="checkbox" name="finalize" value="true" class="form-check-input" /> <span class="fs-8">@Localizer["finalize"]</span></label>
+                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-parcel fs-4"></i>@Localizer["Produce"]</button>
+                </form>
+            }
+            @if (isDone && Model.JournalEntryId != null)
+            {
+                <a href="@Url.Action("JournalEntry","Accounting", new { id = Model.JournalEntryId })" class="btn btn-light-primary"><i class="ki-outline ki-document fs-3"></i>@Localizer["Journal entry"]</a>
+            }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["InvMsg"] != null) { <div class="alert alert-success">@TempData["InvMsg"]</div> }
+        @if (TempData["InvErr"] != null) { <div class="alert alert-danger">@TempData["InvErr"]</div> }
+
+        <div class="row g-5">
+            <div class="col-lg-7">
+                <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Work order"]</div></div>
+                    <div class="card-body">
+                        @if (isDraft)
+                        {
+                            <form asp-action="SaveWorkOrder" method="post" class="row g-4" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Save changes?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" />
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Qty"]</label><input type="number" step="0.01" min="0.01" name="qty" class="form-control form-control-solid" value="@Model.Qty" /></div>
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Start"]</label><input type="date" name="plannedStart" class="form-control form-control-solid" value="@(Model.PlannedStart?.ToString("yyyy-MM-dd"))" /></div>
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["End"]</label><input type="date" name="plannedEnd" class="form-control form-control-solid" value="@(Model.PlannedEnd?.ToString("yyyy-MM-dd"))" /></div>
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Labor"]</label><input type="number" step="0.01" min="0" name="laborCost" class="form-control form-control-solid" value="@Model.LaborCost" /></div>
+                                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Overhead"]</label><input type="number" step="0.01" min="0" name="overheadCost" class="form-control form-control-solid" value="@Model.OverheadCost" /></div>
+                                <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Notes"]</label><textarea name="notes" class="form-control form-control-solid" rows="2">@Model.Notes</textarea></div>
+                                <div class="col-12 d-flex justify-content-end"><button class="btn btn-primary btn-sm"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button></div>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="row g-4">
+                                <div class="col-md-6"><div class="fs-8 text-muted">@SR["Item"]</div><div class="fw-bold text-gray-800">@itemName</div></div>
+                                <div class="col-md-3"><div class="fs-8 text-muted">@Localizer["Qty"]</div><div class="fw-bold">@Model.Qty.ToString("N2")</div></div>
+                                <div class="col-md-3"><div class="fs-8 text-muted">@SR["Warehouse"]</div><div class="fw-bold">@whName</div></div>
+                                @if (!string.IsNullOrWhiteSpace(Model.Notes)) { <div class="col-12 text-muted fs-7">@Model.Notes</div> }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Components (BOM)"]</div></div>
+                    <div class="card-body">
+                        <div class="table-responsive"><table class="table table-row-dashed align-middle gy-2">
+                            <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@Localizer["Component"]</th><th class="text-end">@Localizer["Planned qty"]</th><th class="text-end">@Localizer["Issued"]</th><th class="text-end">@Localizer["Unit cost"]</th></tr></thead>
+                            <tbody>
+                            @foreach (var c in comps)
+                            {
+                                <tr><td class="fw-semibold text-gray-800">@(compNames.TryGetValue(c.ItemId, out var nm) ? nm : ("#" + c.ItemId))</td><td class="text-end">@c.PlannedQty.ToString("N2")</td><td class="text-end @(c.IssuedQty>0?"text-primary fw-bold":"text-muted")">@c.IssuedQty.ToString("N2")</td><td class="text-end text-muted">@(c.UnitCost>0?c.UnitCost.ToString("N2"):"—")</td></tr>
+                            }
+                            @if (comps.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-6">@Localizer["No components"]</td></tr> }
+                            </tbody>
+                        </table></div>
+                    </div>
+                </div>
+
+                @* بند3: labor lines by source — only while the order is open (Released/InProgress) *@
+                <div class="card mt-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Labor"]</div>
+                    @if (laborTotal > 0) { <div class="card-toolbar"><span class="badge badge-light-primary fs-7">@Localizer["Loaded"] : @laborTotal.ToString("N2")</span></div> }
+                </div>
+                    <div class="card-body">
+                        @if (labor.Any())
+                        {
+                            <div class="table-responsive mb-4"><table class="table table-row-dashed align-middle gy-2">
+                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th>@Localizer["Source"]</th><th>@SR["Name"]</th><th class="text-end">@Localizer["Hrs"]</th><th class="text-end">@Localizer["Rate"]</th><th class="text-end">@SR["Amount"]</th><th class="text-end">@Localizer["WHT"]</th><th></th></tr></thead>
+                                <tbody>
+                                @foreach (var l in labor)
+                                {
+                                    var srcNm = l.SourceType == "Employee" ? SR["Employee"] : l.SourceType == "External" ? Localizer["External"] : Localizer["Applied"];
+                                    var nm = l.SourceType == "Employee" && l.EmployeeId != null ? (laborEmpNames.TryGetValue(l.EmployeeId.Value, out var en) ? en : ("#" + l.EmployeeId)) : (l.WorkerName ?? "—");
+                                    <tr>
+                                        <td><span class="badge badge-light-@(l.SourceType=="Employee"?"primary":l.SourceType=="External"?"warning":"secondary")">@srcNm</span></td>
+                                        <td class="fw-semibold text-gray-800">@nm</td>
+                                        <td class="text-end">@l.Hours.ToString("N2")</td>
+                                        <td class="text-end text-muted">@l.RatePerHour.ToString("N2")</td>
+                                        <td class="text-end fw-bold">@l.Amount.ToString("N2")@if (l.CurrencyId != null && l.CurrencyId != functionalCcy && l.AmountForeign != null) { <div class="fs-8 text-muted">@l.AmountForeign.Value.ToString("N2") @@ @l.ExchangeRate</div> }</td>
+                                        <td class="text-end text-muted">@(l.WhtAmount > 0 ? l.WhtAmount.ToString("N2") : "—")</td>
+                                        <td class="text-end">
+                                            @if (isReleased)
+                                            {
+                                                <form asp-action="RemoveWorkOrderLabor" method="post" class="d-inline" onsubmit="return confirm('@Localizer["Remove this labor line and reverse its entry?"]')">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@l.ID" /><input type="hidden" name="workOrderId" value="@Model.ID" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-6"></i></button></form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table></div>
+                        }
+                        else { <div class="text-muted fs-8 mb-3">@Localizer["No labor loaded yet."]</div> }
+
+                        @if (isReleased)
+                        {
+                            <div class="separator separator-dashed mb-4"></div>
+                            <form asp-action="AddWorkOrderLabor" method="post" class="row g-3 align-items-end">@Html.AntiForgeryToken()<input type="hidden" name="workOrderId" value="@Model.ID" />
+                                <div class="col-md-3"><label class="fw-semibold fs-8 text-muted mb-1">@Localizer["Source"]</label>
+                                    <select name="sourceType" id="lab_src" class="form-select form-select-sm form-select-solid" onchange="labSrc(this.value)">
+                                        <option value="Employee">@SR["Employee"]</option>
+                                        <option value="External">@Localizer["External worker"]</option>
+                                        <option value="Applied">@Localizer["Applied (no source)"]</option>
+                                    </select></div>
+                                <div class="col-md-3" id="lab_emp_wrap"><label class="fw-semibold fs-8 text-muted mb-1">@SR["Employee"]</label>
+                                    <select name="employeeId" class="form-select form-select-sm form-select-solid" data-control="select2">
+                                        <option value="">@Localizer["Select"]</option>
+                                        @if (employees != null) { foreach (dynamic e in employees) { <option value="@e.ID">@e.FullName</option> } }
+                                    </select></div>
+                                <div class="col-md-3 d-none" id="lab_worker_wrap"><label class="fw-semibold fs-8 text-muted mb-1">@Localizer["Worker name"]</label><input name="workerName" class="form-control form-control-sm form-control-solid" /></div>
+                                <div class="col-md-2"><label class="fw-semibold fs-8 text-muted mb-1">@Localizer["Hours"]</label><input type="number" step="0.01" min="0.01" name="hours" class="form-control form-control-sm form-control-solid" required /></div>
+                                <div class="col-md-2"><label class="fw-semibold fs-8 text-muted mb-1">@Localizer["Rate/hr"]</label><input type="number" step="0.0001" min="0" name="ratePerHour" class="form-control form-control-sm form-control-solid" placeholder="@Localizer["auto for employee"]" /></div>
+                                <div class="col-md-3 d-none lab-ext"><label class="fw-semibold fs-8 text-muted mb-1">@Localizer["WHT (optional)"]</label>
+                                    <select name="whtCodeId" class="form-select form-select-sm form-select-solid">
+                                        <option value="">@Localizer["None"]</option>
+                                        @if (whtCodes != null) { foreach (dynamic w in whtCodes) { <option value="@w.ID">@w.Name (@w.Rate%)</option> } }
+                                    </select></div>
+                                <div class="col-md-3 d-none lab-ext"><label class="fw-semibold fs-8 text-muted mb-1">@Localizer["Pay account"]</label>
+                                    <select name="externalCreditAccountId" class="form-select form-select-sm form-select-solid">
+                                        @if (cashAccounts != null) { foreach (dynamic a in cashAccounts) { <option value="@a.ID">@a.Code — @a.Name</option> } }
+                                    </select></div>
+                                <div class="col-md-2 d-none lab-ext"><label class="fw-semibold fs-8 text-muted mb-1">@SR["Currency"]</label>
+                                    <select name="currencyId" id="lab_ccy" class="form-select form-select-sm form-select-solid" onchange="labCcy(this.value)">
+                                        @if (currencies != null) { foreach (dynamic c in currencies) { <option value="@c.ID" selected="@(c.ID == functionalCcy)">@c.Code</option> } }
+                                    </select></div>
+                                <div class="col-md-2 d-none" id="lab_fx_wrap"><label class="fw-semibold fs-8 text-muted mb-1">@Localizer["FX rate"]</label><input type="number" step="0.0001" min="0" name="exchangeRate" class="form-control form-control-sm form-control-solid" placeholder="@Localizer["auto"]" /></div>
+                                <div class="col-md-2"><button class="btn btn-sm btn-light-primary w-100"><i class="ki-outline ki-plus fs-4"></i>@Localizer["Load"]</button></div>
+                            </form>
+                            <div class="text-muted fs-8 mt-2">@Localizer["Employee: Dr WIP / Cr wage expense (reclass). External: Dr WIP / Cr cash or payable (+WHT). Foreign: rate in foreign, converted to functional at entry (Buy rate) — WIP stays functional."]</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Cost summary"]</div></div>
+                    <div class="card-body">
+                        <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["Materials"]</span><span class="fw-bold">@Model.MaterialCost.ToString("N2")</span></div>
+                        @if (laborTotal > 0) { <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["Sourced labor"]</span><span class="fw-bold">@laborTotal.ToString("N2")</span></div> }
+                        <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["Applied labor"]</span><span class="fw-bold">@Model.LaborCost.ToString("N2")</span></div>
+                        <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["Overhead"]</span><span class="fw-bold">@Model.OverheadCost.ToString("N2")</span></div>
+                        <div class="separator my-3"></div>
+                        <div class="d-flex flex-stack mb-3"><span class="fw-bold">@Localizer["Total cost"]</span><span class="fw-bold fs-4 text-gray-900">@total.ToString("N2")</span></div>
+                        <div class="d-flex flex-stack"><span class="text-muted fs-7">@Localizer["Produced unit cost"]</span><span class="fw-bold fs-4 text-primary">@(Model.UnitCost>0?Model.UnitCost.ToString("N2"):"—")</span></div>
+                        @if (Model.WipBalance > 0)
+                        {
+                            <div class="separator my-3"></div>
+                            <div class="d-flex flex-stack"><span class="fw-semibold text-primary"><i class="ki-outline ki-factory fs-5 me-1"></i>@Localizer["Held in WIP"]</span><span class="fw-bolder fs-4 text-primary">@Model.WipBalance.ToString("N2")</span></div>
+                        }
+                        <div class="d-flex flex-stack mt-3"><span class="text-muted fs-8">@Localizer["Method"]</span><span class="badge badge-light-@(Model.Mode=="Immediate"?"warning":"primary")">@(Model.Mode == "Immediate" ? Localizer["Immediate"] : Localizer["OrderBased"])</span></div>
+                        @if (isDone) { <div class="alert alert-success d-flex align-items-center mt-4 mb-0 py-2"><i class="ki-outline ki-check-circle fs-3 text-primary me-2"></i><span class="fs-7">@Localizer["Produced & posted"]</span></div> }
+                        else if (isReleased) { <div class="text-muted fs-8 mt-3">@Localizer["Materials issued to WIP. Click \"Complete production\" to receive finished goods and clear WIP."]</div> }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+var LAB_FUNCTIONAL = @functionalCcy;
+function labSrc(v){
+  var emp = document.getElementById('lab_emp_wrap');
+  var worker = document.getElementById('lab_worker_wrap');
+  var ext = document.querySelectorAll('.lab-ext');
+  if(emp) emp.classList.toggle('d-none', v !== 'Employee');
+  if(worker) worker.classList.toggle('d-none', v !== 'External');
+  ext.forEach(function(e){ e.classList.toggle('d-none', v !== 'External'); });
+  var ccy = document.getElementById('lab_ccy'); if (ccy) labCcy(ccy.value);
+}
+function labCcy(v){
+  // show FX rate only when the chosen currency is not the functional one
+  var wrap = document.getElementById('lab_fx_wrap');
+  if (wrap) wrap.classList.toggle('d-none', String(v) === String(LAB_FUNCTIONAL));
+}
+</script>
+}

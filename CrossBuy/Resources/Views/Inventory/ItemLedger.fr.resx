@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Opening" xml:space="preserve">
+    <value>Ouverture</value>
+  </data>
+  <data name="Receipt" xml:space="preserve">
+    <value>Réception</value>
+  </data>
+  <data name="Issue" xml:space="preserve">
+    <value>Sortie</value>
+  </data>
+  <data name="Adjustment" xml:space="preserve">
+    <value>Ajustement</value>
+  </data>
+  <data name="Purchase" xml:space="preserve">
+    <value>Achat</value>
+  </data>
+  <data name="Sale" xml:space="preserve">
+    <value>Vente</value>
+  </data>
+  <data name="Item ledger" xml:space="preserve">
+    <value>Grand livre des articles</value>
+  </data>
+  <data name="Balances" xml:space="preserve">
+    <value>Soldes</value>
+  </data>
+  <data name="Barcode" xml:space="preserve">
+    <value>Code-barres</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>En stock</value>
+  </data>
+  <data name="Avg cost" xml:space="preserve">
+    <value>Coût moyen</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Valeur</value>
+  </data>
+  <data name="Last operation" xml:space="preserve">
+    <value>Dernière opération</value>
+  </data>
+  <data name="In" xml:space="preserve">
+    <value>Entrée</value>
+  </data>
+  <data name="Out" xml:space="preserve">
+    <value>Sortie</value>
+  </data>
+  <data name="Last purchase" xml:space="preserve">
+    <value>Dernier achat</value>
+  </data>
+  <data name="@" xml:space="preserve">
+    <value>@</value>
+  </data>
+  <data name="Avg purchase price" xml:space="preserve">
+    <value>Prix d'achat moyen</value>
+  </data>
+  <data name="over" xml:space="preserve">
+    <value>sur</value>
+  </data>
+  <data name="units purchased" xml:space="preserve">
+    <value>unités achetées</value>
+  </data>
+  <data name="Current avg cost" xml:space="preserve">
+    <value>Coût moyen actuel</value>
+  </data>
+  <data name="Last entry date" xml:space="preserve">
+    <value>Date de dernière entrée</value>
+  </data>
+  <data name="Last exit date" xml:space="preserve">
+    <value>Date de dernière sortie</value>
+  </data>
+  <data name="Item balance over time" xml:space="preserve">
+    <value>Solde de l'article dans le temps</value>
+  </data>
+  <data name="No movements to chart" xml:space="preserve">
+    <value>Aucun mouvement à afficher</value>
+  </data>
+  <data name="Movements" xml:space="preserve">
+    <value>Mouvements</value>
+  </data>
+  <data name="All warehouses" xml:space="preserve">
+    <value>Tous les entrepôts</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>Coût unitaire</value>
+  </data>
+  <data name="JE" xml:space="preserve">
+    <value>JE</value>
+  </data>
+  <data name="No movements" xml:space="preserve">
+    <value>Aucun mouvement</value>
+  </data>
+</root>

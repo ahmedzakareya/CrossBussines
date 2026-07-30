@@ -1,0 +1,296 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var areas = ViewBag.Areas as List<DiningArea> ?? new();
+    var area = ViewBag.Area as DiningArea;
+    var tables = ViewBag.Tables as List<RestaurantTable> ?? new();
+    var shapes = new[] { ("Square", Localizer["Square"].Value), ("Round", Localizer["Round"].Value), ("Rect", Localizer["Rect"].Value) };
+    string iv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
+<style>
+    /* shell holds the scrollable viewport + fixed floating controls */
+    .fp-shell{position:relative;height:620px;}
+    /* viewport carries the grid → ALWAYS fills the map (no gray dead space at any zoom); scrolls when zoomed in */
+    .fp-canvas{position:absolute;inset:0;overflow:auto;border:1px solid #e6eaef;border-radius:16px;
+        background-color:#f3f5f8;
+        background-image:linear-gradient(rgba(90,110,140,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(90,110,140,.06) 1px,transparent 1px);
+        background-size:40px 40px;}
+    .fp-canvas.fp-nogrid{background-image:none !important;}
+    #fpWrap{transform-origin:0 0;}
+    /* fixed floor (world) — transparent, holds the tables */
+    #fpStage{position:relative;width:1400px;height:900px;transform-origin:0 0;}
+    /* wooden table */
+    .fp-canvas .tbl{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+        background:repeating-linear-gradient(91deg,rgba(120,80,38,.045) 0 3px,rgba(120,80,38,0) 3px 10px),linear-gradient(160deg,#ecd4ac,#dcb888);
+        border:3px solid #7a5a37;color:#4a3620;box-shadow:0 6px 16px rgba(80,55,25,.28);
+        cursor:grab;user-select:none;transition:box-shadow .15s ease,transform .15s ease;}
+    .fp-canvas .tbl.fp-square{border-radius:22px;}
+    .fp-canvas .tbl.fp-rect{border-radius:18px;}
+    .fp-canvas .tbl.fp-round{border-radius:50%;}
+    .fp-canvas .tbl:hover{box-shadow:0 10px 24px rgba(80,55,25,.35);transform:translateY(-2px);z-index:5;}
+    .fp-canvas .tbl.dragging{cursor:grabbing;box-shadow:0 16px 32px rgba(80,55,25,.42);z-index:9;}
+    .fp-canvas .tbl.selected{box-shadow:0 0 0 4px rgba(122,90,55,.28),0 8px 20px rgba(80,55,25,.3);z-index:6;}
+    .fp-canvas .tbl .tbl-code{font-weight:800;font-size:1.5rem;line-height:1;color:#3a2a18;}
+    .fp-canvas .tbl .tbl-seats{font-size:.8rem;font-weight:600;color:#6b563c;display:flex;align-items:center;gap:4px;}
+    .fp-canvas .tbl .tbl-seats i{font-size:.85rem;color:#6b563c;}
+    /* realistic top-down armchair (base points up; rotated per side); sits behind the table edge */
+    .fp-canvas .chair{position:absolute;background:#e9e3d4;border:2px solid #2f4a42;
+        border-radius:16px 16px 9px 9px;box-shadow:0 2px 5px rgba(40,35,25,.22);pointer-events:none;}
+    .fp-canvas .chair::before{content:"";position:absolute;top:3px;left:6px;right:6px;height:8px;background:#d6ccb6;border-radius:6px;}
+    /* delete marker — appears on the element on hover / when selected (map-style) */
+    .fp-canvas .tbl-del{position:absolute;top:-11px;right:-11px;width:26px;height:26px;border-radius:50%;
+        background:#f1416c;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);
+        display:none;align-items:center;justify-content:center;cursor:pointer;z-index:20;font-size:18px;font-weight:700;line-height:1;}
+    .fp-canvas .tbl:hover .tbl-del,.fp-canvas .tbl.selected .tbl-del{display:flex;}
+    .fp-canvas .tbl-del:hover{background:#d9214e;transform:scale(1.1);}
+    /* scalable stage (tables layer) */
+    /* floating map controls (bottom-right) — like the reference */
+    .fp-zoom{position:absolute;bottom:16px;right:16px;z-index:30;display:flex;align-items:center;gap:2px;
+        background:#fff;border:1px solid #e6eaef;border-radius:12px;box-shadow:0 4px 14px rgba(50,60,90,.14);padding:4px;}
+    .fp-zoom button{border:0;background:transparent;width:34px;height:34px;border-radius:9px;cursor:pointer;color:#3a4a5a;display:flex;align-items:center;justify-content:center;}
+    .fp-zoom button:hover{background:#f1f5f9;}
+    .fp-zoom .fp-zlbl{min-width:52px;text-align:center;font-weight:600;font-size:.85rem;color:#334155;}
+    .fp-tools{position:absolute;top:16px;right:16px;z-index:30;display:flex;flex-direction:column;gap:4px;
+        background:#fff;border:1px solid #e6eaef;border-radius:12px;box-shadow:0 4px 14px rgba(50,60,90,.14);padding:5px;}
+    .fp-tools button{border:0;background:transparent;width:40px;height:40px;border-radius:9px;cursor:pointer;color:#3a4a5a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:.6rem;}
+    .fp-tools button:hover{background:#f1f5f9;}
+    .fp-tools button.active{background:#e7f1ee;color:#0f766e;}
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Floor plan"]</h1>
+            <span class="text-muted fs-7">@Localizer["Drag tables to position them, then save. Each table has a QR for ordering later."]</span></div>
+        @if (area != null) { <button type="button" id="saveLayout" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@Localizer["Save layout"]</button> }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any())
+        {
+            <div class="alert alert-warning d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>
+                <span>@Localizer["This company has no branches — add one first from the Branches screen."]
+                    <a href="@Url.Action("BranchesList","Service")" class="fw-bold ms-1">@Localizer["Manage branches"]</a></span></div>
+        }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-4"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-4"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Dining area"]</label>
+                <select id="arSel" class="form-select form-select-solid" data-control="select2" @(fB == null ? "disabled" : "")>@if (fB == null) { <option value="">@Localizer["Select a branch first"]</option> }@foreach (var a in areas) { <option value="@a.ID" selected="@(area?.ID==a.ID)">@a.Code — @a.Name</option> }</select>
+                @if (fB != null && !areas.Any()) { <div class="text-danger fs-8 mt-1">@Localizer["No areas — add them in Areas & stations."] <a href="@Url.Action("Areas","Pos", new { branchId = fB })">@SR["Add"]</a></div> }
+            </div>
+        </div></div></div>
+
+        @if (area != null)
+        {
+            <div class="row g-5">
+                <div class="col-lg-8">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@area.Code — @area.Name</h3></div>
+                        <div class="card-toolbar"><span class="text-muted fs-8"><i class="ki-outline ki-information-5 fs-6 me-1"></i>@Localizer["Drag to move · hover to delete"]</span></div></div>
+                        <div class="card-body">
+                            <div class="fp-shell">
+                                <div id="canvas" class="fp-canvas">
+                                    <div id="fpWrap">
+                                        <div id="fpStage">
+                                        @foreach (var t in tables)
+                                        {
+                                            var sh = t.Shape == "Round" ? "fp-round" : (t.Shape == "Rect" ? "fp-rect" : "fp-square");
+                                            <div class="tbl @sh" data-id="@t.ID" data-code="@t.Code" data-seats="@t.Seats" data-shape="@t.Shape" data-w="@iv(t.W)" data-h="@iv(t.H)" style="left:@iv(t.X)px;top:@iv(t.Y)px;width:@iv(t.W)px;height:@iv(t.H)px;">
+                                                <span class="tbl-code">@t.Code</span>
+                                                <span class="tbl-seats">@t.Seats<i class="ki-outline ki-profile-user"></i></span>
+                                                <span class="tbl-del js-del" data-id="@t.ID" data-code="@t.Code" title="@Localizer["Delete table"]">&times;</span>
+                                            </div>
+                                        }
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- side tools (fixed over the viewport) -->
+                                <div class="fp-tools">
+                                    <button type="button" id="fpCenter" title="@Localizer["Center"]"><i class="ki-outline ki-frame fs-4"></i><span>@Localizer["Center"]</span></button>
+                                    <button type="button" id="fpGrid" class="active" title="@Localizer["Grid"]"><i class="ki-outline ki-element-11 fs-4"></i><span>@Localizer["Grid"]</span></button>
+                                </div>
+                                <!-- zoom pill -->
+                                <div class="fp-zoom">
+                                    <button type="button" id="zoomOut" title="@Localizer["Zoom out"]"><i class="ki-outline ki-minus fs-3"></i></button>
+                                    <span class="fp-zlbl" id="zoomLbl">100%</span>
+                                    <button type="button" id="zoomIn" title="@Localizer["Zoom in"]"><i class="ki-outline ki-plus fs-3"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card mb-5"><div class="card-header"><div class="card-title"><h3>@Localizer["Add table"]</h3></div></div>
+                        <div class="card-body">
+                            <form asp-action="SaveTable" method="post" class="row g-2">@Html.AntiForgeryToken()
+                                <input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="diningAreaId" value="@area.ID" /><input type="hidden" name="id" value="0" />
+                                <input type="hidden" name="x" id="addX" value="30" /><input type="hidden" name="y" id="addY" value="40" /><input type="hidden" name="w" value="90" /><input type="hidden" name="h" value="90" />
+                                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@SR["Code"]</label><input name="code" class="form-control form-control-solid form-control-sm" required /></div>
+                                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@Localizer["Seats"]</label><input type="number" name="seats" value="4" min="1" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@Localizer["Shape"]</label><select name="shape" class="form-select form-select-solid form-select-sm">@foreach (var s in shapes) { <option value="@s.Item1">@s.Item2</option> }</select></div>
+                                <div class="col-12"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Tables"] (@tables.Count)</h3></div></div>
+                        <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-7">
+                            <tbody>@foreach (var t in tables) {
+                                <tr><td class="fw-bold">@t.Code <span class="text-muted fw-normal fs-8">· @t.Seats @Localizer["seats"]</span></td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-icon btn-sm btn-light-warning js-edit" data-id="@t.ID" data-code="@t.Code" data-seats="@t.Seats" data-shape="@t.Shape" data-x="@iv(t.X)" data-y="@iv(t.Y)" data-w="@iv(t.W)" data-h="@iv(t.H)" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>
+                                    <button type="button" class="btn btn-icon btn-sm btn-light-primary js-qr" data-id="@t.ID" data-code="@t.Code" title="QR"><i class="ki-outline ki-scan-barcode fs-4"></i></button>
+                                    <form asp-action="RegenerateQr" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Regenerate QR (invalidates the old one)?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.ID" /><input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="areaId" value="@area.ID" /><button class="btn btn-icon btn-sm btn-light" title="@Localizer["Regenerate QR"]"><i class="ki-outline ki-arrows-circle fs-5"></i></button></form>
+                                    <form asp-action="DeleteTable" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete table?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.ID" /><input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="areaId" value="@area.ID" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                                </td></tr>
+                            }</tbody></table></div>
+                            @if (!tables.Any()) { <div class="text-center text-muted py-6">@Localizer["No tables yet."]</div> }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+<form id="layoutForm" asp-action="SaveLayout" method="post" class="d-none">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="areaId" value="@(area?.ID)" /><input type="hidden" name="layoutJson" id="layoutJson" /></form>
+<form id="delForm" asp-action="DeleteTable" method="post" class="d-none">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="areaId" value="@(area?.ID)" /><input type="hidden" name="id" id="delId" /></form>
+
+<!-- edit table modal -->
+<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="SaveTable" method="post">@Html.AntiForgeryToken()
+        <input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="diningAreaId" value="@(area?.ID)" />
+        <input type="hidden" name="id" id="edId" /><input type="hidden" name="x" id="edX" /><input type="hidden" name="y" id="edY" /><input type="hidden" name="w" id="edW" /><input type="hidden" name="h" id="edH" />
+        <div class="modal-header"><h3 class="modal-title">@Localizer["Edit table"]</h3><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><div class="row g-3">
+            <div class="col-4"><label class="fw-semibold fs-7 mb-1">@SR["Code"]</label><input name="code" id="edCode" class="form-control form-control-solid" required /></div>
+            <div class="col-4"><label class="fw-semibold fs-7 mb-1">@Localizer["Seats"]</label><input type="number" name="seats" id="edSeats" min="1" class="form-control form-control-solid" /></div>
+            <div class="col-4"><label class="fw-semibold fs-7 mb-1">@Localizer["Shape"]</label><select name="shape" id="edShape" class="form-select form-select-solid">@foreach (var s in shapes) { <option value="@s.Item1">@s.Item2</option> }</select></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button type="submit" class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+<!-- QR modal -->
+<div class="modal fade" id="qrModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content">
+    <div class="modal-header"><h3 class="modal-title" id="qrTitle">QR</h3><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body text-center"><img id="qrImg" src="" alt="QR" style="max-width:100%" /><div class="text-muted fs-8 mt-3">@Localizer["Scan to open the order (later)."]</div></div>
+</div></div></div>
+
+@section Scripts {
+<script>
+var base='@Url.Action("FloorPlan","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+var arSel=document.getElementById('arSel');
+if(arSel){var goA=function(){location.href=base+'?companyId=@fC&branchId=@fB&areaId='+arSel.value;};if(window.jQuery){jQuery(arSel).on('change select2:select',goA);}else{arSel.addEventListener('change',goA);}}
+
+// ---- draw realistic armchairs by seat count + size the table (6 -> long banquet, etc.) ----
+var CW=46, CH=42, COV=8, PITCH=58;   // chair footprint, tuck-under overlap, slot pitch
+function mkChair(){var c=document.createElement('div');c.className='chair';return c;}
+function chairAt(el,cx,cy,rot){var c=mkChair();c.style.width=CW+'px';c.style.height=CH+'px';c.style.left=(cx-CW/2)+'px';c.style.top=(cy-CH/2)+'px';c.style.transform='rotate('+rot+'deg)';el.appendChild(c);}
+function placeSide(el,side,n,w,h){for(var i=0;i<n;i++){var t=(i+1)/(n+1);
+  if(side==='top')chairAt(el,w*t,-(CH/2-COV),0);
+  else if(side==='bottom')chairAt(el,w*t,h+(CH/2-COV),180);
+  else if(side==='left')chairAt(el,-(CH/2-COV),h*t,-90);
+  else chairAt(el,w+(CH/2-COV),h*t,90);}}
+function layoutTable(el){
+  var seats=parseInt(el.getAttribute('data-seats'))||0, shape=el.getAttribute('data-shape')||'Square';
+  [].slice.call(el.querySelectorAll('.chair')).forEach(function(c){c.remove();});
+  if(shape==='Round'){
+    var d=Math.max(110,74+seats*13); el.style.width=d+'px'; el.style.height=d+'px';
+    var R=d/2+(CH/2-COV);
+    for(var i=0;i<seats;i++){var a=-90+i*360/seats, ar=a*Math.PI/180; chairAt(el,d/2+R*Math.cos(ar),d/2+R*Math.sin(ar),a+90);}
+    return;
+  }
+  var top=0,bot=0,left=0,right=0;
+  if(seats<=4){ if(seats>=1)top=1; if(seats>=2)bot=1; if(seats>=3)left=1; if(seats>=4)right=1; }
+  else { top=Math.ceil(seats/2); bot=seats-top; }
+  var longMax=Math.max(top,bot,1), shortMax=Math.max(left,right,1);
+  var w=Math.max(104,longMax*PITCH+20), h=Math.max(104,(seats<=4?Math.max(longMax,shortMax):shortMax)*PITCH+20);
+  if(seats<=4){ var s=Math.max(w,h); w=s; h=s; }
+  el.style.width=w+'px'; el.style.height=h+'px';
+  placeSide(el,'top',top,w,h); placeSide(el,'bottom',bot,w,h); placeSide(el,'left',left,w,h); placeSide(el,'right',right,w,h);
+}
+[].slice.call(document.querySelectorAll('#canvas .tbl')).forEach(layoutTable);
+
+// ---- fixed floor (1400x900) + zoom; the floor ALWAYS fills the viewport (min zoom = cover), scroll to navigate ----
+var canvas=document.getElementById('canvas'), stage=document.getElementById('fpStage'), wrap=document.getElementById('fpWrap'), Z=1;
+var FW=1400, FH=900;
+function applyZoom(){ if(stage)stage.style.transform='scale('+Z+')'; if(wrap){wrap.style.width=(FW*Z)+'px';wrap.style.height=(FH*Z)+'px';} var l=document.getElementById('zoomLbl'); if(l)l.textContent=Math.round(Z*100)+'%'; }
+function zoomSet(nz){ Z=Math.max(0.5,Math.min(1.8,Math.round(nz*100)/100)); applyZoom(); }
+function fitAll(){ var vw=canvas.clientWidth, vh=canvas.clientHeight;
+  var els=[].slice.call(document.querySelectorAll('#canvas .tbl'));
+  if(!els.length){ zoomSet(Math.min(1,(vw-6)/FW,(vh-6)/FH)); canvas.scrollTo(0,0); return; }
+  var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  els.forEach(function(t){var l=parseFloat(t.style.left)||0, tp=parseFloat(t.style.top)||0; minX=Math.min(minX,l-44); minY=Math.min(minY,tp-44); maxX=Math.max(maxX,l+t.offsetWidth+44); maxY=Math.max(maxY,tp+t.offsetHeight+44);});
+  minX=Math.max(0,minX); minY=Math.max(0,minY); maxX=Math.min(FW,maxX); maxY=Math.min(FH,maxY);
+  var bw=Math.max(1,maxX-minX), bh=Math.max(1,maxY-minY);
+  zoomSet(Math.min((vw-20)/bw,(vh-20)/bh));   // zoom to fit the tables' bounding box
+  var cx=(minX+maxX)/2*Z, cy=(minY+maxY)/2*Z;
+  canvas.scrollTo(Math.max(0,cx-vw/2), Math.max(0,cy-vh/2));   // center the tables in the viewport
+}
+fitAll();   // default: fit + center the tables
+var zi=document.getElementById('zoomIn'),zo=document.getElementById('zoomOut'),zc=document.getElementById('fpCenter'),zg=document.getElementById('fpGrid');
+if(zi)zi.addEventListener('click',function(){zoomSet(Z+0.1);});
+if(zo)zo.addEventListener('click',function(){zoomSet(Z-0.1);});
+if(zc)zc.addEventListener('click',fitAll);
+if(zg)zg.addEventListener('click',function(){canvas.classList.toggle('fp-nogrid');zg.classList.toggle('active');});
+
+// ---- drag tables on the map + auto-save positions; delete marker on hover/select ----
+var drag=null, ox=0, oy=0, moved=false, GRID=20;
+function snap(v){return Math.round(v/GRID)*GRID;}
+function collectLayout(){return [].slice.call(document.querySelectorAll('#canvas .tbl')).map(function(t){return {id:parseInt(t.getAttribute('data-id')),x:parseFloat(t.style.left)||0,y:parseFloat(t.style.top)||0,w:t.offsetWidth,h:t.offsetHeight};});}
+var layoutForm=document.getElementById('layoutForm');
+function persistLayout(){ if(!layoutForm)return; document.getElementById('layoutJson').value=JSON.stringify(collectLayout());
+  var fd=new FormData(layoutForm); fetch(layoutForm.action,{method:'POST',body:fd,headers:{'X-Requested-With':'fetch'}}); }
+function stageXY(e){var r=stage.getBoundingClientRect();return {x:(e.clientX-r.left)/Z, y:(e.clientY-r.top)/Z};}
+if(canvas){
+  canvas.addEventListener('mousedown',function(e){ if(e.target.closest('.tbl-del'))return; var t=e.target.closest('.tbl');if(!t)return;
+    [].slice.call(canvas.querySelectorAll('.tbl.selected')).forEach(function(x){x.classList.remove('selected');});
+    t.classList.add('selected');
+    var p=stageXY(e);drag=t;moved=false;ox=p.x-t.offsetLeft;oy=p.y-t.offsetTop;t.classList.add('dragging');e.preventDefault();});
+  document.addEventListener('mousemove',function(e){if(!drag)return;moved=true;var p=stageXY(e);var x=Math.max(0,p.x-ox),y=Math.max(0,p.y-oy);var maxX=stage.clientWidth-drag.offsetWidth,maxY=stage.clientHeight-drag.offsetHeight;drag.style.left=Math.min(x,maxX)+'px';drag.style.top=Math.min(y,maxY)+'px';});
+  document.addEventListener('mouseup',function(){if(!drag)return;drag.style.left=snap(parseFloat(drag.style.left)||0)+'px';drag.style.top=snap(parseFloat(drag.style.top)||0)+'px';drag.classList.remove('dragging');drag=null;if(moved)persistLayout();});
+}
+// delete marker on the table (map-style)
+[].slice.call(document.querySelectorAll('.js-del')).forEach(function(b){b.addEventListener('click',function(e){
+  e.stopPropagation();
+  var doDel=function(){document.getElementById('delId').value=b.getAttribute('data-id');document.getElementById('delForm').submit();};
+  var msg=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Delete table?"].Value));
+  if(window.CB&&CB.confirm){CB.confirm({type:'delete',text:msg}).then(function(ok){if(ok)doDel();});}else if(confirm(msg)){doDel();}
+});});
+var saveBtn=document.getElementById('saveLayout');
+if(saveBtn)saveBtn.addEventListener('click',function(){document.getElementById('layoutJson').value=JSON.stringify(collectLayout());layoutForm.submit();});
+// new table gets a fresh, non-overlapping default position (instead of all piling top-left)
+(function(){var n=document.querySelectorAll('#canvas .tbl').length;var fx=document.getElementById('addX'),fy=document.getElementById('addY');
+  if(fx&&fy){fx.value=30+(n%6)*120;fy.value=40+Math.floor(n/6)*120;}})();
+// edit table
+[].slice.call(document.querySelectorAll('.js-edit')).forEach(function(b){b.addEventListener('click',function(){
+  document.getElementById('edId').value=b.getAttribute('data-id');
+  document.getElementById('edCode').value=b.getAttribute('data-code');
+  document.getElementById('edSeats').value=b.getAttribute('data-seats');
+  document.getElementById('edShape').value=b.getAttribute('data-shape');
+  document.getElementById('edX').value=b.getAttribute('data-x');document.getElementById('edY').value=b.getAttribute('data-y');
+  document.getElementById('edW').value=b.getAttribute('data-w');document.getElementById('edH').value=b.getAttribute('data-h');
+  if(window.bootstrap)new bootstrap.Modal(document.getElementById('editModal')).show();
+});});
+// QR modal
+[].slice.call(document.querySelectorAll('.js-qr')).forEach(function(b){b.addEventListener('click',function(){
+  document.getElementById('qrTitle').textContent='QR — '+b.getAttribute('data-code');
+  document.getElementById('qrImg').src='@Url.Action("TableQr","Pos")?id='+b.getAttribute('data-id');
+  if(window.bootstrap)new bootstrap.Modal(document.getElementById('qrModal')).show();
+});});
+</script>
+}

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nest - Multipurpose eCommerce HTML Template" xml:space="preserve">
+    <value>Nest - Modèle HTML eCommerce polyvalent</value>
+  </data>
+  <data name="About Us" xml:space="preserve">
+    <value>À propos de nous</value>
+  </data>
+  <data name="My Account" xml:space="preserve">
+    <value>Mon compte</value>
+  </data>
+  <data name="Wishlist" xml:space="preserve">
+    <value>Liste de souhaits</value>
+  </data>
+  <data name="Order Tracking" xml:space="preserve">
+    <value>Suivi de commande</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>Anglais</value>
+  </data>
+  <data name="Arabic" xml:space="preserve">
+    <value>Arabe</value>
+  </data>
+  <data name="Russian" xml:space="preserve">
+    <value>Russe</value>
+  </data>
+  <data name="All Categories" xml:space="preserve">
+    <value>Toutes les catégories</value>
+  </data>
+  <data name="Search for items..." xml:space="preserve">
+    <value>Rechercher des articles...</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>Comparer</value>
+  </data>
+  <data name="Cart" xml:space="preserve">
+    <value>Panier</value>
+  </data>
+  <data name="View cart" xml:space="preserve">
+    <value>Voir le panier</value>
+  </data>
+  <data name="Checkout" xml:space="preserve">
+    <value>Passer à la caisse</value>
+  </data>
+  <data name="My Voucher" xml:space="preserve">
+    <value>Mes bons</value>
+  </data>
+  <data name="My Wishlist" xml:space="preserve">
+    <value>Ma liste de souhaits</value>
+  </data>
+  <data name="Setting" xml:space="preserve">
+    <value>Paramètre</value>
+  </data>
+  <data name="Sign out" xml:space="preserve">
+    <value>Déconnexion</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Parcourir</value>
+  </data>
+  <data name="Show more..." xml:space="preserve">
+    <value>Afficher plus...</value>
+  </data>
+  <data name="Deals" xml:space="preserve">
+    <value>Offres</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>À propos</value>
+  </data>
+  <data name="Shop" xml:space="preserve">
+    <value>Boutique</value>
+  </data>
+  <data name="Vendors" xml:space="preserve">
+    <value>Vendeurs</value>
+  </data>
+  <data name="Mega menu" xml:space="preserve">
+    <value>Méga menu</value>
+  </data>
+  <data name="Blog" xml:space="preserve">
+    <value>Blog</value>
+  </data>
+  <data name="Pages" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="Contact" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>Connexion</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>S'inscrire</value>
+  </data>
+  <data name="Forgot password" xml:space="preserve">
+    <value>Mot de passe oublié</value>
+  </data>
+  <data name="Reset password" xml:space="preserve">
+    <value>Réinitialiser le mot de passe</value>
+  </data>
+  <data name="Purchase Guide" xml:space="preserve">
+    <value>Guide d'achat</value>
+  </data>
+  <data name="Privacy Policy" xml:space="preserve">
+    <value>Politique de confidentialité</value>
+  </data>
+  <data name="Terms of Service" xml:space="preserve">
+    <value>Conditions d'utilisation</value>
+  </data>
+  <data name="404 Page" xml:space="preserve">
+    <value>Page 404</value>
+  </data>
+  <data name="shop" xml:space="preserve">
+    <value>boutique</value>
+  </data>
+  <data name="French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+  <data name="German" xml:space="preserve">
+    <value>Allemand</value>
+  </data>
+  <data name="Spanish" xml:space="preserve">
+    <value>Espagnol</value>
+  </data>
+  <data name="Search for items…" xml:space="preserve">
+    <value>Rechercher des articles…</value>
+  </data>
+  <data name="Our location" xml:space="preserve">
+    <value>Notre emplacement</value>
+  </data>
+  <data name="Log In / Sign Up" xml:space="preserve">
+    <value>Connexion / Inscription</value>
+  </data>
+  <data name="Follow Us" xml:space="preserve">
+    <value>Suivez-nous</value>
+  </data>
+  <data name="Your emaill address" xml:space="preserve">
+    <value>Votre adresse e-mail</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>S'abonner</value>
+  </data>
+  <data name="Corporate" xml:space="preserve">
+    <value>Entreprise</value>
+  </data>
+  <data name="Popular" xml:space="preserve">
+    <value>Populaire</value>
+  </data>
+  <data name="Install App" xml:space="preserve">
+    <value>Installer l'application</value>
+  </data>
+  <data name="Delivery Information" xml:space="preserve">
+    <value>Informations de livraison</value>
+  </data>
+  <data name="Terms &amp; Conditions" xml:space="preserve">
+    <value>Conditions générales</value>
+  </data>
+  <data name="Contact Us" xml:space="preserve">
+    <value>Contactez-nous</value>
+  </data>
+  <data name="Support Center" xml:space="preserve">
+    <value>Centre d'assistance</value>
+  </data>
+  <data name="Careers" xml:space="preserve">
+    <value>Carrières</value>
+  </data>
+  <data name="Sign In" xml:space="preserve">
+    <value>Connexion</value>
+  </data>
+  <data name="View Cart" xml:space="preserve">
+    <value>Voir le panier</value>
+  </data>
+  <data name="Track My Order" xml:space="preserve">
+    <value>Suivre ma commande</value>
+  </data>
+  <data name="Help Ticket" xml:space="preserve">
+    <value>Ticket d'assistance</value>
+  </data>
+  <data name="Shipping Details" xml:space="preserve">
+    <value>Détails de livraison</value>
+  </data>
+  <data name="Compare products" xml:space="preserve">
+    <value>Comparer les produits</value>
+  </data>
+  <data name="Become a Vendor" xml:space="preserve">
+    <value>Devenir vendeur</value>
+  </data>
+  <data name="Affiliate Program" xml:space="preserve">
+    <value>Programme d'affiliation</value>
+  </data>
+  <data name="Farm Business" xml:space="preserve">
+    <value>Activité agricole</value>
+  </data>
+  <data name="Farm Careers" xml:space="preserve">
+    <value>Carrières agricoles</value>
+  </data>
+  <data name="Our Suppliers" xml:space="preserve">
+    <value>Nos fournisseurs</value>
+  </data>
+  <data name="Accessibility" xml:space="preserve">
+    <value>Accessibilité</value>
+  </data>
+  <data name="Promotions" xml:space="preserve">
+    <value>Promotions</value>
+  </data>
+  <data name="From App Store or Google Play" xml:space="preserve">
+    <value>Depuis l'App Store ou Google Play</value>
+  </data>
+  <data name="Secured Payment Gateways" xml:space="preserve">
+    <value>Passerelles de paiement sécurisées</value>
+  </data>
+</root>

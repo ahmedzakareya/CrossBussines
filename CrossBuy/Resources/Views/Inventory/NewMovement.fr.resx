@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Opening balance" xml:space="preserve">
+    <value>Solde d'ouverture</value>
+  </data>
+  <data name="Receipt (in)" xml:space="preserve">
+    <value>Réception (entrée)</value>
+  </data>
+  <data name="Issue (out)" xml:space="preserve">
+    <value>Sortie (sortie)</value>
+  </data>
+  <data name="Adjustment +" xml:space="preserve">
+    <value>Ajustement +</value>
+  </data>
+  <data name="Adjustment −" xml:space="preserve">
+    <value>Ajustement −</value>
+  </data>
+  <data name="Post this stock movement? It will affect stock balances." xml:space="preserve">
+    <value>Comptabiliser ce mouvement de stock ? Il affectera les soldes de stock.</value>
+  </data>
+  <data name="New stock movement" xml:space="preserve">
+    <value>Nouveau mouvement de stock</value>
+  </data>
+  <data name="Movements" xml:space="preserve">
+    <value>Mouvements</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Add an item and a warehouse first." xml:space="preserve">
+    <value>Ajoutez d'abord un article et un entrepôt.</value>
+  </data>
+  <data name="Movement type" xml:space="preserve">
+    <value>Type de mouvement</value>
+  </data>
+  <data name="Inbound — increases stock" xml:space="preserve">
+    <value>Entrant — augmente le stock</value>
+  </data>
+  <data name="Outbound — decreases stock" xml:space="preserve">
+    <value>Sortant — diminue le stock</value>
+  </data>
+  <data name="Date &amp; warehouse" xml:space="preserve">
+    <value>Date &amp; entrepôt</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>Sélectionner</value>
+  </data>
+  <data name="Movement details" xml:space="preserve">
+    <value>Détails du mouvement</value>
+  </data>
+  <data name="Scan barcode + Enter" xml:space="preserve">
+    <value>Scanner le code-barres + Entrée</value>
+  </data>
+  <data name="Select item" xml:space="preserve">
+    <value>Sélectionner un article</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>Unité</value>
+  </data>
+  <data name="Base unit" xml:space="preserve">
+    <value>Unité de base</value>
+  </data>
+  <data name="Unit cost (for inbound)" xml:space="preserve">
+    <value>Coût unitaire (pour entrant)</value>
+  </data>
+  <data name="Section" xml:space="preserve">
+    <value>Section</value>
+  </data>
+  <data name="Rack (optional)" xml:space="preserve">
+    <value>Rack (facultatif)</value>
+  </data>
+  <data name="Batch no." xml:space="preserve">
+    <value>N° de lot</value>
+  </data>
+  <data name="Expiry date" xml:space="preserve">
+    <value>Date d'expiration</value>
+  </data>
+  <data name="Serial no." xml:space="preserve">
+    <value>N° de série</value>
+  </data>
+</root>

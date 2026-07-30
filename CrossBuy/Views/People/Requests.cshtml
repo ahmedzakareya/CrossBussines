@@ -1,0 +1,132 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model PeopleRequestsVm
+@{
+    Layout = "~/Views/Shared/_LayoutPeople.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var statusBadge = new[] { "warning", "success", "danger" };
+    var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value };
+    string letterName(string? lt) => lt switch {
+        "Salary" => Localizer["Salary certificate"].Value,
+        "Employment" => Localizer["Employment letter"].Value,
+        "Experience" => Localizer["Experience letter"].Value,
+        "ToWhom" => Localizer["To whom it may concern"].Value,
+        _ => Localizer["Letter"].Value };
+    string reqTitle(CrossBuy.Models.Context.Admin.EmployeeRequest r) =>
+        r.RequestType == "Permission"
+            ? $"{Localizer["Permission"].Value} — {r.PermissionDate:yyyy-MM-dd} ({r.FromTime:hh\\:mm}→{r.ToTime:hh\\:mm})"
+            : letterName(r.LetterType);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["My Requests — letters & permissions"]</h1>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["ReqMsg"] != null) { <div class="alert alert-success">@TempData["ReqMsg"]</div> }
+        @if (TempData["ReqErr"] != null) { <div class="alert alert-danger">@TempData["ReqErr"]</div> }
+
+        <div class="row g-5">
+            <!-- create -->
+            <div class="col-lg-5">
+                <div class="card card-flush">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["New request"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <form asp-action="CreateRequest" method="post">@Html.AntiForgeryToken()
+                            <label class="fw-semibold fs-6 mb-2">@Localizer["Request type"]</label>
+                            <select name="requestType" id="rq_type" class="form-select form-select-solid mb-4" data-control="select2" data-hide-search="true">
+                                <option value="Letter">@Localizer["Letter"]</option>
+                                <option value="Permission">@Localizer["Hourly permission"]</option>
+                            </select>
+
+                            <div id="rq_letter">
+                                <label class="fw-semibold fs-6 mb-2">@Localizer["Letter type"]</label>
+                                <select name="letterType" class="form-select form-select-solid mb-4" data-control="select2" data-hide-search="true">
+                                    <option value="Salary">@Localizer["Salary certificate"]</option>
+                                    <option value="Employment">@Localizer["Employment letter"]</option>
+                                    <option value="Experience">@Localizer["Experience letter"]</option>
+                                    <option value="ToWhom">@Localizer["To whom it may concern"]</option>
+                                </select>
+                                <label class="fw-semibold fs-6 mb-2">@Localizer["Addressee (optional)"]</label>
+                                <input name="addressee" class="form-control form-control-solid mb-4" placeholder="@Localizer["e.g. Bank"]" />
+                                @if (!Model.HasPayslip) { <div class="text-warning fs-8 mb-3">@Localizer["No payslip yet — the salary certificate will have no figures until the first payslip is posted."]</div> }
+                            </div>
+
+                            <div id="rq_perm" class="d-none">
+                                <div class="row">
+                                    <div class="col-12 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Date"]</label><input name="permissionDate" type="date" class="form-control form-control-solid" /></div>
+                                    <div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["From"]</label><input name="fromTime" type="time" class="form-control form-control-solid" /></div>
+                                    <div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["To"]</label><input name="toTime" type="time" class="form-control form-control-solid" /></div>
+                                </div>
+                                <div class="text-muted fs-8 mb-3">@Localizer["Once approved, late minutes within this window are waived in attendance and payroll."]</div>
+                            </div>
+
+                            <label class="fw-semibold fs-6 mb-2">@Localizer["Reason / notes"]</label>
+                            <textarea name="reason" class="form-control form-control-solid mb-4" rows="2"></textarea>
+                            <button type="submit" class="btn btn-primary w-100"><i class="ki-outline ki-paper-plane fs-3"></i>@SR["Submit"]</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- mine + pending -->
+            <div class="col-lg-7">
+                @if (Model.Pending.Any())
+                {
+                    <div class="card card-flush mb-5">
+                        <div class="card-header"><div class="card-title"><h2>@Localizer["Awaiting your approval"]</h2></div></div>
+                        <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                            <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@Localizer["Request"]</th><th>@Localizer["Requester"]</th><th class="text-end">@Localizer["Decision"]</th></tr></thead>
+                            <tbody>
+                            @foreach (var r in Model.Pending)
+                            {
+                                <tr>
+                                    <td>@reqTitle(r)@if (!string.IsNullOrEmpty(r.Reason)) { <div class="text-muted fs-8">@r.Reason</div> }</td>
+                                    <td>@(Model.Names.TryGetValue(r.EmployeeID, out var n) ? (isAr ? n.Ar : n.En) : ("#" + r.EmployeeID))</td>
+                                    <td class="text-end">
+                                        <form asp-action="DecideRequest" method="post" class="d-inline" data-cb-confirm data-cb-action="approve" data-cb-text="@Localizer["Approve?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><input type="hidden" name="approve" value="true" /><button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check fs-5"></i>@SR["Approve"]</button></form>
+                                        <form asp-action="DecideRequest" method="post" class="d-inline" data-cb-confirm data-cb-action="reject" data-cb-text="@Localizer["Reject?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><input type="hidden" name="approve" value="false" /><button class="btn btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-5"></i>@SR["Reject"]</button></form>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table></div></div>
+                    </div>
+                }
+
+                <div class="card card-flush">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["My requests"]</h2></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                        <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@Localizer["Request"]</th><th class="text-center">@SR["Status"]</th><th class="text-end">@Localizer["Action"]</th></tr></thead>
+                        <tbody>
+                        @if (!Model.Mine.Any()) { <tr><td colspan="3" class="text-center text-muted py-8">@Localizer["No requests yet"]</td></tr> }
+                        @foreach (var r in Model.Mine)
+                        {
+                            <tr>
+                                <td>@reqTitle(r)@if (!string.IsNullOrEmpty(r.Reason)) { <div class="text-muted fs-8">@r.Reason</div> }</td>
+                                <td class="text-center"><span class="badge badge-light-@statusBadge[r.Status]">@statusText[r.Status]</span></td>
+                                <td class="text-end">
+                                    @if (r.RequestType == "Letter" && r.Status == 1)
+                                    { <a href="@Url.Action("LetterPrint", "People", new { id = r.ID })" target="_blank" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-5"></i>@SR["Print"]</a> }
+                                    else { <span class="text-muted fs-8">—</span> }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  function sync(){ var perm = jQuery('#rq_type').val() === 'Permission';
+    document.getElementById('rq_letter').classList.toggle('d-none', perm);
+    document.getElementById('rq_perm').classList.toggle('d-none', !perm); }
+  if (window.jQuery) jQuery('#rq_type').on('change', sync);
+  sync();
+})();
+</script>
+}

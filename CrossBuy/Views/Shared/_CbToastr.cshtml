@@ -1,0 +1,45 @@
+@*
+    Server -> toastr bridge.
+    Renders a toastr toast on the next page load from TempData, so redirect-based
+    (non-AJAX) actions report success/failure per the project-wide standard.
+
+    Standard keys (set via CrossBuy.Models.ControllerToastExtensions):
+        CbToastSuccess | CbToastError | CbToastWarning | CbToastInfo
+
+    Legacy keys are auto-mapped to toastr (the inline alert divs that used to
+    render them have been removed project-wide to avoid double notifications):
+        success: InvMsg | AccMsg | HrMsg | LeaveMsg
+        error  : InvErr | AccErr | LeaveErr
+*@
+@{
+    string First(params string[] keys)
+    {
+        foreach (var k in keys)
+        {
+            var v = TempData[k] as string;
+            if (!string.IsNullOrEmpty(v)) return v;
+        }
+        return null;
+    }
+
+    var _ts = First("CbToastSuccess", "InvMsg", "AccMsg", "HrMsg", "LeaveMsg");
+    var _te = First("CbToastError", "InvErr", "AccErr", "LeaveErr");
+    var _tw = First("CbToastWarning");
+    var _ti = First("CbToastInfo");
+}
+@if (!string.IsNullOrEmpty(_ts) || !string.IsNullOrEmpty(_te) || !string.IsNullOrEmpty(_tw) || !string.IsNullOrEmpty(_ti))
+{
+    <script>
+        (function () {
+            function fire() {
+                if (!window.CB || !window.CB.toast) { return setTimeout(fire, 120); }
+                @if (!string.IsNullOrEmpty(_ts)) { <text>CB.toast.success(@Html.Raw(Json.Serialize(_ts)));</text> }
+                @if (!string.IsNullOrEmpty(_te)) { <text>CB.toast.error(@Html.Raw(Json.Serialize(_te)));</text> }
+                @if (!string.IsNullOrEmpty(_tw)) { <text>CB.toast.warning(@Html.Raw(Json.Serialize(_tw)));</text> }
+                @if (!string.IsNullOrEmpty(_ti)) { <text>CB.toast.info(@Html.Raw(Json.Serialize(_ti)));</text> }
+            }
+            if (document.readyState !== 'loading') fire();
+            else document.addEventListener('DOMContentLoaded', fire);
+        })();
+    </script>
+}

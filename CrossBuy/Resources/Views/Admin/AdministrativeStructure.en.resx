@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Administrative Structure" xml:space="preserve">
+    <value>Administrative Structure</value>
+  </data>
+  <data name="Official administrative unit" xml:space="preserve">
+    <value>Official administrative unit</value>
+  </data>
+  <data name="Manage the administrative structure — companies, branches, administrative entities" xml:space="preserve">
+    <value>Manage the administrative structure — companies, branches, administrative entities</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="Search by name or entity type..." xml:space="preserve">
+    <value>Search by name or entity type...</value>
+  </data>
+  <data name="All units" xml:space="preserve">
+    <value>All units</value>
+  </data>
+  <data name="Tree" xml:space="preserve">
+    <value>Tree</value>
+  </data>
+  <data name="Org chart" xml:space="preserve">
+    <value>Org chart</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Flow</value>
+  </data>
+  <data name="Tree view" xml:space="preserve">
+    <value>Tree view</value>
+  </data>
+  <data name="Classic jsTree hierarchy" xml:space="preserve">
+    <value>Classic jsTree hierarchy</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="3D org chart" xml:space="preserve">
+    <value>3D org chart</value>
+  </data>
+  <data name="Drag to pan · Ctrl+wheel to zoom · double-click to focus an item" xml:space="preserve">
+    <value>Drag to pan · Ctrl+wheel to zoom · double-click to focus an item</value>
+  </data>
+  <data name="Drag to pan" xml:space="preserve">
+    <value>Drag to pan</value>
+  </data>
+  <data name="Fullscreen" xml:space="preserve">
+    <value>Fullscreen</value>
+  </data>
+  <data name="Legend" xml:space="preserve">
+    <value>Legend</value>
+  </data>
+  <data name="Administrative entity" xml:space="preserve">
+    <value>Administrative entity</value>
+  </data>
+  <data name="Structure summary" xml:space="preserve">
+    <value>Structure summary</value>
+  </data>
+  <data name="entities" xml:space="preserve">
+    <value>entities</value>
+  </data>
+  <data name="Collapsible flow chart" xml:space="preserve">
+    <value>Collapsible flow chart</value>
+  </data>
+  <data name="Click the arrow to collapse / expand branches" xml:space="preserve">
+    <value>Click the arrow to collapse / expand branches</value>
+  </data>
+  <data name="Collapsible" xml:space="preserve">
+    <value>Collapsible</value>
+  </data>
+  <data name="Org chart - fullscreen" xml:space="preserve">
+    <value>Org chart - fullscreen</value>
+  </data>
+  <data name="Zoom out" xml:space="preserve">
+    <value>Zoom out</value>
+  </data>
+  <data name="Zoom in" xml:space="preserve">
+    <value>Zoom in</value>
+  </data>
+  <data name="Fit" xml:space="preserve">
+    <value>Fit</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="Failed to load parent data." xml:space="preserve">
+    <value>Failed to load parent data.</value>
+  </data>
+  <data name="An error occurred." xml:space="preserve">
+    <value>An error occurred.</value>
+  </data>
+  <data name="Please fill in all required fields." xml:space="preserve">
+    <value>Please fill in all required fields.</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Add failed" xml:space="preserve">
+    <value>Add failed</value>
+  </data>
+  <data name="An error occurred" xml:space="preserve">
+    <value>An error occurred</value>
+  </data>
+  <data name="Could not save the item." xml:space="preserve">
+    <value>Could not save the item.</value>
+  </data>
+</root>

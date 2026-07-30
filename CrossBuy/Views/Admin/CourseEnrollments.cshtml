@@ -1,0 +1,65 @@
+@using CrossBuy.Models.Context.Admin
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<TrainingEnrollment>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var course = ViewBag.Course as TrainingCourse;
+    var names = ViewBag.Names as Dictionary<int, string> ?? new();
+    var statuses = new[] { "Planned", "Attended", "Completed", "Cancelled" };
+    string stName(string s) => s switch { "Attended" => Localizer["Attended"].Value, "Completed" => Localizer["Completed"].Value, "Cancelled" => Localizer["Cancelled"].Value, _ => Localizer["Planned"].Value };
+    // brand-safe status styling (green family + gray; no blue/mint/yellow)
+    string stStyle(string s) => s switch {
+        "Completed" => "background:#eaf3ef;color:#13433a;",
+        "Attended"  => "background:#e9f1ee;color:#1f6253;",
+        "Cancelled" => "background:#f2f4f7;color:#98a2b3;",
+        _            => "background:#f2f4f7;color:#475467;" };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Course enrollments"]</h1><span class="text-muted fs-7">@course?.Code — @(isAr ? course?.Title : (string.IsNullOrEmpty(course?.TitleEn) ? course?.Title : course?.TitleEn))</span></div>
+        <a href="@Url.Action("TrainingCourses","Admin")" class="btn btn-light">@SR["Back"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrMsg"] != null) { <div class="alert alert-success">@TempData["HrMsg"]</div> }
+        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-header"><div class="card-title"><h2>@Localizer["Enroll employees"]</h2></div></div>
+            <div class="card-body pt-2">
+                <form asp-action="EnrollEmployees" method="post" class="d-flex gap-2 align-items-end">@Html.AntiForgeryToken()
+                    <input type="hidden" name="courseId" value="@course?.ID" />
+                    <div class="flex-grow-1"><label class="fw-semibold fs-7 mb-1">@SR["Employees"]</label>
+                        <select name="employeeIds" class="form-select form-select-solid" data-control="select2" multiple data-placeholder="@Localizer["Select employees…"]">
+                            @foreach (var e in ViewBag.Employees) { <option value="@e.ID">@e.FullName</option> }
+                        </select></div>
+                    <button class="btn btn-primary"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Enroll"]</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3 mb-0">
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th class="text-center">@SR["Status"]</th><th style="min-width:360px">@SR["Update"]</th><th class="text-end pe-4"></th></tr></thead>
+            <tbody class="fw-semibold text-gray-700">
+            @if (!Model.Any()) { <tr><td colspan="4" class="text-center text-muted py-8">@Localizer["No enrollments"]</td></tr> }
+            @foreach (var en in Model)
+            {
+                <tr style="border-bottom:1px dashed #eef1f6;">
+                    <td class="ps-4 fw-bold text-gray-900">@(names.TryGetValue(en.EmployeeID, out var nm) ? nm : ("#" + en.EmployeeID))</td>
+                    <td class="text-center"><span class="badge fw-bold" style="@stStyle(en.Status)">@stName(en.Status)</span>@if (en.Score.HasValue) { <div class="fs-8 text-muted mt-1">@Localizer["Score"]: @en.Score.Value.ToString("0.#")</div> }</td>
+                    <td>
+                        <form asp-action="SetEnrollmentStatus" method="post" class="d-flex gap-2 align-items-center">@Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@en.ID" /><input type="hidden" name="courseId" value="@course?.ID" />
+                            <select name="status" class="form-select form-select-solid form-select-sm w-125px" data-control="select2" data-hide-search="true">@foreach (var s in statuses) { <option value="@s" selected="@(en.Status == s)">@stName(s)</option> }</select>
+                            <input name="score" type="number" step="0.1" class="form-control form-control-solid form-control-sm w-75px" placeholder="@Localizer["Score"]" value="@(en.Score?.ToString(System.Globalization.CultureInfo.InvariantCulture))" />
+                            <input name="certificate" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["Certificate"]" value="@en.Certificate" />
+                            <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check fs-5"></i></button>
+                        </form>
+                    </td>
+                    <td class="text-end"><form asp-action="RemoveEnrollment" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Remove enrollment?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@en.ID" /><input type="hidden" name="courseId" value="@course?.ID" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form></td>
+                </tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>

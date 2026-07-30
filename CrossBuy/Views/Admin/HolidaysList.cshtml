@@ -1,0 +1,89 @@
+@model List<CrossBuy.Models.Context.Admin.OfficialHoliday>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    ViewData["Title"] = Localizer["Official holidays"].Value;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Official holidays"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted">@Localizer["HR"]</li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Holidays"]</li></ul>
+        </div>
+        <button type="button" class="btn btn-primary" id="newBtn"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New holiday"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
+        <div class="alert alert-light-primary d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i><span>@Localizer["Official holidays are automatically excluded from leave day counts (not deducted from balance) and from absence. Tick \"recurring\" for fixed annual feasts."]</span></div>
+        <div class="card card-flush">
+            <div class="card-header align-items-center py-5"><div class="card-title"><div class="d-flex align-items-center position-relative my-1"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="s" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
+            <div class="card-body pt-0">
+                <div class="table-responsive">
+                <table class="table align-middle table-row-dashed fs-6 gy-4" id="t">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                        <th>@SR["Name"]</th><th>@SR["Date"]</th><th class="text-center">@Localizer["Recurring"]</th><th>@SR["Notes"]</th><th class="text-end">@SR["Actions"]</th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var h in Model)
+                    {
+                        <tr data-s="@h.NameAr @h.NameEn @h.HolidayDate.ToString("yyyy-MM-dd")"
+                            data-id="@h.ID" data-namear="@h.NameAr" data-nameen="@h.NameEn" data-date="@h.HolidayDate.ToString("yyyy-MM-dd")" data-rec="@(h.IsRecurring ? "1" : "0")" data-notes="@h.Notes">
+                            <td class="fw-bold text-gray-900">@(isAr ? h.NameAr : (string.IsNullOrEmpty(h.NameEn) ? h.NameAr : h.NameEn))</td>
+                            <td class="text-muted">@h.HolidayDate.ToString("yyyy-MM-dd")</td>
+                            <td class="text-center">@if (h.IsRecurring) { <span class="badge badge-light-primary">@SR["Yes"]</span> } else { <span class="badge badge-light-secondary">@SR["No"]</span> }</td>
+                            <td class="text-muted">@h.Notes</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-icon btn-light-primary btn-sm me-1 editBtn" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></button>
+                                <form asp-action="DeleteHoliday" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete holiday?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@h.ID" /><button class="btn btn-icon btn-light-danger btn-sm"><i class="ki-outline ki-trash fs-6"></i></button></form>
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@Localizer["No holidays yet"]</td></tr> }
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="holModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <form asp-action="SaveHoliday" method="post">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="h_id" value="0" />
+        <div class="modal-header"><h2 id="h_title">@Localizer["New holiday"]</h2><div class="btn btn-icon btn-sm btn-active-light" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body"><div class="row g-4">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 mb-1">@Localizer["Name (AR)"]</label><input name="nameAr" id="h_namear" class="form-control form-control-solid" required /></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" id="h_nameen" class="form-control form-control-solid" /></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 mb-1">@SR["Date"]</label><input name="holidayDate" id="h_date" type="text" class="form-control form-control-solid" data-control="flatpickr" required /></div>
+            <div class="col-md-6 d-flex align-items-end"><label class="form-check form-switch form-check-custom"><input class="form-check-input" type="checkbox" name="isRecurring" id="h_rec" value="true" /><span class="form-check-label fw-semibold ms-3">@Localizer["Recurring yearly"]</span></label></div>
+            <div class="col-12"><label class="fw-semibold fs-7 mb-1">@SR["Notes"]</label><input name="notes" id="h_notes" class="form-control form-control-solid" /></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button type="submit" class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+(function(){
+  var modalEl=document.getElementById('holModal');
+  var modal=modalEl?new bootstrap.Modal(modalEl):null;
+  function open(d){
+    document.getElementById('h_id').value=d.id||'0';
+    document.getElementById('h_namear').value=d.namear||'';
+    document.getElementById('h_nameen').value=d.nameen||'';
+    document.getElementById('h_date').value=d.date||'';
+    document.getElementById('h_rec').checked=(d.rec==='1');
+    document.getElementById('h_notes').value=d.notes||'';
+    if(modal)modal.show();
+  }
+  var nb=document.getElementById('newBtn'); if(nb)nb.addEventListener('click',function(){open({});});
+  [].slice.call(document.querySelectorAll('.editBtn')).forEach(function(b){
+    b.addEventListener('click',function(){var tr=b.closest('tr');open({id:tr.getAttribute('data-id'),namear:tr.getAttribute('data-namear'),nameen:tr.getAttribute('data-nameen'),date:tr.getAttribute('data-date'),rec:tr.getAttribute('data-rec'),notes:tr.getAttribute('data-notes')});});
+  });
+  var s=document.getElementById('s'),rows=[].slice.call(document.querySelectorAll('#t tbody tr'));
+  if(s)s.addEventListener('input',function(){var q=(s.value||'').trim().toLowerCase();rows.forEach(function(r){r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none';});});
+})();
+</script>
+}

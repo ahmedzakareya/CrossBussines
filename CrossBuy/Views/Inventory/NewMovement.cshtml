@@ -1,0 +1,169 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var items = ViewBag.Items as List<Item> ?? new();
+    var warehouses = ViewBag.Warehouses as List<Warehouse> ?? new();
+    var units = ViewBag.Units as List<UnitOfMeasure> ?? new();
+    var types = new (string v, string en, string dir)[] {
+        ("opening","Opening balance","in"),
+        ("receipt","Receipt (in)","in"),
+        ("issue","Issue (out)","out"),
+        ("adjust_in","Adjustment +","in"),
+        ("adjust_out","Adjustment −","out"),
+    };
+}
+<form id="kt_mv_form" class="d-flex flex-column flex-column-fluid" method="post" asp-action="PostMovement" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Post this stock movement? It will affect stock balances."]">
+    @Html.AntiForgeryToken()
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["New stock movement"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("StockMovements","Inventory")" class="text-muted text-hover-primary">@Localizer["Movements"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["New"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("StockMovements","Inventory")" class="btn btn-light">@SR["Cancel"]</a>
+            <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Post"]</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (items.Count == 0 || warehouses.Count == 0) { <div class="alert alert-light-warning">@Localizer["Add an item and a warehouse first."]</div> }
+
+        <div class="d-flex flex-column flex-lg-row">
+            <!--begin::Aside-->
+            <div class="d-flex flex-column gap-7 gap-lg-10 w-100 w-lg-300px mb-7 me-lg-10">
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Movement type"]</h2></div></div>
+                    <div class="card-body pt-0">
+                        <select name="movementType" id="mvType" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                            @foreach (var t in types) { <option value="@t.v" data-dir="@t.dir">@Localizer[t.en]</option> }
+                        </select>
+                        <div class="text-muted fs-7 mt-3" id="dirHint" data-in="@Localizer["Inbound — increases stock"]" data-out="@Localizer["Outbound — decreases stock"]"></div>
+                    </div>
+                </div>
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Date & warehouse"]</h2></div></div>
+                    <div class="card-body pt-0 d-flex flex-column gap-4">
+                        <div><label class="fw-semibold fs-6 mb-2">@SR["Date"]</label><input name="date" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+                        <div><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
+                            <select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>
+                                <option value="">@Localizer["Select"]</option>
+                                @foreach (var w in warehouses) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }
+                            </select></div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Aside-->
+
+            <!--begin::Main-->
+            <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Movement details"]</h2></div><div class="card-toolbar"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div></div></div>
+                    <div class="card-body pt-0">
+                        <div class="row">
+                            <div class="col-md-12 mb-5"><label class="required fw-semibold fs-6 mb-2">@SR["Item"]</label>
+                                <select name="itemId" id="mvItem" class="form-select form-select-solid" data-control="select2" required>
+                                    <option value="">@Localizer["Select item"]</option>
+                                    @foreach (var i in items) { <option value="@i.ID" data-base="@i.BaseUoMId" data-batch="@(i.TrackBatch?"1":"0")" data-expiry="@(i.TrackExpiry?"1":"0")" data-serial="@(i.TrackSerial?"1":"0")">@i.ItemCode — @(isAr ? i.Name : (string.IsNullOrEmpty(i.NameEn) ? i.Name : i.NameEn))</option> }
+                                </select></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-5"><label class="required fw-semibold fs-6 mb-2">@SR["Quantity"]</label><input name="qty" type="number" step="0.0001" min="0" class="form-control form-control-solid" required /></div>
+                            <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Unit"]</label>
+                                <select name="uomId" id="mvUom" class="form-select form-select-solid" data-control="select2">
+                                    <option value="">@Localizer["Base unit"]</option>
+                                    @foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : u.NameEn)</option> }
+                                </select></div>
+                            <div class="col-md-4 mb-5" id="costWrap"><label class="fw-semibold fs-6 mb-2">@Localizer["Unit cost (for inbound)"]</label><input name="unitCost" type="number" step="0.0001" min="0" class="form-control form-control-solid" /></div>
+                        </div>
+                        <div class="row" id="binLocationWrap" style="display:none">
+                            <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Section"]</label><select id="mvSec" class="form-select form-select-solid"><option value="">—</option></select></div>
+                            <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Rack (optional)"]</label><select id="mvRack" class="form-select form-select-solid"><option value="">—</option></select></div>
+                        </div>
+                        <input type="hidden" name="binLocationId" id="mvBin" />
+                        <div class="row" id="batchRow" style="display:none">
+                            <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Batch no."]</label><input name="batchNo" class="form-control form-control-solid" /></div>
+                            <div class="col-md-4 mb-5" id="expiryWrap"><label class="fw-semibold fs-6 mb-2">@Localizer["Expiry date"]</label><input name="expiry" class="form-control form-control-solid" data-control="flatpickr" /></div>
+                            <div class="col-md-4 mb-5" id="serialWrap"><label class="fw-semibold fs-6 mb-2">@Localizer["Serial no."]</label><input name="serialNo" class="form-control form-control-solid" /></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Main-->
+        </div>
+    </div></div>
+</form>
+<partial name="_ItemScanModal" />
+
+<partial name="~/Views/Shared/_QuickAdd.cshtml" />
+@section Scripts {
+<script>
+(function(){
+  var typeSel = document.getElementById('mvType');
+  var itemSel = document.getElementById('mvItem');
+  var costWrap = document.getElementById('costWrap');
+  var batchRow = document.getElementById('batchRow');
+  var expiryWrap = document.getElementById('expiryWrap');
+  var serialWrap = document.getElementById('serialWrap');
+  var uom = document.getElementById('mvUom');
+  var hint = document.getElementById('dirHint');
+  var whSel = document.querySelector('[name="warehouseId"]');
+  var binWrap = document.getElementById('binLocationWrap');
+  var secSel = document.getElementById('mvSec'), rackSel = document.getElementById('mvRack'), binHid = document.getElementById('mvBin');
+
+  // ---- section/rack (location) support, inbound only ----
+  var BINS={sections:[],racks:[],itemDefaults:{}}; var binsUrl='@Url.Action("WarehouseBinsData","Inventory")';
+  function updateBin(){ binHid.value = rackSel.value || secSel.value || ''; }
+  function fillSecOpts(){ var cur=secSel.value; var o='<option value="">—</option>'; BINS.sections.forEach(function(s){o+='<option value="'+s.id+'"'+(cur==s.id?' selected':'')+'>'+s.code+(s.name?(' — '+s.name):'')+'</option>';}); secSel.innerHTML=o; }
+  function fillRacks(){ var sec=secSel.value; var cur=rackSel.value; var o='<option value="">—</option>'; BINS.racks.forEach(function(r){if(String(r.sectionId)===String(sec))o+='<option value="'+r.id+'"'+(cur==r.id?' selected':'')+'>'+r.code+(r.name?(' — '+r.name):'')+'</option>';}); rackSel.innerHTML=o; }
+  function applyDefault(){ var it=itemSel.value; var d=it?BINS.itemDefaults[String(it)]:null; if(d&&d.sectionId){ secSel.value=d.sectionId; fillRacks(); if(d.rackId)rackSel.value=d.rackId; } updateBin(); }
+  function loadBins(){ var wh=whSel?whSel.value:''; if(!wh){BINS={sections:[],racks:[],itemDefaults:{}};fillSecOpts();fillRacks();updateBin();return;} fetch(binsUrl+'?warehouseId='+wh,{headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){BINS=j;fillSecOpts();fillRacks();applyDefault();}); }
+  if(whSel){ if(window.jQuery)jQuery(whSel).on('change select2:select',loadBins); else whSel.addEventListener('change',loadBins); }
+  if(secSel)secSel.addEventListener('change',function(){fillRacks();updateBin();});
+  if(rackSel)rackSel.addEventListener('change',updateBin);
+
+  function curDir(){
+    var o = typeSel.options[typeSel.selectedIndex];
+    return o ? o.getAttribute('data-dir') : 'in';
+  }
+  function toggleByType(){
+    var dir = curDir();
+    if (costWrap) costWrap.style.display = (dir==='in') ? '' : 'none';
+    if (binWrap) binWrap.style.display = '';   // location applies both ways: inbound = where it lands, outbound = which rack it's picked from
+    updateBin();
+    if (hint) hint.textContent = (dir==='in') ? (hint.dataset.in || '') : (hint.dataset.out || '');
+  }
+  function toggleByItem(){
+    var o = itemSel.options[itemSel.selectedIndex];
+    var b = o && o.getAttribute('data-batch')==='1';
+    var e = o && o.getAttribute('data-expiry')==='1';
+    var s = o && o.getAttribute('data-serial')==='1';
+    if (batchRow) batchRow.style.display = (b||e||s) ? '' : 'none';
+    if (expiryWrap) expiryWrap.style.display = e ? '' : 'none';
+    if (serialWrap) serialWrap.style.display = s ? '' : 'none';
+    // default UoM to the item's base
+    var base = o ? o.getAttribute('data-base') : '';
+    if (uom){ uom.value=''; if(window.jQuery && jQuery(uom).data('select2')) jQuery(uom).val('').trigger('change'); }
+    applyDefault();
+  }
+  if (typeSel){ typeSel.addEventListener('change', toggleByType); if(window.jQuery) jQuery(typeSel).on('change', toggleByType); toggleByType(); }
+  if (itemSel){ itemSel.addEventListener('change', toggleByItem); if(window.jQuery) jQuery(itemSel).on('change', toggleByItem); }
+  window.onItemScanned = function(p){
+    if (itemSel){ itemSel.value = String(p.id); if(window.jQuery && jQuery(itemSel).data('select2')) jQuery(itemSel).val(String(p.id)).trigger('change'); else itemSel.dispatchEvent(new Event('change')); }
+    if (uom && p.uomId){ uom.value = String(p.uomId); if(window.jQuery && jQuery(uom).data('select2')) jQuery(uom).val(String(p.uomId)).trigger('change'); }
+    var q = document.querySelector('[name=qty]'); if (q) q.value = p.qty;
+  };
+})();
+</script>
+}

@@ -1,0 +1,108 @@
+@model CrossBuy.BL.PayrollDisbursementView
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    int y = ViewBag.Year, m = ViewBag.Month;
+    var sources = ViewBag.PaySources as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var ci = System.Globalization.CultureInfo.InvariantCulture;
+    string Money(decimal v) => v.ToString("#,##0.00", ci);
+    var months = new[] { "", Localizer["Jan"].Value, Localizer["Feb"].Value, Localizer["Mar"].Value, Localizer["Apr"].Value, Localizer["May"].Value, Localizer["Jun"].Value, Localizer["Jul"].Value, Localizer["Aug"].Value, Localizer["Sep"].Value, Localizer["Oct"].Value, Localizer["Nov"].Value, Localizer["Dec"].Value };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Payroll disbursement & remittance"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted text-hover-primary">@SR["Accounting"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Disbursement"]</li></ul></div>
+        <form method="get" class="d-flex gap-2">
+            <select name="month" class="form-select form-select-sm form-select-solid w-auto">@for (int i = 1; i <= 12; i++){<option value="@i" selected="@(i==m)">@months[i]</option>}</select>
+            <input name="year" type="number" class="form-control form-control-sm form-control-solid w-100px" value="@y" />
+            <button class="btn btn-sm btn-light-primary">@SR["View"]</button>
+        </form>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        @if (!Model.HasPayroll)
+        {
+            <div class="card card-flush"><div class="card-body text-center text-muted py-15">
+                @Localizer["No payroll posted for {0} {1} yet. Post it first from «Payroll run».", months[m], y]
+            </div></div>
+        }
+        else
+        {
+            <div class="row g-5">
+                <!-- Net salaries -->
+                <div class="col-lg-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header"><div class="card-title"><h2>@Localizer["Net salaries"]</h2></div>
+                            <div class="card-toolbar">@if (Model.Disbursed) { <span class="badge badge-light-primary">@SR["Paid"]</span> } else { <span class="badge" style="background:#f1f3f7;color:#7e8299;">@Localizer["Due"]</span> }</div></div>
+                        <div class="card-body pt-2">
+                            <div class="fs-2hx fw-bold text-gray-900 mb-1">@Money(Model.Net) <span class="fs-6 text-muted">@Localizer["EGP"]</span></div>
+                            <div class="text-muted fs-7 mb-5">@Localizer["Dr 2103 Payroll payable / Cr bank or cash"]</div>
+                            @if (!Model.Disbursed)
+                            {
+                                <form asp-action="DisbursePayroll" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Disburse payroll and clear the payable account?"]">@Html.AntiForgeryToken()
+                                    <input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" />
+                                    <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Pay from"]</label>
+                                        <select name="payFromGlAccountId" class="form-select form-select-solid" required>@foreach (var s in sources){<option value="@s.GlAccountId">@s.Name</option>}</select></div>
+                                    <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Pay date"]</label>
+                                        <input name="payDate" type="date" class="form-control form-control-solid" value="@(new DateTime(y, m, DateTime.DaysInMonth(y, m)).ToString("yyyy-MM-dd"))" required /></div>
+                                    <button class="btn btn-primary w-100" @(Model.Net <= 0 ? "disabled" : "")>@Localizer["Disburse"]</button>
+                                </form>
+                            }
+                            else { <div class="text-primary fw-semibold"><i class="ki-outline ki-check-circle fs-2 text-primary me-1"></i>@Localizer["Disbursed; payable cleared."]</div> }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Income tax -->
+                <div class="col-lg-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header"><div class="card-title"><h2>@Localizer["Income tax"]</h2></div>
+                            <div class="card-toolbar">@if (Model.TaxRemitted) { <span class="badge badge-light-primary">@Localizer["Remitted"]</span> } else { <span class="badge" style="background:#f1f3f7;color:#7e8299;">@Localizer["Due"]</span> }</div></div>
+                        <div class="card-body pt-2">
+                            <div class="fs-2hx fw-bold text-gray-900 mb-1">@Money(Model.Tax) <span class="fs-6 text-muted">@Localizer["EGP"]</span></div>
+                            <div class="text-muted fs-7 mb-5">@Localizer["Dr 210205 Tax payable / Cr bank"]</div>
+                            @if (!Model.TaxRemitted)
+                            {
+                                <form asp-action="RemitStatutory" method="post">@Html.AntiForgeryToken()
+                                    <input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" /><input type="hidden" name="component" value="Tax" />
+                                    <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Pay from"]</label>
+                                        <select name="payFromGlAccountId" class="form-select form-select-solid" required>@foreach (var s in sources){<option value="@s.GlAccountId">@s.Name</option>}</select></div>
+                                    <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Remit date"]</label>
+                                        <input name="payDate" type="date" class="form-control form-control-solid" value="@(new DateTime(y, m, DateTime.DaysInMonth(y, m)).ToString("yyyy-MM-dd"))" required /></div>
+                                    <button class="btn btn-light-primary w-100" @(Model.Tax <= 0 ? "disabled" : "")>@Localizer["Remit to authority"]</button>
+                                </form>
+                            }
+                            else { <div class="text-primary fw-semibold"><i class="ki-outline ki-check-circle fs-2 text-primary me-1"></i>@Localizer["Remitted to tax authority."]</div> }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Social insurance -->
+                <div class="col-lg-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header"><div class="card-title"><h2>@Localizer["Social insurance"]</h2></div>
+                            <div class="card-toolbar">@if (Model.SiRemitted) { <span class="badge badge-light-primary">@Localizer["Remitted"]</span> } else { <span class="badge" style="background:#f1f3f7;color:#7e8299;">@Localizer["Due"]</span> }</div></div>
+                        <div class="card-body pt-2">
+                            <div class="fs-2hx fw-bold text-gray-900 mb-1">@Money(Model.Si) <span class="fs-6 text-muted">@Localizer["EGP"]</span></div>
+                            <div class="text-muted fs-7 mb-5">@Localizer["Dr 210204 SI payable / Cr bank (both shares)"]</div>
+                            @if (!Model.SiRemitted)
+                            {
+                                <form asp-action="RemitStatutory" method="post">@Html.AntiForgeryToken()
+                                    <input type="hidden" name="year" value="@y" /><input type="hidden" name="month" value="@m" /><input type="hidden" name="component" value="SI" />
+                                    <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Pay from"]</label>
+                                        <select name="payFromGlAccountId" class="form-select form-select-solid" required>@foreach (var s in sources){<option value="@s.GlAccountId">@s.Name</option>}</select></div>
+                                    <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Remit date"]</label>
+                                        <input name="payDate" type="date" class="form-control form-control-solid" value="@(new DateTime(y, m, DateTime.DaysInMonth(y, m)).ToString("yyyy-MM-dd"))" required /></div>
+                                    <button class="btn btn-light-primary w-100" @(Model.Si <= 0 ? "disabled" : "")>@Localizer["Remit to authority (SI)"]</button>
+                                </form>
+                            }
+                            else { <div class="text-primary fw-semibold"><i class="ki-outline ki-check-circle fs-2 text-primary me-1"></i>@Localizer["Remitted to social insurance."]</div> }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (sources == null || !sources.Any()) { <div class="alert alert-warning mt-5">@Localizer["No bank or cash account. Create one under «Banks & cash» first."]</div> }
+        }
+    </div></div>
+</div>

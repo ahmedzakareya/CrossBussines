@@ -1,0 +1,71 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var receipts = ViewBag.Receipts as List<GoodsReceipt> ?? new();
+    var accounts = ViewBag.Accounts as List<AccountNode> ?? new();
+    var gr = ViewBag.GR as GoodsReceipt;
+    var itemNames = ViewBag.ItemNames as Dictionary<int, string> ?? new();
+}
+<form asp-action="CreateLandedCost" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+    <input type="hidden" name="chargesJson" id="chargesJson" />
+    <input type="hidden" name="goodsReceiptId" value="@(gr?.ID)" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["New Landed Cost"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("LandedCosts","Inventory")" class="text-muted text-hover-primary">@Localizer["Landed costs"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["New"]</li></ul></div>
+        @if (gr != null) { <button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Post"]</button> } else { <button type="button" class="btn btn-light-primary" disabled><i class="ki-outline ki-check fs-2"></i>@Localizer["Select a goods receipt first"]</button> }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
+            <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Goods receipt"]</label>
+                <select id="grSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select receipt"]</option>@foreach (var r in receipts) { <option value="@r.ID" selected="@(gr?.ID==r.ID)">@r.ReceiptNo — @Localizer["cost"] @r.TotalCost.ToString("N2")</option> }</select></div>
+            <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Allocation"]</label><select name="allocationMethod" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="Value">@Localizer["By value"]</option><option value="Qty">@Localizer["By quantity"]</option></select></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="landedDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
+        </div></div></div>
+
+        @if (gr == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-information-5 fs-3x mb-3 d-block"></i>@Localizer["Select a goods receipt to allocate landed costs over its items."]</div></div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card mb-5"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Receipt items"]</h3></div>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-7"><thead><tr class="fw-bold text-muted"><th>@SR["Item"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Value"]</th></tr></thead><tbody>
+                        @foreach (var l in gr.Lines)
+                        {
+                            <tr><td>@(itemNames.TryGetValue(l.ItemId, out var n) ? n : ("#"+l.ItemId))</td><td class="text-end">@l.Qty.ToString("0.##")</td><td class="text-end fw-bold">@l.LineTotal.ToString("N2")</td></tr>
+                        }
+                        <tr class="fw-bold"><td>@SR["Total"]</td><td class="text-end">@gr.Lines.Sum(x=>x.Qty).ToString("0.##")</td><td class="text-end text-primary">@gr.TotalCost.ToString("N2")</td></tr>
+                    </tbody></table></div></div></div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Additional charges"]</h3><div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th style="min-width:140px">@SR["Description"]</th><th style="width:120px">@SR["Amount"]</th><th style="min-width:160px">@Localizer["Credit account"]</th><th style="width:40px"></th></tr></thead><tbody id="rows"></tbody>
+                        <tfoot><tr class="fw-bold"><td class="text-end">@Localizer["Total charges"]</td><td class="text-end" id="tot">0.00</td><td colspan="2"></td></tr></tfoot></table></div>
+                    <div class="text-muted fs-7 mt-2">@Localizer["These are allocated over the receipt items, raising their cost (Dr Inventory / Cr these accounts)."]</div></div></div>
+                </div>
+            </div>
+        }
+    </div></div>
+</form>
+@section Scripts {
+<script>
+var grSel=document.getElementById('grSel');
+if(grSel){var go=function(){location.href='?grId='+(grSel.value||'');};if(window.jQuery&&jQuery(grSel).data('select2'))jQuery(grSel).on('change',go);else grSel.addEventListener('change',go);}
+var ACC=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a=>new{a.Id,a.Code,name=(isAr?a.Name:a.NameEn)})));
+function aopts(){var o='<option value="">—</option>';ACC.forEach(function(a){o+='<option value="'+a.id+'">'+a.code+' — '+a.name+'</option>';});return o;}
+var rowsEl=document.getElementById('rows');
+function calc(){var t=0;if(rowsEl)[].slice.call(rowsEl.querySelectorAll('tr')).forEach(function(tr){t+=parseFloat(tr.querySelector('.amt').value)||0;});var el=document.getElementById('tot');if(el)el.textContent=t.toFixed(2);}
+function addRow(){if(!rowsEl)return;var tr=document.createElement('tr');tr.innerHTML='<td><input class="form-control form-control-solid desc" placeholder="@Localizer["Freight / customs"]"></td><td><input type="number" step="0.01" min="0" class="form-control form-control-solid amt text-end" value="0"></td><td><select class="form-select form-select-solid acc">'+aopts()+'</select></td><td class="text-center"><button type="button" class="btn btn-icon btn-light-danger btn-sm del"><i class="ki-outline ki-trash fs-5"></i></button></td>';rowsEl.appendChild(tr);}
+var addBtn=document.getElementById('add'); if(addBtn)addBtn.addEventListener('click',addRow);
+if(rowsEl){rowsEl.addEventListener('input',calc);rowsEl.addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});addRow();}
+var save=document.getElementById('save');
+if(save)save.addEventListener('click',function(){var arr=[];[].slice.call(rowsEl.querySelectorAll('tr')).forEach(function(tr){var amt=parseFloat(tr.querySelector('.amt').value)||0,acc=tr.querySelector('.acc').value;if(amt>0&&acc)arr.push({description:tr.querySelector('.desc').value,amount:amt,accountId:parseInt(acc)});});if(!arr.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add a charge with amount & account"].Value)));return;}document.getElementById('chargesJson').value=JSON.stringify(arr);document.getElementById('f').submit();});
+</script>
+}

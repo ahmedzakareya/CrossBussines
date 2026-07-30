@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Termination &amp; final settlement" xml:space="preserve">
+    <value>Termination &amp; final settlement</value>
+  </data>
+  <data name="Select employee…" xml:space="preserve">
+    <value>Select employee…</value>
+  </data>
+  <data name="Termination date" xml:space="preserve">
+    <value>Termination date</value>
+  </data>
+  <data name="Compute" xml:space="preserve">
+    <value>Compute</value>
+  </data>
+  <data name="This employee is already terminated (inactive)." xml:space="preserve">
+    <value>This employee is already terminated (inactive).</value>
+  </data>
+  <data name="Service summary" xml:space="preserve">
+    <value>Service summary</value>
+  </data>
+  <data name="Join date" xml:space="preserve">
+    <value>Join date</value>
+  </data>
+  <data name="Service years" xml:space="preserve">
+    <value>Service years</value>
+  </data>
+  <data name="Daily rate" xml:space="preserve">
+    <value>Daily rate</value>
+  </data>
+  <data name="Encashable leave" xml:space="preserve">
+    <value>Encashable leave</value>
+  </data>
+  <data name="d" xml:space="preserve">
+    <value>d</value>
+  </data>
+  <data name="Leave value" xml:space="preserve">
+    <value>Leave value</value>
+  </data>
+  <data name="Suggested gratuity" xml:space="preserve">
+    <value>Suggested gratuity</value>
+  </data>
+  <data name="({0} days/yr)" xml:space="preserve">
+    <value>({0} days/yr)</value>
+  </data>
+  <data name="Post settlement" xml:space="preserve">
+    <value>Post settlement</value>
+  </data>
+  <data name="This terminates the employee and posts the settlement. Continue?" xml:space="preserve">
+    <value>This terminates the employee and posts the settlement. Continue?</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Gratuity" xml:space="preserve">
+    <value>Gratuity</value>
+  </data>
+  <data name="Other earnings" xml:space="preserve">
+    <value>Other earnings</value>
+  </data>
+  <data name="Deductions" xml:space="preserve">
+    <value>Deductions</value>
+  </data>
+  <data name="Pay from" xml:space="preserve">
+    <value>Pay from</value>
+  </data>
+  <data name="Net = (leave + gratuity + other) − deductions. Dr settlement expenses / Cr bank. The employee is deactivated and their contract closed." xml:space="preserve">
+    <value>Net = (leave + gratuity + other) − deductions. Dr settlement expenses / Cr bank. The employee is deactivated and their contract closed.</value>
+  </data>
+  <data name="Terminate &amp; post settlement" xml:space="preserve">
+    <value>Terminate &amp; post settlement</value>
+  </data>
+  <data name="Pick an employee to compute their settlement." xml:space="preserve">
+    <value>Pick an employee to compute their settlement.</value>
+  </data>
+  <data name="Recent settlements" xml:space="preserve">
+    <value>Recent settlements</value>
+  </data>
+  <data name="Years" xml:space="preserve">
+    <value>Years</value>
+  </data>
+  <data name="Leave" xml:space="preserve">
+    <value>Leave</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>Net</value>
+  </data>
+  <data name="No settlements yet." xml:space="preserve">
+    <value>No settlements yet.</value>
+  </data>
+</root>

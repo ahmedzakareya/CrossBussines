@@ -1,0 +1,43 @@
+@using CrossBuy.Models.Context.Admin
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Payslip>
+@{
+    Layout = "~/Views/Shared/_LayoutPeople.cshtml";
+    string M(decimal v) => v.ToString("N2");
+    var months = new[] { "", Localizer["Jan"].Value, Localizer["Feb"].Value, Localizer["Mar"].Value, Localizer["Apr"].Value, Localizer["May"].Value, Localizer["Jun"].Value, Localizer["Jul"].Value, Localizer["Aug"].Value, Localizer["Sep"].Value, Localizer["Oct"].Value, Localizer["Nov"].Value, Localizer["Dec"].Value };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["My payslips"]</h1>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush"><div class="card-body pt-6">
+            @if (!Model.Any())
+            {
+                <div class="text-center text-muted py-15">@Localizer["No payslips yet."]</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                <table class="table align-middle table-row-dashed fs-6 gy-4">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase"><th>@Localizer["Period"]</th><th>@Localizer["Earnings"]</th><th>@Localizer["Deductions"]</th><th>@Localizer["Net"]</th><th class="text-end"></th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var s in Model)
+                    {
+                        var ded = s.SiEmployee + s.Tax + s.LatePenalty + s.AbsencePenalty;
+                        <tr>
+                            <td class="fw-bold text-gray-800">@months[s.Month] @s.Year</td>
+                            <td class="text-primary">@M(s.GrossEarnings)</td>
+                            <td class="text-danger">@M(ded)</td>
+                            <td class="fw-bold fs-5">@M(s.Net) <span class="fs-8 text-muted">EGP</span></td>
+                            <td class="text-end"><a href="@Url.Action("Payslip","People", new { id = s.ID })" class="btn btn-sm btn-light-primary">@Localizer["View / print"]</a></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                </div>
+            }
+        </div></div>
+    </div></div>
+</div>

@@ -1,0 +1,18 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<StockBalanceRow>
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+@foreach (var b in Model)
+{
+    <tr>
+        <td class="fw-bold text-gray-800">@b.ItemCode — @(isAr ? b.ItemName : (string.IsNullOrEmpty(b.ItemNameEn) ? b.ItemName : b.ItemNameEn))</td>
+        <td class="text-muted">@b.WarehouseCode</td>
+        <td class="text-end fw-bold @(b.QtyOnHand<=0?"text-danger":"text-gray-900")">@b.QtyOnHand.ToString("0.##")</td>
+        <td class="text-end text-muted">@b.AvgCost.ToString("0.00")</td>
+        <td class="text-end fw-bold text-gray-800">@b.TotalValue.ToString("0.00")</td>
+        <td class="text-end"><a href="@Url.Action("ItemLedger","Inventory", new { itemId = b.ItemId, warehouseId = b.WarehouseId })" class="btn btn-icon btn-light-primary btn-sm" title="@Localizer["Ledger"]"><i class="ki-outline ki-document fs-6"></i></a></td>
+    </tr>
+}

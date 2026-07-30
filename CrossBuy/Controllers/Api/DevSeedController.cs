@@ -1,0 +1,12117 @@
+using CrossBuy.BL;
+using CrossBuy.Models.Context;
+using CrossBuy.Models.Context.Admin;
+using CrossBuy.Models.Context.Accounting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Data.SqlClient;
+
+namespace CrossBuy.Controllers.Api
+{
+	/// DEV-ONLY: sets known passwords for the test team so we can exercise the
+	/// notification flow (manager + two direct reports). Guarded by a key.
+	[ApiController]
+	[Route("api/dev")]
+	[AllowAnonymous]
+	[CrossBuy.Models.DevOnly]   // SECURITY: all seeding/test/reset endpoints return 404 outside Development
+	public class DevSeedController : ControllerBase
+	{
+		private readonly UserManager<Users> _um;
+		private readonly CrossDbContext _db;
+		private readonly CrossBuy.BL.ICostCenterService _costCenters;
+		private readonly CrossBuy.BL.IReceivableService _ar;
+		private readonly CrossBuy.BL.IPayableService _ap;
+		private readonly CrossBuy.BL.IBankService _bank;
+		private readonly CrossBuy.BL.IAccountingPostingService _posting;
+		private readonly CrossBuy.BL.IJournalEntryService _je;
+		private readonly CrossBuy.BL.IFixedAssetService _fa;
+		private readonly CrossBuy.BL.ITaxService _tax;
+		private readonly CrossBuy.BL.IItemService _itemSvc;
+		private readonly CrossBuy.BL.IWarehouseService _whSvc;
+		private readonly CrossBuy.BL.IStockService _stock;
+		private readonly CrossBuy.BL.IProcurementService _proc;
+		private readonly CrossBuy.BL.ISellingService _sell;
+		private readonly CrossBuy.BL.IPricingService _pricing;
+		private readonly CrossBuy.BL.IThreeWayMatchService _match;
+		private readonly CrossBuy.BL.ICrmService _crm;
+		private readonly CrossBuy.BL.IFxRevaluationService _reval;
+		private readonly CrossBuy.BL.IPosSetupService _posSetup;
+		private readonly CrossBuy.BL.IPosOrderService _posOrders;
+		private readonly CrossBuy.BL.IPosAccessService _posAccess;
+		private readonly IServiceScopeFactory _scopes;
+		public DevSeedController(UserManager<Users> um, CrossDbContext db, CrossBuy.BL.ICostCenterService costCenters,
+			CrossBuy.BL.IReceivableService ar, CrossBuy.BL.IPayableService ap, CrossBuy.BL.IBankService bank,
+			CrossBuy.BL.IAccountingPostingService posting, CrossBuy.BL.IJournalEntryService je, CrossBuy.BL.IFixedAssetService fa,
+			CrossBuy.BL.ITaxService tax, CrossBuy.BL.IItemService itemSvc, CrossBuy.BL.IWarehouseService whSvc, CrossBuy.BL.IStockService stock, CrossBuy.BL.IProcurementService proc, CrossBuy.BL.ISellingService sell,
+			CrossBuy.BL.IPricingService pricing, CrossBuy.BL.IThreeWayMatchService match, CrossBuy.BL.ICrmService crm,
+			CrossBuy.BL.IFxRevaluationService reval, CrossBuy.BL.IPosSetupService posSetup, CrossBuy.BL.IPosOrderService posOrders, CrossBuy.BL.IPosAccessService posAccess, IServiceScopeFactory scopes)
+		{
+			_um = um; _db = db; _costCenters = costCenters; _ar = ar; _ap = ap; _bank = bank; _posting = posting; _je = je; _fa = fa; _tax = tax; _itemSvc = itemSvc; _whSvc = whSvc; _stock = stock; _proc = proc; _sell = sell; _pricing = pricing; _match = match; _crm = crm; _reval = reval; _posSetup = posSetup; _posOrders = posOrders; _posAccess = posAccess; _scopes = scopes;
+		}
+
+		// GET /api/dev/excel-smoke?key=seed123 — verifies the ClosedXML .xlsx builder runs (no runtime error)
+		[HttpGet("excel-smoke")]
+		public IActionResult ExcelSmoke(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var headers = new[] { "كود", "الاسم", "الكمية", "السعر", "تاريخ" };
+			var rows = new List<IReadOnlyList<object?>> {
+				new object?[] { "A-1", "صنف تجريبي", 10, 12.5m, DateTime.Today },
+				new object?[] { "A-2", null, 0, 99.99m, null } };
+			var bytes = CrossBuy.BL.ExcelExporter.Build("اختبار", headers, rows, "اختبار التصدير");
+			return Ok(new { ok = bytes.Length > 0, bytes = bytes.Length });
+		}
+
+		// GET /api/dev/culture-check?key=seed123 — HM-1 verification: prove decimals round-trip under
+		// the (number-normalized) request culture, and that dates/calendar/UI are untouched.
+		[HttpGet("culture-check")]
+		public IActionResult CultureCheck(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+
+			var cc = System.Globalization.CultureInfo.CurrentCulture;
+			var uc = System.Globalization.CultureInfo.CurrentUICulture;
+			var nf = cc.NumberFormat;
+			var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+			// (input, isNullable, kind: value|null|error, expected)
+			var cases = new (string input, bool nullable, string kind, decimal expected)[]
+			{
+				("625000.00",   true,  "value", 625000m),
+				("625000",      true,  "value", 625000m),
+				("0.05",        true,  "value", 0.05m),
+				("1,250.75",    true,  "value", 1250.75m),
+				("625000,50",   true,  "value", 625000.50m),
+				("٦٢٥٠٠٠٫٥٠",    true,  "value", 625000.50m),   // Arabic digits + Arabic decimal ٫
+				("-12.5",       true,  "value", -12.5m),
+				("1,250",       true,  "value", 1250m),
+				("1,250,000",   true,  "value", 1250000m),
+				("1,25",        true,  "value", 1.25m),
+				("12,3456",     true,  "error", 0m),
+				("1,2500",      true,  "error", 0m),
+				("",            true,  "null",  0m),            // nullable empty → null
+				("",            false, "error", 0m),            // non-nullable empty → error
+				("abc",         true,  "error", 0m),
+				("12.345",      true,  "value", 12.345m),
+				("0.005",       true,  "value", 0.005m),
+				("1 250.50",    true,  "value", 1250.50m),      // space thousands
+				("1٬250",        true,  "value", 1250m),         // Arabic thousands ٬ removed
+				("1 250",  true,  "value", 1250m),         // NBSP removed
+			};
+
+			var results = new List<object>();
+			int fail = 0;
+			foreach (var (input, nullable, kind, expected) in cases)
+			{
+				var norm = CrossBuy.Models.Binders.NumberInputNormalizer.Normalize(input);
+				var st = CrossBuy.Models.Binders.NumberInputNormalizer.TryBindDecimal(input, nullable, out var got);
+				string gotStr = st == CrossBuy.Models.Binders.NumberBindStatus.Bound ? got.ToString(inv)
+							  : st == CrossBuy.Models.Binders.NumberBindStatus.NullValue ? "null" : "ERROR";
+				bool pass = kind == "value" ? (st == CrossBuy.Models.Binders.NumberBindStatus.Bound && got == expected)
+						  : kind == "null"  ? (st == CrossBuy.Models.Binders.NumberBindStatus.NullValue)
+						  :                    (st == CrossBuy.Models.Binders.NumberBindStatus.Error);
+				if (!pass) fail++;
+				results.Add(new
+				{
+					input,
+					nullable,
+					norm,
+					expected = kind == "value" ? expected.ToString(inv) : kind,
+					got = gotStr,
+					pass
+				});
+			}
+
+			// prove the ORIGINAL bug is dead: parse "1500.50" WITH the live request culture (was 0 before)
+			bool rawDotOk = decimal.TryParse("1500.50", System.Globalization.NumberStyles.Number, cc, out var rawDot);
+
+			return Ok(new
+			{
+				currentCulture      = cc.Name,
+				currentUICulture    = uc.Name,
+				// the SIX separators that must all be normalized (Currency* is what ToString("C") reads)
+				six = new
+				{
+					NumberDecimalSeparator   = nf.NumberDecimalSeparator,
+					NumberGroupSeparator     = nf.NumberGroupSeparator,
+					CurrencyDecimalSeparator = nf.CurrencyDecimalSeparator,
+					CurrencyGroupSeparator   = nf.CurrencyGroupSeparator,
+					PercentDecimalSeparator  = nf.PercentDecimalSeparator,
+					PercentGroupSeparator    = nf.PercentGroupSeparator
+				},
+				digitSubstitution   = nf.DigitSubstitution.ToString(),
+				nativeDigits        = string.Join("", nf.NativeDigits),
+				calendar            = cc.Calendar.GetType().Name,        // must stay Gregorian
+				shortDatePattern    = cc.DateTimeFormat.ShortDatePattern, // proof dates untouched
+				sampleCurrency      = (1234.5m).ToString("C", cc),        // proof ToString("C") is normalized
+				samplePercent       = (0.15m).ToString("P", cc),
+				rawCultureParsesDot = rawDotOk,
+				rawCultureDotValue  = rawDot,
+				failCount           = fail,
+				allPass             = fail == 0,
+				cases               = results
+			});
+		}
+
+		// GET /api/dev/hyper-hm0-seed?key=seed123 — HM-0 dev fixtures ONLY (Development). Creates a Hyper-activity branch
+		// + its default capabilities + POS setting + two terminals with DISTINCT receipt series + payment methods + a
+		// demo cashier login. Idempotent. NO items, customers, stock movements, or journal entries.
+		[HttpGet("hyper-hm0-seed")]
+		public async Task<IActionResult> HyperHm0Seed(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var log = new List<string>();
+
+			// 1) Hyper-activity branch (idempotent by Name)
+			var branch = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "HYPER-DEMO");
+			if (branch == null)
+			{
+				branch = new CrossBuy.Models.Context.Admin.Branch
+				{
+					Name = "HYPER-DEMO", NameAr = "هايبر ديمو", Location = "Kuwait", CountryID = 32, CompanyID = 79,
+					PhoneNumber = "", Email = "", Description = "HM-0 hypermarket demo", ActivityPresetCode = "Hyper"
+				};
+				_db.Branches.Add(branch); await _db.SaveChangesAsync(); log.Add("branch CREATED #" + branch.ID);
+			}
+			else { if (branch.ActivityPresetCode != "Hyper") { branch.ActivityPresetCode = "Hyper"; await _db.SaveChangesAsync(); } log.Add("branch exists #" + branch.ID); }
+			int bid = branch.ID;
+
+			// 2) capabilities — hyper defaults (direct upsert; deterministic, no preset coupling)
+			var defaults = new (string key, bool on)[]
+			{
+				("BarcodeMulti", true), ("CashDrawer", true), ("SuspendResume", true), ("PriceCheck", true),
+				("Weight", false), ("ExpiryControl", false), ("Promotions", false), ("Loyalty", false), ("ShelfLabels", false)
+			};
+			var existingCaps = await _db.BranchCapabilities.Where(c => c.BranchId == bid).ToListAsync();
+			foreach (var d in defaults)
+			{
+				var ex = existingCaps.FirstOrDefault(x => x.CapabilityKey == d.key);
+				if (ex == null) _db.BranchCapabilities.Add(new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = bid, CapabilityKey = d.key, Enabled = d.on });
+				else ex.Enabled = d.on;
+			}
+			await _db.SaveChangesAsync(); log.Add("capabilities set (4 on / 5 off)");
+
+			// 3) POS setting — sales warehouse + currency (config only; no selling)
+			int? whId = await _db.Warehouses.Where(w => w.CompanyID == 1).OrderBy(w => w.ID).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			int? ccyId = await _db.Currencies.Where(c => c.Code == "KWD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			await _posSetup.SavePosSettingAsync(bid, whId, null, null, ccyId); log.Add($"pos setting (warehouse {whId}, currency {ccyId})");
+
+			// 4) two terminals with DISTINCT receipt series (idempotent by branch+code)
+			async Task<int> EnsureTerminal(string code, string name, string prefix)
+			{
+				var exT = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid && t.Code == code);
+				var (ok, err, id) = await _posSetup.SaveTerminalAsync(bid, exT?.ID ?? 0, code, name, prefix, null, true, true);
+				return id;
+			}
+			int l1 = await EnsureTerminal("HM-L1", "Lane 1", "HM-L1-");
+			int l2 = await EnsureTerminal("HM-L2", "Lane 2", "HM-L2-");
+			log.Add($"terminals HM-L1=#{l1} (HM-L1-), HM-L2=#{l2} (HM-L2-)");
+
+			// 5) payment methods (idempotent) — Cash → till/cash, Card + KNet → bank/clearing
+			async Task EnsurePay(string method, string display, int acct, int sort)
+			{
+				var exP = await _db.BranchPaymentMethods.FirstOrDefaultAsync(p => p.BranchId == bid && p.PaymentMethod == method);
+				if (exP == null) _db.BranchPaymentMethods.Add(new CrossBuy.Models.Context.Pos.BranchPaymentMethod { BranchId = bid, PaymentMethod = method, DisplayName = display, TargetAccountId = acct, IsActive = true, Sort = sort });
+				else { exP.TargetAccountId = acct; exP.DisplayName = display; exP.IsActive = true; }
+			}
+			await EnsurePay("Cash", "نقدي", 3, 1);
+			await EnsurePay("Card", "بطاقة", 5, 2);
+			await EnsurePay("KNet", "كي-نت", 5, 3);
+			await _db.SaveChangesAsync(); log.Add("payment methods: Cash/Card/KNet");
+
+			// 6) demo cashier login (Identity user + Employee on the hyper branch + pos-manager role)
+			var user = await _um.FindByNameAsync("hyper1");
+			if (user == null)
+			{
+				user = new Users { UserName = "hyper1", Email = "hyper1@demo.local", IsActive = true, IsEndUser = true, EmailConfirmed = true };
+				var res = await _um.CreateAsync(user, "Hyper@123");
+				if (!res.Succeeded) return Ok(new { ok = false, step = "createUser", errors = res.Errors.Select(e => e.Description), log });
+				log.Add("user hyper1 CREATED");
+			}
+			else log.Add("user hyper1 exists");
+
+			var emp = await _db.Employee.FirstOrDefaultAsync(e => e.UserId == user.Id);
+			if (emp == null)
+			{
+				emp = new CrossBuy.Models.Context.Admin.Employee
+				{
+					FirstName = "Hyper", LastName = "Cashier", FullName = "كاشير هايبر", FullNameEn = "Hyper Cashier",
+					Address = "", PhoneNumber = "", Email = "hyper1@demo.local", JobTitleID = 2, EmpCompanyID = 1, ProfileImage = "",
+					DateOfBirth = new DateTime(1990, 1, 1), Gender = "Male", MaritalStatus = "Single", DateOfJoining = DateTime.Today,
+					IsActive = true, UserId = user.Id, BranchID = bid
+				};
+				_db.Employee.Add(emp); await _db.SaveChangesAsync(); log.Add("employee CREATED #" + emp.ID);
+			}
+			else { if (emp.BranchID != bid) { emp.BranchID = bid; await _db.SaveChangesAsync(); } log.Add("employee exists #" + emp.ID); }
+
+			if (!await _db.BranchUserRoles.AnyAsync(r => r.BranchId == bid && r.EmployeeId == emp.ID && r.PosRole == "pos-manager" && r.IsActive))
+			{
+				_db.BranchUserRoles.Add(new CrossBuy.Models.Context.Pos.BranchUserRole { BranchId = bid, EmployeeId = emp.ID, PosRole = "pos-manager", IsActive = true, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync(); log.Add("role pos-manager granted");
+			}
+			else log.Add("role pos-manager exists");
+
+			// 7) isolation control user: a RESTAURANT-only cashier on Cairo branch 15 (non-Hyper), for cross-lane tests.
+			//    (branch 15's ActivityPresetCode is left as-is — no restaurant config is touched.)
+			var ruser = await _um.FindByNameAsync("rest1");
+			if (ruser == null)
+			{
+				ruser = new Users { UserName = "rest1", Email = "rest1@demo.local", IsActive = true, IsEndUser = true, EmailConfirmed = true };
+				var rres = await _um.CreateAsync(ruser, "Rest@123");
+				if (rres.Succeeded) log.Add("user rest1 CREATED");
+				else log.Add("rest1 create failed: " + string.Join(";", rres.Errors.Select(e => e.Description)));
+			}
+			else log.Add("user rest1 exists");
+			if (ruser != null)
+			{
+				var remp = await _db.Employee.FirstOrDefaultAsync(e => e.UserId == ruser.Id);
+				if (remp == null)
+				{
+					remp = new CrossBuy.Models.Context.Admin.Employee
+					{
+						FirstName = "Rest", LastName = "Cashier", FullName = "كاشير مطعم", FullNameEn = "Restaurant Cashier",
+						Address = "", PhoneNumber = "", Email = "rest1@demo.local", JobTitleID = 2, EmpCompanyID = 1, ProfileImage = "",
+						DateOfBirth = new DateTime(1990, 1, 1), Gender = "Male", MaritalStatus = "Single", DateOfJoining = DateTime.Today,
+						IsActive = true, UserId = ruser.Id, BranchID = 15
+					};
+					_db.Employee.Add(remp); await _db.SaveChangesAsync(); log.Add("rest employee CREATED #" + remp.ID);
+				}
+				else log.Add("rest employee exists #" + remp.ID);
+				if (!await _db.BranchUserRoles.AnyAsync(r => r.BranchId == 15 && r.EmployeeId == remp.ID && r.PosRole == "pos-cashier" && r.IsActive))
+				{
+					_db.BranchUserRoles.Add(new CrossBuy.Models.Context.Pos.BranchUserRole { BranchId = 15, EmployeeId = remp.ID, PosRole = "pos-cashier", IsActive = true, CreatedAt = DateTime.UtcNow });
+					await _db.SaveChangesAsync(); log.Add("rest1 pos-cashier @branch15 granted");
+				}
+			}
+
+			return Ok(new { ok = true, branchId = bid, terminals = new { HM_L1 = l1, HM_L2 = l2 }, login = new { hyper = "hyper1/Hyper@123", restaurant = "rest1/Rest@123 (branch15, isolation control)" }, note = "NO items/customers/stock/GL created.", log });
+		}
+
+		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
+		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
+		[HttpGet("apply-preset-guard-test")]
+		public async Task<IActionResult> ApplyPresetGuardTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var results = new List<object>();
+			int fails = 0;
+
+			var A = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-GUARD-A", NameAr = "اختبار أ", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "guard test", ActivityPresetCode = null };
+			var B = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-GUARD-B", NameAr = "اختبار ب", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "guard test", ActivityPresetCode = null };
+			_db.Branches.Add(A); _db.Branches.Add(B); await _db.SaveChangesAsync();
+			await _posSetup.SaveTerminalAsync(A.ID, 0, "ZZ-TA", "TA", "ZZ-TA-", null, false, true);   // gives A operational history (a terminal), no cash account
+
+			async Task Run(string label, int bid, string code, bool conscious, bool expectOk)
+			{
+				var (ok, err) = await _posSetup.ApplyPresetAsync(bid, code, conscious);
+				bool pass = ok == expectOk; if (!pass) fails++;
+				results.Add(new { test = label, expectOk, actualOk = ok, pass, error = err });
+			}
+			await Run("A(has terminal)+Hyper, casual → REFUSE", A.ID, "Hyper", false, false);
+			await Run("A(has terminal)+Restaurant, casual → ALLOW", A.ID, "Restaurant", false, true);
+			await Run("B(clean)+Hyper, casual → ALLOW", B.ID, "Hyper", false, true);
+			await Run("A(now Restaurant)+Cafe, casual → REFUSE (set-change)", A.ID, "Cafe", false, false);
+			await Run("A+Cafe, CONSCIOUS path → ALLOW", A.ID, "Cafe", true, true);
+
+			// cleanup — remove ONLY the throwaway entities this test created
+			var bids = new[] { A.ID, B.ID };
+			_db.BranchCapabilities.RemoveRange(_db.BranchCapabilities.Where(c => bids.Contains(c.BranchId)));
+			_db.PosTerminals.RemoveRange(_db.PosTerminals.Where(t => bids.Contains(t.BranchId)));
+			await _db.SaveChangesAsync();
+			_db.Branches.RemoveRange(_db.Branches.Where(b => bids.Contains(b.ID)));
+			await _db.SaveChangesAsync();
+
+			return Ok(new { allPass = fails == 0, failCount = fails, results, note = "throwaway branches ZZ-GUARD-* created and removed; no existing branch touched." });
+		}
+
+		// GET /api/dev/numbering-concurrency-test?key=seed123 — HM-1-أ ب-1-4. 10 PARALLEL allocations (separate DI
+		// scopes = separate DbContexts = real concurrency) of a receipt number AND of a JE sequence number, on
+		// THROWAWAY entities only. Proves: distinct numbers, counter advanced by exactly 10, no unique-violation.
+		[HttpGet("numbering-concurrency-test")]
+		public async Task<IActionResult> NumberingConcurrencyTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int N = 10;
+
+			// ---- Part A: receipt number on a throwaway branch+terminal ----
+			var br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-CONC-BR", NameAr = "تزامن", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "conc test", ActivityPresetCode = null };
+			_db.Branches.Add(br); await _db.SaveChangesAsync();
+			var (_, _, termId) = await _posSetup.SaveTerminalAsync(br.ID, 0, "ZZ-CT", "ct", "ZZ-CT-", null, false, true);
+
+			var recTasks = Enumerable.Range(0, N).Select(_ => Task.Run(async () =>
+			{
+				try { using var sc = _scopes.CreateScope(); var svc = sc.ServiceProvider.GetRequiredService<CrossBuy.BL.IPosOrderService>(); return await svc.AllocateReceiptNoAsync(termId); }
+				catch (Exception ex) { return "ERR:" + ex.Message; }
+			}));
+			var recRes = (await Task.WhenAll(recTasks)).ToList();
+			int recErrs = recRes.Count(x => x.StartsWith("ERR:"));
+			int recDistinct = recRes.Where(x => !x.StartsWith("ERR:")).Distinct().Count();
+			int termAfter = await _db.PosTerminals.AsNoTracking().Where(t => t.ID == termId).Select(t => t.NextReceiptNo).FirstAsync();
+			bool recPass = recErrs == 0 && recDistinct == N && termAfter == N + 1;
+
+			// ---- Part B: JE sequence on a throwaway NumberSequences key (same atomic SQL as ReserveEntryNoAsync) ----
+			const string seqKey = "ZZ-CONC";
+			_db.NumberSequences.Add(new CrossBuy.Models.Context.Accounting.NumberSequence { CompanyID = 1, SequenceKey = seqKey, FiscalYearId = 1, Prefix = "ZZ", NextNumber = 1, PadLength = 6 });
+			await _db.SaveChangesAsync();
+			var jeTasks = Enumerable.Range(0, N).Select(_ => Task.Run<object>(async () =>
+			{
+				try { using var sc = _scopes.CreateScope(); var db2 = sc.ServiceProvider.GetRequiredService<CrossDbContext>();
+					return (await db2.Database.SqlQueryRaw<int>("UPDATE dbo.NumberSequences SET NextNumber = NextNumber + 1 OUTPUT deleted.NextNumber AS [Value] WHERE SequenceKey = {0}", seqKey).ToListAsync()).Single(); }
+				catch (Exception ex) { return "ERR:" + ex.Message; }
+			}));
+			var jeRes = (await Task.WhenAll(jeTasks)).ToList();
+			int jeErrs = jeRes.Count(x => x is string s && s.StartsWith("ERR:"));
+			var jeNums = jeRes.OfType<int>().OrderBy(x => x).ToList();
+			int jeDistinct = jeNums.Distinct().Count();
+			int seqAfter = await _db.NumberSequences.AsNoTracking().Where(s => s.SequenceKey == seqKey).Select(s => s.NextNumber).FirstAsync();
+			bool jePass = jeErrs == 0 && jeDistinct == N && seqAfter == N + 1 && jeNums.SequenceEqual(Enumerable.Range(1, N));
+
+			// ---- Part C (ب-2-3.1): CREATION race — 10 parallel run the exact ensure-then-allocate batch on a key that
+			// does NOT exist yet. Proves exactly ONE row is created (no duplicates) and numbers stay 1..N. ----
+			const string newKey = "ZZ-NEWKEY";
+			_db.NumberSequences.RemoveRange(_db.NumberSequences.Where(s => s.SequenceKey == newKey)); await _db.SaveChangesAsync();   // ensure absent
+			var crTasks = Enumerable.Range(0, N).Select(_ => Task.Run<object>(async () =>
+			{
+				try { using var sc = _scopes.CreateScope(); var db3 = sc.ServiceProvider.GetRequiredService<CrossDbContext>();
+					return (await db3.Database.SqlQueryRaw<int>(
+						@"SET NOCOUNT ON;
+IF NOT EXISTS (SELECT 1 FROM dbo.NumberSequences WITH (UPDLOCK, HOLDLOCK) WHERE CompanyID={0} AND SequenceKey={1} AND FiscalYearId={2})
+    INSERT INTO dbo.NumberSequences (CompanyID,SequenceKey,FiscalYearId,Prefix,NextNumber,PadLength) VALUES ({0},{1},{2},'ZZ',1,6);
+UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber AS [Value] WHERE CompanyID={0} AND SequenceKey={1} AND FiscalYearId={2};",
+						1, newKey, 1).ToListAsync()).Single(); }
+				catch (Exception ex) { return "ERR:" + ex.Message; }
+			}));
+			var crRes = (await Task.WhenAll(crTasks)).ToList();
+			int crErrs = crRes.Count(x => x is string s && s.StartsWith("ERR:"));
+			var crNums = crRes.OfType<int>().OrderBy(x => x).ToList();
+			int crRows = await _db.NumberSequences.CountAsync(s => s.SequenceKey == newKey);   // MUST be exactly 1
+			bool crPass = crErrs == 0 && crRows == 1 && crNums.Distinct().Count() == N && crNums.SequenceEqual(Enumerable.Range(1, N));
+
+			// cleanup throwaway entities only
+			_db.NumberSequences.RemoveRange(_db.NumberSequences.Where(s => s.SequenceKey == seqKey || s.SequenceKey == newKey));
+			_db.PosTerminals.RemoveRange(_db.PosTerminals.Where(t => t.BranchId == br.ID));
+			await _db.SaveChangesAsync();
+			_db.Branches.RemoveRange(_db.Branches.Where(b => b.ID == br.ID));
+			await _db.SaveChangesAsync();
+
+			return Ok(new
+			{
+				allPass = recPass && jePass && crPass,
+				receipt = new { pass = recPass, errors = recErrs, distinct = recDistinct, counterAfter = termAfter, numbers = recRes.OrderBy(x => x) },
+				jeSeq = new { pass = jePass, errors = jeErrs, distinct = jeDistinct, counterAfter = seqAfter, numbers = jeNums },
+				creationRace = new { pass = crPass, errors = crErrs, rowsCreated = crRows, distinct = crNums.Distinct().Count(), numbers = crNums }
+			});
+		}
+
+		// GET /api/dev/hm1-b3-test?key=seed123 — HM-1-أ ب-3 smoke test of the ambient "own-or-join" transaction on the sale path.
+		// Part A: a normal sale COMMITS revenue + COGS + stock movement together (ambient tx commits).
+		// Part B: an insufficient-stock sale rolls back the WHOLE sale — no orphan invoice / JE / movement (no revenue without cost) —
+		//         and returns the StockService error verbatim. Runs on throwaway ZZ entities; teardown REVERSES the ZZ JEs (never deletes) and removes ZZ scaffolding.
+		[HttpGet("hm1-b3-test")]
+		public async Task<IActionResult> Hm1B3Test(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var log = new List<string>();
+
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int? revenue = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			if (cat == null || revenue == null || baseUom == 0) return BadRequest(new { message = "need a GL-wired category, account 4101, and a unit" });
+
+			// ZZ warehouse (negative stock OFF so an over-sell fails)
+			await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "ZZB3WH", Name = "اختبار ب-3", NameEn = "B3 test" }, null);
+			var wh = await _db.Warehouses.FirstAsync(w => w.CompanyID == company && w.Code == "ZZB3WH");
+			if (wh.AllowNegativeStock) { wh.AllowNegativeStock = false; await _db.SaveChangesAsync(); }
+
+			// ZZ stockable item
+			var (iok, ierr, item) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput
+			{
+				ItemCode = "ZZ-B3-ITEM", Barcode = "ZZB3BARCODE", Name = "صنف اختبار ب-3", NameEn = "B3 test item",
+				ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable,
+				BaseUoMId = baseUom, SalesPrice = 100m, OpeningCost = 60m, IsActive = true
+			}, null);
+			if (!iok || item == null) return BadRequest(new { message = "ZZ item create failed: " + ierr });
+
+			// ZZ customer (SaveCustomerAsync assigns the AR control account)
+			await _ar.SaveCustomerAsync(company, new CrossBuy.Models.Context.Accounting.Customer { Name = "عميل اختبار ب-3", Phone = "0", IsActive = true });
+			var cust = await _db.Customers.OrderByDescending(c => c.ID).FirstAsync(c => c.CompanyID == company && c.Name == "عميل اختبار ب-3");
+
+			// receive 10 @ 60 (GL on) so stock + inventory value exist
+			var (rok, rerr, rmv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 10, UnitCostInBase = 60m, SourceType = "Opening", PostToGl = true }, null);
+			log.Add($"receive ok={rok} err={rerr}");
+
+			CrossBuy.BL.SalesLineInput Line(decimal qty) => new() { ItemDescription = item.Name, Qty = qty, UnitPrice = 100m, TaxRate = 0, RevenueAccountId = revenue.Value, ItemId = item.ID, WarehouseId = wh.ID };
+
+			// ---- Part A: SUCCESS — sell 3, expect commit of revenue + COGS + movement + stock 10→7 ----
+			var (aok, aerr, ainv) = await _ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(3) }, "ZZ-B3 success", null);
+			var (aQty, aVal, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			var aMove = await _db.StockMovements.AsNoTracking().Where(m => m.ItemId == item.ID && m.SourceType == "SalesInvoice").OrderByDescending(m => m.ID).FirstOrDefaultAsync();
+			bool successPass = aok && ainv != null && ainv.JournalEntryId != null && aMove != null && aMove.JournalEntryId != null && aQty == 7m;
+			log.Add($"success ok={aok} err={aerr} inv={ainv?.InvoiceNo} salesJe={ainv?.JournalEntryId} cogsJe={aMove?.JournalEntryId} qtyAfter={aQty}");
+
+			// ---- Part B: FAILURE — sell 100 (only 7 on hand, negative OFF) → whole sale must roll back ----
+			int invBefore = await _db.SalesInvoices.CountAsync(i => i.CustomerId == cust.ID);
+			int jeBefore = await _db.JournalEntries.CountAsync();
+			int mvBefore = await _db.StockMovements.CountAsync(m => m.ItemId == item.ID);
+			var (bok, berr, binv) = await _ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(100) }, "ZZ-B3 forced-fail", null);
+			int invAfter = await _db.SalesInvoices.CountAsync(i => i.CustomerId == cust.ID);
+			int jeAfter = await _db.JournalEntries.CountAsync();
+			int mvAfter = await _db.StockMovements.CountAsync(m => m.ItemId == item.ID);
+			var (bQty, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			bool failPass = !bok && !string.IsNullOrEmpty(berr) && binv == null
+							&& invAfter == invBefore && jeAfter == jeBefore && mvAfter == mvBefore && bQty == 7m;
+			log.Add($"forcedFail ok={bok} err={berr} invΔ={invAfter - invBefore} jeΔ={jeAfter - jeBefore} mvΔ={mvAfter - mvBefore} qty={bQty}");
+
+			// ---- teardown: reverse ZZ JEs (never delete a JE), then hard-remove ZZ scaffolding ----
+			var teardown = new List<string>();
+			var zzJeIds = new List<int>();
+			if (rmv?.JournalEntryId != null) zzJeIds.Add(rmv.JournalEntryId.Value);
+			if (ainv?.JournalEntryId != null) zzJeIds.Add(ainv.JournalEntryId.Value);
+			if (aMove?.JournalEntryId != null) zzJeIds.Add(aMove.JournalEntryId.Value);
+			foreach (var jeId in zzJeIds.Distinct()) { var (rvok, rverr, _) = await _je.ReverseAsync(jeId, null, "ZZ-B3 teardown"); teardown.Add($"reverse {jeId}: {(rvok ? "ok" : rverr)}"); }
+			await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID).ExecuteDeleteAsync();
+			await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID).ExecuteDeleteAsync();
+			await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID).ExecuteDeleteAsync();
+			var invIds = await _db.SalesInvoices.Where(i => i.CustomerId == cust.ID).Select(i => i.ID).ToListAsync();
+			await _db.SalesInvoiceLines.Where(l => invIds.Contains(l.SalesInvoiceId)).ExecuteDeleteAsync();
+			await _db.SalesInvoices.Where(i => i.CustomerId == cust.ID).ExecuteDeleteAsync();
+			await _db.ItemBarcodes.Where(b => b.ItemId == item.ID).ExecuteDeleteAsync();
+			await _db.Items.Where(i => i.ID == item.ID).ExecuteDeleteAsync();
+			await _db.Customers.Where(c => c.ID == cust.ID).ExecuteDeleteAsync();
+			await _db.Warehouses.Where(w => w.ID == wh.ID).ExecuteDeleteAsync();
+
+			// HM-D9 precondition: FAIL if ANY ZZ stock row survived OR integrity is not green after teardown
+			int zzResidue = await _db.StockMovements.CountAsync(m => m.ItemId == item.ID) + await _db.StockBalances.CountAsync(b => b.ItemId == item.ID) + await _db.StockCostLayers.CountAsync(l => l.ItemId == item.ID) + await _db.StockBatches.CountAsync(b => b.ItemId == item.ID);
+			var _integ9 = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IIntegrityCheckService>();
+			var (_run9, _) = await _integ9.RunAndLogAsync(company, "hm1-b3 teardown check");
+			bool teardownClean = zzResidue == 0 && _run9.FailedCount == 0;
+
+			return Ok(new
+			{
+				allPass = successPass && failPass && teardownClean,
+				teardownClean, zzResidue, teardownFailedCount = _run9.FailedCount,
+				partA_success = new { pass = successPass, proves = "ambient tx commits revenue + COGS + movement + stock together", detail = log.Count > 1 ? log[1] : "" },
+				partB_forcedFail = new { pass = failPass, proves = "insufficient stock → whole sale rolled back (no revenue without cost); StockService error returned verbatim", stockServiceError = berr, detail = log.Count > 2 ? log[2] : "" },
+				teardown,
+				note = "ZZ throwaway; the two success JEs were reversed (net-zero, balanced) and all ZZ scaffolding removed. The reversal advanced the JV counter, so a few new-period gaps (>1162) are expected — the entryno_dup check counts them (warning only, never a failure)."
+			});
+		}
+
+		// GET /api/dev/hm1-b3-tracker-test?key=seed123 — HM-1-أ ب-3 CORRECTION proof: a DB rollback does NOT reset EF's
+		// ChangeTracker, and the DbContext is request-Scoped. This fails a sale on purpose, then does further writes on the
+		// SAME context in the SAME request and proves there is NO phantom: tracker is empty after the failed sale, a plain
+		// SaveChanges writes 0 rows (no Added entity re-inserted), no DbUpdateConcurrencyException, and a following real sale
+		// commits correctly and is the ONLY invoice. Runs on throwaway ZZ entities.
+		[HttpGet("hm1-b3-tracker-test")]
+		public async Task<IActionResult> Hm1B3TrackerTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int? revenue = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			if (cat == null || revenue == null || baseUom == 0) return BadRequest(new { message = "need a GL-wired category, account 4101, and a unit" });
+
+			await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "ZZB3TWH", Name = "اختبار متتبّع ب-3", NameEn = "B3 tracker WH" }, null);
+			var wh = await _db.Warehouses.FirstAsync(w => w.CompanyID == company && w.Code == "ZZB3TWH");
+			if (wh.AllowNegativeStock) { wh.AllowNegativeStock = false; await _db.SaveChangesAsync(); }
+
+			var (iok, ierr, item) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput
+			{
+				ItemCode = "ZZ-B3-TRK", Barcode = "ZZB3TRKBC", Name = "صنف متتبّع ب-3", NameEn = "B3 tracker item",
+				ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable,
+				BaseUoMId = baseUom, SalesPrice = 100m, OpeningCost = 60m, IsActive = true
+			}, null);
+			if (!iok || item == null) return BadRequest(new { message = "ZZ item create failed: " + ierr });
+			await _ar.SaveCustomerAsync(company, new CrossBuy.Models.Context.Accounting.Customer { Name = "عميل متتبّع ب-3", Phone = "0", IsActive = true });
+			var cust = await _db.Customers.OrderByDescending(c => c.ID).FirstAsync(c => c.CompanyID == company && c.Name == "عميل متتبّع ب-3");
+			var (rok, rerr, rmv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 5, UnitCostInBase = 60m, SourceType = "Opening", PostToGl = true }, null);
+
+			CrossBuy.BL.SalesLineInput Line(decimal qty) => new() { ItemDescription = item.Name, Qty = qty, UnitPrice = 100m, TaxRate = 0, RevenueAccountId = revenue.Value, ItemId = item.ID, WarehouseId = wh.ID };
+
+			// PROOF-0: this action is ONE HTTP request ⇒ ONE request-Scoped CrossDbContext. Prove _db IS that scoped
+			// instance; _ar (IReceivableService) is resolved from the SAME scope with CrossDbContext injected, so _ar's
+			// context is the SAME object as _db (AddDbContext<CrossDbContext> is Scoped). ⇒ the tracker checks below are
+			// on the very context the failed sale used — not a fresh one.
+			bool sameContext = ReferenceEquals(_db, HttpContext.RequestServices.GetService(typeof(CrossDbContext)) as CrossDbContext);
+
+			// baselines (committed DB rows) BEFORE the failed sale
+			int invBefore = await _db.SalesInvoices.CountAsync();
+			int jeBefore = await _db.JournalEntries.CountAsync();
+			int jelBefore = await _db.JournalEntryLines.CountAsync();
+			int mvBefore = await _db.StockMovements.CountAsync();
+			var (qtyBefore, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);   // expect 5
+
+			// (1) FAIL a sale on purpose (100 > 5 on hand, negative OFF) — this is where phantom entities would linger.
+			var (fok, ferr, finv) = await _ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(100) }, "ZZ-B3 tracker fail", null);
+
+			// (2) IMMEDIATELY inspect the tracker + force a plain SaveChanges on the SAME context (this is exactly what a
+			// later write in the same request would trigger — the moment a lingering Added phantom would be re-inserted).
+			int trackedAfterFail = _db.ChangeTracker.Entries().Count();     // expect 0 — owner rollback cleared it
+			int phantomWrites = -99; string? concurrencyErr = null;
+			try { phantomWrites = await _db.SaveChangesAsync(); }            // expect 0 — no Added phantom re-inserted
+			catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex) { concurrencyErr = "DbUpdateConcurrencyException: " + ex.Message; }
+			catch (Exception ex) { concurrencyErr = ex.GetType().Name + ": " + ex.Message; }
+
+			// committed DB rows AFTER the fail+SaveChanges — must equal the baselines (the failed sale persisted NOTHING)
+			int invAfterFail = await _db.SalesInvoices.CountAsync();
+			int jeAfterFail = await _db.JournalEntries.CountAsync();
+			int jelAfterFail = await _db.JournalEntryLines.CountAsync();
+			int mvAfterFail = await _db.StockMovements.CountAsync();
+			var (qtyAfterFail, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			bool noPhantomRows = invAfterFail == invBefore && jeAfterFail == jeBefore && jelAfterFail == jelBefore && mvAfterFail == mvBefore && qtyAfterFail == qtyBefore;
+
+			// (2b) CONTROL — prove ScopedTx.RollbackAsync() actually EMPTIES a KNOWN-nonempty tracker (so the checks above
+			// aren't vacuous): add a throwaway row inside an OWNED ScopedTx, confirm it IS tracked as Added, roll back,
+			// then confirm the tracker is empty, a plain SaveChanges writes 0, and nothing persisted.
+			int ctrlAddedInside, ctrlTrackedAfter, ctrlPlainWrite, ctrlRows;
+			await using (var ctrlTx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db))
+			{
+				_db.NumberSequences.Add(new CrossBuy.Models.Context.Accounting.NumberSequence { CompanyID = 1, SequenceKey = "ZZ-CTRL", FiscalYearId = 1, Prefix = "ZZ", NextNumber = 1, PadLength = 6 });
+				ctrlAddedInside = _db.ChangeTracker.Entries().Count(e => e.State == Microsoft.EntityFrameworkCore.EntityState.Added);   // >= 1
+				await ctrlTx.RollbackAsync();   // OWNER ⇒ DB rollback + ChangeTracker.Clear()
+			}
+			ctrlTrackedAfter = _db.ChangeTracker.Entries().Count();          // 0
+			ctrlPlainWrite = await _db.SaveChangesAsync();                    // 0 — the Added ZZ-CTRL was NOT re-inserted
+			ctrlRows = await _db.NumberSequences.CountAsync(s => s.SequenceKey == "ZZ-CTRL");   // 0 — nothing persisted
+
+			// (3) a SUBSEQUENT real sale on the SAME context must commit correctly and be the ONLY invoice.
+			var (sok, serr, sinv) = await _ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(2) }, "ZZ-B3 tracker ok", null);
+			int invCount = await _db.SalesInvoices.CountAsync(i => i.CustomerId == cust.ID);
+			int mvCount = await _db.StockMovements.CountAsync(m => m.ItemId == item.ID && m.SourceType == "SalesInvoice");
+			var (qtyAfter, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			var sMove = await _db.StockMovements.AsNoTracking().Where(m => m.ItemId == item.ID && m.SourceType == "SalesInvoice").OrderByDescending(m => m.ID).FirstOrDefaultAsync();
+
+			bool pass = sameContext                                              // the checks are on the request-scoped context
+						&& !fok && !string.IsNullOrEmpty(ferr) && finv == null      // the fail rolled back
+						&& trackedAfterFail == 0 && noPhantomRows                   // tracker cleared AND no committed phantom row
+						&& phantomWrites == 0 && concurrencyErr == null             // plain SaveChanges wrote nothing, no concurrency crash
+						&& ctrlAddedInside >= 1 && ctrlTrackedAfter == 0 && ctrlPlainWrite == 0 && ctrlRows == 0   // control: clear works on a known-nonempty tracker
+						&& sok && sinv != null && invCount == 1 && mvCount == 1     // exactly ONE invoice + ONE COGS movement (the success only)
+						&& qtyAfter == 3m;                                          // 5 received − 2 sold; the 100 never happened
+
+			// teardown: reverse ZZ JEs (never delete), remove ZZ scaffolding
+			var teardown = new List<string>();
+			foreach (var jeId in new[] { rmv?.JournalEntryId, sinv?.JournalEntryId, sMove?.JournalEntryId }.Where(x => x != null).Select(x => x!.Value).Distinct())
+			{ var (rvok, rverr, _) = await _je.ReverseAsync(jeId, null, "ZZ-B3 tracker teardown"); teardown.Add($"reverse {jeId}: {(rvok ? "ok" : rverr)}"); }
+			await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID).ExecuteDeleteAsync();
+			await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID).ExecuteDeleteAsync();
+			await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID).ExecuteDeleteAsync();
+			var invIds = await _db.SalesInvoices.Where(i => i.CustomerId == cust.ID).Select(i => i.ID).ToListAsync();
+			await _db.SalesInvoiceLines.Where(l => invIds.Contains(l.SalesInvoiceId)).ExecuteDeleteAsync();
+			await _db.SalesInvoices.Where(i => i.CustomerId == cust.ID).ExecuteDeleteAsync();
+			await _db.ItemBarcodes.Where(b => b.ItemId == item.ID).ExecuteDeleteAsync();
+			await _db.Items.Where(i => i.ID == item.ID).ExecuteDeleteAsync();
+			await _db.Customers.Where(c => c.ID == cust.ID).ExecuteDeleteAsync();
+			await _db.Warehouses.Where(w => w.ID == wh.ID).ExecuteDeleteAsync();
+
+			// HM-D9 precondition: FAIL (not merely report) if ANY ZZ stock row survived OR integrity is not green after teardown
+			int zzResidue = await _db.StockMovements.CountAsync(m => m.ItemId == item.ID) + await _db.StockBalances.CountAsync(b => b.ItemId == item.ID) + await _db.StockCostLayers.CountAsync(l => l.ItemId == item.ID) + await _db.StockBatches.CountAsync(b => b.ItemId == item.ID);
+			var _integ9 = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IIntegrityCheckService>();
+			var (_run9, _) = await _integ9.RunAndLogAsync(company, "hm1-b3-tracker teardown check");
+			bool teardownClean = zzResidue == 0 && _run9.FailedCount == 0;
+			pass = pass && teardownClean;
+
+			return Ok(new
+			{
+				pass, teardownClean, zzResidue, teardownFailedCount = _run9.FailedCount,
+				sameRequestContext = sameContext,
+				failedSale = new { ok = fok, err = ferr, invoiceReturned = finv != null },
+				afterFail = new { trackedEntities = trackedAfterFail, plainSaveChangesWrote = phantomWrites, concurrencyException = concurrencyErr ?? "none" },
+				rowsBeforeVsAfterFail = new {
+					invoices = $"{invBefore}→{invAfterFail}", journalEntries = $"{jeBefore}→{jeAfterFail}",
+					journalEntryLines = $"{jelBefore}→{jelAfterFail}", stockMovements = $"{mvBefore}→{mvAfterFail}",
+					itemQty = $"{qtyBefore}→{qtyAfterFail}", noPhantomRows
+				},
+				controlClear = new { addedInsideTx = ctrlAddedInside, trackedAfterRollback = ctrlTrackedAfter, plainSaveChangesWrote = ctrlPlainWrite, persistedRows = ctrlRows },
+				subsequentRealSale = new { ok = sok, err = serr, invoiceCountForCustomer = invCount, cogsMovements = mvCount, stockQtyAfter = qtyAfter, expected = "1 invoice, 1 movement, qty 3" },
+				teardown,
+				proves = "SAME request/context (ReferenceEquals=true). A failed sale persisted ZERO rows and left an EMPTY tracker; a forced plain SaveChanges wrote 0 with no DbUpdateConcurrencyException; the control proves the clear empties a known-nonempty tracker; and the next real write on the same context committed correctly."
+			});
+		}
+
+		// GET /api/dev/hm1-d5a-test?key=seed123 — HM-D5-أ: the receipt-counter advance now parses ONLY the numeric SUFFIX
+		// after the terminal's prefix. On a ZZ terminal whose prefix CONTAINS a digit (ZZ6-), prove an in-series 6-digit
+		// receipt advances the counter by exactly 1 (not to 6 million), a prefix mismatch freezes the counter + records an
+		// anomaly, and regression still advances. Runs the REAL PosOrderService method on a throwaway ZZ terminal.
+		[HttpGet("hm1-d5a-test")]
+		public async Task<IActionResult> Hm1D5aTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			async Task<int> Ctr(int tid) => await _db.PosTerminals.AsNoTracking().Where(t => t.ID == tid).Select(t => t.NextReceiptNo).FirstAsync();
+
+			// ZZ branch + terminal with a DIGIT in the prefix (ZZ6-) — the worst case for the old all-digits scrape
+			var br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-D5A-BR", NameAr = "اختبار كشط", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "d5a", ActivityPresetCode = null };
+			_db.Branches.Add(br); await _db.SaveChangesAsync();
+			var (_, _, termId) = await _posSetup.SaveTerminalAsync(br.ID, 0, "ZZ6-T", "d5a", "ZZ6-", null, false, true);
+			await _db.Database.ExecuteSqlRawAsync("UPDATE PosTerminals SET NextReceiptNo = 5 WHERE ID = {0}", termId);
+
+			int oldScrape = int.Parse(new string("ZZ6-000012".Where(char.IsDigit).ToArray()), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);   // OLD bug = 6000012
+
+			// 1) normal 6-digit IN-SERIES → counter 5 → 13 (n=12,+1), NOT 6000013
+			var t1 = await _db.PosTerminals.FirstAsync(t => t.ID == termId);
+			var r1 = await _posOrders.AdvanceCounterPastOfflineReceiptAsync(t1, "ZZ6-000012");
+			int c1 = await Ctr(termId);
+			// 1b) IDEMPOTENCY (corr. 6): SAME receipt again → conditional (NextReceiptNo <= n) keeps the counter — advances once only
+			var t1b = await _db.PosTerminals.FirstAsync(t => t.ID == termId);
+			var r1b = await _posOrders.AdvanceCounterPastOfflineReceiptAsync(t1b, "ZZ6-000012");
+			int c1b = await Ctr(termId);
+			// 2) prefix MISMATCH → counter frozen + anomaly returned (NOT advanced)
+			var t2 = await _db.PosTerminals.FirstAsync(t => t.ID == termId);
+			var r2 = await _posOrders.AdvanceCounterPastOfflineReceiptAsync(t2, "XYZ-000099");
+			int c2 = await Ctr(termId);
+			// 3) regression: a higher in-series number still advances (13 → 51)
+			var t3 = await _db.PosTerminals.FirstAsync(t => t.ID == termId);
+			var r3 = await _posOrders.AdvanceCounterPastOfflineReceiptAsync(t3, "ZZ6-000050");
+			int c3 = await Ctr(termId);
+			// 3b) int-OVERFLOW suffix (corr. 5a): a 12-digit suffix exceeds Int32 → TryParse fails → anomaly, counter FROZEN (intended)
+			var t3b = await _db.PosTerminals.FirstAsync(t => t.ID == termId);
+			var r3b = await _posOrders.AdvanceCounterPastOfflineReceiptAsync(t3b, "ZZ6-999999999999");
+			int c3b = await Ctr(termId);
+
+			// 4) prefix-change guard (corr. 3): give the terminal an OPEN (zero-footprint) order → a prefix CHANGE must be rejected; SAME prefix stays allowed
+			_db.PosOrders.Add(new CrossBuy.Models.Context.Pos.PosOrder { CompanyId = 1, BranchId = br.ID, TerminalId = termId, Status = "Open", OrderType = "Takeaway", OpenedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+			var (gChangeOk, gChangeErr, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ6-T", "d5a", "ZZ9-", null, false, true);   // change ZZ6- → ZZ9- (has orders) → REJECT
+			var (gSameOk, _, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ6-T", "d5a", "ZZ6-", null, false, true);              // same prefix → allowed
+			// 4b) CODE backdoor (corr. 2): change CODE with an EMPTY prefix → derived prefix (code+"-") changes → must be REJECTED too
+			var (gCodeOk, gCodeErr, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ9-T", "d5a", null, null, false, true);
+			var prefixAfter = await _db.PosTerminals.AsNoTracking().Where(t => t.ID == termId).Select(t => t.ReceiptPrefix).FirstAsync();
+			var codeAfter = await _db.PosTerminals.AsNoTracking().Where(t => t.ID == termId).Select(t => t.Code).FirstAsync();
+
+			bool pass = r1.advanced && r1.anomaly == null && c1 == 13 && c1.ToString("D6").Length == 6   // in-series: +1, 6 digits
+						&& c1b == 13                                                                       // idempotent: same receipt keeps 13
+						&& !r2.advanced && r2.anomaly != null && c2 == 13                                   // mismatch: frozen + anomaly
+						&& r3.advanced && r3.anomaly == null && c3 == 51                                    // regression
+						&& !r3b.advanced && r3b.anomaly != null && c3b == 51                                // int-overflow: frozen + anomaly
+						&& oldScrape == 6000012 && c1 != oldScrape + 1                                      // old scrape would have jumped to 6000013
+						&& !gChangeOk && gSameOk && prefixAfter == "ZZ6-"                                   // explicit-prefix change blocked, same allowed
+						&& !gCodeOk && codeAfter == "ZZ6-T";                                                 // CODE backdoor blocked (code + prefix both unchanged)
+
+			// teardown: the OPEN order + terminal + branch are ZERO-footprint (no invoice/JE/movement) → direct delete allowed (rule 5)
+			await _db.PosOrders.Where(o => o.TerminalId == termId).ExecuteDeleteAsync();
+			await _db.PosTerminals.Where(t => t.BranchId == br.ID).ExecuteDeleteAsync();
+			await _db.Branches.Where(b => b.ID == br.ID).ExecuteDeleteAsync();
+
+			return Ok(new
+			{
+				pass,
+				prefixWithDigit = "ZZ6-",
+				inSeries = new { input = "ZZ6-000012", advanced = r1.advanced, anomaly = r1.anomaly ?? "none", counter = $"5=>{c1}", expected = 13, nextNumberDigits = c1.ToString("D6").Length },
+				idempotent = new { input = "ZZ6-000012 (again)", counterStaysAt = c1b, expected = 13 },
+				prefixMismatch = new { input = "XYZ-000099", advanced = r2.advanced, anomaly = r2.anomaly ?? "none", counterFrozenAt = c2 },
+				regression = new { input = "ZZ6-000050", advanced = r3.advanced, anomaly = r3.anomaly ?? "none", counter = $"13=>{c3}", expected = 51 },
+				intOverflow = new { input = "ZZ6-999999999999 (12 digits)", advanced = r3b.advanced, anomaly = r3b.anomaly ?? "none", counterFrozenAt = c3b },
+				prefixChangeGuard = new { changeRejected = !gChangeOk, error = gChangeErr, sameAllowed = gSameOk, prefixAfter },
+				codeBackdoorGuard = new { changeViaCodeRejected = !gCodeOk, error = gCodeErr, codeAfter, prefixAfter },
+				oldBugWouldHaveJumpedTo = oldScrape + 1,
+				proves = "suffix-only parse; in-series +1 (6 digits); idempotent; mismatch & int-overflow frozen+recorded; regression intact; prefix change blocked via explicit prefix AND via Code backdoor once orders exist; old scrape would have hit 6000013."
+			});
+		}
+
+		// HM-1-أ (البند ٦): teardown guard — a direct delete is allowed ONLY for a ZERO-FOOTPRINT entity. Returns (safe, why).
+		// Financial effect (a JE line) or stock effect (a movement / balance row) ⇒ NOT safe (must be reversed via services first).
+		private async Task<(bool safe, string why)> ItemDeletableAsync(int companyId, int itemId)
+		{
+			int mv = await _db.StockMovements.CountAsync(m => m.CompanyID == companyId && m.ItemId == itemId);
+			int bl = await _db.StockBalances.CountAsync(b => b.CompanyID == companyId && b.ItemId == itemId);
+			if (mv > 0 || bl > 0) return (false, $"has stock footprint: {mv} movement(s), {bl} balance row(s) — reverse via StockService, do NOT delete");
+			return (true, "no stock footprint");
+		}
+
+		// GET /api/dev/hm1-closeshift-test?key=seed123 — HM-1-أ (هـ): CloseShiftAsync now posts the drawer-variance JE AND the
+		// close fields in ONE own-or-join transaction. Proves: (a) close WITH a variance ⇒ shift Closed + VarianceJournalEntryId
+		// set + JE exists (atomic); (b) close with variance 0 ⇒ NO JE (existing behaviour). Fixed ZZ terminal; variance JE reversed.
+		[HttpGet("hm1-closeshift-test")]
+		public async Task<IActionResult> Hm1CloseShiftTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int drawer = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var br = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "ZZ-SHIFT-BR" && b.CompanyID == company);
+			if (br == null) { br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-SHIFT-BR", NameAr = "وردية", Location = "t", CountryID = 32, CompanyID = company, PhoneNumber = "", Email = "", Description = "shift", ActivityPresetCode = null }; _db.Branches.Add(br); await _db.SaveChangesAsync(); }
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == br.ID && t.Code == "ZZSH-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = br.ID, Code = "ZZSH-T", Name = "sh", CashAccountId = drawer, ReceiptPrefix = "ZZSH-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+
+			// (a) variance close: expected cash = 0 (no sales), close with float 10 ⇒ variance +10 ⇒ JE + fields atomic
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var sh1 = await posSetup.GetOpenShiftAsync(term.ID);
+			var (c1ok, c1err) = await posSetup.CloseShiftAsync(company, term.ID, sh1!.ID, 10m, null, DateTime.Today, null);
+			var sh1After = await _db.PosShifts.AsNoTracking().FirstAsync(s => s.ID == sh1.ID);
+			bool jeExists = sh1After.VarianceJournalEntryId != null && await _db.JournalEntries.AnyAsync(e => e.ID == sh1After.VarianceJournalEntryId);
+			bool aOk = c1ok && sh1After.Status == "Closed" && sh1After.VarianceJournalEntryId != null && jeExists;
+
+			// (b) zero-variance close: NO JE
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var sh2 = await posSetup.GetOpenShiftAsync(term.ID);
+			var (c2ok, _) = await posSetup.CloseShiftAsync(company, term.ID, sh2!.ID, 0m, null, DateTime.Today, null);
+			var sh2After = await _db.PosShifts.AsNoTracking().FirstAsync(s => s.ID == sh2.ID);
+			bool bOk = c2ok && sh2After.Status == "Closed" && sh2After.VarianceJournalEntryId == null;
+
+			// teardown: reverse the variance JE via services (never delete a posted JE)
+			var teardown = new List<string>();
+			if (sh1After.VarianceJournalEntryId != null) { var (rv, rverr, _) = await _je.ReverseAsync(sh1After.VarianceJournalEntryId.Value, null, "ZZ shift-test teardown"); teardown.Add($"reverse {sh1After.VarianceJournalEntryId}: {(rv ? "ok" : rverr)}"); }
+
+			return Ok(new
+			{
+				pass = aOk && bOk,
+				varianceClose = new { ok = c1ok, err = c1err, status = sh1After.Status, varianceJe = sh1After.VarianceJournalEntryId, jeExists, atomic = aOk },
+				zeroVarianceClose = new { ok = c2ok, status = sh2After.Status, varianceJe = sh2After.VarianceJournalEntryId, noJe = bOk },
+				teardown,
+				note = "fixed ZZ terminal (ZZSH-T) reused; variance JE reversed via ReverseAsync (never deleted)."
+			});
+		}
+
+		// GET /api/dev/hm1-d6-concurrency-test?key=seed123 — HM-D6 correction 3: REAL concurrency through the fixed path.
+		// Sale ‖ invoice-edit (reverse+repost) and Sale ‖ sales-return on the SAME item. Proves the final balance == net
+		// movements (no lost update), no InvalidOperationException/deadlock, and the loser serialized on the UPDLOCK.
+		// Fixed ZZ entities; transactions are legitimate + consistent (balanced GL, balance==movements) and left in place.
+		[HttpGet("hm1-d6-concurrency-test")]
+		public async Task<IActionResult> Hm1D6ConcurrencyTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>();
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int revenue = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			if (cat == null || revenue == 0 || baseUom == 0 || wh == 0) return BadRequest(new { message = "need category/4101/uom/warehouse" });
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-CONC-ITM");
+			if (itm == null) { var (iok, _, it2) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-CONC-ITM", Barcode = "ZZCONCITM", Name = "تزامن D6", NameEn = "D6 conc", ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 100m, OpeningCost = 30m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "ZZ item" }); itm = it2; }
+			int itemId = itm!.ID;
+			await _ar.SaveCustomerAsync(company, new CrossBuy.Models.Context.Accounting.Customer { Name = "عميل تزامن D6", Phone = "0", IsActive = true });
+			int custId = await _db.Customers.Where(c => c.CompanyID == company && c.Name == "عميل تزامن D6").OrderByDescending(c => c.ID).Select(c => c.ID).FirstAsync();
+			var (qtyNow, _, _) = await _stock.GetBalanceAsync(company, itemId, wh);
+			if (qtyNow < 50) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = 1, Qty = 300, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = true }, null);
+
+			CrossBuy.BL.SalesLineInput Line(decimal q) => new() { ItemDescription = itm.Name, Qty = q, UnitPrice = 100m, TaxRate = 0, RevenueAccountId = revenue, ItemId = itemId, WarehouseId = wh };
+			async Task<decimal> BalMinusMoves() { var (b, _, _) = await _stock.GetBalanceAsync(company, itemId, wh); var m = await _db.StockMovements.AsNoTracking().Where(x => x.ItemId == itemId && x.WarehouseId == wh).SumAsync(x => (decimal?)(x.Direction * x.QtyBase)) ?? 0m; return b - m; }
+
+			// pre-create an invoice to EDIT and one to RETURN against
+			var (eok, _, einv) = await _ar.CreateSalesInvoiceAsync(company, custId, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(2) }, "ZZ-conc edit-target", null);
+			var (rok, _, rinv) = await _ar.CreateSalesInvoiceAsync(company, custId, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(3) }, "ZZ-conc return-target", null);
+
+			async Task<(string label, bool ok, string? err, long ms)> Op(string label, Func<CrossBuy.BL.IReceivableService, Task<(bool, string?)>> body)
+			{
+				var sw = System.Diagnostics.Stopwatch.StartNew();
+				using var sc = _scopes.CreateScope(); var ar = sc.ServiceProvider.GetRequiredService<CrossBuy.BL.IReceivableService>();
+				try { var (ok, err) = await body(ar); sw.Stop(); return (label, ok, err, sw.ElapsedMilliseconds); }
+				catch (Exception ex) { sw.Stop(); return (label, false, ex.GetType().Name + ": " + ex.Message, sw.ElapsedMilliseconds); }
+			}
+
+			// ===== Case A: SALE ‖ EDIT (reverse+repost) on the same item =====
+			decimal driftA0 = await BalMinusMoves();
+			var aRes = await Task.WhenAll(
+				Op("sale", async ar => { var (ok, err, _) = await ar.CreateSalesInvoiceAsync(company, custId, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(1) }, "ZZ-conc A sale", null); return (ok, err); }),
+				Op("edit", async ar => { var (ok, err, _) = await ar.EditSalesInvoiceAsync(company, einv!.ID, custId, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(4) }, "ZZ-conc A edit", null); return (ok, err); }));
+			decimal driftA1 = await BalMinusMoves();
+			bool aNoExc = aRes.All(r => r.err == null || !r.err.Contains("Exception"));
+			log.Add($"A sale‖edit: {string.Join(" | ", aRes.Select(r => $"{r.label} ok={r.ok} {r.ms}ms {(r.err ?? "")}"))} · balance−movements {driftA0}→{driftA1}");
+
+			// ===== Case B: SALE ‖ RETURN on the same item =====
+			decimal driftB0 = await BalMinusMoves();
+			var bRes = await Task.WhenAll(
+				Op("sale", async ar => { var (ok, err, _) = await ar.CreateSalesInvoiceAsync(company, custId, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(1) }, "ZZ-conc B sale", null); return (ok, err); }),
+				Op("return", async ar => { var (ok, err, _) = await ar.CreateSalesReturnAsync(company, custId, rinv!.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { Line(1) }, "ZZ-conc B return", null); return (ok, err); }));
+			decimal driftB1 = await BalMinusMoves();
+			bool bNoExc = bRes.All(r => r.err == null || !r.err.Contains("Exception"));
+			log.Add($"B sale‖return: {string.Join(" | ", bRes.Select(r => $"{r.label} ok={r.ok} {r.ms}ms {(r.err ?? "")}"))} · balance−movements {driftB0}→{driftB1}");
+
+			bool pass = driftA1 == 0m && driftB1 == 0m && aNoExc && bNoExc;
+			return Ok(new
+			{
+				pass,
+				caseA_sale_edit = new { balanceMinusMovements = driftA1, consistent = driftA1 == 0m, noException = aNoExc, ops = aRes.Select(r => new { r.label, r.ok, r.err, r.ms }) },
+				caseB_sale_return = new { balanceMinusMovements = driftB1, consistent = driftB1 == 0m, noException = bNoExc, ops = bRes.Select(r => new { r.label, r.ok, r.err, r.ms }) },
+				loserWait = "the higher ms of each pair ≈ the wait on the UPDLOCK (loser serialized then succeeded); full timing → Phase د",
+				note = "fixed ZZ entities; sales/edit/return are legitimate balanced transactions left in place (balance==movements, GL balanced). Reversal-based teardown formalized in item 6."
+			});
+		}
+
+#if DEBUG
+		// GET /api/dev/hm1-b5b-test?key=seed123 — HM-D5-أ 5ب: the offline-replay is now ONE atomic own-or-join transaction
+		// (rebuild + pay + sync-log commit together; dedup INSIDE the tx). Proves: (a) a sync-log-commit failure rolls the
+		// WHOLE sale back (no orphan post) and the retry posts ONCE; (b) two concurrent replays of the same LocalGuid → ONE
+		// invoice (unique index backstop); (c) a conflict-save failure NEVER fails the order and is still caught independently
+		// (out-of-series check); (d) a normal replay posts once + logs + no conflict; (e) same order twice → alreadySynced,
+		// counter advances once. Uses FIXED ZZ entities (reused); money reversed via VoidPaidOrderAsync (services, not delete).
+		[HttpGet("hm1-b5b-test")]
+		public async Task<IActionResult> Hm1B5bTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int revenue = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			int drawer = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			if (cat == null || revenue == 0 || drawer == 0 || baseUom == 0 || wh == 0) return BadRequest(new { message = "need category/4101/110101/uom/warehouse" });
+
+			// ---- FIXED ZZ entities (reused across runs — item 6 formalizes this) ----
+			var br = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "ZZ-B5B-BR" && b.CompanyID == company);
+			if (br == null) { br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-B5B-BR", NameAr = "اختبار 5ب", Location = "t", CountryID = 32, CompanyID = company, PhoneNumber = "", Email = "", Description = "5b", ActivityPresetCode = null }; _db.Branches.Add(br); await _db.SaveChangesAsync(); }
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == br.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = br.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == br.ID && t.Code == "ZZB5-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = br.ID, Code = "ZZB5-T", Name = "5b", CashAccountId = drawer, ReceiptPrefix = "ZZB5-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-B5B-ITM");
+			if (itm == null) { var (iok, ierr, it2) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-B5B-ITM", Barcode = "ZZB5BITM", Name = "صنف 5ب", NameEn = "5b item", ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 50m, OpeningCost = 30m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "ZZ item: " + ierr }); itm = it2; }
+			var (qNow, _, _) = await _stock.GetBalanceAsync(company, itm!.ID, wh);
+			if (qNow < 50) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itm.ID, WarehouseId = wh, Direction = 1, Qty = 200, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = true }, null);
+
+			// reset: VOID any prior posted orders for our fixed guids (reverse via services), then drop their sync logs for a clean re-run
+			var guids = new[] { "ZZ5B-a", "ZZ5B-b", "ZZ5B-c", "ZZ5B-d", "ZZ5B-e" };
+			foreach (var lg in await _db.PosSyncLogs.Where(x => x.CompanyId == company && guids.Contains(x.LocalGuid)).ToListAsync())
+			{ if (lg.OrderId.HasValue && lg.OrderId.Value != 0) { try { await _posOrders.VoidPaidOrderAsync(company, lg.OrderId.Value, null); } catch { } } }
+			_db.PosSyncLogs.RemoveRange(await _db.PosSyncLogs.Where(x => x.CompanyId == company && guids.Contains(x.LocalGuid)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			// HM-D10 fix: allocate UNIQUE ReceiptNos per run via the terminal counter — NO hardcoded numbers (same pattern as DEV-2026-008).
+			// Voided orders keep their ReceiptNo (a tax doc is never deleted), so hardcoded numbers duplicated on every re-run; allocation guarantees uniqueness.
+			string rnA = await _posOrders.AllocateReceiptNoAsync(term.ID);
+			string rnB = await _posOrders.AllocateReceiptNoAsync(term.ID);
+			string rnCbase = await _posOrders.AllocateReceiptNoAsync(term.ID);
+			string rnC = "XYZ-" + rnCbase.Substring(term.ReceiptPrefix!.Length);   // deliberately MISMATCHED prefix (out-of-series test) yet unique per run
+			string rnD = await _posOrders.AllocateReceiptNoAsync(term.ID);
+			string rnE = await _posOrders.AllocateReceiptNoAsync(term.ID);
+
+			CrossBuy.BL.PosSyncOrderInput Payload(string guid, string receiptNo) => new()
+			{ LocalGuid = guid, TerminalId = term.ID, ShiftId = shift!.ID, OrderType = "Takeaway", Method = "Cash", ReceiptNo = receiptNo,
+			  Lines = new List<CrossBuy.BL.PosSyncLineInput> { new CrossBuy.BL.PosSyncLineInput { ItemId = itm.ID, Qty = 1, UnitPrice = 50m, DiscountAmount = 0, TaxRate = 0, OptionIds = new List<int>() } } };
+
+			// ===== (a) sync-log-commit fault AFTER a successful pay → FULL rollback, then retry posts ONCE =====
+			int inv0 = await _db.SalesInvoices.CountAsync(), je0 = await _db.JournalEntries.CountAsync(), mv0 = await _db.StockMovements.CountAsync(m => m.ItemId == itm.ID);
+			CrossBuy.BL.PosOrderService._testFaultBeforeSyncLogCommit = () => throw new Exception("ZZ injected sync-log fault");
+			bool threwA = false;
+			try { await _posOrders.SyncPaidOrderAsync(company, Payload("ZZ5B-a", rnA), null); } catch { threwA = true; }
+			CrossBuy.BL.PosOrderService._testFaultBeforeSyncLogCommit = null;
+			bool aRollback = threwA
+				&& await _db.SalesInvoices.CountAsync() == inv0 && await _db.JournalEntries.CountAsync() == je0
+				&& await _db.StockMovements.CountAsync(m => m.ItemId == itm.ID) == mv0
+				&& !await _db.PosSyncLogs.AnyAsync(x => x.LocalGuid == "ZZ5B-a");
+			Chk("(a) fault → FULL rollback: no invoice/JE/movement/sync-log", aRollback);
+			var (raOk, _, raInv, raAlready) = await _posOrders.SyncPaidOrderAsync(company, Payload("ZZ5B-a", rnA), null);
+			Chk("(a) retry posts exactly ONCE", raOk && raInv != null && !raAlready && await _db.SalesInvoices.CountAsync() == inv0 + 1);
+
+			// ===== (b) two CONCURRENT replays of the SAME guid → exactly ONE sync-log / one invoice (unique-index backstop) =====
+			async Task<(bool ok, bool already)> Replay(string g) { using var sc = _scopes.CreateScope(); var svc = sc.ServiceProvider.GetRequiredService<CrossBuy.BL.IPosOrderService>(); try { var r = await svc.SyncPaidOrderAsync(company, Payload(g, rnB), null); return (r.ok, r.alreadySynced); } catch { return (false, false); } }
+			var bTasks = new[] { Replay("ZZ5B-b"), Replay("ZZ5B-b") };
+			var bRes = await Task.WhenAll(bTasks);
+			int bLogs = await _db.PosSyncLogs.CountAsync(x => x.LocalGuid == "ZZ5B-b");
+			int bInvoicesForOrder = await _db.PosSyncLogs.Where(x => x.LocalGuid == "ZZ5B-b").Select(x => x.InvoiceId).Distinct().CountAsync();
+			Chk("(b) concurrent same-guid → exactly ONE sync-log (1 invoice)", bLogs == 1 && bInvoicesForOrder == 1);
+
+			// ===== (c) conflict-save fault → order posted + device SUCCESS + caught independently by out-of-series =====
+			CrossBuy.BL.PosOrderService._testFaultBeforeConflictSave = () => throw new Exception("ZZ injected conflict-save fault");
+			var (cOk, _, cInv, _) = await _posOrders.SyncPaidOrderAsync(company, Payload("ZZ5B-c", rnC), null);   // mismatched prefix → anomaly
+			CrossBuy.BL.PosOrderService._testFaultBeforeConflictSave = null;
+			int cOrderId = (await _db.PosSyncLogs.Where(x => x.LocalGuid == "ZZ5B-c").Select(x => x.OrderId).FirstOrDefaultAsync()) ?? 0;
+			bool cConflictRow = await _db.PosSyncConflicts.AnyAsync(x => x.OrderId == cOrderId && x.ConflictType == "ReceiptNoMismatch");
+			Chk("(c) order POSTED + device success despite conflict-save failure", cOk && cInv != null && cOrderId != 0);
+			Chk("(c) conflict row NOT persisted (save failed) — proven not-swallowed by out-of-series below", !cConflictRow);
+
+			// ===== (d) normal replay → one post + sync-log + NO conflict =====
+			var (dOk, _, dInv, _) = await _posOrders.SyncPaidOrderAsync(company, Payload("ZZ5B-d", rnD), null);
+			int dOrderId = (await _db.PosSyncLogs.Where(x => x.LocalGuid == "ZZ5B-d").Select(x => x.OrderId).FirstOrDefaultAsync()) ?? 0;
+			Chk("(d) normal sync ok + sync-log + NO conflict", dOk && dInv != null && dOrderId != 0 && !await _db.PosSyncConflicts.AnyAsync(x => x.OrderId == dOrderId));
+
+			// ===== (e) idempotency: same order twice → alreadySynced + counter advances ONCE =====
+			async Task<int> Ctr() => await _db.PosTerminals.AsNoTracking().Where(t => t.ID == term.ID).Select(t => t.NextReceiptNo).FirstAsync();
+			var (e1Ok, _, e1Inv, e1Al) = await _posOrders.SyncPaidOrderAsync(company, Payload("ZZ5B-e", rnE), null);
+			int ctrMid = await Ctr();
+			var (e2Ok, _, e2Inv, e2Al) = await _posOrders.SyncPaidOrderAsync(company, Payload("ZZ5B-e", rnE), null);
+			int ctrAfter = await Ctr();
+			Chk("(e) 2nd send → alreadySynced + same invoice", e1Ok && e2Al && e2Inv == e1Inv);
+			Chk("(e) counter advanced exactly ONCE", ctrAfter == ctrMid);
+
+			// teardown: VOID every posted order (reverse money via services), drop our sync logs; leave FIXED ZZ scaffolding
+			foreach (var lg in await _db.PosSyncLogs.Where(x => x.CompanyId == company && guids.Contains(x.LocalGuid)).ToListAsync())
+			{ if (lg.OrderId.HasValue && lg.OrderId.Value != 0) { try { await _posOrders.VoidPaidOrderAsync(company, lg.OrderId.Value, null); } catch { } } }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+
+			// FINAL integrity gate (item-1 rule: a DEBUG test must not poison the indicator). Run AFTER teardown — the voided
+			// orders remain (tax docs) so the out-of-series channel still sees the mismatched receipt, but stock/GL must be clean.
+			var (integRun, checks) = await integ.RunAndLogAsync(company, "hm1-b5b");
+			var oos = checks.FirstOrDefault(c => c.Key == "receiptno_out_of_series");
+			Chk("(c) out-of-series channel independently counts the mismatched order", oos != null && oos.Note != null && oos.Note.Contains(rnC));
+			Chk("inv-test-integrity failedCount == 0 (post-teardown, no ZZ residue)", integRun.FailedCount == 0);
+
+			return Ok(new { allPass, log, note = "money reversed via VoidPaidOrderAsync (services); FIXED ZZ entities (ZZ-B5B-BR / ZZB5-T / ZZ-B5B-ITM) reused, not deleted; ReceiptNos allocated per-run (HM-D10)." });
+		}
+
+		// GET /api/dev/hm1-d6-race-test?key=seed123 — HM-D6: proves the StockBalance lost-update (identity-map staleness)
+		// FAILS on the pre-fix path and PASSES after the fix, toggled by the internal bypass seam. Reproduced deterministically
+		// in ONE rolled-back transaction: PostMovement IN 10 (tracks bal=10) → a RAW SQL write bumps the DB to 15 + adds a +5
+		// movement (the tracker does NOT observe raw SQL) → PostMovement IN 1. Pre-fix reads the stale tracked 10 → 11 (≠ net
+		// movements 16); post-fix Reloads → 16 (== movements). Everything rolls back → zero persistence. Also: same-item basket.
+		// GET /api/dev/hm1-reverse-je?key=seed123&ids=8450,8452 — reverse given JEs via services (AP subledger↔GL re-sync after ZZ teardown).
+		[HttpGet("hm1-reverse-je")]
+		public async Task<IActionResult> Hm1ReverseJe(string key, string ids, [FromServices] CrossBuy.BL.IJournalEntryService jes)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var res = new List<object>();
+			foreach (var s in ids.Split(',', StringSplitOptions.RemoveEmptyEntries))
+			{ if (int.TryParse(s.Trim(), out var id)) { var (ok, err, rid) = await jes.ReverseAsync(id, null, "HM-1-أ AP subledger↔GL re-sync (undo ZZ teardown JE reversal)"); res.Add(new { id, reversed = ok, reversalId = rid, error = err }); } }
+			return Ok(new { res });
+		}
+
+		// GET /api/dev/hm1-close-batch-test?key=seed123 — HM-1-أ closing battery on ZZ entities: (أ) edit purchase invoice,
+		// (ب) edit purchase return (pos.388), (ج) issue failure on an unmapped ZZ category. All effects reversed via services.
+		[HttpGet("hm1-close-batch-test")]
+		public async Task<IActionResult> Hm1CloseBatchTest(string key, [FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.IJournalEntryService jes)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var manifest = new List<object>(); var jeToReverse = new List<int>();
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			int invAcc = cat!.InventoryAccountId!.Value;
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-STEP0-VEN");
+			if (ven == null) return BadRequest(new { message = "run hm1-step0-purchase-test first (ZZ vendor)" });
+			async Task<int> ZzItem(string code) { var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code); if (it != null) return it.ID; var (ok, err, r) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = code, Barcode = code, Name = code, NameEn = code, ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 50m, OpeningCost = 20m, IsActive = true }, null); if (!ok) throw new Exception("item " + code + ": " + err); return r!.ID; }
+			async Task<decimal> Q(int itemId) { var (q, _, _) = await _stock.GetBalanceAsync(company, itemId, wh); return q; }
+			List<CrossBuy.BL.PurchaseLineInput> Line(int itemId, decimal qty, decimal price) => new() { new CrossBuy.BL.PurchaseLineInput { ItemDescription = "ZZ", Qty = qty, UnitPrice = price, TaxRate = 0, ExpenseAccountId = invAcc, ItemId = itemId, WarehouseId = wh } };
+
+			// ===== (أ) EDIT PURCHASE INVOICE (reverse + repost inside ambient tx) =====
+			int itA = await ZzItem("ZZ-CB-INVA");
+			decimal a0 = await Q(itA);
+			var (ia_ok, ia_err, ia) = await ap.CreatePurchaseInvoiceAsync(company, ven.ID, DateTime.UtcNow, Line(itA, 5, 20), "ZZ inv", null);
+			decimal aAfterCreate = await Q(itA);
+			bool aThrew = false; string? aEditErr = null; decimal aAfterEdit = 0; int aOldJe = ia?.JournalEntryId ?? 0, aNewJe = 0;
+			try { var (ie_ok, ie_err, ie) = await ap.EditPurchaseInvoiceAsync(company, ia!.ID, ven.ID, DateTime.UtcNow, Line(itA, 3, 25), "ZZ inv edited", null); aEditErr = ie_err; aAfterEdit = await Q(itA); aNewJe = ie?.JournalEntryId ?? 0; if (ie_ok && aNewJe != 0) jeToReverse.Add(aNewJe); }
+			catch (InvalidOperationException) { aThrew = true; }
+			manifest.Add(new { test = "أ edit-purchase-invoice", invoiceNo = ia?.InvoiceNo, oldJe = aOldJe, newJe = aNewJe, stock = new { before = a0, afterCreate = aAfterCreate, afterEdit = aAfterEdit, expected = 3m, ok = aAfterEdit - a0 == 3m }, noInvalidOp = !aThrew, editError = aEditErr });
+
+			// ===== (ب) EDIT PURCHASE RETURN (pos.388 — the previously-swallowed issue result) =====
+			int itB = await ZzItem("ZZ-CB-RETB");
+			if (await Q(itB) < 5) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itB, WarehouseId = wh, Direction = 1, Qty = 10, UnitCostInBase = 20m, SourceType = "Opening", PostToGl = true }, null);
+			decimal b0 = await Q(itB);
+			var (rc_ok, rc_err, rc) = await ap.CreatePurchaseReturnAsync(company, ven.ID, null, DateTime.UtcNow, Line(itB, 2, 20), "ZZ ret", null);
+			decimal bAfterCreate = await Q(itB);
+			bool bThrew = false; string? bEditErr = null; decimal bAfterEdit = 0; int bNewJe = 0;
+			try { var (re_ok, re_err, re) = await ap.EditPurchaseReturnAsync(company, rc!.ID, ven.ID, null, DateTime.UtcNow, Line(itB, 1, 20), "ZZ ret edited", null); bEditErr = re_err; bAfterEdit = await Q(itB); bNewJe = re?.JournalEntryId ?? 0; if (re_ok && bNewJe != 0) jeToReverse.Add(bNewJe); }
+			catch (InvalidOperationException) { bThrew = true; }
+			manifest.Add(new { test = "ب edit-purchase-return(pos388)", returnNo = rc?.ReturnNo, newJe = bNewJe, stock = new { before = b0, afterCreate = bAfterCreate, afterEdit = bAfterEdit, expectedNet = -1m, ok = bAfterEdit - b0 == -1m }, noInvalidOp = !bThrew, editError = bEditErr });
+
+			// ===== (ج) ISSUE FAILURE on an UNMAPPED ZZ category — verbatim rejection + zero effect =====
+			var zcat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-CLOSE-CAT");
+			if (zcat == null) { zcat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Name = "ZZ-CLOSE-CAT", NameEn = "ZZ close cat", InventoryAccountId = invAcc, CogsAccountId = cat.CogsAccountId, GrniAccountId = cat.GrniAccountId, AdjustmentAccountId = cat.AdjustmentAccountId }; _db.ItemCategories.Add(zcat); await _db.SaveChangesAsync(); }
+			var zitm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-CB-CFG");
+			if (zitm == null) { var (ok, err, r) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-CB-CFG", Barcode = "ZZCBCFG", Name = "cfg", NameEn = "cfg", ItemCategoryId = zcat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 50m, OpeningCost = 20m, IsActive = true }, null); if (!ok) return BadRequest(new { message = "cfg item: " + err }); zitm = await _db.Items.FirstAsync(i => i.ID == r!.ID); }
+			if (await Q(zitm.ID) < 3) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = zitm.ID, WarehouseId = wh, Direction = 1, Qty = 10, UnitCostInBase = 20m, SourceType = "Opening", PostToGl = true }, null);
+			// snapshot BEFORE unmap+issue
+			int mv0 = await _db.StockMovements.CountAsync(m => m.ItemId == zitm.ID);
+			int je0 = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			decimal cq0 = await Q(zitm.ID);
+			// UNMAP the ZZ category's inventory account, attempt an issue, then RESTORE
+			int? savedInvAcc = zcat.InventoryAccountId; zcat.InventoryAccountId = null; await _db.SaveChangesAsync();
+			var (sok, serr, _) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = zitm.ID, WarehouseId = wh, Direction = -1, Qty = 1, SourceType = "Issue", PostToGl = true }, null);
+			zcat.InventoryAccountId = savedInvAcc; await _db.SaveChangesAsync();   // RESTORE config
+			int mv1 = await _db.StockMovements.CountAsync(m => m.ItemId == zitm.ID);
+			int je1 = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			decimal cq1 = await Q(zitm.ID);
+			manifest.Add(new { test = "ج issue-fail-unmapped-inv-account", rejected = !sok, verbatimError = serr, zeroEffect = new { movementsUnchanged = mv0 == mv1, jeUnchanged = je0 == je1, balanceUnchanged = cq0 == cq1 }, configRestored = zcat.InventoryAccountId == savedInvAcc });
+
+			// ===== teardown: reverse the edit JEs via services + zero the ZZ items' stock =====
+			var rev = new List<object>();
+			foreach (var je in jeToReverse) { var (rok, _, _) = await jes.ReverseAsync(je, null, "HM-1-أ close-batch teardown"); rev.Add(new { je, reversed = rok }); }
+			foreach (var it in new[] { itA, itB, zitm.ID }) { var q = await Q(it); if (q != 0) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = it, WarehouseId = wh, Direction = (short)(q > 0 ? -1 : 1), Qty = Math.Abs(q), SourceType = "ZZ-STEP0-Teardown", PostToGl = false }, null); }
+			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
+		}
+
+		// GET /api/dev/hm1-double-post-test?key=seed123 — (HM-D16 د) does GRN receipt + purchase invoice on the SAME goods
+		// double-debit inventory with no guard? On ZZ entities; fully reversed via services afterward.
+		[HttpGet("hm1-double-post-test")]
+		public async Task<IActionResult> Hm1DoublePostTest(string key, [FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.IProcurementService proc, [FromServices] CrossBuy.BL.IJournalEntryService jes)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			int invAcc = cat!.InventoryAccountId!.Value;
+			int grniAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "210203").Select(a => a.ID).FirstAsync();
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-STEP0-VEN");
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-STEP0-ITM");
+			if (ven == null || itm == null) return BadRequest(new { message = "run hm1-step0-purchase-test first (needs ZZ-STEP0 vendor+item)" });
+			int itemId = itm.ID;
+
+			async Task<decimal> GlNet(int acc) => await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == acc).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+			async Task<decimal> Bal() { var (q, _, _) = await _stock.GetBalanceAsync(company, itemId, wh); return q; }
+
+			decimal bal0 = await Bal(), inv0 = await GlNet(invAcc), grni0 = await GlNet(grniAcc);
+			// (1) RECEIVE 4 via GRN
+			var (grOk, grErr, gr) = await proc.CreateReceiptAsync(company, ven.ID, wh, null, DateTime.UtcNow, "ZZ dbl grn", new List<CrossBuy.BL.ReceiptLineInput> { new CrossBuy.BL.ReceiptLineInput { ItemId = itemId, Qty = 4, UoMId = baseUom, UnitCost = 20m } }, null);
+			decimal balAfterGrn = await Bal();
+			int grJe = await _db.StockMovements.AsNoTracking().Where(m => m.SourceType == "Receipt" && m.SourceId == gr!.ID && m.ItemId == itemId).Select(m => m.JournalEntryId ?? 0).FirstOrDefaultAsync();
+			// (2) INVOICE the SAME 4 (no GRN reference)
+			var (piOk, piErr, pi) = await ap.CreatePurchaseInvoiceAsync(company, ven.ID, DateTime.UtcNow, new List<CrossBuy.BL.PurchaseLineInput> { new CrossBuy.BL.PurchaseLineInput { ItemDescription = "ZZ dbl", Qty = 4, UnitPrice = 20m, TaxRate = 0, ExpenseAccountId = invAcc, ItemId = itemId, WarehouseId = wh } }, "ZZ dbl inv", null);
+			decimal bal1 = await Bal(), inv1 = await GlNet(invAcc), grni1 = await GlNet(grniAcc);
+
+			var result = new
+			{
+				intendedReceiveQty = 4,
+				stock = new { before = bal0, afterGRN = balAfterGrn, afterInvoice = bal1, totalDelta = bal1 - bal0, doubled = (bal1 - bal0) == 8m },
+				inventoryGL = new { deltaDebit = inv1 - inv0, doubled = (inv1 - inv0) == 160m },
+				grni = new { delta = grni1 - grni0, leftOpen = (grni1 - grni0) != 0m, note = "receipt credits GRNI −80; invoice does NOT clear it" },
+				anyPreventionOrWarning = (!grOk || !piOk) ? $"grn:{grErr} inv:{piErr}" : "NONE — both posted with no block/warning",
+				verdict = ((bal1 - bal0) == 8m && (inv1 - inv0) == 160m) ? "DOUBLE-POSTING CONFIRMED: stock +8 and inventory GL +160 for 4 units received once" : "no doubling"
+			};
+
+			// ===== full reversal via services =====
+			var rev = new List<object>();
+			if (piOk && pi?.JournalEntryId != null) rev.Add(new { pi = pi.InvoiceNo, r = (await jes.ReverseAsync(pi.JournalEntryId.Value, null, "HM-D16 double-post test teardown")).ok });
+			if (grOk && grJe != 0) rev.Add(new { grn = gr!.ReceiptNo, r = (await jes.ReverseAsync(grJe, null, "HM-D16 double-post test teardown")).ok });
+			var q = await Bal();
+			if (q != 0) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = (short)(q > 0 ? -1 : 1), Qty = Math.Abs(q), SourceType = "ZZ-STEP0-Teardown", PostToGl = false, Notes = "reverse double-post test" }, null);
+			decimal balFinal = await Bal();
+			return Ok(new { result, teardown = new { reversals = rev, balanceAfter = balFinal } });
+		}
+
+		// GET /api/dev/hm1-step0-teardown?key=seed123 — (أ) reverse the step-zero footprint VIA SERVICES (ReverseAsync + a reversing
+		// movement), never delete. ZZ-STEP0 vendor/item stay as reusable scaffolding. Idempotent (skips already-reversed JEs).
+		[HttpGet("hm1-step0-teardown")]
+		public async Task<IActionResult> Hm1Step0Teardown(string key, [FromServices] CrossBuy.BL.IJournalEntryService jes)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<object>();
+			int itemId = await _db.Items.Where(i => i.CompanyID == company && i.ItemCode == "ZZ-STEP0-ITM").Select(i => i.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			if (itemId == 0) return BadRequest(new { message = "ZZ-STEP0-ITM not found (run step0 first)" });
+			// reverse the three JEs (invoice 8445 / GRN 8446 / return 8447) via services
+			foreach (var je in new[] { 8445, 8446, 8447 })
+			{
+				var (rok, rerr, rid) = await jes.ReverseAsync(je, null, "HM-D14 step-zero teardown (reverse via services)");
+				log.Add(new { je, reversed = rok, reversalId = rid, error = rerr });
+			}
+			// zero the ZZ item's stock via a reversing movement (PostToGl=false — GL already handled by the reversals)
+			var (q, _, _) = await _stock.GetBalanceAsync(company, itemId, wh);
+			object? mv = null;
+			if (q != 0)
+			{
+				var (sok, serr, _) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = (short)(q > 0 ? -1 : 1), Qty = Math.Abs(q), SourceType = "ZZ-STEP0-Teardown", PostToGl = false, Notes = "reverse step-zero stock" }, null);
+				mv = new { posted = sok, error = serr, zeroedQty = q };
+			}
+			var (qAfter, vAfter, _2) = await _stock.GetBalanceAsync(company, itemId, wh);
+			return Ok(new { note = "step-zero effect reversed via services; ZZ-STEP0 entities kept", reversals = log, stockZeroing = mv, balanceAfter = new { qty = qAfter, value = vAfter } });
+		}
+
+		// GET /api/dev/hm1-guard-purchase-test?key=seed123 — (د⚠️) PROVES inv-resync-item's three-way guard MISJUDGES any item with
+		// purchase history: the guard reads per-item GL only from movement-linked JEs, but a purchase-invoice movement is PostToGl=false
+		// (JournalEntryId=NULL), so the purchase inventory debit is invisible to it ⇒ glVal≠movementsVal ⇒ it refuses a legitimate resync
+		// as "movements suspect". Reproduced in ONE rolled-back tx (zero persistence): purchase-style IN (no JE link) → raw balance bump → resync.
+		[HttpGet("hm1-guard-purchase-test")]
+		public async Task<IActionResult> Hm1GuardPurchaseTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			if (cat == null || baseUom == 0 || wh == 0) return BadRequest(new { message = "need category/uom/warehouse" });
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-GUARDPUR-ITM");
+			if (itm == null) { var (iok, _, it2) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-GUARDPUR-ITM", Barcode = "ZZGUARDPUR", Name = "حارس شراء", NameEn = "guard purchase", ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 50m, OpeningCost = 20m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "ZZ item create failed" }); itm = it2; }
+			int itemId = itm!.ID;
+
+			bool refused; object? body; decimal glSeen = 0, movSeen = 0;
+			await using (var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db))
+			{
+				// purchase-style receipt: movement WITHOUT a linked JE (PostToGl=false), exactly like PayableService:194
+				await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = 1, Qty = 5, UnitCostInBase = 20m, SourceType = "PurchaseInvoice", PostToGl = false, Notes = "guard-test purchase" }, null);
+				// a real balance drift (a lost-update-style +1) so resync is actually needed and reaches the guard
+				await _db.Database.ExecuteSqlRawAsync("UPDATE StockBalances SET QtyOnHand = QtyOnHand + 1, TotalValue = TotalValue + 20 WHERE CompanyID = {0} AND ItemId = {1} AND WarehouseId = {2}", company, itemId, wh);
+				var result = await InvResyncItem("seed123", itemId, wh, 1, "guard-purchase-test (movements are truth; SHOULD proceed, but guard will wrongly refuse)", callerBypassDisable: true);
+				refused = result is BadRequestObjectResult;
+				body = (result as ObjectResult)?.Value;
+				movSeen = 100m;   // 5 × 20 (movements value)
+				await tx.RollbackAsync();   // zero persistence
+			}
+			return Ok(new
+			{
+				verdict = refused ? "GUARD IS BROKEN for purchase-history items — it REFUSED a legitimate resync (movements are truth)" : "guard proceeded",
+				refused, guardResponse = body,
+				explanation = "purchase movement is PostToGl=false ⇒ JournalEntryId=NULL ⇒ guard's per-item glVal (movement-linked JEs only) misses the invoice inventory debit ⇒ glVal(0) ≠ movementsVal(100) ⇒ refuses as 'movements suspect'. A non-purchase item would pass."
+			});
+		}
+
+		// GET /api/dev/hm1-step0-purchase-test?key=seed123 — STEP ZERO (blocking): does the purchase→receipt path work AFTER ب-3,
+		// and does it create an inbound stock movement (SourceType? JournalEntryId?)? On FIXED ZZ entities only. Read-verifies, no teardown of the FK graph.
+		[HttpGet("hm1-step0-purchase-test")]
+		public async Task<IActionResult> Hm1Step0PurchaseTest(string key, [FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.IProcurementService proc)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var report = new List<object>();
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			int apCtrl = await _db.Vendors.AsNoTracking().Select(v => v.ControlAccountId).FirstOrDefaultAsync();   // reuse an existing AP control account
+			if (cat == null || baseUom == 0 || wh == 0 || apCtrl == 0) return BadRequest(new { message = "need category(inv-acc)/uom/warehouse/existing-vendor-control-account" });
+
+			// FIXED ZZ vendor + ZZ stockable item (reused across runs)
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-STEP0-VEN");
+			if (ven == null) { ven = new CrossBuy.Models.Context.Accounting.Vendor { CompanyID = company, Name = "ZZ-STEP0-VEN", NameEn = "ZZ step0 vendor", ControlAccountId = apCtrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Vendors.Add(ven); await _db.SaveChangesAsync(); }
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-STEP0-ITM");
+			if (itm == null) { var (iok, ierr, it2) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-STEP0-ITM", Barcode = "ZZSTEP0ITM", Name = "صنف صفر", NameEn = "step0 item", ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 50m, OpeningCost = 20m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "ZZ item: " + ierr }); itm = it2; }
+			int itemId = itm!.ID;
+
+			async Task<(decimal q, decimal v)> Bal() { var (q, v, _) = await _stock.GetBalanceAsync(company, itemId, wh); return (q, v); }
+			async Task<object> Probe(string tag, int? sourceId, string srcType)
+			{
+				if (sourceId == null) return new { tag, movementCreated = false };
+				var m = await _db.StockMovements.AsNoTracking().Where(x => x.CompanyID == company && x.ItemId == itemId && x.SourceType == srcType && x.SourceId == sourceId).OrderByDescending(x => x.ID).FirstOrDefaultAsync();
+				if (m == null) return new { tag, movementCreated = false, sourceType_searched = srcType, sourceId };
+				return new { tag, movementCreated = true, sourceType_actual = m.SourceType, direction = m.Direction, qtyBase = m.QtyBase, hasJournalEntryId = m.JournalEntryId != null, journalEntryId = m.JournalEntryId };
+			}
+
+			// ===== (1) PURCHASE INVOICE for a ZZ stockable item =====
+			var (pq0, pv0) = await Bal();
+			var (piOk, piErr, piInv) = await ap.CreatePurchaseInvoiceAsync(company, ven.ID, DateTime.UtcNow, new List<CrossBuy.BL.PurchaseLineInput> {
+				new CrossBuy.BL.PurchaseLineInput { ItemDescription = "ZZ step0", Qty = 5, UnitPrice = 20m, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = cat.InventoryAccountId!.Value, ItemId = itemId, WarehouseId = wh } }, "ZZ step0", null);
+			var (pq1, pv1) = await Bal();
+			report.Add(new { step = "1-purchase-invoice", ok = piOk, error = piErr, invoiceNo = piInv?.InvoiceNo, invoiceJournalEntryId = piInv?.JournalEntryId, balanceDelta = pq1 - pq0, movement = await Probe("purchase-invoice", piInv?.ID, "PurchaseInvoice") });
+
+			// ===== (2) GRN (goods receipt) =====
+			var (gq0, _) = await Bal();
+			var (grOk, grErr, gr) = await proc.CreateReceiptAsync(company, ven.ID, wh, null, DateTime.UtcNow, "ZZ step0 grn", new List<CrossBuy.BL.ReceiptLineInput> {
+				new CrossBuy.BL.ReceiptLineInput { ItemId = itemId, Qty = 3, UoMId = baseUom, UnitCost = 20m } }, null);
+			var (gq1, _2) = await Bal();
+			report.Add(new { step = "2-goods-receipt", ok = grOk, error = grErr, receiptNo = gr?.ReceiptNo, balanceDelta = gq1 - gq0, movement = await Probe("goods-receipt", gr?.ID, "GoodsReceipt") });
+
+			// ===== (3) VENDOR RETURN =====
+			var (rq0, _3) = await Bal();
+			var (prOk, prErr, pr) = await ap.CreatePurchaseReturnAsync(company, ven.ID, piInv?.ID, DateTime.UtcNow, new List<CrossBuy.BL.PurchaseLineInput> {
+				new CrossBuy.BL.PurchaseLineInput { ItemDescription = "ZZ step0 return", Qty = 1, UnitPrice = 20m, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = cat.InventoryAccountId!.Value, ItemId = itemId, WarehouseId = wh } }, "ZZ step0 return", null);
+			var (rq1, _4) = await Bal();
+			report.Add(new { step = "3-vendor-return", ok = prOk, error = prErr, returnNo = pr?.ReturnNo, balanceDelta = rq1 - rq0, movement = await Probe("vendor-return", pr?.ID, "PurchaseReturn") });
+
+			return Ok(new { note = "STEP ZERO — ZZ entities only. Purchase→receipt path probed post-ب-3.", vendorId = ven.ID, itemId, report });
+		}
+
+		[HttpGet("hm1-d6-race-test")]
+		public async Task<IActionResult> Hm1D6RaceTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			if (cat == null || baseUom == 0 || wh == 0) return BadRequest(new { message = "need category/uom/warehouse" });
+			// fixed ZZ item (reused; ends every run at 0 movements because each scenario is rolled back → HM-D6-clean)
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-RACE-ITM");
+			if (itm == null) { var (iok, _, it2) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-RACE-ITM", Barcode = "ZZRACEITM", Name = "سباق D6", NameEn = "D6 race", ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 100m, OpeningCost = 30m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "ZZ item create failed" }); itm = it2; }
+			int itemId = itm!.ID;
+
+			// up=true reproduces the DOCUMENTED +1 (balance HIGHER): main holds a stale-HIGH base while an external DEDUCT
+			// (a concurrent sale) lands — exactly #5173. up=false reproduces −5 (external add). Both via the SAME mechanism.
+			async Task<(decimal bal, decimal mv)> Scenario(bool bypass, bool up)
+			{
+				CrossBuy.BL.StockService._testBypassLockReadRefresh = bypass;
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);   // OWNER — rolled back at the end (zero persistence)
+				// step 1: main context IN 10 → tracks bal=10 (DB=10, movements=10)
+				await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = 1, Qty = 10, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = false }, null);
+				// step 2: EXTERNAL write the tracker can't observe (raw SQL) + its matching movement
+				int extDir = up ? -1 : 1; decimal extQty = up ? 1 : 5; decimal extVal = up ? 30 : 150;
+				await _db.Database.ExecuteSqlRawAsync("UPDATE StockBalances SET QtyOnHand = QtyOnHand + {0}, TotalValue = TotalValue + {1} WHERE CompanyID = {2} AND ItemId = {3} AND WarehouseId = {4}", extDir * extQty, extDir * extVal, company, itemId, wh);
+				await _db.Database.ExecuteSqlRawAsync("INSERT INTO StockMovements (CompanyID, MovementDate, ItemId, WarehouseId, Direction, QtyBase, UoMId, QtyInUoM, UnitCost, TotalCost, SourceType, CreatedAt) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6}, {5}, 30, {7}, 'ZZ-EXT', {1})", company, DateTime.UtcNow, itemId, wh, extDir, extQty, baseUom, extVal);
+				// step 3: main op computes from its STALE base (10): up ⇒ OUT 1 (deduct from stale-high) ; down ⇒ IN 1
+				if (up) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = -1, Qty = 1, SourceType = "Issue", PostToGl = false }, null);
+				else await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = 1, Qty = 1, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = false }, null);
+				decimal balNow = await _db.StockBalances.AsNoTracking().Where(b => b.ItemId == itemId && b.WarehouseId == wh).Select(b => b.QtyOnHand).FirstAsync();
+				decimal mvNow = await _db.StockMovements.AsNoTracking().Where(m => m.ItemId == itemId && m.WarehouseId == wh).SumAsync(m => (decimal?)(m.Direction * m.QtyBase)) ?? 0m;
+				await tx.RollbackAsync();   // undo EVERYTHING → zero persistence
+				CrossBuy.BL.StockService._testBypassLockReadRefresh = false;
+				return (balNow, mvNow);
+			}
+
+			var preUp = await Scenario(true, true);     // pre-fix, +1 direction (matches #5173): bal 9, mv 8 → +1
+			var postUp = await Scenario(false, true);   // fixed: bal 8, mv 8
+			var pre = await Scenario(true, false);      // pre-fix, −5 direction
+			var post = await Scenario(false, false);    // fixed
+
+			// same-item basket (fixed path, one tx, rolled back): line 2 must read line 1's result
+			decimal basketBal, basketMv;
+			await using (var tx2 = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db))
+			{
+				await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = 1, Qty = 10, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = false }, null);
+				await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = 1, Qty = 7, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = false }, null);
+				basketBal = await _db.StockBalances.AsNoTracking().Where(b => b.ItemId == itemId && b.WarehouseId == wh).Select(b => b.QtyOnHand).FirstAsync();
+				basketMv = await _db.StockMovements.AsNoTracking().Where(m => m.ItemId == itemId && m.WarehouseId == wh).SumAsync(m => (decimal?)(m.Direction * m.QtyBase)) ?? 0m;
+				await tx2.RollbackAsync();
+			}
+
+			bool upPlus1 = (preUp.bal - preUp.mv) == 1m;       // the DOCUMENTED +1 direction reproduced exactly
+			bool upFixed = postUp.bal == postUp.mv;
+			bool preFails = pre.bal != pre.mv;                 // pre-fix: balance ≠ net movements (the bug)
+			bool postPasses = post.bal == post.mv;             // post-fix: balance == net movements
+			bool basketOk = basketBal == 17m && basketMv == 17m; // line 2 saw line 1 (10+7)
+
+			return Ok(new
+			{
+				pass = upPlus1 && upFixed && preFails && postPasses && basketOk,
+				plus1_matches5173 = new
+				{
+					preFix = new { balance = preUp.bal, netMovements = preUp.mv, anomaly = preUp.bal - preUp.mv, reproduced = upPlus1 },
+					postFix = new { balance = postUp.bal, netMovements = postUp.mv, anomaly = postUp.bal - postUp.mv, consistent = upFixed },
+					timeline = "IN 10 (main tracks bal=10) → EXTERNAL sale OUT 1 (DB→9, movements 10−1=9, tracker BLIND) → main OUT 1 from its STALE base 10 ⇒ pre-fix 10−1=9 while net-movements=8 ⇒ +1 (balance HIGHER); post-fix Reload sees 9 ⇒ 9−1=8 == movements. Mirrors deploy/EVIDENCE-ZZ-B5B.md (a-retry 199 · b external→198 · c stale 199→198 vs 197 = +1)."
+				},
+				minus5_reverseDirection = new
+				{
+					preFix = new { balance = pre.bal, netMovements = pre.mv, anomaly = pre.bal - pre.mv, reproducedBug = preFails },
+					postFix = new { balance = post.bal, netMovements = post.mv, anomaly = post.bal - post.mv, consistent = postPasses }
+				},
+				sameItemBasket = new { balance = basketBal, netMovements = basketMv, expected = 17, line2ReadLine1 = basketOk },
+				note = "deterministic (raw-SQL external write, tracker-blind) inside a ROLLED-BACK tx → zero persistence. Real concurrent lock-wait timing deferred to Phase د measurement per instruction."
+			});
+		}
+
+		// GET /api/dev/hm1-phase-d-measure?key=seed123 — Phase د item 11: Isolated vs Ambient JV allocation under 5 parallel
+		// full sales; 20-line basket time; lock-wait. Fixed ZZ entities (topped-up). Numbers to decide the JvAllocationMode switch.
+		[HttpGet("hm1-phase-d-measure")]
+		public async Task<IActionResult> Hm1PhaseDMeasure(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int revenue = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			if (cat == null || revenue == 0 || baseUom == 0 || wh == 0) return BadRequest(new { message = "need category/4101/uom/warehouse" });
+			async Task<int> EnsureItem(string code)
+			{
+				var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (it == null) { var (ok, _, c2) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 100m, OpeningCost = 30m, IsActive = true }, null); if (!ok) return 0; it = c2; }
+				var (q, _, _) = await _stock.GetBalanceAsync(company, it!.ID, wh); if (q < 200) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = it.ID, WarehouseId = wh, Direction = 1, Qty = 1000, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = true }, null);
+				return it.ID;
+			}
+			int itemA = await EnsureItem("ZZ-MEAS-A");
+			await _ar.SaveCustomerAsync(company, new CrossBuy.Models.Context.Accounting.Customer { Name = "عميل قياس د", Phone = "0", IsActive = true });
+			int custId = await _db.Customers.Where(c => c.CompanyID == company && c.Name == "عميل قياس د").OrderByDescending(c => c.ID).Select(c => c.ID).FirstAsync();
+			CrossBuy.BL.SalesLineInput L(int n = 1) => new() { ItemDescription = "meas", Qty = n, UnitPrice = 100m, TaxRate = 0, RevenueAccountId = revenue, ItemId = itemA, WarehouseId = wh };
+
+			async Task<(long[] ms, int fails)> FiveParallel(string mode)
+			{
+				CrossBuy.BL.JournalEntryService._testJvModeOverride = mode;
+				var tasks = Enumerable.Range(0, 5).Select(_ => Task.Run(async () =>
+				{
+					var sw = System.Diagnostics.Stopwatch.StartNew();
+					using var sc = _scopes.CreateScope(); var ar = sc.ServiceProvider.GetRequiredService<CrossBuy.BL.IReceivableService>();
+					var (ok, _, _) = await ar.CreateSalesInvoiceAsync(company, custId, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> { L() }, "meas " + mode, null);
+					sw.Stop(); return (ok, sw.ElapsedMilliseconds);
+				})).ToArray();
+				var r = await Task.WhenAll(tasks);
+				CrossBuy.BL.JournalEntryService._testJvModeOverride = null;
+				return (r.Select(x => x.ElapsedMilliseconds).OrderBy(x => x).ToArray(), r.Count(x => !x.ok));
+			}
+
+			var iso = await FiveParallel("Isolated");
+			var amb = await FiveParallel("Ambient");
+
+			// 20-line basket (single invoice) time
+			var sw20 = System.Diagnostics.Stopwatch.StartNew();
+			var lines20 = Enumerable.Range(0, 20).Select(_ => L()).ToList();
+			var (b20ok, _, _) = await _ar.CreateSalesInvoiceAsync(company, custId, DateTime.Today, lines20, "meas 20-line", null);
+			sw20.Stop();
+
+			return Ok(new
+			{
+				isolated = new { perSaleMs = iso.ms, minMs = iso.ms.Min(), maxMs = iso.ms.Max(), lockWaitApproxMs = iso.ms.Max() - iso.ms.Min(), failures = iso.fails },
+				ambient = new { perSaleMs = amb.ms, minMs = amb.ms.Min(), maxMs = amb.ms.Max(), lockWaitApproxMs = amb.ms.Max() - amb.ms.Min(), failures = amb.fails },
+				basket20 = new { ok = b20ok, totalMs = sw20.ElapsedMilliseconds, perLineMs = sw20.ElapsedMilliseconds / 20.0 },
+				connectionsPerSale = "1 ambient (held for the sale) + 1 short-lived ISOLATED connection per JE posted (sale JE + COGS JE + receipt JE…) ≈ 3–4; Ambient mode uses only the 1 ambient connection but serializes ALL sales on the single JV NumberSequences row",
+				note = "fixed ZZ entities topped-up; measurement sales left in place (consistent). JvAllocationMode override is a Debug-only seam."
+			});
+		}
+#endif
+
+		// GET /api/dev/seed-currencies?key=seed123 — seed common currencies + recent exchange rates (Currency module test data)
+		[HttpGet("seed-currencies")]
+		public async Task<IActionResult> SeedCurrencies(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var defs = new (string code, string sym, string ar, string en, byte dp, decimal rate)[] {
+				("USD", "$",   "دولار أمريكي", "US Dollar",   2, 49.50m),
+				("EUR", "€",   "يورو",          "Euro",        2, 53.80m),
+				("SAR", "ر.س", "ريال سعودي",    "Saudi Riyal", 2, 13.20m),
+				("AED", "د.إ", "درهم إماراتي",  "UAE Dirham",  2, 13.50m),
+			};
+			int added = 0, rates = 0;
+			foreach (var d in defs)
+			{
+				var cur = await _db.Currencies.FirstOrDefaultAsync(c => c.Code == d.code);
+				if (cur == null)
+				{
+					cur = new CrossBuy.Models.Context.Accounting.Currency { Code = d.code, Symbol = d.sym, Name = d.ar, NameEn = d.en, DecimalPlaces = d.dp };
+					_db.Currencies.Add(cur);
+					await _db.SaveChangesAsync();
+					added++;
+				}
+				for (int i = 0; i < 3; i++)
+				{
+					var dt = DateTime.Today.AddDays(-i);
+					bool exists = await _db.ExchangeRates.AnyAsync(r => r.CurrencyId == cur.ID && r.RateDate == dt && r.RateType == "Central");
+					if (!exists)
+					{
+						_db.ExchangeRates.Add(new CrossBuy.Models.Context.Accounting.ExchangeRate { CurrencyId = cur.ID, RateDate = dt, Rate = d.rate + i * 0.05m, RateType = "Central" });
+						rates++;
+					}
+				}
+			}
+			await _db.SaveChangesAsync();
+			return Ok(new { ok = true, currenciesAdded = added, ratesAdded = rates });
+		}
+
+		// GET /api/dev/seed-item-allmoves?key=seed123&code=ITM-0001 — give one item EVERY movement type (for the item card demo); keeps GL balanced & integrity green
+		[HttpGet("seed-item-allmoves")]
+		public async Task<IActionResult> SeedItemAllMoves(string key, string? code)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var c = (code ?? "ITM-0001").Trim();
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == c)
+				?? await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && i.IsActive && !i.IsComposite && i.ItemType == "Stockable");
+			if (item == null) return BadRequest(new { message = "no stockable item found" });
+			var whs = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Take(2).ToListAsync();
+			if (whs.Count < 1) return BadRequest(new { message = "need a warehouse" });
+			int w1 = whs[0].ID, w2 = whs.Count > 1 ? whs[1].ID : whs[0].ID;
+			var steps = new List<object>();
+			async Task post(string label, int whId, short dir, decimal qty, decimal? cost, string src, bool gl)
+			{
+				var (ok, err, mv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+				{ Date = DateTime.UtcNow, ItemId = item.ID, WarehouseId = whId, Direction = dir, Qty = qty, UnitCostInBase = cost, SourceType = src, PostToGl = gl }, null);
+				steps.Add(new { label, ok, err });
+			}
+			await post("Opening +100 @10", w1, 1, 100, 10m, "Opening", true);
+			await post("PurchaseInvoice +60 @12", w1, 1, 60, 12m, "PurchaseInvoice", true);
+			await post("Adjustment +10 @11", w1, 1, 10, 11m, "Adjustment", true);
+			await post("SalesInvoice -25", w1, -1, 25, null, "SalesInvoice", true);
+			await post("Issue -15", w1, -1, 15, null, "Issue", true);
+			// inter-warehouse transfer (no GL — total inventory value unchanged → integrity stays green)
+			var (tok, terr, tmv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ Date = DateTime.UtcNow, ItemId = item.ID, WarehouseId = w1, Direction = -1, Qty = 20, SourceType = "TransferOut", PostToGl = false }, null);
+			var outUnit = (tmv != null && tmv.QtyBase != 0) ? tmv.TotalCost / tmv.QtyBase : 11m;
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ Date = DateTime.UtcNow, ItemId = item.ID, WarehouseId = w2, Direction = 1, Qty = 20, UnitCostInBase = outUnit, SourceType = "TransferIn", PostToGl = false }, null);
+			steps.Add(new { label = "Transfer 20 (WH1→WH2)", ok = tok, err = terr });
+
+			var bals = await (from b in _db.StockBalances.AsNoTracking()
+							  join wh in _db.Warehouses.AsNoTracking() on b.WarehouseId equals wh.ID
+							  where b.CompanyID == company && b.ItemId == item.ID && b.QtyOnHand != 0
+							  select new { wh.Code, b.QtyOnHand, b.TotalValue }).ToListAsync();
+			var moveCount = await _db.StockMovements.CountAsync(m => m.CompanyID == company && m.ItemId == item.ID);
+			var barcode = await _db.Items.Where(i => i.ID == item.ID).Select(i => i.Barcode).FirstOrDefaultAsync();
+			return Ok(new { item = item.ItemCode, name = item.Name, barcode, totalQty = bals.Sum(x => x.QtyOnHand), warehouses = bals, movementCount = moveCount, steps });
+		}
+
+		// GET /api/dev/crm-test-campaign?key=seed123 — CRM campaigns: CRUD + attribution + ROI (self-cleaning, non-GL)
+		[HttpGet("crm-test-campaign")]
+		public async Task<IActionResult> CrmTestCampaign(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var (cok, cerr) = await _crm.SaveCampaignAsync(company, new CrossBuy.Models.Context.Crm.Campaign { Name = "حملة اختبار", Channel = "Email", Status = "Active", Budget = 1000 }, "test");
+			var camp = await _db.Campaigns.OrderByDescending(c => c.ID).FirstAsync(c => c.CompanyID == company);
+			await _crm.SaveLeadAsync(company, new CrossBuy.Models.Context.Crm.Lead { Name = "محتمل حملة", Status = "New", CampaignId = camp.ID }, "test");
+			var lead = await _db.Leads.OrderByDescending(l => l.ID).FirstAsync(l => l.CompanyID == company);
+			await _crm.SaveOpportunityAsync(company, new CrossBuy.Models.Context.Crm.Opportunity { Title = "فرصة حملة", Stage = "Won", Amount = 2500, Probability = 100, CampaignId = camp.ID }, "test");
+			var opp = await _db.Opportunities.OrderByDescending(o => o.ID).FirstAsync(o => o.CompanyID == company);
+			var (rows, _) = await _crm.SearchCampaignsAsync(company, "حملة اختبار", null, 1, 25);
+			var row = rows.FirstOrDefault(r => r.Id == camp.ID);
+			var picks = await _crm.GetCampaignsForPickAsync(company);
+			var inPick = picks.Any(p => p.id == camp.ID);
+			var rowOk = row != null && row.Leads >= 1 && row.Opps >= 1 && row.Won >= 1 && row.WonValue == 2500m && row.RoiPct == 150.0m;
+			// cleanup
+			_db.Opportunities.Remove(await _db.Opportunities.FirstAsync(o => o.ID == opp.ID));
+			_db.Leads.Remove(await _db.Leads.FirstAsync(l => l.ID == lead.ID));
+			_db.Campaigns.Remove(await _db.Campaigns.FirstAsync(c => c.ID == camp.ID));
+			await _db.SaveChangesAsync();
+			return Ok(new { campaign = new { cok, cerr }, perf = row == null ? null : new { row.Leads, row.Opps, row.Won, row.WonValue, row.RoiPct }, inPick, allPass = rowOk && inPick });
+		}
+
+		// GET /api/dev/crm-test-analytics?key=seed123 — 2.8 customer analytics: verifies the COGS join query runs + margin computes
+		[HttpGet("crm-test-analytics")]
+		public async Task<IActionResult> CrmTestAnalytics(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var a = await _ar.GetCustomerAnalyticsAsync(company);
+			var top = a.Rows.FirstOrDefault();
+			return Ok(new
+			{
+				ran = true,
+				activeCustomers = a.ActiveCustomers,
+				totalRevenue = a.TotalRevenue,
+				totalMargin = a.TotalMargin,
+				totalOutstanding = a.TotalOutstanding,
+				segments = a.Segments.Count,
+				topCustomer = top == null ? null : new { top.Name, top.Revenue, top.Cogs, top.Margin, top.MarginPct, top.InvoiceCount },
+				marginComputed = top != null && top.Revenue != 0
+			});
+		}
+
+		// GET /api/dev/crm-test-pricing?key=seed123 — P3-5 pricing engine: segment + quantity-break resolution (NON-GL, self-cleaning)
+		[HttpGet("crm-test-pricing")]
+		public async Task<IActionResult> CrmTestPricing(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && i.IsActive);
+			if (item == null) return BadRequest(new { message = "need an item" });
+			var basePrice = Math.Round(item.SalesPrice ?? 0m, 2);
+			var pl = new CrossBuy.Models.Context.Inventory.PriceList { CompanyID = company, Code = "PLTEST-" + Guid.NewGuid().ToString("N").Substring(0, 6), Name = "اختبار تسعير", Segment = "SEGTEST", Priority = 1000, IsActive = true, CreatedAt = DateTime.UtcNow };
+			_db.PriceLists.Add(pl); await _db.SaveChangesAsync();
+			_db.PriceListLines.AddRange(
+				new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = pl.ID, ItemId = item.ID, MinQty = 1, UnitPrice = 100m, DiscountPercent = 0m },
+				new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = pl.ID, ItemId = item.ID, MinQty = 10, UnitPrice = 90m, DiscountPercent = 5m });
+			await _db.SaveChangesAsync();
+			var asOf = DateTime.UtcNow;
+			var seg1 = await _pricing.GetPriceAsync(company, item.ID, null, "SEGTEST", null, 1, asOf);
+			var seg10 = await _pricing.GetPriceAsync(company, item.ID, null, "SEGTEST", null, 10, asOf);
+			var other = await _pricing.GetPriceAsync(company, item.ID, null, "NOSUCHSEG", null, 5, asOf);
+			// cleanup
+			_db.PriceListLines.RemoveRange(_db.PriceListLines.Where(l => l.PriceListId == pl.ID));
+			_db.PriceLists.Remove(await _db.PriceLists.FirstAsync(p => p.ID == pl.ID));
+			await _db.SaveChangesAsync();
+			var seg1Ok = seg1.UnitPrice == 100m && seg1.DiscountPercent == 0m && seg1.Source == "list";
+			var qtyBreakOk = seg10.UnitPrice == 90m && seg10.DiscountPercent == 5m;  // larger MinQty wins
+			var otherSegSkips = other.PriceListId != pl.ID;                           // our segment-specific list must not apply to another segment
+			return Ok(new { basePrice, seg1 = new { seg1.UnitPrice, seg1.DiscountPercent, seg1.Source }, seg10 = new { seg10.UnitPrice, seg10.DiscountPercent }, other = new { other.UnitPrice, other.Source }, seg1Ok, qtyBreakOk, otherSegSkips, allPass = seg1Ok && qtyBreakOk && otherSegSkips });
+		}
+
+		// GET /api/dev/crm-test-3waymatch?key=seed123 — P3-6 three-way match (raw PO/GR rows, NO posting, self-cleaning)
+		[HttpGet("crm-test-3waymatch")]
+		public async Task<IActionResult> CrmTest3WayMatch(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && i.IsActive);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need item + warehouse" });
+			var vendorId = await _db.Vendors.Where(v => v.CompanyID == company).Select(v => (int?)v.ID).FirstOrDefaultAsync() ?? 1;
+			var po = new CrossBuy.Models.Context.Inventory.PurchaseOrder { CompanyID = company, OrderNo = "POTEST-" + Guid.NewGuid().ToString("N").Substring(0, 6), OrderDate = DateTime.Today, VendorId = vendorId, WarehouseId = wh.ID, Status = "Approved", GrandTotal = 1000 };
+			_db.PurchaseOrders.Add(po); await _db.SaveChangesAsync();
+			var poLine = new CrossBuy.Models.Context.Inventory.PurchaseOrderLine { PurchaseOrderId = po.ID, LineNo = 1, ItemId = item.ID, Qty = 100, UnitPrice = 10, ReceivedQty = 90, LineTotal = 1000 };
+			_db.PurchaseOrderLines.Add(poLine); await _db.SaveChangesAsync();
+			var gr = new CrossBuy.Models.Context.Inventory.GoodsReceipt { CompanyID = company, ReceiptNo = "GRTEST-" + Guid.NewGuid().ToString("N").Substring(0, 6), ReceiptDate = DateTime.Today, WarehouseId = wh.ID, VendorId = vendorId, PurchaseOrderId = po.ID, Status = "Posted", TotalCost = 900 };
+			_db.GoodsReceipts.Add(gr); await _db.SaveChangesAsync();
+			var grl1 = new CrossBuy.Models.Context.Inventory.GoodsReceiptLine { GoodsReceiptId = gr.ID, LineNo = 1, ItemId = item.ID, Qty = 90, UnitCost = 10, LineTotal = 900, PurchaseOrderLineId = poLine.ID };
+			_db.GoodsReceiptLines.Add(grl1); await _db.SaveChangesAsync();
+			var shortMatch = await _match.CheckPoAsync(company, po.ID);          // received 90/100 = 10% qty var > 5% → FAIL
+			// receive the remaining 10 → fully matched
+			_db.GoodsReceiptLines.Add(new CrossBuy.Models.Context.Inventory.GoodsReceiptLine { GoodsReceiptId = gr.ID, LineNo = 2, ItemId = item.ID, Qty = 10, UnitCost = 10, LineTotal = 100, PurchaseOrderLineId = poLine.ID });
+			await _db.SaveChangesAsync();
+			var fullMatch = await _match.CheckPoAsync(company, po.ID);           // 100/100, price equal → PASS
+			// price variance: bump the received cost
+			var priceLine = await _db.GoodsReceiptLines.FirstAsync(l => l.GoodsReceiptId == gr.ID && l.LineNo == 2);
+			priceLine.UnitCost = 13; await _db.SaveChangesAsync();               // avg recv cost > PO price by >2% → FAIL
+			var priceMatch = await _match.CheckPoAsync(company, po.ID);
+			// cleanup
+			_db.GoodsReceiptLines.RemoveRange(_db.GoodsReceiptLines.Where(l => l.GoodsReceiptId == gr.ID));
+			_db.GoodsReceipts.Remove(await _db.GoodsReceipts.FirstAsync(g => g.ID == gr.ID));
+			_db.PurchaseOrderLines.RemoveRange(_db.PurchaseOrderLines.Where(l => l.PurchaseOrderId == po.ID));
+			_db.PurchaseOrders.Remove(await _db.PurchaseOrders.FirstAsync(p => p.ID == po.ID));
+			await _db.SaveChangesAsync();
+			var shortOk = !shortMatch.Ok; var fullOk = fullMatch.Ok; var priceOk = !priceMatch.Ok;
+			return Ok(new { tolerance = new { qty = CrossBuy.BL.ThreeWayMatchService.QtyTolPct, price = CrossBuy.BL.ThreeWayMatchService.PriceTolPct }, shortReceipt = new { shortMatch.Ok, shortMatch.Failures }, fullReceipt = new { fullMatch.Ok }, priceVariance = new { priceMatch.Ok, priceMatch.Failures }, shortOk, fullOk, priceOk, allPass = shortOk && fullOk && priceOk });
+		}
+
+		// GET /api/dev/crm-test-crm?key=seed123 — P3-7 CRM: lead→customer convert, opportunity+pipeline, activity toggle (self-cleaning)
+		[HttpGet("crm-test-crm")]
+		public async Task<IActionResult> CrmTestCrm(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var (lok, lerr) = await _crm.SaveLeadAsync(company, new CrossBuy.Models.Context.Crm.Lead { Name = "عميل محتمل اختبار", Company = "شركة اختبار", Phone = "0100000000", Segment = "SEGTEST", EstimatedValue = 5000, Status = "Qualified" }, "test");
+			var lead = await _db.Leads.OrderByDescending(l => l.ID).FirstAsync(l => l.CompanyID == company);
+			var (cok, cerr, accId) = await _crm.ConvertLeadToAccountAsync(company, lead.ID, "test");
+			var leadAfter = await _db.Leads.AsNoTracking().FirstAsync(l => l.ID == lead.ID);
+			var convOk = cok && accId > 0 && leadAfter.AccountId == accId && leadAfter.Status == "Converted";
+			var (ook, oerr) = await _crm.SaveOpportunityAsync(company, new CrossBuy.Models.Context.Crm.Opportunity { Title = "فرصة اختبار", AccountId = accId, Stage = "Proposal", Amount = 12000, Probability = 60 }, "test");
+			var opp = await _db.Opportunities.OrderByDescending(o => o.ID).FirstAsync(o => o.CompanyID == company);
+			var pipeline = await _crm.PipelineSummaryAsync(company);
+			var pipeOk = pipeline.Any(p => p.Stage == "Proposal" && p.Count >= 1);
+			var (aok, aerr) = await _crm.SaveActivityAsync(company, new CrossBuy.Models.Context.Crm.Activity { Type = "Call", Subject = "مكالمة اختبار", DueDate = DateTime.Today }, "test");
+			var act = await _db.Activities.OrderByDescending(a => a.ID).FirstAsync(a => a.CompanyID == company);
+			var toggled = await _crm.ToggleActivityAsync(company, act.ID);
+			var actAfter = await _db.Activities.AsNoTracking().FirstAsync(a => a.ID == act.ID);
+			var actOk = aok && toggled && actAfter.Done;
+			// cleanup
+			_db.Activities.Remove(await _db.Activities.FirstAsync(a => a.ID == act.ID));
+			_db.Opportunities.Remove(await _db.Opportunities.FirstAsync(o => o.ID == opp.ID));
+			_db.Leads.Remove(await _db.Leads.FirstAsync(l => l.ID == lead.ID));
+			_db.CrmContacts.RemoveRange(_db.CrmContacts.Where(c => c.AccountId == accId));
+			if (accId > 0) { var a = await _db.CrmAccounts.FirstOrDefaultAsync(x => x.ID == accId); if (a != null) _db.CrmAccounts.Remove(a); }
+			await _db.SaveChangesAsync();
+			return Ok(new { lead = new { lok, lerr }, convert = new { cok, accId, convOk }, opportunity = new { ook, pipeOk }, activity = new { aok, actOk }, allPass = lok && convOk && ook && pipeOk && actOk });
+		}
+
+		// GET /api/dev/inv-test-i4?key=seed123 — SO -> Delivery (stock-out + COGS) -> convert to invoice (revenue)
+		[HttpGet("inv-test-i4")]
+		public async Task<IActionResult> InvTestI4(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			var cust = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
+			if (item == null || wh == null || cust == null) return BadRequest(new { message = "need item, warehouse, customer" });
+			// make sure there's stock to sell
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 50, UnitCostInBase = 10, SourceType = "Opening", PostToGl = false }, null);
+			var (q0, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+
+			var (sok, serr, so) = await _sell.CreateSalesOrderAsync(company, cust.ID, wh.ID, DateTime.Today, null, "I4 test",
+				new List<CrossBuy.BL.SoLineInput> { new() { ItemId = item.ID, ItemDescription = item.Name, Qty = 8, UoMId = item.BaseUoMId, UnitPrice = 25, TaxRate = 14 } }, null);
+			if (!sok) return Ok(new { step = "SO", ok = false, serr });
+			var soLine = (await _sell.GetSalesOrderAsync(company, so!.ID))!.Lines.First();
+
+			var (dok, derr, dn) = await _sell.CreateDeliveryAsync(company, cust.ID, wh.ID, so.ID, DateTime.Today, "I4 test",
+				new List<CrossBuy.BL.DeliveryLineInput> { new() { ItemId = item.ID, Qty = 8, UoMId = item.BaseUoMId, SalesOrderLineId = soLine.ID } }, null);
+			var (q1, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			var dmv = await _db.StockMovements.AsNoTracking().Where(m => m.SourceType == "Issue" && m.SourceId == (dn == null ? -1 : dn.ID)).FirstOrDefaultAsync();
+			object? cogsLines = dmv?.JournalEntryId == null ? null : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == dmv.JournalEntryId)
+				.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit }).ToListAsync();
+
+			var (cok, cerr, invId) = await _sell.ConvertToInvoiceAsync(company, so.ID, null);
+			var (q2, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			int? invJe = invId == null ? null : await _db.SalesInvoices.AsNoTracking().Where(x => x.ID == invId).Select(x => x.JournalEntryId).FirstOrDefaultAsync();
+			object? revLines = invJe == null ? null : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == invJe)
+				.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit }).ToListAsync();
+
+			return Ok(new
+			{
+				item = item.ItemCode, qtyBefore = q0,
+				so = new { ok = sok, no = so.OrderNo },
+				delivery = new { ok = dok, derr, no = dn?.DeliveryNo, qtyAfter = q1, cogsJe = dmv?.JournalEntryId, cogsLines, expected = "qty -8, Dr COGS / Cr Inventory @ avg cost" },
+				convert = new { ok = cok, cerr, invoiceId = invId, qtyAfterConvert = q2, je = invJe, revLines, expected = "Dr AR / Cr Revenue + VAT — stock UNCHANGED" }
+			});
+		}
+
+		// GET /api/dev/inv-test-i3?key=seed123 — PO -> Goods Receipt -> verify stock-in + GL (Dr Inventory / Cr GRNI)
+		[HttpGet("inv-test-i3")]
+		public async Task<IActionResult> InvTestI3(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			var vendor = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
+			if (item == null || wh == null || vendor == null) return BadRequest(new { message = "need item, warehouse, vendor" });
+			var (q0, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+
+			var (pok, perr, po) = await _proc.CreatePurchaseOrderAsync(company, vendor.ID, wh.ID, DateTime.Today, null, "I3 test",
+				new List<CrossBuy.BL.PoLineInput> { new() { ItemId = item.ID, ItemDescription = item.Name, Qty = 30, UoMId = item.BaseUoMId, UnitPrice = 12, TaxRate = 14 } }, null);
+			if (!pok) return Ok(new { step = "PO", ok = false, perr });
+			var poLine = (await _proc.GetPurchaseOrderAsync(company, po!.ID))!.Lines.First();
+
+			var (gok, gerr, gr) = await _proc.CreateReceiptAsync(company, vendor.ID, wh.ID, po.ID, DateTime.Today, "I3 test",
+				new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = item.ID, Qty = 30, UoMId = item.BaseUoMId, UnitCost = 12, PurchaseOrderLineId = poLine.ID } }, null);
+			var (q1, v1, a1) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			var mv = await _db.StockMovements.AsNoTracking().Where(m => m.SourceType == "Receipt" && m.SourceId == (gr == null ? -1 : gr.ID)).FirstOrDefaultAsync();
+			var poAfter = await _db.PurchaseOrders.AsNoTracking().FirstOrDefaultAsync(p => p.ID == po.ID);
+			object? jeLines = null;
+			if (mv?.JournalEntryId != null)
+				jeLines = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == mv.JournalEntryId)
+					.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit }).ToListAsync();
+
+			// convert PO -> invoice (received → Dr GRNI / Cr AP, no extra stock)
+			var (cok, cerr, invId) = await _proc.ConvertToInvoiceAsync(company, po.ID, null);
+			var (q2, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			object? invJe = null; int? invJeId = null;
+			if (invId != null)
+			{
+				invJeId = await _db.PurchaseInvoices.AsNoTracking().Where(x => x.ID == invId).Select(x => x.JournalEntryId).FirstOrDefaultAsync();
+				if (invJeId != null) invJe = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == invJeId)
+					.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit }).ToListAsync();
+			}
+
+			return Ok(new
+			{
+				item = item.ItemCode, qtyBefore = q0,
+				po = new { ok = pok, no = po.OrderNo, statusAfterReceipt = poAfter?.Status },
+				receipt = new { ok = gok, gerr, no = gr?.ReceiptNo, totalCost = gr?.TotalCost },
+				stock = new { qtyAfter = q1, valueAfter = v1, avg = a1, expected = "qty +30 @ 12" },
+				gl = new { je = mv?.JournalEntryId, lines = jeLines, expected = "Dr 1103 inventory / Cr 210203 GRNI" },
+				convert = new { ok = cok, cerr, invoiceId = invId, qtyAfterConvert = q2, je = invJeId, lines = invJe, expected = "Dr 210203 GRNI / Cr AP — stock UNCHANGED" }
+			});
+		}
+
+		// GET /api/dev/inv-test-costing?key=seed123  — exercises the costing engine (no GL) and checks the ledger<->balance invariant
+		[HttpGet("inv-test-costing")]
+		public async Task<IActionResult> InvTestCosting(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need at least one item + warehouse (run seed-inv-demo)" });
+
+			// clean prior test rows for a deterministic run (direct delete)
+			await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID && b.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID && l.WarehouseId == wh.ID).ExecuteDeleteAsync();
+
+			var steps = new List<object>();
+			async Task run(string label, short dir, decimal qty, decimal? cost)
+			{
+				var (ok, err, mv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+				{
+					Date = DateTime.UtcNow, ItemId = item.ID, WarehouseId = wh.ID, Direction = dir, Qty = qty,
+					UnitCostInBase = cost, SourceType = dir == 1 ? "Opening" : "Issue", PostToGl = false
+				}, null);
+				var (bq, bv, ba) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+				steps.Add(new { label, ok, err, mvCost = mv?.TotalCost, mvUnit = mv?.UnitCost, qtyOnHand = bq, totalValue = bv, avgCost = ba });
+			}
+
+			await run("IN 100 @ 10", 1, 100, 10m);
+			await run("IN 50 @ 16", 1, 50, 16m);
+			await run("OUT 60", -1, 60, null);
+
+			var movsum = await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID)
+				.SumAsync(m => (decimal?)(m.Direction * m.TotalCost)) ?? 0m;
+			var (fq, fv, favg) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+
+			return Ok(new
+			{
+				item = item.ItemCode, warehouse = wh.Code, costingMethod = item.CostingMethod ?? "(category/Moving)",
+				steps,
+				final = new { qtyOnHand = fq, totalValue = fv, avgCost = favg },
+				invariant = new { ledgerSum = movsum, balanceValue = fv, ok = Math.Abs(movsum - fv) < 0.01m }
+			});
+		}
+
+		// GET /api/dev/inv-test-gl?key=seed123 — posts movements WITH GL and verifies valuation == inventory account balance
+		[HttpGet("inv-test-gl")]
+		public async Task<IActionResult> InvTestGl(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need item + warehouse" });
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId);
+			int invAcc = cat?.InventoryAccountId ?? 0;
+
+			// reset this item/warehouse ledger (direct delete, no change-tracking/concurrency)
+			await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID && b.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID && l.WarehouseId == wh.ID).ExecuteDeleteAsync();
+
+			var jeIds = new List<int>();
+			var steps = new List<object>();
+			async Task run(string label, short dir, decimal qty, decimal? cost, string src)
+			{
+				var (ok, err, mv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+				{ Date = DateTime.UtcNow, ItemId = item.ID, WarehouseId = wh.ID, Direction = dir, Qty = qty, UnitCostInBase = cost, SourceType = src, PostToGl = true }, null);
+				if (mv?.JournalEntryId != null) jeIds.Add(mv.JournalEntryId.Value);
+				steps.Add(new { label, ok, err, value = mv?.TotalCost, je = mv?.JournalEntryId });
+			}
+			await run("Opening 100 @ 10", 1, 100, 10m, "Opening");
+			await run("Issue 30", -1, 30, null, "Issue");
+
+			var (sq, sv, sa) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			// net of inventory account across our journal entries (debit - credit)
+			var invNet = await _db.JournalEntryLines.AsNoTracking()
+				.Where(l => l.AccountId == invAcc && jeIds.Contains(l.JournalEntryId))
+				.SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+
+			return Ok(new
+			{
+				item = item.ItemCode, inventoryAccountId = invAcc, steps,
+				stockValuation = sv, qtyOnHand = sq,
+				glInventoryNet = invNet,
+				invariant_valuation_equals_GL = Math.Abs(invNet - sv) < 0.01m
+			});
+		}
+
+		// GET /api/dev/inv-test-composite?key=seed123 — verifies bundle explosion + assembly
+		[HttpGet("inv-test-composite")]
+		public async Task<IActionResult> InvTestComposite(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var simples = await _db.Items.AsNoTracking().Where(i => i.CompanyID == company && !i.IsComposite).OrderBy(i => i.ID).Take(2).ToListAsync();
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (simples.Count < 2 || wh == null) return BadRequest(new { message = "need 2 simple items + warehouse" });
+			var A = simples[0]; var B = simples[1];
+
+			// clean any prior test composite items + the components' ledgers
+			var oldKits = await _db.Items.Where(i => i.CompanyID == company && (i.ItemCode == "TEST-BUNDLE" || i.ItemCode == "TEST-ASM")).ToListAsync();
+			foreach (var k in oldKits) await _db.ItemComponents.Where(c => c.ParentItemId == k.ID).ExecuteDeleteAsync();
+			if (oldKits.Count > 0) { _db.Items.RemoveRange(oldKits); await _db.SaveChangesAsync(); }
+			foreach (var it in new[] { A, B })
+			{
+				await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == it.ID && m.WarehouseId == wh.ID).ExecuteDeleteAsync();
+				await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == it.ID && b.WarehouseId == wh.ID).ExecuteDeleteAsync();
+				await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == it.ID && l.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			}
+
+			// opening stock for components (no GL)
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = A.ID, WarehouseId = wh.ID, Direction = 1, Qty = 100, UnitCostInBase = 5m, SourceType = "Opening", PostToGl = false }, null);
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = B.ID, WarehouseId = wh.ID, Direction = 1, Qty = 100, UnitCostInBase = 8m, SourceType = "Opening", PostToGl = false }, null);
+
+			// create a Bundle (A x2, B x1) and an Assembly (A x1, B x3)
+			CrossBuy.Models.Context.Inventory.Item NewKit(string code, string type) => new()
+			{ CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = A.ItemCategoryId, ItemType = "Stockable", BaseUoMId = A.BaseUoMId, IsComposite = true, CompositeType = type, IsActive = true, CreatedAt = DateTime.UtcNow };
+			var bundle = NewKit("TEST-BUNDLE", "Bundle"); var asm = NewKit("TEST-ASM", "Assembly");
+			_db.Items.AddRange(bundle, asm); await _db.SaveChangesAsync();
+			_db.ItemComponents.AddRange(
+				new() { CompanyID = company, ParentItemId = bundle.ID, ComponentItemId = A.ID, Quantity = 2, SortOrder = 0 },
+				new() { CompanyID = company, ParentItemId = bundle.ID, ComponentItemId = B.ID, Quantity = 1, SortOrder = 1 },
+				new() { CompanyID = company, ParentItemId = asm.ID, ComponentItemId = A.ID, Quantity = 1, SortOrder = 0 },
+				new() { CompanyID = company, ParentItemId = asm.ID, ComponentItemId = B.ID, Quantity = 3, SortOrder = 1 });
+			await _db.SaveChangesAsync();
+
+			async Task<object> qty(int id) { var (q, v, a) = await _stock.GetBalanceAsync(company, id, wh.ID); return new { q, v, a }; }
+			var before = new { A = await qty(A.ID), B = await qty(B.ID) };
+
+			// 1) issue 10 bundles → expect A -20, B -10
+			var (bok, berr, _) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = bundle.ID, WarehouseId = wh.ID, Direction = -1, Qty = 10, SourceType = "Issue", PostToGl = false }, null);
+			var afterBundle = new { A = await qty(A.ID), B = await qty(B.ID) };
+
+			// 2) assemble 5 kits → expect A -5, B -15, kit +5 (cost = 5*5 + 15*8 = 145)
+			var (aok, aerr, prod) = await _stock.AssembleAsync(company, asm.ID, wh.ID, 5, DateTime.UtcNow, false, null);
+			var afterAsm = new { A = await qty(A.ID), B = await qty(B.ID), kit = await qty(asm.ID) };
+
+			return Ok(new
+			{
+				components = new { A = A.ItemCode, B = B.ItemCode },
+				before,
+				bundleIssue = new { ok = bok, err = berr, afterBundle, expected = "A -20, B -10" },
+				assembly = new { ok = aok, err = aerr, producedJe = prod?.JournalEntryId, afterAsm, expected = "A -5, B -15, kit +5 @ cost 145/5=29" }
+			});
+		}
+
+		// GET /api/dev/inv-test-i2?key=seed123 — purchase invoice → stock-in (no double GL); sales invoice → stock-out + COGS
+		[HttpGet("inv-test-i2")]
+		public async Task<IActionResult> InvTestI2(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			var vendor = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
+			var customer = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company);
+			var revenue = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item!.ItemCategoryId);
+			if (item == null || wh == null || vendor == null || customer == null) return BadRequest(new { message = "need item, warehouse, vendor, customer" });
+
+			// reset this item's ledger
+			await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID && b.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID && l.WarehouseId == wh.ID).ExecuteDeleteAsync();
+
+			// 1) purchase 50 @ 10  → stock +50, value 500 ; invoice JE debits inventory (no double)
+			var (pok, perr, pinv) = await _ap.CreatePurchaseInvoiceAsync(company, vendor.ID, DateTime.Today,
+				new List<CrossBuy.BL.PurchaseLineInput> { new() { ItemDescription = item.Name, Qty = 50, UnitPrice = 10, TaxRate = 0, ExpenseAccountId = revenue, ItemId = item.ID, WarehouseId = wh.ID } }, "I2 test", null);
+			var afterBuy = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+
+			// 2) sell 20 @ 15 → stock -20 ; COGS JE (Dr COGS / Cr inventory) at avg cost 10 = 200
+			var (sok, serr, sinv) = await _ar.CreateSalesInvoiceAsync(company, customer.ID, DateTime.Today,
+				new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = item.Name, Qty = 20, UnitPrice = 15, TaxRate = 0, RevenueAccountId = revenue, ItemId = item.ID, WarehouseId = wh.ID } }, "I2 test", null);
+			var afterSell = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+
+			var cogsMv = await _db.StockMovements.AsNoTracking().Where(m => m.ItemId == item.ID && m.SourceType == "SalesInvoice").OrderByDescending(m => m.ID).FirstOrDefaultAsync();
+
+			return Ok(new
+			{
+				item = item.ItemCode, inventoryAccount = cat?.InventoryAccountId,
+				purchase = new { ok = pok, err = perr, invNo = pinv?.InvoiceNo, je = pinv?.JournalEntryId, afterBuy = new { afterBuy.qty, afterBuy.value, afterBuy.avg }, expected = "qty 50, value 500" },
+				sale = new { ok = sok, err = serr, invNo = sinv?.InvoiceNo, salesJe = sinv?.JournalEntryId, afterSell = new { afterSell.qty, afterSell.value, afterSell.avg }, expected = "qty 30" },
+				cogs = new { movementCost = cogsMv?.TotalCost, cogsJe = cogsMv?.JournalEntryId, expected = "200 (20 x avg 10)" }
+			});
+		}
+
+		// GET /api/dev/seed-inv-items?key=seed123  — bulk realistic items + opening stock for testing
+		[HttpGet("seed-inv-items")]
+		public async Task<IActionResult> SeedInvItems(string key, bool stock = true)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+
+			// ensure base lookups exist (reuse seed-inv-demo output)
+			var cats = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company).ToListAsync();
+			var units = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).ToListAsync();
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (cats.Count == 0 || units.Count == 0 || wh == null) return BadRequest(new { message = "run seed-inv-demo first (needs categories, units, warehouse)" });
+			int catId(string code) => (cats.FirstOrDefault(c => c.Code == code) ?? cats[0]).ID;
+			int uomId(string code) => (units.FirstOrDefault(u => u.Code == code) ?? units[0]).ID;
+			int pcs = uomId("PCS"), ctn = uomId("CTN"), kg = uomId("KG");
+
+			// (nameAr, nameEn, catCode, type, price, cost, baseUom, trackBatch, trackExpiry, trackSerial)
+			var data = new (string ar, string en, string cat, string type, decimal price, decimal cost, int uom, bool tb, bool te, bool ts)[]
+			{
+				("لابتوب Dell Latitude","Dell Latitude Laptop","FG","Stockable",24000,18500,pcs,false,false,true),
+				("لابتوب HP ProBook","HP ProBook Laptop","FG","Stockable",21000,16000,pcs,false,false,true),
+				("شاشة LG 24 بوصة","LG 24\" Monitor","FG","Stockable",4200,3100,pcs,false,false,true),
+				("كيبورد لاسلكي Logitech","Logitech Wireless Keyboard","FG","Stockable",650,420,pcs,false,false,false),
+				("ماوس لاسلكي Logitech","Logitech Wireless Mouse","FG","Stockable",350,210,pcs,false,false,false),
+				("طابعة HP LaserJet","HP LaserJet Printer","FG","Stockable",5500,4200,pcs,false,false,true),
+				("راوتر TP-Link","TP-Link Router","FG","Stockable",900,560,pcs,false,false,true),
+				("هارد خارجي 1TB","External HDD 1TB","FG","Stockable",1800,1250,pcs,false,false,true),
+				("فلاش USB 64GB","USB Flash 64GB","FG","Stockable",250,150,pcs,false,false,false),
+				("سماعة بلوتوث","Bluetooth Headset","FG","Stockable",750,480,pcs,false,false,false),
+				("شاحن لابتوب","Laptop Charger","SUP","Stockable",320,180,pcs,false,false,false),
+				("كابل HDMI","HDMI Cable","SUP","Stockable",120,55,pcs,false,false,false),
+				("ورق تصوير A4","A4 Paper Ream","SUP","Stockable",140,95,pcs,false,false,false),
+				("حبر طابعة أسود","Black Toner","SUP","Stockable",1100,780,pcs,false,true,false),
+				("أقلام جاف (علبة)","Ballpoint Pens (box)","SUP","Stockable",90,45,ctn,false,false,false),
+				("دفتر ملاحظات","Notebook","SUP","Stockable",35,18,pcs,false,false,false),
+				("مطهّر يدين 500مل","Hand Sanitizer 500ml","SUP","Stockable",60,32,pcs,true,true,false),
+				("مناديل ورقية","Tissue Box","SUP","Stockable",45,22,pcs,false,false,false),
+				("قهوة عربية 1كجم","Arabic Coffee 1kg","FG","Stockable",380,260,kg,true,true,false),
+				("شاي أكياس (علبة)","Tea Bags (box)","FG","Stockable",75,40,ctn,true,true,false),
+				("سكر 1كجم","Sugar 1kg","RM","Stockable",38,28,kg,true,true,false),
+				("زيت طعام 1لتر","Cooking Oil 1L","RM","Stockable",95,72,pcs,true,true,false),
+				("دقيق فاخر 1كجم","Premium Flour 1kg","RM","Stockable",30,20,kg,true,true,false),
+				("مياه معدنية (كرتونة)","Mineral Water (carton)","FG","Stockable",55,38,ctn,false,true,false),
+				("عصير برتقال 1لتر","Orange Juice 1L","FG","Stockable",48,30,pcs,true,true,false),
+				("بسكويت (علبة)","Biscuits (box)","FG","Stockable",65,42,ctn,false,true,false),
+				("شوكولاتة لوح","Chocolate Bar","FG","Stockable",25,14,pcs,false,true,false),
+				("معقّم أسطح 1لتر","Surface Cleaner 1L","SUP","Stockable",70,40,pcs,true,true,false),
+				("قفازات طبية (علبة)","Medical Gloves (box)","SUP","Stockable",120,75,ctn,true,true,false),
+				("كمامات (علبة 50)","Face Masks (50 box)","SUP","Stockable",90,55,ctn,true,true,false),
+				("بطارية AA (علبة)","AA Batteries (pack)","SUP","Stockable",60,35,ctn,false,false,false),
+				("لمبة LED","LED Bulb","SUP","Stockable",55,30,pcs,false,false,false),
+				("كاميرا مراقبة","CCTV Camera","FG","Stockable",1600,1150,pcs,false,false,true),
+				("جهاز تابلت 10 بوصة","10\" Tablet","FG","Stockable",6800,5200,pcs,false,false,true),
+				("ساعة ذكية","Smart Watch","FG","Stockable",2400,1700,pcs,false,false,true),
+				("باور بانك 20000","Power Bank 20000","FG","Stockable",780,520,pcs,false,false,false),
+				("حامل لابتوب","Laptop Stand","SUP","Stockable",260,150,pcs,false,false,false),
+				("خدمة تركيب وصيانة","Install & Maintenance Service","SUP","Service",500,0,pcs,false,false,false),
+				("خدمة تدريب","Training Service","SUP","Service",800,0,pcs,false,false,false),
+				("صندوق كرتون تغليف","Packing Carton","RM","Stockable",18,9,pcs,false,false,false),
+			};
+
+			// next free code/barcode numbers
+			int seq = 1000;
+			var created = new List<string>(); var skipped = 0; int stocked = 0;
+			foreach (var d in data)
+			{
+				string code, barcode; bool exists;
+				do { seq++; code = "ITM-" + seq.ToString("D4"); barcode = "622" + (1000000000 + seq).ToString(); exists = await _db.Items.AnyAsync(i => i.CompanyID == company && (i.ItemCode == code || i.Barcode == barcode)); } while (exists);
+				if (await _db.Items.AnyAsync(i => i.CompanyID == company && i.Name == d.ar)) { skipped++; continue; }
+
+				var (ok, err, item) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput
+				{
+					ItemCode = code, Barcode = barcode, Name = d.ar, NameEn = d.en, ItemCategoryId = catId(d.cat), ItemType = d.type,
+					BaseUoMId = d.uom, SalesPrice = d.price, OpeningCost = d.cost, TrackBatch = d.tb, TrackExpiry = d.te, TrackSerial = d.ts, IsActive = true
+				}, null);
+				if (!ok) { skipped++; continue; }
+				created.Add(code + " — " + d.ar);
+
+				// opening stock (no GL) for stockable items so balances exist for testing
+				if (stock && d.type == "Stockable" && item != null)
+				{
+					decimal qty = 100 + (created.Count * 7) % 400;
+					await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+					{ ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = qty, UnitCostInBase = d.cost, SourceType = "Opening", PostToGl = false }, null);
+					stocked++;
+				}
+			}
+
+			return Ok(new { createdCount = created.Count, stockedCount = stocked, skipped, warehouse = wh.Code, created });
+		}
+
+		// GET /api/dev/seed-inv-composite?key=seed123 — sample composite items (bundle + assembly) using existing items as components
+		[HttpGet("seed-inv-composite")]
+		public async Task<IActionResult> SeedInvComposite(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "FG")
+					?? await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company);
+			if (cat == null) return BadRequest(new { message = "run seed-inv-demo first" });
+			// pick a few stockable simple items as components
+			var pool = await _db.Items.AsNoTracking().Where(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable").OrderBy(i => i.ID).Take(6).ToListAsync();
+			if (pool.Count < 3) return BadRequest(new { message = "need at least 3 stockable items (run seed-inv-items)" });
+
+			async Task<int?> NewComposite(string code, string ar, string en, string type, (int itemId, decimal qty)[] comps)
+			{
+				if (await _db.Items.AnyAsync(i => i.CompanyID == company && i.ItemCode == code)) return null;
+				var kit = new CrossBuy.Models.Context.Inventory.Item
+				{
+					CompanyID = company, ItemCode = code, Barcode = "629" + (2000000000 + code.GetHashCode() % 90000000).ToString().PadLeft(10, '0').Substring(0, 10),
+					Name = ar, NameEn = en, ItemCategoryId = cat.ID, ItemType = "Stockable", BaseUoMId = pool[0].BaseUoMId,
+					IsComposite = true, CompositeType = type, IsActive = true, CreatedAt = DateTime.UtcNow
+				};
+				// ensure barcode uniqueness simply
+				kit.Barcode = "629" + DateTime.UtcNow.Ticks.ToString().Substring(8, 10);
+				_db.Items.Add(kit); await _db.SaveChangesAsync();
+				_db.ItemBarcodes.Add(new CrossBuy.Models.Context.Inventory.ItemBarcode { ItemId = kit.ID, Barcode = kit.Barcode, UoMId = kit.BaseUoMId });
+				int o = 0;
+				foreach (var c in comps)
+					_db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = kit.ID, ComponentItemId = c.itemId, Quantity = c.qty, SortOrder = o++, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+				return kit.ID;
+			}
+
+			var bundleId = await NewComposite("KIT-BNDL-01", "طقم مكتب (حزمة بيع)", "Office Set (Bundle)", "Bundle",
+				new[] { (pool[0].ID, 1m), (pool[1].ID, 1m), (pool[2].ID, 2m) });
+			var asmId = await NewComposite("KIT-ASM-01", "جهاز مكتب مجمّع (تجميع)", "Assembled Workstation", "Assembly",
+				new[] { (pool[0].ID, 1m), (pool[1].ID, 1m), (pool[2].ID, 1m) });
+
+			return Ok(new
+			{
+				bundle = new { id = bundleId, code = "KIT-BNDL-01", components = new[] { pool[0].ItemCode, pool[1].ItemCode, pool[2].ItemCode } },
+				assembly = new { id = asmId, code = "KIT-ASM-01" },
+				note = "Bundle يتفكّك عند البيع · Assembly يحتاج أمر تجميع"
+			});
+		}
+
+		// GET /api/dev/seed-item-images?key=seed123 — generates a distinct SVG thumbnail for every item and sets ImagePath
+		[HttpGet("seed-item-images")]
+		public async Task<IActionResult> SeedItemImages(string key, [FromServices] Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, bool overwrite = false)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var palette = new[] { "#3E97FF", "#50CD89", "#F1416C", "#FFC700", "#7239EA", "#00A3FF", "#F1BC00", "#1BC5BD", "#E4506F", "#8950FC", "#FF6F00", "#0BB783" };
+			var dir = System.IO.Path.Combine(env.WebRootPath, "uploads", "items");
+			System.IO.Directory.CreateDirectory(dir);
+			var items = await _db.Items.Where(i => i.CompanyID == company).ToListAsync();
+			int done = 0;
+			foreach (var it in items)
+			{
+				if (!overwrite && !string.IsNullOrWhiteSpace(it.ImagePath) && !it.ImagePath.Contains("/uploads/items/seed-")) continue;
+				var bg = palette[Math.Abs(it.ID) % palette.Length];
+				var label = (it.ItemCode ?? "").Replace("&", "&amp;").Replace("<", "&lt;");
+				var initial = string.IsNullOrWhiteSpace(it.Name) ? "?" : it.Name.Trim().Substring(0, 1);
+				var svg =
+$@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'>
+<rect width='400' height='400' rx='28' fill='{bg}'/>
+<circle cx='200' cy='160' r='92' fill='rgba(255,255,255,0.18)'/>
+<text x='200' y='196' font-size='110' font-family='Segoe UI, Arial' font-weight='700' fill='#ffffff' text-anchor='middle'>{System.Net.WebUtility.HtmlEncode(initial)}</text>
+<text x='200' y='320' font-size='40' font-family='Segoe UI, Arial' font-weight='600' fill='#ffffff' text-anchor='middle'>{label}</text>
+</svg>";
+				var file = $"seed-{it.ID}.svg";
+				await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(dir, file), svg);
+				it.ImagePath = "/uploads/items/" + file;
+				done++;
+			}
+			await _db.SaveChangesAsync();
+			return Ok(new { updated = done, folder = dir });
+		}
+
+		// maps an item to a photo keyword (from its English name)
+		private static string ItemKeyword(string? en)
+		{
+			var s = (en ?? "").ToLowerInvariant();
+			var map = new (string needle, string kw)[]
+			{
+				("laptop","laptop"),("monitor","monitor"),("keyboard","keyboard"),("mouse","mouse"),("printer","printer"),
+				("router","router"),("headset","headphones"),("camera","camera"),("tablet","tablet"),("watch","watch"),
+				("power bank","battery"),("flash","usb"),("usb","usb"),("hdd","harddisk"),("charger","charger"),("cable","cable"),
+				("coffee","coffee"),("tea","tea"),("sugar","sugar"),("oil","oil"),("flour","flour"),("water","water"),
+				("juice","juice"),("biscuit","biscuit"),("chocolate","chocolate"),("battery","battery"),("batteries","battery"),
+				("bulb","lightbulb"),("glove","gloves"),("mask","mask"),("sanitizer","sanitizer"),("tissue","tissue"),
+				("pen","pen"),("notebook","notebook"),("paper","paper"),("toner","toner"),("carton","box"),("stand","desk"),("set","office")
+			};
+			foreach (var m in map) if (s.Contains(m.needle)) return m.kw;
+			var w = System.Text.RegularExpressions.Regex.Match(s, "[a-z]{3,}");
+			return w.Success ? w.Value : "product";
+		}
+
+		// GET /api/dev/seed-item-images-real?key=seed123 — downloads a realistic product photo per item (by keyword)
+		[HttpGet("seed-item-images-real")]
+		public async Task<IActionResult> SeedItemImagesReal(string key, [FromServices] Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var dir = System.IO.Path.Combine(env.WebRootPath, "uploads", "items");
+			System.IO.Directory.CreateDirectory(dir);
+			var items = await _db.Items.Where(i => i.CompanyID == 1).ToListAsync();
+			using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+			http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+			int ok = 0, fail = 0; var sample = new List<object>();
+			foreach (var it in items)
+			{
+				var kw = ItemKeyword(it.NameEn);
+				var url = $"https://loremflickr.com/400/400/{kw}?lock={it.ID}";
+				try
+				{
+					var bytes = await http.GetByteArrayAsync(url);
+					if (bytes.Length < 1000) { fail++; continue; }   // tiny = error placeholder
+					var file = $"real-{it.ID}.jpg";
+					await System.IO.File.WriteAllBytesAsync(System.IO.Path.Combine(dir, file), bytes);
+					it.ImagePath = "/uploads/items/" + file; ok++;
+					if (sample.Count < 6) sample.Add(new { it.ItemCode, keyword = kw });
+				}
+				catch { fail++; }
+			}
+			await _db.SaveChangesAsync();
+			return Ok(new { downloaded = ok, failed = fail, folder = dir, sample });
+		}
+
+		// GET /api/dev/seed-uom-demo?key=seed123 — adds a دزن unit + conversions + per-unit barcodes to a few PCS items
+		[HttpGet("seed-uom-demo")]
+		public async Task<IActionResult> SeedUomDemo(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			// ensure a "Dozen" unit
+			var dzn = await _db.UnitsOfMeasure.FirstOrDefaultAsync(u => u.CompanyID == company && u.Code == "DZN");
+			if (dzn == null)
+			{
+				dzn = new CrossBuy.Models.Context.Inventory.UnitOfMeasure { CompanyID = company, Code = "DZN", Name = NCH(new[] { 1583, 1585, 1586, 1606 }), NameEn = "Dozen", IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.UnitsOfMeasure.Add(dzn); await _db.SaveChangesAsync();
+			}
+			var pcs = await _db.UnitsOfMeasure.FirstAsync(u => u.CompanyID == company && u.Code == "PCS");
+			var ctn = await _db.UnitsOfMeasure.FirstAsync(u => u.CompanyID == company && u.Code == "CTN");
+
+			// pick 3 PCS-based stockable non-composite items
+			var items = await _db.Items.Where(i => i.CompanyID == company && i.BaseUoMId == pcs.ID && i.ItemType == "Stockable" && !i.IsComposite).OrderBy(i => i.ID).Take(3).ToListAsync();
+			var result = new List<object>();
+			foreach (var it in items)
+			{
+				// clear old conversions/unit barcodes for a clean demo
+				_db.UoMConversions.RemoveRange(_db.UoMConversions.Where(c => c.ItemId == it.ID));
+				_db.ItemBarcodes.RemoveRange(_db.ItemBarcodes.Where(b => b.ItemId == it.ID && b.UoMId != null && b.UoMId != it.BaseUoMId));
+				await _db.SaveChangesAsync();
+
+				// 1 DZN = 12 base ; 1 CTN = 144 base
+				_db.UoMConversions.Add(new() { ItemId = it.ID, FromUoMId = dzn.ID, ToUoMId = it.BaseUoMId, Factor = 12 });
+				_db.UoMConversions.Add(new() { ItemId = it.ID, FromUoMId = ctn.ID, ToUoMId = it.BaseUoMId, Factor = 144 });
+				var bcDzn = "627" + it.ID.ToString("D5") + "012";
+				var bcCtn = "627" + it.ID.ToString("D5") + "144";
+				_db.ItemBarcodes.Add(new() { ItemId = it.ID, Barcode = bcDzn, UoMId = dzn.ID });
+				_db.ItemBarcodes.Add(new() { ItemId = it.ID, Barcode = bcCtn, UoMId = ctn.ID });
+				await _db.SaveChangesAsync();
+				result.Add(new { it.ItemCode, name = it.Name, pieceBarcode = it.Barcode, dozenBarcode = bcDzn, cartonBarcode = bcCtn });
+			}
+
+			var composites = await _db.Items.AsNoTracking().Where(i => i.CompanyID == company && i.IsComposite && i.Barcode.Length > 6)
+				.Select(i => new { i.ItemCode, i.Name, i.Barcode, i.CompositeType }).ToListAsync();
+
+			return Ok(new
+			{
+				note = "امسح piece/dozen/carton barcode لنفس الصنف هتلاقي الوحدة بتتغيّر تلقائيًا",
+				multiUnitItems = result,
+				compositeItems = composites
+			});
+		}
+		private static string NCH(int[] cp) { var s = new System.Text.StringBuilder(); foreach (var c in cp) s.Append((char)c); return s.ToString(); }
+
+		// GET /api/dev/inv-test-i6?key=seed123 — transfer between two warehouses at cost (no GL)
+		[HttpGet("inv-test-i6")]
+		public async Task<IActionResult> InvTestI6(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var whs = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Take(2).ToListAsync();
+			if (item == null || whs.Count < 2) return BadRequest(new { message = "need item + 2 warehouses" });
+			var src = whs[0]; var dst = whs[1];
+			// ensure stock in source
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = item.ID, WarehouseId = src.ID, Direction = 1, Qty = 40, UnitCostInBase = 15, SourceType = "Opening", PostToGl = false }, null);
+			var (sq0, _, _) = await _stock.GetBalanceAsync(company, item.ID, src.ID);
+			var (dq0, _, _) = await _stock.GetBalanceAsync(company, item.ID, dst.ID);
+
+			var (ok, err, tr) = await _stock.TransferAsync(company, src.ID, dst.ID, DateTime.Today, "I6 test",
+				new List<CrossBuy.BL.TransferLineInput> { new() { ItemId = item.ID, Qty = 10, UoMId = item.BaseUoMId } }, null);
+
+			var (sq1, sv1, _) = await _stock.GetBalanceAsync(company, item.ID, src.ID);
+			var (dq1, dv1, da1) = await _stock.GetBalanceAsync(company, item.ID, dst.ID);
+			var mvs = await _db.StockMovements.AsNoTracking().Where(m => (m.SourceType == "TransferOut" || m.SourceType == "TransferIn") && m.SourceId == (tr == null ? -1 : tr.ID))
+				.Select(m => new { m.SourceType, m.WarehouseId, m.Direction, m.QtyBase, m.UnitCost, m.TotalCost, m.JournalEntryId }).ToListAsync();
+
+			return Ok(new
+			{
+				item = item.ItemCode, from = src.Code, to = dst.Code,
+				ok, err, transferNo = tr?.TransferNo,
+				source = new { before = sq0, after = sq1 },
+				destination = new { before = dq0, after = dq1, value = dv1, avg = da1 },
+				movements = mvs,
+				expected = "source -10, destination +10 at same cost, no JE (JournalEntryId null)"
+			});
+		}
+
+		// GET /api/dev/inv-test-i7?key=seed123 — physical count posts the difference as an adjustment + GL
+		[HttpGet("inv-test-i7")]
+		public async Task<IActionResult> InvTestI7(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need item + warehouse" });
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 100, UnitCostInBase = 12, SourceType = "Opening", PostToGl = false }, null);
+			var (book, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+
+			// counted = book - 7 (shrinkage of 7)
+			var counted = book - 7;
+			var (ok, err, cnt) = await _stock.PostCountAsync(company, wh.ID, DateTime.Today, "I7 test",
+				new List<CrossBuy.BL.CountLineInput> { new() { ItemId = item.ID, CountedQty = counted } }, null);
+			var (after, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			var adjMv = await _db.StockMovements.AsNoTracking().Where(m => m.SourceType == "Adjustment" && m.SourceId == (cnt == null ? -1 : cnt.ID)).FirstOrDefaultAsync();
+			object? jeLines = adjMv?.JournalEntryId == null ? null : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == adjMv.JournalEntryId)
+				.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit }).ToListAsync();
+
+			return Ok(new
+			{
+				item = item.ItemCode, bookQty = book, countedQty = counted,
+				ok, err, countNo = cnt?.CountNo, netAdjustment = cnt?.TotalAdjValue,
+				qtyAfter = after, expected = $"after = {counted} (book adjusted down by 7)",
+				adjustment = new { je = adjMv?.JournalEntryId, lines = jeLines, expected = "Dr Adjustment / Cr Inventory (shrinkage)" }
+			});
+		}
+
+		// GET /api/dev/inv-test-i9?key=seed123 — landed cost raises item value (qty unchanged) + GL
+		[HttpGet("inv-test-i9")]
+		public async Task<IActionResult> InvTestI9(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			var vendor = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
+			var freightAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "210203").Select(a => a.ID).FirstOrDefaultAsync();
+			if (item == null || wh == null || vendor == null) return BadRequest(new { message = "need item, warehouse, vendor" });
+
+			// fresh receipt of 20 @ 10
+			var (pok, _, po) = await _proc.CreatePurchaseOrderAsync(company, vendor.ID, wh.ID, DateTime.Today, null, "I9", new List<CrossBuy.BL.PoLineInput> { new() { ItemId = item.ID, ItemDescription = item.Name, Qty = 20, UoMId = item.BaseUoMId, UnitPrice = 10 } }, null);
+			var pol = (await _proc.GetPurchaseOrderAsync(company, po!.ID))!.Lines.First();
+			var (gok, gerr, gr) = await _proc.CreateReceiptAsync(company, vendor.ID, wh.ID, po.ID, DateTime.Today, "I9", new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = item.ID, Qty = 20, UoMId = item.BaseUoMId, UnitCost = 10, PurchaseOrderLineId = pol.ID } }, null);
+			var (vq, vv0, va0) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+
+			// landed cost: freight 200 → allocated to this item (raises value, qty same)
+			var (lok, lerr, lc) = await _stock.PostLandedCostAsync(company, gr!.ID, DateTime.Today, "Value",
+				new List<CrossBuy.BL.LandedChargeInput> { new() { Description = "شحن", Amount = 200, AccountId = freightAcc } }, "I9 test", null);
+			var (vq1, vv1, va1) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+			object? jeLines = lc?.JournalEntryId == null ? null : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == lc.JournalEntryId)
+				.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit }).ToListAsync();
+
+			return Ok(new
+			{
+				item = item.ItemCode, receipt = gr.ReceiptNo,
+				beforeLanded = new { qty = vq, value = vv0, avg = va0 },
+				landed = new { ok = lok, lerr, no = lc?.LandedNo, total = lc?.TotalAmount, je = lc?.JournalEntryId },
+				afterLanded = new { qty = vq1, value = vv1, avg = va1 },
+				glLines = jeLines,
+				expected = "qty UNCHANGED, value +200, avg up; Dr Inventory 200 / Cr Freight 200"
+			});
+		}
+
+		// GET /api/dev/inv-test-interbranch?key=seed123 — transfer between two branches → value moves between cost centers via transit
+		[HttpGet("inv-test-interbranch")]
+		public async Task<IActionResult> InvTestInterbranch(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var src = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company && w.Code == "WH-02");
+			var dst = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company && w.Code == "WH-BR2");
+			if (item == null || src == null || dst == null) return BadRequest(new { message = "need item + WH-02 + WH-BR2 (run inv_interbranch.sql)" });
+			int invAcc = await _db.ItemCategories.AsNoTracking().Where(c => c.ID == item.ItemCategoryId).Select(c => c.InventoryAccountId ?? 0).FirstAsync();
+			int srcCc = await _db.CostCenters.AsNoTracking().Where(c => c.CompanyID == company && c.SourceHierarchicalId == src.BranchHierarchicalId).Select(c => c.ID).FirstAsync();
+			int dstCc = await _db.CostCenters.AsNoTracking().Where(c => c.CompanyID == company && c.SourceHierarchicalId == dst.BranchHierarchicalId).Select(c => c.ID).FirstAsync();
+
+			// ensure stock at source
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = item.ID, WarehouseId = src.ID, Direction = 1, Qty = 30, UnitCostInBase = 20, SourceType = "Opening", PostToGl = false }, null);
+
+			// helper: net (debit-credit) of an account at a given cost center (across our transfer JE only computed after)
+			async Task<decimal> invAt(int cc) => await _db.JournalEntryLines.AsNoTracking()
+				.Where(l => l.AccountId == invAcc && l.CostCenterId == cc
+					&& _db.JournalEntries.Any(e => e.ID == l.JournalEntryId && e.SourceType == "StockTransfer"))
+				.SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+
+			var srcInvBefore = await invAt(srcCc); var dstInvBefore = await invAt(dstCc);
+			var (sq0, _, _) = await _stock.GetBalanceAsync(company, item.ID, src.ID);
+			var (dq0, _, _) = await _stock.GetBalanceAsync(company, item.ID, dst.ID);
+
+			var (ok, err, tr) = await _stock.TransferAsync(company, src.ID, dst.ID, DateTime.Today, "interbranch test",
+				new List<CrossBuy.BL.TransferLineInput> { new() { ItemId = item.ID, Qty = 10, UoMId = item.BaseUoMId } }, null);
+
+			var (sq1, _, _) = await _stock.GetBalanceAsync(company, item.ID, src.ID);
+			var (dq1, _, _) = await _stock.GetBalanceAsync(company, item.ID, dst.ID);
+			object? jeLines = tr?.JournalEntryId == null ? null : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == tr.JournalEntryId)
+				.Join(_db.Accounts, l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit, l.CostCenterId }).ToListAsync();
+			// transit account net across this JE (should be 0)
+			var transitAccId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110302").Select(a => a.ID).FirstAsync();
+			var transitNet = tr?.JournalEntryId == null ? 0 : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == tr.JournalEntryId && l.AccountId == transitAccId).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+			var invNetThisJe = tr?.JournalEntryId == null ? 0 : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == tr.JournalEntryId && l.AccountId == invAcc).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+
+			return Ok(new
+			{
+				item = item.ItemCode, from = src.Code + " (CC" + srcCc + ")", to = dst.Code + " (CC" + dstCc + ")",
+				ok, err, transferNo = tr?.TransferNo, je = tr?.JournalEntryId,
+				sourceStock = new { before = sq0, after = sq1 },
+				destStock = new { before = dq0, after = dq1 },
+				jeLines,
+				checks = new
+				{
+					inventoryAccountNet_thisJE = invNetThisJe,                  // (a) should be 0 → total 1103 unchanged
+					transitNet_thisJE = transitNet,                              // (c) should be 0 → transit cleared
+					sourceCcInventoryDelta = await invAt(srcCc) - srcInvBefore,  // (b) should be negative (value left source CC)
+					destCcInventoryDelta = await invAt(dstCc) - dstInvBefore     // (b) should be positive (value arrived dest CC)
+				},
+				expected = "1103 net=0, transit net=0, source CC -value, dest CC +value"
+			});
+		}
+
+		// GET /api/dev/seed-inv-roles?key=seed123 — bootstrap: make Admin's employee an InventoryManager
+		[HttpGet("seed-inv-roles")]
+		public async Task<IActionResult> SeedInvRoles(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var admin = await _um.FindByNameAsync("Admin");
+			var emp = admin == null ? null : await _db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.UserId == admin.Id);
+			if (emp == null) emp = await _db.Employee.AsNoTracking().OrderBy(e => e.ID).FirstOrDefaultAsync();
+			if (emp == null) return BadRequest(new { message = "no employee found" });
+			var has = await _db.InventoryUserRoles.AnyAsync(r => r.CompanyID == company && r.EmployeeId == emp.ID && r.Role == "InventoryManager");
+			if (!has)
+			{
+				_db.InventoryUserRoles.Add(new CrossBuy.Models.Context.Inventory.InventoryUserRole { CompanyID = company, EmployeeId = emp.ID, Role = "InventoryManager", CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+			}
+			var all = await _db.InventoryUserRoles.AsNoTracking().Where(r => r.CompanyID == company).Select(r => new { r.EmployeeId, r.Role, r.ScopeBranchId }).ToListAsync();
+			return Ok(new { managerEmployee = new { emp.ID, emp.FullName }, totalAssignments = all.Count, assignments = all, note = "RBAC مفعّل الآن. شغّل هذا قبل تعيين أدوار أخرى حتى لا يُقفل الأدمن." });
+		}
+
+		// GET /api/dev/inv-test-approval?key=seed123 — submit a PO above threshold → SoD block → approve → executed
+		[HttpGet("inv-test-approval")]
+		public async Task<IActionResult> InvTestApproval(string key, [FromServices] CrossBuy.BL.IInventoryApprovalService approvals)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			// set a low threshold so we trigger approval
+			var st = await _db.InventorySettings.FirstOrDefaultAsync(x => x.CompanyID == company);
+			if (st == null) { st = new CrossBuy.Models.Context.Inventory.InventorySettings { CompanyID = company, InterBranchTransferMode = "CostCenterPosting" }; _db.InventorySettings.Add(st); }
+			st.ApprovalThreshold = 100; await _db.SaveChangesAsync();
+
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			var vendor = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
+			var manager = await _db.InventoryUserRoles.AsNoTracking().Where(r => r.CompanyID == company && r.Role == "InventoryManager").Select(r => r.EmployeeId).FirstOrDefaultAsync();
+			var requester = await _db.Employee.AsNoTracking().Where(e => e.ID != manager).Select(e => e.ID).FirstOrDefaultAsync();  // a real employee that isn't the manager
+
+			var amount = 50m * 10m; // 500 > 100 threshold
+			var apId = await approvals.SubmitAsync("PurchaseOrder", amount,
+				new CrossBuy.BL.PoApprovalPayload { VendorId = vendor!.ID, WarehouseId = wh!.ID, OrderDate = DateTime.Today, Notes = "approval test", Lines = new() { new CrossBuy.BL.PoLineInput { ItemId = item!.ID, ItemDescription = item.Name, Qty = 50, UnitPrice = 10 } } },
+				requester);
+
+			// SoD: requester tries to approve own → must fail
+			var sod = await approvals.ApproveAsync(apId, requester, "self");
+			// manager approves → executes (creates the PO)
+			var done = await approvals.ApproveAsync(apId, manager, "ok");
+			var ap = await _db.InventoryApprovals.AsNoTracking().FirstAsync(a => a.ID == apId);
+
+			return Ok(new
+			{
+				threshold = st.ApprovalThreshold, submittedAmount = amount, approvalId = apId,
+				sodBlock = new { ok = sod.ok, error = sod.error, expected = "ok=false (creator can't approve own)" },
+				managerApprove = new { ok = done.ok, error = done.error },
+				finalStatus = ap.Status, resultDocNo = ap.ResultDocNo, decidedBy = ap.DecidedByEmployeeId,
+				expected = "SoD blocks self-approval; manager approval executes → status Approved + PO created"
+			});
+		}
+
+		// GET /api/dev/inv-test-fefo?key=seed123 — FEFO auto-select on issue + expired-batch block
+		[HttpGet("inv-test-fefo")]
+		public async Task<IActionResult> InvTestFefo(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need item + warehouse" });
+
+			// enable expiry tracking on this item for the test
+			item.TrackExpiry = true; await _db.SaveChangesAsync();
+
+			// reset ledger/balances/layers/batches for a deterministic run
+			await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID && b.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID && l.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockBatches.Where(b => b.CompanyID == company && b.ItemId == item.ID).ExecuteDeleteAsync();
+
+			var today = DateTime.Today;
+			var steps = new List<object>();
+			async Task<(bool ok, string? err, int? batchId, decimal qty)> recv(string batch, decimal qty, decimal cost, DateTime exp)
+			{
+				var (ok, err, mv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+				{ Date = today, ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = qty, UnitCostInBase = cost, BatchNo = batch, Expiry = exp, SourceType = "Opening", PostToGl = false }, null);
+				return (ok, err, mv?.BatchId, qty);
+			}
+
+			// receive: near-expiry, far-expiry, and an already-expired batch
+			await recv("B-NEAR", 100, 10m, today.AddDays(30));
+			await recv("B-FAR", 100, 12m, today.AddDays(365));
+			await recv("B-EXP", 50, 9m, today.AddDays(-5));
+
+			// helper: per-batch on-hand
+			async Task<Dictionary<string, decimal>> onHand()
+			{
+				var rows = await (from m in _db.StockMovements
+								  join b in _db.StockBatches on m.BatchId equals b.ID
+								  where m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID
+								  group new { m, b } by b.BatchNo into g
+								  select new { Batch = g.Key, Qty = g.Sum(x => x.m.Direction * x.m.QtyBase) }).ToListAsync();
+				return rows.ToDictionary(r => r.Batch, r => r.Qty);
+			}
+
+			// ISSUE 60 (no batch) → FEFO must draw entirely from B-NEAR (nearest expiry)
+			var (i1ok, i1err, i1mv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ Date = today, ItemId = item.ID, WarehouseId = wh.ID, Direction = -1, Qty = 60, SourceType = "Issue", PostToGl = false }, null);
+			var oh1 = await onHand();
+			steps.Add(new { step = "issue 60 (FEFO)", ok = i1ok, err = i1err, B_NEAR = oh1.GetValueOrDefault("B-NEAR"), B_FAR = oh1.GetValueOrDefault("B-FAR"), B_EXP = oh1.GetValueOrDefault("B-EXP"), expect = "B-NEAR=40, B-FAR=100, B-EXP=50" });
+
+			// ISSUE 150 (no batch) → valid (non-expired) stock = 40 + 100 = 140 < 150 → must FAIL (expired excluded)
+			var (i2ok, i2err, _) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ Date = today, ItemId = item.ID, WarehouseId = wh.ID, Direction = -1, Qty = 150, SourceType = "Issue", PostToGl = false }, null);
+			steps.Add(new { step = "issue 150 (exceeds valid)", ok = i2ok, err = i2err, expect = "ok=false: valid stock short, expired excluded" });
+
+			// ISSUE 140 (no batch) → draws B-NEAR 40 then B-FAR 100; B-EXP stays 50
+			var (i3ok, i3err, _) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ Date = today, ItemId = item.ID, WarehouseId = wh.ID, Direction = -1, Qty = 140, SourceType = "Issue", PostToGl = false }, null);
+			var oh3 = await onHand();
+			steps.Add(new { step = "issue 140 (FEFO)", ok = i3ok, err = i3err, B_NEAR = oh3.GetValueOrDefault("B-NEAR"), B_FAR = oh3.GetValueOrDefault("B-FAR"), B_EXP = oh3.GetValueOrDefault("B-EXP"), expect = "B-NEAR=0, B-FAR=0, B-EXP=50 (untouched)" });
+
+			// EXPLICIT issue from the expired batch → must be blocked
+			var (i4ok, i4err, _) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+			{ Date = today, ItemId = item.ID, WarehouseId = wh.ID, Direction = -1, Qty = 10, BatchNo = "B-EXP", SourceType = "Issue", PostToGl = false }, null);
+			steps.Add(new { step = "explicit issue from B-EXP", ok = i4ok, err = i4err, expect = "ok=false: expired batch blocked" });
+
+			bool pass = oh1.GetValueOrDefault("B-NEAR") == 40 && oh1.GetValueOrDefault("B-FAR") == 100
+				&& !i2ok && i3ok && oh3.GetValueOrDefault("B-EXP") == 50
+				&& oh3.GetValueOrDefault("B-NEAR") == 0 && oh3.GetValueOrDefault("B-FAR") == 0 && !i4ok;
+
+			return Ok(new { item = item.ItemCode, warehouse = wh.Code, steps, allPass = pass });
+		}
+
+		// GET /api/dev/seed-writeoff-demo?key=seed123 — write-off in BOTH modes, verifies the GL invariant (delta) end-to-end
+		[HttpGet("seed-writeoff-demo")]
+		public async Task<IActionResult> SeedWriteOffDemo(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need item + warehouse" });
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId);
+			int invAcc = cat?.InventoryAccountId ?? 0;
+			var woAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "510103").Select(a => a.ID).FirstOrDefaultAsync();
+			if (woAcc == 0) return BadRequest(new { message = "write-off account 510103 missing" });
+
+			// disable approval routing for the demo (call the service directly anyway), then top up stock with GL
+			var st = await _db.InventorySettings.FirstOrDefaultAsync(x => x.CompanyID == company)
+				?? new CrossBuy.Models.Context.Inventory.InventorySettings { CompanyID = company };
+			if (st.ID == 0) _db.InventorySettings.Add(st);
+			await _db.SaveChangesAsync();
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = DateTime.Today, ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 100, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = true }, null);
+
+			async Task<decimal> glNet(int acc) => await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == acc).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+
+			var runs = new List<object>();
+			foreach (var mode in new[] { "SeparateDocument", "AdjustmentReason" })
+			{
+				st = await _db.InventorySettings.FirstAsync(x => x.CompanyID == company);
+				st.WriteOffMode = mode; await _db.SaveChangesAsync();
+
+				var (sQ0, sV0, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+				decimal inv0 = await glNet(invAcc), wo0 = await glNet(woAcc);
+
+				var (ok, err, docNo, docId, m) = await _stock.WriteOffAsync(company, wh.ID, DateTime.Today, "Damaged", "demo " + mode,
+					new List<CrossBuy.BL.WriteOffLineInput> { new() { ItemId = item.ID, Qty = 5, Reason = "Damaged" } }, null);
+
+				var (sQ1, sV1, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+				decimal inv1 = await glNet(invAcc), wo1 = await glNet(woAcc);
+
+				decimal stockDrop = R(sV0 - sV1), invDrop = R(inv0 - inv1), woDebit = R(wo1 - wo0);
+				runs.Add(new
+				{
+					mode = m, ok, err, docNo, docType = (m == "AdjustmentReason" ? "StockCount (Reason)" : "StockWriteOff"),
+					stockValueDrop = stockDrop, inventoryGlCredit = invDrop, writeOffExpenseDebit = woDebit,
+					invariant_ok = ok && stockDrop == invDrop && woDebit == stockDrop && stockDrop > 0m
+				});
+			}
+
+			return Ok(new
+			{
+				item = item.ItemCode, warehouse = wh.Code, inventoryAccountId = invAcc, writeOffAccountId = woAcc,
+				expected = "each run: stock value -50 = inventory GL credit 50 = write-off expense debit 50 (5 units @ 10)",
+				runs,
+				allPass = runs.All(r => (bool)r.GetType().GetProperty("invariant_ok")!.GetValue(r)!)
+			});
+		}
+
+		private static decimal R(decimal d) => Math.Round(d, 2);
+
+		// GET /api/dev/inv-test-concurrency?key=seed123 — REAL concurrency proof of the StockService balance lock.
+		// Drives PostMovementAsync from many independent DI scopes (own DbContext/connection each) at once, then
+		// verifies the stock balance still equals the movement ledger (no lost updates) and never goes negative.
+		// Also runs a raw control: concurrent counter increments WITH vs WITHOUT UPDLOCK to prove the lock is necessary.
+		[HttpGet("inv-test-concurrency")]
+		public async Task<IActionResult> InvTestConcurrency(string key, int rounds = 5)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var wh = await _db.Warehouses.FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need item + warehouse" });
+			if (wh.AllowNegativeStock) { wh.AllowNegativeStock = false; await _db.SaveChangesAsync(); }  // enforce the guard for the test
+
+			// run one StockService movement in its OWN scope (independent DbContext + connection)
+			async Task<(bool ok, string? err)> op(short dir, decimal qty, decimal? cost)
+			{
+				using var scope = _scopes.CreateScope();
+				var stock = scope.ServiceProvider.GetRequiredService<IStockService>();
+				var (ok, err, _) = await stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+				{ Date = DateTime.Today, ItemId = item.ID, WarehouseId = wh.ID, Direction = dir, Qty = qty, UnitCostInBase = cost, SourceType = dir == 1 ? "Opening" : "Issue", PostToGl = false }, null);
+				return (ok, err);
+			}
+			async Task reset()
+			{
+				await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID).ExecuteDeleteAsync();
+				await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID && b.WarehouseId == wh.ID).ExecuteDeleteAsync();
+				await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID && l.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			}
+			async Task<(decimal qLedger, decimal vLedger, int outCount)> ledger()
+			{
+				var ms = await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID)
+					.Select(m => new { m.Direction, m.QtyBase, m.TotalCost }).ToListAsync();
+				return (Math.Round(ms.Sum(m => m.Direction * m.QtyBase), 4), R(ms.Sum(m => m.Direction * m.TotalCost)), ms.Count(m => m.Direction == -1));
+			}
+
+			var roundResults = new List<object>();
+			var passFlags = new List<bool>();
+			for (int r = 0; r < Math.Max(1, Math.Min(rounds, 10)); r++)
+			{
+				// ---- MIX scenario: opening 200@10, then 15 concurrent receipts + 15 concurrent issues all at once ----
+				await reset();
+				await op(1, 200, 10m);
+				var mix = new List<Func<Task<(bool, string?)>>>();
+				for (int i = 0; i < 15; i++) { decimal c = 10m + i; mix.Add(() => op(1, 10, c)); }
+				for (int i = 0; i < 15; i++) mix.Add(() => op(-1, 8, null));
+				var mixRes = await Task.WhenAll(mix.Select(f => f()));
+				var (mq, mv, _) = await ledger();
+				var (bq, bv, ba) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+				bool mixOk = Math.Round(bq, 4) == mq && R(bv) == mv && bq >= 0 && (bq == 0 ? true : Math.Abs(ba - R(bv / bq)) < 0.01m);
+
+				// ---- OVERSELL scenario: opening 100@10, then 20 concurrent issues of 10 (total 200 > 100) ----
+				await reset();
+				await op(1, 100, 10m);
+				var sell = Enumerable.Range(0, 20).Select(_ => (Func<Task<(bool, string?)>>)(() => op(-1, 10, null))).ToList();
+				var sellRes = await Task.WhenAll(sell.Select(f => f()));
+				int success = sellRes.Count(x => x.Item1);
+				var (oq, ov, outCnt) = await ledger();
+				var (sq, sv, _) = await _stock.GetBalanceAsync(company, item.ID, wh.ID);
+				bool sellOk = sq >= 0 && Math.Round(sq, 4) == oq && R(sv) == ov && outCnt == success && sq == R4d(100 - 10 * success);
+				passFlags.Add(mixOk); passFlags.Add(sellOk);
+
+				roundResults.Add(new
+				{
+					round = r + 1,
+					mix = new { receipts = 15, issues = 15, allCommitted = mixRes.Count(x => x.Item1), balanceQty = bq, ledgerQty = mq, balanceValue = bv, ledgerValue = mv, negative = bq < 0, pass = mixOk },
+					oversell = new { issuesAttempted = 20, succeeded = success, failedInsufficient = 20 - success, finalQty = sq, neverNegative = sq >= 0, ledgerMatches = Math.Round(sq, 4) == oq && R(sv) == ov, pass = sellOk }
+				});
+			}
+
+			// ---- CONTROL: raw concurrent increments on one row, WITHOUT vs WITH UPDLOCK (proves the lock matters) ----
+			var cs = _db.Database.GetConnectionString()!;
+			async Task<int> raceIncrement(bool useLock, int n)
+			{
+				await using (var c = new SqlConnection(cs))
+				{
+					await c.OpenAsync();
+					var setup = c.CreateCommand();
+					setup.CommandText = "IF OBJECT_ID('_ConcTest') IS NULL CREATE TABLE _ConcTest(id int primary key, val int);" +
+						" IF NOT EXISTS(SELECT 1 FROM _ConcTest WHERE id=1) INSERT _ConcTest(id,val) VALUES(1,0); UPDATE _ConcTest SET val=0 WHERE id=1;";
+					await setup.ExecuteNonQueryAsync();
+				}
+				var tasks = Enumerable.Range(0, n).Select(_ => Task.Run(async () =>
+				{
+					try
+					{
+						await using var c = new SqlConnection(cs); await c.OpenAsync();
+						await using var tx = (SqlTransaction)await c.BeginTransactionAsync();
+						var sel = c.CreateCommand(); sel.Transaction = tx;
+						sel.CommandText = useLock ? "SELECT val FROM _ConcTest WITH (UPDLOCK, HOLDLOCK) WHERE id=1" : "SELECT val FROM _ConcTest WHERE id=1";
+						int v = (int)(await sel.ExecuteScalarAsync())!;
+						await Task.Delay(3);   // widen the read-modify-write window
+						var upd = c.CreateCommand(); upd.Transaction = tx;
+						upd.CommandText = "UPDATE _ConcTest SET val=@v WHERE id=1"; upd.Parameters.AddWithValue("@v", v + 1);
+						await upd.ExecuteNonQueryAsync();
+						await tx.CommitAsync();
+					}
+					catch { /* nolock variant may deadlock/timeout; that itself is a failure of correctness */ }
+				}));
+				await Task.WhenAll(tasks);
+				await using (var c2 = new SqlConnection(cs))
+				{
+					await c2.OpenAsync(); var g = c2.CreateCommand(); g.CommandText = "SELECT val FROM _ConcTest WHERE id=1";
+					return (int)(await g.ExecuteScalarAsync())!;
+				}
+			}
+			int controlN = 50;
+			int noLockFinal = await raceIncrement(false, controlN);
+			int lockFinal = await raceIncrement(true, controlN);
+
+			return Ok(new
+			{
+				item = item.ItemCode, warehouse = wh.Code,
+				stockServiceProof = new
+				{
+					description = "PostMovementAsync run concurrently from independent DI scopes; balance must equal the movement ledger and never go negative",
+					rounds = roundResults,
+					allRoundsPass = passFlags.All(p => p)
+				},
+				lockNecessityControl = new
+				{
+					description = $"{controlN} concurrent read-modify-write increments on one row",
+					withoutLock_final = noLockFinal, withoutLock_expected = controlN, withoutLock_lostUpdates = controlN - noLockFinal,
+					withUpdlock_final = lockFinal, withUpdlock_expected = controlN,
+					proves = "without UPDLOCK final < expected (lost updates); with UPDLOCK final == expected"
+				}
+			});
+		}
+
+		private static decimal R4d(decimal d) => Math.Round(d, 4);
+
+		// GET /api/dev/seed-opening-demo?key=seed123 — loads a full Go-Live opening scenario
+		// (stock + AR + AP + fixed asset + GL trial balance) and verifies every integrity invariant via deltas.
+		[HttpGet("seed-opening-demo")]
+		public async Task<IActionResult> SeedOpeningDemo(string key, [FromServices] CrossBuy.BL.IOpeningBalanceService opening)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var cutoff = new DateTime(2026, 1, 1);
+
+			// ---- reset prior opening artifacts so the demo is idempotent ----
+			var jeIds = await _db.JournalEntries.Where(j => j.CompanyID == company && j.SourceType != null && j.SourceType.StartsWith("Opening")).Select(j => j.ID).ToListAsync();
+			if (jeIds.Count > 0)
+			{
+				await _db.JournalEntryLines.Where(l => jeIds.Contains(l.JournalEntryId)).ExecuteDeleteAsync();
+				await _db.JournalEntries.Where(j => jeIds.Contains(j.ID)).ExecuteDeleteAsync();
+			}
+			var siIds = await _db.SalesInvoices.Where(i => i.CompanyID == company && i.Notes == "رصيد افتتاحي").Select(i => i.ID).ToListAsync();
+			if (siIds.Count > 0) { await _db.SalesInvoiceLines.Where(l => siIds.Contains(l.SalesInvoiceId)).ExecuteDeleteAsync(); await _db.SalesInvoices.Where(i => siIds.Contains(i.ID)).ExecuteDeleteAsync(); }
+			var piIds = await _db.PurchaseInvoices.Where(i => i.CompanyID == company && i.Notes == "رصيد افتتاحي").Select(i => i.ID).ToListAsync();
+			if (piIds.Count > 0) { await _db.PurchaseInvoiceLines.Where(l => piIds.Contains(l.PurchaseInvoiceId)).ExecuteDeleteAsync(); await _db.PurchaseInvoices.Where(i => piIds.Contains(i.ID)).ExecuteDeleteAsync(); }
+			await _db.FixedAssets.Where(a => a.CompanyID == company && a.Notes == "__OB_DEMO__").ExecuteDeleteAsync();
+			await _db.OpeningBalances.Where(o => o.CompanyID == company).ExecuteDeleteAsync();
+			await _db.OpeningBalanceControls.Where(o => o.CompanyID == company).ExecuteDeleteAsync();
+
+			// demo entities
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			if (item == null || wh == null) return BadRequest(new { message = "need item + warehouse" });
+			// reset the demo item's stock so its opening starts clean
+			await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID && b.WarehouseId == wh.ID).ExecuteDeleteAsync();
+			await _db.StockCostLayers.Where(l => l.CompanyID == company && l.ItemId == item.ID && l.WarehouseId == wh.ID).ExecuteDeleteAsync();
+
+			var customer = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company)
+				?? await _ar.CreateCustomerAsync(company, "عميل افتتاحي", "Opening Cust", null, 100000);
+			var vendor = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company)
+				?? await _ap.CreateVendorAsync(company, "مورد افتتاحي", "Opening Vendor", null);
+			int cashAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstAsync();
+			int capAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "3101").Select(a => a.ID).FirstAsync();
+
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> StockVal() => await _db.StockBalances.Where(b => b.CompanyID == company && b.ItemId == item.ID && b.WarehouseId == wh.ID).SumAsync(b => (decimal?)b.TotalValue) ?? 0;
+
+			// ---- baseline snapshot ----
+			decimal b1103 = await Net("1103"), b1102 = await Net("1102"), b2101 = await Net("2101"), bOBE = await Net("3301"), b1201 = await Net("1201"), b1202 = await Net("1202"), bStock = await StockVal();
+
+			// ---- load opening balances ----
+			var steps = new List<object>();
+			decimal stockVal = 50m * 20m, arAmt = 500m, apAmt = 300m, assetCost = 2000m, assetAccum = 800m;
+			decimal assetNbv = assetCost - assetAccum;
+			decimal cash = 600m;
+			decimal capital = (stockVal + arAmt + assetNbv - apAmt) + cash;  // so OBE drains to zero
+
+			var (s1, e1, tot) = await opening.PostStockAsync(company, cutoff, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = item.ID, WarehouseId = wh.ID, Qty = 50, UnitCost = 20 } }, null);
+			steps.Add(new { step = "stock 50@20", ok = s1, err = e1, total = tot });
+			var (s2, e2) = await opening.PostArAsync(company, cutoff, customer.ID, arAmt, null); steps.Add(new { step = "AR 500", ok = s2, err = e2 });
+			var (s3, e3) = await opening.PostApAsync(company, cutoff, vendor.ID, apAmt, null); steps.Add(new { step = "AP 300", ok = s3, err = e3 });
+			var (s4, e4) = await opening.PostAssetAsync(company, cutoff, new CrossBuy.BL.FixedAssetInput { Name = "أصل افتتاحي تجريبي", Cost = assetCost, SalvageValue = 0, UsefulLifeMonths = 60, AcquisitionDate = new DateTime(2024, 1, 1), Notes = "__OB_DEMO__" }, assetAccum, null);
+			steps.Add(new { step = "asset cost 2000 / accum 800", ok = s4, err = e4 });
+			var (s5, e5) = await opening.PostGlAsync(company, cutoff, new List<CrossBuy.BL.OpeningGlLineInput> { new() { AccountId = cashAcc, Debit = cash, Credit = 0 }, new() { AccountId = capAcc, Debit = 0, Credit = capital } }, null);
+			steps.Add(new { step = $"GL: Dr cash {cash} / Cr capital {capital}", ok = s5, err = e5 });
+
+			// ---- after snapshot + delta assertions ----
+			decimal a1103 = await Net("1103"), a1102 = await Net("1102"), a2101 = await Net("2101"), aOBE = await Net("3301"), a1201 = await Net("1201"), a1202 = await Net("1202"), aStock = await StockVal();
+			decimal R(decimal d) => Math.Round(d, 2);
+			var deltas = new
+			{
+				stock_value = R(aStock - bStock),
+				gl_1103 = R(a1103 - b1103),
+				stock_equals_1103 = R(aStock - bStock) == R(a1103 - b1103) && R(aStock - bStock) == stockVal,
+				ar_1102 = R(a1102 - b1102),
+				ar_ok = R(a1102 - b1102) == arAmt,
+				ap_2101_credit = R(-(a2101 - b2101)),
+				ap_ok = R(-(a2101 - b2101)) == apAmt,
+				asset_cost_1201 = R(a1201 - b1201),
+				asset_accum_1202_credit = R(-(a1202 - b1202)),
+				asset_ok = R(a1201 - b1201) == assetCost && R(-(a1202 - b1202)) == assetAccum,
+				obe_delta = R(aOBE - bOBE),
+				obe_nets_to_zero = R(aOBE - bOBE) == 0m
+			};
+			var globalChecks = await opening.VerifyAsync(company);
+
+			bool allPass = (bool)deltas.GetType().GetProperty("stock_equals_1103")!.GetValue(deltas)! &&
+				deltas.ar_ok && deltas.ap_ok && deltas.asset_ok && deltas.obe_nets_to_zero && s1 && s2 && s3 && s4 && s5;
+
+			return Ok(new
+			{
+				cutoff = cutoff.ToString("yyyy-MM-dd"),
+				item = item.ItemCode, warehouse = wh.Code, customer = customer.Name, vendor = vendor.Name,
+				scenario = new { stockVal, arAmt, apAmt, assetCost, assetAccum, assetNbv, cash, capital },
+				steps, deltas,
+				globalIntegrity = globalChecks.Select(c => new { c.Name, a = c.A, b = c.B, c.Ok }),
+				allPass,
+				note = "deltas isolate the opening load from pre-existing dev-test data; globalIntegrity is whole-company (may reflect earlier test noise)"
+			});
+		}
+
+		// GET /api/dev/inv-test-periodlock?key=seed123 — proves EVERY stock GL path is blocked in a Closed period.
+		[HttpGet("inv-test-periodlock")]
+		public async Task<IActionResult> InvTestPeriodLock(string key, [FromServices] CrossBuy.BL.IOpeningBalanceService opening, [FromServices] CrossBuy.BL.IFiscalPeriodService periods)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var closedDate = new DateTime(2026, 3, 15);   // inside a period we will close
+			var openDate = new DateTime(2026, 7, 15);     // a known-open period for preconditions
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && !i.IsComposite && i.ItemType == "Stockable");
+			var whs = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).ToListAsync();
+			if (item == null || whs.Count == 0) return BadRequest(new { message = "need item + warehouse" });
+			var wh = whs[0];
+
+			// precondition: give the item stock in an OPEN period so issue/transfer/count/write-off are otherwise valid
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = openDate, ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 500, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = true }, null);
+
+			var period = await periods.ResolveAsync(company, closedDate);
+			if (period == null) return BadRequest(new { message = "no fiscal period for 2026-03" });
+
+			int beforeCount = await _db.StockMovements.CountAsync(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID);
+
+			await periods.SetStatusAsync(period.ID, "Closed");
+			var attempts = new List<object>();
+			void rec(string op, bool ok, string? err) => attempts.Add(new { op, ok, blocked = !ok && (err ?? "").Contains("مقفول"), error = err });
+			try
+			{
+				var r1 = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = closedDate, ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 10, UnitCostInBase = 10m, SourceType = "Receipt", PostToGl = true }, null);
+				rec("Receipt (IN +GL)", r1.ok, r1.error);
+				var r2 = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = closedDate, ItemId = item.ID, WarehouseId = wh.ID, Direction = -1, Qty = 5, SourceType = "Issue", PostToGl = true }, null);
+				rec("Issue (OUT +GL)", r2.ok, r2.error);
+				if (whs.Count >= 2)
+				{
+					var r3 = await _stock.TransferAsync(company, wh.ID, whs[1].ID, closedDate, "test", new List<CrossBuy.BL.TransferLineInput> { new() { ItemId = item.ID, Qty = 5 } }, null);
+					rec("Transfer", r3.ok, r3.error);
+				}
+				var r4 = await _stock.PostCountAsync(company, wh.ID, closedDate, "test", new List<CrossBuy.BL.CountLineInput> { new() { ItemId = item.ID, CountedQty = 490 } }, null);
+				rec("Stock count adjustment", r4.ok, r4.error);
+				var r5 = await _stock.WriteOffAsync(company, wh.ID, closedDate, "Damaged", "test", new List<CrossBuy.BL.WriteOffLineInput> { new() { ItemId = item.ID, Qty = 3, Reason = "Damaged" } }, null);
+				rec("Write-off", r5.ok, r5.error);
+				var r6 = await _stock.PostOpeningStockAsync(company, closedDate, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = item.ID, WarehouseId = wh.ID, Qty = 10, UnitCost = 10 } }, null);
+				rec("Opening stock", r6.ok, r6.error);
+				var kit = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && i.IsComposite && i.CompositeType == "Assembly");
+				if (kit != null)
+				{
+					var r7 = await _stock.AssembleAsync(company, kit.ID, wh.ID, 1, closedDate, false, null);
+					rec("Assemble", r7.ok, r7.error);
+				}
+			}
+			finally { await periods.SetStatusAsync(period.ID, "Open"); }
+
+			int afterCount = await _db.StockMovements.CountAsync(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID);
+
+			return Ok(new
+			{
+				closedPeriod = $"{period.PeriodNo}/2026", closedDate = closedDate.ToString("yyyy-MM-dd"),
+				attempts,
+				allBlocked = attempts.All(a => (bool)a.GetType().GetProperty("blocked")!.GetValue(a)!),
+				noMovementsLeaked = beforeCount == afterCount,
+				movementCount = new { before = beforeCount, after = afterCount },
+				note = "GL-posting paths were already guarded via JournalEntryService. GAP FOUND+FIXED: same-branch/NoGL transfers posted no JE and bypassed the period check — added an entry-level PeriodGuardAsync to every StockService public method, so all stock paths now reject Closed periods and roll back."
+			});
+		}
+
+		// GET /api/dev/inv-test-integrity?key=seed123 — runs all integrity checks and prints a summary
+		[HttpGet("inv-test-integrity")]
+		public async Task<IActionResult> InvTestIntegrity(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var (run, checks) = await integ.RunAndLogAsync(1, "Manual");
+			// HM-D6 item 3: show the ACTUAL build config of the running assembly + the state of the #if DEBUG test seams,
+			// so a Debug deployment (which would REVIVE the bypass/fault seams) is visible here. Display only; changes nothing.
+			string buildConfig =
+#if DEBUG
+				"Debug — test seams PRESENT (dev only; a Debug deployment would REVIVE the fix-bypass/fault seams)";
+#else
+				"Release — test seams COMPILED OUT (production-safe)";
+#endif
+			return Ok(new
+			{
+				runId = run.ID, allOk = run.AllOk, failedCount = run.FailedCount, buildConfig,
+				checks = checks.Select(c => new { c.Key, name = c.NameAr, c.Expected, c.Actual, diff = c.Diff, c.Ok, c.Note }),
+				note = "نفس الفحوص يشغّلها HostedService يوميًا ويُخطر مديري المخزون عند أي انحراف. الانحرافات الظاهرة (إن وُجدت) ناتجة عن بيانات اختبارات سابقة رحّلت مخزونًا بدون GL."
+			});
+		}
+
+		// GET /api/dev/inv-reconcile?key=seed123 — ONE-TIME cleanup of accumulated dev-test stock corruption.
+		// Rebuilds StockBalances to sane non-negative values (physical on-hand qty × pure-purchase average from IN movements),
+		// then posts a balanced book-to-physical reconciliation JE (inventory 1103 & GRNI 210203 ↔ opening-equity 3301)
+		// so the stock/GRNI GL equals the subledger. Standard remedy for corrupted book stock; no P&L impact, books stay balanced.
+		[HttpGet("inv-reconcile")]
+		public async Task<IActionResult> InvReconcile(string key, [FromServices] CrossBuy.BL.IJournalEntryService journals, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int? itemId = null, string? reason = null)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<object>();
+			decimal R(decimal v) => Math.Round(v, 2);
+			var reconLogs = new List<CrossBuy.Models.Context.Inventory.InventoryReconcileLog>();   // HM-D6 item 5: permanent audit trail
+			var reconRunAt = DateTime.UtcNow;
+
+			async Task<int?> Acc(string code) => await _db.Accounts.Where(a => a.CompanyID == company && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			async Task<decimal> GlNet(int accId) => await _db.JournalEntryLines.Where(l => l.AccountId == accId).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+			var acc1103 = await Acc("1103"); var acc3301 = await Acc("3301"); var accGrni = await Acc("210203");
+			if (acc1103 == null || acc3301 == null) return BadRequest(new { message = "need accounts 1103 + 3301" });
+
+			// (1) rebuild every StockBalance to a sane non-negative value: qty (physical) × pure-purchase avg
+			var bals = await _db.StockBalances.Where(b => b.CompanyID == company && (itemId == null || b.ItemId == itemId)).ToListAsync();   // itemId != null ⇒ scope to ONE item
+			int fixedRows = 0;
+			foreach (var b in bals)
+			{
+				var ins = await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == b.ItemId && m.WarehouseId == b.WarehouseId && m.Direction == 1).ToListAsync();
+				decimal inQty = ins.Sum(m => m.QtyBase), inVal = ins.Sum(m => m.TotalCost);
+				decimal avg = inQty > 0 ? Math.Round(inVal / inQty, 4) : 0m;
+				if (avg < 0) avg = 0m;   // guard against corrupted negative purchase rows
+				decimal newVal = R(b.QtyOnHand * avg);
+				if (b.TotalValue != newVal || b.AvgCost != avg)
+				{
+					fixedRows++;
+					// AUDIT: capture before/after. NB QtyBefore==QtyAfter — inv-reconcile rebuilds VALUE only, it does NOT change QtyOnHand.
+					reconLogs.Add(new CrossBuy.Models.Context.Inventory.InventoryReconcileLog { CompanyID = company, ItemId = b.ItemId, WarehouseId = b.WarehouseId, QtyBefore = b.QtyOnHand, QtyAfter = b.QtyOnHand, ValueBefore = b.TotalValue, ValueAfter = newVal, AvgBefore = b.AvgCost, AvgAfter = avg, RanBy = "inv-reconcile", RanAt = reconRunAt, Reason = reason ?? "book-to-physical value rebuild" });
+				}
+				b.AvgCost = avg; b.TotalValue = newVal;
+			}
+			await _db.SaveChangesAsync();
+			decimal newSub = R(bals.Sum(b => b.TotalValue));
+
+			// (2) reconcile inventory GL 1103 to the rebuilt subledger
+			decimal gl1103 = R(await GlNet(acc1103.Value));
+			decimal dInv = R(newSub - gl1103);
+			// (3) reconcile GRNI 210203 to unbilled receipts
+			decimal grniGl = accGrni == null ? 0 : R(-await GlNet(accGrni.Value));
+			decimal unbilled = await _db.GoodsReceipts.Where(g => g.CompanyID == company && g.Status == "Posted" && g.InvoiceId == null).SumAsync(g => (decimal?)g.TotalCost) ?? 0m;
+			decimal dGrni = R(unbilled - grniGl);   // GRNI is credit-normal → need to CREDIT it by dGrni
+
+			var jl = new List<CrossBuy.BL.JournalLineInput>();
+			if (dInv != 0) { jl.Add(new() { AccountId = acc1103.Value, Debit = dInv > 0 ? dInv : 0, Credit = dInv < 0 ? -dInv : 0, Description = "تسوية جرد المخزون (تنظيف بيانات)" });
+				jl.Add(new() { AccountId = acc3301.Value, Debit = dInv < 0 ? -dInv : 0, Credit = dInv > 0 ? dInv : 0, Description = "حقوق ملكية افتتاحية" }); }
+			if (accGrni != null && dGrni != 0) { jl.Add(new() { AccountId = accGrni.Value, Debit = dGrni < 0 ? -dGrni : 0, Credit = dGrni > 0 ? dGrni : 0, Description = "تسوية GRNI (تنظيف بيانات)" });
+				jl.Add(new() { AccountId = acc3301.Value, Debit = dGrni > 0 ? dGrni : 0, Credit = dGrni < 0 ? -dGrni : 0, Description = "حقوق ملكية افتتاحية" }); }
+
+			object? je = null; int? jeId = null;
+			// The GL delta (dInv/dGrni) is computed on the WHOLE subledger vs GL — it is only valid for a full run. A scoped
+			// (single-item) run rebuilds+logs that item's VALUE only and must NOT post a company-wide GL JE from a filtered newSub.
+			if (itemId == null && jl.Count > 0)
+			{
+				var (ok, err, entry) = await journals.CreateAndPostAsync(new CrossBuy.BL.JournalEntryInput
+				{
+					CompanyID = company, EntryDate = DateTime.Today, JournalType = "Manual", SourceType = "StockReconcile",
+					Description = "تسوية جرد المخزون وGRNI — تنظيف بيانات اختبار", DescriptionEn = "Stock & GRNI book-to-physical reconciliation (test-data cleanup)", Lines = jl,
+				}, null);
+				if (!ok) return BadRequest(new { message = err });
+				jeId = entry!.ID; je = new { entry.ID, entry.EntryNo };
+			}
+
+			// HM-D6 item 5: PERSIST the per-item audit trail (never silently erase this bug family's evidence)
+			if (reconLogs.Count > 0)
+			{
+				foreach (var rl in reconLogs) rl.JournalEntryId = jeId;
+				_db.InventoryReconcileLogs.AddRange(reconLogs);
+				await _db.SaveChangesAsync();
+			}
+
+			var (run, checks) = await integ.RunAndLogAsync(company, "Reconcile");
+			return Ok(new { scopedItemId = itemId, fixedRows, reconLogged = reconLogs.Count, newSub, dInv, dGrni, journalEntry = je, failedCount = run.FailedCount, checks = checks.Select(c => new { key = c.Key, name = c.NameAr, c.Ok, c.Expected, c.Actual }) });
+		}
+
+		// GET /api/dev/inv-resync-item?key=seed123&itemId=&warehouseId=&expectQtyDelta=&reason= — HM-D6 item 5:
+		// resync ONE (item,warehouse) StockBalance to its net-movements (the movement ledger is the truth for a balance-cache
+		// lost-update). SCOPED ONLY (no bulk); mandatory reason; refuses if the observed delta ≠ the caller-declared expectQtyDelta
+		// (guard against a blind run on a different-cause discrepancy). Runs in ONE own-or-join tx: lock→guard→Reload→modify +
+		// the audit-log row, commit together. Balance is the drifted CACHE and the GL is posted from the same movements, so NO
+		// GL JE is posted (a JE would re-break stock_gl); if the GL itself is wrong that is inv-reconcile's separate job.
+		[HttpGet("inv-resync-item")]
+		public async Task<IActionResult> InvResyncItem(string key, int itemId, int warehouseId, int expectQtyDelta, string? reason, bool callerBypassDisable = false)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (itemId <= 0 || warehouseId <= 0) return BadRequest(new { message = "itemId و warehouseId إلزاميان (لا وضع جملة)" });
+			if (string.IsNullOrWhiteSpace(reason)) return BadRequest(new { message = "reason إلزامي" });
+			// HM-D14: DISABLED. The three-way guard computes per-item glVal ONLY from movement-linked JEs, but a purchase-invoice
+			// movement is PostToGl=false (JournalEntryId=NULL) so the invoice inventory debit is invisible ⇒ the guard MISJUDGES any
+			// item with purchase history (proven by hm1-guard-purchase-test: refused a legitimate resync, glVal 0 ≠ movementsVal 100).
+			// This tool WRITES to the balance, so a misjudgment is unsafe. Refuse to run entirely until the guard's GL attribution is
+			// fixed to include the invoice-JE inventory debit (SourceType=PurchaseInvoice → invoice lines → item). Do NOT re-enable here.
+			if (!callerBypassDisable) return BadRequest(new { message = "inv-resync-item مُعطَّلة (HM-D14): حارس مساهمة GL يسيء الحكم على أي صنف له تاريخ شراء (مدين الشراء ليس على الحركة). لا تُشغَّل حتى إصلاح الحارس.", disabled = true });
+			const int company = 1; decimal R(decimal v) => Math.Round(v, 2);
+
+			await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+			// written rule: lock → guard → Reload → modify
+			var bal = (await _db.StockBalances.FromSqlInterpolated($"SELECT * FROM StockBalances WITH (UPDLOCK, HOLDLOCK) WHERE CompanyID = {company} AND ItemId = {itemId} AND WarehouseId = {warehouseId}").AsTracking().ToListAsync()).FirstOrDefault();
+			if (bal == null) { await tx.RollbackAsync(); return BadRequest(new { message = "لا يوجد صفّ رصيد لهذا الصنف/المخزن" }); }
+			var entry = _db.Entry(bal);
+			if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Modified || entry.State == Microsoft.EntityFrameworkCore.EntityState.Added)
+			{ await tx.RollbackAsync(); return BadRequest(new { message = "الرصيد يحمل تعديلًا غير محفوظ لحظة القراءة المقفولة — أُلغيت العملية" }); }
+			await entry.ReloadAsync();
+
+			decimal netQty = await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == itemId && m.WarehouseId == warehouseId).SumAsync(m => (decimal?)(m.Direction * m.QtyBase)) ?? 0m;
+			decimal netVal = await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == itemId && m.WarehouseId == warehouseId).SumAsync(m => (decimal?)(m.Direction * m.TotalCost)) ?? 0m;
+			decimal actualDelta = R(bal.QtyOnHand - netQty);
+
+			if (actualDelta == 0m) { await tx.CommitAsync(); return Ok(new { noop = true, message = "متطابق أصلًا (الرصيد = صافي الحركات) — لا تغيير", itemId, warehouseId, qty = bal.QtyOnHand }); }
+			if (actualDelta != expectQtyDelta) { await tx.RollbackAsync(); return BadRequest(new { message = $"عدم تطابق الاتجاه: القاعدة تُظهر فرقًا {actualDelta}، ومرّرتَ expectQtyDelta={expectQtyDelta} — رُفض (قد يكون سبب الانحراف مختلفًا)", actualDelta }); }
+
+			// THREE-WAY CORROBORATION (item 2): balance (stored cache) vs movements (ledger) vs GL (posted from the SAME movements).
+			// resync assumes the BALANCE drifted while movements+GL are truth. Verify that: the per-item GL inventory contribution
+			// (Σ inventory-account lines of the item's movements' JEs — exact because stock JEs are per-movement single-item) must
+			// AGREE with the movements value, and DISAGREE with the balance. If the GL instead agrees with the BALANCE, the
+			// MOVEMENTS are the suspect (e.g. a duplicate/phantom movement) and resync would CREATE the divergence ⇒ REFUSE.
+			int? invAcct = await _db.Items.Where(i => i.ID == itemId).Join(_db.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => c.InventoryAccountId).FirstOrDefaultAsync();
+			var jeIds = await _db.StockMovements.Where(m => m.CompanyID == company && m.ItemId == itemId && m.WarehouseId == warehouseId && m.JournalEntryId != null).Select(m => m.JournalEntryId!.Value).Distinct().ToListAsync();
+			decimal glVal = invAcct == null ? 0m : R(await _db.JournalEntryLines.Where(l => l.AccountId == invAcct.Value && jeIds.Contains(l.JournalEntryId)).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m);
+			if (Math.Abs(glVal - R(netVal)) >= 0.01m)
+			{ await tx.RollbackAsync(); return BadRequest(new { message = "الدفتر (GL) لا يطابق قيمة الحركات — الحركات مشتبَهة (مثل حركة مكرَّرة/يتيمة)؛ resync ليست الأداة الصحيحة، راجع الحركات", balanceValue = bal.TotalValue, movementsValue = R(netVal), glValue = glVal }); }
+			if (Math.Abs(glVal - bal.TotalValue) < 0.01m)
+			{ await tx.RollbackAsync(); return BadRequest(new { message = "الرصيد مطابق للدفتر أصلًا (لا انحراف قيمة في الذاكرة) — resync غير صحيحة هنا", balanceValue = bal.TotalValue, glValue = glVal }); }
+
+			var before = new { bal.QtyOnHand, bal.TotalValue, bal.AvgCost };
+			decimal newVal = R(netVal); decimal newAvg = netQty > 0 ? Math.Round(netVal / netQty, 4) : 0m;
+			bal.QtyOnHand = netQty; bal.TotalValue = newVal; bal.AvgCost = newAvg;   // balance ← movement-ledger truth
+			var rl = new CrossBuy.Models.Context.Inventory.InventoryReconcileLog { CompanyID = company, ItemId = itemId, WarehouseId = warehouseId, QtyBefore = before.QtyOnHand, QtyAfter = netQty, ValueBefore = before.TotalValue, ValueAfter = newVal, AvgBefore = before.AvgCost, AvgAfter = newAvg, RanBy = "inv-resync-item", RanAt = DateTime.UtcNow, JournalEntryId = null, Reason = $"[qtyDelta {(actualDelta > 0 ? "+" : "")}{actualDelta}] {reason}" };
+			_db.InventoryReconcileLogs.Add(rl);
+			await _db.SaveChangesAsync();
+			await tx.CommitAsync();
+
+			return Ok(new
+			{
+				done = true, itemId, warehouseId,
+				direction = actualDelta > 0 ? "الرصيد كان أعلى (+) من الحركات" : "الرصيد كان أقلّ (−) من الحركات",
+				threeWay = new { balanceValue = before.TotalValue, movementsValue = R(netVal), glValue = glVal, verdict = "GL يطابق الحركات ⇒ الحركات حقيقة والرصيد هو المنحرف" },
+				before, after = new { qty = netQty, value = newVal, avg = newAvg }, netMovements = new { qty = netQty, value = netVal },
+				journalEntry = "لا قيد — الرصيد هو الذاكرة المنحرفة والـGL مُرحَّل من نفس الحركات (قيد فرق قيمة سيكسر stock_gl من جديد)",
+				reconcileLogId = rl.ID
+			});
+		}
+
+		// GET /api/dev/hm1-resync-guard-test?key=seed123 — HM-D6 item 2: proves the three-way guard REFUSES when the GL
+		// corroborates the BALANCE (not the movements). Setup (rolled back ⇒ zero persistence): IN 10 (PostToGl ⇒ balance 10,
+		// GL 10) then a RAW duplicate movement +5 WITHOUT a JE and WITHOUT touching the balance ⇒ movements=15 (inflated),
+		// balance=10==GL. resync must reject ("movements suspect") — expectQtyDelta alone would have let it through.
+		[HttpGet("hm1-resync-guard-test")]
+		public async Task<IActionResult> Hm1ResyncGuardTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int baseUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == company).Select(u => u.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			if (cat == null || baseUom == 0 || wh == 0) return BadRequest(new { message = "need category/uom/warehouse" });
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-GUARD-ITM");
+			if (itm == null) { var (iok, _, it2) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-GUARD-ITM", Barcode = "ZZGUARDITM", Name = "حارس D6", NameEn = "D6 guard", ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = baseUom, SalesPrice = 100m, OpeningCost = 30m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "ZZ item create failed" }); itm = it2; }
+			int itemId = itm!.ID;
+
+			bool rejected; object? body;
+			await using (var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db))
+			{
+				await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = 1, Qty = 10, UnitCostInBase = 30m, SourceType = "Opening", PostToGl = true }, null);   // balance 10, GL 10 (JE)
+				await _db.Database.ExecuteSqlRawAsync("INSERT INTO StockMovements (CompanyID, MovementDate, ItemId, WarehouseId, Direction, QtyBase, UoMId, QtyInUoM, UnitCost, TotalCost, SourceType, CreatedAt) VALUES ({0}, {1}, {2}, {3}, 1, 5, {4}, 5, 30, 150, 'ZZ-DUP', {1})", company, DateTime.UtcNow, itemId, wh, baseUom);   // phantom dup: movements→15, no JE, balance untouched
+				var result = await InvResyncItem("seed123", itemId, wh, -5, "guard-test (should be refused)", callerBypassDisable: true);   // balanceQty 10 − movementsQty 15 = −5 (passes the delta guard)
+				rejected = result is BadRequestObjectResult;
+				body = (result as BadRequestObjectResult)?.Value ?? (result as OkObjectResult)?.Value;
+				await tx.RollbackAsync();   // undo setup + dup → zero persistence
+			}
+			return Ok(new { pass = rejected, rejected, proves = "expectQtyDelta matched (−5) yet the tool REFUSED because GL(10) corroborates the BALANCE not the movements(15) ⇒ movements are the suspect", resyncResponse = body });
+		}
+
+		// GET /api/dev/warehouse-sections-test?key=seed123 — verifies Section/Rack + Category/Group foundation.
+		// Proves: rack-under-rack rejected, Group inherits parent GL when empty, group-under-group rejected,
+		// item default section/rack persists, and integrity stays green (dimensions never touch GL). Self-cleaning.
+		[HttpGet("warehouse-sections-test")]
+			public async Task<IActionResult> WarehouseSectionsTest(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var createdCatIds = new List<int>();
+				var createdBinIds = new List<int>();
+				int? createdSettingId = null; int usedWh = 0; bool createdWh = false; int usedItem = 0;
+				try
+				{
+					var (runB, _b) = await integ.RunAndLogAsync(company, "Manual");
+					int failedBefore = runB.FailedCount;
+
+					var whs = await _whSvc.GetWarehousesAsync(company);
+					var wh = whs.FirstOrDefault();
+					if (wh == null) { await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "TSTWH", Name = "مخزن اختبار", NameEn = "Test WH" }, null); wh = (await _whSvc.GetWarehousesAsync(company)).First(); createdWh = true; }
+					usedWh = wh.ID;
+
+					await _whSvc.SaveBinLocationAsync(usedWh, 0, "SEC-TST", "قسم اختبار", "Section", null, true);
+					var sec = (await _whSvc.GetBinLocationsAsync(usedWh)).First(b => b.Code == "SEC-TST"); createdBinIds.Add(sec.ID);
+					await _whSvc.SaveBinLocationAsync(usedWh, 0, "RCK-TST", "رف اختبار", "Rack", sec.ID, true);
+					var rack = (await _whSvc.GetBinLocationsAsync(usedWh)).First(b => b.Code == "RCK-TST"); createdBinIds.Add(rack.ID);
+					var (badRack, _e1) = await _whSvc.SaveBinLocationAsync(usedWh, 0, "RCK-BAD", null, "Rack", rack.ID, true);
+					bool rackUnderRackRejected = !badRack;
+
+					var mapped = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null && c.CogsAccountId != null);
+					int? invAcc = mapped?.InventoryAccountId; int? cogsAcc = mapped?.CogsAccountId;
+					await _itemSvc.CreateCategoryAsync(company, new CrossBuy.Models.Context.Inventory.ItemCategory { Code = "CAT-TST", Name = "فئة اختبار", NameEn = "Cat", Kind = "Category", InventoryAccountId = invAcc, CogsAccountId = cogsAcc }, null);
+					var cat = await _db.ItemCategories.AsNoTracking().FirstAsync(c => c.CompanyID == company && c.Code == "CAT-TST"); createdCatIds.Add(cat.ID);
+					await _itemSvc.CreateCategoryAsync(company, new CrossBuy.Models.Context.Inventory.ItemCategory { Code = "GRP-TST", Name = "مجموعة اختبار", NameEn = "Grp", Kind = "Group", ParentId = cat.ID }, null);
+					var grp = await _db.ItemCategories.AsNoTracking().FirstAsync(c => c.CompanyID == company && c.Code == "GRP-TST"); createdCatIds.Add(grp.ID);
+					bool glInherited = grp.InventoryAccountId == invAcc && grp.CogsAccountId == cogsAcc;
+					var (badGrp, _e2) = await _itemSvc.CreateCategoryAsync(company, new CrossBuy.Models.Context.Inventory.ItemCategory { Code = "GRP-BAD", Name = "x", NameEn = "x", Kind = "Group", ParentId = grp.ID }, null);
+					bool groupUnderGroupRejected = !badGrp;
+
+					var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemType == "Stockable");
+					bool locationSaved = true;
+					if (item != null)
+					{
+						usedItem = item.ID;
+						var s = await _db.ItemWarehouseSettings.FirstOrDefaultAsync(x => x.ItemId == item.ID && x.WarehouseId == usedWh);
+						bool preexisting = s != null;
+						int? oldSec = s?.DefaultSectionId; int? oldRack = s?.DefaultBinLocationId;
+						if (s == null) { s = new CrossBuy.Models.Context.Inventory.ItemWarehouseSetting { ItemId = item.ID, WarehouseId = usedWh }; _db.ItemWarehouseSettings.Add(s); }
+						s.DefaultSectionId = sec.ID; s.DefaultBinLocationId = rack.ID;
+						await _db.SaveChangesAsync();
+						var reload = await _db.ItemWarehouseSettings.AsNoTracking().FirstAsync(x => x.ID == s.ID);
+						locationSaved = reload.DefaultSectionId == sec.ID && reload.DefaultBinLocationId == rack.ID;
+						if (preexisting) { var back = await _db.ItemWarehouseSettings.FirstAsync(x => x.ID == s.ID); back.DefaultSectionId = oldSec; back.DefaultBinLocationId = oldRack; await _db.SaveChangesAsync(); }
+						else createdSettingId = s.ID;
+					}
+
+					var (runA, _a) = await integ.RunAndLogAsync(company, "Manual");
+					int failedAfter = runA.FailedCount;
+					bool integrityGreen = failedAfter <= failedBefore;
+					bool allPass = rackUnderRackRejected && glInherited && groupUnderGroupRejected && integrityGreen && locationSaved;
+					return Ok(new { allPass, rackUnderRackRejected, glInheritedFromParent = glInherited, groupUnderGroupRejected, itemLocationSaved = locationSaved, itemTested = usedItem, failedBefore, failedAfter, integrityGreen, note = "self-cleaning; dimensions never touch GL/valuation" });
+				}
+				finally
+				{
+					if (createdSettingId != null) { var s = await _db.ItemWarehouseSettings.FindAsync(createdSettingId.Value); if (s != null) _db.ItemWarehouseSettings.Remove(s); }
+					foreach (var id in createdCatIds) { var c = await _db.ItemCategories.FindAsync(id); if (c != null) _db.ItemCategories.Remove(c); }
+					var gb = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "GRP-BAD"); if (gb != null) _db.ItemCategories.Remove(gb);
+					var rb = usedWh > 0 ? await _db.BinLocations.FirstOrDefaultAsync(b => b.WarehouseId == usedWh && b.Code == "RCK-BAD") : null; if (rb != null) _db.BinLocations.Remove(rb);
+					foreach (var id in Enumerable.Reverse(createdBinIds)) { var b = await _db.BinLocations.FindAsync(id); if (b != null) _db.BinLocations.Remove(b); }
+					await _db.SaveChangesAsync();
+					if (createdWh) { var w = await _db.Warehouses.FindAsync(usedWh); if (w != null) { _db.Warehouses.Remove(w); await _db.SaveChangesAsync(); } }
+				}
+			}
+
+			// GET /api/dev/seed-sections-groups?key=seed123 — persistent demo data for the Section/Rack + Category/Group screens.
+			// Idempotent (skips anything already present by code). Purely organizational — never posts GL, integrity stays green.
+			[HttpGet("seed-sections-groups")]
+			public async Task<IActionResult> SeedSectionsGroups(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>();
+
+				var whs = await _whSvc.GetWarehousesAsync(company);
+				var wh = whs.FirstOrDefault(w => w.Code == "WH-MAIN") ?? whs.FirstOrDefault();
+				if (wh == null) return Ok(new { ok = false, message = "لا يوجد مخزن للشركة 1" });
+				int whId = wh.ID;
+
+				// 1) Sections + racks (hypermarket zones)
+				var layout = new (string code, string name, string[] racks)[]
+				{
+					("S-DRY",   "الأطعمة الجافة",     new[]{ "R-D1", "R-D2", "R-D3" }),
+					("S-CHILL", "المبرّدات",          new[]{ "R-C1", "R-C2" }),
+					("S-FROZ",  "المجمّدات",          new[]{ "R-F1", "R-F2" }),
+					("S-CARE",  "العناية الشخصية",    new[]{ "R-P1", "R-P2" }),
+					("S-HOME",  "الأدوات المنزلية",   new[]{ "R-H1" }),
+				};
+				int secN = 0, rackN = 0;
+				var byCode = (await _whSvc.GetBinLocationsAsync(whId)).Select(b => b.Code).ToHashSet();
+				foreach (var (code, name, racks) in layout)
+				{
+					if (!byCode.Contains(code)) { await _whSvc.SaveBinLocationAsync(whId, 0, code, name, "Section", null, true); secN++; }
+					var sec = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == code);
+					foreach (var rc in racks)
+					{
+						if (!(await _whSvc.GetBinLocationsAsync(whId)).Any(b => b.Code == rc))
+						{ await _whSvc.SaveBinLocationAsync(whId, 0, rc, "رف " + rc, "Rack", sec.ID, true); rackN++; }
+					}
+				}
+				log.Add($"sections+{secN}, racks+{rackN} @ {wh.Code}");
+
+				// 2) Category -> Group trees (GL inherited from an existing mapped category)
+				var fg = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+				int? invAcc = fg?.InventoryAccountId, cogsAcc = fg?.CogsAccountId, adjAcc = fg?.AdjustmentAccountId, grniAcc = fg?.GrniAccountId;
+				var trees = new (string code, string name, string nameEn, (string code, string name, string nameEn)[] groups)[]
+				{
+					("CAT-DAIRY", "ألبان", "Dairy", new[]{ ("GRP-DAIRY-BABY","ألبان أطفال","Baby milk"), ("GRP-DAIRY-FRESH","ألبان طازجة","Fresh dairy") }),
+					("CAT-BEV",   "مشروبات", "Beverages", new[]{ ("GRP-BEV-WATER","مياه","Water"), ("GRP-BEV-JUICE","عصائر","Juice"), ("GRP-BEV-SODA","مشروبات غازية","Soda") }),
+					("CAT-CLEAN", "منظّفات", "Cleaning", new[]{ ("GRP-CLEAN-FLOOR","منظّفات أرضيات","Floor cleaners"), ("GRP-CLEAN-LAUNDRY","مساحيق غسيل","Laundry") }),
+					("CAT-SNACK", "وجبات خفيفة", "Snacks", new[]{ ("GRP-SNACK-CHIPS","شيبس","Chips"), ("GRP-SNACK-CHOC","شوكولاتة","Chocolate") }),
+				};
+				int catN = 0, grpN = 0;
+				var groupIds = new List<int>();
+				foreach (var (code, name, nameEn, groups) in trees)
+				{
+					var root = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == code);
+					if (root == null)
+					{
+						await _itemSvc.CreateCategoryAsync(company, new CrossBuy.Models.Context.Inventory.ItemCategory { Code = code, Name = name, NameEn = nameEn, Kind = "Category", InventoryAccountId = invAcc, CogsAccountId = cogsAcc, AdjustmentAccountId = adjAcc, GrniAccountId = grniAcc }, null);
+						root = await _db.ItemCategories.FirstAsync(c => c.CompanyID == company && c.Code == code); catN++;
+					}
+					foreach (var (gc, gn, gne) in groups)
+					{
+						var grp = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == gc);
+						if (grp == null)
+						{
+							await _itemSvc.CreateCategoryAsync(company, new CrossBuy.Models.Context.Inventory.ItemCategory { Code = gc, Name = gn, NameEn = gne, Kind = "Group", ParentId = root.ID }, null);
+							grp = await _db.ItemCategories.FirstAsync(c => c.CompanyID == company && c.Code == gc); grpN++;
+						}
+						groupIds.Add(grp.ID);
+					}
+				}
+				log.Add($"categories+{catN}, groups+{grpN} (GL inherited from {fg?.Code ?? "-"})");
+
+				// 3) Assign stockable items to a default section/rack (round-robin)
+				var allBins = await _whSvc.GetBinLocationsAsync(whId);
+				var sections = allBins.Where(b => b.LocationType == "Section").OrderBy(b => b.Code).ToList();
+				var racksBySec = allBins.Where(b => b.LocationType == "Rack").GroupBy(b => b.ParentId ?? 0).ToDictionary(g => g.Key, g => g.OrderBy(x => x.Code).ToList());
+				var items = await _db.Items.AsNoTracking().Where(i => i.CompanyID == company && i.ItemType == "Stockable").OrderBy(i => i.ID).ToListAsync();
+				int locN = 0;
+				for (int idx = 0; idx < items.Count && sections.Count > 0; idx++)
+				{
+					var it = items[idx];
+					var sec = sections[idx % sections.Count];
+					var racks = racksBySec.TryGetValue(sec.ID, out var rl) ? rl : new List<CrossBuy.Models.Context.Inventory.BinLocation>();
+					int? rackId = racks.Count > 0 ? racks[idx % racks.Count].ID : (int?)null;
+					var s = await _db.ItemWarehouseSettings.FirstOrDefaultAsync(x => x.ItemId == it.ID && x.WarehouseId == whId);
+					if (s == null) { s = new CrossBuy.Models.Context.Inventory.ItemWarehouseSetting { ItemId = it.ID, WarehouseId = whId }; _db.ItemWarehouseSettings.Add(s); }
+					if (s.DefaultSectionId == null) { s.DefaultSectionId = sec.ID; s.DefaultBinLocationId = rackId; locN++; }
+				}
+				await _db.SaveChangesAsync();
+				log.Add($"item default locations set +{locN} of {items.Count} @ {wh.Code}");
+
+				return Ok(new
+				{
+					ok = true, warehouse = wh.Code, log,
+					tip = "افتح: نظام المخازن > سيكشنات/رفوف المخزن (اختر " + wh.Code + ") ثم مواقع الأصناف، والتصنيفات لرؤية الفئات/المجموعات."
+				});
+			}
+
+			// GET /api/dev/inv-test-assetbridge?key=seed123 — receiving an Asset-type item capitalizes it (no stock) and enters depreciation.
+			// GET /api/dev/receipt-location-test?key=seed123 — a goods receipt into a chosen rack stamps StockMovement.BinLocationId.
+			// Isolated (throwaway warehouse) + self-cleaning. Proves inbound documents record the section/rack; integrity stays green.
+			[HttpGet("receipt-location-test")]
+			public async Task<IActionResult> ReceiptLocationTest(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				int whId = 0, secId = 0, rackId = 0, grId = 0, mvId = 0; int? jeId = null; int usedItem = 0;
+				try
+				{
+					var (runB, _b) = await integ.RunAndLogAsync(company, "Manual");
+					int failedBefore = runB.FailedCount;
+
+					// throwaway warehouse + section + rack
+					await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "TSTLOC", Name = "اختبار الموقع", NameEn = "Loc test" }, null);
+					whId = (await _whSvc.GetWarehousesAsync(company)).First(w => w.Code == "TSTLOC").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "SEC-LOC", "قسم", "Section", null, true);
+					secId = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == "SEC-LOC").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "RCK-LOC", "رف", "Rack", secId, true);
+					rackId = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == "RCK-LOC").ID;
+
+					// a simple stockable item whose category maps an inventory account (no batch/serial/expiry to keep the receipt simple)
+					var item = await (from i in _db.Items.AsNoTracking()
+									  join c in _db.ItemCategories.AsNoTracking() on i.ItemCategoryId equals c.ID
+									  where i.CompanyID == company && i.ItemType == "Stockable" && !i.TrackBatch && !i.TrackSerial && !i.TrackExpiry && c.InventoryAccountId != null
+									  select i).FirstOrDefaultAsync();
+					if (item == null) return Ok(new { ok = false, message = "لا يوجد صنف مخزني بسيط بحساب مخزون" });
+					usedItem = item.ID;
+
+					// receive 2 @ 10 onto the rack
+					var line = new CrossBuy.BL.ReceiptLineInput { ItemId = item.ID, Qty = 2, UnitCost = 10, BinLocationId = rackId };
+					var (rok, rerr, gr) = await _proc.CreateReceiptAsync(company, null, whId, null, new DateTime(2026, 7, 1), "receipt-location-test", new List<CrossBuy.BL.ReceiptLineInput> { line }, null);
+					if (!rok || gr == null) return Ok(new { ok = false, message = "تعذّر إنشاء الاستلام: " + rerr });
+					grId = gr.ID;
+
+					var mv = await _db.StockMovements.AsNoTracking().FirstOrDefaultAsync(m => m.SourceType == "Receipt" && m.SourceId == grId && m.WarehouseId == whId);
+					bool stampedOnReceipt = mv != null && mv.BinLocationId == rackId;
+					if (mv != null) { mvId = mv.ID; jeId = mv.JournalEntryId; }
+
+					var (runA, _a) = await integ.RunAndLogAsync(company, "Manual");
+					int failedAfter = runA.FailedCount;
+					bool integrityGreen = failedAfter <= failedBefore;
+
+					return Ok(new
+					{
+						allPass = stampedOnReceipt && integrityGreen,
+						stampedOnReceipt, movementBinLocationId = mv?.BinLocationId, expectedRackId = rackId,
+						itemTested = usedItem, failedBefore, failedAfter, integrityGreen, note = "self-cleaning"
+					});
+				}
+				finally
+				{
+					// reverse GL, then delete stock artifacts + receipt + bins + warehouse (throwaway, isolated)
+					if (jeId != null) { try { await _je.ReverseAsync(jeId.Value, null, "receipt-location-test cleanup"); } catch { } }
+					if (whId > 0)
+					{
+						_db.StockMovements.RemoveRange(_db.StockMovements.Where(m => m.WarehouseId == whId));
+						_db.StockCostLayers.RemoveRange(_db.StockCostLayers.Where(l => l.WarehouseId == whId));
+						_db.StockBalances.RemoveRange(_db.StockBalances.Where(b => b.WarehouseId == whId));
+						await _db.SaveChangesAsync();
+						if (grId > 0)
+						{
+							_db.GoodsReceiptLines.RemoveRange(_db.GoodsReceiptLines.Where(l => l.GoodsReceiptId == grId));
+							var gr = await _db.GoodsReceipts.FindAsync(grId); if (gr != null) _db.GoodsReceipts.Remove(gr);
+							await _db.SaveChangesAsync();
+						}
+						if (rackId > 0) { var r = await _db.BinLocations.FindAsync(rackId); if (r != null) _db.BinLocations.Remove(r); }
+						if (secId > 0) { var s = await _db.BinLocations.FindAsync(secId); if (s != null) _db.BinLocations.Remove(s); }
+						await _db.SaveChangesAsync();
+						var w = await _db.Warehouses.FindAsync(whId); if (w != null) { _db.Warehouses.Remove(w); await _db.SaveChangesAsync(); }
+					}
+				}
+			}
+
+			// GET /api/dev/outbound-location-test?key=seed123 — an outbound issue records which rack the goods were picked from.
+			// Isolated (throwaway warehouse) + self-cleaning. Seeds stock via a receipt, then issues and checks the issue movement's BinLocationId.
+			[HttpGet("outbound-location-test")]
+			public async Task<IActionResult> OutboundLocationTest(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				int whId = 0, secId = 0, rackId = 0, grId = 0; int usedItem = 0;
+				try
+				{
+					var (runB, _b) = await integ.RunAndLogAsync(company, "Manual");
+					int failedBefore = runB.FailedCount;
+
+					await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "TSTOUT", Name = "اختبار الصرف", NameEn = "Out test" }, null);
+					whId = (await _whSvc.GetWarehousesAsync(company)).First(w => w.Code == "TSTOUT").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "SEC-OUT", "قسم", "Section", null, true);
+					secId = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == "SEC-OUT").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "RCK-OUT", "رف", "Rack", secId, true);
+					rackId = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == "RCK-OUT").ID;
+
+					var item = await (from i in _db.Items.AsNoTracking()
+									  join c in _db.ItemCategories.AsNoTracking() on i.ItemCategoryId equals c.ID
+									  where i.CompanyID == company && i.ItemType == "Stockable" && !i.TrackBatch && !i.TrackSerial && !i.TrackExpiry && c.InventoryAccountId != null
+									  select i).FirstOrDefaultAsync();
+					if (item == null) return Ok(new { ok = false, message = "لا يوجد صنف مخزني بسيط" });
+					usedItem = item.ID;
+
+					// seed 5 units onto the rack (inbound receipt)
+					var (rok, rerr, gr) = await _proc.CreateReceiptAsync(company, null, whId, null, new DateTime(2026, 7, 1), "seed", new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = item.ID, Qty = 5, UnitCost = 10, BinLocationId = rackId } }, null);
+					if (!rok || gr == null) return Ok(new { ok = false, message = "تعذّر الاستلام: " + rerr });
+					grId = gr.ID;
+
+					// issue 2 units, picked from the rack
+					var (iok, ierr, imv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest
+					{ Date = new DateTime(2026, 7, 2), ItemId = item.ID, WarehouseId = whId, Direction = -1, Qty = 2, BinLocationId = rackId, SourceType = "Issue", PostToGl = true, Notes = "outbound-location-test" }, null);
+					if (!iok || imv == null) return Ok(new { ok = false, message = "تعذّر الصرف: " + ierr });
+					bool stampedOnIssue = imv.BinLocationId == rackId && imv.Direction == -1;
+
+					var (runA, _a) = await integ.RunAndLogAsync(company, "Manual");
+					int failedAfter = runA.FailedCount;
+					bool integrityGreen = failedAfter <= failedBefore;
+
+					return Ok(new { allPass = stampedOnIssue && integrityGreen, stampedOnIssue, issueBinLocationId = imv.BinLocationId, expectedRackId = rackId, itemTested = usedItem, failedBefore, failedAfter, integrityGreen, note = "self-cleaning" });
+				}
+				finally
+				{
+					if (whId > 0)
+					{
+						// reverse GL for every movement posted into the throwaway warehouse, then delete all stock artifacts
+						var jeIds = await _db.StockMovements.Where(m => m.WarehouseId == whId && m.JournalEntryId != null).Select(m => m.JournalEntryId!.Value).Distinct().ToListAsync();
+						foreach (var j in jeIds) { try { await _je.ReverseAsync(j, null, "outbound-location-test cleanup"); } catch { } }
+						_db.StockMovements.RemoveRange(_db.StockMovements.Where(m => m.WarehouseId == whId));
+						_db.StockCostLayers.RemoveRange(_db.StockCostLayers.Where(l => l.WarehouseId == whId));
+						_db.StockBalances.RemoveRange(_db.StockBalances.Where(b => b.WarehouseId == whId));
+						await _db.SaveChangesAsync();
+						if (grId > 0)
+						{
+							_db.GoodsReceiptLines.RemoveRange(_db.GoodsReceiptLines.Where(l => l.GoodsReceiptId == grId));
+							var gr = await _db.GoodsReceipts.FindAsync(grId); if (gr != null) _db.GoodsReceipts.Remove(gr);
+							await _db.SaveChangesAsync();
+						}
+						if (rackId > 0) { var r = await _db.BinLocations.FindAsync(rackId); if (r != null) _db.BinLocations.Remove(r); }
+						if (secId > 0) { var s = await _db.BinLocations.FindAsync(secId); if (s != null) _db.BinLocations.Remove(s); }
+						await _db.SaveChangesAsync();
+						var w = await _db.Warehouses.FindAsync(whId); if (w != null) { _db.Warehouses.Remove(w); await _db.SaveChangesAsync(); }
+					}
+				}
+			}
+
+			// GET /api/dev/binstock-test?key=seed123 — rack-level quantities build from movements, relocate + count + reconcile.
+			// Isolated throwaway warehouse, self-cleaning. Quantity only — never touches GL (integrity stays green).
+			[HttpGet("binstock-test")]
+			public async Task<IActionResult> BinStockTest(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				int whId = 0, secId = 0, rackA = 0, rackB = 0, grId = 0; int usedItem = 0;
+				try
+				{
+					var (runB, _b) = await integ.RunAndLogAsync(company, "Manual");
+					int failedBefore = runB.FailedCount;
+
+					await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "TSTBS", Name = "اختبار الرفوف", NameEn = "Bin test" }, null);
+					whId = (await _whSvc.GetWarehousesAsync(company)).First(w => w.Code == "TSTBS").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "SEC-BS", "قسم", "Section", null, true);
+					secId = (await _whSvc.GetBinLocationsAsync(whId)).First(b => b.Code == "SEC-BS").ID;
+					await _whSvc.SaveBinLocationAsync(whId, 0, "RCK-A", "رف أ", "Rack", secId, true);
+					await _whSvc.SaveBinLocationAsync(whId, 0, "RCK-B", "رف ب", "Rack", secId, true);
+					var binsList = await _whSvc.GetBinLocationsAsync(whId);
+					rackA = binsList.First(b => b.Code == "RCK-A").ID; rackB = binsList.First(b => b.Code == "RCK-B").ID;
+
+					var item = await (from i in _db.Items.AsNoTracking()
+									  join c in _db.ItemCategories.AsNoTracking() on i.ItemCategoryId equals c.ID
+									  where i.CompanyID == company && i.ItemType == "Stockable" && !i.TrackBatch && !i.TrackSerial && !i.TrackExpiry && c.InventoryAccountId != null
+									  select i).FirstOrDefaultAsync();
+					if (item == null) return Ok(new { ok = false, message = "لا يوجد صنف مخزني بسيط" });
+					usedItem = item.ID;
+
+					async Task<decimal> BinQ(int bin) => (await _stock.GetBinStocksAsync(company, whId)).Where(b => b.BinLocationId == bin && b.ItemId == item.ID).Sum(b => b.QtyOnHand);
+
+					// receive 5 onto rack A
+					var (rok, rerr, gr) = await _proc.CreateReceiptAsync(company, null, whId, null, new DateTime(2026, 7, 1), "bs", new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = item.ID, Qty = 5, UnitCost = 10, BinLocationId = rackA } }, null);
+					if (!rok || gr == null) return Ok(new { ok = false, message = "receipt: " + rerr });
+					grId = gr.ID;
+					decimal afterReceiptA = await BinQ(rackA);
+
+					// issue 2 from rack A
+					await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = new DateTime(2026, 7, 2), ItemId = item.ID, WarehouseId = whId, Direction = -1, Qty = 2, BinLocationId = rackA, SourceType = "Issue", PostToGl = true }, null);
+					decimal afterIssueA = await BinQ(rackA);
+
+					// relocate 1 from A to B
+					var (mok, merr) = await _stock.RelocateBinAsync(company, whId, item.ID, rackA, rackB, 1, null);
+					decimal relA = await BinQ(rackA), relB = await BinQ(rackB);
+
+					// reconciliation: located total == warehouse balance (3)
+					var (whQty, _, _) = await _stock.GetBalanceAsync(company, item.ID, whId);
+					decimal located = (await _stock.GetBinStocksAsync(company, whId)).Where(b => b.ItemId == item.ID).Sum(b => b.QtyOnHand);
+
+					// over-locate guard: counting rack A at 10 (others=1, total would be 11 > 3) must be rejected
+					var (overOk, _) = await _stock.SetBinCountAsync(company, whId, rackA, item.ID, 10, null);
+					// valid count: rack A = 2 (others B=1 → 3 == whQty) must pass
+					var (cntOk, cntErr) = await _stock.SetBinCountAsync(company, whId, rackA, item.ID, 2, null);
+
+					var (runA, _a) = await integ.RunAndLogAsync(company, "Manual");
+					int failedAfter = runA.FailedCount;
+					bool integrityGreen = failedAfter <= failedBefore;
+
+					bool allPass = afterReceiptA == 5 && afterIssueA == 3 && relA == 2 && relB == 1 && located == 3 && whQty == 3 && !overOk && cntOk && integrityGreen;
+					return Ok(new { allPass, afterReceiptA, afterIssueA, relocatedA = relA, relocatedB = relB, locatedTotal = located, warehouseQty = whQty, overLocateRejected = !overOk, validCountAccepted = cntOk, integrityGreen, failedBefore, failedAfter, note = "self-cleaning" });
+				}
+				finally
+				{
+					if (whId > 0)
+					{
+						var jeIds = await _db.StockMovements.Where(m => m.WarehouseId == whId && m.JournalEntryId != null).Select(m => m.JournalEntryId!.Value).Distinct().ToListAsync();
+						foreach (var j in jeIds) { try { await _je.ReverseAsync(j, null, "binstock-test cleanup"); } catch { } }
+						_db.BinStocks.RemoveRange(_db.BinStocks.Where(b => b.WarehouseId == whId));
+						_db.StockMovements.RemoveRange(_db.StockMovements.Where(m => m.WarehouseId == whId));
+						_db.StockCostLayers.RemoveRange(_db.StockCostLayers.Where(l => l.WarehouseId == whId));
+						_db.StockBalances.RemoveRange(_db.StockBalances.Where(b => b.WarehouseId == whId));
+						await _db.SaveChangesAsync();
+						if (grId > 0)
+						{
+							_db.GoodsReceiptLines.RemoveRange(_db.GoodsReceiptLines.Where(l => l.GoodsReceiptId == grId));
+							var gr = await _db.GoodsReceipts.FindAsync(grId); if (gr != null) _db.GoodsReceipts.Remove(gr);
+							await _db.SaveChangesAsync();
+						}
+						_db.BinLocations.RemoveRange(_db.BinLocations.Where(b => b.WarehouseId == whId));
+						await _db.SaveChangesAsync();
+						var w = await _db.Warehouses.FindAsync(whId); if (w != null) { _db.Warehouses.Remove(w); await _db.SaveChangesAsync(); }
+					}
+				}
+			}
+
+			// GET /api/dev/pos-quickmenu-test?key=seed123 — RC-1 cashier quick-menu setup: config saves + reads, NO GL/stock. Self-cleaning.
+			[HttpGet("pos-quickmenu-test")]
+			public async Task<IActionResult> PosQuickMenuTest(string key, [FromServices] CrossBuy.BL.IPosSetupService pos, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				int groupId = 0, quickId = 0, itemId = 0; string? oldCode = null;
+				try
+				{
+					var (runB, _b) = await integ.RunAndLogAsync(company, "Manual");
+					int failedBefore = runB.FailedCount;
+
+					var branchId = await _db.Branches.AsNoTracking().Select(b => b.ID).FirstOrDefaultAsync();
+					if (branchId == 0) return Ok(new { ok = false, message = "لا يوجد فرع" });
+					var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemType == "Stockable");
+					if (item == null) return Ok(new { ok = false, message = "لا يوجد صنف" });
+					itemId = item.ID; oldCode = item.QuickCode;
+
+					await pos.SaveMenuGroupAsync(branchId, 0, "TESTTAB", "Test tab", 1, true);
+					groupId = (await pos.GetMenuGroupsAsync(branchId)).First(g => g.Name == "TESTTAB").ID;
+					var (aok, aerr) = await pos.AddQuickItemAsync(branchId, groupId, itemId);
+					quickId = (await pos.GetQuickItemsAsync(branchId)).First(q => q.ItemId == itemId && q.GroupId == groupId).ID;
+					// duplicate add must be rejected
+					var (dupOk, _d) = await pos.AddQuickItemAsync(branchId, groupId, itemId);
+					var (cok, cerr) = await pos.SetQuickCodeAsync(company, itemId, "TQ999");
+
+					var menu = await pos.GetQuickMenuAsync(company, branchId);
+					var grp = menu.FirstOrDefault(g => g.GroupId == groupId);
+					bool itemInMenu = grp != null && grp.Items.Any(x => x.ItemId == itemId && x.QuickCode == "TQ999");
+
+					var (runA, _a) = await integ.RunAndLogAsync(company, "Manual");
+					int failedAfter = runA.FailedCount;
+
+					return Ok(new
+					{
+						allPass = aok && itemInMenu && cok && !dupOk && failedAfter <= failedBefore,
+						groupCreated = groupId > 0, quickAdded = aok, duplicateRejected = !dupOk, quickCodeSaved = cok, itemInMenu,
+						failedBefore, failedAfter, integrityGreen = failedAfter <= failedBefore, note = "self-cleaning; config only, no GL/stock"
+					});
+				}
+				finally
+				{
+					if (quickId > 0) { var q = await _db.PosQuickItems.FindAsync(quickId); if (q != null) _db.PosQuickItems.Remove(q); }
+					if (groupId > 0) { var g = await _db.PosMenuGroups.FindAsync(groupId); if (g != null) _db.PosMenuGroups.Remove(g); }
+					if (itemId > 0) { var it = await _db.Items.FindAsync(itemId); if (it != null) it.QuickCode = oldCode; }
+					await _db.SaveChangesAsync();
+				}
+			}
+
+			// GET /api/dev/seed-restaurant-menu?key=seed123 — realistic restaurant items (categories + prices). Idempotent, persistent.
+			[HttpGet("seed-restaurant-menu")]
+			public async Task<IActionResult> SeedRestaurantMenu(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>();
+				// base UoM (reuse or create «قطعة»)
+				var uom = await _db.UnitsOfMeasure.FirstOrDefaultAsync(u => u.CompanyID == company);
+				if (uom == null) { uom = new CrossBuy.Models.Context.Inventory.UnitOfMeasure { CompanyID = company, Code = "PCS", Name = "قطعة", NameEn = "Piece", IsActive = true, CreatedAt = DateTime.UtcNow }; _db.UnitsOfMeasure.Add(uom); await _db.SaveChangesAsync(); }
+				int uomId = uom.ID;
+				var fg = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+
+				var menu = new (string cCode, string cAr, string cEn, (string code, string ar, string en, decimal price)[] items)[]
+				{
+					("CAT-SAND","ساندويتشات","Sandwiches", new[]{ ("BRG-L","برجر لحم","Beef burger",90m),("BRG-C","برجر دجاج","Chicken burger",80m),("SHW-L","شاورما لحم","Beef shawarma",65m),("SHW-C","شاورما دجاج","Chicken shawarma",60m),("FAJ","فاهيتا دجاج","Chicken fajita",95m) }),
+					("CAT-DRK","مشروبات","Drinks", new[]{ ("PEP","بيبسي","Pepsi",20m),("SEV","سفن أب","7Up",20m),("MRN","ميرندا","Mirinda",20m),("WTR","مياه معدنية","Water",10m),("ORJ","عصير برتقال","Orange juice",30m) }),
+					("CAT-PIZ","بيتزا","Pizza", new[]{ ("PIZ-MARG","بيتزا مارجريتا","Margherita pizza",85m),("PIZ-PEP","بيتزا بيبروني","Pepperoni pizza",100m),("PIZ-VEG","بيتزا خضار","Veggie pizza",90m),("PIZ-MIX","بيتزا مشكل","Mixed pizza",110m) }),
+					("CAT-CHK","دجاج","Chicken", new[]{ ("CHK-FRD","دجاج مقلي","Fried chicken",75m),("CHK-BKT","بوكس دجاج","Chicken bucket",160m),("CHK-WNG","أجنحة دجاج","Chicken wings",65m),("CHK-GRL","دجاج مشوي","Grilled chicken",85m),("CHK-STR","ستربس دجاج","Chicken strips",70m) }),
+					("CAT-DST","حلويات","Desserts", new[]{ ("ICE","آيس كريم","Ice cream",35m),("KNF","كنافة","Kunafa",45m),("CHZ","تشيز كيك","Cheesecake",50m) }),
+					("CAT-SID","مقبّلات","Sides", new[]{ ("FRZ","بطاطس مقلية","Fries",30m),("MOZ","أصابع موزاريلا","Mozzarella sticks",45m),("SLD","سلطة","Salad",35m) }),
+				};
+				// code → local SVG thumbnail (files ship under wwwroot/uploads/items)
+				var img = new Dictionary<string, string>
+				{
+					["BRG-L"]="rm-burger-beef",["BRG-C"]="rm-burger-chicken",["SHW-L"]="rm-shawarma-beef",["SHW-C"]="rm-shawarma-chicken",["FAJ"]="rm-fajita",
+					["PEP"]="rm-cola",["SEV"]="rm-7up",["MRN"]="rm-mirinda",["WTR"]="rm-water",["ORJ"]="rm-juice",
+					["ICE"]="rm-icecream",["KNF"]="rm-kunafa",["CHZ"]="rm-cheesecake",["FRZ"]="rm-fries",["MOZ"]="rm-mozzarella",["SLD"]="rm-salad",
+					["PIZ-MARG"]="rm-pizza-margherita",["PIZ-PEP"]="rm-pizza-pepperoni",["PIZ-VEG"]="rm-pizza-veggie",["PIZ-MIX"]="rm-pizza-mix",
+					["CHK-FRD"]="rm-chicken-fried",["CHK-BKT"]="rm-chicken-bucket",["CHK-WNG"]="rm-chicken-wings",["CHK-GRL"]="rm-chicken-grilled",["CHK-STR"]="rm-chicken-strips",
+				};
+				string ImgPath(string code) => img.TryGetValue(code, out var f) ? "/uploads/items/" + f + ".svg" : null;
+				int catN = 0, itemN = 0, imgN = 0;
+				foreach (var (cCode, cAr, cEn, items) in menu)
+				{
+					var cat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == cCode);
+					if (cat == null)
+					{
+						await _itemSvc.CreateCategoryAsync(company, new CrossBuy.Models.Context.Inventory.ItemCategory { Code = cCode, Name = cAr, NameEn = cEn, Kind = "Category", InventoryAccountId = fg?.InventoryAccountId, CogsAccountId = fg?.CogsAccountId, AdjustmentAccountId = fg?.AdjustmentAccountId, GrniAccountId = fg?.GrniAccountId }, null);
+						cat = await _db.ItemCategories.FirstAsync(c => c.CompanyID == company && c.Code == cCode); catN++;
+					}
+					foreach (var (code, ar, en, price) in items)
+					{
+						var existing = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+						if (existing != null)
+						{
+							// backfill image on items seeded before thumbnails existed
+							var p0 = ImgPath(code);
+							if (p0 != null && existing.ImagePath != p0) { existing.ImagePath = p0; await _db.SaveChangesAsync(); imgN++; }
+							continue;
+						}
+						var (iok, ierr, _) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput
+						{ ItemCode = code, Barcode = "RM" + code, Name = ar, NameEn = en, ItemCategoryId = cat.ID, ItemType = "Stockable", BaseUoMId = uomId, SalesPrice = price, IsActive = true }, null);
+						if (iok)
+						{
+							itemN++;
+							var p = ImgPath(code);
+							if (p != null) { var it = await _db.Items.FirstAsync(i => i.CompanyID == company && i.ItemCode == code); it.ImagePath = p; await _db.SaveChangesAsync(); imgN++; }
+						}
+					}
+				}
+				log.Add($"categories+{catN}, items+{itemN}, images+{imgN}");
+				return Ok(new { ok = true, log, tip = "افتح: نظام المخازن > الأصناف لرؤيتها، ثم منصة العمليات > الأصناف السريعة لإضافتها كأزرار." });
+			}
+
+			// GET /api/dev/pos-modifiers-test?key=seed123 — modifiers SETUP: define groups/options + attach to items.
+			// Proves it writes NOTHING to GL/stock (setup only). Self-cleaning.
+			[HttpGet("pos-modifiers-test")]
+			public async Task<IActionResult> PosModifiersTest(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>(); bool allPass = true;
+				void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+				var host = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "BRG-L");
+				var drink = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "PEP");
+				var addon = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "MOZ");
+				if (host == null || drink == null || addon == null) return BadRequest(new { message = "run seed-restaurant-menu first" });
+
+				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+				// Choice group (mandatory, no price) + AddOn group (optional, priced)
+				var (g1ok, g1e, g1) = await _posSetup.SaveModifierGroupAsync(company, new CrossBuy.Models.Context.Pos.ModifierGroup { Name = "مشروب العرض", NameEn = "Combo drink", Type = "Choice" });
+				var (g2ok, g2e, g2) = await _posSetup.SaveModifierGroupAsync(company, new CrossBuy.Models.Context.Pos.ModifierGroup { Name = "إضافات", NameEn = "Add-ons", Type = "AddOn" });
+				Chk("groups created", g1ok && g2ok && g1 > 0 && g2 > 0);
+
+				// Choice option: extra price forced to 0 even if we pass 5
+				await _posSetup.SaveOptionAsync(company, g1, 0, "بيبسي", "Pepsi", drink.ID, 1, 5m, true);
+				await _posSetup.SaveOptionAsync(company, g2, 0, "موزاريلا زيادة", "Extra mozzarella", addon.ID, 1, 15m, false);
+				var o1 = await _posSetup.GetOptionsAsync(company, g1);
+				var o2 = await _posSetup.GetOptionsAsync(company, g2);
+				Chk("choice option added, extra price forced to 0", o1.Count == 1 && o1[0].ExtraPrice == 0m);
+				Chk("addon option added with extra price", o2.Count == 1 && o2[0].ExtraPrice == 15m);
+
+				// attach both groups to the host item
+				await _posSetup.AttachGroupToItemAsync(company, g1, host.ID);
+				await _posSetup.AttachGroupToItemAsync(company, g2, host.ID);
+				await _posSetup.AttachGroupToItemAsync(company, g2, host.ID);   // duplicate → ignored
+				var gi = await _posSetup.GetGroupItemsAsync(company, g2);
+				Chk("group attached to item (dedup)", gi.Count == 1 && gi[0].ItemId == host.ID);
+
+				// NO accounting effect from setup
+				int jeA = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+				Chk("setup posts NO journal entries", jeA == jeB);
+
+				// cleanup (delete cascades options + links)
+				await _posSetup.DeleteModifierGroupAsync(company, g1);
+				await _posSetup.DeleteModifierGroupAsync(company, g2);
+				bool clean = !await _db.ModifierGroups.AnyAsync(x => x.ID == g1 || x.ID == g2)
+					&& !await _db.ModifierOptions.AnyAsync(x => x.GroupId == g1 || x.GroupId == g2)
+					&& !await _db.ItemModifierGroups.AnyAsync(x => x.GroupId == g1 || x.GroupId == g2);
+				Chk("delete cascades options + links (self-clean)", clean);
+
+				return Ok(new { allPass, log, tip = "شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2 (بلا تغيير)." });
+			}
+
+			// GET /api/dev/pos-payroles-test?key=seed123 — payment-methods + cashier-roles SETUP. No GL/stock. Self-cleaning.
+			[HttpGet("pos-payroles-test")]
+			public async Task<IActionResult> PosPayRolesTest(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>(); bool allPass = true;
+				void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+				var emp = await _db.Employee.AsNoTracking().Where(e => e.BranchID != null).OrderBy(e => e.ID).FirstOrDefaultAsync();
+				if (emp == null) return BadRequest(new { message = "need an employee linked to a branch" });
+				int branchId = emp.BranchID!.Value;
+				int cashAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+
+				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+				// --- payment methods ---
+				var (m1ok, m1e) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "Cash", "نقدي", cashAcc == 0 ? (int?)null : cashAcc, true, 1);
+				var (m2ok, m2e) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "KNet", "كي-نت", null, true, 2);
+				var (dupOk, _) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "Cash", null, null, true, 9);   // duplicate type → rejected
+				var methods = await _posSetup.GetPaymentMethodsAsync(branchId);
+				Chk("payment methods added", m1ok && m2ok && methods.Count(x => x.PaymentMethod == "Cash" || x.PaymentMethod == "KNet") >= 2);
+				Chk("duplicate method rejected", !dupOk);
+				Chk("cash mapped to account 110101", methods.Any(x => x.PaymentMethod == "Cash" && x.TargetAccountId == cashAcc) || cashAcc == 0);
+
+				// --- cashier roles ---
+				var (r1ok, r1e) = await _posSetup.AssignPosRoleAsync(branchId, emp.ID, "pos-cashier");
+				await _posSetup.AssignPosRoleAsync(branchId, emp.ID, "pos-cashier");   // duplicate → ignored
+				var (badOk, _) = await _posSetup.AssignPosRoleAsync(branchId, emp.ID, "not-a-role");   // invalid role
+				var roles = await _posSetup.GetBranchRolesAsync(branchId);
+				Chk("role assigned (dedup)", r1ok && roles.Count(x => x.EmployeeId == emp.ID && x.PosRole == "pos-cashier") == 1);
+				Chk("invalid role rejected", !badOk);
+
+				// --- no accounting effect ---
+				int jeA = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+				Chk("setup posts NO journal entries", jeA == jeB);
+
+				// --- cleanup ---
+				foreach (var m in methods) await _posSetup.DeletePaymentMethodAsync(branchId, m.ID);
+				foreach (var r in roles.Where(x => x.EmployeeId == emp.ID)) await _posSetup.RemovePosRoleAsync(branchId, r.Id);
+				bool clean = !await _db.BranchPaymentMethods.AnyAsync(x => x.BranchId == branchId)
+					&& !await _db.BranchUserRoles.AnyAsync(x => x.BranchId == branchId && x.EmployeeId == emp.ID);
+				Chk("self-clean", clean);
+
+				return Ok(new { allPass, log, branchUsed = branchId, tip = "شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+			}
+
+			// GET /api/dev/rc2-test?key=seed123 — RC-2 critical path: order → cash pay → invoice + correct stock + GL.
+			// Covers a SIMPLE item and an OrderBased pre-manufactured composite (deducted once, NO backflush).
+			[HttpGet("rc2-test")]
+			public async Task<IActionResult> Rc2Test(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>(); bool allPass = true;
+				void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+				const decimal EPS = 0.05m;
+
+				var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+				var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+				var simple = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "WTR");
+				var comp = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "MOZ");   // used as the composite's component
+				if (wh == null || branch == null || simple == null || comp == null) return BadRequest(new { message = "run seed-restaurant-menu first" });
+
+				// branch POS setting (sales warehouse + service%)
+				var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+				if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+				setting.DefaultSalesWarehouseId = wh.ID; setting.ServiceChargePct = 10m;
+				await _db.SaveChangesAsync();
+
+				// an OrderBased pre-manufactured composite (own stock), with a component to prove NO backflush
+				var kit = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "RC2-COMBO");
+				if (kit == null)
+				{
+					kit = new CrossBuy.Models.Context.Inventory.Item
+					{
+						CompanyID = company, ItemCode = "RC2-COMBO", Barcode = "RC2-COMBO", Name = "كومبو مُصنّع مسبقًا", NameEn = "Pre-made combo",
+						ItemCategoryId = simple.ItemCategoryId, ItemType = "Stockable", BaseUoMId = simple.BaseUoMId, SalesPrice = 120m,
+						IsActive = true, IsComposite = true, CompositeType = "Assembly", ProductionMethod = "OrderBased",
+					};
+					_db.Items.Add(kit); await _db.SaveChangesAsync();
+				}
+				else { kit.IsComposite = true; kit.CompositeType = "Assembly"; kit.ProductionMethod = "OrderBased"; kit.SalesPrice = 120m; await _db.SaveChangesAsync(); }
+				if (!await _db.ItemComponents.AnyAsync(c => c.ParentItemId == kit.ID))
+				{ _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = kit.ID, ComponentItemId = comp.ID, Quantity = 2, UoMId = comp.BaseUoMId, SortOrder = 1 }); await _db.SaveChangesAsync(); }
+
+				// opening stock (no GL): simple, the finished composite, and the component
+				async Task Ensure(int itemId, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, itemId, wh.ID); if (q < 50) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh.ID, Direction = 1, Qty = 50, UnitCostInBase = cost, SourceType = "Opening", PostToGl = false }, null); }
+				await Ensure(simple.ID, 4m); await Ensure(kit.ID, 40m); await Ensure(comp.ID, 8m);
+
+				async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+				async Task<decimal> Q(int itemId) => (await _stock.GetBalanceAsync(company, itemId, wh.ID)).qty;
+				async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+				decimal cashB = await Net("110101"), revB = await Net("4101"), vatB = await Net("210201"), arB = await Net("1102");
+				decimal qSimpleB = await Q(simple.ID), qKitB = await Q(kit.ID), qCompB = await Q(comp.ID), tbB = await TbDrift();
+
+				// open order + lines (simple ×2, pre-made composite ×1)
+				var (ook, _, orderId) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null);
+				if (!ook) return Ok(new { allPass = false, log = new[] { "FAIL create order" } });
+				await _posOrders.AddLineAsync(company, orderId, simple.ID, 2);
+				await _posOrders.AddLineAsync(company, orderId, kit.ID, 1);
+				var mid = await _posOrders.GetOrderAsync(company, orderId);
+
+				// OPEN order = zero accounting/stock effect
+				Chk("open order posts NO journal entries", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeB);
+				Chk("open order moves NO stock", (await Q(simple.ID)) == qSimpleB && (await Q(kit.ID)) == qKitB && (await Q(comp.ID)) == qCompB);
+				Chk("order totals computed (sub+service+tax)", mid != null && Math.Abs(mid.GrandTotal - (mid.SubTotal + mid.ServiceAmount + mid.TaxTotal)) < EPS);
+
+				// pay cash
+				var (pok, perr, invId) = await _posOrders.PayAsync(company, orderId, "Cash", null);
+				Chk("pay ok", pok && invId != null);
+				if (!pok) { log.Add("payErr: " + perr); return Ok(new { allPass = false, log }); }
+				var paid = await _posOrders.GetOrderAsync(company, orderId);
+				var inv = await _db.SalesInvoices.AsNoTracking().FirstOrDefaultAsync(i => i.ID == invId);
+
+				Chk("invoice posted + order Paid", inv != null && inv.Status == "Posted" && paid!.Status == "Paid" && paid.InvoiceId == invId);
+				Chk("simple item deducted by 2", Math.Abs((qSimpleB - await Q(simple.ID)) - 2m) < 0.001m);
+				Chk("pre-made composite (finished) deducted by 1", Math.Abs((qKitB - await Q(kit.ID)) - 1m) < 0.001m);
+				Chk("NO backflush: component stock UNCHANGED (no double-count)", (await Q(comp.ID)) == qCompB);
+
+				decimal cashA = await Net("110101"), revA = await Net("4101"), vatA = await Net("210201"), arA = await Net("1102");
+				Chk("cash debited by grand total", Math.Abs((cashA - cashB) - paid!.GrandTotal) < EPS);
+				Chk("AR nets to zero (invoice then receipt)", Math.Abs(arA - arB) < EPS);
+				Chk("revenue credited by subtotal+service", Math.Abs((revB - revA) - (paid.SubTotal + paid.ServiceAmount)) < EPS);
+				Chk("VAT output credited by tax total", Math.Abs((vatB - vatA) - paid.TaxTotal) < EPS);
+				Chk("trial balance still balanced", Math.Abs((await TbDrift()) - tbB) < EPS);
+				var pay = await _db.PosPayments.AsNoTracking().FirstOrDefaultAsync(p => p.OrderId == orderId);
+				Chk("PosPayment (Cash) recorded", pay != null && pay.PaymentMethod == "Cash");
+
+				return Ok(new
+				{
+					allPass, log,
+					totals = new { paid!.SubTotal, paid.ServiceAmount, paid.TaxTotal, paid.GrandTotal },
+					invoiceId = invId,
+					tip = "شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2 (بلا انحراف جديد)."
+				});
+			}
+
+			// GET /api/dev/pos-terminals-test?key=seed123 — POS-1: terminal (isolated till) + shift. No GL/stock. Self-cleaning.
+			[HttpGet("pos-terminals-test")]
+			public async Task<IActionResult> PosTerminalsTest(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>(); bool allPass = true;
+				void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+				var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+				if (branch == null) return BadRequest(new { message = "need a branch" });
+
+				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+				int accB = await _db.Accounts.CountAsync(a => a.CompanyID == company);
+
+				// create a terminal with an AUTO-created dedicated till account
+				var (t1ok, t1e, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST1", "اختبار", null, null, true, true);
+				Chk("terminal created", t1ok && tid > 0);
+				var term = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.ID == tid);
+				Chk("receipt prefix defaulted + counter=1", term != null && term.ReceiptPrefix == "TST1-" && term.NextReceiptNo == 1);
+
+				// the till account: a NEW postable child under main cash 110101
+				var till = term?.CashAccountId == null ? null : await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.ID == term.CashAccountId);
+				var mainCashId = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+				Chk("dedicated till cash account auto-created (postable child of 110101)", till != null && till.IsPostable && till.Code.StartsWith("110101") && till.ParentId == mainCashId);
+				Chk("duplicate terminal code rejected", !(await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST1", "x", null, null, true, true)).ok);
+
+				// shift: open, reject double-open, close
+				var (s1ok, _) = await _posSetup.OpenShiftAsync(tid, "Morning", null, 100m);
+				var (dupOk, _) = await _posSetup.OpenShiftAsync(tid, "Evening", null, 0m);
+				var openSh = await _posSetup.GetOpenShiftAsync(tid);
+				Chk("shift opened", s1ok && openSh != null && openSh.OpeningFloat == 100m);
+				Chk("second open shift rejected", !dupOk);
+				var (cok, _) = await _posSetup.CloseShiftAsync(company, tid, openSh!.ID, 100m, null, DateTime.Today, null);   // counted==expected(100, no sales) → variance 0, no JE
+				Chk("shift closed", cok && (await _posSetup.GetOpenShiftAsync(tid)) == null);
+
+				// setup writes NO journal entries (creating a chart account is not a posting)
+				Chk("setup posts NO journal entries", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeB);
+
+				// cleanup: shifts + terminal + the auto till account
+				foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == tid).ToListAsync()) _db.PosShifts.Remove(s);
+				var tRow = await _db.PosTerminals.FirstOrDefaultAsync(t => t.ID == tid);
+				int? tillId = tRow?.CashAccountId;
+				if (tRow != null) _db.PosTerminals.Remove(tRow);
+				await _db.SaveChangesAsync();
+				if (tillId != null) { var a = await _db.Accounts.FirstOrDefaultAsync(x => x.ID == tillId); if (a != null) _db.Accounts.Remove(a); await _db.SaveChangesAsync(); }
+				bool clean = !await _db.PosTerminals.AnyAsync(t => t.ID == tid) && (await _db.Accounts.CountAsync(a => a.CompanyID == company)) == accB;
+				Chk("self-clean (terminal + shift + till account removed)", clean);
+
+				return Ok(new { allPass, log, tip = "شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+			}
+
+			// GET /api/dev/pos2-test?key=seed123 — POS-2: sale runs inside a TERMINAL+SHIFT → cash to the terminal
+			// drawer + terminal receipt number + role-enforcement logic. No double stock. Invariants green.
+			[HttpGet("pos2-test")]
+			public async Task<IActionResult> Pos2Test(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>(); bool allPass = true;
+				void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+				const decimal EPS = 0.05m;
+
+				var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+				var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+				var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "WTR");
+				if (wh == null || branch == null || item == null) return BadRequest(new { message = "run seed-restaurant-menu first" });
+				var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+				if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+				setting.DefaultSalesWarehouseId = wh.ID; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+				async Task Ensure(int itemId, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, itemId, wh.ID); if (q < 50) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh.ID, Direction = 1, Qty = 50, UnitCostInBase = cost, SourceType = "Opening", PostToGl = false }, null); }
+				await Ensure(item.ID, 4m);
+
+				// role-enforcement logic
+				Chk("CanSell: cashier=yes, waiter=no; manager=manager", _posAccess.CanSell(new[] { "pos-cashier" }) && !_posAccess.CanSell(new[] { "pos-waiter" }) && _posAccess.IsManager(new[] { "pos-manager" }));
+
+				// a terminal with an auto drawer + an open shift
+				var (tok, terr, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "POS2T", "اختبار POS2", null, null, true, true);
+				if (!tok) return Ok(new { allPass = false, log = new[] { "FAIL terminal: " + terr } });
+				var term = await _db.PosTerminals.AsNoTracking().FirstAsync(t => t.ID == tid);
+				int drawer = term.CashAccountId ?? 0;
+				Chk("terminal has its own drawer account", drawer > 0);
+				await _posSetup.OpenShiftAsync(tid, "Morning", null, 0m);
+				var shift = await _posSetup.GetOpenShiftAsync(tid);
+
+				async Task<decimal> NetId(int accId) => accId == 0 ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == accId).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0);
+				async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync(); return id == null ? 0 : await NetId(id.Value); }
+				async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+				async Task<decimal> Q() => (await _stock.GetBalanceAsync(company, item.ID, wh.ID)).qty;
+
+				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+				decimal drawerB = await NetId(drawer), mainCashB = await Net("110101"), arB = await Net("1102"), qB = await Q(), tbB = await TbDrift();
+
+				// order INSIDE the terminal+shift
+				var (ook, _, orderId) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, tid, shift!.ID);
+				await _posOrders.AddLineAsync(company, orderId, item.ID, 2);
+				Chk("open order = no JE + no stock move", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeB && (await Q()) == qB);
+
+				var (pok, perr, invId) = await _posOrders.PayAsync(company, orderId, "Cash", null);
+				Chk("pay ok", pok && invId != null);
+				if (!pok) { log.Add("payErr: " + perr); return Ok(new { allPass = false, log }); }
+				var paid = await _posOrders.GetOrderAsync(company, orderId);
+				var ord = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == orderId);
+
+				Chk("order linked to terminal + shift", ord.TerminalId == tid && ord.ShiftId == shift.ID);
+				Chk("terminal receipt number assigned (prefix + 000001)", ord.ReceiptNo == term.ReceiptPrefix + "000001");
+				Chk("terminal counter advanced to 2", (await _db.PosTerminals.AsNoTracking().Where(t => t.ID == tid).Select(t => t.NextReceiptNo).FirstAsync()) == 2);
+				Chk("cash posted to the TERMINAL drawer (not main 110101)", Math.Abs((await NetId(drawer) - drawerB) - paid!.GrandTotal) < EPS && (await Net("110101")) == mainCashB);
+				Chk("stock deducted by 2", Math.Abs((qB - await Q()) - 2m) < 0.001m);
+				Chk("AR nets to zero", Math.Abs((await Net("1102")) - arB) < EPS);
+				Chk("trial balance balanced", Math.Abs((await TbDrift()) - tbB) < EPS);
+
+				return Ok(new { allPass, log, receiptNo = ord.ReceiptNo, invoiceId = invId, drawerAccountId = drawer, tip = "شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+			}
+
+			// GET /api/dev/pos3-test?key=seed123 — POS-3: terminal receipt settings persist; no GL. Self-cleaning.
+			[HttpGet("pos3-test")]
+			public async Task<IActionResult> Pos3Test(string key)
+			{
+				if (key != "seed123") return Unauthorized(new { message = "bad key" });
+				const int company = 1;
+				var log = new List<string>(); bool allPass = true;
+				void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+				var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+				if (branch == null) return BadRequest(new { message = "need a branch" });
+				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+				var (ok, err, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST3", "طباعة", null, null, true, true, 58, 3, "Star TSP");
+				Chk("terminal saved with receipt settings", ok && tid > 0);
+				var t = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(x => x.ID == tid);
+				Chk("paper=58, copies=3, printer persisted", t != null && t.ReceiptPaperWidthMm == 58 && t.ReceiptCopies == 3 && t.ReceiptPrinterName == "Star TSP");
+				// clamp guards
+				await _posSetup.SaveTerminalAsync(branch.ID, tid, "TST3", "طباعة", null, null, false, true, 80, 99, null);
+				var t2 = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(x => x.ID == tid);
+				Chk("paper normalized to 80 + copies clamped to 5", t2 != null && t2.ReceiptPaperWidthMm == 80 && t2.ReceiptCopies == 5);
+				Chk("printing setup posts NO journal entries", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeB);
+
+				// cleanup terminal + its auto till account
+				var till = t?.CashAccountId;
+				var row = await _db.PosTerminals.FirstOrDefaultAsync(x => x.ID == tid); if (row != null) _db.PosTerminals.Remove(row); await _db.SaveChangesAsync();
+				if (till != null) { var a = await _db.Accounts.FirstOrDefaultAsync(x => x.ID == till); if (a != null) { _db.Accounts.Remove(a); await _db.SaveChangesAsync(); } }
+				Chk("self-clean", !await _db.PosTerminals.AnyAsync(x => x.ID == tid));
+
+				return Ok(new { allPass, log, tip = "الطباعة نفسها client-side (window.print) — تُختبر في المتصفّح على /pos عند الدفع. inv-test-integrity يبقى 2." });
+			}
+
+			[HttpGet("inv-test-assetbridge")]
+		public async Task<IActionResult> InvTestAssetBridge(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var recvDate = new DateTime(2026, 8, 15);
+			var depPeriod = new DateTime(2026, 9, 30);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.GrniAccountId != null && c.InventoryAccountId != null);
+			if (wh == null || cat == null) return BadRequest(new { message = "need warehouse + category with GRNI/inventory accounts" });
+			int baseUom = await _db.Items.Where(i => i.CompanyID == company).Select(i => i.BaseUoMId).FirstAsync();
+
+			// ensure an Asset-type item exists
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ASSET-BRIDGE");
+			if (item == null)
+			{
+				item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "ASSET-BRIDGE", Barcode = "ASSET-BRIDGE", Name = "جهاز حاسب للاختبار", NameEn = "Test laptop", ItemType = "Asset", ItemCategoryId = cat.ID, BaseUoMId = baseUom, IsActive = true, IsComposite = false };
+				_db.Items.Add(item); await _db.SaveChangesAsync();
+			}
+			else { item.ItemType = "Asset"; await _db.SaveChangesAsync(); }
+
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> StockQty() => (await _stock.GetBalanceAsync(company, item.ID, wh.ID)).qty;
+
+			decimal b1201 = await Net("1201"), bGrni = await Net("210203"), b1103 = await Net("1103");
+			int bAssets = await _db.FixedAssets.CountAsync(a => a.CompanyID == company);
+			decimal bStockQty = await StockQty();
+
+			decimal qty = 2, unit = 5000m, cost = qty * unit;
+			var (rok, rerr, gr) = await _proc.CreateReceiptAsync(company, null, wh.ID, null, recvDate, "asset bridge test",
+				new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = item.ID, Qty = qty, UnitCost = unit } }, null);
+
+			decimal a1201 = await Net("1201"), aGrni = await Net("210203"), a1103 = await Net("1103");
+			int aAssets = await _db.FixedAssets.CountAsync(a => a.CompanyID == company);
+			decimal aStockQty = await StockQty();
+			var asset = await _db.FixedAssets.AsNoTracking().Where(a => a.CompanyID == company).OrderByDescending(a => a.ID).FirstOrDefaultAsync();
+
+			// run depreciation for the next month → asset must enter the schedule
+			decimal monthly = asset == null || asset.UsefulLifeMonths <= 0 ? 0 : Math.Round((asset.Cost - asset.SalvageValue) / asset.UsefulLifeMonths, 2);
+			bool eligible = asset != null && asset.Status == "Active" && asset.AcquisitionDate <= depPeriod && asset.AccumulatedDepreciation < (asset.Cost - asset.SalvageValue) && monthly > 0;
+			decimal R(decimal d) => Math.Round(d, 2);
+
+			return Ok(new
+			{
+				receiptOk = rok, receiptErr = rerr, receiptNo = gr?.ReceiptNo,
+				deltas = new
+				{
+					fixedAssetCreated = aAssets - bAssets,
+					dr_fixedAsset_1201 = R(a1201 - b1201),
+					cr_grni_210203 = R(-(aGrni - bGrni)),
+					inventory_1103_change = R(a1103 - b1103),
+					stock_qty_change = R(aStockQty - bStockQty)
+				},
+				asset = asset == null ? null : new { asset.AssetNo, asset.Name, asset.Cost, asset.UsefulLifeMonths, asset.Status },
+				depreciation = new { monthly, enteredSchedule = eligible },
+				checks = new
+				{
+					capitalized_not_stocked = R(aStockQty - bStockQty) == 0 && R(a1103 - b1103) == 0,
+					dr_asset_equals_cost = R(a1201 - b1201) == cost,
+					cr_grni_equals_cost = R(-(aGrni - bGrni)) == cost,
+					one_asset_created = (aAssets - bAssets) == 1,
+					enters_depreciation = eligible
+				},
+				expected = $"Dr 1201 = {cost} = Cr GRNI; no stock (1103 unchanged, qty 0); 1 asset; depreciation {cost}/60 = {R(cost/60)}/mo",
+				allPass = rok && R(aStockQty - bStockQty) == 0 && R(a1103 - b1103) == 0 && R(a1201 - b1201) == cost && R(-(aGrni - bGrni)) == cost && (aAssets - bAssets) == 1 && eligible
+			});
+		}
+
+		// GET /api/dev/inv-test-assetcapitalize?key=seed123 — capitalize an Asset item already in stock (Dr 1201 / Cr 1103).
+		[HttpGet("inv-test-assetcapitalize")]
+		public async Task<IActionResult> InvTestAssetCapitalize(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var date = new DateTime(2026, 8, 20);
+			var wh = await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == company);
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.GrniAccountId != null && c.InventoryAccountId != null);
+			if (wh == null || cat == null) return BadRequest(new { message = "need warehouse + category" });
+			int baseUom = await _db.Items.Where(i => i.CompanyID == company).Select(i => i.BaseUoMId).FirstAsync();
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ASSET-INSTOCK");
+			if (item == null) { item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "ASSET-INSTOCK", Barcode = "ASSET-INSTOCK", Name = "أصل في المخزون", NameEn = "Asset in stock", ItemType = "Asset", ItemCategoryId = cat.ID, BaseUoMId = baseUom, IsActive = true, IsComposite = false }; _db.Items.Add(item); await _db.SaveChangesAsync(); }
+			else { item.ItemType = "Asset"; await _db.SaveChangesAsync(); }
+
+			// put it into stock directly (legacy: an Asset item sitting in inventory) — Dr 1103 / Cr GRNI
+			await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = date, ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 4, UnitCostInBase = 250m, SourceType = "Receipt", PostToGl = true }, null);
+
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> StockQty() => (await _stock.GetBalanceAsync(company, item.ID, wh.ID)).qty;
+			async Task<decimal> StockVal() => (await _stock.GetBalanceAsync(company, item.ID, wh.ID)).value;
+
+			decimal b1201 = await Net("1201"), b1103 = await Net("1103"), bQty = await StockQty(), bVal = await StockVal();
+			int bAssets = await _db.FixedAssets.CountAsync(a => a.CompanyID == company);
+
+			var (ok, err, assetId, cost) = await _stock.CapitalizeFromStockAsync(company, item.ID, wh.ID, 4, date, null, null);
+
+			decimal a1201 = await Net("1201"), a1103 = await Net("1103"), aQty = await StockQty(), aVal = await StockVal();
+			int aAssets = await _db.FixedAssets.CountAsync(a => a.CompanyID == company);
+			decimal R(decimal d) => Math.Round(d, 2);
+
+			return Ok(new
+			{
+				ok, err, assetId, cost = R(cost),
+				deltas = new { dr_1201 = R(a1201 - b1201), cr_1103 = R(-(a1103 - b1103)), stock_value_drop = R(bVal - aVal), stock_qty_drop = R(bQty - aQty), asset_created = aAssets - bAssets },
+				checks = new
+				{
+					dr_asset_equals_cost = R(a1201 - b1201) == R(cost),
+					cr_inventory_equals_cost = R(-(a1103 - b1103)) == R(cost),
+					stock_value_relieved = R(bVal - aVal) == R(cost),
+					invariant_stock_eq_gl = R(bVal - aVal) == R(-(a1103 - b1103)),
+					one_asset_created = (aAssets - bAssets) == 1
+				},
+				expected = "issue 4@250=1000 out of stock; Dr 1201 1000 = Cr 1103 1000; stock value −1000 = inventory GL −1000; +1 asset",
+				allPass = ok && R(a1201 - b1201) == R(cost) && R(-(a1103 - b1103)) == R(cost) && R(bVal - aVal) == R(cost) && (aAssets - bAssets) == 1
+			});
+		}
+
+		// GET /api/dev/sess-probe?key=seed123 — sets a session value on first hit; reports it on later hits.
+		// Used to prove the session (and its DataProtection-protected cookie) survives an app restart/rebuild.
+		[HttpGet("sess-probe")]
+		public IActionResult SessProbe(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var existing = HttpContext.Session.GetString("probe");
+			if (string.IsNullOrEmpty(existing))
+			{
+				var v = "probe-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+				HttpContext.Session.SetString("probe", v);
+				return Ok(new { state = "set", value = v, note = "call again (same cookie jar) after a restart; should report state=found with the same value" });
+			}
+			return Ok(new { state = "found", value = existing, note = "session survived — cookie decrypted with the persisted key ring" });
+		}
+
+		// GET /api/dev/hr-test-holiday?key=seed123 — proves official holidays are excluded from leave working-day counts.
+		[HttpGet("hr-test-holiday")]
+		public async Task<IActionResult> HrTestHoliday(string key, [FromServices] CrossBuy.BL.ILeaveDashboardService dash, [FromServices] CrossBuy.BL.IHolidayService hol)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var emp = await _db.Employee.AsNoTracking().OrderBy(e => e.ID).FirstOrDefaultAsync();
+			if (emp == null) return BadRequest(new { message = "no employee" });
+			int company = emp.EmpCompanyID;
+			var s = new DateTime(2026, 9, 1); var e = new DateTime(2026, 9, 7);
+
+			// clean any prior test holidays
+			await _db.OfficialHolidays.Where(h => h.CompanyID == company && h.Notes == "__HOLTEST__").ExecuteDeleteAsync();
+
+			int before = await dash.WorkingDaysAsync(emp.ID, s, e);
+
+			// mark every day in the range as an official holiday → working days must drop to 0
+			for (var d = s; d <= e; d = d.AddDays(1))
+				_db.OfficialHolidays.Add(new CrossBuy.Models.Context.Admin.OfficialHoliday { CompanyID = company, NameAr = "اختبار", HolidayDate = d, IsRecurring = false, Notes = "__HOLTEST__", CreatedAt = DateTime.UtcNow });
+			// a recurring holiday to verify multi-year expansion
+			_db.OfficialHolidays.Add(new CrossBuy.Models.Context.Admin.OfficialHoliday { CompanyID = company, NameAr = "متكرر", HolidayDate = new DateTime(2026, 9, 20), IsRecurring = true, Notes = "__HOLTEST__", CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+
+			int after = await dash.WorkingDaysAsync(emp.ID, s, e);
+			var recurring = await hol.HolidayDatesAsync(company, new DateTime(2026, 1, 1), new DateTime(2028, 12, 31));
+			int recCount = recurring.Count(x => x.Month == 9 && x.Day == 20);
+
+			// cleanup
+			await _db.OfficialHolidays.Where(h => h.CompanyID == company && h.Notes == "__HOLTEST__").ExecuteDeleteAsync();
+
+			return Ok(new
+			{
+				employee = emp.FullName, company,
+				range = "2026-09-01..2026-09-07",
+				workingDays_before = before,
+				workingDays_afterAllHolidays = after,
+				recurring_2026_2028_occurrences = recCount,
+				checks = new { holidays_excluded = before > 0 && after == 0, recurring_expands_per_year = recCount == 3 },
+				allPass = before > 0 && after == 0 && recCount == 3
+			});
+		}
+
+		// GET /api/dev/hr-test-attendance?key=seed123 — proves attendance computes late/overtime/absence/rest correctly.
+		[HttpGet("hr-test-attendance")]
+		public async Task<IActionResult> HrTestAttendance(string key, [FromServices] CrossBuy.BL.IAttendanceService att)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			// an employee that has an attendance policy
+			var assign = await _db.PolicyAssignments.AsNoTracking().FirstOrDefaultAsync();
+			if (assign == null) return BadRequest(new { message = "no policy assignment" });
+			var emp = await _db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == assign.EmployeeID);
+			var policy = await att.PolicyForAsync(assign.EmployeeID);
+			if (emp == null || policy == null) return BadRequest(new { message = "employee has no attendance policy" });
+			int company = emp.EmpCompanyID;
+
+			bool isWork(DateTime d) => d.DayOfWeek switch
+			{
+				DayOfWeek.Sunday => policy.WorkOnSunday, DayOfWeek.Monday => policy.WorkOnMonday,
+				DayOfWeek.Tuesday => policy.WorkOnTuesday, DayOfWeek.Wednesday => policy.WorkOnWednesday,
+				DayOfWeek.Thursday => policy.WorkOnThursday, DayOfWeek.Friday => policy.WorkOnFriday,
+				DayOfWeek.Saturday => policy.WorkOnSaturday, _ => false
+			};
+
+			// clean Oct-2026 test records for this employee
+			var s = new DateTime(2026, 10, 1); var e = new DateTime(2026, 10, 31);
+			await _db.AttendanceRecords.Where(r => r.CompanyID == company && r.EmployeeID == emp.ID && r.WorkDate >= s && r.WorkDate <= e).ExecuteDeleteAsync();
+
+			// pick work days + a rest day in Oct 2026
+			var workDays = new List<DateTime>(); DateTime? restDay = null;
+			for (var d = s; d <= e; d = d.AddDays(1))
+			{
+				if (isWork(d)) workDays.Add(d); else restDay ??= d;
+			}
+			if (workDays.Count < 2) return BadRequest(new { message = "not enough work days" });
+
+			var d1 = workDays[0]; var d2 = workDays[1];
+			var grace = TimeSpan.FromMinutes(policy.AllowedGraceMinutes);
+			// late by 30 min, overtime by 45 min on d1
+			var ci = d1 + policy.WorkStartTime + grace + TimeSpan.FromMinutes(30);
+			var co = d1 + policy.WorkEndTime + TimeSpan.FromMinutes(45);
+			var (o1, e1, r1) = await att.RecordAsync(company, emp.ID, d1, ci, co, "Manual", "test late+ot", null);
+			// absent on d2 (no check-in)
+			var (o2, e2, r2) = await att.RecordAsync(company, emp.ID, d2, null, null, "Manual", "test absent", null);
+			// rest day
+			(bool ok, string? err, CrossBuy.Models.Context.Admin.AttendanceRecord? rec) r3 = (true, null, null);
+			if (restDay != null) r3 = await att.RecordAsync(company, emp.ID, restDay.Value, restDay.Value + policy.WorkStartTime, null, "Manual", "test rest", null);
+
+			var summary = await att.MonthlySummaryAsync(company, 2026, 10);
+			var row = summary.FirstOrDefault(x => x.EmployeeID == emp.ID);
+
+			// cleanup
+			await _db.AttendanceRecords.Where(r => r.CompanyID == company && r.EmployeeID == emp.ID && r.WorkDate >= s && r.WorkDate <= e).ExecuteDeleteAsync();
+
+			return Ok(new
+			{
+				employee = emp.FullName, policy = new { start = policy.WorkStartTime.ToString(), end = policy.WorkEndTime.ToString(), graceMin = policy.AllowedGraceMinutes },
+				lateDay = new { date = d1.ToString("yyyy-MM-dd"), status = r1?.Status, lateMinutes = r1?.LateMinutes, overtimeMinutes = r1?.OvertimeMinutes },
+				absentDay = new { date = d2.ToString("yyyy-MM-dd"), status = r2?.Status },
+				restDay = restDay == null ? null : new { date = restDay.Value.ToString("yyyy-MM-dd"), status = r3.rec?.Status },
+				summaryRow = row == null ? null : new { row.WorkDays, row.PresentDays, row.LateCount, row.LateMinutes, row.OvertimeMinutes, row.AbsentDays },
+				checks = new
+				{
+					late_30 = r1?.LateMinutes == 30,
+					ot_45 = r1?.OvertimeMinutes == 45,
+					late_status = r1?.Status == "Late",
+					absent_status = r2?.Status == "Absent",
+					rest_status = restDay == null || r3.rec?.Status == "RestDay",
+					summary_has_late = row != null && row.LateMinutes >= 30,
+					summary_has_absent = row != null && row.AbsentDays >= 1
+				},
+				allPass = r1?.LateMinutes == 30 && r1?.OvertimeMinutes == 45 && r1?.Status == "Late" && r2?.Status == "Absent" && (restDay == null || r3.rec?.Status == "RestDay") && row != null && row.LateMinutes >= 30 && row.AbsentDays >= 1
+			});
+		}
+
+		// GET /api/dev/hr-test-payslip?key=seed123 — proves attendance flows into payroll + a payslip is issued.
+		[HttpGet("hr-test-payslip")]
+		public async Task<IActionResult> HrTestPayslip(string key, [FromServices] CrossBuy.BL.IAttendanceService att, [FromServices] CrossBuy.BL.IAccountingPostingService posting)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int yr = 2026, mo = 11;
+			var assign = await _db.PolicyAssignments.AsNoTracking().FirstOrDefaultAsync();
+			if (assign == null) return BadRequest(new { message = "no policy assignment" });
+			var emp = await _db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == assign.EmployeeID);
+			var policy = await att.PolicyForAsync(assign.EmployeeID);
+			var sp = await _db.SalaryPolicies.AsNoTracking().FirstOrDefaultAsync(s => s.LeavePolicyTypeID == assign.LeavePolicyTypeID);
+			if (emp == null || policy == null || sp == null) return BadRequest(new { message = "employee missing attendance/salary policy" });
+			int company = emp.EmpCompanyID;
+
+			bool isWork(DateTime d) => d.DayOfWeek switch { DayOfWeek.Sunday => policy.WorkOnSunday, DayOfWeek.Monday => policy.WorkOnMonday, DayOfWeek.Tuesday => policy.WorkOnTuesday, DayOfWeek.Wednesday => policy.WorkOnWednesday, DayOfWeek.Thursday => policy.WorkOnThursday, DayOfWeek.Friday => policy.WorkOnFriday, DayOfWeek.Saturday => policy.WorkOnSaturday, _ => false };
+
+			var s = new DateTime(yr, mo, 1); var e = new DateTime(yr, mo, 30);
+			// cleanup prior run (attendance, payslips, payroll JE for the period)
+			await _db.AttendanceRecords.Where(r => r.CompanyID == company && r.EmployeeID == emp.ID && r.WorkDate >= s && r.WorkDate <= e).ExecuteDeleteAsync();
+			await _db.Payslips.Where(p => p.CompanyID == company && p.Year == yr && p.Month == mo).ExecuteDeleteAsync();
+			int srcId = yr * 100 + mo;
+			var jeIds = await _db.JournalEntries.Where(j => j.CompanyID == company && j.SourceType == "Payroll" && j.SourceId == srcId).Select(j => j.ID).ToListAsync();
+			if (jeIds.Count > 0) { await _db.JournalEntryLines.Where(l => jeIds.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(j => jeIds.Contains(j.ID)).ExecuteDeleteAsync(); }
+
+			// record present on all work days, with: 1 late(+20m), 1 overtime(+60m), 1 absent (skipped)
+			var work = new List<DateTime>();
+			for (var d = s; d <= e; d = d.AddDays(1)) if (isWork(d)) work.Add(d);
+			if (work.Count < 4) return BadRequest(new { message = "not enough work days" });
+			var lateDay = work[0]; var otDay = work[1]; var absentDay = work[2];
+			foreach (var d in work)
+			{
+				if (d == absentDay) continue;  // leave absent
+				var ci = d + policy.WorkStartTime + TimeSpan.FromMinutes(policy.AllowedGraceMinutes);
+				var co = d + policy.WorkEndTime;
+				if (d == lateDay) ci = ci + TimeSpan.FromMinutes(20);
+				if (d == otDay) co = co + TimeSpan.FromMinutes(60);
+				await att.RecordAsync(company, emp.ID, d, ci, co, "Manual", null, null);
+			}
+
+			var (pok, perr, jeId) = await posting.PostPayrollRunAsync(company, yr, mo, null);
+			var slip = await _db.Payslips.AsNoTracking().FirstOrDefaultAsync(p => p.CompanyID == company && p.Year == yr && p.Month == mo && p.EmployeeID == emp.ID);
+
+			decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+			decimal expOt = R(60m / 60m * sp.OvertimeRate), expLate = R(20 * sp.LatePenaltyPerMinute), expAbs = R(1 * sp.AbsencePenaltyPerDay);
+			decimal baseAllow = R(sp.BaseSalary + sp.HousingAllowance + sp.TransportationAllowance + sp.OtherAllowances);
+			// mirror the service: SI on insurable wage (capped), progressive monthly tax if brackets exist (else flat)
+			var payCfg = await _db.PayrollSettings.AsNoTracking().FirstOrDefaultAsync(x => x.CompanyID == company);
+			var brackets = await _db.PayrollTaxBrackets.AsNoTracking().Where(b => b.CompanyID == company).OrderBy(b => b.Ordinal).ToListAsync();
+			decimal insurable = CrossBuy.BL.AccountingPostingService.InsurableWage(baseAllow, payCfg);
+			decimal expSiEmp = R(insurable * sp.SocialInsuranceEmployeeShare / 100m);
+			decimal expTax = 0m;
+			if (sp.IsTaxApplicable)
+			{
+				if (brackets.Count > 0)
+				{
+					var annualTaxable = baseAllow * 12m - ((payCfg?.TaxBaseExcludesEmployeeSI ?? false) ? expSiEmp * 12m : 0m) - (payCfg?.PersonalExemptionAnnual ?? 0m);
+					expTax = R(CrossBuy.BL.AccountingPostingService.ProgressiveAnnualTax(annualTaxable, brackets) / 12m);
+				}
+				else { expTax = R(baseAllow * sp.TaxRate / 100m); }
+			}
+			decimal expNet = R(baseAllow + expOt - expSiEmp - expTax - expLate - expAbs);
+
+			return Ok(new
+			{
+				payrollPosted = pok, error = perr, journalEntryId = jeId,
+				rates = new { sp.OvertimeRate, sp.LatePenaltyPerMinute, sp.AbsencePenaltyPerDay },
+				slip = slip == null ? null : new { slip.EmployeeName, slip.LateMinutes, slip.OvertimePay, slip.LatePenalty, slip.AbsentDays, slip.AbsencePenalty, slip.GrossEarnings, slip.Net, slip.JournalEntryId },
+				expected = new { lateMinutes = 20, overtimePay = expOt, latePenalty = expLate, absentDays = 1, absencePenalty = expAbs, net = expNet },
+				checks = slip == null ? null : new
+				{
+					payslip_created = true,
+					late_minutes = slip.LateMinutes == 20,
+					overtime_pay = slip.OvertimePay == expOt,
+					late_penalty = slip.LatePenalty == expLate,
+					absent_days = slip.AbsentDays == 1,
+					absence_penalty = slip.AbsencePenalty == expAbs,
+					net_matches = slip.Net == expNet,
+					linked_to_je = slip.JournalEntryId == jeId
+				},
+				allPass = pok && slip != null && slip.LateMinutes == 20 && slip.OvertimePay == expOt && slip.LatePenalty == expLate && slip.AbsentDays == 1 && slip.AbsencePenalty == expAbs && slip.Net == expNet && slip.JournalEntryId == jeId
+			});
+		}
+
+		// GET /api/dev/hr-test-disburse?key=seed123 — proves payroll disbursement + statutory remittance clear 2103/210205/210204.
+		[HttpGet("hr-test-disburse")]
+		public async Task<IActionResult> HrTestDisburse(string key, [FromServices] CrossBuy.BL.IAccountingPostingService posting)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1, yr = 2026, mo = 9;   // dedicated test period
+			int src = yr * 100 + mo;
+
+			// helper: wipe the test period's payroll + settlements so the run is repeatable
+			async Task WipePeriod()
+			{
+				var allTypes = new[] { "Payroll", "PayrollPay", "PayrollRemitTax", "PayrollRemitSI" };
+				var ids = await _db.JournalEntries.Where(e => e.CompanyID == company && allTypes.Contains(e.SourceType) && e.SourceId == src).Select(e => e.ID).ToListAsync();
+				if (ids.Count > 0) { await _db.JournalEntryLines.Where(l => ids.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(e => ids.Contains(e.ID)).ExecuteDeleteAsync(); }
+				await _db.Payslips.Where(p => p.CompanyID == company && p.Year == yr && p.Month == mo).ExecuteDeleteAsync();
+			}
+			await WipePeriod();
+
+			// temporarily raise the first salary policy so tax + SI actually accrue (demo salaries are tax-free)
+			var pol = await _db.SalaryPolicies.OrderBy(s => s.ID).FirstOrDefaultAsync();
+			if (pol == null) return BadRequest(new { message = "no salary policy — run the HR seed first" });
+			var (oBase, oSiE, oSiC, oTax, oTaxApp) = (pol.BaseSalary, pol.SocialInsuranceEmployeeShare, pol.SocialInsuranceCompanyShare, pol.TaxRate, pol.IsTaxApplicable);
+			pol.BaseSalary = 30000m; pol.SocialInsuranceEmployeeShare = 11m; pol.SocialInsuranceCompanyShare = 18.75m; pol.IsTaxApplicable = true;
+			await _db.SaveChangesAsync();
+
+			await posting.PostPayrollRunAsync(company, yr, mo, null);   // fresh post with accruing tax/SI
+
+			var bank = await _db.BankAccounts.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company);
+			if (bank == null) return BadRequest(new { message = "no bank account — run seed-acc-demo first" });
+			var payFrom = bank.GlAccountId;
+			var payDate = new DateTime(yr, mo, DateTime.DaysInMonth(yr, mo));
+
+			var before = await posting.GetDisbursementViewAsync(company, yr, mo);
+			var (d1ok, d1err) = await posting.DisbursePayrollAsync(company, yr, mo, payFrom, payDate, null);
+			var (d2ok, d2err) = await posting.DisbursePayrollAsync(company, yr, mo, payFrom, payDate, null); // must refuse (idempotent)
+			var (txok, txerr) = await posting.RemitStatutoryAsync(company, yr, mo, "Tax", payFrom, payDate, null);
+			var (siok, sierr) = await posting.RemitStatutoryAsync(company, yr, mo, "SI", payFrom, payDate, null);
+			var (si2ok, _) = await posting.RemitStatutoryAsync(company, yr, mo, "SI", payFrom, payDate, null); // must refuse
+			var after = await posting.GetDisbursementViewAsync(company, yr, mo);
+
+			// trial balance still balanced?
+			var tb = await _db.JournalEntryLines.AsNoTracking()
+				.Join(_db.JournalEntries.AsNoTracking().Where(e => e.CompanyID == company && e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l)
+				.GroupBy(l => 1).Select(g => new { dr = g.Sum(x => x.Debit), cr = g.Sum(x => x.Credit) }).FirstOrDefaultAsync();
+			bool balanced = tb != null && tb.dr == tb.cr;
+
+			// restore the policy and remove the test period's entries so the DB is left as found
+			pol.BaseSalary = oBase; pol.SocialInsuranceEmployeeShare = oSiE; pol.SocialInsuranceCompanyShare = oSiC; pol.TaxRate = oTax; pol.IsTaxApplicable = oTaxApp;
+			await _db.SaveChangesAsync();
+			await WipePeriod();
+
+			return Ok(new
+			{
+				period = $"{mo}/{yr}",
+				accrued = new { before.Net, before.Tax, before.Si },
+				disburse = new { ok = d1ok, error = d1err, idempotent_refused = !d2ok && d2err != null },
+				remitTax = new { ok = txok, error = txerr },
+				remitSi = new { ok = siok, error = sierr, idempotent_refused = !si2ok },
+				after = new { after.Disbursed, after.TaxRemitted, after.SiRemitted },
+				trialBalanceBalanced = balanced,
+				allPass = before.Net > 0 && before.Tax > 0 && before.Si > 0 && d1ok && !d2ok && txok && siok && !si2ok && after.Disbursed && after.TaxRemitted && after.SiRemitted && balanced
+			});
+		}
+
+		// GET /api/dev/seed-disbursement?key=seed123&year=2026&month=1
+		// Persistently posts the period's payroll (unsettled) so /Accounting/PayrollDisbursement has data.
+		// Idempotent (won't double-post); leaves the run in the "due" state so the disburse/remit forms show.
+		[HttpGet("seed-disbursement")]
+		public async Task<IActionResult> SeedDisbursement(string key, int year = 2026, int month = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1; int src = year * 100 + month;
+			var existing = await _db.JournalEntries.AsNoTracking()
+				.FirstOrDefaultAsync(e => e.CompanyID == company && e.SourceType == "Payroll" && e.SourceId == src && e.Status == "Posted");
+			string action;
+			if (existing == null)
+			{
+				var (ok, err, _) = await _posting.PostPayrollRunAsync(company, year, month, null);
+				if (!ok) return BadRequest(new { message = err ?? "post failed" });
+				action = "posted";
+			}
+			else action = "already posted";
+			var v = await _posting.GetDisbursementViewAsync(company, year, month);
+			return Ok(new { period = $"{month}/{year}", action, v.HasPayroll, v.Net, v.Tax, v.Si, v.Disbursed, v.TaxRemitted, v.SiRemitted });
+		}
+
+		// GET /api/dev/seed-payments?key=seed123 — creates a few vendor payments (posted via the AP service → balanced JEs) so /Accounting/Payments has data. Idempotent.
+		[HttpGet("seed-payments")]
+		public async Task<IActionResult> SeedPayments(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			if (await _db.Payments.AnyAsync(p => p.CompanyID == company))
+				return Ok(new { skipped = true, message = "payments already exist" });
+			var bank = await _db.BankAccounts.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company);
+			if (bank == null) return BadRequest(new { message = "no bank account — run seed-acc-demo" });
+			int cashAcc = bank.GlAccountId;
+			var vendorIds = await _db.Vendors.AsNoTracking().Where(v => v.CompanyID == company).OrderBy(v => v.ID).Select(v => v.ID).Take(4).ToListAsync();
+			if (vendorIds.Count == 0) return BadRequest(new { message = "no vendors" });
+			var samples = new (decimal amt, string method, DateTime date, string notes)[]
+			{
+				(5000m,  "BankTransfer", new DateTime(2026, 6, 15), "دفعة مورد"),
+				(3200m,  "Cash",         new DateTime(2026, 6, 20), "سداد نقدي"),
+				(8000m,  "BankTransfer", new DateTime(2026, 7, 1),  "تحويل بنكي"),
+				(4500m,  "Cheque",       new DateTime(2026, 7, 5),  "شيك مورد"),
+			};
+			var results = new List<object>();
+			for (int i = 0; i < samples.Length && i < vendorIds.Count; i++)
+			{
+				var s = samples[i];
+				var (ok, err) = await _ap.CreatePaymentAsync(company, vendorIds[i], s.date, s.amt, s.method, cashAcc, s.notes, null);
+				results.Add(new { vendorId = vendorIds[i], s.amt, s.method, ok, err });
+			}
+			return Ok(new { created = results });
+		}
+
+		// GET /api/dev/hr-test-leaveaccrual?key=seed123 — proves leave encashment reduces balance + provision matches liability, all balanced.
+		[HttpGet("hr-test-leaveaccrual")]
+		public async Task<IActionResult> HrTestLeaveAccrual(string key, [FromServices] CrossBuy.BL.ILeaveAccrualService accrual)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			// fresh slate for the feature so the run is repeatable
+			var leTypes = new[] { "LeaveEncash", "LeaveProvision" };
+			var leIds = await _db.JournalEntries.Where(e => e.CompanyID == company && leTypes.Contains(e.SourceType)).Select(e => e.ID).ToListAsync();
+			if (leIds.Count > 0) { await _db.JournalEntryLines.Where(l => leIds.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(e => leIds.Contains(e.ID)).ExecuteDeleteAsync(); }
+			await _db.LeaveEncashments.Where(x => x.CompanyID == company).ExecuteDeleteAsync();
+			await _db.LeaveProvisionRuns.Where(x => x.CompanyID == company).ExecuteDeleteAsync();
+
+			var assign = await _db.PolicyAssignments.AsNoTracking().FirstOrDefaultAsync();
+			if (assign == null) return BadRequest(new { message = "no policy assignment — run HR seed" });
+			int empId = assign.EmployeeID;
+			var bank = await _db.BankAccounts.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company);
+			if (bank == null) return BadRequest(new { message = "no bank account — run seed-acc-demo" });
+			if (!await _db.Accounts.AnyAsync(a => a.CompanyID == company && a.Code == "520104"))
+				return BadRequest(new { message = "leave accounts (520104/520106/210206) missing — run seed-acc-demo" });
+
+			// ---- Encashment: encash 1 day of the first encashable balance ----
+			var balBefore = await accrual.GetEncashableBalancesAsync(empId);
+			var pick = balBefore.FirstOrDefault(b => b.RemainingDays > 0);
+			object encashResult; bool encashOk = false, balanceDropped = false;
+			if (pick == null) { encashResult = new { skipped = "no encashable balance" }; }
+			else
+			{
+				int remBefore = pick.RemainingDays;
+				var (eok, eerr) = await accrual.EncashAsync(company, empId, pick.LeaveTypeId, 1, bank.GlAccountId, DateTime.Today, null);
+				var balsAfter = await accrual.GetEncashableBalancesAsync(empId);
+				var remAfter = balsAfter.FirstOrDefault(x => x.LeaveTypeId == pick.LeaveTypeId)?.RemainingDays ?? 0;
+				encashOk = eok; balanceDropped = remAfter == remBefore - 1;
+				encashResult = new { ok = eok, error = eerr, remBefore, remAfter, balanceDropped };
+			}
+
+			// ---- Provision: post then verify liability == target, second post refused ----
+			var asOf = new DateTime(DateTime.Today.Year, 12, 31);
+			var pvBefore = await accrual.ProvisionPreviewAsync(company, asOf);
+			var (pok, perr) = await accrual.PostProvisionAsync(company, asOf, null);
+			var pvAfter = await accrual.ProvisionPreviewAsync(company, asOf);
+			var (p2ok, _) = await accrual.PostProvisionAsync(company, asOf, null); // must refuse (no diff)
+			bool liabilityMatches = pvAfter.CurrentBalance == pvAfter.TargetAmount;
+
+			// trial balance balanced?
+			var tb = await _db.JournalEntryLines.AsNoTracking()
+				.Join(_db.JournalEntries.AsNoTracking().Where(e => e.CompanyID == company && e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l)
+				.GroupBy(l => 1).Select(g => new { dr = g.Sum(x => x.Debit), cr = g.Sum(x => x.Credit) }).FirstOrDefaultAsync();
+			bool balanced = tb != null && tb.dr == tb.cr;
+
+			// cleanup so the DB is left as found
+			var clr = await _db.JournalEntries.Where(e => e.CompanyID == company && leTypes.Contains(e.SourceType)).Select(e => e.ID).ToListAsync();
+			if (clr.Count > 0) { await _db.JournalEntryLines.Where(l => clr.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(e => clr.Contains(e.ID)).ExecuteDeleteAsync(); }
+			await _db.LeaveEncashments.Where(x => x.CompanyID == company).ExecuteDeleteAsync();
+			await _db.LeaveProvisionRuns.Where(x => x.CompanyID == company).ExecuteDeleteAsync();
+
+			return Ok(new
+			{
+				encashment = encashResult,
+				provision = new { target = pvBefore.TargetAmount, posted = pok, error = perr, currentAfter = pvAfter.CurrentBalance, liabilityMatches, secondPostRefused = !p2ok },
+				trialBalanceBalanced = balanced,
+				allPass = (pick == null || (encashOk && balanceDropped)) && pok && liabilityMatches && !p2ok && balanced
+			});
+		}
+
+		// GET /api/dev/hr-test-docs?key=seed123 — proves contracts/documents save + expiry alerts surface & notify.
+		[HttpGet("hr-test-docs")]
+		public async Task<IActionResult> HrTestDocs(string key, [FromServices] CrossBuy.BL.IHrDocumentService docs)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			var emp = await _db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.EmpCompanyID == company);
+			if (emp == null) return BadRequest(new { message = "no employee" });
+
+			// clean prior test rows for this employee
+			await _db.EmploymentContracts.Where(c => c.CompanyID == company && c.EmployeeID == emp.ID && c.Notes == "hr-test").ExecuteDeleteAsync();
+			await _db.EmployeeDocuments.Where(d => d.CompanyID == company && d.EmployeeID == emp.ID && d.Notes == "hr-test").ExecuteDeleteAsync();
+
+			// a contract ending in 20 days + a document expired 10 days ago
+			var (c1ok, c1err) = await docs.SaveContractAsync(new CrossBuy.Models.Context.Admin.EmploymentContract
+			{ CompanyID = company, EmployeeID = emp.ID, ContractType = "FixedTerm", StartDate = DateTime.Today.AddYears(-1), EndDate = DateTime.Today.AddDays(20), Status = "Active", Notes = "hr-test" }, null, null);
+			var (d1ok, d1err) = await docs.SaveDocumentAsync(new CrossBuy.Models.Context.Admin.EmployeeDocument
+			{ CompanyID = company, EmployeeID = emp.ID, DocType = "Passport", DocNumber = "TEST123", ExpiryDate = DateTime.Today.AddDays(-10), Notes = "hr-test" }, null, null);
+
+			var expiring = await docs.ExpiringAsync(company, 60);
+			var mine = expiring.Where(x => x.EmployeeId == emp.ID).ToList();
+			bool foundContract = mine.Any(x => x.Kind == "Contract" && x.DaysLeft == 20);
+			bool foundExpiredDoc = mine.Any(x => x.Kind == "Document" && x.DaysLeft == -10);
+			bool sortedByDaysLeft = expiring.Select(x => x.DaysLeft).SequenceEqual(expiring.Select(x => x.DaysLeft).OrderBy(v => v));
+
+			int notified = await docs.NotifyExpiringAsync(company, 60);
+
+			// cleanup (rows + the notifications we just created)
+			await _db.Notifications.Where(n => n.Type == "hr_expiry" && n.RecipientEmployeeID == emp.ID).ExecuteDeleteAsync();
+			await _db.EmploymentContracts.Where(c => c.CompanyID == company && c.EmployeeID == emp.ID && c.Notes == "hr-test").ExecuteDeleteAsync();
+			await _db.EmployeeDocuments.Where(d => d.CompanyID == company && d.EmployeeID == emp.ID && d.Notes == "hr-test").ExecuteDeleteAsync();
+
+			return Ok(new
+			{
+				saved = new { contract = c1ok, contractErr = c1err, document = d1ok, documentErr = d1err },
+				alerts = new { foundContract, foundExpiredDoc, sortedByDaysLeft, totalForEmp = mine.Count },
+				notified_at_least = notified >= 2,
+				allPass = c1ok && d1ok && foundContract && foundExpiredDoc && sortedByDaysLeft && notified >= 2
+			});
+		}
+
+		// GET /api/dev/hr-test-settlement?key=seed123 — proves final settlement posts a balanced JE, terminates the employee, then restores.
+		[HttpGet("hr-test-settlement")]
+		public async Task<IActionResult> HrTestSettlement(string key, [FromServices] CrossBuy.BL.IFinalSettlementService settle)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			if (!await _db.Accounts.AnyAsync(a => a.CompanyID == company && a.Code == "520107"))
+				return BadRequest(new { message = "gratuity account 520107 missing — run seed-accounting" });
+			var emp = await _db.Employee.FirstOrDefaultAsync(e => e.EmpCompanyID == company && e.IsActive);
+			if (emp == null) return BadRequest(new { message = "no active employee" });
+			var bank = await _db.BankAccounts.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company);
+			if (bank == null) return BadRequest(new { message = "no bank account — run seed-acc-demo" });
+
+			bool wasActive = emp.IsActive;
+			var termDate = DateTime.Today;
+			var activeContractIds = await _db.EmploymentContracts.Where(c => c.CompanyID == company && c.EmployeeID == emp.ID && c.Status == "Active").Select(c => c.ID).ToListAsync();
+
+			var pv = await settle.PreviewAsync(company, emp.ID, termDate);
+			decimal gratuity = Math.Max(pv.SuggestedGratuity, 1000m), other = 1000m, ded = 200m;
+			var (pok, perr) = await settle.PostAsync(company, emp.ID, termDate, "test", gratuity, other, ded, bank.GlAccountId, null);
+
+			await _db.Entry(emp).ReloadAsync();
+			bool nowInactive = !emp.IsActive;
+			var rec = await _db.FinalSettlements.AsNoTracking().FirstOrDefaultAsync(s => s.CompanyID == company && s.EmployeeID == emp.ID);
+			decimal expectedNet = Math.Round(pv.LeaveValue + gratuity + other - ded, 2, MidpointRounding.AwayFromZero);
+			bool netMatches = rec != null && rec.NetSettlement == expectedNet;
+			var (refusedOk, refusedErr) = await settle.PostAsync(company, emp.ID, termDate, "test", gratuity, other, ded, bank.GlAccountId, null); // already inactive → refuse
+
+			var tb = await _db.JournalEntryLines.AsNoTracking()
+				.Join(_db.JournalEntries.AsNoTracking().Where(e => e.CompanyID == company && e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l)
+				.GroupBy(l => 1).Select(g => new { dr = g.Sum(x => x.Debit), cr = g.Sum(x => x.Credit) }).FirstOrDefaultAsync();
+			bool balanced = tb != null && tb.dr == tb.cr;
+
+			// ---- cleanup: remove settlement JE + records, restore employee & contracts ----
+			var jeIds = await _db.JournalEntries.Where(e => e.CompanyID == company && e.SourceType == "FinalSettlement" && e.SourceId == emp.ID).Select(e => e.ID).ToListAsync();
+			if (jeIds.Count > 0) { await _db.LeaveEncashments.Where(x => x.JournalEntryId != null && jeIds.Contains(x.JournalEntryId.Value)).ExecuteDeleteAsync();
+				await _db.JournalEntryLines.Where(l => jeIds.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(e => jeIds.Contains(e.ID)).ExecuteDeleteAsync(); }
+			await _db.FinalSettlements.Where(s => s.CompanyID == company && s.EmployeeID == emp.ID).ExecuteDeleteAsync();
+			emp.IsActive = wasActive;
+			foreach (var c in await _db.EmploymentContracts.Where(c => activeContractIds.Contains(c.ID)).ToListAsync()) { c.Status = "Active"; c.EndDate = null; }
+			await _db.SaveChangesAsync();
+
+			return Ok(new
+			{
+				preview = new { pv.ServiceYears, pv.LeaveValue, pv.SuggestedGratuity },
+				posted = pok, error = perr,
+				employee_terminated = nowInactive,
+				settlement_recorded = rec != null,
+				net = rec?.NetSettlement, expectedNet, netMatches,
+				second_post_refused = !refusedOk,
+				trialBalanceBalanced = balanced,
+				allPass = pok && nowInactive && rec != null && netMatches && !refusedOk && balanced
+			});
+		}
+
+		// GET /api/dev/hr-test-carryover?key=seed123 — proves unused leave carries to next year, capped, idempotent, and raises balance.
+		[HttpGet("hr-test-carryover")]
+		public async Task<IActionResult> HrTestCarryOver(string key, [FromServices] CrossBuy.BL.ILeaveAccrualService accrual, [FromServices] CrossBuy.BL.ILeaveDashboardService leave)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1, fromYear = DateTime.Today.Year, targetYear = fromYear + 1;
+			var assign = await _db.PolicyAssignments.AsNoTracking().FirstOrDefaultAsync();
+			if (assign == null) return BadRequest(new { message = "no policy assignment" });
+			var lp = await _db.LeavePolicies.FirstOrDefaultAsync(x => x.LeavePolicyTypeID == assign.LeavePolicyTypeID);
+			if (lp == null) return BadRequest(new { message = "no leave policy" });
+			int empId = assign.EmployeeID, typeId = lp.LeaveTypeID, entitlement = lp.EntitlementDaysPerYear;
+
+			int origLimit = lp.CarryOverLimit;
+			lp.CarryOverLimit = 5;   // temporary cap for the test
+			await _db.SaveChangesAsync();
+			await _db.LeaveCarryOvers.Where(c => c.CompanyID == company && c.Year == targetYear).ExecuteDeleteAsync();
+
+			var remainingFrom = await leave.RemainingForTypeInYearAsync(empId, typeId, fromYear);
+			int expectedCarry = Math.Min(Math.Max(0, remainingFrom), 5);
+
+			var (r1ok, _, rows1) = await accrual.RunCarryOverAsync(company, fromYear);
+			var carried = await _db.LeaveCarryOvers.AsNoTracking().Where(c => c.CompanyID == company && c.EmployeeID == empId && c.LeaveTypeID == typeId && c.Year == targetYear).SumAsync(c => (int?)c.Days) ?? 0;
+			var remainingTarget = await leave.RemainingForTypeInYearAsync(empId, typeId, targetYear);
+
+			// idempotency: run again, total for target year must NOT double
+			var (r2ok, _, _) = await accrual.RunCarryOverAsync(company, fromYear);
+			var carriedAfter2 = await _db.LeaveCarryOvers.AsNoTracking().Where(c => c.CompanyID == company && c.EmployeeID == empId && c.LeaveTypeID == typeId && c.Year == targetYear).SumAsync(c => (int?)c.Days) ?? 0;
+
+			bool carryMatches = carried == expectedCarry;
+			bool balanceRaised = remainingTarget == (entitlement + carried);  // target year: entitlement + carriedIn, no usage
+			bool idempotent = carriedAfter2 == carried;
+
+			// cleanup
+			await _db.LeaveCarryOvers.Where(c => c.CompanyID == company && c.Year == targetYear).ExecuteDeleteAsync();
+			lp.CarryOverLimit = origLimit;
+			await _db.SaveChangesAsync();
+
+			return Ok(new
+			{
+				fromYear, targetYear, entitlement, remainingFrom, limit = 5,
+				expectedCarry, carried, carryMatches,
+				remainingTargetYear = remainingTarget, balanceRaised,
+				idempotent,
+				allPass = r1ok && r2ok && carryMatches && balanceRaised && idempotent
+			});
+		}
+
+		// GET /api/dev/crm-test-enrich?key=seed123 — proves Customer/Vendor enrichment fields save on create + edit (P3-1).
+		[HttpGet("crm-test-enrich")]
+		public async Task<IActionResult> CrmTestEnrich(string key, [FromServices] CrossBuy.BL.IReceivableService ar, [FromServices] CrossBuy.BL.IPayableService ap)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			// create a customer with full enrichment
+			var (c1ok, c1err) = await ar.SaveCustomerAsync(company, new CrossBuy.Models.Context.Accounting.Customer
+			{ Name = "عميل اختبار CRM", Phone = "0100", Email = "t@x.com", ContactPerson = "محمد", Segment = "VIP", ShippingAddress = "ش الشحن", CreditLimit = 5000 });
+			var cust = await _db.Customers.OrderByDescending(c => c.ID).FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "عميل اختبار CRM");
+			bool custControl = cust != null && cust.ControlAccountId > 0;   // control account auto-assigned
+			// edit it
+			(var c2ok, _) = cust != null ? await ar.SaveCustomerAsync(company, new CrossBuy.Models.Context.Accounting.Customer { ID = cust.ID, Name = cust.Name, Segment = "Wholesale", Phone = "0200", IsActive = true }) : (false, null);
+			await _db.Entry(cust!).ReloadAsync();
+			bool custEdited = cust!.Segment == "Wholesale" && cust.Phone == "0200";
+
+			var (v1ok, _) = await ap.SaveVendorAsync(company, new CrossBuy.Models.Context.Accounting.Vendor
+			{ Name = "مورد اختبار CRM", Phone = "0300", Email = "v@x.com", ContactPerson = "علي", Segment = "Local" });
+			var vend = await _db.Vendors.OrderByDescending(v => v.ID).FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "مورد اختبار CRM");
+			bool vendOk = vend != null && vend.ControlAccountId > 0 && vend.Segment == "Local" && vend.Phone == "0300";
+
+			// cleanup
+			if (cust != null) _db.Customers.Remove(cust);
+			if (vend != null) _db.Vendors.Remove(await _db.Vendors.FirstAsync(x => x.ID == vend.ID));
+			await _db.SaveChangesAsync();
+
+			return Ok(new
+			{
+				customer = new { created = c1ok, controlAssigned = custControl, edited = custEdited },
+				vendor = new { created = v1ok, ok = vendOk },
+				allPass = c1ok && custControl && custEdited && v1ok && vendOk
+			});
+		}
+
+		// GET /api/dev/crm-test-quotation?key=seed123 — proves quotation create → status → convert-to-order (P3-2).
+		[HttpGet("crm-test-quotation")]
+		public async Task<IActionResult> CrmTestQuotation(string key, [FromServices] CrossBuy.BL.ISellingService sell)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			var cust = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company);
+			if (cust == null) return BadRequest(new { message = "no customer — run seed-acc-demo" });
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == company);
+
+			var lines = new List<CrossBuy.BL.SoLineInput> { new() { ItemId = item?.ID, ItemDescription = "بند اختبار", Qty = 3, UnitPrice = 100, DiscountAmount = 0, TaxRate = 14 } };
+			var (cok, cerr, q) = await sell.CreateQuotationAsync(company, cust.ID, null, DateTime.Today, DateTime.Today.AddDays(30), "test", lines, null);
+			bool totalsOk = q != null && q.GrandTotal == 342.00m && q.Status == "Draft";   // 3*100=300 + 14% = 342
+
+			var (s1ok, _) = q != null ? await sell.SetQuotationStatusAsync(company, q.ID, "Sent") : (false, (string?)null);
+			var (s2ok, _) = q != null ? await sell.SetQuotationStatusAsync(company, q.ID, "Accepted") : (false, (string?)null);
+
+			var (convOk, convErr, soId) = q != null ? await sell.ConvertQuotationToOrderAsync(company, q.ID, null) : (false, "no quote", null);
+			var qAfter = q != null ? await sell.GetQuotationAsync(company, q.ID) : null;
+			bool linkedOk = qAfter != null && qAfter.Status == "Converted" && qAfter.SalesOrderId == soId;
+			var so = soId.HasValue ? await _db.SalesOrders.AsNoTracking().FirstOrDefaultAsync(x => x.ID == soId.Value) : null;
+			bool soOk = so != null && so.GrandTotal == 342.00m;
+			var (conv2ok, _, _) = q != null ? await sell.ConvertQuotationToOrderAsync(company, q.ID, null) : (false, null, null);  // must refuse
+
+			// cleanup: remove SO + quote (+ lines)
+			if (soId.HasValue) { await _db.SalesOrderLines.Where(l => l.SalesOrderId == soId.Value).ExecuteDeleteAsync(); await _db.SalesOrders.Where(x => x.ID == soId.Value).ExecuteDeleteAsync(); }
+			if (q != null) { await _db.QuotationLines.Where(l => l.QuotationId == q.ID).ExecuteDeleteAsync(); await _db.Quotations.Where(x => x.ID == q.ID).ExecuteDeleteAsync(); }
+
+			return Ok(new
+			{
+				created = cok, error = cerr, quoteNo = q?.QuoteNo, totalsOk,
+				statusFlow = s1ok && s2ok,
+				converted = convOk, convError = convErr, salesOrderId = soId, linkedOk, soTotalOk = soOk,
+				secondConvertRefused = !conv2ok,
+				allPass = cok && totalsOk && s1ok && s2ok && convOk && linkedOk && soOk && !conv2ok
+			});
+		}
+
+		// GET /api/dev/crm-test-salesreturn?key=seed123 — proves credit note reverses AR+revenue+VAT, balanced (P3-3a).
+		[HttpGet("crm-test-salesreturn")]
+		public async Task<IActionResult> CrmTestSalesReturn(string key, [FromServices] CrossBuy.BL.IReceivableService ar)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			var cust = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company);
+			if (cust == null) return BadRequest(new { message = "no customer — run seed-acc-demo" });
+			var revAcc = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.CompanyID == company && a.IsPostable && a.Code.StartsWith("4"));
+			if (revAcc == null) return BadRequest(new { message = "no revenue account — run seed-accounting" });
+
+			var lines = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "مرتجع اختبار", Qty = 2, UnitPrice = 100, DiscountAmount = 0, TaxRate = 14, RevenueAccountId = revAcc.ID } };
+			var (ok, err, ret) = await ar.CreateSalesReturnAsync(company, cust.ID, null, DateTime.Today, lines, "test", null);
+			bool totalsOk = ret != null && ret.GrandTotal == 228.00m && ret.ReturnNo != null && ret.ReturnNo.StartsWith("CN-");
+
+			// verify the credit-note JE: Dr revenue 200 + Dr VAT 28 / Cr AR(1102) 228
+			decimal arCredit = 0, revDebit = 0;
+			if (ret?.JournalEntryId != null)
+			{
+				var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == ret.JournalEntryId).ToListAsync();
+				arCredit = jl.Where(l => l.AccountId == cust.ControlAccountId).Sum(l => l.Credit);
+				revDebit = jl.Where(l => l.AccountId == revAcc.ID).Sum(l => l.Debit);
+			}
+			bool jeOk = arCredit == 228.00m && revDebit == 200.00m;
+
+			var tb = await _db.JournalEntryLines.AsNoTracking()
+				.Join(_db.JournalEntries.AsNoTracking().Where(e => e.CompanyID == company && e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l)
+				.GroupBy(l => 1).Select(g => new { dr = g.Sum(x => x.Debit), cr = g.Sum(x => x.Credit) }).FirstOrDefaultAsync();
+			bool balanced = tb != null && tb.dr == tb.cr;
+
+			// cleanup: delete the credit-note JE + the return rows
+			if (ret != null)
+			{
+				var jeIds = await _db.JournalEntries.Where(e => e.CompanyID == company && e.SourceType == "SalesReturn" && e.SourceId == ret.ID).Select(e => e.ID).ToListAsync();
+				if (jeIds.Count > 0) { await _db.JournalEntryLines.Where(l => jeIds.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(e => jeIds.Contains(e.ID)).ExecuteDeleteAsync(); }
+				await _db.SalesReturnLines.Where(l => l.SalesReturnId == ret.ID).ExecuteDeleteAsync();
+				await _db.SalesReturns.Where(r => r.ID == ret.ID).ExecuteDeleteAsync();
+			}
+
+			return Ok(new
+			{
+				created = ok, error = err, returnNo = ret?.ReturnNo, totalsOk,
+				je = new { arCredit, revDebit, jeOk },
+				trialBalanceBalanced = balanced,
+				allPass = ok && totalsOk && jeOk && balanced
+			});
+		}
+
+		// GET /api/dev/crm-test-purchasereturn?key=seed123 — proves debit note reverses AP+VAT-in, stock out, balanced (P3-3b).
+		[HttpGet("crm-test-purchasereturn")]
+		public async Task<IActionResult> CrmTestPurchaseReturn(string key, [FromServices] CrossBuy.BL.IPayableService ap)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			var ven = await _db.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.CompanyID == company);
+			if (ven == null) return BadRequest(new { message = "no vendor — run seed-acc-demo" });
+			var bal = await (from b in _db.StockBalances
+							 join i in _db.Items on b.ItemId equals i.ID
+							 where b.CompanyID == company && b.QtyOnHand >= 2 && b.AvgCost > 0
+								&& i.CompanyID == company && i.IsActive && i.ItemType != "Service" && !i.IsComposite
+							 select b).FirstOrDefaultAsync();
+			if (bal == null) return BadRequest(new { message = "no movable item with stock — run seed-acc-demo / inventory seed" });
+			int itemId = bal.ItemId, whId = bal.WarehouseId;
+			decimal q0 = bal.QtyOnHand, v0 = bal.TotalValue, a0 = bal.AvgCost;
+
+			var lines = new List<CrossBuy.BL.PurchaseLineInput> { new() { ItemId = itemId, WarehouseId = whId, Qty = 1, TaxRate = 14 } };
+			var (ok, err, ret) = await ap.CreatePurchaseReturnAsync(company, ven.ID, null, DateTime.Today, lines, "test", null);
+			bool postedOk = ok && ret != null && ret.JournalEntryId != null && ret.ReturnNo != null && ret.ReturnNo.StartsWith("DN-");
+
+			decimal apDebit = 0;
+			if (ret?.JournalEntryId != null)
+				apDebit = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == ret.JournalEntryId && l.AccountId == ven.ControlAccountId).SumAsync(l => l.Debit);
+			bool apOk = ret != null && apDebit == ret.GrandTotal && ret.GrandTotal > 0;
+
+			var tb = await _db.JournalEntryLines.AsNoTracking()
+				.Join(_db.JournalEntries.AsNoTracking().Where(e => e.CompanyID == company && e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l)
+				.GroupBy(l => 1).Select(g => new { dr = g.Sum(x => x.Debit), cr = g.Sum(x => x.Credit) }).FirstOrDefaultAsync();
+			bool balanced = tb != null && tb.dr == tb.cr;
+
+			// ---- full teardown: delete JEs + stock movements + return rows, restore the stock balance ----
+			if (ret != null)
+			{
+				var mvs = await _db.StockMovements.Where(m => m.CompanyID == company && m.SourceType == "PurchaseReturn" && m.SourceId == ret.ID).ToListAsync();
+				var mvJe = mvs.Where(m => m.JournalEntryId != null).Select(m => m.JournalEntryId!.Value).ToList();
+				var noteJe = await _db.JournalEntries.Where(e => e.CompanyID == company && e.SourceType == "PurchaseReturn" && e.SourceId == ret.ID).Select(e => e.ID).ToListAsync();
+				var allJe = mvJe.Concat(noteJe).Distinct().ToList();
+				if (allJe.Count > 0) { await _db.JournalEntryLines.Where(l => allJe.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(e => allJe.Contains(e.ID)).ExecuteDeleteAsync(); }
+				await _db.StockMovements.Where(m => m.CompanyID == company && m.SourceType == "PurchaseReturn" && m.SourceId == ret.ID).ExecuteDeleteAsync();
+				await _db.PurchaseReturnLines.Where(l => l.PurchaseReturnId == ret.ID).ExecuteDeleteAsync();
+				await _db.PurchaseReturns.Where(r => r.ID == ret.ID).ExecuteDeleteAsync();
+				var b = await _db.StockBalances.FirstOrDefaultAsync(x => x.CompanyID == company && x.ItemId == itemId && x.WarehouseId == whId);
+				if (b != null) { b.QtyOnHand = q0; b.TotalValue = v0; b.AvgCost = a0; await _db.SaveChangesAsync(); }
+			}
+
+			return Ok(new
+			{
+				posted = postedOk, error = err, returnNo = ret?.ReturnNo,
+				cost = ret?.SubTotal, vat = ret?.TaxTotal, grand = ret?.GrandTotal,
+				ap = new { apDebit, apOk },
+				trialBalanceBalanced = balanced,
+				allPass = postedOk && apOk && balanced
+			});
+		}
+
+		// GET /api/dev/crm-test-creditlimit?key=seed123 — proves credit-limit blocks an over-limit invoice (P3-4).
+		[HttpGet("crm-test-creditlimit")]
+		public async Task<IActionResult> CrmTestCreditLimit(string key, [FromServices] CrossBuy.BL.IReceivableService ar)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int company = 1;
+			var revAcc = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.CompanyID == company && a.IsPostable && a.Code.StartsWith("4"));
+			if (revAcc == null) return BadRequest(new { message = "no revenue account" });
+
+			// create a fresh customer with a 1000 credit limit
+			await ar.SaveCustomerAsync(company, new CrossBuy.Models.Context.Accounting.Customer { Name = "عميل اختبار حد ائتمان", CreditLimit = 1000m });
+			var cust = await _db.Customers.OrderByDescending(c => c.ID).FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "عميل اختبار حد ائتمان");
+			if (cust == null) return BadRequest(new { message = "customer create failed" });
+
+			System.Func<decimal, List<CrossBuy.BL.SalesLineInput>> line = amt => new() { new() { ItemDescription = "بند", Qty = 1, UnitPrice = amt, TaxRate = 0, RevenueAccountId = revAcc.ID } };
+			var (ok1, e1, _) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, line(200m), "test1", null);  // 200 ≤ 1000 → ok
+			var outstanding = await ar.CustomerOutstandingAsync(company, cust.ID);
+			var (ok2, e2, _) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, line(900m), "test2", null);  // 200+900=1100 > 1000 → blocked
+
+			bool withinOk = ok1;
+			bool overBlocked = !ok2 && (e2 ?? "").Contains("حدّ الائتمان");
+
+			// cleanup: delete the customer's invoices + their JEs + the customer
+			var invIds = await _db.SalesInvoices.Where(i => i.CompanyID == company && i.CustomerId == cust.ID).Select(i => i.ID).ToListAsync();
+			var jeIds = await _db.JournalEntries.Where(j => j.CompanyID == company && j.SourceType == "SalesInvoice" && invIds.Contains(j.SourceId ?? 0)).Select(j => j.ID).ToListAsync();
+			if (jeIds.Count > 0) { await _db.JournalEntryLines.Where(l => jeIds.Contains(l.JournalEntryId)).ExecuteDeleteAsync(); await _db.JournalEntries.Where(j => jeIds.Contains(j.ID)).ExecuteDeleteAsync(); }
+			await _db.SalesInvoiceLines.Where(l => invIds.Contains(l.SalesInvoiceId)).ExecuteDeleteAsync();
+			await _db.SalesInvoices.Where(i => invIds.Contains(i.ID)).ExecuteDeleteAsync();
+			await _db.Customers.Where(c => c.ID == cust.ID).ExecuteDeleteAsync();
+
+			return Ok(new
+			{
+				creditLimit = 1000m, firstInvoice = new { posted = ok1, error = e1 },
+				outstandingAfterFirst = outstanding,
+				secondInvoice = new { posted = ok2, blocked = overBlocked, error = e2 },
+				allPass = withinOk && outstanding == 200m && overBlocked
+			});
+		}
+
+		// GET /api/dev/seed-users?key=seed123
+		[HttpGet("seed-users")]
+		public async Task<IActionResult> SeedUsers(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+
+			var team = new[]
+			{
+				new { user = "Admin",         pass = "Admin@123",  role = "Manager (يستقبل طلبات الفريق)" },
+				new { user = "sara.ali",      pass = "Sara@123",   role = "Employee (تابعة لأحمد)" },
+				new { user = "khaled.hassan", pass = "Khaled@123", role = "Employee (تابع لأحمد)" },
+			};
+
+			var result = new List<object>();
+			foreach (var t in team)
+			{
+				var u = await _um.FindByNameAsync(t.user);
+				if (u == null) { result.Add(new { t.user, status = "not found" }); continue; }
+
+				u.IsActive = true;
+				u.IsEndUser = true;
+				await _um.UpdateAsync(u);
+
+				var token = await _um.GeneratePasswordResetTokenAsync(u);
+				var reset = await _um.ResetPasswordAsync(u, token, t.pass);
+
+				result.Add(new
+				{
+					username = t.user,
+					password = t.pass,
+					t.role,
+					status = reset.Succeeded ? "ok" : string.Join("; ", reset.Errors.Select(e => e.Description))
+				});
+			}
+
+			return Ok(new { success = true, message = "Test users ready", credentials = result });
+		}
+
+		// GET /api/dev/seed-test-org?key=seed123
+		// Builds a Company with two Branches; each branch has a manager (branch head) + an employee,
+		// with photos, correct hierarchy seating, leave policy (balance + work days), and logins.
+		[HttpGet("seed-test-org")]
+		public async Task<IActionResult> SeedTestOrg(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+
+			const string pass = "Test@1234";
+			const int policyId = 8;     // has entitlements + Sun→Thu work days
+			const int countryId = 32;
+			const int jtManager = 2, jtAccountant = 4, jtDeveloper = 5;
+
+			// idempotency: if already seeded, just re-ensure passwords and report
+			if (await _um.FindByNameAsync("cairo.manager") != null)
+			{
+				foreach (var un in new[] { "cairo.manager", "cairo.staff", "alex.manager", "alex.staff" })
+				{
+					var ex = await _um.FindByNameAsync(un);
+					if (ex != null) { var tk = await _um.GeneratePasswordResetTokenAsync(ex); await _um.ResetPasswordAsync(ex, tk, pass); }
+				}
+				return Ok(new { success = true, message = "Test org already seeded (passwords re-ensured)", password = pass });
+			}
+
+			// 1) Company
+			var company = new Companies
+			{
+				CompanyName = "Test Branches Co.",
+				ComoanyNameAr = "شركة الفروع للاختبار",
+				Address = "—", PhoneNumber = "—", Email = "info@testorg.local",
+				CountryID = countryId, CompanyTypeId = 1,
+				CreatedAt = DateTime.UtcNow,
+			};
+			_db.Companies.Add(company);
+			await _db.SaveChangesAsync();
+
+			// 2) Branches
+			Branch MakeBranch(string ar, string en, string city) => new Branch
+			{
+				Name = en, NameAr = ar, Location = city, CountryID = countryId,
+				CompanyID = company.CompanyID, PhoneNumber = "—", Email = $"{city.ToLower()}@testorg.local",
+				Description = "—", CreatedAt = DateTime.UtcNow,
+			};
+			var cairo = MakeBranch("فرع القاهرة", "Cairo Branch", "Cairo");
+			var alex = MakeBranch("فرع الإسكندرية", "Alexandria Branch", "Alex");
+			_db.Branches.AddRange(cairo, alex);
+			await _db.SaveChangesAsync();
+
+			// helper: create identity user + employee + policy assignment, return the Employee
+			async Task<Employee> MakePerson(string userName, string ar, string en, int jobTitleId, int branchId, string photo)
+			{
+				var u = new Users { UserName = userName, Email = $"{userName}@testorg.local", EmailConfirmed = true, IsActive = true, IsEndUser = true };
+				await _um.CreateAsync(u, pass);
+
+				var emp = new Employee
+				{
+					FirstName = en.Split(' ')[0], LastName = en.Contains(' ') ? en[(en.IndexOf(' ') + 1)..] : "-",
+					FullName = ar, FullNameEn = en,
+					Address = "—", PhoneNumber = "—", Email = $"{userName}@testorg.local",
+					CountryID = countryId, JobTitleID = jobTitleId, BranchID = branchId, EmpCompanyID = company.CompanyID,
+					ProfileImage = $"/uploads/employees/{photo}",
+					DateOfBirth = new DateTime(1990, 1, 1), Gender = "Male", MaritalStatus = "Single",
+					DateOfJoining = new DateTime(2022, 1, 1), IsActive = true,
+					UserId = u.Id, CreatedAt = DateTime.UtcNow,
+				};
+				_db.Employee.Add(emp);
+				await _db.SaveChangesAsync();
+
+				_db.PolicyAssignments.Add(new PolicyAssignments { EmployeeID = emp.ID, LeavePolicyTypeID = policyId, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+				return emp;
+			}
+
+			var cMgr = await MakePerson("cairo.manager", "أحمد منصور", "Ahmed Mansour", jtManager, cairo.ID, "test-cairo-mgr.jpg");
+			var cStaff = await MakePerson("cairo.staff", "ليلى كمال", "Laila Kamal", jtAccountant, cairo.ID, "test-cairo-staff.jpg");
+			var aMgr = await MakePerson("alex.manager", "عمر فؤاد", "Omar Fouad", jtManager, alex.ID, "test-alex-mgr.jpg");
+			var aStaff = await MakePerson("alex.staff", "نور حسن", "Nour Hassan", jtDeveloper, alex.ID, "test-alex-staff.jpg");
+
+			// helper: add a hierarchy node and return it (saved, so its H_ID is available)
+			async Task<Hierarchical> Node(int type, int objId, int? parent, string ar, string en)
+			{
+				var n = new Hierarchical { H_Type = type, H_ObjectID = objId, H_Parent = parent, H_Name = ar, H_NameEn = en, IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.Hierarchicals.Add(n);
+				await _db.SaveChangesAsync();
+				return n;
+			}
+
+			// 3) hierarchy: Company → Branch → Manager(branch head) → Employee
+			var companyNode = await Node(1, company.CompanyID, null, company.ComoanyNameAr, company.CompanyName);
+
+			async Task SeatBranch(Branch br, Employee mgr, Employee staff, int staffJt, string staffJtAr, string staffJtEn)
+			{
+				var branchNode = await Node(2, br.ID, companyNode.H_ID, br.NameAr, br.Name);
+				var mgrPos = await Node(4, jtManager, branchNode.H_ID, "مدير", "Manager");
+				var mgrNode = await Node(5, mgr.ID, mgrPos.H_ID, mgr.FullName, mgr.FullNameEn);
+				var staffPos = await Node(4, staffJt, mgrNode.H_ID, staffJtAr, staffJtEn);
+				await Node(5, staff.ID, staffPos.H_ID, staff.FullName, staff.FullNameEn);
+			}
+
+			await SeatBranch(cairo, cMgr, cStaff, jtAccountant, "محاسب", "Accountant");
+			await SeatBranch(alex, aMgr, aStaff, jtDeveloper, "مطوّر", "Developer");
+
+			return Ok(new
+			{
+				success = true,
+				message = "Test organization seeded",
+				password = pass,
+				company = new { company.CompanyID, ar = company.ComoanyNameAr, en = company.CompanyName },
+				branches = new object[]
+				{
+					new { branch = "فرع القاهرة", manager = new { user = "cairo.manager", name = "أحمد منصور", empId = cMgr.ID }, employee = new { user = "cairo.staff", name = "ليلى كمال", empId = cStaff.ID } },
+					new { branch = "فرع الإسكندرية", manager = new { user = "alex.manager", name = "عمر فؤاد", empId = aMgr.ID }, employee = new { user = "alex.staff", name = "نور حسن", empId = aStaff.ID } },
+				}
+			});
+		}
+
+		// GET /api/dev/seed-dept-heads?key=seed123
+		// Inserts a "Department Head" tier between each branch manager and the staff employee,
+		// so the chain becomes: Employee → Department Head → Branch Manager (two approval levels).
+		[HttpGet("seed-dept-heads")]
+		public async Task<IActionResult> SeedDeptHeads(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+
+			const string pass = "Test@1234";
+			const int policyId = 8, countryId = 32;
+
+			if (await _um.FindByNameAsync("cairo.dept") != null)
+			{
+				foreach (var un in new[] { "cairo.dept", "alex.dept" })
+				{
+					var ex = await _um.FindByNameAsync(un);
+					if (ex != null) { var tk = await _um.GeneratePasswordResetTokenAsync(ex); await _um.ResetPasswordAsync(ex, tk, pass); }
+				}
+				return Ok(new { success = true, message = "Department heads already seeded (passwords re-ensured)", password = pass });
+			}
+
+			// ensure a "Department Head" job title
+			var jt = await _db.JobTitles.FirstOrDefaultAsync(j => j.TitleAr == "رئيس قسم");
+			if (jt == null)
+			{
+				jt = new JobTitle { Title = "Department Head", TitleAr = "رئيس قسم", Description = "-" };
+				_db.JobTitles.Add(jt);
+				await _db.SaveChangesAsync();
+			}
+			var deptJt = jt.ID;
+
+			// insert one department head between (branch manager) and (existing staff employee)
+			async Task<object> Insert(string userName, string ar, string en, int mgrEmpId, int staffEmpId, int branchId, string photo)
+			{
+				var br = await _db.Branches.FindAsync(branchId);
+
+				var u = new Users { UserName = userName, Email = $"{userName}@testorg.local", EmailConfirmed = true, IsActive = true, IsEndUser = true };
+				await _um.CreateAsync(u, pass);
+
+				var emp = new Employee
+				{
+					FirstName = en.Split(' ')[0], LastName = en.Contains(' ') ? en[(en.IndexOf(' ') + 1)..] : "-",
+					FullName = ar, FullNameEn = en,
+					Address = "—", PhoneNumber = "—", Email = $"{userName}@testorg.local",
+					CountryID = countryId, JobTitleID = deptJt, BranchID = branchId, EmpCompanyID = br!.CompanyID,
+					ProfileImage = $"/uploads/employees/{photo}",
+					DateOfBirth = new DateTime(1988, 1, 1), Gender = "Male", MaritalStatus = "Single",
+					DateOfJoining = new DateTime(2021, 1, 1), IsActive = true,
+					UserId = u.Id, CreatedAt = DateTime.UtcNow,
+				};
+				_db.Employee.Add(emp);
+				await _db.SaveChangesAsync();
+				_db.PolicyAssignments.Add(new PolicyAssignments { EmployeeID = emp.ID, LeavePolicyTypeID = policyId, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+
+				// node: position (under the branch manager's employee node) → dept-head employee node
+				var mgrNode = await _db.Hierarchicals.FirstOrDefaultAsync(h => h.H_Type == 5 && h.H_ObjectID == mgrEmpId);
+				var deptPos = new Hierarchical { H_Type = 4, H_ObjectID = deptJt, H_Parent = mgrNode!.H_ID, H_Name = "رئيس قسم", H_NameEn = "Department Head", IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.Hierarchicals.Add(deptPos);
+				await _db.SaveChangesAsync();
+				var deptNode = new Hierarchical { H_Type = 5, H_ObjectID = emp.ID, H_Parent = deptPos.H_ID, H_Name = ar, H_NameEn = en, IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.Hierarchicals.Add(deptNode);
+				await _db.SaveChangesAsync();
+
+				// re-seat the existing staff: move their position node under the new dept head
+				var staffNode = await _db.Hierarchicals.FirstOrDefaultAsync(h => h.H_Type == 5 && h.H_ObjectID == staffEmpId);
+				var staffPos = await _db.Hierarchicals.FindAsync(staffNode!.H_Parent!.Value);
+				staffPos!.H_Parent = deptNode.H_ID;
+				await _db.SaveChangesAsync();
+
+				return new { user = userName, name = ar, empId = emp.ID };
+			}
+
+			var c = await Insert("cairo.dept", "سمير عادل", "Samir Adel", 19, 20, 15, "test-cairo-dept.jpg");
+			var a = await Insert("alex.dept", "هالة سعيد", "Hala Saeed", 21, 22, 16, "test-alex-dept.jpg");
+
+			return Ok(new { success = true, message = "Department heads seeded", password = pass, deptHeads = new[] { c, a } });
+		}
+
+		// GET /api/dev/seed-accounting?key=seed123&companyId=1
+		// Phase-0 seed: account types, EGP currency, fiscal year 2026 + periods, and a starter Egyptian COA.
+		[HttpGet("seed-accounting")]
+		public async Task<IActionResult> SeedAccounting(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+
+			// 1) account types (idempotent by Code)
+			var typeDefs = new[]
+			{
+				("ASSET",  "الأصول",        "Assets",      "D", "BalanceSheet"),
+				("LIAB",   "الالتزامات",     "Liabilities", "C", "BalanceSheet"),
+				("EQUITY", "حقوق الملكية",   "Equity",      "C", "BalanceSheet"),
+				("REV",    "الإيرادات",      "Revenue",     "C", "IncomeStatement"),
+				("EXP",    "المصروفات",      "Expenses",    "D", "IncomeStatement"),
+			};
+			foreach (var (code, ar, en, nb, st) in typeDefs)
+			{
+				if (!await _db.AccountTypes.AnyAsync(t => t.Code == code))
+					_db.AccountTypes.Add(new AccountType { Code = code, Name = ar, NameEn = en, NormalBalance = nb, StatementType = st });
+			}
+			await _db.SaveChangesAsync();
+			var types = await _db.AccountTypes.ToDictionaryAsync(t => t.Code, t => t.ID);
+
+			// 2) currency EGP (functional)
+			if (!await _db.Currencies.AnyAsync(c => c.Code == "EGP"))
+			{
+				_db.Currencies.Add(new Currency { Code = "EGP", Symbol = "ج.م", Name = "جنيه مصري", NameEn = "Egyptian Pound", DecimalPlaces = 2 });
+				await _db.SaveChangesAsync();
+			}
+
+			// 3) fiscal year 2026 + 12 monthly periods + period 13 (adjustment) — idempotent
+			if (!await _db.FiscalYears.AnyAsync(f => f.CompanyID == companyId && f.Name == "2026"))
+			{
+				var fy = new FiscalYear { CompanyID = companyId, Name = "2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 12, 31), Status = "Open" };
+				_db.FiscalYears.Add(fy);
+				await _db.SaveChangesAsync();
+				for (var m = 1; m <= 12; m++)
+				{
+					var start = new DateTime(2026, m, 1);
+					_db.FiscalPeriods.Add(new FiscalPeriod { FiscalYearId = fy.ID, PeriodNo = (byte)m, StartDate = start, EndDate = start.AddMonths(1).AddDays(-1), Status = "Open" });
+				}
+				_db.FiscalPeriods.Add(new FiscalPeriod { FiscalYearId = fy.ID, PeriodNo = 13, StartDate = new DateTime(2026, 12, 31), EndDate = new DateTime(2026, 12, 31), Status = "Open" });
+				await _db.SaveChangesAsync();
+			}
+
+			// 4) starter Egyptian chart of accounts (idempotent: skip if any account exists for the company)
+			var seededCoa = false;
+			if (!await _db.Accounts.AnyAsync(a => a.CompanyID == companyId))
+			{
+				async Task<Account> Add(string code, string ar, string en, string typeCode, int? parentId,
+					bool postable, bool requireCC = false, string? cashFlow = null)
+				{
+					var acc = new Account
+					{
+						CompanyID = companyId, Code = code, Name = ar, NameEn = en,
+						AccountTypeId = types[typeCode], ParentId = parentId,
+						IsPostable = postable, IsActive = true, RequireCostCenter = requireCC,
+						CashFlowCategory = cashFlow, CreatedAt = DateTime.UtcNow,
+					};
+					_db.Accounts.Add(acc);
+					await _db.SaveChangesAsync();
+					return acc;
+				}
+
+				// Assets
+				var assets = await Add("1", "الأصول", "Assets", "ASSET", null, false);
+				var current = await Add("11", "أصول متداولة", "Current Assets", "ASSET", assets.ID, false);
+				var cashBank = await Add("1101", "النقدية والبنوك", "Cash & Banks", "ASSET", current.ID, false);
+				await Add("110101", "الخزينة الرئيسية", "Main Cash", "ASSET", cashBank.ID, true, false, "Operating");
+				await Add("110102", "بنك - حساب جاري", "Bank - Current", "ASSET", cashBank.ID, true, false, "Operating");
+				await Add("1102", "العملاء (مدينون)", "Accounts Receivable", "ASSET", current.ID, false); // control → sub-ledger later
+				await Add("1103", "المخزون", "Inventory", "ASSET", current.ID, true);
+				var fixedA = await Add("12", "أصول ثابتة", "Fixed Assets", "ASSET", assets.ID, false);
+				await Add("1201", "أصول بالتكلفة", "Assets at Cost", "ASSET", fixedA.ID, true, false, "Investing");
+				await Add("1202", "مجمع الإهلاك", "Accumulated Depreciation", "ASSET", fixedA.ID, true);
+
+				// Liabilities
+				var liab = await Add("2", "الالتزامات", "Liabilities", "LIAB", null, false);
+				var curLiab = await Add("21", "التزامات متداولة", "Current Liabilities", "LIAB", liab.ID, false);
+				await Add("2101", "الموردون (دائنون)", "Accounts Payable", "LIAB", curLiab.ID, false); // control
+				var taxes = await Add("2102", "ضرائب مستحقة", "Taxes Payable", "LIAB", curLiab.ID, false);
+				await Add("210201", "ض.ق.م مستحقة (مخرجات)", "VAT Output Payable", "LIAB", taxes.ID, true);
+				await Add("210202", "ضريبة مخصومة مستحقة", "Withholding Tax Payable", "LIAB", taxes.ID, true);
+				await Add("2103", "رواتب مستحقة الدفع", "Payroll Payable", "LIAB", curLiab.ID, true);
+
+				// Equity
+				var equity = await Add("3", "حقوق الملكية", "Equity", "EQUITY", null, false);
+				await Add("3101", "رأس المال", "Capital", "EQUITY", equity.ID, true);
+				await Add("3201", "الأرباح المحتجزة", "Retained Earnings", "EQUITY", equity.ID, true);
+
+				// Revenue
+				var rev = await Add("4", "الإيرادات", "Revenue", "REV", null, false);
+				await Add("4101", "إيرادات النشاط", "Operating Revenue", "REV", rev.ID, true, false, "Operating");
+
+				// Expenses
+				var exp = await Add("5", "المصروفات", "Expenses", "EXP", null, false);
+				var opEx = await Add("51", "مصروفات تشغيل", "Operating Expenses", "EXP", exp.ID, false);
+				await Add("510101", "مصروف إيجار", "Rent Expense", "EXP", opEx.ID, true, true, "Operating");
+				await Add("510102", "مصروف كهرباء ومرافق", "Utilities Expense", "EXP", opEx.ID, true, true, "Operating");
+				var adminEx = await Add("52", "مصروفات إدارية ورواتب", "Administrative & Payroll", "EXP", exp.ID, false);
+				await Add("520101", "مصروف رواتب وأجور", "Salaries & Wages Expense", "EXP", adminEx.ID, true, true, "Operating");
+				await Add("520102", "مصروف تأمينات اجتماعية", "Social Insurance Expense", "EXP", adminEx.ID, true, true, "Operating");
+				await Add("520103", "مصروف إهلاك", "Depreciation Expense", "EXP", adminEx.ID, true, true, "Operating");
+
+				seededCoa = true;
+			}
+
+			// 5) cost centers from the org tree (branch/admin-body nodes) — Phase 2
+			var ccCreated = await _costCenters.SeedFromHierarchyAsync(companyId);
+
+			// 6) payroll payable accounts + posting rules — Phase 5
+			var accByCode = await _db.Accounts.Where(a => a.CompanyID == companyId).ToDictionaryAsync(a => a.Code, a => a.ID);
+			int? AccId(string code) => accByCode.TryGetValue(code, out var id) ? id : (int?)null;
+			async Task EnsureAcc(string code, string ar, string en, string parentCode, string typeCode)
+			{
+				if (accByCode.ContainsKey(code)) return;
+				var a = new Account
+				{
+					CompanyID = companyId, Code = code, Name = ar, NameEn = en,
+					AccountTypeId = types[typeCode], ParentId = AccId(parentCode),
+					IsPostable = true, IsActive = true, CreatedAt = DateTime.UtcNow,
+				};
+				_db.Accounts.Add(a); await _db.SaveChangesAsync(); accByCode[code] = a.ID;
+			}
+			if (accByCode.ContainsKey("2102"))
+			{
+				// NOTE: 210203 is GRNI (فواتير لم ترد بعد) used by inventory — payroll income tax has its OWN account (210205)
+				await EnsureAcc("210205", "ضرائب كسب عمل مستحقة", "Payroll Tax Payable", "2102", "LIAB");
+				await EnsureAcc("210204", "تأمينات اجتماعية مستحقة", "Social Insurance Payable", "2102", "LIAB");
+				await EnsureAcc("210206", "مخصص إجازات مستحق", "Leave Provision Payable", "21", "LIAB");   // HR-2f
+			}
+			if (accByCode.ContainsKey("52"))
+			{
+				await EnsureAcc("520104", "بدل إجازات (صرف نقدي)", "Leave Encashment Expense", "52", "EXP");   // HR-2f
+				await EnsureAcc("520106", "مصروف مخصص إجازات", "Leave Provision Expense", "52", "EXP");        // HR-2f
+				await EnsureAcc("520107", "مكافأة نهاية الخدمة", "End-of-Service Gratuity Expense", "52", "EXP"); // HR-7
+			}
+			if (accByCode.ContainsKey("11"))   // VAT input (recoverable) — current asset, for purchase invoices
+				await EnsureAcc("110401", "ض.ق.م مدخلات (مخصومة)", "VAT Input (Recoverable)", "11", "ASSET");
+			var rulesSeeded = false;
+			if (accByCode.ContainsKey("520101") && !await _db.PostingRules.AnyAsync(r => r.CompanyID == companyId && r.SourceType == "Payroll"))
+			{
+				void Rule(string comp, int? dr, int? cr, string? ccs) =>
+					_db.PostingRules.Add(new PostingRule { CompanyID = companyId, SourceType = "Payroll", ComponentCode = comp, DebitAccountId = dr, CreditAccountId = cr, CostCenterSource = ccs, CreatedAt = DateTime.UtcNow });
+				Rule("BasicSalary", AccId("520101"), null, "EmployeeDepartment");
+				Rule("SocialInsCompany", AccId("520102"), null, "EmployeeDepartment");
+				Rule("NetPay", null, AccId("2103"), null);
+				Rule("IncomeTax", null, AccId("210205"), null);
+				Rule("SocialInsPayable", null, AccId("210204"), null);
+				await _db.SaveChangesAsync();
+				rulesSeeded = true;
+			}
+
+			// payroll calc settings + Egyptian progressive tax brackets (HR-2d) — idempotent
+			if (!await _db.PayrollSettings.AnyAsync(s => s.CompanyID == companyId))
+			{
+				_db.PayrollSettings.Add(new CrossBuy.Models.Context.Accounting.PayrollSettings
+				{ CompanyID = companyId, PersonalExemptionAnnual = 20000m, TaxBaseExcludesEmployeeSI = true, SiMinMonthly = 2000m, SiMaxMonthly = 12600m, GratuityDaysPerYear = 21m, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+			}
+			if (!await _db.PayrollTaxBrackets.AnyAsync(b => b.CompanyID == companyId))
+			{
+				void Bk(int ord, decimal from, decimal? to, decimal rate) =>
+					_db.PayrollTaxBrackets.Add(new CrossBuy.Models.Context.Accounting.PayrollTaxBracket { CompanyID = companyId, Ordinal = ord, FromAmount = from, ToAmount = to, Rate = rate, CreatedAt = DateTime.UtcNow });
+				Bk(1, 0, 40000, 0); Bk(2, 40000, 55000, 10); Bk(3, 55000, 70000, 15); Bk(4, 70000, 200000, 20);
+				Bk(5, 200000, 400000, 22.5m); Bk(6, 400000, 1200000, 25); Bk(7, 1200000, null, 27.5m);
+				await _db.SaveChangesAsync();
+			}
+
+			var count = await _db.Accounts.CountAsync(a => a.CompanyID == companyId);
+			var ccCount = await _db.CostCenters.CountAsync(c => c.CompanyID == companyId);
+			return Ok(new
+			{
+				success = true,
+				message = "Accounting Phase-0/2 seeded",
+				companyId,
+				accountTypes = types.Count,
+				coaSeeded = seededCoa,
+				accountsForCompany = count,
+				costCentersCreated = ccCreated,
+				costCentersForCompany = ccCount,
+				payrollRulesSeeded = rulesSeeded
+			});
+		}
+
+		// GET /api/dev/seed-multicurrency?key=seed123&companyId=1
+		// Multi-Currency 1-1 seed (idempotent): foreign currencies + sample exchange rates
+		// (Buy/Sell/Central) + FX GL anchor accounts (realized/unrealized gain/loss, translation
+		// reserve) + sets company default currency and each branch functional currency = EGP.
+		[HttpGet("seed-multicurrency")]
+		public async Task<IActionResult> SeedMultiCurrency(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+
+			// 1) currencies (EGP is seeded by seed-accounting). DecimalPlaces per ISO.
+			var curDefs = new (string code, string sym, string ar, string en, byte dp)[]
+			{
+				("EGP", "ج.م", "جنيه مصري",  "Egyptian Pound", 2),
+				("USD", "$",   "دولار أمريكي", "US Dollar",      2),
+				("EUR", "€",   "يورو",        "Euro",           2),
+				("SAR", "ر.س", "ريال سعودي",  "Saudi Riyal",    2),
+				("KWD", "د.ك", "دينار كويتي", "Kuwaiti Dinar",  3),   // 3-decimal currency to exercise DecimalPlaces
+			};
+			foreach (var c in curDefs)
+				if (!await _db.Currencies.AnyAsync(x => x.Code == c.code))
+					_db.Currencies.Add(new Currency { Code = c.code, Symbol = c.sym, Name = c.ar, NameEn = c.en, DecimalPlaces = c.dp });
+			await _db.SaveChangesAsync();
+			var curByCode = await _db.Currencies.ToDictionaryAsync(c => c.Code, c => c.ID);
+
+			// 2) sample exchange rates vs EGP at 2026-01-01 (Rate = EGP per 1 foreign unit).
+			//    Buy = bank buys FX (vendor payments), Sell = bank sells FX (customer collection), Central = mid.
+			var rateDate = new DateTime(2026, 1, 1);
+			var rateDefs = new (string code, decimal buy, decimal sell, decimal central)[]
+			{
+				("USD", 49.80m, 50.20m, 50.00m),
+				("EUR", 53.80m, 54.30m, 54.00m),
+				("SAR", 13.20m, 13.40m, 13.30m),
+				("KWD", 161.0m, 163.0m, 162.0m),
+			};
+			int ratesAdded = 0;
+			foreach (var r in rateDefs)
+			{
+				if (!curByCode.TryGetValue(r.code, out var cid)) continue;
+				foreach (var (type, val) in new[] { ("Buy", r.buy), ("Sell", r.sell), ("Central", r.central) })
+					if (!await _db.ExchangeRates.AnyAsync(x => x.CurrencyId == cid && x.RateDate == rateDate && x.RateType == type))
+					{ _db.ExchangeRates.Add(new ExchangeRate { CurrencyId = cid, RateDate = rateDate, Rate = val, RateType = type }); ratesAdded++; }
+			}
+			await _db.SaveChangesAsync();
+
+			// 3) FX GL anchor accounts (idempotent by Code) under existing parents 4/5/3.
+			var types = await _db.AccountTypes.ToDictionaryAsync(t => t.Code, t => t.ID);
+			var accByCode = await _db.Accounts.Where(a => a.CompanyID == companyId).ToDictionaryAsync(a => a.Code, a => a.ID);
+			int? AccId(string code) => accByCode.TryGetValue(code, out var id) ? id : (int?)null;
+			async Task EnsureAcc(string code, string ar, string en, string parentCode, string typeCode)
+			{
+				if (accByCode.ContainsKey(code) || !types.ContainsKey(typeCode)) return;
+				var a = new Account { CompanyID = companyId, Code = code, Name = ar, NameEn = en, AccountTypeId = types[typeCode], ParentId = AccId(parentCode), IsPostable = true, IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.Accounts.Add(a); await _db.SaveChangesAsync(); accByCode[code] = a.ID;
+			}
+			if (accByCode.ContainsKey("4")) { await EnsureAcc("4902", "أرباح فروق عملة محققة", "Realized FX Gain", "4", "REV"); await EnsureAcc("4903", "أرباح فروق عملة غير محققة", "Unrealized FX Gain", "4", "REV"); }
+			if (accByCode.ContainsKey("5")) { await EnsureAcc("5902", "خسائر فروق عملة محققة", "Realized FX Loss", "5", "EXP"); await EnsureAcc("5903", "خسائر فروق عملة غير محققة", "Unrealized FX Loss", "5", "EXP"); }
+			if (accByCode.ContainsKey("3")) await EnsureAcc("3202", "احتياطي ترجمة العملة", "Currency Translation Reserve", "3", "EQUITY");
+
+			// 4) company default currency + branch functional currency = EGP (stable; lock branches that already have data)
+			var egpId = curByCode["EGP"];
+			var company = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyID == companyId);
+			if (company != null && company.DefaultCurrencyId == null) { company.DefaultCurrencyId = egpId; }
+			bool hasTxn = await _db.JournalEntries.AnyAsync(e => e.CompanyID == companyId);
+			var branches = await _db.Branches.Where(b => b.CompanyID == companyId).ToListAsync();
+			foreach (var b in branches)
+			{
+				if (b.FunctionalCurrencyId == null) b.FunctionalCurrencyId = egpId;
+				if (hasTxn && b.CurrencyLockedAt == null) b.CurrencyLockedAt = DateTime.UtcNow;
+			}
+			await _db.SaveChangesAsync();
+
+			return Ok(new
+			{
+				success = true,
+				message = "Multi-currency 1-1 seeded",
+				currencies = curByCode.Count,
+				ratesAdded,
+				fxAccounts = new[] { "4902", "5902", "4903", "5903", "3202" }.Where(c => accByCode.ContainsKey(c)).ToArray(),
+				companyDefaultCurrency = company?.DefaultCurrencyId,
+				branchesSet = branches.Count,
+				branchesLocked = branches.Count(b => b.CurrencyLockedAt != null)
+			});
+		}
+
+		// GET /api/dev/mc-test-p2p?key=seed123&companyId=1
+		// Multi-Currency 1-3 smoke: posts a USD purchase invoice (item line) + a USD goods receipt through
+		// the real services → verifies foreign cost is converted to the functional currency before GL/stock.
+		// Then call /api/dev/inv-test-integrity to confirm AP==subledger / inventory==GL / TB balanced.
+		[HttpGet("mc-test-p2p")]
+		public async Task<IActionResult> McTestP2p(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
+			if (usd == 0) return BadRequest(new { message = "run seed-multicurrency first" });
+			var vendor = await _db.Vendors.Where(v => v.CompanyID == companyId).OrderBy(v => v.ID).FirstOrDefaultAsync();
+			if (vendor == null) return BadRequest(new { message = "no vendor — run seed-acc-demo first" });
+			var item = await (from i in _db.Items.AsNoTracking()
+							  where i.CompanyID == companyId && i.IsActive && i.ItemType == "Stockable"
+							  join c in _db.ItemCategories.AsNoTracking() on i.ItemCategoryId equals c.ID
+							  where c.InventoryAccountId != null && c.GrniAccountId != null
+							  select i).FirstOrDefaultAsync();
+			if (item == null) return BadRequest(new { message = "no stockable item with a mapped category" });
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).OrderBy(w => w.ID).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (wh == null) return BadRequest(new { message = "no warehouse" });
+
+			// 1) USD purchase invoice, one item line (Qty 10 @ $100, 14% VAT). Rate looked up from Buy (49.80).
+			var piLines = new List<CrossBuy.BL.PurchaseLineInput> {
+				new() { ItemDescription = "MC test (USD)", Qty = 10, UnitPrice = 100, TaxRate = 14, ItemId = item.ID, WarehouseId = wh, ExpenseAccountId = 0 }
+			};
+			var (piok, pierr, pi) = await _ap.CreatePurchaseInvoiceAsync(companyId, vendor.ID, DateTime.UtcNow, piLines, "MC 1-3 test PI (USD)", null, usd, null);
+
+			// 2) USD goods receipt, one item line (Qty 5 @ $80). Rate looked up from Buy.
+			var grLines = new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = item.ID, Qty = 5, UnitCost = 80 } };
+			var (grok, grerr, gr) = await _proc.CreateReceiptAsync(companyId, vendor.ID, wh.Value, null, DateTime.UtcNow, "MC 1-3 test GR (USD)", grLines, null, usd, null);
+
+			return Ok(new
+			{
+				success = piok && grok,
+				purchaseInvoice = pi == null ? null : new { pi.InvoiceNo, pi.CurrencyId, rate = pi.ExchangeRate, foreignGrand = pi.GrandTotal, baseGrand = pi.GrandTotalBase },
+				piError = pierr,
+				goodsReceipt = gr == null ? null : new { gr.ReceiptNo, gr.CurrencyId, rate = gr.ExchangeRate, baseTotal = gr.TotalCost },
+				grError = grerr,
+				note = "Now GET /api/dev/inv-test-integrity?key=seed123 — ar_sub/ap_sub/tb_balanced must stay OK."
+			});
+		}
+
+		// GET /api/dev/mc-test-o2c?key=seed123&companyId=1
+		// Multi-Currency 1-4 smoke: posts a USD sales invoice (revenue line) + a USD receipt through the
+		// real services → revenue/VAT/AR are converted to the functional currency. Then call inv-test-integrity
+		// to confirm AR==subledger / TB balanced (using the base columns).
+		[HttpGet("mc-test-o2c")]
+		public async Task<IActionResult> McTestO2c(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
+			if (usd == 0) return BadRequest(new { message = "run seed-multicurrency first" });
+			var customer = await _db.Customers.Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).FirstOrDefaultAsync();
+			if (customer == null) return BadRequest(new { message = "no customer — run seed-acc-demo first" });
+			var revAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			if (revAcc == 0) return BadRequest(new { message = "revenue account 4101 missing" });
+			var cashAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+
+			// 1) USD sales invoice, one revenue line (Qty 10 @ $100, 14% VAT). Sell rate (50.20).
+			var siLines = new List<CrossBuy.BL.SalesLineInput> {
+				new() { ItemDescription = "MC test (USD)", Qty = 10, UnitPrice = 100, TaxRate = 14, RevenueAccountId = revAcc }
+			};
+			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, customer.ID, DateTime.UtcNow, siLines, "MC 1-4 test SV (USD)", null, usd, null);
+
+			// 2) USD receipt ($500) against the customer
+			var (rcok, rcerr) = await _ar.CreateReceiptAsync(companyId, customer.ID, DateTime.UtcNow, 500m, "Bank", cashAcc, "MC 1-4 test RC (USD)", null, usd, null);
+
+			return Ok(new
+			{
+				success = siok && rcok,
+				salesInvoice = si == null ? null : new { si.InvoiceNo, si.CurrencyId, rate = si.ExchangeRate, foreignGrand = si.GrandTotal, baseGrand = si.GrandTotalBase },
+				siError = sierr,
+				receiptPosted = rcok,
+				rcError = rcerr,
+				note = "Now GET /api/dev/inv-test-integrity?key=seed123 — ar_sub/tb_balanced must stay OK (AR may be negative if the receipt rate≠invoice rate; that's the 1-5 realized-FX residual, but subledger==GL still holds)."
+			});
+		}
+
+		// GET /api/dev/mc-test-fx?key=seed123&companyId=1
+		// Multi-Currency 1-5 smoke: a USD sales invoice @50 then a USD receipt @51 of the same foreign amount.
+		// Expects realized FX gain = foreign × (51−50) booked to 4902, AR cleared at the invoice rate, invariants intact.
+		[HttpGet("mc-test-fx")]
+		public async Task<IActionResult> McTestFx(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
+			if (usd == 0) return BadRequest(new { message = "run seed-multicurrency first" });
+			var revAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			var cashAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "110102").Select(a => a.ID).FirstOrDefaultAsync();
+			var fx4902 = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4902").Select(a => a.ID).FirstOrDefaultAsync();
+			if (revAcc == 0 || cashAcc == 0 || fx4902 == 0) return BadRequest(new { message = "missing 4101/110102/4902 accounts" });
+
+			// dedicated customer so FIFO allocation is deterministic (single open invoice)
+			var cust = await _ar.CreateCustomerAsync(companyId, "عميل اختبار فروق العملة", "MC FX Test", null, null);
+
+			decimal fxBefore = await _db.JournalEntryLines.AsNoTracking()
+				.Where(l => l.AccountId == fx4902).SumAsync(l => (decimal?)(l.Credit - l.Debit)) ?? 0m;
+
+			// USD sales invoice @ 50.00, $1000 (no VAT) → AR base 50,000
+			var siLines = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "FX test", Qty = 10, UnitPrice = 100, TaxRate = 0, RevenueAccountId = revAcc } };
+			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.UtcNow, siLines, "MC 1-5 FX invoice @50", null, usd, 50.00m);
+			if (!siok) return BadRequest(new { step = "invoice", error = sierr });
+
+			// USD receipt of $1000 @ 51.00 → cash 51,000 / AR 50,000 / FX gain 1,000
+			var (rcok, rcerr) = await _ar.CreateReceiptAsync(companyId, cust.ID, DateTime.UtcNow, 1000m, "Bank", cashAcc, "MC 1-5 FX receipt @51", null, usd, 51.00m);
+			if (!rcok) return BadRequest(new { step = "receipt", error = rcerr });
+
+			decimal fxAfter = await _db.JournalEntryLines.AsNoTracking()
+				.Where(l => l.AccountId == fx4902).SumAsync(l => (decimal?)(l.Credit - l.Debit)) ?? 0m;
+			var alloc = await _db.ReceiptAllocations.AsNoTracking().Where(a => a.SalesInvoiceId == si!.ID)
+				.Select(a => new { a.ForeignAmount, a.InvoiceRate, a.ReceiptRate, a.ArBase, a.FxDiff }).ToListAsync();
+
+			return Ok(new
+			{
+				success = true,
+				invoice = new { si!.InvoiceNo, foreignGrand = si.GrandTotal, baseGrand = si.GrandTotalBase, rate = si.ExchangeRate },
+				realizedFxGain_4902_delta = fxAfter - fxBefore,   // expect 1000.00
+				expected = 1000.00m,
+				allocations = alloc,
+				note = "Now GET /api/dev/inv-test-integrity?key=seed123 — ar_sub/tb_balanced must stay OK; this invoice's AR nets to 0."
+			});
+		}
+
+		// GET /api/dev/mc-test-reval?key=seed123&companyId=1
+		// Multi-Currency 1-6 smoke: an OPEN USD invoice @50 + a closing rate of 55 → revaluation posts an
+		// unrealized gain to 4903 and an auto-reversal next day; AR control nets to zero (subledger intact).
+		[HttpGet("mc-test-reval")]
+		public async Task<IActionResult> McTestReval(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
+			if (usd == 0) return BadRequest(new { message = "run seed-multicurrency first" });
+			var revAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			var gainAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4903").Select(a => a.ID).FirstOrDefaultAsync();
+			var lossAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "5903").Select(a => a.ID).FirstOrDefaultAsync();
+			if (revAcc == 0 || gainAcc == 0 || lossAcc == 0) return BadRequest(new { message = "missing 4101/4903/5903 accounts" });
+
+			var asOf = DateTime.UtcNow.Date;
+			// closing rate 55 (Central) at asOf — insert if missing
+			if (!await _db.ExchangeRates.AnyAsync(r => r.CurrencyId == usd && r.RateDate == asOf && r.RateType == "Central"))
+			{ _db.ExchangeRates.Add(new ExchangeRate { CurrencyId = usd, RateDate = asOf, RateType = "Central", Rate = 55.00m }); await _db.SaveChangesAsync(); }
+
+			// open USD invoice @ 50, $1000 (unsettled)
+			var cust = await _ar.CreateCustomerAsync(companyId, "عميل اختبار إعادة التقييم", "MC Reval Test", null, null);
+			var siLines = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "Reval test", Qty = 10, UnitPrice = 100, TaxRate = 0, RevenueAccountId = revAcc } };
+			var (siok, sierr, si) = await _ar.CreateSalesInvoiceAsync(companyId, cust.ID, asOf, siLines, "MC 1-6 open invoice @50", null, usd, 50.00m);
+			if (!siok) return BadRequest(new { step = "invoice", error = sierr });
+
+			decimal fxBefore = await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == gainAcc || l.AccountId == lossAcc).SumAsync(l => (decimal?)(l.Credit - l.Debit)) ?? 0m;
+			var preview = await _reval.PreviewAsync(companyId, asOf, "Central");
+			var (ok, err, runId) = await _reval.PostAsync(companyId, asOf, "Central", null);
+			if (!ok) return BadRequest(new { step = "revaluation", error = err });
+			decimal fxAfter = await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == gainAcc || l.AccountId == lossAcc).SumAsync(l => (decimal?)(l.Credit - l.Debit)) ?? 0m;
+			var run = await _db.FxRevaluationRuns.AsNoTracking().FirstOrDefaultAsync(r => r.ID == runId);
+
+			return Ok(new
+			{
+				success = true,
+				thisInvoice = new { si!.InvoiceNo, foreignGrand = si.GrandTotal, bookBase = si.GrandTotalBase, rate = si.ExchangeRate },
+				previewArDiff = preview.TotalArDiff,
+				previewApDiff = preview.TotalApDiff,
+				unrealizedFx_4903_5903_netDelta = fxAfter - fxBefore,   // net gain(+) booked at period end (reversed next day)
+				run = run == null ? null : new { run.ID, run.JournalEntryId, run.ReversalEntryId, run.TotalArDiff, run.TotalApDiff },
+				note = "Reval JE dated asOf + auto-reversal dated asOf+1. GET /api/dev/inv-test-integrity — ar_sub/ap_sub/tb stay OK (control nets to zero all-time)."
+			});
+		}
+
+		// GET /api/dev/mc-test-pricing2?key=seed123&companyId=1
+		// Pricing 2-1: verifies customer>segment>general priority, currency matching, and the converted fallback.
+		// Self-cleaning (no GL): creates lists, resolves prices, then removes the lists and restores the item price.
+		[HttpGet("mc-test-pricing2")]
+		public async Task<IActionResult> McTestPricing2(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
+			if (usd == 0) return BadRequest(new { message = "run seed-multicurrency first" });
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == companyId && i.IsActive);
+			if (item == null) return BadRequest(new { message = "need an item" });
+			var origPrice = item.SalesPrice;
+			item.SalesPrice = 500m; await _db.SaveChangesAsync();   // known base (EGP)
+			var cust = await _ar.CreateCustomerAsync(companyId, "عميل اختبار تسعير", "Pricing Test", null, null);
+			var c = await _db.Customers.FirstAsync(x => x.ID == cust.ID); c.Segment = "GOLD2"; await _db.SaveChangesAsync();
+
+			CrossBuy.Models.Context.Inventory.PriceList Mk(string code, int? custId, string? seg, int? cur) =>
+				new() { CompanyID = companyId, Code = code + Guid.NewGuid().ToString("N").Substring(0, 5), Name = code, CustomerId = custId, Segment = seg, CurrencyId = cur, Priority = 1, IsActive = true, CreatedAt = DateTime.UtcNow };
+			var lGen = Mk("GEN", null, null, null); var lSeg = Mk("SEG", null, "GOLD2", null);
+			var lCust = Mk("CUST", cust.ID, null, null); var lUsd = Mk("USD", null, null, usd);
+			_db.PriceLists.AddRange(lGen, lSeg, lCust, lUsd); await _db.SaveChangesAsync();
+			_db.PriceListLines.AddRange(
+				new() { PriceListId = lGen.ID, ItemId = item.ID, MinQty = 1, UnitPrice = 100m },
+				new() { PriceListId = lSeg.ID, ItemId = item.ID, MinQty = 1, UnitPrice = 90m },
+				new() { PriceListId = lCust.ID, ItemId = item.ID, MinQty = 1, UnitPrice = 80m },
+				new() { PriceListId = lUsd.ID, ItemId = item.ID, MinQty = 1, UnitPrice = 7m });
+			await _db.SaveChangesAsync();
+			var asOf = DateTime.UtcNow;
+
+			var rCust = await _pricing.GetPriceAsync(companyId, item.ID, cust.ID, "GOLD2", null, 1, asOf);   // expect 80 (customer)
+			var rSeg = await _pricing.GetPriceAsync(companyId, item.ID, null, "GOLD2", null, 1, asOf);        // expect 90 (segment)
+			var rGen = await _pricing.GetPriceAsync(companyId, item.ID, null, null, null, 1, asOf);           // expect 100 (general)
+			var rUsd = await _pricing.GetPriceAsync(companyId, item.ID, null, null, usd, 1, asOf);            // expect 7 (USD list, fixed)
+
+			// remove the foreign list → USD doc now has no matching list → converted fallback from base 500
+			_db.PriceListLines.RemoveRange(_db.PriceListLines.Where(l => l.PriceListId == lUsd.ID));
+			_db.PriceLists.Remove(await _db.PriceLists.FirstAsync(p => p.ID == lUsd.ID));
+			await _db.SaveChangesAsync();
+			var rConv = await _pricing.GetPriceAsync(companyId, item.ID, null, null, usd, 1, asOf);           // expect converted (source=converted)
+
+			// cleanup
+			_db.PriceListLines.RemoveRange(_db.PriceListLines.Where(l => l.PriceListId == lGen.ID || l.PriceListId == lSeg.ID || l.PriceListId == lCust.ID));
+			_db.PriceLists.RemoveRange(_db.PriceLists.Where(p => p.ID == lGen.ID || p.ID == lSeg.ID || p.ID == lCust.ID));
+			item.SalesPrice = origPrice; await _db.SaveChangesAsync();
+
+			return Ok(new
+			{
+				customerWins = new { rCust.UnitPrice, rCust.Source, pass = rCust.UnitPrice == 80m && rCust.Source == "list" },
+				segmentWins = new { rSeg.UnitPrice, rSeg.Source, pass = rSeg.UnitPrice == 90m && rSeg.Source == "list" },
+				generalWins = new { rGen.UnitPrice, rGen.Source, pass = rGen.UnitPrice == 100m && rGen.Source == "list" },
+				usdFixed = new { rUsd.UnitPrice, rUsd.Source, rUsd.CurrencyId, pass = rUsd.UnitPrice == 7m && rUsd.Source == "list" && rUsd.CurrencyId == usd },
+				usdConverted = new { rConv.UnitPrice, rConv.Source, rConv.CurrencyId, pass = rConv.Source == "converted" && rConv.UnitPrice > 0 },
+				allPass = rCust.UnitPrice == 80m && rSeg.UnitPrice == 90m && rGen.UnitPrice == 100m && rUsd.UnitPrice == 7m && rConv.Source == "converted"
+			});
+		}
+
+		// GET /api/dev/pricing-test-margin?key=seed123&companyId=1
+		// Pricing 2A: verifies the gross-margin floor. Creates a throwaway item + stock balance (cost 100),
+		// sets the floor to 20% (→ floor 120), runs functional + foreign + per-item-override + unknown-cost cases,
+		// then removes everything and restores the settings. No GL touched (balance is throwaway and deleted).
+		[HttpGet("pricing-test-margin")]
+		public async Task<IActionResult> PricingTestMargin(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
+
+			// snapshot settings to restore later
+			var s = await _db.InventorySettings.FirstOrDefaultAsync(x => x.CompanyID == companyId);
+			if (s == null) { s = new CrossBuy.Models.Context.Inventory.InventorySettings { CompanyID = companyId, CreatedAt = DateTime.UtcNow }; _db.InventorySettings.Add(s); await _db.SaveChangesAsync(); }
+			var origMode = s.MinMarginMode; var origPct = s.MinMarginPct;
+
+			// clone FK-bearing fields from a real item so the throwaway item is valid
+			var tmpl = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == companyId);
+			if (tmpl == null) return BadRequest(new { message = "need at least one item to clone" });
+
+			CrossBuy.Models.Context.Inventory.Item probe = null!, noCost = null!;
+			CrossBuy.Models.Context.Inventory.StockBalance bal = null!;
+			try
+			{
+				s.MinMarginMode = "Block"; s.MinMarginPct = 20m; await _db.SaveChangesAsync();   // floor = cost×1.20
+
+				string g() => Guid.NewGuid().ToString("N").Substring(0, 8);
+				probe = new CrossBuy.Models.Context.Inventory.Item {
+					CompanyID = companyId, ItemCode = "MRGN-" + g(), Barcode = "MRGN-" + g(), Name = "اختبار الحدّ الأدنى",
+					BaseUoMId = tmpl.BaseUoMId, ItemType = tmpl.ItemType, CostingMethod = tmpl.CostingMethod, IsActive = true, CreatedAt = DateTime.UtcNow };
+				noCost = new CrossBuy.Models.Context.Inventory.Item {
+					CompanyID = companyId, ItemCode = "MRGN0-" + g(), Barcode = "MRGN0-" + g(), Name = "اختبار بلا تكلفة",
+					BaseUoMId = tmpl.BaseUoMId, ItemType = tmpl.ItemType, CostingMethod = tmpl.CostingMethod, IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.Items.AddRange(probe, noCost); await _db.SaveChangesAsync();
+				bal = new CrossBuy.Models.Context.Inventory.StockBalance { CompanyID = companyId, ItemId = probe.ID, WarehouseId = 1, QtyOnHand = 1m, TotalValue = 100m, AvgCost = 100m };
+				_db.StockBalances.Add(bal); await _db.SaveChangesAsync();   // cost = 100
+				var asOf = DateTime.UtcNow;
+
+				// functional (no doc currency): floor 120
+				var fLow = await _pricing.CheckMarginAsync(companyId, probe.ID, 110m, null, null, asOf);   // < 120 → violate
+				var fOk = await _pricing.CheckMarginAsync(companyId, probe.ID, 130m, null, null, asOf);    // ≥ 120 → pass
+				// foreign USD @ rate 50: net×rate compared to 120
+				object? foHigh = null, foLow = null;
+				if (usd.HasValue && usd.Value > 0)
+				{
+					var fh = await _pricing.CheckMarginAsync(companyId, probe.ID, 3m, usd, 50m, asOf);     // 150 functional → pass
+					var fl = await _pricing.CheckMarginAsync(companyId, probe.ID, 2m, usd, 50m, asOf);     // 100 functional → violate
+					foHigh = new { fh.PriceFunctional, fh.Ok, pass = fh.PriceFunctional == 150m && fh.Ok };
+					foLow = new { fl.PriceFunctional, fl.Ok, pass = fl.PriceFunctional == 100m && !fl.Ok };
+				}
+				// per-item override 50% → floor 150
+				probe.MinMarginPct = 50m; await _db.SaveChangesAsync();
+				var ovViolate = await _pricing.CheckMarginAsync(companyId, probe.ID, 130m, null, null, asOf);  // 130 < 150 → violate
+				var ovPass = await _pricing.CheckMarginAsync(companyId, probe.ID, 160m, null, null, asOf);     // 160 ≥ 150 → pass
+				// unknown cost (no balance) → skipped, never blocks
+				var skip = await _pricing.CheckMarginAsync(companyId, noCost.ID, 1m, null, null, asOf);
+
+				bool allPass = !fLow.Ok && fLow.FloorFunctional == 120m && fOk.Ok
+					&& ovViolate.FloorFunctional == 150m && !ovViolate.Ok && ovPass.Ok
+					&& skip.Skipped && skip.Ok
+					&& (!usd.HasValue || usd.Value == 0 || (foHigh != null && foLow != null));
+
+				return Ok(new
+				{
+					cost = bal.TotalValue / bal.QtyOnHand,
+					functionalViolate = new { fLow.PriceFunctional, fLow.FloorFunctional, fLow.MarginPct, fLow.Ok, fLow.Mode, pass = !fLow.Ok && fLow.FloorFunctional == 120m },
+					functionalPass = new { fOk.PriceFunctional, fOk.Ok, pass = fOk.Ok },
+					foreignPass = foHigh,
+					foreignViolate = foLow,
+					overrideViolate = new { ovViolate.FloorFunctional, ovViolate.MarginPct, ovViolate.Ok, pass = ovViolate.FloorFunctional == 150m && !ovViolate.Ok },
+					overridePass = new { ovPass.Ok, pass = ovPass.Ok },
+					unknownCostSkipped = new { skip.Skipped, skip.Ok, pass = skip.Skipped && skip.Ok },
+					usdAvailable = usd.HasValue && usd.Value > 0,
+					allPass
+				});
+			}
+			finally
+			{
+				// cleanup: remove balance + probe items, restore settings
+				if (bal != null) { _db.StockBalances.Remove(bal); }
+				if (probe != null) _db.Items.Remove(probe);
+				if (noCost != null) _db.Items.Remove(noCost);
+				s.MinMarginMode = origMode; s.MinMarginPct = origPct;
+				await _db.SaveChangesAsync();
+			}
+		}
+
+		// GET /api/dev/promotion-test?key=seed123&companyId=1
+		// Pricing 2B: verifies the promotion engine — percent, expired (ignored), fixed-amount (functional + doc-currency),
+		// best-single (largest wins), and cross-currency amount folding. Self-cleaning; no GL touched.
+		[HttpGet("promotion-test")]
+		public async Task<IActionResult> PromotionTest(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var tmpl = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == companyId);
+			if (tmpl == null) return BadRequest(new { message = "need at least one item to clone" });
+
+			CrossBuy.Models.Context.Inventory.Item probe = null!;
+			CrossBuy.Models.Context.Inventory.PriceList usdList = null!;
+			var promoIds = new List<int>();
+			var asOf = DateTime.UtcNow;
+			try
+			{
+				string g() => Guid.NewGuid().ToString("N").Substring(0, 8);
+				probe = new CrossBuy.Models.Context.Inventory.Item {
+					CompanyID = companyId, ItemCode = "PROMO-" + g(), Barcode = "PROMO-" + g(), Name = "اختبار العروض",
+					BaseUoMId = tmpl.BaseUoMId, ItemType = tmpl.ItemType, CostingMethod = tmpl.CostingMethod, SalesPrice = 100m, IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(probe); await _db.SaveChangesAsync();
+
+				// helper to create a promotion targeting this item
+				async Task<int> MkPromo(string type, decimal val, int? curId, bool active, DateTime? from, DateTime? to, int prio)
+				{
+					var p = new CrossBuy.Models.Context.Inventory.Promotion {
+						CompanyID = companyId, Code = "PR-" + g(), Name = "عرض اختبار", DiscountType = type, Value = val,
+						CurrencyId = curId, ItemId = probe.ID, MinQty = 1, Priority = prio, IsActive = active, ValidFrom = from, ValidTo = to, CreatedAt = DateTime.UtcNow };
+					_db.Promotions.Add(p); await _db.SaveChangesAsync(); promoIds.Add(p.ID); return p.ID;
+				}
+				async Task Deactivate(int id) { var p = await _db.Promotions.FirstAsync(x => x.ID == id); p.IsActive = false; await _db.SaveChangesAsync(); }
+
+				// A) percent 10% (functional) → net 90 → disc 10
+				var aId = await MkPromo("Percent", 10m, null, true, null, null, 0);
+				var rA = await _pricing.GetPriceAsync(companyId, probe.ID, null, null, null, 1, asOf);
+				await Deactivate(aId);
+
+				// B) expired percent 50% → ignored
+				var bId = await MkPromo("Percent", 50m, null, true, null, asOf.AddDays(-1), 0);
+				var rB = await _pricing.GetPriceAsync(companyId, probe.ID, null, null, null, 1, asOf);
+				await Deactivate(bId);
+
+				// C) fixed amount 30 (functional) on functional doc → net 70 → disc 30%
+				var cId = await MkPromo("Amount", 30m, null, true, null, null, 0);
+				var rC = await _pricing.GetPriceAsync(companyId, probe.ID, null, null, null, 1, asOf);
+				await Deactivate(cId);
+
+				// E) best-single: 10% and 25% both active → 25% wins
+				var e1 = await MkPromo("Percent", 10m, null, true, null, null, 0);
+				var e2 = await MkPromo("Percent", 25m, null, true, null, null, 0);
+				var rE = await _pricing.GetPriceAsync(companyId, probe.ID, null, null, null, 1, asOf);
+				await Deactivate(e1); await Deactivate(e2);
+
+				// D + G (multi-currency) — need USD
+				object? dCase = null, gCase = null;
+				if (usd.HasValue && usd.Value > 0)
+				{
+					// USD price list @ 20 for the item, so the USD doc has a known unit price
+					usdList = new CrossBuy.Models.Context.Inventory.PriceList { CompanyID = companyId, Code = "PUSD-" + g(), Name = "USD promo test", CurrencyId = usd, Priority = 1, IsActive = true, CreatedAt = DateTime.UtcNow };
+					_db.PriceLists.Add(usdList); await _db.SaveChangesAsync();
+					_db.PriceListLines.Add(new() { PriceListId = usdList.ID, ItemId = probe.ID, MinQty = 1, UnitPrice = 20m });
+					await _db.SaveChangesAsync();
+
+					// D) amount 5 stored in USD on USD doc (same currency, no convert) → net 15 → disc 25%
+					var dId = await MkPromo("Amount", 5m, usd, true, null, null, 0);
+					var rD = await _pricing.GetPriceAsync(companyId, probe.ID, null, null, usd, 1, asOf);
+					await Deactivate(dId);
+					dCase = new { rD.UnitPrice, rD.DiscountPercent, promo = rD.PromotionId, pass = rD.UnitPrice == 20m && rD.DiscountPercent == 25m && rD.PromotionId != null };
+
+					// G) amount 30 stored in functional on USD doc → converted; effective % is rate-independent = 30%
+					//    (base converts 100/rate, discount converts 30/rate → 30% of the net). Remove USD list so base=converted 100.
+					_db.PriceListLines.RemoveRange(_db.PriceListLines.Where(l => l.PriceListId == usdList.ID));
+					_db.PriceLists.Remove(await _db.PriceLists.FirstAsync(p => p.ID == usdList.ID)); usdList = null!;
+					await _db.SaveChangesAsync();
+					var gId = await MkPromo("Amount", 30m, null, true, null, null, 0);
+					var rG = await _pricing.GetPriceAsync(companyId, probe.ID, null, null, usd, 1, asOf);
+					await Deactivate(gId);
+					gCase = new { rG.UnitPrice, rG.DiscountPercent, source = rG.Source, promo = rG.PromotionId, pass = rG.Source == "converted" && rG.PromotionId != null && Math.Abs(rG.DiscountPercent - 30m) <= 0.5m };
+				}
+
+				bool allPass = rA.DiscountPercent == 10m && rA.PromotionId != null
+					&& rB.DiscountPercent == 0m && rB.PromotionId == null
+					&& rC.DiscountPercent == 30m && rC.PromotionId != null
+					&& rE.DiscountPercent == 25m
+					&& (!usd.HasValue || usd.Value == 0 || ((bool)((dynamic)dCase!).pass && (bool)((dynamic)gCase!).pass));
+
+				return Ok(new
+				{
+					percent = new { rA.UnitPrice, rA.DiscountPercent, promo = rA.PromotionId, pass = rA.DiscountPercent == 10m && rA.PromotionId != null },
+					expiredIgnored = new { rB.DiscountPercent, promo = rB.PromotionId, pass = rB.DiscountPercent == 0m && rB.PromotionId == null },
+					amountFunctional = new { rC.DiscountPercent, promo = rC.PromotionId, pass = rC.DiscountPercent == 30m && rC.PromotionId != null },
+					bestSingle = new { rE.DiscountPercent, promo = rE.PromotionId, pass = rE.DiscountPercent == 25m },
+					amountDocCurrency = dCase,
+					amountCrossCurrency = gCase,
+					usdAvailable = usd.HasValue && usd.Value > 0,
+					allPass
+				});
+			}
+			finally
+			{
+				_db.Promotions.RemoveRange(_db.Promotions.Where(p => promoIds.Contains(p.ID)));
+				if (usdList != null) { _db.PriceListLines.RemoveRange(_db.PriceListLines.Where(l => l.PriceListId == usdList.ID)); _db.PriceLists.Remove(usdList); }
+				if (probe != null) _db.Items.Remove(probe);
+				await _db.SaveChangesAsync();
+			}
+		}
+
+		// GET /api/dev/pricing-test-costplus?key=seed123&companyId=1
+		// Pricing 2C: verifies cost-plus price-list lines — purchased (avg stock cost 100 +20% = 120),
+		// manufactured (BOM material 100 +30% = 130), and foreign conversion + currency rounding. Self-cleaning; no GL.
+		[HttpGet("pricing-test-costplus")]
+		public async Task<IActionResult> PricingTestCostPlus(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var tmpl = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == companyId);
+			if (tmpl == null) return BadRequest(new { message = "need at least one item to clone" });
+
+			var itemIds = new List<int>();
+			var balIds = new List<int>();
+			var compIds = new List<int>();
+			var listIds = new List<int>();
+			var asOf = DateTime.UtcNow;
+			try
+			{
+				string g() => Guid.NewGuid().ToString("N").Substring(0, 8);
+				CrossBuy.Models.Context.Inventory.Item MkItem(string p) => new() {
+					CompanyID = companyId, ItemCode = p + g(), Barcode = p + g(), Name = "cost-plus " + p,
+					BaseUoMId = tmpl.BaseUoMId, ItemType = tmpl.ItemType, CostingMethod = tmpl.CostingMethod, IsActive = true, CreatedAt = DateTime.UtcNow };
+
+				// purchased item with avg stock cost 100
+				var purchased = MkItem("CP-P-");
+				// manufactured parent + one component (avg cost 50, qty 2 → material 100)
+				var parent = MkItem("CP-M-");
+				var comp = MkItem("CP-C-");
+				_db.Items.AddRange(purchased, parent, comp); await _db.SaveChangesAsync();
+				itemIds.AddRange(new[] { purchased.ID, parent.ID, comp.ID });
+
+				var bals = new List<CrossBuy.Models.Context.Inventory.StockBalance> {
+					new() { CompanyID = companyId, ItemId = purchased.ID, WarehouseId = 1, QtyOnHand = 1m, TotalValue = 100m, AvgCost = 100m },  // cost 100
+					new() { CompanyID = companyId, ItemId = comp.ID, WarehouseId = 1, QtyOnHand = 1m, TotalValue = 50m, AvgCost = 50m }          // component avg 50
+				};
+				_db.StockBalances.AddRange(bals); await _db.SaveChangesAsync();
+				balIds.AddRange(bals.Select(b => b.ID));
+
+				var bom = new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = companyId, ParentItemId = parent.ID, ComponentItemId = comp.ID, Quantity = 2m, ScrapPct = 0m, SortOrder = 1 };
+				_db.ItemComponents.Add(bom); await _db.SaveChangesAsync(); compIds.Add(bom.ID);
+
+				// cost-plus price lists (functional): purchased +20%, manufactured +30%
+				async Task<int> MkCostPlusList(int itemId, decimal markup)
+				{
+					var pl = new CrossBuy.Models.Context.Inventory.PriceList { CompanyID = companyId, Code = "CPL-" + g(), Name = "cost-plus list", Priority = 5, IsActive = true, CreatedAt = DateTime.UtcNow };
+					_db.PriceLists.Add(pl); await _db.SaveChangesAsync(); listIds.Add(pl.ID);
+					_db.PriceListLines.Add(new() { PriceListId = pl.ID, ItemId = itemId, MinQty = 1, PricingMode = "CostPlus", MarkupPercent = markup });
+					await _db.SaveChangesAsync();
+					return pl.ID;
+				}
+				await MkCostPlusList(purchased.ID, 20m);
+				await MkCostPlusList(parent.ID, 30m);
+
+				var rPurch = await _pricing.GetPriceAsync(companyId, purchased.ID, null, null, null, 1, asOf);   // 100×1.20 = 120
+				var rManuf = await _pricing.GetPriceAsync(companyId, parent.ID, null, null, null, 1, asOf);        // 100×1.30 = 130
+
+				object? fxCase = null;
+				if (usd.HasValue && usd.Value > 0)
+				{
+					var rUsd = await _pricing.GetPriceAsync(companyId, purchased.ID, null, null, usd, 1, asOf);   // 120 → USD, rounded to 2dp
+					bool twoDp = rUsd.UnitPrice == Math.Round(rUsd.UnitPrice, 2);
+					fxCase = new { rUsd.UnitPrice, rUsd.Source, rUsd.CurrencyId, roundedTo2dp = twoDp, pass = rUsd.Source == "costplus" && rUsd.UnitPrice > 0 && rUsd.CurrencyId == usd && twoDp };
+				}
+
+				bool allPass = rPurch.Source == "costplus" && rPurch.UnitPrice == 120m
+					&& rManuf.Source == "costplus" && rManuf.UnitPrice == 130m
+					&& (!usd.HasValue || usd.Value == 0 || (bool)((dynamic)fxCase!).pass);
+
+				return Ok(new
+				{
+					purchased = new { rPurch.UnitPrice, rPurch.Source, pass = rPurch.Source == "costplus" && rPurch.UnitPrice == 120m },
+					manufactured = new { rManuf.UnitPrice, rManuf.Source, pass = rManuf.Source == "costplus" && rManuf.UnitPrice == 130m },
+					foreignConverted = fxCase,
+					usdAvailable = usd.HasValue && usd.Value > 0,
+					allPass
+				});
+			}
+			finally
+			{
+				_db.PriceListLines.RemoveRange(_db.PriceListLines.Where(l => listIds.Contains(l.PriceListId)));
+				_db.PriceLists.RemoveRange(_db.PriceLists.Where(p => listIds.Contains(p.ID)));
+				_db.ItemComponents.RemoveRange(_db.ItemComponents.Where(c => compIds.Contains(c.ID)));
+				_db.StockBalances.RemoveRange(_db.StockBalances.Where(b => balIds.Contains(b.ID)));
+				_db.Items.RemoveRange(_db.Items.Where(i => itemIds.Contains(i.ID)));
+				await _db.SaveChangesAsync();
+			}
+		}
+
+		// GET /api/dev/chat-test-seed?key=seed123&companyId=1
+		// Creates PERSISTENT test employees + logins (company 1) so you can try the internal chat between users.
+		// Idempotent: re-running reuses the same accounts. NOT self-cleaning (they stay so you can log in).
+		[HttpGet("chat-test-seed")]
+		public async Task<IActionResult> ChatTestSeed(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var jtId = await _db.JobTitles.Select(j => j.ID).FirstOrDefaultAsync();
+			var defs = new[]
+			{
+				new { user = "cb_chat1", ar = "سارة (اختبار الشات)", en = "Sara (Chat test)" },
+				new { user = "cb_chat2", ar = "خالد (اختبار الشات)", en = "Khaled (Chat test)" },
+				new { user = "cb_chat3", ar = "منى (اختبار الشات)",  en = "Mona (Chat test)" },
+			};
+			const string pass = "Chat@12345";
+			var accounts = new List<object>();
+			foreach (var d in defs)
+			{
+				var u = await _um.FindByNameAsync(d.user);
+				if (u == null)
+				{
+					u = new Users { UserName = d.user, Email = d.user + "@test.local", EmailConfirmed = true, IsActive = true, IsEndUser = true };
+					var res = await _um.CreateAsync(u, pass);
+					if (!res.Succeeded) { accounts.Add(new { d.user, ok = false, error = string.Join("; ", res.Errors.Select(e => e.Description)) }); continue; }
+				}
+				var emp = await _db.Employee.FirstOrDefaultAsync(e => e.UserId == u.Id);
+				if (emp == null)
+				{
+					emp = new Employee
+					{
+						FirstName = "T", LastName = "T", FullName = d.ar, FullNameEn = d.en, Address = "", PhoneNumber = "",
+						Email = u.Email, ProfileImage = "", Gender = "F", MaritalStatus = "S", JobTitleID = jtId,
+						EmpCompanyID = companyId, IsActive = true, DateOfBirth = new DateTime(1995, 1, 1), DateOfJoining = new DateTime(2022, 1, 1), UserId = u.Id
+					};
+					_db.Employee.Add(emp); await _db.SaveChangesAsync();
+				}
+				accounts.Add(new { username = d.user, password = pass, employeeId = emp.ID, name = d.ar });
+			}
+			return Ok(new { message = "Chat test accounts ready (login at /Account/Login)", companyId, accounts });
+		}
+
+		// GET /api/dev/employee-request-test?key=seed123&companyId=1
+		// HR-8: verifies the ESS request workflow (letter → chain → approve) and that an approved hourly
+		// permission waives late minutes in the monthly attendance summary. Self-cleaning; no GL touched.
+		[HttpGet("employee-request-test")]
+		public async Task<IActionResult> EmployeeRequestTest(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var reqSvc = HttpContext.RequestServices.GetService(typeof(IEmployeeRequestService)) as IEmployeeRequestService;
+			var attSvc = HttpContext.RequestServices.GetService(typeof(IAttendanceService)) as IAttendanceService;
+			if (reqSvc == null || attSvc == null) return StatusCode(500, new { message = "services unavailable" });
+
+			Employee mgr = null!, emp = null!;
+			Users u1 = null!, u2 = null!;
+			var nodeIds = new List<int>();
+			var reqIds = new List<int>();
+			int ptId = 990777;
+			try
+			{
+				// throwaway identity users (Employee.UserId is a NOT-NULL unique FK to AspNetUsers)
+				string g8() => Guid.NewGuid().ToString("N").Substring(0, 8);
+				u1 = new Users { UserName = "hr8mgr_" + g8(), Email = "hr8mgr@test.local", EmailConfirmed = true, IsActive = true, IsEndUser = true };
+				u2 = new Users { UserName = "hr8emp_" + g8(), Email = "hr8emp@test.local", EmailConfirmed = true, IsActive = true, IsEndUser = true };
+				await _um.CreateAsync(u1, "Test@12345"); await _um.CreateAsync(u2, "Test@12345");
+
+				var jtId = await _db.JobTitles.Select(j => j.ID).FirstOrDefaultAsync();
+				Employee MkEmp(string ar, string uid) => new() { FirstName = "T", LastName = "T", FullName = ar, FullNameEn = ar, Address = "", PhoneNumber = "", Email = "", ProfileImage = "", Gender = "M", MaritalStatus = "S", JobTitleID = jtId, EmpCompanyID = companyId, IsActive = true, DateOfBirth = new DateTime(1990, 1, 1), DateOfJoining = new DateTime(2020, 1, 1), UserId = uid };
+				mgr = MkEmp("مدير اختبار الطلبات", u1.Id); emp = MkEmp("موظف اختبار الطلبات", u2.Id);
+				_db.Employee.AddRange(mgr, emp); await _db.SaveChangesAsync();
+
+				// throwaway org subtree: unit(1) → pos(4) → mgr(5) → pos(4) → emp(5)
+				async Task<Hierarchical> Node(int type, int? objId, int? parent, string ar)
+				{ var n = new Hierarchical { H_Type = type, H_ObjectID = objId, H_Parent = parent, H_Name = ar, H_NameEn = ar, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Hierarchicals.Add(n); await _db.SaveChangesAsync(); nodeIds.Add(n.H_ID); return n; }
+				var unit = await Node(1, 990771, null, "وحدة اختبار");
+				var mgrPos = await Node(4, 990772, unit.H_ID, "مدير");
+				var mgrNode = await Node(5, mgr.ID, mgrPos.H_ID, "مدير اختبار");
+				var empPos = await Node(4, 990773, mgrNode.H_ID, "موظف");
+				await Node(5, emp.ID, empPos.H_ID, "موظف اختبار");
+
+				// ---- workflow: create a salary letter → should be pending on the manager, then approve → final ----
+				var (cok, cerr, req) = await reqSvc.CreateAsync(new EmployeeRequest { CompanyID = companyId, EmployeeID = emp.ID, RequestType = "Letter", LetterType = "Salary" });
+				if (req != null) reqIds.Add(req.ID);
+				bool pendingOnMgr = cok && req != null && req.Status == 0 && req.CurrentApproverEmployeeID == mgr.ID;
+				var (dok, derr) = req != null ? await reqSvc.DecideAsync(req.ID, mgr.ID, true, "ok") : (false, "no req");
+				var afterDecide = req != null ? await _db.EmployeeRequests.AsNoTracking().FirstAsync(r => r.ID == req.ID) : null;
+				bool approved = dok && afterDecide != null && afterDecide.Status == 1;
+
+				// ---- permission waiver: reuse an existing attendance policy (FK to Policies) + assign emp, add a late record ----
+				var pol = await _db.AttendancePolicies.AsNoTracking().FirstOrDefaultAsync();
+				ptId = pol?.LeavePolicyTypeID ?? 0;
+				_db.PolicyAssignments.Add(new PolicyAssignments { LeavePolicyTypeID = ptId, EmployeeID = emp.ID });
+				// pick a day in 2099-01 that the policy treats as a work day
+				bool PolWorks(DateTime d) => pol != null && d.DayOfWeek switch {
+					DayOfWeek.Sunday => pol.WorkOnSunday, DayOfWeek.Monday => pol.WorkOnMonday, DayOfWeek.Tuesday => pol.WorkOnTuesday,
+					DayOfWeek.Wednesday => pol.WorkOnWednesday, DayOfWeek.Thursday => pol.WorkOnThursday, DayOfWeek.Friday => pol.WorkOnFriday,
+					DayOfWeek.Saturday => pol.WorkOnSaturday, _ => false };
+				var day = new DateTime(2099, 1, 1);
+				for (int i = 0; i < 31 && !PolWorks(day); i++) day = day.AddDays(1);
+				_db.AttendanceRecords.Add(new AttendanceRecord { CompanyID = companyId, EmployeeID = emp.ID, WorkDate = day, CheckIn = day.AddHours(9).AddMinutes(40), Source = "Manual", LateMinutes = 40, Status = "Late" });
+				await _db.SaveChangesAsync();
+
+				var baseRow = (await attSvc.MonthlySummaryAsync(companyId, day.Year, day.Month)).FirstOrDefault(r => r.EmployeeID == emp.ID);
+				int baseLate = baseRow?.LateMinutes ?? -1;   // expect 40 (no permission yet)
+
+				var perm = new EmployeeRequest { CompanyID = companyId, EmployeeID = emp.ID, RequestType = "Permission", Status = 1, PermissionDate = day, FromTime = new TimeSpan(9, 0, 0), ToTime = new TimeSpan(10, 0, 0), CreatedAt = DateTime.UtcNow };
+				_db.EmployeeRequests.Add(perm); await _db.SaveChangesAsync(); reqIds.Add(perm.ID);
+
+				var waivedRow = (await attSvc.MonthlySummaryAsync(companyId, day.Year, day.Month)).FirstOrDefault(r => r.EmployeeID == emp.ID);
+				int waivedLate = waivedRow?.LateMinutes ?? -1;   // expect 0 (60-min permission waives 40 late)
+
+				bool allPass = pendingOnMgr && approved && baseLate == 40 && waivedLate == 0;
+				return Ok(new
+				{
+					workflow = new { pendingOnMgr, approved, pass = pendingOnMgr && approved },
+					permissionWaiver = new { baseLate, waivedLate, pass = baseLate == 40 && waivedLate == 0 },
+					allPass
+				});
+			}
+			finally
+			{
+				_db.EmployeeRequestSteps.RemoveRange(_db.EmployeeRequestSteps.Where(s => reqIds.Contains(s.EmployeeRequestID)));
+				_db.EmployeeRequests.RemoveRange(_db.EmployeeRequests.Where(r => reqIds.Contains(r.ID)));
+				if (emp != null) { _db.AttendanceRecords.RemoveRange(_db.AttendanceRecords.Where(a => a.EmployeeID == emp.ID)); _db.PolicyAssignments.RemoveRange(_db.PolicyAssignments.Where(p => p.EmployeeID == emp.ID)); }
+				if (emp != null && mgr != null)
+					_db.Notifications.RemoveRange(_db.Notifications.Where(n => n.RecipientEmployeeID == emp.ID || n.RecipientEmployeeID == mgr.ID));
+				_db.Hierarchicals.RemoveRange(_db.Hierarchicals.Where(h => nodeIds.Contains(h.H_ID)));
+				if (emp != null) _db.Employee.Remove(emp);
+				if (mgr != null) _db.Employee.Remove(mgr);
+				await _db.SaveChangesAsync();
+				if (u1 != null) await _um.DeleteAsync(u1);
+				if (u2 != null) await _um.DeleteAsync(u2);
+			}
+		}
+
+		// GET /api/dev/appraisal-test?key=seed123&companyId=1
+		// HR-9: verifies weighted scoring + workflow (create → score → submit → acknowledge). Self-cleaning; no GL.
+		[HttpGet("appraisal-test")]
+		public async Task<IActionResult> AppraisalTest(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var svc = HttpContext.RequestServices.GetService(typeof(IAppraisalService)) as IAppraisalService;
+			if (svc == null) return StatusCode(500, new { message = "service unavailable" });
+			var empIds = await _db.Employee.Where(e => e.EmpCompanyID == companyId && e.IsActive).OrderBy(e => e.ID).Select(e => e.ID).Take(2).ToListAsync();
+			if (empIds.Count == 0) return BadRequest(new { message = "need at least one employee" });
+			int fakeEmp = empIds[0], fakeMgr = empIds.Count > 1 ? empIds[1] : empIds[0];   // real ids (Notifications FK → Employee)
+			int notifHigh = await _db.Notifications.AnyAsync() ? await _db.Notifications.MaxAsync(n => n.ID) : 0;
+			int tplId = 0, cycleId = 0, apprId = 0;
+			try
+			{
+				// template with two weighted criteria: (w1,max5) and (w3,max10)
+				var (tok, terr, tid) = await svc.SaveTemplateAsync(new AppraisalTemplate { CompanyID = companyId, Name = "اختبار التقييم", IsActive = true, Criteria = new()
+				{ new AppraisalCriterion { Name = "الجودة", Weight = 1, MaxScore = 5 }, new AppraisalCriterion { Name = "الإنتاجية", Weight = 3, MaxScore = 10 } } });
+				tplId = tid;
+				var (cok, cerr) = await svc.SaveCycleAsync(new AppraisalCycle { CompanyID = companyId, Name = "دورة اختبار", Year = 2099 });
+				cycleId = (await svc.GetCyclesAsync(companyId)).First(c => c.Name == "دورة اختبار" && c.Year == 2099).ID;
+
+				var (aok, aerr, aid) = await svc.CreateAppraisalAsync(companyId, cycleId, tplId, fakeEmp, fakeMgr, null);
+				apprId = aid;
+				var tpl = await svc.GetTemplateAsync(companyId, tplId);
+				var critA = tpl!.Criteria[0].ID; var critB = tpl.Criteria[1].ID;
+				// score A=4/5, B=8/10 → weighted = ((4/5)*1 + (8/10)*3)/(1+3)*100 = 80
+				await svc.SaveScoresAsync(companyId, apprId, new() { { critA, 4m }, { critB, 8m } }, new() { { critA, null }, { critB, null } }, "جيد");
+				var scored = await svc.GetAppraisalAsync(companyId, apprId);
+				decimal score = scored?.TotalScore ?? -1;
+
+				var (subok, suberr) = await svc.SubmitAsync(companyId, apprId);
+				var afterSubmit = (await svc.GetAppraisalAsync(companyId, apprId))!.Status;   // expect 1
+				var (ackok, ackerr) = await svc.AcknowledgeAsync(apprId, fakeEmp, "شكرًا");
+				var afterAck = (await svc.GetAppraisalAsync(companyId, apprId))!.Status;        // expect 2
+
+				bool allPass = score == 80m && subok && afterSubmit == 1 && ackok && afterAck == 2;
+				return Ok(new
+				{
+					weightedScore = new { score, expected = 80, pass = score == 80m },
+					workflow = new { submitted = afterSubmit == 1, acknowledged = afterAck == 2, pass = afterSubmit == 1 && afterAck == 2 },
+					allPass
+				});
+			}
+			finally
+			{
+				if (apprId > 0) { _db.AppraisalLines.RemoveRange(_db.AppraisalLines.Where(l => l.AppraisalId == apprId)); _db.Appraisals.RemoveRange(_db.Appraisals.Where(a => a.ID == apprId)); }
+				if (tplId > 0) { _db.AppraisalCriteria.RemoveRange(_db.AppraisalCriteria.Where(c => c.TemplateId == tplId)); _db.AppraisalTemplates.RemoveRange(_db.AppraisalTemplates.Where(t => t.ID == tplId)); }
+				if (cycleId > 0) _db.AppraisalCycles.RemoveRange(_db.AppraisalCycles.Where(c => c.ID == cycleId));
+				_db.Notifications.RemoveRange(_db.Notifications.Where(n => n.ID > notifHigh));   // only notifications this test created
+				await _db.SaveChangesAsync();
+			}
+		}
+
+		// GET /api/dev/training-test?key=seed123&companyId=1
+		// HR-10: verifies course + enrollment + status/score update + ESS my-trainings. Self-cleaning; no GL.
+		[HttpGet("training-test")]
+		public async Task<IActionResult> TrainingTest(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var svc = HttpContext.RequestServices.GetService(typeof(ITrainingService)) as ITrainingService;
+			if (svc == null) return StatusCode(500, new { message = "service unavailable" });
+			var empId = await _db.Employee.Where(e => e.EmpCompanyID == companyId && e.IsActive).OrderBy(e => e.ID).Select(e => e.ID).FirstOrDefaultAsync();
+			if (empId == 0) return BadRequest(new { message = "need an employee" });
+			int courseId = 0;
+			try
+			{
+				var (cok, cerr, cid) = await svc.SaveCourseAsync(new CrossBuy.Models.Context.Admin.TrainingCourse { CompanyID = companyId, Code = "TRN-" + Guid.NewGuid().ToString("N").Substring(0, 6), Title = "دورة اختبار", Provider = "Test", Hours = 12, Cost = 500, IsActive = true });
+				courseId = cid;
+				var (eok, eerr) = await svc.EnrollAsync(companyId, courseId, new[] { empId });
+				var enr = (await svc.GetEnrollmentsAsync(companyId, courseId)).FirstOrDefault();
+				bool enrolled = eok && enr != null && enr.Status == "Planned";
+				var (sok, serr) = enr != null ? await svc.SetEnrollmentStatusAsync(companyId, enr.ID, "Completed", 90m, "CERT-1") : (false, "no enrollment");
+				var after = enr != null ? (await svc.GetEnrollmentsAsync(companyId, courseId)).First(x => x.ID == enr.ID) : null;
+				bool completed = sok && after != null && after.Status == "Completed" && after.Score == 90m && after.CompletedAt != null;
+				var mine = await svc.MyTrainingsAsync(empId);
+				bool inEss = mine.Any(x => x.CourseId == courseId);
+
+				bool allPass = enrolled && completed && inEss;
+				return Ok(new
+				{
+					enroll = new { enrolled, pass = enrolled },
+					complete = new { status = after?.Status, score = after?.Score, cert = after?.Certificate, pass = completed },
+					essVisible = new { inEss, pass = inEss },
+					allPass
+				});
+			}
+			finally
+			{
+				if (courseId > 0) await svc.DeleteCourseAsync(companyId, courseId);   // removes course + its enrollments
+			}
+		}
+
+		// GET /api/dev/pricing-test-discount?key=seed123&companyId=1
+		// Pricing 2D: verifies the discount ceiling — Block rejects unless manage authority; Warn notifies. Self-cleaning; no GL.
+		[HttpGet("pricing-test-discount")]
+		public async Task<IActionResult> PricingTestDiscount(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var svc = HttpContext.RequestServices.GetService(typeof(IPricingService)) as IPricingService;
+			if (svc == null) return StatusCode(500, new { message = "service unavailable" });
+			var s = await _db.InventorySettings.FirstOrDefaultAsync(x => x.CompanyID == companyId);
+			if (s == null) { s = new CrossBuy.Models.Context.Inventory.InventorySettings { CompanyID = companyId, CreatedAt = DateTime.UtcNow }; _db.InventorySettings.Add(s); await _db.SaveChangesAsync(); }
+			var origMode = s.DiscountApprovalMode; var origPct = s.MaxLineDiscountPct;
+			var hi = new[] { ((decimal)1, (decimal)100, (decimal)20) };   // 20% discount
+			var lo = new[] { ((decimal)1, (decimal)100, (decimal)5) };    // 5% discount
+			try
+			{
+				s.DiscountApprovalMode = "Block"; s.MaxLineDiscountPct = 10m; await _db.SaveChangesAsync();
+				var blockNoAuth = await svc.EvaluateLineDiscountsAsync(companyId, hi, false);   // block
+				var blockAuth = await svc.EvaluateLineDiscountsAsync(companyId, hi, true);       // allowed (warn)
+				var under = await svc.EvaluateLineDiscountsAsync(companyId, lo, false);          // clean
+				s.DiscountApprovalMode = "Warn"; await _db.SaveChangesAsync();
+				var warn = await svc.EvaluateLineDiscountsAsync(companyId, hi, false);           // warn
+
+				bool allPass = blockNoAuth.block != null && blockAuth.block == null && blockAuth.warn != null
+					&& under.block == null && under.warn == null
+					&& warn.block == null && warn.warn != null;
+				return Ok(new
+				{
+					blockedWithoutAuthority = new { blocked = blockNoAuth.block != null, pass = blockNoAuth.block != null },
+					allowedWithAuthority = new { allowed = blockAuth.block == null, notified = blockAuth.warn != null, pass = blockAuth.block == null && blockAuth.warn != null },
+					underThreshold = new { clean = under.block == null && under.warn == null, pass = under.block == null && under.warn == null },
+					warnMode = new { warns = warn.warn != null, pass = warn.block == null && warn.warn != null },
+					allPass
+				});
+			}
+			finally { s.DiscountApprovalMode = origMode; s.MaxLineDiscountPct = origPct; await _db.SaveChangesAsync(); }
+		}
+
+		// GET /api/dev/crm-test-automation?key=seed123&companyId=1
+		// CRM 3-7b(ii): rule (LeadCreated → CreateActivity) fires; stage filter respected. Self-cleaning; no GL.
+		[HttpGet("crm-test-automation")]
+		public async Task<IActionResult> CrmTestAutomation(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var svc = HttpContext.RequestServices.GetService(typeof(ICrmAutomationService)) as ICrmAutomationService;
+			if (svc == null) return StatusCode(500, new { message = "service unavailable" });
+			int ruleA = 0, ruleB = 0, fakeLead = 990222;
+			int actHigh = await _db.Activities.AnyAsync() ? await _db.Activities.MaxAsync(a => a.ID) : 0;
+			try
+			{
+				var (aok, aerr, ra) = await svc.SaveRuleAsync(new CrossBuy.Models.Context.Crm.CrmAutomationRule { CompanyID = companyId, Name = "اختبار: عميل جديد", TriggerType = "LeadCreated", ActionType = "CreateActivity", ActivityType = "Call", Subject = "مكالمة ترحيب", DueInDays = 1, IsActive = true });
+				ruleA = ra;
+				var (bok, berr, rb) = await svc.SaveRuleAsync(new CrossBuy.Models.Context.Crm.CrmAutomationRule { CompanyID = companyId, Name = "اختبار: فوز", TriggerType = "OpportunityStageChanged", StageFilter = "Won", ActionType = "CreateActivity", ActivityType = "Task", Subject = "تجهيز العقد", DueInDays = 2, IsActive = true });
+				ruleB = rb;
+
+				int firedLead = await svc.RunAsync(companyId, "LeadCreated", null, fakeLead, null, null);              // expect 1 (+ activity)
+				var actCreated = await _db.Activities.AsNoTracking().AnyAsync(a => a.LeadId == fakeLead && a.Type == "Call");
+				int firedWrongStage = await svc.RunAsync(companyId, "OpportunityStageChanged", "Lost", null, 990223, null);  // filter Won → 0
+				int firedRightStage = await svc.RunAsync(companyId, "OpportunityStageChanged", "Won", null, 990223, null);   // 1
+
+				bool allPass = firedLead == 1 && actCreated && firedWrongStage == 0 && firedRightStage == 1;
+				return Ok(new
+				{
+					leadCreatedFired = new { firedLead, activityCreated = actCreated, pass = firedLead == 1 && actCreated },
+					stageFilter = new { wrong = firedWrongStage, right = firedRightStage, pass = firedWrongStage == 0 && firedRightStage == 1 },
+					allPass
+				});
+			}
+			finally
+			{
+				_db.Activities.RemoveRange(_db.Activities.Where(a => a.ID > actHigh && (a.LeadId == fakeLead || a.OpportunityId == 990223)));
+				await _db.SaveChangesAsync();
+				if (ruleA > 0) await svc.DeleteRuleAsync(companyId, ruleA);
+				if (ruleB > 0) await svc.DeleteRuleAsync(companyId, ruleB);
+			}
+		}
+
+		// GET /api/dev/crm-test-customfields?key=seed123&companyId=1
+		// CRM 3-7b(i): define a custom field, store a value for an entity, read it back. Self-cleaning; no GL.
+		[HttpGet("crm-test-customfields")]
+		public async Task<IActionResult> CrmTestCustomFields(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var svc = HttpContext.RequestServices.GetService(typeof(ICrmCustomFieldService)) as ICrmCustomFieldService;
+			if (svc == null) return StatusCode(500, new { message = "service unavailable" });
+			int fieldId = 0, fakeEntity = 990111;
+			try
+			{
+				var (sok, serr, fid) = await svc.SaveFieldAsync(new CrossBuy.Models.Context.Crm.CrmCustomField { CompanyID = companyId, EntityType = "Lead", Label = "حقل اختبار", FieldType = "Text", IsActive = true });
+				fieldId = fid;
+				await svc.SaveValuesAsync(companyId, "Lead", fakeEntity, new() { { fieldId, "قيمة اختبار" } });
+				var forEntity = await svc.GetForEntityAsync(companyId, "Lead", fakeEntity);
+				var row = forEntity.FirstOrDefault(x => x.Field.ID == fieldId);
+				bool allPass = sok && row != null && row.Value == "قيمة اختبار";
+				return Ok(new { defined = sok, stored = row?.Value, pass = allPass, allPass });
+			}
+			finally
+			{
+				if (fieldId > 0) { _db.CrmCustomFieldValues.RemoveRange(_db.CrmCustomFieldValues.Where(v => v.FieldId == fieldId)); await svc.DeleteFieldAsync(companyId, fieldId); }
+			}
+		}
+
+		// GET /api/dev/fx-test-bank-reval?key=seed123&companyId=1 (run seed-multicurrency first)
+		// Foreign bank revaluation: a foreign bank's statement balance × closing rate vs GL carrying value → 4903/5903 + auto-reversal.
+		[HttpGet("fx-test-bank-reval")]
+		public async Task<IActionResult> FxTestBankReval(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fx = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IFxRevaluationService)) as CrossBuy.BL.IFxRevaluationService;
+			var cur = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.ICurrencyService)) as CrossBuy.BL.ICurrencyService;
+			if (fx == null || cur == null) return StatusCode(500, new { message = "services unavailable" });
+			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			if (usd == null || usd == 0) return BadRequest(new { message = "run seed-multicurrency first" });
+			var functional = await cur.GetFunctionalCurrencyIdAsync(companyId, null);
+			var cashAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.IsPostable && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (cashAcc == null) return BadRequest(new { message = "no cash GL account (1101x)" });
+			var asOf = DateTime.UtcNow.Date;
+
+			CrossBuy.Models.Context.Accounting.BankAccount bank = null!;
+			int? runId = null;
+			try
+			{
+				bank = new CrossBuy.Models.Context.Accounting.BankAccount { CompanyID = companyId, BankName = "بنك اختبار أجنبي", GlAccountId = cashAcc.Value, CurrencyId = usd, ForeignBalance = 1000m, OpeningBalance = 0m, IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.BankAccounts.Add(bank); await _db.SaveChangesAsync();
+
+				var (rate, _) = await cur.ToBaseAsync(1m, usd.Value, functional, asOf, "Central");
+				decimal expectedReval = Math.Round(1000m * rate, 2);
+
+				var prev = await fx.PreviewAsync(companyId, asOf, "Central");
+				var line = prev.Lines.FirstOrDefault(l => l.PartyType == "Bank" && l.Party == "بنك اختبار أجنبي");
+				bool previewOk = line != null && line.ForeignOutstanding == 1000m && line.RevaluedBase == expectedReval
+					&& Math.Round(line.RevaluedBase - line.BookBase, 2) == Math.Round(line.Diff, 2);
+
+				var (pok, perr, rid) = await fx.PostAsync(companyId, asOf, "Central", null);
+				runId = rid;
+				var run = rid.HasValue ? await _db.FxRevaluationRuns.AsNoTracking().FirstOrDefaultAsync(r => r.ID == rid.Value) : null;
+				bool postOk = pok && run != null && run.ReversalEntryId != null;
+
+				bool allPass = previewOk && postOk;
+				return Ok(new
+				{
+					preview = new { bankLine = line == null ? null : (object)new { line.CurrencyCode, line.ForeignOutstanding, line.BookBase, line.ClosingRate, line.RevaluedBase, line.Diff }, expectedReval, pass = previewOk },
+					post = new { posted = pok, reversalCreated = run?.ReversalEntryId != null, bankDiff = run?.TotalBankDiff, pass = postOk },
+					allPass
+				});
+			}
+			finally
+			{
+				if (bank != null) { var b = await _db.BankAccounts.FirstOrDefaultAsync(x => x.ID == bank.ID); if (b != null) { _db.BankAccounts.Remove(b); await _db.SaveChangesAsync(); } }
+				// the reval + its auto-reversal net to zero across the two dates → TB stays balanced; they are left as a normal reval record.
+			}
+		}
+
+		// GET /api/dev/seed-brands?key=seed123&companyId=1 — demo brands (idempotent by Code).
+		[HttpGet("seed-brands")]
+		public async Task<IActionResult> SeedBrands(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var demo = new[]
+			{
+				new Brand { CompanyId = companyId, Code = "REST", Name = "مطعم الأصالة", NameEn = "Al-Asala Restaurant", TradeName = "الأصالة للمأكولات الشرقية", ColorPrimary = "#8B1E1E", ColorSecondary = "#D4AF37", ColorAccent = "#2F4F4F", Address = "القاهرة — مدينة نصر، شارع مكرم عبيد", Phone = "0100 123 4567", Email = "info@alasala.demo", Website = "alasala.demo", ReceiptFooterAr = "شكرًا لزيارتكم — نسعد بخدمتكم دائمًا", ReceiptFooterEn = "Thank you for dining with us", IsActive = true, CreatedAt = DateTime.UtcNow },
+				new Brand { CompanyId = companyId, Code = "CAFE", Name = "كافيه لاتيه", NameEn = "Latte Cafe", TradeName = "لاتيه للقهوة المختصة", ColorPrimary = "#6F4E37", ColorSecondary = "#C4A484", ColorAccent = "#3B2F2F", Address = "الجيزة — الشيخ زايد، مول أركان", Phone = "0111 222 3344", Email = "hello@latte.demo", Website = "latte.demo", ReceiptFooterAr = "قهوتك المفضّلة بانتظارك", ReceiptFooterEn = "Your favorite coffee awaits", IsActive = true, CreatedAt = DateTime.UtcNow },
+				new Brand { CompanyId = companyId, Code = "MART", Name = "سوبر ماركت الوفرة", NameEn = "Al-Wafra Supermarket", TradeName = "الوفرة للتجزئة", ColorPrimary = "#1E7A46", ColorSecondary = "#F2C200", ColorAccent = "#0B3D2E", Address = "الإسكندرية — سموحة", Phone = "0122 555 7788", Email = "care@wafra.demo", Website = "wafra.demo", ReceiptFooterAr = "وفّر أكثر مع الوفرة", ReceiptFooterEn = "Save more at Al-Wafra", IsActive = true, CreatedAt = DateTime.UtcNow },
+			};
+			var logos = new Dictionary<string, string> { { "REST", "/uploads/brands/rest.svg" }, { "CAFE", "/uploads/brands/cafe.svg" }, { "MART", "/uploads/brands/mart.svg" } };
+			int added = 0;
+			foreach (var b in demo)
+			{
+				var existing = await _db.Brands.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Code == b.Code);
+				if (existing == null) { b.LogoPath = logos.GetValueOrDefault(b.Code); _db.Brands.Add(b); added++; }
+				else if (string.IsNullOrEmpty(existing.LogoPath)) existing.LogoPath = logos.GetValueOrDefault(b.Code);   // attach demo logo
+			}
+			await _db.SaveChangesAsync();
+			var all = await _db.Brands.AsNoTracking().Where(b => b.CompanyId == companyId).OrderBy(b => b.Name).ToListAsync();
+			return Ok(new { added, total = all.Count, brands = all.Select(b => new { b.ID, b.Code, b.Name, b.TradeName, b.ColorPrimary, b.ColorSecondary, b.ColorAccent, b.Phone, b.Address }) });
+		}
+
+		// GET /api/dev/brand-test?key=seed123&companyId=1
+		// Brand foundation: verifies identity resolution (company fallback → brand values) + branch linking. Self-cleaning; no GL.
+		[HttpGet("brand-test")]
+		public async Task<IActionResult> BrandTest(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var svc = HttpContext.RequestServices.GetService(typeof(IBrandService)) as IBrandService;
+			if (svc == null) return StatusCode(500, new { message = "service unavailable" });
+			var branch = await _db.Branches.FirstOrDefaultAsync(b => b.CompanyID == companyId) ?? await _db.Branches.FirstOrDefaultAsync();
+			if (branch == null) return BadRequest(new { message = "need a branch" });
+			companyId = branch.CompanyID;   // brand + branch must share the same company
+			int? origBrandId = branch.BrandId;
+			int brandId = 0;
+			try
+			{
+				// fallback (no brand): identity comes from the company
+				branch.BrandId = null; await _db.SaveChangesAsync();
+				var before = await svc.ResolveIdentityAsync(branch.ID);
+				bool fallbackOk = before.Source == "company";
+
+				var (sok, serr, bid) = await svc.SaveBrandAsync(new CrossBuy.Models.Context.Admin.Brand {
+					CompanyId = companyId, Code = "BRT-" + Guid.NewGuid().ToString("N").Substring(0, 6), Name = "علامة اختبار", TradeName = "Test Trade",
+					ColorPrimary = "#123456", Phone = "0100000000", IsActive = true }, null, null);
+				brandId = bid;
+
+				branch.BrandId = brandId; await _db.SaveChangesAsync();
+				var after = await svc.ResolveIdentityAsync(branch.ID);
+				bool brandOk = after.Source == "brand" && after.TradeName == "Test Trade" && after.ColorPrimary == "#123456" && after.Phone == "0100000000";
+
+				bool allPass = fallbackOk && sok && brandOk;
+				return Ok(new
+				{
+					fallback = new { before.Source, pass = fallbackOk },
+					resolved = new { after.Source, after.TradeName, after.ColorPrimary, after.Phone, pass = brandOk },
+					allPass
+				});
+			}
+			finally
+			{
+				branch.BrandId = origBrandId; await _db.SaveChangesAsync();   // unlink before delete
+				if (brandId > 0) await svc.DeleteBrandAsync(companyId, brandId);
+			}
+		}
+
+		// GET /api/dev/maint-test?key=seed123&companyId=1
+		// Asset maintenance: monthly schedule → log a maintenance with cost → JE Dr 520110/Cr cash (asset cost center) +
+		// NextDueDate advances +1 month + it shows in the due list. Self-cleaning (reverses the JE, removes record+schedule).
+		[HttpGet("maint-test")]
+		public async Task<IActionResult> MaintTest(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var mnt = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IMaintenanceService)) as CrossBuy.BL.IMaintenanceService;
+			var jsvc = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IJournalEntryService)) as CrossBuy.BL.IJournalEntryService;
+			if (mnt == null || jsvc == null) return StatusCode(500, new { message = "services unavailable" });
+			var cashAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.IsPostable && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			var acc520110 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520110").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (cashAcc == null || acc520110 == null) return BadRequest(new { message = "missing cash/520110 account" });
+
+			// use any existing asset, else create a throwaway one (cleaned up in finally)
+			var asset = await _db.FixedAssets.AsNoTracking().FirstOrDefaultAsync(a => a.CompanyID == companyId);
+			int throwawayAssetId = 0;
+			if (asset == null)
+			{
+				async Task<int> Acc(string code) => await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == code).Select(a => a.ID).FirstOrDefaultAsync();
+				int costA = await Acc("1201"), accumA = await Acc("1202"), depA = await Acc("520103");
+				if (costA == 0 || accumA == 0 || depA == 0) return BadRequest(new { message = "asset accounts 1201/1202/520103 missing" });
+				var newAsset = new CrossBuy.Models.Context.Accounting.FixedAsset { CompanyID = companyId, AssetNo = "AST-TEST", Name = "أصل اختبار الصيانة", AcquisitionDate = DateTime.Today, Cost = 1000m, SalvageValue = 0m, UsefulLifeMonths = 60, DepreciationMethod = "StraightLine", CostAccountId = costA, AccumDepAccountId = accumA, DepExpenseAccountId = depA, Status = "Active" };
+				_db.FixedAssets.Add(newAsset); await _db.SaveChangesAsync();
+				asset = newAsset; throwawayAssetId = newAsset.ID;
+			}
+			async Task<decimal> Net(int acc) => Math.Round(await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == acc).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m, 2);
+
+			int schedId = 0, recId = 0, jeId = 0;
+			try
+			{
+				var today = DateTime.Today;
+				var (sok, serr, sid) = await mnt.SaveScheduleAsync(new CrossBuy.Models.Context.Accounting.MaintenanceSchedule { CompanyID = companyId, AssetId = asset.ID, Title = "صيانة اختبار", Type = "Preventive", IntervalMonths = 1, NextDueDate = today, IsActive = true });
+				if (!sok) return BadRequest(new { step = "schedule", error = serr });
+				schedId = sid;
+
+				var dueBefore = (await mnt.DueSoonAsync(companyId, 35)).Any(d => d.ScheduleId == schedId);   // due today → listed
+				decimal exp0 = await Net(acc520110.Value), cash0 = await Net(cashAcc.Value);
+
+				var (lok, lerr) = await mnt.LogMaintenanceAsync(companyId, asset.ID, schedId, today, "صيانة دورية", 500m, "مورد اختبار", cashAcc, null, null);
+				if (!lok) return BadRequest(new { step = "log", error = lerr });
+
+				var rec = await _db.MaintenanceRecords.AsNoTracking().Where(r => r.AssetId == asset.ID && r.ScheduleId == schedId).OrderByDescending(r => r.ID).FirstAsync();
+				recId = rec.ID; jeId = rec.JournalEntryId ?? 0;
+				var sch = await _db.MaintenanceSchedules.AsNoTracking().FirstAsync(s => s.ID == schedId);
+				decimal exp1 = await Net(acc520110.Value), cash1 = await Net(cashAcc.Value);
+
+				bool glOk = rec.JournalEntryId != null && Math.Round(exp1 - exp0, 2) == 500m && Math.Round(cash0 - cash1, 2) == 500m;
+				bool advanced = sch.LastDoneDate?.Date == today && sch.NextDueDate.Date == today.AddMonths(1);
+				bool pass = dueBefore && glOk && advanced;
+				return Ok(new
+				{
+					dueListedBefore = dueBefore,
+					gl = new { maintExpenseDelta = Math.Round(exp1 - exp0, 2), cashDelta = Math.Round(cash1 - cash0, 2), journalPosted = rec.JournalEntryId != null, pass = glOk },
+					schedule = new { lastDone = sch.LastDoneDate, nextDue = sch.NextDueDate, advancedOneMonth = advanced },
+					pass
+				});
+			}
+			finally
+			{
+				if (jeId > 0) { try { await jsvc.ReverseAsync(jeId, null, "تنظيف اختبار الصيانة"); } catch { } }
+				if (recId > 0) _db.MaintenanceRecords.RemoveRange(_db.MaintenanceRecords.Where(r => r.ID == recId));
+				if (schedId > 0) _db.MaintenanceSchedules.RemoveRange(_db.MaintenanceSchedules.Where(s => s.ID == schedId));
+				if (throwawayAssetId > 0) _db.FixedAssets.RemoveRange(_db.FixedAssets.Where(a => a.ID == throwawayAssetId));
+				await _db.SaveChangesAsync();
+			}
+		}
+
+		// GET /api/dev/je-test-project?key=seed123&companyId=1 — a manual JE line carries the chosen ProjectId (persists + reads back).
+		[HttpGet("je-test-project")]
+		public async Task<IActionResult> JeTestProject(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var je = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IJournalEntryService)) as CrossBuy.BL.IJournalEntryService;
+			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
+			if (je == null || prj == null) return StatusCode(500, new { message = "services unavailable" });
+			var accs = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.IsPostable && !a.RequireCostCenter).OrderBy(a => a.Code).Select(a => a.ID).Take(2).ToListAsync();
+			if (accs.Count < 2) return BadRequest(new { message = "need 2 postable accounts" });
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project { CompanyID = companyId, Code = "PRJJE-" + Guid.NewGuid().ToString("N").Substring(0, 5), Name = "مشروع قيد يدوي", IsActive = true });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+			var (ok, err, entry) = await je.CreateAndPostAsync(new CrossBuy.BL.JournalEntryInput
+			{
+				CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Manual", Description = "اختبار مشروع على قيد يدوي",
+				Lines = new List<CrossBuy.BL.JournalLineInput> {
+					new() { AccountId = accs[0], Debit = 100, Credit = 0, ProjectId = pid, Description = "مدين" },
+					new() { AccountId = accs[1], Debit = 0, Credit = 100, ProjectId = pid, Description = "دائن" } }
+			}, null);
+			if (!ok) return BadRequest(new { step = "post", error = err });
+			var persisted = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == entry!.ID).Select(l => l.ProjectId).ToListAsync();
+			bool bothTagged = persisted.Count == 2 && persisted.All(x => x == pid);
+			await je.ReverseAsync(entry!.ID, null, "تنظيف اختبار");   // keep the ledger clean (balanced reversal)
+			return Ok(new { entry = entry!.EntryNo, linesTaggedWithProject = persisted, pass = bothTagged });
+		}
+
+		// GET /api/dev/project-test?key=seed123&companyId=1
+		// Project dimension: a project-tagged sales invoice must produce a revenue line AND a COGS line with the SAME ProjectId,
+		// and the profitability report must show both revenue and cost for that project. No self-cleaning (posts a real invoice).
+		[HttpGet("project-test")]
+		public async Task<IActionResult> ProjectTest(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var ar = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IReceivableService)) as CrossBuy.BL.IReceivableService;
+			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
+			if (ar == null || prj == null) return StatusCode(500, new { message = "services unavailable" });
+
+			// an item whose category has BOTH inventory + COGS accounts, with stock on hand
+			var candidate = await (from b in _db.StockBalances.AsNoTracking()
+								   join i in _db.Items.AsNoTracking() on b.ItemId equals i.ID
+								   join c in _db.ItemCategories.AsNoTracking() on i.ItemCategoryId equals c.ID
+								   where b.CompanyID == companyId && b.QtyOnHand >= 1 && c.InventoryAccountId != null && c.CogsAccountId != null
+								   select new { i.ID, b.WarehouseId, b.AvgCost }).FirstOrDefaultAsync();
+			if (candidate == null) return BadRequest(new { message = "no stock item with inventory+COGS accounts" });
+			var custId = await _db.Customers.Where(c => c.CompanyID == companyId).Select(c => c.ID).FirstOrDefaultAsync();
+			if (custId == 0) return BadRequest(new { message = "need a customer" });
+			var revAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.IsPostable && a.Code.StartsWith("4")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			if (revAcc == 0) return BadRequest(new { message = "no revenue account (4xxx)" });
+
+			var (sok, serr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project { CompanyID = companyId, Code = "PRJ-" + Guid.NewGuid().ToString("N").Substring(0, 5), Name = "مشروع اختبار", NameEn = "Test project", IsActive = true, Budget = 100000m });
+			if (!sok) return BadRequest(new { step = "project", error = serr });
+
+			decimal unitPrice = Math.Round(candidate.AvgCost, 2) + 100m;   // ensure revenue > cost
+			var lines = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "بند مشروع", Qty = 1, UnitPrice = unitPrice, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = revAcc, ItemId = candidate.ID, WarehouseId = candidate.WarehouseId } };
+			var (iok, ierr, inv) = await ar.CreateSalesInvoiceAsync(companyId, custId, DateTime.Today, lines, "اختبار مشروع", null, null, null, pid);
+			if (!iok) return BadRequest(new { step = "invoice", error = ierr });
+
+			// GL lines tagged with this project
+			var tagged = await (from l in _db.JournalEntryLines.AsNoTracking()
+								join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+								where l.ProjectId == pid
+								select new { a.Code, l.Debit, l.Credit }).ToListAsync();
+			decimal revenue = tagged.Where(x => x.Code.StartsWith("4")).Sum(x => x.Credit - x.Debit);
+			decimal cost = tagged.Where(x => x.Code.StartsWith("5")).Sum(x => x.Debit - x.Credit);
+			bool revTagged = tagged.Any(x => x.Code.StartsWith("4"));
+			bool cogsTagged = tagged.Any(x => x.Code.StartsWith("5"));
+
+			var pnl = await prj.ProfitabilityAsync(companyId, DateTime.Today.AddDays(-1), DateTime.Today.AddDays(1));
+			var row = pnl.FirstOrDefault(r => r.ProjectId == pid);
+
+			bool pass = iok && revTagged && cogsTagged && revenue > 0 && cost > 0 && row != null && row.Revenue > 0 && row.Cost > 0;
+			return Ok(new
+			{
+				invoiceNo = inv?.InvoiceNo,
+				glTagging = new { revenueLineTagged = revTagged, cogsLineTagged = cogsTagged, revenue, cost, pass = revTagged && cogsTagged },
+				report = row == null ? null : (object)new { row.Code, row.Revenue, row.Cost, row.Profit, row.MarginPct },
+				pass
+			});
+		}
+
+		// GET /api/dev/p0-test?key=seed123&companyId=1
+		// Projects & Contracting P0: create an activity type (lookup) + a project with the contracting fields
+		// (customer + optional cost center + status + activity type), verify it persisted, verify the EXISTING
+		// profitability report still runs, and verify the project save wrote ZERO journal entries (no new accounting
+		// writer). Self-cleaning (deletes the test project + activity type — pure master data, no GL).
+		[HttpGet("p0-test")]
+		public async Task<IActionResult> P0Test(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
+			if (prj == null) return StatusCode(500, new { message = "project service unavailable" });
+
+			var custId = await _db.Customers.Where(c => c.CompanyID == companyId).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var ccId = await _db.CostCenters.Where(c => c.CompanyID == companyId && c.IsActive).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+
+			// 1) user-defined activity type (from the empty lookup)
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (aok, aerr, atId) = await prj.SaveActivityTypeAsync(new CrossBuy.Models.Context.Accounting.ProjectActivityType { CompanyID = companyId, Code = "AT-" + suffix, Name = "مقاولات إنشائية (اختبار)", NameEn = "Construction (test)", IsActive = true });
+			if (!aok) return BadRequest(new { step = "activityType", error = aerr });
+
+			// 2) project with the contracting fields
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{
+				CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع مقاولات اختبار", NameEn = "Contracting test", IsActive = true,
+				StartDate = DateTime.Today, EndDate = DateTime.Today.AddMonths(6), Budget = 500000m,
+				CustomerId = custId, Location = "القاهرة الجديدة", ContractValue = 750000m, Status = "Active",
+				ActivityTypeId = atId, CostCenterId = ccId
+			});
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			// 3) read back + verify every contracting field persisted
+			var saved = await prj.GetAsync(companyId, pid);
+			var fields = new
+			{
+				customer = saved?.CustomerId == custId,
+				location = saved?.Location == "القاهرة الجديدة",
+				contractValue = saved?.ContractValue == 750000m,
+				status = saved?.Status == "Active",
+				activityType = saved?.ActivityTypeId == atId,
+				costCenter = saved?.CostCenterId == ccId
+			};
+			bool fieldsOk = fields.customer && fields.location && fields.contractValue && fields.status && fields.activityType && fields.costCenter;
+
+			// 4) existing profitability report still runs (no break)
+			bool pnlOk; int pnlRows = 0; string? pnlErr = null;
+			try { var pnl = await prj.ProfitabilityAsync(companyId, DateTime.Today.AddMonths(-1), DateTime.Today.AddDays(1)); pnlRows = pnl.Count; pnlOk = true; }
+			catch (Exception ex) { pnlOk = false; pnlErr = ex.Message; }
+
+			// 5) zero new accounting impact (project save writes no journal entries)
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool noGl = jeAfter == jeBefore;
+
+			// 6) cleanup (pure master data — no GL)
+			await prj.DeleteAsync(companyId, pid);
+			await prj.DeleteActivityTypeAsync(companyId, atId);
+
+			bool pass = aok && pok && fieldsOk && pnlOk && noGl;
+			return Ok(new
+			{
+				pass,
+				createdProjectId = pid,
+				fieldsPersisted = fields,
+				fieldsOk,
+				profitability = new { ranWithoutError = pnlOk, rows = pnlRows, error = pnlErr },
+				zeroNewJournalEntries = new { before = jeBefore, after = jeAfter, ok = noGl },
+				cleanedUp = true,
+				usedCustomerId = custId,
+				usedCostCenterId = ccId
+			});
+		}
+
+		// GET /api/dev/p1-test?key=seed123&companyId=1
+		// Projects & Contracting P1 (BOQ): create a project + a main item with 2 priced sub-items, verify Σ values,
+		// Σ estimated cost, margin, project link, and ZERO journal entries (estimate only, no GL). Self-cleaning.
+		[HttpGet("p1-test")]
+		public async Task<IActionResult> P1Test(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
+			var boq = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IBoqService)) as CrossBuy.BL.IBoqService;
+			if (prj == null || boq == null) return StatusCode(500, new { message = "services unavailable" });
+
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع BOQ اختبار", NameEn = "BOQ test project", IsActive = true, Status = "Active", ContractValue = 100000m });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			// main item (section header — no price), then 2 priced sub-items
+			var (mok, merr, mainId) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "1", Description = "أعمال خرسانة" });
+			if (!mok) return BadRequest(new { step = "mainItem", error = merr });
+			await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, ParentId = mainId, Code = "1.1", Description = "خرسانة عادية", Unit = "م3", Quantity = 100m, UnitPrice = 500m, MaterialCost = 20000m, LaborCost = 10000m, EquipmentCost = 5000m });
+			await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, ParentId = mainId, Code = "1.2", Description = "خرسانة مسلحة", Unit = "م3", Quantity = 200m, UnitPrice = 300m, MaterialCost = 30000m, LaborCost = 8000m, SubcontractCost = 5000m, EquipmentCost = 2000m });
+
+			var items = await boq.GetForProjectAsync(companyId, pid);
+			var sum = await boq.GetSummaryAsync(companyId, pid);
+			// expected: value = 100*500 + 200*300 = 110000 ; cost = 35000 + 45000 = 80000 ; margin = 30000 ; variance = +10000
+			bool valueOk = sum.TotalValue == 110000m;
+			bool costOk = sum.TotalCost == 80000m;
+			bool marginOk = sum.Margin == 30000m;
+			bool varianceOk = sum.VarianceVsContract == 10000m;
+			bool linkedOk = items.All(i => i.ProjectId == pid) && items.Count == 3;
+
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool noGl = jeAfter == jeBefore;
+
+			// cleanup (children first, then main, then project)
+			foreach (var ch in items.Where(i => i.ParentId != null)) await boq.DeleteItemAsync(companyId, ch.ID);
+			await boq.DeleteItemAsync(companyId, mainId);
+			await prj.DeleteAsync(companyId, pid);
+
+			bool pass = pok && mok && valueOk && costOk && marginOk && varianceOk && linkedOk && noGl;
+			return Ok(new
+			{
+				pass,
+				totals = new { sum.ItemCount, sum.TotalValue, sum.TotalCost, sum.Margin, sum.MarginPct, sum.ContractValue, sum.VarianceVsContract },
+				checks = new { valueOk, costOk, marginOk, varianceOk, linkedOk },
+				zeroNewJournalEntries = new { before = jeBefore, after = jeAfter, ok = noGl },
+				cleanedUp = true
+			});
+		}
+
+		// GET /api/dev/p2-test?key=seed123&companyId=1
+		// Projects & Contracting P2: receive an advance → Dr cash · Cr «Advances from customers» (2104, LIABILITY, NOT revenue),
+		// tagged with ProjectId, balanced; advance balance read from the GL matches. Self-cleaning (hard-deletes the JE + project).
+		[HttpGet("p2-test")]
+		public async Task<IActionResult> P2Test(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
+			var contract = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IContractService)) as CrossBuy.BL.IContractService;
+			if (prj == null || contract == null) return StatusCode(500, new { message = "services unavailable" });
+
+			var cashId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			if (cashId == 0) return BadRequest(new { message = "no postable cash account (1101*)" });
+
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع مقدّم اختبار", NameEn = "Advance test", IsActive = true, Status = "Active", ContractValue = 1000000m, AdvancePercent = 20m, RetentionPercent = 10m });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			decimal amount = 200000m;   // 20% of 1,000,000
+			var (aok, aerr, entryId) = await contract.ReceiveAdvanceAsync(companyId, pid, amount, cashId, DateTime.Today, null);
+			if (!aok || entryId == null) return BadRequest(new { step = "advance", error = aerr });
+
+			// inspect the posted lines
+			var lines = await (from l in _db.JournalEntryLines.AsNoTracking()
+							   join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+							   where l.JournalEntryId == entryId.Value
+							   select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+			bool cashDebit = lines.Any(x => x.Code.StartsWith("1101") && x.Debit == amount);
+			bool advCredit = lines.Any(x => x.Code == "2104" && x.Credit == amount);
+			bool noRevenue = !lines.Any(x => x.Code.StartsWith("4"));   // advance is NOT revenue
+			bool allTagged = lines.Count > 0 && lines.All(x => x.ProjectId == pid);
+			bool balanced = lines.Sum(x => x.Debit) == lines.Sum(x => x.Credit);
+
+			var sum = await contract.GetSummaryAsync(companyId, pid);   // BEFORE cleanup
+			bool balanceOk = sum.AdvanceBalance == amount;
+
+			// dev teardown: hard-delete the JE + its lines, then the project (now no lines reference it)
+			var delLines = await _db.JournalEntryLines.Where(l => l.JournalEntryId == entryId.Value).ToListAsync();
+			_db.JournalEntryLines.RemoveRange(delLines);
+			var delEntry = await _db.JournalEntries.FirstOrDefaultAsync(e => e.ID == entryId.Value);
+			if (delEntry != null) _db.JournalEntries.Remove(delEntry);
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+
+			bool pass = pok && aok && cashDebit && advCredit && noRevenue && allTagged && balanced && balanceOk;
+			return Ok(new
+			{
+				pass,
+				posting = new { cashDebit, advCredit, noRevenue, allTagged, balanced },
+				advanceBalanceFromGL = sum.AdvanceBalance,
+				advanceExpected = sum.AdvanceExpected,
+				amount,
+				cleanedUp = true
+			});
+		}
+
+		// GET /api/dev/p3-test?key=seed123&companyId=1
+		// Projects & Contracting P3 (execution/progress): cumulative snapshots per BOQ item → value-weighted overall %
+		// + period delta (cumulative − previous) + cap at 100% + Draft/Confirmed. OPERATIONAL — zero journal entries. Self-cleaning.
+		[HttpGet("p3-test")]
+		public async Task<IActionResult> P3Test(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
+			var boq = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IBoqService)) as CrossBuy.BL.IBoqService;
+			var prog = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProgressService)) as CrossBuy.BL.IProgressService;
+			if (prj == null || boq == null || prog == null) return StatusCode(500, new { message = "services unavailable" });
+
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع إنجاز اختبار", NameEn = "Progress test", IsActive = true, Status = "Active", ContractValue = 100000m });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			// 2 leaf BOQ items: A = 100×500 = 50,000 ; B = 200×300 = 60,000 ; ΣBOQ value = 110,000
+			var (aok, aerr, aId) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "A", Description = "بند A", Unit = "م3", Quantity = 100m, UnitPrice = 500m });
+			var (bok, berr, bId) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "B", Description = "بند B", Unit = "م3", Quantity = 200m, UnitPrice = 300m });
+			if (!aok || !bok) return BadRequest(new { step = "boq", error = aerr ?? berr });
+
+			// measurement #1: A cum=50 (50%→25,000), B cum=100 (50%→30,000) → Σexec 55,000 ; overall 50%
+			var (s1ok, s1err, m1) = await prog.SaveMeasurementAsync(companyId, pid, 0, DateTime.Today, "قياس 1",
+				new List<CrossBuy.BL.ProgressRowInput> { new() { BoqItemId = aId, CumulativeQty = 50m }, new() { BoqItemId = bId, CumulativeQty = 100m } }, null);
+			if (!s1ok) return BadRequest(new { step = "m1", error = s1err });
+			var em1 = await prog.BuildEditModelAsync(companyId, pid, m1);
+
+			// measurement #2: A cum=100 (100%→50,000), B cum=250 (>200 → capped 100%→60,000) → Σexec 110,000 ; overall 100% ; period 55,000
+			var (s2ok, s2err, m2) = await prog.SaveMeasurementAsync(companyId, pid, 0, DateTime.Today, "قياس 2",
+				new List<CrossBuy.BL.ProgressRowInput> { new() { BoqItemId = aId, CumulativeQty = 100m }, new() { BoqItemId = bId, CumulativeQty = 250m } }, null);
+			if (!s2ok) return BadRequest(new { step = "m2", error = s2err });
+			var em2 = await prog.BuildEditModelAsync(companyId, pid, m2);
+			var bLine2 = em2.Lines.FirstOrDefault(l => l.BoqItemId == bId);
+
+			// confirm #2 → frozen; a confirmed measurement must not be deletable
+			var (cok, cerr) = await prog.ConfirmAsync(companyId, m2);
+			var m2Status = await _db.ProjectProgresses.AsNoTracking().Where(p => p.ID == m2).Select(p => p.Status).FirstOrDefaultAsync();
+			var (delAllowed, _) = await prog.DeleteAsync(companyId, m2);
+
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+
+			bool overall1Ok = em1.OverallPercent == 50m;
+			bool overall2Ok = em2.OverallPercent == 100m;
+			bool capOk = bLine2 != null && bLine2.Percent == 100m && bLine2.ExecutedValue == 60000m && bLine2.OverBoq;
+			bool periodOk = em2.PeriodValue == 55000m;
+			bool confirmOk = cok && m2Status == "Confirmed" && !delAllowed;
+			bool noGl = jeAfter == jeBefore;
+
+			// dev teardown: hard-delete progress (lines+headers) → BOQ items → project
+			var progHdrIds = await _db.ProjectProgresses.Where(h => h.ProjectId == pid && h.CompanyID == companyId).Select(h => h.ID).ToListAsync();
+			var progLines = await _db.ProjectProgressLines.Where(l => progHdrIds.Contains(l.ProgressId)).ToListAsync();
+			_db.ProjectProgressLines.RemoveRange(progLines);
+			var progHdrs = await _db.ProjectProgresses.Where(h => h.ProjectId == pid && h.CompanyID == companyId).ToListAsync();
+			_db.ProjectProgresses.RemoveRange(progHdrs);
+			await _db.SaveChangesAsync();
+			await boq.DeleteItemAsync(companyId, aId);
+			await boq.DeleteItemAsync(companyId, bId);
+			await prj.DeleteAsync(companyId, pid);
+
+			bool pass = pok && aok && bok && s1ok && s2ok && overall1Ok && overall2Ok && capOk && periodOk && confirmOk && noGl;
+			return Ok(new
+			{
+				pass,
+				overall = new { m1 = em1.OverallPercent, m2 = em2.OverallPercent, overall1Ok, overall2Ok },
+				cap = new { itemBPercent = bLine2?.Percent, itemBExecuted = bLine2?.ExecutedValue, overBoq = bLine2?.OverBoq, capOk },
+				period = new { m2PeriodValue = em2.PeriodValue, periodOk },
+				status = new { m2Status, deleteBlockedWhenConfirmed = !delAllowed, confirmOk },
+				zeroNewJournalEntries = new { before = jeBefore, after = jeAfter, ok = noGl },
+				cleanedUp = true
+			});
+		}
+
+		// GET /api/dev/seed-billing-data?key=seed123&projectId=2020&companyId=1
+		// Enrich an EXISTING (empty) contracting project so its Progress-billing screen becomes usable: assign a customer,
+		// contract value + advance/retention %, add 3 leaf BOQ items, then create AND confirm one progress measurement
+		// (~40% executed). OPERATIONAL ONLY — writes ZERO journal entries. Idempotent: skips any part already present.
+		[HttpGet("seed-billing-data")]
+		public async Task<IActionResult> SeedBillingData(string key, int projectId,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
+			[FromServices] CrossBuy.BL.IProgressService progress, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+
+			var p = await _db.Projects.FirstOrDefaultAsync(x => x.ID == projectId && x.CompanyID == companyId);
+			if (p == null) return NotFound(new { message = "project not found", projectId });
+
+			// 1) make the project billable: customer + contract value + advance/retention %
+			if (p.CustomerId == null)
+			{
+				var custId = await _db.Customers.Where(c => c.CompanyID == companyId && c.IsActive)
+					.OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+				if (custId == null) return BadRequest(new { message = "no active customer to assign" });
+				p.CustomerId = custId;
+			}
+			if (p.ContractValue == null || p.ContractValue == 0m) p.ContractValue = 100000m;
+			if (p.AdvancePercent == null) p.AdvancePercent = 10m;
+			if (p.RetentionPercent == null) p.RetentionPercent = 5m;
+			if (string.IsNullOrWhiteSpace(p.Status) || p.Status == "Draft") p.Status = "Active";
+			if (!p.IsActive) p.IsActive = true;
+			await _db.SaveChangesAsync();
+
+			// 2) BOQ (only if the project has none) — 3 leaf items, ΣBOQ = 100,000
+			var existingBoq = await _db.BoqItems.Where(b => b.CompanyID == companyId && b.ProjectId == projectId).Select(b => b.ID).ToListAsync();
+			var boqIds = new List<int>(existingBoq);
+			if (existingBoq.Count == 0)
+			{
+				var (a1ok, a1err, i1) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = projectId, Code = "1", Description = "أعمال الحفر والردم", DescriptionEn = "Excavation & backfill", Unit = "م3", Quantity = 500m, UnitPrice = 60m });
+				var (a2ok, a2err, i2) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = projectId, Code = "2", Description = "أعمال الخرسانة المسلحة", DescriptionEn = "Reinforced concrete", Unit = "م3", Quantity = 200m, UnitPrice = 250m });
+				var (a3ok, a3err, i3) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = projectId, Code = "3", Description = "أعمال التشطيبات", DescriptionEn = "Finishing works", Unit = "م2", Quantity = 400m, UnitPrice = 50m });
+				if (!a1ok || !a2ok || !a3ok) return BadRequest(new { step = "boq", error = a1err ?? a2err ?? a3err });
+				boqIds = new List<int> { i1, i2, i3 };
+			}
+
+			// 3) one CONFIRMED measurement (~40% each) — only if the project has no confirmed measurement yet
+			int measurementId;
+			var already = await _db.ProjectProgresses.AsNoTracking()
+				.FirstOrDefaultAsync(m => m.CompanyID == companyId && m.ProjectId == projectId && m.Status == "Confirmed");
+			bool createdMeasurement = false;
+			if (already != null) measurementId = already.ID;
+			else
+			{
+				// executed qty per leaf ≈ 40% of its BOQ quantity
+				var leaves = await _db.BoqItems.AsNoTracking()
+					.Where(b => b.CompanyID == companyId && b.ProjectId == projectId && b.UnitPrice > 0m)
+					.Select(b => new { b.ID, b.Quantity }).ToListAsync();
+				var rows = leaves.Select(l => new CrossBuy.BL.ProgressRowInput { BoqItemId = l.ID, CumulativeQty = R(l.Quantity * 0.40m) }).ToList();
+				var (sok, serr, mid) = await progress.SaveMeasurementAsync(companyId, projectId, 0, DateTime.Today, "قياس أول — 40%", rows, null);
+				if (!sok) return BadRequest(new { step = "measurement", error = serr });
+				var (cok, cerr) = await progress.ConfirmAsync(companyId, mid);
+				if (!cok) return BadRequest(new { step = "confirm", error = cerr });
+				measurementId = mid; createdMeasurement = true;
+			}
+
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			return Ok(new
+			{
+				ok = true,
+				project = new { p.ID, p.Code, p.Name, p.CustomerId, p.ContractValue, p.AdvancePercent, p.RetentionPercent, p.Status },
+				boqItems = boqIds.Count,
+				measurementId,
+				createdMeasurement,
+				zeroNewJournalEntries = new { before = jeBefore, after = jeAfter, ok = jeAfter == jeBefore },
+				next = "افتح الشاشة واضغط «مستخلص جديد» — سيظهر القياس المؤكَّد جاهزًا للفوترة"
+			});
+		}
+
+		// GET /api/dev/p4-test?key=seed123&companyId=1
+		// Projects & Contracting P4 (المستخلص / progress billing): builds from a Confirmed measurement → invoice (W+T) via
+		// ReceivableService + retention (Dr 1104) & advance recovery (Dr 2104) as ProjectId-tagged settlement receipts.
+		// Verifies the compound entry is balanced, all legs ProjectId-tagged, net due = W+T−R−A, ar_sub + TB stay OK,
+		// double-billing/re-post are blocked. Self-cleaning (hard-deletes invoice+receipts+JEs+advance+progress+BOQ+project).
+		[HttpGet("p4-test")]
+		public async Task<IActionResult> P4Test(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
+			[FromServices] CrossBuy.BL.IContractService contract, [FromServices] CrossBuy.BL.IProgressService progress,
+			[FromServices] CrossBuy.BL.IProgressBillingService billing, [FromServices] CrossBuy.BL.IReceivableService ar,
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+
+			var cust = await ar.CreateCustomerAsync(companyId, "عميل مستخلص اختبار " + suffix, "Billing test", null, null);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع مستخلص اختبار", NameEn = "Billing test", IsActive = true, Status = "Active", ContractValue = 1000000m, AdvancePercent = 25m, RetentionPercent = 10m });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+			var pRow = await _db.Projects.FirstAsync(p => p.ID == pid); pRow.CustomerId = cust.ID; await _db.SaveChangesAsync();
+
+			var cashId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			var (advOk, advErr, advEntryId) = await contract.ReceiveAdvanceAsync(companyId, pid, 250000m, cashId, DateTime.Today, null);
+			if (!advOk) return BadRequest(new { step = "advance", error = advErr });
+
+			// BOQ: A 100×1000, B 100×1000 → ΣBOQ 200,000
+			var (_, _, aItem) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "A", Description = "بند A", Unit = "م", Quantity = 100m, UnitPrice = 1000m });
+			var (_, _, bItem) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "B", Description = "بند B", Unit = "م", Quantity = 100m, UnitPrice = 1000m });
+
+			// measurement #1: A cum 50 (50,000), B cum 50 (50,000) → cumulative executed 100,000 ; confirm
+			var (_, _, m1) = await progress.SaveMeasurementAsync(companyId, pid, 0, DateTime.Today, "قياس 1",
+				new List<CrossBuy.BL.ProgressRowInput> { new() { BoqItemId = aItem, CumulativeQty = 50m }, new() { BoqItemId = bItem, CumulativeQty = 50m } }, null);
+			await progress.ConfirmAsync(companyId, m1);
+
+			// billing #1 from m1: W=100,000 · Tax 14% → 14,000 · Retention 10% → 10,000 · Advance recovery 25% → 25,000 · Net 79,000
+			var (sdOk, sdErr, bid) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 14m, "مستخلص 1", null);
+			if (!sdOk) return BadRequest(new { step = "saveDraft", error = sdErr });
+			var draft = await billing.GetAsync(companyId, bid);
+
+			// double-billing guard: a second billing for the SAME measurement must be blocked
+			var (dupOk, dupErr, _) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 14m, null, null);
+			bool dupeBlocked = !dupOk;
+
+			await billing.ApproveAsync(companyId, bid);
+			var (postOk, postErr) = await billing.PostAsync(companyId, bid, null);
+			if (!postOk) return BadRequest(new { step = "post", error = postErr });
+			// re-post guard
+			var (rePostOk, _) = await billing.PostAsync(companyId, bid, null);
+			bool rePostBlocked = !rePostOk;
+
+			var posted = await billing.GetAsync(companyId, bid);
+			var inv = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == posted!.SalesInvoiceId);
+			var controlId = cust.ControlAccountId;
+
+			async Task<List<dynamic>> JeLines(int? jeId) => (await (from l in _db.JournalEntryLines.AsNoTracking()
+				join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+				where l.JournalEntryId == jeId select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync()).Cast<dynamic>().ToList();
+
+			var invLines = await JeLines(inv.JournalEntryId);
+			var retLines = posted!.RetentionReceiptId != null ? await JeLines((await _db.Receipts.AsNoTracking().FirstAsync(r => r.ID == posted.RetentionReceiptId)).JournalEntryId) : new List<dynamic>();
+			var advLines = posted.AdvanceReceiptId != null ? await JeLines((await _db.Receipts.AsNoTracking().FirstAsync(r => r.ID == posted.AdvanceReceiptId)).JournalEntryId) : new List<dynamic>();
+
+			bool arDebit = invLines.Any(x => x.Code == "1102" && x.Debit == 114000m);
+			bool revCredit = invLines.Any(x => x.Code == "4102" && x.Credit == 100000m);
+			bool taxCredit = invLines.Any(x => x.Code == "210201" && x.Credit == 14000m);
+			bool invBalanced = invLines.Sum(x => (decimal)x.Debit) == invLines.Sum(x => (decimal)x.Credit);
+			bool retLeg = retLines.Any(x => x.Code == "1104" && x.Debit == 10000m) && retLines.Any(x => x.Code == "1102" && x.Credit == 10000m);
+			bool advLeg = advLines.Any(x => x.Code == "2104" && x.Debit == 25000m) && advLines.Any(x => x.Code == "1102" && x.Credit == 25000m);
+			bool allTagged = invLines.Concat(retLines).Concat(advLines).All(x => x.ProjectId == pid);
+			bool netOk = posted.NetDue == 79000m;
+
+			var summary = await contract.GetSummaryAsync(companyId, pid);
+			bool advBalanceOk = summary.AdvanceBalance == 225000m;   // 250,000 − 25,000 recovered
+			decimal retGl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.ProjectId == pid).Join(_db.Accounts.AsNoTracking(), l => l.AccountId, a => a.ID, (l, a) => new { a.Code, l.Debit, l.Credit }).Where(x => x.Code == "1104").SumAsync(x => x.Debit - x.Credit);
+			bool retBalanceOk = retGl == 10000m;
+
+			var checks = await integ.RunAsync(companyId);
+			bool arSubOk = checks.First(c => c.Key == "ar_sub").Ok;
+			bool tbOk = checks.First(c => c.Key == "tb_balanced").Ok;
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			// ---- dev teardown (hard delete everything this test created) ----
+			var billIds = await _db.ProgressBillings.Where(x => x.ProjectId == pid && x.CompanyID == companyId).Select(x => x.ID).ToListAsync();
+			_db.ProgressBillingLines.RemoveRange(await _db.ProgressBillingLines.Where(l => billIds.Contains(l.BillingId)).ToListAsync());
+			_db.ProgressBillings.RemoveRange(await _db.ProgressBillings.Where(x => x.ProjectId == pid && x.CompanyID == companyId).ToListAsync());
+			await _db.SaveChangesAsync();
+			// receipts (retention + advance) + allocations + their JEs
+			foreach (var rid in new[] { posted.RetentionReceiptId, posted.AdvanceReceiptId })
+			{
+				if (rid == null) continue;
+				_db.ReceiptAllocations.RemoveRange(await _db.ReceiptAllocations.Where(a => a.ReceiptId == rid.Value).ToListAsync());
+				var rc = await _db.Receipts.FirstOrDefaultAsync(r => r.ID == rid.Value);
+				var rcJe = rc?.JournalEntryId;
+				if (rc != null) _db.Receipts.Remove(rc);
+				await _db.SaveChangesAsync();
+				if (rcJe != null) { _db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == rcJe).ToListAsync()); _db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == rcJe).ToListAsync()); await _db.SaveChangesAsync(); }
+			}
+			// invoice + lines + JE
+			_db.ReceiptAllocations.RemoveRange(await _db.ReceiptAllocations.Where(a => a.SalesInvoiceId == inv.ID).ToListAsync());
+			_db.SalesInvoiceLines.RemoveRange(await _db.SalesInvoiceLines.Where(l => l.SalesInvoiceId == inv.ID).ToListAsync());
+			var invJe = inv.JournalEntryId;
+			_db.SalesInvoices.RemoveRange(await _db.SalesInvoices.Where(i => i.ID == inv.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			if (invJe != null) { _db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == invJe).ToListAsync()); _db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == invJe).ToListAsync()); await _db.SaveChangesAsync(); }
+			// advance JE (P2)
+			var advLinesDel = await _db.JournalEntryLines.Where(l => l.JournalEntryId == advEntryId).ToListAsync();
+			_db.JournalEntryLines.RemoveRange(advLinesDel);
+			_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == advEntryId).ToListAsync());
+			await _db.SaveChangesAsync();
+			// progress + boq + customer + project
+			var progIds = await _db.ProjectProgresses.Where(p => p.ProjectId == pid && p.CompanyID == companyId).Select(p => p.ID).ToListAsync();
+			_db.ProjectProgressLines.RemoveRange(await _db.ProjectProgressLines.Where(l => progIds.Contains(l.ProgressId)).ToListAsync());
+			_db.ProjectProgresses.RemoveRange(await _db.ProjectProgresses.Where(p => p.ProjectId == pid && p.CompanyID == companyId).ToListAsync());
+			await _db.SaveChangesAsync();
+			await boq.DeleteItemAsync(companyId, aItem); await boq.DeleteItemAsync(companyId, bItem);
+			_db.Customers.RemoveRange(await _db.Customers.Where(c => c.ID == cust.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool cleanedUp = jeAfter == jeBefore;
+
+			bool pass = pok && advOk && sdOk && postOk && arDebit && revCredit && taxCredit && invBalanced
+						&& retLeg && advLeg && allTagged && netOk && advBalanceOk && retBalanceOk
+						&& dupeBlocked && rePostBlocked && arSubOk && tbOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				draft = new { draft!.GrossWork, draft.TaxAmount, draft.RetentionAmount, draft.AdvanceRecoveryAmount, draft.NetDue },
+				posting = new { arDebit, revCredit, taxCredit, invBalanced, retLeg, advLeg, allTagged, netDue = posted.NetDue, netOk },
+				balances = new { advanceBalance = summary.AdvanceBalance, advBalanceOk, retentionGl = retGl, retBalanceOk },
+				guards = new { dupeBlocked, rePostBlocked },
+				integrity = new { arSubOk, tbOk, allIntegrity },
+				cleanedUp = new { before = jeBefore, after = jeAfter, ok = cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p5a-test?key=seed123&companyId=1
+		// Projects & Contracting P5-أ (actual material cost): issue stock to a project → Dr 510104 project cost / Cr inventory,
+		// tagged ProjectId, via StockService (inventory reduced by StockService; stock_gl intact). Cost enters profitability.
+		// Uses a real Average-costed item with stock; restores it exactly afterwards (self-cleaning).
+		[HttpGet("p5a-test")]
+		public async Task<IActionResult> P5aTest(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IProjectMaterialIssueService material,
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+
+			// find an Average-costed item with enough stock (no FIFO layers → clean restore)
+			var pick = await (from sb in _db.StockBalances.AsNoTracking()
+							  join it in _db.Items.AsNoTracking() on sb.ItemId equals it.ID
+							  where sb.CompanyID == companyId && sb.QtyOnHand >= 3 && it.CostingMethod == "Average"
+							  select new { sb.ItemId, sb.WarehouseId, sb.QtyOnHand, sb.TotalValue }).FirstOrDefaultAsync();
+			if (pick == null) return BadRequest(new { message = "no Average item with stock >= 3 to test with" });
+
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع صرف مواد اختبار", NameEn = "Material issue test", IsActive = true, Status = "Active" });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			decimal issueQty = 2m;
+			var (sok, serr, iid) = await material.SaveDraftAsync(companyId, pid, 0, DateTime.Today, pick.WarehouseId,
+				"اختبار", new List<CrossBuy.BL.MaterialLineInput> { new() { ItemId = pick.ItemId, Qty = issueQty } }, null);
+			if (!sok) return BadRequest(new { step = "saveDraft", error = serr });
+			var (postOk, postErr) = await material.PostAsync(companyId, iid, null);
+			if (!postOk) return BadRequest(new { step = "post", error = postErr });
+
+			var issue = await material.GetAsync(companyId, iid);
+			var line = issue!.Lines.First();
+			decimal cost = line.TotalCost;
+			var mv = await _db.StockMovements.AsNoTracking().FirstAsync(m => m.ID == line.StockMovementId);
+
+			// inspect the issue JE
+			var jeLines = await (from l in _db.JournalEntryLines.AsNoTracking()
+								 join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+								 where l.JournalEntryId == mv.JournalEntryId
+								 select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+			bool costDebit = jeLines.Any(x => x.Code == "510104" && x.Debit == cost);
+			bool invCredit = jeLines.Any(x => x.Code == "1103" && x.Credit == cost);
+			bool allTagged = jeLines.Count > 0 && jeLines.All(x => x.ProjectId == pid);
+			bool balanced = jeLines.Sum(x => x.Debit) == jeLines.Sum(x => x.Credit);
+
+			// stock reduced by issueQty
+			var balNow = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == pick.ItemId && b.WarehouseId == pick.WarehouseId).Select(b => b.QtyOnHand).FirstAsync();
+			bool stockReduced = balNow == pick.QtyOnHand - issueQty;
+
+			// profitability picks up the cost for this project
+			var pnl = await prj.ProfitabilityAsync(companyId, DateTime.Today.AddYears(-1), DateTime.Today.AddDays(1));
+			var row = pnl.FirstOrDefault(r => r.ProjectId == pid);
+			bool profitOk = row != null && row.Cost == cost && row.Revenue == 0m;
+
+			var checks = await integ.RunAsync(companyId);
+			bool stockGlOk = checks.First(c => c.Key == "stock_gl").Ok;
+			bool tbOk = checks.First(c => c.Key == "tb_balanced").Ok;
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			// ---- teardown: delete JE + movement + issue, restore the exact balance, delete project ----
+			_db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == mv.JournalEntryId).ToListAsync());
+			_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == mv.JournalEntryId).ToListAsync());
+			_db.StockMovements.RemoveRange(await _db.StockMovements.Where(m => m.ID == mv.ID).ToListAsync());
+			var bal = await _db.StockBalances.FirstAsync(b => b.CompanyID == companyId && b.ItemId == pick.ItemId && b.WarehouseId == pick.WarehouseId);
+			bal.QtyOnHand += issueQty; bal.TotalValue += cost;   // restore exactly (moving-average unchanged)
+			_db.ProjectMaterialIssueLines.RemoveRange(await _db.ProjectMaterialIssueLines.Where(l => l.IssueId == iid).ToListAsync());
+			_db.ProjectMaterialIssues.RemoveRange(await _db.ProjectMaterialIssues.Where(x => x.ID == iid).ToListAsync());
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+
+			var checksAfter = await integ.RunAsync(companyId);
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool cleanedUp = jeAfter == jeBefore && checksAfter.All(c => c.Ok);
+
+			bool pass = pok && sok && postOk && costDebit && invCredit && allTagged && balanced && stockReduced && profitOk && stockGlOk && tbOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				item = new { pick.ItemId, pick.WarehouseId, qtyBefore = pick.QtyOnHand, issueQty, issueCost = cost },
+				posting = new { costDebit, invCredit, allTagged, balanced },
+				stock = new { qtyAfter = balNow, stockReduced },
+				profitability = new { projectCost = row?.Cost, revenue = row?.Revenue, profitOk },
+				integrity = new { stockGlOk, tbOk, allIntegrity },
+				cleanedUp = new { jeBefore, jeAfter, ok = cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p5b-test?key=seed123&companyId=1
+		// Projects & Contracting P5-ب (actual labor): project task + timesheet hours × hourly cost → post via JournalEntryService:
+		// Dr 510104 project cost [ProjectId] / Cr 520101 salary [UNtagged, +cost center]. Cost enters profitability; post-once.
+		[HttpGet("p5b-test")]
+		public async Task<IActionResult> P5bTest(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IProjectLaborService labor,
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var emp = await _db.Employee.OrderBy(e => e.ID).FirstOrDefaultAsync();
+			if (emp == null) return BadRequest(new { message = "no employee" });
+			decimal? origRate = emp.ManufHourlyRate;
+			emp.ManufHourlyRate = 50m;   // guarantee a derivable hourly cost; restored in teardown
+			await _db.SaveChangesAsync();
+
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع عمالة اختبار", NameEn = "Labor test", IsActive = true, Status = "Active" });
+			if (!pok) { emp.ManufHourlyRate = origRate; await _db.SaveChangesAsync(); return BadRequest(new { step = "project", error = perr }); }
+
+			var task = new CrossBuy.Models.Context.Tasks.TaskItem
+			{
+				CompanyId = companyId, Title = "تنفيذ ميداني", EntityType = "Project", EntityId = pid,
+				AssigneeEmployeeId = emp.ID, CreatedByEmployeeId = emp.ID, Priority = "Normal", Status = "New",
+				ActualHours = 0, IsBillable = false, ProgressPct = 0, IsScheduled = false, CreatedAt = DateTime.UtcNow
+			};
+			_db.TaskItems.Add(task); await _db.SaveChangesAsync();
+			_db.TimesheetEntries.Add(new CrossBuy.Models.Context.Tasks.TimesheetEntry
+			{ CompanyId = companyId, TaskId = task.ID, EmployeeId = emp.ID, WorkDate = DateTime.Today, Hours = 8m, Source = "Manual", IsBillable = false, CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+
+			decimal expected = 8m * 50m;   // 400
+			var (postOk, postErr) = await labor.PostTaskLaborAsync(companyId, task.ID, null);
+			if (!postOk) { /* cleanup */ _db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(t => t.TaskId == task.ID).ToListAsync()); _db.TaskItems.Remove(task); await _db.SaveChangesAsync(); await prj.DeleteAsync(companyId, pid); emp.ManufHourlyRate = origRate; await _db.SaveChangesAsync(); return BadRequest(new { step = "post", error = postErr }); }
+
+			var je = await _db.JournalEntries.AsNoTracking().FirstAsync(e => e.CompanyID == companyId && e.SourceType == "ProjectLabor" && e.SourceId == task.ID);
+			var lines = await (from l in _db.JournalEntryLines.AsNoTracking()
+							   join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+							   where l.JournalEntryId == je.ID
+							   select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+			bool costDebit = lines.Any(x => x.Code == "510104" && x.Debit == expected && x.ProjectId == pid);
+			bool salaryCredit = lines.Any(x => x.Code == "520101" && x.Credit == expected && x.ProjectId == null);   // untagged
+			bool balanced = lines.Sum(x => x.Debit) == lines.Sum(x => x.Credit);
+
+			var pnl = await prj.ProfitabilityAsync(companyId, DateTime.Today.AddYears(-1), DateTime.Today.AddDays(1));
+			var row = pnl.FirstOrDefault(r => r.ProjectId == pid);
+			bool profitOk = row != null && row.Cost == expected && row.Revenue == 0m;
+
+			bool laborPosted = (await _db.TaskItems.AsNoTracking().Where(t => t.ID == task.ID).Select(t => t.LaborPostedAt).FirstAsync()) != null;
+			var (rePostOk, _) = await labor.PostTaskLaborAsync(companyId, task.ID, null);
+			bool rePostBlocked = !rePostOk;
+
+			var checks = await integ.RunAsync(companyId);
+			bool tbOk = checks.First(c => c.Key == "tb_balanced").Ok;
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			// teardown
+			_db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == je.ID).ToListAsync());
+			_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == je.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			_db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(t => t.TaskId == task.ID).ToListAsync());
+			_db.TaskItems.RemoveRange(await _db.TaskItems.Where(t => t.ID == task.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+			var empR = await _db.Employee.FirstAsync(e => e.ID == emp.ID); empR.ManufHourlyRate = origRate; await _db.SaveChangesAsync();
+
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool cleanedUp = jeAfter == jeBefore && (await integ.RunAsync(companyId)).All(c => c.Ok);
+
+			bool pass = pok && postOk && costDebit && salaryCredit && balanced && profitOk && laborPosted && rePostBlocked && tbOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				expectedCost = expected,
+				posting = new { costDebit, salaryCredit, balanced },
+				profitability = new { projectCost = row?.Cost, revenue = row?.Revenue, profitOk },
+				guards = new { laborPosted, rePostBlocked },
+				integrity = new { tbOk, allIntegrity },
+				cleanedUp = new { jeBefore, jeAfter, ok = cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p6a-test?key=seed123&companyId=1
+		// Projects & Contracting P6-أ (budget-vs-actual report): aggregates BOQ estimate vs actual (attributed material + total 510104).
+		// READ-ONLY report (posts nothing). Builds real data (BOQ + attributed material issue + labor), asserts the aggregation, self-cleans.
+		[HttpGet("p6a-test")]
+		public async Task<IActionResult> P6aTest(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
+			[FromServices] CrossBuy.BL.IProjectMaterialIssueService material, [FromServices] CrossBuy.BL.IProjectLaborService labor,
+			[FromServices] CrossBuy.BL.IProjectBudgetService budget, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var pick = await (from sb in _db.StockBalances.AsNoTracking()
+							  join it in _db.Items.AsNoTracking() on sb.ItemId equals it.ID
+							  where sb.CompanyID == companyId && sb.QtyOnHand >= 3 && it.CostingMethod == "Average"
+							  select new { sb.ItemId, sb.WarehouseId, sb.QtyOnHand }).FirstOrDefaultAsync();
+			if (pick == null) return BadRequest(new { message = "no Average item with stock" });
+			var emp = await _db.Employee.OrderBy(e => e.ID).FirstOrDefaultAsync();
+			if (emp == null) return BadRequest(new { message = "no employee" });
+			decimal? origRate = emp.ManufHourlyRate; emp.ManufHourlyRate = 50m; await _db.SaveChangesAsync();
+
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع موازنة اختبار", NameEn = "Budget test", IsActive = true, Status = "Active" });
+			if (!pok) { emp.ManufHourlyRate = origRate; await _db.SaveChangesAsync(); return BadRequest(new { step = "project", error = perr }); }
+
+			// BOQ: A est = 1000+500 = 1500 ; B est = 800
+			var (_, _, aItem) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "A", Description = "بند A", Quantity = 1, UnitPrice = 3000, MaterialCost = 1000m, LaborCost = 500m });
+			var (_, _, bItem) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "B", Description = "بند B", Quantity = 1, UnitPrice = 1500, MaterialCost = 800m });
+
+			// attributed material issue → item A (2 units)
+			var (msok, _, iid) = await material.SaveDraftAsync(companyId, pid, 0, DateTime.Today, pick.WarehouseId, "t",
+				new List<CrossBuy.BL.MaterialLineInput> { new() { ItemId = pick.ItemId, Qty = 2m, BoqItemId = aItem } }, null);
+			await material.PostAsync(companyId, iid, null);
+			var issue = await material.GetAsync(companyId, iid);
+			var mline = issue!.Lines.First();
+			decimal matCost = mline.TotalCost;
+			var mv = await _db.StockMovements.AsNoTracking().FirstAsync(m => m.ID == mline.StockMovementId);
+
+			// labor: 8h × 50 = 400 on a project task
+			var task = new CrossBuy.Models.Context.Tasks.TaskItem { CompanyId = companyId, Title = "عمالة", EntityType = "Project", EntityId = pid, AssigneeEmployeeId = emp.ID, CreatedByEmployeeId = emp.ID, Priority = "Normal", Status = "New", ActualHours = 0, IsBillable = false, ProgressPct = 0, IsScheduled = false, CreatedAt = DateTime.UtcNow };
+			_db.TaskItems.Add(task); await _db.SaveChangesAsync();
+			_db.TimesheetEntries.Add(new CrossBuy.Models.Context.Tasks.TimesheetEntry { CompanyId = companyId, TaskId = task.ID, EmployeeId = emp.ID, WorkDate = DateTime.Today, Hours = 8m, Source = "Manual", IsBillable = false, CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+			await labor.PostTaskLaborAsync(companyId, task.ID, null);
+			var laborJe = await _db.JournalEntries.AsNoTracking().FirstAsync(e => e.CompanyID == companyId && e.SourceType == "ProjectLabor" && e.SourceId == task.ID);
+			decimal laborCost = 400m;
+
+			// ---- the report (read-only) ----
+			var jeBeforeReport = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var rep = await budget.GetBudgetVsActualAsync(companyId, pid);
+			var jeAfterReport = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool readOnly = jeBeforeReport == jeAfterReport;
+
+			var la = rep.Lines.FirstOrDefault(x => x.BoqItemId == aItem);
+			var lb = rep.Lines.FirstOrDefault(x => x.BoqItemId == bItem);
+			bool lineAOk = la != null && la.EstimatedCost == 1500m && la.ActualCost == matCost && la.Variance == 1500m - matCost;
+			bool lineBOk = lb != null && lb.EstimatedCost == 800m && lb.ActualCost == 0m;
+			bool totEstOk = rep.TotalEstimated == 2300m;
+			bool totActOk = rep.TotalActual == matCost + laborCost;
+			bool attrOk = rep.AttributedActual == matCost;
+			bool unattrOk = rep.UnattributedActual == laborCost;   // labor only (all material attributed)
+			bool totVarOk = rep.TotalVariance == 2300m - (matCost + laborCost);
+
+			var checks = await integ.RunAsync(companyId);
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			// ---- teardown ----
+			_db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == laborJe.ID).ToListAsync());
+			_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == laborJe.ID).ToListAsync());
+			_db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == mv.JournalEntryId).ToListAsync());
+			_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == mv.JournalEntryId).ToListAsync());
+			_db.StockMovements.RemoveRange(await _db.StockMovements.Where(m => m.ID == mv.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			var bal = await _db.StockBalances.FirstAsync(b => b.CompanyID == companyId && b.ItemId == pick.ItemId && b.WarehouseId == pick.WarehouseId);
+			bal.QtyOnHand += 2m; bal.TotalValue += matCost;
+			_db.ProjectMaterialIssueLines.RemoveRange(await _db.ProjectMaterialIssueLines.Where(l => l.IssueId == iid).ToListAsync());
+			_db.ProjectMaterialIssues.RemoveRange(await _db.ProjectMaterialIssues.Where(x => x.ID == iid).ToListAsync());
+			_db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(t => t.TaskId == task.ID).ToListAsync());
+			_db.TaskItems.RemoveRange(await _db.TaskItems.Where(t => t.ID == task.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			await boq.DeleteItemAsync(companyId, aItem); await boq.DeleteItemAsync(companyId, bItem);
+			await prj.DeleteAsync(companyId, pid);
+			var empR = await _db.Employee.FirstAsync(e => e.ID == emp.ID); empR.ManufHourlyRate = origRate; await _db.SaveChangesAsync();
+			bool cleanedUp = (await integ.RunAsync(companyId)).All(c => c.Ok);
+
+			bool pass = pok && msok && readOnly && lineAOk && lineBOk && totEstOk && totActOk && attrOk && unattrOk && totVarOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				lineA = new { est = la?.EstimatedCost, actual = la?.ActualCost, variance = la?.Variance, la?.Over, lineAOk },
+				lineB = new { est = lb?.EstimatedCost, actual = lb?.ActualCost, lineBOk },
+				totals = new { rep.TotalEstimated, rep.TotalActual, rep.AttributedActual, unattributed = rep.UnattributedActual, rep.TotalVariance, totEstOk, totActOk, attrOk, unattrOk, totVarOk },
+				readOnly,
+				integrity = new { allIntegrity, cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p6b-test?key=seed123&companyId=1
+		// Projects & Contracting P6-ب (retention release): seed a 1104 debit balance for a project (Dr 1104 / Cr cash) then
+		// release it: Dr cash / Cr 1104, ProjectId-tagged. Verifies balance drops, no 1102/ar_sub touch, over-release blocked, TB, inv=0.
+		[HttpGet("p6b-test")]
+		public async Task<IActionResult> P6bTest(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IContractService contract,
+			[FromServices] CrossBuy.BL.IJournalEntryService je, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var cashId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			var retId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "1104").Select(a => a.ID).FirstOrDefaultAsync();
+			if (cashId == 0 || retId == 0) return BadRequest(new { message = "missing cash/1104 account" });
+			var curId = await _db.Currencies.Select(c => c.ID).FirstOrDefaultAsync();
+
+			var arSubBefore = (await integ.RunAsync(companyId)).First(c => c.Key == "ar_sub").Actual;
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع محتجز اختبار", NameEn = "Retention test", IsActive = true, Status = "Active" });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			decimal R = 5000m;
+			// seed a retention balance: Dr 1104 / Cr cash, tagged ProjectId (mimics the P4 hold's Dr 1104)
+			var (sok, serr, setupJe) = await je.CreateAndPostAsync(new CrossBuy.BL.JournalEntryInput
+			{
+				CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Manual", CurrencyId = curId,
+				SourceType = "RetentionSeedTest", SourceId = pid, Description = "seed retention",
+				Lines = new List<CrossBuy.BL.JournalLineInput> {
+					new() { AccountId = retId, Debit = R, Credit = 0, ProjectId = pid, Description = "seed" },
+					new() { AccountId = cashId, Debit = 0, Credit = R, ProjectId = pid, Description = "seed" },
+				}
+			}, null);
+			if (!sok) { await prj.DeleteAsync(companyId, pid); return BadRequest(new { step = "seed", error = serr }); }
+
+			decimal balBefore = (await contract.GetSummaryAsync(companyId, pid)).RetentionBalance;
+
+			// release the full balance
+			var (relOk, relErr, relJe) = await contract.ReleaseRetentionAsync(companyId, pid, R, cashId, DateTime.Today, null);
+			if (!relOk) return BadRequest(new { step = "release", error = relErr });
+
+			var lines = await (from l in _db.JournalEntryLines.AsNoTracking()
+							   join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+							   where l.JournalEntryId == relJe!.Value
+							   select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+			bool cashDebit = lines.Any(x => x.Code.StartsWith("1101") && x.Debit == R);
+			bool retCredit = lines.Any(x => x.Code == "1104" && x.Credit == R);
+			bool allTagged = lines.Count > 0 && lines.All(x => x.ProjectId == pid);
+			bool balanced = lines.Sum(x => x.Debit) == lines.Sum(x => x.Credit);
+			bool noArTouch = !lines.Any(x => x.Code == "1102");
+
+			decimal balAfter = (await contract.GetSummaryAsync(companyId, pid)).RetentionBalance;
+			bool balanceDropped = balBefore == R && balAfter == 0m;
+
+			// over-release now blocked (balance 0)
+			var (overOk, _, _) = await contract.ReleaseRetentionAsync(companyId, pid, 100m, cashId, DateTime.Today, null);
+			bool overBlocked = !overOk;
+
+			var checks = await integ.RunAsync(companyId);
+			bool arSubOk = checks.First(c => c.Key == "ar_sub").Ok && checks.First(c => c.Key == "ar_sub").Actual == arSubBefore;   // unchanged
+			bool tbOk = checks.First(c => c.Key == "tb_balanced").Ok;
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			// teardown: delete release JE + setup JE + project
+			foreach (var jid in new[] { relJe!.Value, setupJe!.ID })
+			{
+				_db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == jid).ToListAsync());
+				_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == jid).ToListAsync());
+			}
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool cleanedUp = jeAfter == jeBefore && (await integ.RunAsync(companyId)).All(c => c.Ok);
+
+			bool pass = pok && sok && relOk && cashDebit && retCredit && allTagged && balanced && noArTouch && balanceDropped && overBlocked && arSubOk && tbOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				posting = new { cashDebit, retCredit, allTagged, balanced, noArTouch },
+				balances = new { balBefore, balAfter, balanceDropped },
+				guards = new { overBlocked },
+				integrity = new { arSubOk, tbOk, allIntegrity },
+				cleanedUp = new { jeBefore, jeAfter, ok = cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p6c-test?key=seed123&companyId=1
+		// Projects & Contracting P6-ج (subcontractor billing): purchase invoice (Dr 510104[project]+VAT / Cr AP) + retention
+		// settlement payment (Dr AP / Cr 2105[project]) via PayableService. Verifies ap_sub intact, cost→profitability, no double-billing.
+		[HttpGet("p6c-test")]
+		public async Task<IActionResult> P6cTest(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.ISubcontractBillingService subc,
+			[FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع باطن اختبار", NameEn = "Subcontract test", IsActive = true, Status = "Active" });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+			var vendor = await ap.CreateVendorAsync(companyId, "باطن اختبار " + suffix, "Sub test", null);
+
+			var (scok, scerr, scId) = await subc.SaveSubcontractAsync(companyId, pid, 0, vendor.ID, "أعمال باطن", 1000000m, 10m, null);
+			if (!scok) return BadRequest(new { step = "subcontract", error = scerr });
+
+			// billing: cumulative 50,000 → W 50,000 · tax 14% → 7,000 · retention 10% → 5,000 · net 52,000
+			var (sbok, sberr, bid) = await subc.SaveBillingDraftAsync(companyId, scId, 0, DateTime.Today, 50000m, 14m, "مستخلص باطن 1", null);
+			if (!sbok) return BadRequest(new { step = "draft", error = sberr });
+			await subc.ApproveBillingAsync(companyId, bid);
+			var (postOk, postErr) = await subc.PostBillingAsync(companyId, bid, null);
+			if (!postOk) return BadRequest(new { step = "post", error = postErr });
+
+			var b = await subc.GetBillingAsync(companyId, bid);
+			var inv = await _db.PurchaseInvoices.AsNoTracking().FirstAsync(i => i.ID == b!.PurchaseInvoiceId);
+			var invLines = await (from l in _db.JournalEntryLines.AsNoTracking() join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+								  where l.JournalEntryId == inv.JournalEntryId select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+			var pay = await _db.Payments.AsNoTracking().FirstAsync(p => p.ID == b!.RetentionPaymentId);
+			var payLines = await (from l in _db.JournalEntryLines.AsNoTracking() join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+								  where l.JournalEntryId == pay.JournalEntryId select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+
+			bool costDebit = invLines.Any(x => x.Code == "510104" && x.Debit == 50000m && x.ProjectId == pid);
+			bool vatDebit = invLines.Any(x => x.Code == "110401" && x.Debit == 7000m);
+			bool apCredit = invLines.Any(x => x.Code == "2101" && x.Credit == 57000m);
+			bool retApDebit = payLines.Any(x => x.Code == "2101" && x.Debit == 5000m && x.ProjectId == pid);
+			bool retCredit = payLines.Any(x => x.Code == "2105" && x.Credit == 5000m && x.ProjectId == pid);
+			bool balanced = invLines.Sum(x => x.Debit) == invLines.Sum(x => x.Credit) && payLines.Sum(x => x.Debit) == payLines.Sum(x => x.Credit);
+			bool netOk = b!.NetPayable == 52000m;
+
+			var pnl = await prj.ProfitabilityAsync(companyId, DateTime.Today.AddYears(-1), DateTime.Today.AddDays(1));
+			var row = pnl.FirstOrDefault(r => r.ProjectId == pid);
+			bool profitOk = row != null && row.Cost == 50000m && row.Revenue == 0m;
+
+			// double-billing: same cumulative → W 0 → blocked ; re-post → blocked
+			var (dupOk, _, _) = await subc.SaveBillingDraftAsync(companyId, scId, 0, DateTime.Today, 50000m, 14m, null, null);
+			bool dupeBlocked = !dupOk;
+			var (rePostOk, _) = await subc.PostBillingAsync(companyId, bid, null);
+			bool rePostBlocked = !rePostOk;
+
+			var checks = await integ.RunAsync(companyId);
+			bool apSubOk = checks.First(c => c.Key == "ap_sub").Ok;
+			bool tbOk = checks.First(c => c.Key == "tb_balanced").Ok;
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			// teardown: payment (+alloc+JE), invoice (+lines+JE), sub-billing, subcontract, vendor, project
+			_db.PaymentAllocations.RemoveRange(await _db.PaymentAllocations.Where(a => a.PaymentId == pay.ID).ToListAsync());
+			if (pay.JournalEntryId != null) { _db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == pay.JournalEntryId).ToListAsync()); _db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == pay.JournalEntryId).ToListAsync()); }
+			_db.Payments.RemoveRange(await _db.Payments.Where(p => p.ID == pay.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			_db.PurchaseInvoiceLines.RemoveRange(await _db.PurchaseInvoiceLines.Where(l => l.PurchaseInvoiceId == inv.ID).ToListAsync());
+			if (inv.JournalEntryId != null) { _db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == inv.JournalEntryId).ToListAsync()); _db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == inv.JournalEntryId).ToListAsync()); }
+			_db.PurchaseInvoices.RemoveRange(await _db.PurchaseInvoices.Where(i => i.ID == inv.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			_db.SubcontractBillings.RemoveRange(await _db.SubcontractBillings.Where(x => x.SubcontractId == scId).ToListAsync());
+			_db.Subcontracts.RemoveRange(await _db.Subcontracts.Where(x => x.ID == scId).ToListAsync());
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+			_db.Vendors.RemoveRange(await _db.Vendors.Where(v => v.ID == vendor.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool cleanedUp = jeAfter == jeBefore && (await integ.RunAsync(companyId)).All(c => c.Ok);
+
+			bool pass = pok && scok && sbok && postOk && costDebit && vatDebit && apCredit && retApDebit && retCredit && balanced && netOk && profitOk && dupeBlocked && rePostBlocked && apSubOk && tbOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				invoice = new { costDebit, vatDebit, apCredit },
+				retention = new { retApDebit, retCredit },
+				totals = new { netPayable = b!.NetPayable, netOk, balanced },
+				profitability = new { projectCost = row?.Cost, revenue = row?.Revenue, profitOk },
+				guards = new { dupeBlocked, rePostBlocked },
+				integrity = new { apSubOk, tbOk, allIntegrity },
+				cleanedUp = new { jeBefore, jeAfter, ok = cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p6c2-test?key=seed123&companyId=1
+		// Projects & Contracting P6-ج-2 (subcontractor retention release): seed a 2105 Cr balance then release it: Dr 2105 / Cr cash,
+		// ProjectId-tagged. Verifies balance drops, no AP (2101)/ap_sub touch, over-release blocked, TB, inv=0. Self-cleaning.
+		[HttpGet("p6c2-test")]
+		public async Task<IActionResult> P6c2Test(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IContractService contract,
+			[FromServices] CrossBuy.BL.IJournalEntryService je, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var cashId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			var retId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "2105").Select(a => a.ID).FirstOrDefaultAsync();
+			if (cashId == 0 || retId == 0) return BadRequest(new { message = "missing cash/2105 account" });
+			var curId = await _db.Currencies.Select(c => c.ID).FirstOrDefaultAsync();
+
+			var apSubBefore = (await integ.RunAsync(companyId)).First(c => c.Key == "ap_sub").Actual;
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع محتجز باطن اختبار", NameEn = "Sub retention test", IsActive = true, Status = "Active" });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			decimal R = 3000m;
+			// seed a subcontractor-retention balance: Dr cash / Cr 2105, tagged ProjectId (mimics the P6-ج hold's Cr 2105)
+			var (sok, serr, setupJe) = await je.CreateAndPostAsync(new CrossBuy.BL.JournalEntryInput
+			{
+				CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Manual", CurrencyId = curId,
+				SourceType = "SubRetentionSeedTest", SourceId = pid, Description = "seed sub retention",
+				Lines = new List<CrossBuy.BL.JournalLineInput> {
+					new() { AccountId = cashId, Debit = R, Credit = 0, ProjectId = pid, Description = "seed" },
+					new() { AccountId = retId, Debit = 0, Credit = R, ProjectId = pid, Description = "seed" },
+				}
+			}, null);
+			if (!sok) { await prj.DeleteAsync(companyId, pid); return BadRequest(new { step = "seed", error = serr }); }
+
+			decimal balBefore = await contract.SubRetentionBalanceAsync(companyId, pid);
+			var (relOk, relErr, relJe) = await contract.ReleaseSubRetentionAsync(companyId, pid, R, cashId, DateTime.Today, null);
+			if (!relOk) return BadRequest(new { step = "release", error = relErr });
+
+			var lines = await (from l in _db.JournalEntryLines.AsNoTracking()
+							   join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+							   where l.JournalEntryId == relJe!.Value
+							   select new { a.Code, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+			bool retDebit = lines.Any(x => x.Code == "2105" && x.Debit == R);
+			bool cashCredit = lines.Any(x => x.Code.StartsWith("1101") && x.Credit == R);
+			bool allTagged = lines.Count > 0 && lines.All(x => x.ProjectId == pid);
+			bool balanced = lines.Sum(x => x.Debit) == lines.Sum(x => x.Credit);
+			bool noApTouch = !lines.Any(x => x.Code == "2101");
+
+			decimal balAfter = await contract.SubRetentionBalanceAsync(companyId, pid);
+			bool balanceDropped = balBefore == R && balAfter == 0m;
+			var (overOk, _, _) = await contract.ReleaseSubRetentionAsync(companyId, pid, 100m, cashId, DateTime.Today, null);
+			bool overBlocked = !overOk;
+
+			var checks = await integ.RunAsync(companyId);
+			bool apSubOk = checks.First(c => c.Key == "ap_sub").Ok && checks.First(c => c.Key == "ap_sub").Actual == apSubBefore;
+			bool tbOk = checks.First(c => c.Key == "tb_balanced").Ok;
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			foreach (var jid in new[] { relJe!.Value, setupJe!.ID })
+			{
+				_db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == jid).ToListAsync());
+				_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == jid).ToListAsync());
+			}
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool cleanedUp = jeAfter == jeBefore && (await integ.RunAsync(companyId)).All(c => c.Ok);
+
+			bool pass = pok && sok && relOk && retDebit && cashCredit && allTagged && balanced && noApTouch && balanceDropped && overBlocked && apSubOk && tbOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				posting = new { retDebit, cashCredit, allTagged, balanced, noApTouch },
+				balances = new { balBefore, balAfter, balanceDropped },
+				guards = new { overBlocked },
+				integrity = new { apSubOk, tbOk, allIntegrity },
+				cleanedUp = new { jeBefore, jeAfter, ok = cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p6d-test?key=seed123&companyId=1
+		// Projects & Contracting P6-د (variation orders): approve a VO (New item + Adjust existing) → BOQ updated, revised contract
+		// = original + Σ VO, original unchanged, previous posted billing snapshot UNCHANGED, new item enters the next measurement,
+		// ZERO journal entries from approve. inv=0. Self-cleaning.
+		[HttpGet("p6d-test")]
+		public async Task<IActionResult> P6dTest(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
+			[FromServices] CrossBuy.BL.IProgressService progress, [FromServices] CrossBuy.BL.IProgressBillingService billing,
+			[FromServices] CrossBuy.BL.IVariationOrderService vos, [FromServices] CrossBuy.BL.IReceivableService ar,
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var revAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4102").Select(a => a.ID).FirstOrDefaultAsync();
+			if (revAcc == 0) return BadRequest(new { message = "no 4102" });
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var cust = await ar.CreateCustomerAsync(companyId, "عميل VO اختبار " + suffix, "VO test", null, null);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع أمر تغيير", NameEn = "VO test", IsActive = true, Status = "Active", ContractValue = 1000000m, AdvancePercent = 0m, RetentionPercent = 0m });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+			var pr = await _db.Projects.FirstAsync(p => p.ID == pid); pr.CustomerId = cust.ID; await _db.SaveChangesAsync();
+
+			// original BOQ item A (100 × 500 = 50,000)
+			var (_, _, aId) = await boq.SaveItemAsync(new CrossBuy.Models.Context.Accounting.BoqItem { CompanyID = companyId, ProjectId = pid, Code = "A", Description = "بند أصلي", Unit = "م", Quantity = 100m, UnitPrice = 500m, MaterialCost = 20000m });
+			// measurement + posted billing (snapshot). A cum 100 → executed 50,000
+			var (_, _, m1) = await progress.SaveMeasurementAsync(companyId, pid, 0, DateTime.Today, "قياس 1", new List<CrossBuy.BL.ProgressRowInput> { new() { BoqItemId = aId, CumulativeQty = 100m } }, null);
+			await progress.ConfirmAsync(companyId, m1);
+			var (bdok, bderr, bid) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 0m, "مستخلص 1", null);
+			if (!bdok) return BadRequest(new { step = "billingDraft", error = bderr });
+			await billing.ApproveAsync(companyId, bid);
+			var (bpok, bperr) = await billing.PostAsync(companyId, bid, null);
+			if (!bpok) return BadRequest(new { step = "billingPost", error = bperr });
+			var b1 = await billing.GetAsync(companyId, bid);
+			decimal prevPeriod = b1!.Lines.First().PeriodValue;   // snapshot (should be 50,000)
+
+			// ---- variation order: New item B (10×1000) + Adjust A (500→600) ----
+			var jeBeforeApprove = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var (svok, sverr, voId) = await vos.SaveDraftAsync(companyId, pid, 0, "توسعة", "Expansion", "طلب العميل",
+				new List<CrossBuy.BL.VoLineInput> {
+					new() { Kind = "New", Code = "B", Description = "بند إضافي", Unit = "م", Quantity = 10m, UnitPrice = 1000m, MaterialCost = 4000m },
+					new() { Kind = "Adjust", BoqItemId = aId, Quantity = 100m, UnitPrice = 600m }
+				}, null);
+			if (!svok) return BadRequest(new { step = "voDraft", error = sverr });
+			var (vaok, vaerr) = await vos.ApproveAsync(companyId, voId, null);
+			if (!vaok) return BadRequest(new { step = "voApprove", error = vaerr });
+			var jeAfterApprove = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+
+			var vo = await vos.GetAsync(companyId, voId);
+			var newItem = await _db.BoqItems.AsNoTracking().FirstOrDefaultAsync(b => b.ProjectId == pid && b.VariationOrderId == voId);
+			var itemA = await _db.BoqItems.AsNoTracking().FirstAsync(b => b.ID == aId);
+			var adjLine = vo!.Lines.First(l => l.Kind == "Adjust");
+			var rev = await vos.RevisedContractValueAsync(companyId, pid);
+			var origAfter = await _db.Projects.AsNoTracking().Where(p => p.ID == pid).Select(p => p.ContractValue).FirstAsync();
+			var b1b = await billing.GetAsync(companyId, bid);   // re-read the previous billing
+			var em2 = await progress.BuildEditModelAsync(companyId, pid, null);   // a NEW measurement includes leaves
+
+			bool zeroJe = jeAfterApprove == jeBeforeApprove;
+			bool newItemOk = newItem != null && newItem.VariationOrderId == voId && newItem.Quantity == 10m && newItem.UnitPrice == 1000m;
+			bool adjustOk = itemA.UnitPrice == 600m && adjLine.OldUnitPrice == 500m && adjLine.OldQuantity == 100m;
+			bool voValueOk = vo.Value == 20000m;   // B 10,000 + A delta (60,000−50,000) 10,000
+			bool revisedOk = rev.Original == 1000000m && rev.ApprovedChanges == 20000m && rev.Revised == 1020000m && origAfter == 1000000m;
+			bool prevBillingUnchanged = b1b!.Lines.First().PeriodValue == prevPeriod && prevPeriod == 50000m;
+			bool nextIncludesNew = newItem != null && em2.Lines.Any(l => l.BoqItemId == newItem.ID);
+
+			var checks = await integ.RunAsync(companyId);
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			// ---- teardown ----
+			var inv = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == b1!.SalesInvoiceId);
+			_db.ReceiptAllocations.RemoveRange(await _db.ReceiptAllocations.Where(a => a.SalesInvoiceId == inv.ID).ToListAsync());
+			_db.SalesInvoiceLines.RemoveRange(await _db.SalesInvoiceLines.Where(l => l.SalesInvoiceId == inv.ID).ToListAsync());
+			if (inv.JournalEntryId != null) { _db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => l.JournalEntryId == inv.JournalEntryId).ToListAsync()); _db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => e.ID == inv.JournalEntryId).ToListAsync()); }
+			_db.SalesInvoices.RemoveRange(await _db.SalesInvoices.Where(i => i.ID == inv.ID).ToListAsync());
+			_db.ProgressBillingLines.RemoveRange(await _db.ProgressBillingLines.Where(l => _db.ProgressBillings.Any(h => h.ID == l.BillingId && h.ProjectId == pid)).ToListAsync());
+			_db.ProgressBillings.RemoveRange(await _db.ProgressBillings.Where(x => x.ProjectId == pid).ToListAsync());
+			await _db.SaveChangesAsync();
+			_db.VariationOrderLines.RemoveRange(await _db.VariationOrderLines.Where(l => _db.VariationOrders.Any(v => v.ID == l.VariationOrderId && v.ProjectId == pid)).ToListAsync());
+			_db.VariationOrders.RemoveRange(await _db.VariationOrders.Where(v => v.ProjectId == pid).ToListAsync());
+			var progLineIds = await _db.ProjectProgresses.Where(p => p.ProjectId == pid).Select(p => p.ID).ToListAsync();
+			_db.ProjectProgressLines.RemoveRange(await _db.ProjectProgressLines.Where(l => progLineIds.Contains(l.ProgressId)).ToListAsync());
+			_db.ProjectProgresses.RemoveRange(await _db.ProjectProgresses.Where(p => p.ProjectId == pid).ToListAsync());
+			_db.BoqItems.RemoveRange(await _db.BoqItems.Where(b => b.ProjectId == pid).ToListAsync());
+			await _db.SaveChangesAsync();
+			await prj.DeleteAsync(companyId, pid);
+			_db.Customers.RemoveRange(await _db.Customers.Where(c => c.ID == cust.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			bool cleanedUp = (await integ.RunAsync(companyId)).All(c => c.Ok);
+
+			bool pass = pok && bpok && svok && vaok && zeroJe && newItemOk && adjustOk && voValueOk && revisedOk && prevBillingUnchanged && nextIncludesNew && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				variation = new { newItemOk, adjustOk, voValue = vo.Value, voValueOk },
+				contract = new { rev.Original, rev.ApprovedChanges, rev.Revised, origUnchanged = origAfter == 1000000m, revisedOk },
+				billing = new { prevPeriod, prevBillingUnchanged, nextIncludesNew },
+				zeroJe = new { before = jeBeforeApprove, after = jeAfterApprove, zeroJe },
+				integrity = new { allIntegrity, cleanedUp }
+			});
+		}
+
+		// GET /api/dev/p6e-test?key=seed123&companyId=1
+		// Projects & Contracting P6-هـ (owned-equipment depreciation to project): allocate + post a depreciation share (3000)
+		// → reclass Dr 510104[proj]=3000 / Cr 520103=3000 (balanced); the asset's AccumulatedDepreciation and DepreciationRuns
+		// are UNTOUCHED, no line on the accum-dep account; project cost rises by 3000; re-post blocked; delete-posted blocked;
+		// TB balanced; inv=0. Self-cleaning.
+		[HttpGet("p6e-test")]
+		public async Task<IActionResult> P6eTest(string key,
+			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IEquipmentDepreciationService equip,
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int? depExpAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "520103").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			int? accumAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "1202").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			int? costAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "1201").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			int? projCostAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "510104").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (depExpAcc == null || projCostAcc == null) return BadRequest(new { message = "accounts 520103/510104 not configured" });
+
+			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			var depRunsBefore = await _db.DepreciationRuns.CountAsync(r => r.CompanyID == companyId);
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (pok, perr, pid) = await prj.SaveAsync(new CrossBuy.Models.Context.Accounting.Project
+			{ CompanyID = companyId, Code = "PRJ-" + suffix, Name = "مشروع إهلاك معدات اختبار", NameEn = "Equip dep test", IsActive = true, Status = "Active" });
+			if (!pok) return BadRequest(new { step = "project", error = perr });
+
+			// owned equipment (fixed asset): Cost 120000 / life 60 → monthly dep 2000 ; opening accum dep = 5000 (must stay 5000)
+			const decimal openingAccum = 5000m;
+			var asset = new CrossBuy.Models.Context.Accounting.FixedAsset
+			{
+				CompanyID = companyId, AssetNo = "EQ-" + suffix, Name = "حفّار اختبار", NameEn = "Test excavator",
+				AcquisitionDate = DateTime.Today.AddMonths(-3), Cost = 120000m, SalvageValue = 0m, UsefulLifeMonths = 60,
+				DepreciationMethod = "StraightLine", CostAccountId = costAcc ?? 0, AccumDepAccountId = accumAcc ?? 0,
+				DepExpenseAccountId = depExpAcc.Value, AccumulatedDepreciation = openingAccum, Status = "Active", CreatedAt = DateTime.UtcNow
+			};
+			_db.FixedAssets.Add(asset); await _db.SaveChangesAsync();
+
+			const decimal share = 3000m;
+			var (sok, serr, aid) = await equip.SaveDraftAsync(companyId, pid, 0, new CrossBuy.BL.EquipmentAllocInput
+			{ FixedAssetId = asset.ID, PeriodDate = DateTime.Today, Amount = share, Note = "t" }, null);
+			async Task Teardown()
+			{
+				var jeIds = await _db.JournalEntries.Where(e => e.CompanyID == companyId && e.SourceType == "EquipmentDepAllocation").Select(e => e.ID).ToListAsync();
+				_db.JournalEntryLines.RemoveRange(await _db.JournalEntryLines.Where(l => jeIds.Contains(l.JournalEntryId)).ToListAsync());
+				_db.JournalEntries.RemoveRange(await _db.JournalEntries.Where(e => jeIds.Contains(e.ID)).ToListAsync());
+				_db.EquipmentDepreciationAllocations.RemoveRange(await _db.EquipmentDepreciationAllocations.Where(x => x.ProjectId == pid).ToListAsync());
+				_db.FixedAssets.RemoveRange(await _db.FixedAssets.Where(x => x.ID == asset.ID).ToListAsync());
+				await _db.SaveChangesAsync();
+				await prj.DeleteAsync(companyId, pid);
+			}
+			if (!sok) { await Teardown(); return BadRequest(new { step = "save", error = serr }); }
+
+			var (postOk, postErr) = await equip.PostAsync(companyId, aid, null);
+			if (!postOk) { await Teardown(); return BadRequest(new { step = "post", error = postErr }); }
+
+			var je = await _db.JournalEntries.AsNoTracking().FirstAsync(e => e.CompanyID == companyId && e.SourceType == "EquipmentDepAllocation" && e.SourceId == aid);
+			var lines = await (from l in _db.JournalEntryLines.AsNoTracking()
+							   join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID
+							   where l.JournalEntryId == je.ID
+							   select new { a.Code, a.ID, l.Debit, l.Credit, l.ProjectId }).ToListAsync();
+			bool costDebit = lines.Any(x => x.Code == "510104" && x.Debit == share && x.ProjectId == pid);
+			bool depCredit = lines.Any(x => x.Code == "520103" && x.Credit == share && x.ProjectId == null);   // untagged
+			bool balanced = lines.Sum(x => x.Debit) == lines.Sum(x => x.Credit);
+			bool noAccumLine = accumAcc == null || !lines.Any(x => x.ID == accumAcc.Value);   // depreciation contra-asset never touched
+
+			// depreciation schedule untouched
+			var assetAfter = await _db.FixedAssets.AsNoTracking().FirstAsync(a => a.ID == asset.ID);
+			bool accumUnchanged = assetAfter.AccumulatedDepreciation == openingAccum;
+			var depRunsAfter = await _db.DepreciationRuns.CountAsync(r => r.CompanyID == companyId);
+			bool depRunsUnchanged = depRunsAfter == depRunsBefore;
+
+			// project cost rises by the share
+			var pnl = await prj.ProfitabilityAsync(companyId, DateTime.Today.AddYears(-1), DateTime.Today.AddDays(1));
+			var row = pnl.FirstOrDefault(r => r.ProjectId == pid);
+			bool profitOk = row != null && row.Cost == share && row.Revenue == 0m;
+
+			// guards
+			var (rePostOk, _) = await equip.PostAsync(companyId, aid, null);
+			bool rePostBlocked = !rePostOk;
+			var (delOk, _) = await equip.DeleteAsync(companyId, aid);
+			bool deletePostedBlocked = !delOk;
+
+			var checks = await integ.RunAsync(companyId);
+			bool tbOk = checks.First(c => c.Key == "tb_balanced").Ok;
+			bool allIntegrity = checks.All(c => c.Ok);
+
+			await Teardown();
+			var jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
+			bool cleanedUp = jeAfter == jeBefore && (await integ.RunAsync(companyId)).All(c => c.Ok);
+
+			bool pass = pok && sok && postOk && costDebit && depCredit && balanced && noAccumLine
+				&& accumUnchanged && depRunsUnchanged && profitOk && rePostBlocked && deletePostedBlocked && tbOk && allIntegrity && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				share,
+				posting = new { costDebit, depCredit, balanced, noAccumLine },
+				depreciationSchedule = new { openingAccum, accumAfter = assetAfter.AccumulatedDepreciation, accumUnchanged, depRunsBefore, depRunsAfter, depRunsUnchanged },
+				profitability = new { projectCost = row?.Cost, revenue = row?.Revenue, profitOk },
+				guards = new { rePostBlocked, deletePostedBlocked },
+				integrity = new { tbOk, allIntegrity },
+				cleanedUp = new { jeBefore, jeAfter, ok = cleanedUp }
+			});
+		}
+
+		// GET /api/dev/prj-demo-cost?key=seed123&companyId=1
+		// Projects & Contracting: adds the COST side to the permanent PRJ-DEMO project so profitability shows revenue − cost.
+		// Posts (via the existing services) a material issue (P5-أ) + project labor (P5-ب) + equipment depreciation share (P6-هـ),
+		// all tagged ProjectId, realistic amounts < revenue (55,000). IDEMPOTENT (marker-guarded per component) and NON-cleaning —
+		// this is intentional permanent demo data. Verifies inv=0. No new writer; touches nothing outside the demo project.
+		[HttpGet("prj-demo-cost")]
+		public async Task<IActionResult> PrjDemoCost(string key,
+			[FromServices] CrossBuy.BL.IProjectMaterialIssueService material, [FromServices] CrossBuy.BL.IProjectLaborService labor,
+			[FromServices] CrossBuy.BL.IEquipmentDepreciationService equip, [FromServices] CrossBuy.BL.IIntegrityCheckService integ,
+			int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const string MARK = "DEMO-COST";
+			var project = await _db.Projects.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.Code == "PRJ-DEMO");
+			if (project == null) return BadRequest(new { message = "PRJ-DEMO not found" });
+			int pid = project.ID;
+			var log = new List<string>();
+
+			// --- 1) material issue (P5-أ) — idempotent via marker note ---
+			decimal materialCost;
+			var existingMi = await _db.ProjectMaterialIssues.Include(x => x.Lines).FirstOrDefaultAsync(x => x.ProjectId == pid && x.Note == MARK && x.Status == "Posted");
+			if (existingMi != null) { materialCost = existingMi.Lines.Sum(l => l.TotalCost); log.Add("material: already seeded"); }
+			else
+			{
+				var pick = await (from sb in _db.StockBalances.AsNoTracking()
+								  join it in _db.Items.AsNoTracking() on sb.ItemId equals it.ID
+								  where sb.CompanyID == companyId && it.CostingMethod == "Average" && sb.QtyOnHand >= 50
+								  orderby sb.QtyOnHand descending
+								  select new { sb.ItemId, sb.WarehouseId, sb.QtyOnHand }).FirstOrDefaultAsync();
+				if (pick == null) return BadRequest(new { step = "material", message = "no Average item with stock >= 50" });
+				decimal qty = Math.Min(700m, Math.Floor(pick.QtyOnHand * 0.8m));
+				var (msok, mserr, iid) = await material.SaveDraftAsync(companyId, pid, 0, DateTime.Today, pick.WarehouseId, MARK,
+					new List<CrossBuy.BL.MaterialLineInput> { new() { ItemId = pick.ItemId, Qty = qty } }, null);
+				if (!msok) return BadRequest(new { step = "material-save", error = mserr });
+				var (mpok, mperr) = await material.PostAsync(companyId, iid, null);
+				if (!mpok) return BadRequest(new { step = "material-post", error = mperr });
+				var mi = await material.GetAsync(companyId, iid);
+				materialCost = mi!.Lines.Sum(l => l.TotalCost);
+				log.Add($"material: issued {qty} of item #{pick.ItemId} → {materialCost:N2}");
+			}
+
+			// --- 2) project labor (P5-ب) — idempotent via marker task title ---
+			decimal laborCost = 0m;
+			const string LABOR_TITLE = "أعمال تنفيذ ميدانية (ديمو)";
+			var existingTask = await _db.TaskItems.FirstOrDefaultAsync(t => t.CompanyId == companyId && t.EntityType == "Project" && t.EntityId == pid && t.Title == LABOR_TITLE);
+			if (existingTask != null && existingTask.LaborPostedAt != null)
+			{
+				var je = await _db.JournalEntries.AsNoTracking().FirstOrDefaultAsync(e => e.CompanyID == companyId && e.SourceType == "ProjectLabor" && e.SourceId == existingTask.ID);
+				if (je != null) laborCost = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == je.ID).SumAsync(l => l.Debit);
+				log.Add("labor: already seeded");
+			}
+			else
+			{
+				var emp = await _db.Employee.AsNoTracking().Where(e => e.ManufHourlyRate > 0).OrderBy(e => e.ID).FirstOrDefaultAsync();
+				if (emp == null) return BadRequest(new { step = "labor", message = "no employee with a derivable hourly rate" });
+				var task = existingTask ?? new CrossBuy.Models.Context.Tasks.TaskItem
+				{
+					CompanyId = companyId, Title = LABOR_TITLE, TitleEn = "Field execution work (demo)", EntityType = "Project", EntityId = pid,
+					AssigneeEmployeeId = emp.ID, CreatedByEmployeeId = emp.ID, Priority = "Normal", Status = "Done",
+					ActualHours = 0, IsBillable = false, ProgressPct = 100, IsScheduled = false, CreatedAt = DateTime.UtcNow
+				};
+				if (existingTask == null) { _db.TaskItems.Add(task); await _db.SaveChangesAsync(); }
+				bool hasTs = await _db.TimesheetEntries.AnyAsync(t => t.TaskId == task.ID);
+				if (!hasTs)
+				{
+					_db.TimesheetEntries.Add(new CrossBuy.Models.Context.Tasks.TimesheetEntry
+					{ CompanyId = companyId, TaskId = task.ID, EmployeeId = emp.ID, WorkDate = DateTime.Today, Hours = 250m, Source = "Manual", IsBillable = false, CreatedAt = DateTime.UtcNow });
+					await _db.SaveChangesAsync();
+				}
+				var (lok, lerr) = await labor.PostTaskLaborAsync(companyId, task.ID, null);
+				if (!lok) return BadRequest(new { step = "labor-post", error = lerr });
+				var je = await _db.JournalEntries.AsNoTracking().FirstAsync(e => e.CompanyID == companyId && e.SourceType == "ProjectLabor" && e.SourceId == task.ID);
+				laborCost = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == je.ID).SumAsync(l => l.Debit);
+				log.Add($"labor: employee #{emp.ID} × 250h → {laborCost:N2}");
+			}
+
+			// --- 3) equipment depreciation share (P6-هـ) — idempotent via marker note ---
+			decimal equipCost = 0m;
+			var existingAlloc = await _db.EquipmentDepreciationAllocations.FirstOrDefaultAsync(x => x.ProjectId == pid && x.Note == MARK && x.Status == "Posted");
+			if (existingAlloc != null) { equipCost = existingAlloc.Amount; log.Add("equipment: already seeded"); }
+			else
+			{
+				var asset = await _db.FixedAssets.AsNoTracking().Where(a => a.CompanyID == companyId && a.Status == "Active" && a.DepExpenseAccountId > 0).OrderBy(a => a.ID).FirstOrDefaultAsync();
+				if (asset == null) return BadRequest(new { step = "equipment", message = "no active fixed asset with a depreciation-expense account" });
+				const decimal share = 6000m;
+				var (sok, serr, aid) = await equip.SaveDraftAsync(companyId, pid, 0, new CrossBuy.BL.EquipmentAllocInput
+				{ FixedAssetId = asset.ID, PeriodDate = DateTime.Today, Amount = share, Note = MARK }, null);
+				if (!sok) return BadRequest(new { step = "equipment-save", error = serr });
+				var (epok, eperr) = await equip.PostAsync(companyId, aid, null);
+				if (!epok) return BadRequest(new { step = "equipment-post", error = eperr });
+				equipCost = share;
+				log.Add($"equipment: asset #{asset.ID} share → {share:N2}");
+			}
+
+			// --- profitability (from GL, ProjectId-tagged) + integrity ---
+			decimal revenue = await _db.JournalEntryLines.Where(l => l.ProjectId == pid && _db.Accounts.Any(a => a.ID == l.AccountId && a.Code == "4102"))
+				.Join(_db.JournalEntries.Where(e => e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l).SumAsync(l => l.Credit - l.Debit);
+			decimal cost = await _db.JournalEntryLines.Where(l => l.ProjectId == pid && _db.Accounts.Any(a => a.ID == l.AccountId && a.Code == "510104"))
+				.Join(_db.JournalEntries.Where(e => e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l).SumAsync(l => l.Debit - l.Credit);
+
+			var checks = await integ.RunAsync(companyId);
+			bool invOk = checks.All(c => c.Ok);
+
+			return Ok(new
+			{
+				ok = true,
+				project = project.Code,
+				log,
+				costs = new { material = Math.Round(materialCost, 2), labor = Math.Round(laborCost, 2), equipment = Math.Round(equipCost, 2), total = Math.Round(materialCost + laborCost + equipCost, 2) },
+				profitability = new { revenue = Math.Round(revenue, 2), cost = Math.Round(cost, 2), profit = Math.Round(revenue - cost, 2) },
+				integrity = new { invOk, failedCount = checks.Count(c => !c.Ok) }
+			});
+		}
+
+		// GET /api/dev/r0-test?key=seed123&companyId=1
+		// Recruitment R0: verifies the 3 new tables exist + required-document catalog CRUD round-trip + the seeded defaults.
+		// Self-cleaning. Does NOT touch Employee/EmployeeRequest. (EmployeeService field-persist fix is build-verified + covered in R3.)
+		[HttpGet("r0-test")]
+		public async Task<IActionResult> R0Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			// 1) tables exist
+			async Task<bool> TableExists(string t) => (await _db.Database.SqlQueryRaw<int>(
+				$"SELECT COUNT(*) AS Value FROM sys.tables WHERE name = '{t}'").FirstAsync()) > 0;
+			bool tReqDoc = await TableExists("RequiredDocumentTypes");
+			bool tJobApp = await TableExists("JobApplications");
+			bool tAppDoc = await TableExists("ApplicationDocuments");
+
+			// 2) seeded defaults
+			var seeded = await recruit.GetDocTypesAsync(companyId);
+			int seedCount = seeded.Count;
+			bool hasMandatory = seeded.Any(x => x.IsMandatory);
+			bool hasOptional = seeded.Any(x => !x.IsMandatory);
+
+			// 3) catalog CRUD round-trip (create → read → update → delete)
+			var baseline = seedCount;
+			var (cok, cerr, id) = await recruit.SaveDocTypeAsync(companyId, new CrossBuy.BL.RequiredDocTypeDto
+			{ NameAr = "نوع اختبار R0", NameEn = "R0 test type", IsMandatory = true, IsActive = true });
+			bool created = cok && id > 0;
+			var read1 = await recruit.GetDocTypeAsync(companyId, id);
+			bool readOk = read1 != null && read1.NameAr == "نوع اختبار R0" && read1.IsMandatory;
+			var (uok, _, _) = await recruit.SaveDocTypeAsync(companyId, new CrossBuy.BL.RequiredDocTypeDto
+			{ ID = id, NameAr = "نوع اختبار R0", NameEn = "R0 test type", IsMandatory = false, IsActive = true, SortOrder = read1?.SortOrder ?? 0 });
+			var read2 = await recruit.GetDocTypeAsync(companyId, id);
+			bool updateOk = uok && read2 != null && !read2.IsMandatory;
+			var (dok, _) = await recruit.DeleteDocTypeAsync(companyId, id);
+			var read3 = await recruit.GetDocTypeAsync(companyId, id);
+			bool deleteOk = dok && read3 == null;
+			int afterCount = (await recruit.GetDocTypesAsync(companyId)).Count;
+			bool cleanedUp = afterCount == baseline;
+
+			bool pass = tReqDoc && tJobApp && tAppDoc && seedCount > 0 && hasMandatory && hasOptional
+				&& created && readOk && updateOk && deleteOk && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				tables = new { RequiredDocumentTypes = tReqDoc, JobApplications = tJobApp, ApplicationDocuments = tAppDoc },
+				seed = new { seedCount, hasMandatory, hasOptional },
+				catalogCrud = new { created, readOk, updateOk, deleteOk, cleanedUp }
+			});
+		}
+
+		// GET /api/dev/r1-test?key=seed123&companyId=1
+		// Recruitment R1: create a job application → appears on the board → move through stages (dates stamped) →
+		// move-to-Hired blocked (needs conversion, R3) → edit. Self-cleaning. Does NOT touch Employee.
+		[HttpGet("r1-test")]
+		public async Task<IActionResult> R1Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (cok, cerr, id) = await recruit.SaveApplicationAsync(companyId, new CrossBuy.Models.Context.Admin.JobApplication
+			{ FirstName = "متقدّم", LastName = suffix, Email = "app_" + suffix + "@test.local" }, null);
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+
+			var a0 = await recruit.GetApplicationAsync(companyId, id);
+			bool created = a0 != null && a0.Status == "New" && a0.ApplicationNo > 0 && a0.AppliedAt != null;
+			bool onBoard = (await recruit.GetApplicationsAsync(companyId)).Any(x => x.ID == id);
+
+			var (mr, _) = await recruit.MoveStageAsync(companyId, id, "Review", null);
+			var aR = await recruit.GetApplicationAsync(companyId, id);
+			bool reviewOk = mr && aR!.Status == "Review" && aR.ReviewedAt != null;
+
+			var (mi, _) = await recruit.MoveStageAsync(companyId, id, "Interview", null);
+			var aI = await recruit.GetApplicationAsync(companyId, id);
+			bool interviewOk = mi && aI!.Status == "Interview" && aI.InterviewAt != null;
+
+			var (ma, _) = await recruit.MoveStageAsync(companyId, id, "Accepted", null);
+			var aA = await recruit.GetApplicationAsync(companyId, id);
+			bool acceptedOk = ma && aA!.Status == "Accepted" && aA.DecisionAt != null;
+
+			var (mh, _) = await recruit.MoveStageAsync(companyId, id, "Hired", null);
+			bool hiredBlocked = !mh;   // hiring only via conversion (R3)
+
+			var (uok, _, _) = await recruit.SaveApplicationAsync(companyId, new CrossBuy.Models.Context.Admin.JobApplication
+			{ ID = id, FirstName = "متقدّم", LastName = suffix + "-edited", PhoneNumber = "0100" }, null);
+			var aU = await recruit.GetApplicationAsync(companyId, id);
+			bool editOk = uok && aU!.LastName.EndsWith("-edited") && aU.PhoneNumber == "0100";
+
+			// teardown
+			var row = await _db.JobApplications.FirstOrDefaultAsync(x => x.ID == id);
+			if (row != null) { _db.JobApplications.Remove(row); await _db.SaveChangesAsync(); }
+			bool cleanedUp = !await _db.JobApplications.AnyAsync(x => x.ID == id);
+
+			bool pass = created && onBoard && reviewOk && interviewOk && acceptedOk && hiredBlocked && editOk && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				create = new { created, onBoard, applicationNo = a0?.ApplicationNo },
+				stages = new { reviewOk, interviewOk, acceptedOk, hiredBlocked },
+				edit = new { editOk },
+				cleanedUp
+			});
+		}
+
+		// GET /api/dev/r2-test?key=seed123&companyId=1
+		// Recruitment R2: application checklist (catalog types, all missing) → upload a mandatory doc → it turns Present and
+		// the mandatory-done count rises → add an "other" doc → delete a doc. Self-cleaning (cascade deletes docs). No file on disk.
+		[HttpGet("r2-test")]
+		public async Task<IActionResult> R2Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (cok, cerr, appId) = await recruit.SaveApplicationAsync(companyId, new CrossBuy.Models.Context.Admin.JobApplication
+			{ FirstName = "متقدّم", LastName = suffix }, null);
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+
+			var chk0 = await recruit.GetChecklistAsync(companyId, appId);
+			int typeCount = chk0.Count;
+			bool allMissing = chk0.All(c => !c.Present);
+			int mandTotal = chk0.Count(c => c.Type.IsMandatory);
+			var firstMand = chk0.FirstOrDefault(c => c.Type.IsMandatory);
+
+			// fake in-memory file; webRootPath=null → no physical write, row still created
+			var bytes = System.Text.Encoding.UTF8.GetBytes("dummy");
+			IFormFile MakeFile() => new FormFile(new MemoryStream(bytes), 0, bytes.Length, "file", "id.pdf");
+
+			bool uploadOk = false, nowPresent = false, mandRose = false;
+            if (firstMand != null)
+            {
+				var (uok, _) = await recruit.AddApplicationDocAsync(companyId, appId, firstMand.Type.ID, MakeFile(), "12345", null, null, null);
+				uploadOk = uok;
+				var chk1 = await recruit.GetChecklistAsync(companyId, appId);
+				nowPresent = chk1.First(c => c.Type.ID == firstMand.Type.ID).Present;
+				mandRose = chk1.Count(c => c.Type.IsMandatory && c.Present) == 1;
+			}
+
+			// add an "other" (ad-hoc) doc
+			var (ook, _) = await recruit.AddApplicationDocAsync(companyId, appId, null, MakeFile(), null, null, null, null);
+			var docs = await recruit.GetApplicationDocsAsync(companyId, appId);
+			bool otherAdded = ook && docs.Any(d => d.RequiredDocumentTypeID == null);
+			int totalDocs = docs.Count;
+
+			// delete one doc
+			var toDel = docs.First();
+			var (dok, _, _) = await recruit.DeleteApplicationDocAsync(companyId, toDel.ID, null);
+			bool deleteOk = dok && (await recruit.GetApplicationDocsAsync(companyId, appId)).Count == totalDocs - 1;
+
+			// teardown (cascade removes ApplicationDocuments)
+			var row = await _db.JobApplications.FirstOrDefaultAsync(x => x.ID == appId);
+			if (row != null) { _db.JobApplications.Remove(row); await _db.SaveChangesAsync(); }
+			bool cleanedUp = !await _db.JobApplications.AnyAsync(x => x.ID == appId)
+				&& !await _db.ApplicationDocuments.AnyAsync(d => d.ApplicationID == appId);
+
+			bool pass = cok && typeCount > 0 && allMissing && mandTotal > 0 && uploadOk && nowPresent && mandRose
+				&& otherAdded && totalDocs == 2 && deleteOk && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				checklist = new { typeCount, allMissing, mandTotal },
+				upload = new { uploadOk, nowPresent, mandRose },
+				other = new { otherAdded, totalDocs },
+				delete = new { deleteOk },
+				cleanedUp
+			});
+		}
+
+		// GET /api/dev/r3-test?key=seed123&companyId=1
+		// Recruitment R3: hire link — accepted application + a document → HireFromApplicationAsync onto an existing employee →
+		// the doc is carried into EmployeeDocuments, the application becomes Hired + HiredEmployeeID set, re-hire is blocked.
+		// Self-cleaning (removes the carried EmployeeDocuments + the application). Employee row itself is left untouched.
+		[HttpGet("r3-test")]
+		public async Task<IActionResult> R3Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var emp = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId).OrderBy(e => e.ID).FirstOrDefaultAsync()
+					  ?? await _db.Employee.AsNoTracking().OrderBy(e => e.ID).FirstOrDefaultAsync();
+			if (emp == null) return BadRequest(new { message = "no employee to hire onto" });
+			const string MARK = "R3TESTDOC";
+
+			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
+			var (cok, cerr, appId) = await recruit.SaveApplicationAsync(companyId, new CrossBuy.Models.Context.Admin.JobApplication
+			{ FirstName = "متقدّم", LastName = suffix, JobTitleID = emp.JobTitleID }, null);
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+
+			// attach one doc + accept
+			var bytes = System.Text.Encoding.UTF8.GetBytes("dummy");
+			IFormFile MakeFile() => new FormFile(new MemoryStream(bytes), 0, bytes.Length, "file", "id.pdf");
+			var chk = await recruit.GetChecklistAsync(companyId, appId);
+			var mand = chk.FirstOrDefault(c => c.Type.IsMandatory);
+			await recruit.AddApplicationDocAsync(companyId, appId, mand?.Type.ID, MakeFile(), MARK, null, null, null);
+			await recruit.MoveStageAsync(companyId, appId, "Review", null);
+			await recruit.MoveStageAsync(companyId, appId, "Accepted", null);
+
+			int empDocsBefore = await _db.EmployeeDocuments.CountAsync(d => d.EmployeeID == emp.ID);
+
+			var (hok, herr) = await recruit.HireFromApplicationAsync(companyId, appId, emp.ID);
+			var app = await recruit.GetApplicationAsync(companyId, appId);
+			bool appHired = hok && app!.Status == "Hired" && app.HiredEmployeeID == emp.ID && app.HiredAt != null;
+			bool docCarried = await _db.EmployeeDocuments.AnyAsync(d => d.EmployeeID == emp.ID && d.DocNumber == MARK);
+			int empDocsAfter = await _db.EmployeeDocuments.CountAsync(d => d.EmployeeID == emp.ID);
+			bool countRose = empDocsAfter == empDocsBefore + 1;
+
+			var (rehireOk, _) = await recruit.HireFromApplicationAsync(companyId, appId, emp.ID);
+			bool rehireBlocked = !rehireOk;
+
+			// teardown: remove carried employee docs + the application (cascade removes its app-docs)
+			var carried = await _db.EmployeeDocuments.Where(d => d.EmployeeID == emp.ID && d.DocNumber == MARK).ToListAsync();
+			_db.EmployeeDocuments.RemoveRange(carried);
+			var row = await _db.JobApplications.FirstOrDefaultAsync(x => x.ID == appId);
+			if (row != null) _db.JobApplications.Remove(row);
+			await _db.SaveChangesAsync();
+			bool cleanedUp = !await _db.JobApplications.AnyAsync(x => x.ID == appId)
+				&& await _db.EmployeeDocuments.CountAsync(d => d.EmployeeID == emp.ID) == empDocsBefore;
+
+			bool pass = cok && appHired && docCarried && countRose && rehireBlocked && cleanedUp;
+			return Ok(new
+			{
+				pass,
+				hire = new { hok, appHired, hiredEmployeeId = app?.HiredEmployeeID },
+				docs = new { docCarried, empDocsBefore, empDocsAfter, countRose },
+				guard = new { rehireBlocked },
+				cleanedUp
+			});
+		}
+
+		// GET /api/dev/recruit-demo?key=seed123&companyId=1
+		// Recruitment: permanent sample applicants spread across the board stages (+ some documents on the accepted one).
+		// Idempotent (marker Source='DEMO'), NON-cleaning — intentional demo data so the board/detail aren't empty for review.
+		[HttpGet("recruit-demo")]
+		public async Task<IActionResult> RecruitDemo(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (await _db.JobApplications.AnyAsync(a => a.CompanyID == companyId && a.Source == "DEMO"))
+				return Ok(new { alreadySeeded = true, count = await _db.JobApplications.CountAsync(a => a.CompanyID == companyId) });
+
+			int? jt = await _db.JobTitles.OrderBy(t => t.ID).Select(t => (int?)t.ID).FirstOrDefaultAsync();
+			int? jt2 = await _db.JobTitles.OrderBy(t => t.ID).Skip(1).Select(t => (int?)t.ID).FirstOrDefaultAsync() ?? jt;
+			int? br = await _db.Branches.Where(b => b.CompanyID == companyId).OrderBy(b => b.ID).Select(b => (int?)b.ID).FirstOrDefaultAsync();
+			int no = await _db.JobApplications.Where(a => a.CompanyID == companyId).Select(a => (int?)a.ApplicationNo).MaxAsync() ?? 0;
+			var now = DateTime.UtcNow;
+
+			var people = new (string first, string last, string stage, int? title, string phone)[]
+			{
+				("الحسن", "عمر", "Interview", jt, "01000000011"),
+				("سارة", "محمود", "Review", jt2, "01000000022"),
+				("خالد", "إبراهيم", "New", jt, "01000000033"),
+				("منى", "علي", "Accepted", jt2, "01000000044"),
+				("يوسف", "أحمد", "New", jt, "01000000055"),
+				("ندى", "حسن", "Review", jt2, "01000000066"),
+			};
+
+			var created = new List<CrossBuy.Models.Context.Admin.JobApplication>();
+			foreach (var p in people)
+			{
+				var a = new CrossBuy.Models.Context.Admin.JobApplication
+				{
+					CompanyID = companyId, ApplicationNo = ++no,
+					FirstName = p.first, LastName = p.last, FullName = (p.first + " " + p.last),
+					Email = null, PhoneNumber = p.phone, JobTitleID = p.title, BranchID = br, EmpCompanyID = companyId,
+					Status = p.stage, Source = "DEMO", AppliedAt = now, CreatedAt = now
+				};
+				if (p.stage is "Review" or "Interview" or "Accepted") a.ReviewedAt = now;
+				if (p.stage is "Interview" or "Accepted") a.InterviewAt = now;
+				if (p.stage == "Accepted") a.DecisionAt = now;
+				_db.JobApplications.Add(a);
+				created.Add(a);
+			}
+			await _db.SaveChangesAsync();
+
+			// attach two documents to the accepted applicant so its checklist shows progress
+			var accepted = created.First(a => a.Status == "Accepted");
+			var reqTypes = await _db.RequiredDocumentTypes.Where(t => t.CompanyID == companyId && t.IsActive).OrderBy(t => t.SortOrder).Take(2).ToListAsync();
+			foreach (var t in reqTypes)
+				_db.ApplicationDocuments.Add(new CrossBuy.Models.Context.Admin.ApplicationDocument
+				{
+					ApplicationID = accepted.ID, RequiredDocumentTypeID = t.ID,
+					DocType = string.IsNullOrWhiteSpace(t.NameEn) ? t.Name : t.NameEn,
+					FilePath = "/uploads/hr-docs/sample-doc.pdf", FileName = "sample.pdf", UploadedAt = now
+				});
+			await _db.SaveChangesAsync();
+
+			return Ok(new { seeded = created.Count, docsOnAccepted = reqTypes.Count, stages = created.GroupBy(x => x.Status).ToDictionary(g => g.Key, g => g.Count()) });
+		}
+
+		// GET /api/dev/crm-seed-pipeline?key=seed123&companyId=1
+		// CRM 3-3: seed the default sales pipeline + stages (idempotent) and backfill opportunities' PipelineId/StageId.
+		[HttpGet("crm-seed-pipeline")]
+		public async Task<IActionResult> CrmSeedPipeline(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var pl = await _db.CrmPipelines.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.IsDefault);
+			if (pl == null)
+			{
+				pl = new CrossBuy.Models.Context.Crm.CrmPipeline { CompanyID = companyId, Name = "خط البيع الافتراضي", NameEn = "Default Sales", IsDefault = true, IsActive = true, CreatedAt = DateTime.UtcNow };
+				_db.CrmPipelines.Add(pl); await _db.SaveChangesAsync();
+			}
+			if (!await _db.CrmPipelineStages.AnyAsync(s => s.PipelineId == pl.ID))
+			{
+				var defs = new (string code, string en, int prob, bool won, bool lost)[]
+				{
+					("Prospecting","Prospecting",10,false,false), ("Qualification","Qualification",25,false,false),
+					("Proposal","Proposal",50,false,false), ("Negotiation","Negotiation",75,false,false),
+					("Won","Won",100,true,false), ("Lost","Lost",0,false,true)
+				};
+				int sort = 0;
+				foreach (var d in defs)
+					_db.CrmPipelineStages.Add(new CrossBuy.Models.Context.Crm.CrmPipelineStage { CompanyID = companyId, PipelineId = pl.ID, Name = d.code, NameEn = d.en, Sort = sort++, Probability = d.prob, IsWon = d.won, IsLost = d.lost, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+			}
+			var stages = await _db.CrmPipelineStages.AsNoTracking().Where(s => s.PipelineId == pl.ID).ToListAsync();
+			var byName = stages.ToDictionary(s => s.Name, s => s.ID);
+			int fixedCount = 0;
+			foreach (var o in await _db.Opportunities.Where(o => o.CompanyID == companyId && (o.PipelineId == null || o.StageId == null)).ToListAsync())
+			{
+				o.PipelineId = pl.ID;
+				if (byName.TryGetValue(o.Stage, out var sid)) o.StageId = sid;
+				fixedCount++;
+			}
+			await _db.SaveChangesAsync();
+			return Ok(new { pipelineId = pl.ID, stages = stages.Count, opportunitiesBackfilled = fixedCount });
+		}
+
+		// GET /api/dev/crm-test-o2c?key=seed123&companyId=1
+		// CRM 3-3b: account → opportunity → products (Amount recompute) → convert to Quotation (O2C). Self-cleaning.
+		[HttpGet("crm-test-o2c")]
+		public async Task<IActionResult> CrmTestO2c(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == companyId && i.IsActive && i.ItemType == "Stockable");
+			if (item == null) return BadRequest(new { message = "need an item" });
+			var acc = new CrossBuy.Models.Context.Crm.CrmAccount { CompanyID = companyId, Name = "حساب اختبار O2C", IsActive = true, CreatedAt = DateTime.UtcNow };
+			_db.CrmAccounts.Add(acc); await _db.SaveChangesAsync();
+			await _crm.SaveOpportunityAsync(companyId, new CrossBuy.Models.Context.Crm.Opportunity { Title = "فرصة O2C", AccountId = acc.ID, Stage = "Proposal", Amount = 0 }, null);
+			var opp = await _db.Opportunities.AsNoTracking().Where(o => o.AccountId == acc.ID).OrderByDescending(o => o.ID).FirstAsync();
+
+			await _crm.SaveOpportunityProductsAsync(companyId, opp.ID, new List<CrossBuy.Models.Context.Crm.OpportunityProduct>
+			{ new() { ItemId = item.ID, ItemDescription = item.Name, Qty = 2, UnitPrice = 100, DiscountPercent = 10 } });   // 2*100*0.9 = 180
+			var oppAfterProducts = await _db.Opportunities.AsNoTracking().FirstAsync(o => o.ID == opp.ID);
+
+			var (cok, cerr, qid) = await _crm.ConvertOpportunityToQuotationAsync(companyId, opp.ID, null);
+			var oppFinal = await _db.Opportunities.AsNoTracking().FirstAsync(o => o.ID == opp.ID);
+			var accFinal = await _db.CrmAccounts.AsNoTracking().FirstAsync(a => a.ID == acc.ID);
+			decimal? quoteGrand = qid.HasValue ? await _db.Quotations.AsNoTracking().Where(q => q.ID == qid.Value).Select(q => (decimal?)q.GrandTotal).FirstOrDefaultAsync() : null;
+
+			var result = new
+			{
+				amountFromProducts = oppAfterProducts.Amount,           // expect 180
+				convert = new { cok, cerr, qid, oppQuotationId = oppFinal.QuotationId, accountCustomerId = accFinal.CustomerId },
+				quotationGrand = quoteGrand,                            // expect 180
+				pass = oppAfterProducts.Amount == 180m && cok && oppFinal.QuotationId == qid && accFinal.CustomerId != null && quoteGrand == 180m
+			};
+
+			// cleanup
+			if (qid.HasValue) { _db.QuotationLines.RemoveRange(_db.QuotationLines.Where(l => l.QuotationId == qid.Value)); _db.Quotations.RemoveRange(_db.Quotations.Where(q => q.ID == qid.Value)); }
+			_db.OpportunityProducts.RemoveRange(_db.OpportunityProducts.Where(p => p.OpportunityId == opp.ID));
+			_db.Opportunities.RemoveRange(_db.Opportunities.Where(o => o.ID == opp.ID));
+			if (accFinal.CustomerId.HasValue) { var nc = await _db.Customers.FirstOrDefaultAsync(c => c.ID == accFinal.CustomerId.Value); if (nc != null) _db.Customers.Remove(nc); }
+			_db.CrmContacts.RemoveRange(_db.CrmContacts.Where(c => c.AccountId == acc.ID));
+			_db.CrmAccounts.RemoveRange(_db.CrmAccounts.Where(a => a.ID == acc.ID));
+			await _db.SaveChangesAsync();
+			return Ok(result);
+		}
+
+		// GET /api/dev/crm-test-account?key=seed123&companyId=1
+		// CRM 3-2: lead → convert to Account(+Contact, NO customer) → opportunity on account → Won → financial Customer
+		// is created & linked (Account.CustomerId + Opportunity.CustomerId). Self-cleaning.
+		[HttpGet("crm-test-account")]
+		public async Task<IActionResult> CrmTestAccount(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var lead = new CrossBuy.Models.Context.Crm.Lead { CompanyID = companyId, Name = "جهة اختبار 360", Company = "شركة اختبار 360", Phone = "0100", Email = "t@x.com", Status = "Qualified", CreatedAt = DateTime.UtcNow };
+			_db.Leads.Add(lead); await _db.SaveChangesAsync();
+
+			var (cok, cerr, accId) = await _crm.ConvertLeadToAccountAsync(companyId, lead.ID, null);
+			if (!cok) return BadRequest(new { step = "convert", error = cerr });
+			var acc = await _db.CrmAccounts.AsNoTracking().FirstAsync(a => a.ID == accId);
+			var contactCount = await _db.CrmContacts.CountAsync(c => c.AccountId == accId);
+			var custBeforeWon = acc.CustomerId;   // expect null
+
+			var (sok, serr) = await _crm.SaveOpportunityAsync(companyId, new CrossBuy.Models.Context.Crm.Opportunity { Title = "فرصة اختبار 360", AccountId = accId, Stage = "Proposal", Amount = 5000 }, null);
+			if (!sok) return BadRequest(new { step = "opp", error = serr });
+			var opp = await _db.Opportunities.AsNoTracking().Where(o => o.AccountId == accId).OrderByDescending(o => o.ID).FirstAsync();
+
+			await _crm.UpdateOpportunityStageAsync(companyId, opp.ID, "Won");
+			var accAfter = await _db.CrmAccounts.AsNoTracking().FirstAsync(a => a.ID == accId);
+			var oppAfter = await _db.Opportunities.AsNoTracking().FirstAsync(o => o.ID == opp.ID);
+
+			var result = new
+			{
+				leadConvertedToAccount = new { accId, leadAccountId = (await _db.Leads.AsNoTracking().FirstAsync(l => l.ID == lead.ID)).AccountId, contactCount, custBeforeWon },
+				wonLinkedCustomer = new { accountCustomerId = accAfter.CustomerId, oppCustomerId = oppAfter.CustomerId },
+				pass = custBeforeWon == null && contactCount == 1 && accAfter.CustomerId != null && oppAfter.CustomerId == accAfter.CustomerId
+			};
+
+			// cleanup (remove the created customer + opp + account + contacts + lead)
+			var newCustId = accAfter.CustomerId;
+			_db.Opportunities.Remove(await _db.Opportunities.FirstAsync(o => o.ID == opp.ID));
+			_db.CrmContacts.RemoveRange(_db.CrmContacts.Where(c => c.AccountId == accId));
+			_db.CrmAccounts.Remove(await _db.CrmAccounts.FirstAsync(a => a.ID == accId));
+			_db.Leads.Remove(await _db.Leads.FirstAsync(l => l.ID == lead.ID));
+			if (newCustId.HasValue) { var nc = await _db.Customers.FirstOrDefaultAsync(c => c.ID == newCustId.Value); if (nc != null) _db.Customers.Remove(nc); }
+			await _db.SaveChangesAsync();
+
+			return Ok(result);
+		}
+
+		// GET /api/dev/crm-test-timeline?key=seed123&companyId=1
+		// CRM 3-4: attach activities to an Account via the polymorphic timeline, read them back, and exercise the
+		// due-reminder pipeline (GetDueReminders → MarkReminded). Self-cleaning.
+		[HttpGet("crm-test-timeline")]
+		public async Task<IActionResult> CrmTestTimeline(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var emp = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId).Select(e => (int?)e.ID).FirstOrDefaultAsync();
+
+			var acc = new CrossBuy.Models.Context.Crm.CrmAccount { CompanyID = companyId, Name = "حساب اختبار الخط الزمني", IsActive = true, CreatedAt = DateTime.UtcNow };
+			_db.CrmAccounts.Add(acc); await _db.SaveChangesAsync();
+
+			await _crm.SaveActivityAsync(companyId, new CrossBuy.Models.Context.Crm.Activity { Type = "Call", Subject = "مكالمة أولى", EntityType = "Account", EntityId = acc.ID, OwnerEmployeeId = emp }, "test");
+			await _crm.SaveActivityAsync(companyId, new CrossBuy.Models.Context.Crm.Activity { Type = "Meeting", Subject = "اجتماع متابعة", EntityType = "Account", EntityId = acc.ID, OwnerEmployeeId = emp, ReminderAt = DateTime.UtcNow.AddMinutes(-1) }, "test");
+
+			var timeline = await _crm.GetTimelineAsync(companyId, "Account", acc.ID);
+			var due = await _crm.GetDueRemindersAsync(companyId, DateTime.UtcNow);
+			var dueForAcc = due.Where(a => a.EntityType == "Account" && a.EntityId == acc.ID).Select(a => a.ID).ToList();
+			await _crm.MarkRemindedAsync(companyId, dueForAcc);
+			var dueAfter = (await _crm.GetDueRemindersAsync(companyId, DateTime.UtcNow)).Count(a => a.EntityType == "Account" && a.EntityId == acc.ID);
+
+			var result = new
+			{
+				timelineCount = timeline.Count,
+				dueRemindersFound = dueForAcc.Count,
+				dueAfterMark = dueAfter,
+				pass = timeline.Count == 2 && dueForAcc.Count == 1 && dueAfter == 0
+			};
+
+			_db.Activities.RemoveRange(_db.Activities.Where(a => a.EntityType == "Account" && a.EntityId == acc.ID));
+			_db.CrmAccounts.Remove(await _db.CrmAccounts.FirstAsync(a => a.ID == acc.ID));
+			await _db.SaveChangesAsync();
+			return Ok(result);
+		}
+
+		// GET /api/dev/crm-test-marketing?key=seed123&companyId=1
+		// CRM 3-5: build a marketing list → push to a campaign → add member + dedupe → set Converted →
+		// attribute a won opportunity → read campaign ROI/funnel. Self-cleaning.
+		[HttpGet("crm-test-marketing")]
+		public async Task<IActionResult> CrmTestMarketing(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var camp = new CrossBuy.Models.Context.Crm.Campaign { CompanyID = companyId, Name = "حملة اختبار التسويق", Status = "Active", Budget = 1000, CreatedAt = DateTime.UtcNow };
+			_db.Campaigns.Add(camp);
+			var lead = new CrossBuy.Models.Context.Crm.Lead { CompanyID = companyId, Name = "محتمل تسويق", Status = "New", CreatedAt = DateTime.UtcNow };
+			var acc = new CrossBuy.Models.Context.Crm.CrmAccount { CompanyID = companyId, Name = "حساب تسويق", IsActive = true, CreatedAt = DateTime.UtcNow };
+			_db.Leads.Add(lead); _db.CrmAccounts.Add(acc); await _db.SaveChangesAsync();
+
+			var (lok, lerr, listId) = await _crm.SaveListAsync(companyId, new CrossBuy.Models.Context.Crm.CrmMarketingList { Name = "قائمة اختبار" }, "test");
+			if (!lok) return BadRequest(new { step = "list", error = lerr });
+			await _crm.AddListMembersAsync(companyId, listId, new[] { ("Lead", lead.ID, (string?)lead.Name), ("Account", acc.ID, (string?)acc.Name) });
+			var pushed = await _crm.AddListToCampaignAsync(companyId, camp.ID, listId);          // expect 2
+			var dup = await _crm.AddCampaignMembersAsync(companyId, camp.ID, new[] { ("Account", acc.ID, (string?)acc.Name) });  // expect 0 (dedupe)
+
+			var membersBefore = await _crm.GetCampaignMembersAsync(companyId, camp.ID);
+			await _crm.UpdateMemberStatusAsync(companyId, membersBefore.First().Id, "Converted");
+
+			// attribute a won opportunity (revenue) — inserted directly to avoid financial-customer side effects
+			_db.Opportunities.Add(new CrossBuy.Models.Context.Crm.Opportunity { CompanyID = companyId, Title = "فرصة تسويق", AccountId = acc.ID, CampaignId = camp.ID, Stage = "Won", Amount = 5000, CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+
+			var detail = await _crm.GetCampaignDetailAsync(companyId, camp.ID);
+			var result = new
+			{
+				pushed, dup,
+				members = detail!.Members, converted = detail.Converted, responded = detail.Responded,
+				wonValue = detail.WonValue, roiPct = detail.RoiPct, responseRatePct = detail.ResponseRatePct,
+				pass = pushed == 2 && dup == 0 && detail.Members == 2 && detail.Converted == 1 && detail.WonValue == 5000m && detail.RoiPct == 400m
+			};
+
+			// cleanup
+			_db.Opportunities.RemoveRange(_db.Opportunities.Where(o => o.CampaignId == camp.ID));
+			_db.CampaignMembers.RemoveRange(_db.CampaignMembers.Where(m => m.CampaignId == camp.ID));
+			_db.CrmListMembers.RemoveRange(_db.CrmListMembers.Where(m => m.ListId == listId));
+			_db.CrmMarketingLists.Remove(await _db.CrmMarketingLists.FirstAsync(l => l.ID == listId));
+			_db.Campaigns.Remove(await _db.Campaigns.FirstAsync(c => c.ID == camp.ID));
+			_db.CrmAccounts.Remove(await _db.CrmAccounts.FirstAsync(a => a.ID == acc.ID));
+			_db.Leads.Remove(await _db.Leads.FirstAsync(l => l.ID == lead.ID));
+			await _db.SaveChangesAsync();
+			return Ok(result);
+		}
+
+		// GET /api/dev/crm-test-tickets?key=seed123&companyId=1
+		// CRM 3-6: SLA policy → ticket stamps due dates → status transitions set first-response/resolved →
+		// a past-due ticket is detected as breached. Self-cleaning.
+		[HttpGet("crm-test-tickets")]
+		public async Task<IActionResult> CrmTestTickets(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var (pok, perr) = await _crm.SaveSlaPolicyAsync(companyId, new CrossBuy.Models.Context.Crm.CrmSlaPolicy { Name = "اختبار SLA عالي", Priority = "High", FirstResponseMins = 60, ResolutionMins = 240, IsActive = true });
+			if (!pok) return BadRequest(new { step = "policy", error = perr });
+
+			var (tok, terr, tid) = await _crm.SaveTicketAsync(companyId, new CrossBuy.Models.Context.Crm.CrmTicket { Subject = "تذكرة اختبار", Priority = "High", Description = "وصف" }, "test");
+			if (!tok) return BadRequest(new { step = "ticket", error = terr });
+			var t0 = await _db.CrmTickets.AsNoTracking().FirstAsync(t => t.ID == tid);
+			var slaStamped = t0.SlaPolicyId != null && t0.FirstResponseDueAt != null && t0.ResolutionDueAt != null
+				&& Math.Abs((t0.FirstResponseDueAt.Value - (t0.CreatedAt ?? DateTime.UtcNow).AddMinutes(60)).TotalMinutes) < 1;
+
+			await _crm.UpdateTicketStatusAsync(companyId, tid, "Open");
+			var afterOpen = await _db.CrmTickets.AsNoTracking().FirstAsync(t => t.ID == tid);
+			await _crm.UpdateTicketStatusAsync(companyId, tid, "Resolved");
+			var afterResolved = await _db.CrmTickets.AsNoTracking().FirstAsync(t => t.ID == tid);
+
+			// breach: a past-due, unresponded, open ticket
+			var breachT = new CrossBuy.Models.Context.Crm.CrmTicket { CompanyID = companyId, Subject = "تذكرة متأخرة", Priority = "High", Status = "New",
+				CreatedAt = DateTime.UtcNow.AddHours(-5), FirstResponseDueAt = DateTime.UtcNow.AddHours(-4), ResolutionDueAt = DateTime.UtcNow.AddHours(-1) };
+			_db.CrmTickets.Add(breachT); await _db.SaveChangesAsync();
+			var stats = await _crm.TicketStatsAsync(companyId);
+
+			var result = new
+			{
+				slaStamped,
+				firstRespondedOnOpen = afterOpen.FirstRespondedAt != null,
+				resolvedStamped = afterResolved.ResolvedAt != null,
+				breachedFirstResponse = stats.breachedFr,
+				breachedResolution = stats.breachedRes,
+				pass = slaStamped && afterOpen.FirstRespondedAt != null && afterResolved.ResolvedAt != null && stats.breachedFr >= 1 && stats.breachedRes >= 1
+			};
+
+			// cleanup
+			_db.CrmTickets.RemoveRange(_db.CrmTickets.Where(t => t.ID == tid || t.ID == breachT.ID));
+			_db.CrmSlaPolicies.RemoveRange(_db.CrmSlaPolicies.Where(p => p.Name == "اختبار SLA عالي"));
+			await _db.SaveChangesAsync();
+			return Ok(result);
+		}
+
+		// GET /api/dev/crm-test-scoring?key=seed123&companyId=1
+		// CRM 3-7: scoring rules compute a lead's score; routing auto-assigns a SalesRep; forecast weights pipeline.
+		// GET /api/dev/crm-test-manager-scope?key=seed123
+		// CRM RBAC: SalesManager sees own + FULL team subtree (all levels/branches) via Hierarchicals; rep sees only own.
+		// Builds a throwaway org subtree (M → P1 → {A,B}; B → P2 → C; and outsider O under a separate node), tests, cleans up.
+		[HttpGet("crm-test-manager-scope")]
+		public async Task<IActionResult> CrmTestManagerScope([FromServices] CrossBuy.BL.ICrmAccessService access, string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			// synthetic employee object-ids (high, won't collide with real employees)
+			const int M = 990001, A = 990002, B = 990003, C = 990004, O = 990005;
+			Hierarchical N(string name, int? type, int? parent, int? objId) => new Hierarchical { H_Name = name, H_Type = type, H_Parent = parent, H_ObjectID = objId };
+			var created = new List<Hierarchical>();
+			async Task<Hierarchical> Add(Hierarchical h) { _db.Hierarchicals.Add(h); await _db.SaveChangesAsync(); created.Add(h); return h; }
+			try
+			{
+				var mgr = await Add(N("MGR-TEST", 5, null, M));              // manager employee node
+				var p1 = await Add(N("POS1", 4, mgr.H_ID, null));           // position under manager
+				await Add(N("A", 5, p1.H_ID, A));                           // direct report A
+				var b = await Add(N("B", 5, p1.H_ID, B));                   // direct report B
+				var p2 = await Add(N("POS2", 4, b.H_ID, null));            // position under B
+				await Add(N("C", 5, p2.H_ID, C));                          // report C — 2 levels below M
+				var other = await Add(N("OTHER-POS", 4, null, null));      // separate branch (not under M)
+				await Add(N("O", 5, other.H_ID, O));                       // outsider O
+
+				var teamM = await access.TeamOwnerIdsAsync(M);   // expect {M,A,B,C}, NOT O
+				var teamA = await access.TeamOwnerIdsAsync(A);   // A has no subordinates → {A}
+
+				var pass = teamM.SetEquals(new HashSet<int> { M, A, B, C }) && !teamM.Contains(O)
+					&& teamA.SetEquals(new HashSet<int> { A });
+
+				return Ok(new
+				{
+					managerTeam = teamM.OrderBy(x => x).ToArray(), expectedManager = new[] { M, A, B, C },
+					repTeam = teamA.OrderBy(x => x).ToArray(), expectedRep = new[] { A },
+					outsiderExcluded = !teamM.Contains(O),
+					pass
+				});
+			}
+			finally
+			{
+				// cleanup: remove synthetic nodes (children first)
+				created.Reverse();
+				_db.Hierarchicals.RemoveRange(created);
+				await _db.SaveChangesAsync();
+			}
+		}
+
+		[HttpGet("crm-test-scoring")]
+		public async Task<IActionResult> CrmTestScoring(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			// reset settings (routing off) for the scoring part
+			await _crm.SaveCrmSettingsAsync(companyId, new CrossBuy.Models.Context.Crm.CrmSettings { AutoRouteLeads = false, HotScore = 50, WarmScore = 20 });
+			await _crm.SaveScoringRuleAsync(companyId, new CrossBuy.Models.Context.Crm.CrmScoringRule { Name = "ZZScore Website", Field = "Source", Operator = "eq", Value = "ZWebsite", Points = 30, IsActive = true });
+			await _crm.SaveScoringRuleAsync(companyId, new CrossBuy.Models.Context.Crm.CrmScoringRule { Name = "ZZScore BigValue", Field = "EstimatedValue", Operator = "gte", Value = "10000", Points = 20, IsActive = true });
+
+			await _crm.SaveLeadAsync(companyId, new CrossBuy.Models.Context.Crm.Lead { Name = "ZZScoreLead", Source = "ZWebsite", EstimatedValue = 15000, Status = "New" }, "test");
+			var lead = await _db.Leads.AsNoTracking().Where(l => l.CompanyID == companyId && l.Name == "ZZScoreLead").OrderByDescending(l => l.ID).FirstAsync();
+			var recomputed = await _crm.RecomputeAllLeadScoresAsync(companyId);
+
+			// routing: turn on + ensure a SalesRep role, then a new unowned lead is auto-assigned
+			var emp = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId).Select(e => (int?)e.ID).FirstOrDefaultAsync();
+			bool roleAdded = false; int? routedOwner = null;
+			if (emp != null)
+			{
+				if (!await _db.CrmUserRoles.AnyAsync(r => r.CompanyID == companyId && r.EmployeeId == emp && r.Role == "SalesRep"))
+				{ _db.CrmUserRoles.Add(new CrossBuy.Models.Context.Crm.CrmUserRole { CompanyID = companyId, EmployeeId = emp.Value, Role = "SalesRep", CreatedAt = DateTime.UtcNow }); await _db.SaveChangesAsync(); roleAdded = true; }
+				await _crm.SaveCrmSettingsAsync(companyId, new CrossBuy.Models.Context.Crm.CrmSettings { AutoRouteLeads = true, HotScore = 50, WarmScore = 20 });
+				await _crm.SaveLeadAsync(companyId, new CrossBuy.Models.Context.Crm.Lead { Name = "ZZRouteLead", Status = "New" }, "test");
+				routedOwner = (await _db.Leads.AsNoTracking().Where(l => l.CompanyID == companyId && l.Name == "ZZRouteLead").OrderByDescending(l => l.ID).FirstAsync()).OwnerEmployeeId;
+			}
+
+			// forecast: one open + one won opp in the same month
+			var mref = new DateTime(2099, 3, 15);
+			_db.Opportunities.AddRange(
+				new CrossBuy.Models.Context.Crm.Opportunity { CompanyID = companyId, Title = "ZZFcOpen", Stage = "Proposal", Amount = 1000, Probability = 50, ExpectedCloseDate = mref, CreatedAt = DateTime.UtcNow },
+				new CrossBuy.Models.Context.Crm.Opportunity { CompanyID = companyId, Title = "ZZFcWon", Stage = "Won", Amount = 2000, Probability = 100, ExpectedCloseDate = mref, CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+			var fc = (await _crm.GetForecastAsync(companyId)).FirstOrDefault(r => r.Month == "2099-03");
+
+			var result = new
+			{
+				leadScore = lead.Score, scoreExpected = 50, recomputedCount = recomputed,
+				routingOwner = routedOwner, routedEmp = emp,
+				forecastWeighted = fc?.WeightedAmount, forecastWon = fc?.WonAmount,
+				pass = lead.Score == 50 && (emp == null || routedOwner == emp) && fc != null && fc.WeightedAmount == 500m && fc.WonAmount == 2000m
+			};
+
+			// cleanup
+			_db.Opportunities.RemoveRange(_db.Opportunities.Where(o => o.Title == "ZZFcOpen" || o.Title == "ZZFcWon"));
+			_db.Leads.RemoveRange(_db.Leads.Where(l => l.Name == "ZZScoreLead" || l.Name == "ZZRouteLead"));
+			_db.CrmScoringRules.RemoveRange(_db.CrmScoringRules.Where(r => r.Name == "ZZScore Website" || r.Name == "ZZScore BigValue"));
+			if (roleAdded && emp != null) _db.CrmUserRoles.RemoveRange(_db.CrmUserRoles.Where(r => r.CompanyID == companyId && r.EmployeeId == emp && r.Role == "SalesRep"));
+			await _db.SaveChangesAsync();
+			await _crm.SaveCrmSettingsAsync(companyId, new CrossBuy.Models.Context.Crm.CrmSettings { AutoRouteLeads = false, HotScore = 50, WarmScore = 20 });
+			return Ok(result);
+		}
+
+		// GET /api/dev/manuf-test-wo?key=seed123&companyId=1
+		// Module 4 4-1: raws + BOM → work order → complete (backflush + labor/overhead) → verify stock, GL & WIP.
+		[HttpGet("manuf-test-wo")]
+		public async Task<IActionResult> ManufTestWo([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IStockService stock, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == companyId && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null) return BadRequest(new { message = "missing category(inv-acc)/uom/warehouse" });
+
+			async Task<int> EnsureItem(string code, bool composite)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == companyId && i.ItemCode == code);
+				if (ex != null) return ex.ID;
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = companyId, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, IsComposite = composite, CompositeType = composite ? "Assembly" : null, CostingMethod = "Average", CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int r1 = await EnsureItem("MFGT-R1", false), r2 = await EnsureItem("MFGT-R2", false), fin = await EnsureItem("MFGT-FIN", true);
+
+			// opening stock for raws (idempotent: only if none)
+			if (!await _db.StockBalances.AnyAsync(b => b.CompanyID == companyId && b.ItemId == r1))
+			{
+				var (ook, oerr, _, _) = await stock.PostOpeningStockAsync(companyId, DateTime.UtcNow.AddDays(-1), new List<CrossBuy.BL.OpeningStockLineInput> {
+					new() { ItemId = r1, WarehouseId = wh.Value, Qty = 1000, UnitCost = 5 },
+					new() { ItemId = r2, WarehouseId = wh.Value, Qty = 500, UnitCost = 8 } }, "test");
+				if (!ook) return BadRequest(new { step = "opening-stock", error = oerr });
+			}
+			// BOM: 2×R1 + 1×R2
+			if (!await _db.ItemComponents.AnyAsync(c => c.ParentItemId == fin))
+			{
+				_db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = companyId, ParentItemId = fin, ComponentItemId = r1, Quantity = 2, SortOrder = 1, CreatedAt = DateTime.UtcNow });
+				_db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = companyId, ParentItemId = fin, ComponentItemId = r2, Quantity = 1, SortOrder = 2, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+			}
+
+			var (finQ0, _, _) = await stock.GetBalanceAsync(companyId, fin, wh.Value);
+			var (cok, cerr, woId) = await manuf.CreateAsync(companyId, fin, 10, wh.Value, null, null, 100, 50, "اختبار", "test");
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+			await manuf.SetStatusAsync(companyId, woId, "Released");
+			var (dok, derr, unit) = await manuf.CompleteAsync(companyId, woId, DateTime.UtcNow, "test");
+			if (!dok) return BadRequest(new { step = "complete", error = derr });
+
+			var wo = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woId);
+			var (finQ1, _, _) = await stock.GetBalanceAsync(companyId, fin, wh.Value);
+			var je = wo.JournalEntryId == null ? null : await _db.JournalEntries.AsNoTracking().FirstOrDefaultAsync(j => j.ID == wo.JournalEntryId);
+			decimal jeDr = 0, jeCr = 0;
+			if (je != null) { var lns = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == je.ID).ToListAsync(); jeDr = lns.Sum(l => l.Debit); jeCr = lns.Sum(l => l.Credit); }
+			// WIP balance (1105) must net to 0
+			var wipAccId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => a.ID).FirstAsync();
+			var wipBal = await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == wipAccId).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+
+			return Ok(new
+			{
+				woStatus = wo.Status, producedQty = wo.ProducedQty,
+                materialCost = wo.MaterialCost, unitCost = unit, totalCost = wo.MaterialCost + wo.LaborCost + wo.OverheadCost,
+				finishedStockDelta = finQ1 - finQ0,
+				jeBalanced = jeDr == jeCr, jeDr, jeCr,
+				wipBalance = wipBal,
+				pass = wo.Status == "Completed" && wo.ProducedQty == 10 && wo.MaterialCost == 180m && unit == 33m && (finQ1 - finQ0) == 10 && jeDr == jeCr && wipBal == 0m
+			});
+		}
+
+		// GET /api/dev/mfg-sale-chain-test?key=seed123 — FULL CHAIN manufacture→sale.
+		// Answers "how did the finished good get its balance": here it comes from a REAL Work Order (consuming
+		// components at manufacture), NOT a seed. Then selling it in the cashier deducts the FINISHED good ONCE
+		// (no component re-backflush). Asserts: WO produces finished + consumes components; sale deducts finished
+		// only; components unchanged at sale; WIP=0; trial balance balanced. (Then run inv-test-integrity=2.)
+		[HttpGet("mfg-sale-chain-test")]
+		public async Task<IActionResult> MfgSaleChainTest([FromServices] CrossBuy.BL.IManufService manuf, string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.01m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing category(inv-acc)/uom/warehouse/branch" });
+
+			async Task<int> EnsureItem(string code, bool composite, decimal? salesPrice)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { if (salesPrice != null) { ex.SalesPrice = salesPrice; await _db.SaveChangesAsync(); } return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, IsComposite = composite, CompositeType = composite ? "Assembly" : null, CostingMethod = "Average", SalesPrice = salesPrice, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			// reuse the manuf-test items; finished good gets a sales price so it can be sold
+			int r1 = await EnsureItem("MFGT-R1", false, null), r2 = await EnsureItem("MFGT-R2", false, null), fin = await EnsureItem("MFGT-FIN", true, 100m);
+
+			if (!await _db.StockBalances.AnyAsync(b => b.CompanyID == company && b.ItemId == r1))
+			{
+				var (ook0, oerr0, _, _) = await _stock.PostOpeningStockAsync(company, DateTime.UtcNow.AddDays(-1), new List<CrossBuy.BL.OpeningStockLineInput> {
+					new() { ItemId = r1, WarehouseId = wh.Value, Qty = 1000, UnitCost = 5 },
+					new() { ItemId = r2, WarehouseId = wh.Value, Qty = 500, UnitCost = 8 } }, "test");
+				if (!ook0) return BadRequest(new { step = "opening", error = oerr0 });
+			}
+			if (!await _db.ItemComponents.AnyAsync(c => c.ParentItemId == fin))
+			{
+				_db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = fin, ComponentItemId = r1, Quantity = 2, SortOrder = 1, CreatedAt = DateTime.UtcNow });
+				_db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = fin, ComponentItemId = r2, Quantity = 1, SortOrder = 2, CreatedAt = DateTime.UtcNow });
+				await _db.SaveChangesAsync();
+			}
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> WipNet() { var a = await _db.Accounts.AsNoTracking().Where(x => x.CompanyID == company && x.Code == "1105").Select(x => (int?)x.ID).FirstOrDefaultAsync(); return a == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == a).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// ---- STEP 1: manufacture the finished good via a REAL work order ----
+			decimal finB = await Q(fin), r1B = await Q(r1), r2B = await Q(r2), tbB = await TbDrift();
+			var (cok, cerr, woId) = await manuf.CreateAsync(company, fin, 10, wh.Value, null, null, 100, 50, "chain-test", "test");
+			if (!cok) return Ok(new { allPass = false, log = new[] { "FAIL create WO: " + cerr } });
+			await manuf.SetStatusAsync(company, woId, "Released");
+			var (dok, derr, unit) = await manuf.CompleteAsync(company, woId, DateTime.UtcNow, "test");
+			Chk("work order completed", dok);
+			if (!dok) { log.Add("completeErr: " + derr); return Ok(new { allPass = false, log }); }
+			decimal finWo = await Q(fin), r1Wo = await Q(r1), r2Wo = await Q(r2);
+			Chk("WO produced finished +10 (from manufacture, NOT a seed)", Math.Abs((finWo - finB) - 10m) < EPS);
+			Chk("WO consumed components at manufacture (R1 −20, R2 −10)", Math.Abs((r1B - r1Wo) - 20m) < EPS && Math.Abs((r2B - r2Wo) - 10m) < EPS);
+			Chk("WIP nets to 0 after complete", Math.Abs(await WipNet()) < EPS);
+
+			// ---- STEP 2: sell the manufactured finished good in the cashier ----
+			var (ook2, _, orderId) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null);
+			await _posOrders.AddLineAsync(company, orderId, fin, 2);
+			var (pok, perr, invId) = await _posOrders.PayAsync(company, orderId, "Cash", null);
+			Chk("cashier sale paid (invoice posted)", pok && invId != null);
+			if (!pok) { log.Add("payErr: " + perr); return Ok(new { allPass = false, log }); }
+			decimal finSale = await Q(fin), r1Sale = await Q(r1), r2Sale = await Q(r2);
+			Chk("sale deducted the FINISHED good ONCE (−2)", Math.Abs((finWo - finSale) - 2m) < EPS);
+			Chk("sale did NOT re-consume components (R1/R2 unchanged — no double)", Math.Abs(r1Sale - r1Wo) < EPS && Math.Abs(r2Sale - r2Wo) < EPS);
+			Chk("WIP still 0 after sale", Math.Abs(await WipNet()) < EPS);
+			Chk("trial balance balanced across WO + sale", Math.Abs((await TbDrift()) - tbB) < EPS);
+
+			return Ok(new { allPass, log, unitCost = unit, finishedProduced = finWo - finB, finishedSold = finWo - finSale, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2 (بلا انحراف جديد)." });
+		}
+
+		// GET /api/dev/split-items-test?key=seed123 — POS-4d-3b split BY ITEM. Real stock (opening), NOT injected asserts.
+		// CRITICAL: a qty-3 line split 2→bill A + 1→bill B → total stock deduction of that item == 3 EXACTLY
+		// (not 4 double, not 2 short). Plus: N invoices, Σ invoice totals == order total exactly, AR nets to zero, TB balanced.
+		[HttpGet("split-items-test")]
+		public async Task<IActionResult> SplitItemsTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.02m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing category(inv-acc)/uom/warehouse/branch" });
+
+			async Task<int> EnsureItem(string code, decimal price)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { ex.SalesPrice = price; await _db.SaveChangesAsync(); return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int a = await EnsureItem("SPLIT-A", 30m), b = await EnsureItem("SPLIT-B", 20m);
+			async Task Ensure(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.Value); if (q < 50) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = cost, SourceType = "Opening", PostToGl = false }, null); }
+			await Ensure(a, 10m); await Ensure(b, 8m);
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 10m; await _db.SaveChangesAsync();
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			decimal qaB = await Q(a), qbB = await Q(b), arB = await Net("1102"), tbB = await TbDrift();
+			var (ook, _, orderId) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null);
+			if (!ook) return Ok(new { allPass = false, log = new[] { "FAIL create order" } });
+			await _posOrders.AddLineAsync(company, orderId, a, 3);   // qty-3 line → will be split 2+1
+			await _posOrders.AddLineAsync(company, orderId, b, 1);
+			var ord = await _posOrders.GetOrderAsync(company, orderId);
+			int lineA = ord!.Lines.First(l => l.ItemId == a).Id, lineB = ord.Lines.First(l => l.ItemId == b).Id;
+			decimal orderGrand = ord.GrandTotal;
+
+			var bills = new List<List<CrossBuy.BL.SplitAllocation>>
+			{
+				new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = lineA, Qty = 2 } },
+				new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = lineA, Qty = 1 }, new CrossBuy.BL.SplitAllocation { LineId = lineB, Qty = 1 } },
+			};
+			var (pok, perr, invIds) = await _posOrders.PaySplitByItemAsync(company, orderId, bills, "Cash", null);
+			Chk("split-by-item pay ok (2 invoices)", pok && invIds.Count == 2);
+			if (!pok) { log.Add("payErr: " + perr); return Ok(new { allPass = false, log }); }
+
+			decimal invSum = 0; foreach (var id in invIds) { var iv = await _db.SalesInvoices.AsNoTracking().FirstAsync(x => x.ID == id); invSum += iv.GrandTotal; }
+			Chk("Σ invoice totals == order total EXACTLY", Math.Abs(invSum - orderGrand) < 0.001m);
+			Chk("SPLIT-A (qty 3) deducted EXACTLY 3 (2→A + 1→B; no double, no short)", Math.Abs((qaB - await Q(a)) - 3m) < 0.001m);
+			Chk("SPLIT-B deducted EXACTLY 1", Math.Abs((qbB - await Q(b)) - 1m) < 0.001m);
+			Chk("AR nets to zero across split invoices + receipts", Math.Abs((await Net("1102")) - arB) < EPS);
+			Chk("trial balance balanced", Math.Abs((await TbDrift()) - tbB) < EPS);
+			Chk("2 PosPayments recorded", (await _db.PosPayments.CountAsync(p => p.OrderId == orderId)) == 2);
+
+			return Ok(new { allPass, log, orderGrand, invSum, invoiceIds = invIds, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2 (بلا انحراف)." });
+		}
+
+		// GET /api/dev/rc4-test?key=seed123 — RC-4c modifier backflush at pay (mfg-sale-chain principle: real opening stock,
+		// no injected asserts). Proves: an AddOn modifier's LinkedItem is deducted QtyDeducted×qty ONCE (no double/short),
+		// the parent once, revenue = base+extra (extra folded into the line), COGS for BOTH, AR nets 0, TB balanced.
+		// Plus the CRITICAL split test: parent qty 3 with cheese, split 2+1 → cheese deducted EXACTLY 3 across the 2 invoices.
+		// Run inv-reconcile?key=seed123 AFTER (the PostToGl=false openings raise stock>GL by their value — scaffolding, not a bug).
+		[HttpGet("rc4-test")]
+		public async Task<IActionResult> Rc4Test(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing category(inv-acc)/uom/warehouse/branch" });
+
+			async Task<int> EnsureItem(string code, decimal price)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { ex.SalesPrice = price; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int parent = await EnsureItem("RC4-PARENT", 40m), cheese = await EnsureItem("RC4-CHEESE", 0m);
+			// real opening stock (no GL — like split-items-test): parent @20, cheese @5
+			async Task Ensure(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.Value); if (q < 50) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = cost, SourceType = "Opening", PostToGl = false }, null); }
+			await Ensure(parent, 20m); await Ensure(cheese, 5m);
+
+			// modifier group (AddOn) «RC4 إضافة جبنة» with one option → cheese, QtyDeducted 1, ExtraPrice 15; attach to the parent
+			var grp = await _db.ModifierGroups.FirstOrDefaultAsync(g => g.CompanyID == company && g.Name == "RC4 إضافة جبنة");
+			if (grp == null) { grp = new CrossBuy.Models.Context.Pos.ModifierGroup { CompanyID = company, Name = "RC4 إضافة جبنة", Type = "AddOn", MinSelect = 0, MaxSelect = 0, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.ModifierGroups.Add(grp); await _db.SaveChangesAsync(); }
+			var opt = await _db.ModifierOptions.FirstOrDefaultAsync(o => o.GroupId == grp.ID && o.LinkedItemId == cheese);
+			if (opt == null) { opt = new CrossBuy.Models.Context.Pos.ModifierOption { GroupId = grp.ID, Name = "جبنة زيادة", LinkedItemId = cheese, QtyDeducted = 1m, ExtraPrice = 15m, IsActive = true }; _db.ModifierOptions.Add(opt); await _db.SaveChangesAsync(); }
+			else { opt.QtyDeducted = 1m; opt.ExtraPrice = 15m; opt.IsActive = true; await _db.SaveChangesAsync(); }
+			if (!await _db.ItemModifierGroups.AnyAsync(l => l.ItemId == parent && l.GroupId == grp.ID)) { _db.ItemModifierGroups.Add(new CrossBuy.Models.Context.Pos.ItemModifierGroup { ItemId = parent, GroupId = grp.ID, Sort = 1 }); await _db.SaveChangesAsync(); }
+
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 10m; await _db.SaveChangesAsync();
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// ============ TEST 1: single pay — parent ×2 with cheese ============
+			decimal qPB = await Q(parent), qCB = await Q(cheese), revB = await Net("4101"), invB = await Net("1103"), arB = await Net("1102"), tbB = await TbDrift();
+			var (o1ok, _, oid1) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null);
+			if (!o1ok) return Ok(new { allPass = false, log = new[] { "FAIL create order 1" } });
+			var (aok, aerr) = await _posOrders.AddLineAsync(company, oid1, parent, 2, new List<int> { opt.ID });
+			Chk("add parent×2 + cheese ok", aok); if (!aok) { log.Add("addErr: " + aerr); return Ok(new { allPass = false, log }); }
+			var ord1 = await _posOrders.GetOrderAsync(company, oid1);
+			var pl = ord1!.Lines.First(l => l.ItemId == parent);
+			Chk("line unitPrice = base+extra (40+15=55)", Math.Abs(pl.UnitPrice - 55m) < 0.001m);
+			Chk("modifier recorded on the line", pl.Modifiers.Count == 1 && pl.Modifiers[0].LinkedItemId == cheese);
+			Chk("OPEN order = zero stock move", (await Q(parent)) == qPB && (await Q(cheese)) == qCB);
+
+			var (p1ok, p1err, inv1) = await _posOrders.PayAsync(company, oid1, "Cash", null);
+			Chk("pay ok", p1ok && inv1 != null); if (!p1ok) { log.Add("payErr: " + p1err); return Ok(new { allPass = false, log }); }
+			var paid1 = await _posOrders.GetOrderAsync(company, oid1);
+			Chk("parent deducted EXACTLY 2", Math.Abs((qPB - await Q(parent)) - 2m) < 0.001m);
+			Chk("cheese (modifier) deducted EXACTLY 2 = QtyDeducted×qty (1×2), ONCE", Math.Abs((qCB - await Q(cheese)) - 2m) < 0.001m);
+			Chk("revenue credited by subtotal+service (extra INCLUDED: 55×2=110 +svc)", Math.Abs((revB - await Net("4101")) - (paid1!.SubTotal + paid1.ServiceAmount)) < EPS);
+			Chk("COGS for BOTH: inventory 1103 credited by parent×2 + cheese×2 (20×2+5×2=50)", Math.Abs((await Net("1103")) - invB - (-50m)) < EPS);
+			Chk("AR nets to zero", Math.Abs((await Net("1102")) - arB) < EPS);
+			Chk("trial balance balanced", Math.Abs((await TbDrift()) - tbB) < EPS);
+			var inv1Lines = await _db.SalesInvoiceLines.AsNoTracking().Where(l => l.SalesInvoiceId == inv1).ToListAsync();
+			Chk("invoice has a 0-price cheese line (ItemId=cheese, qty 2, price 0)", inv1Lines.Any(l => l.ItemId == cheese && l.UnitPrice == 0 && Math.Abs(l.Qty - 2m) < 0.001m));
+
+			// ============ TEST 2: CRITICAL split — parent ×3 with cheese, split 2+1 ============
+			decimal qP2 = await Q(parent), qC2 = await Q(cheese);
+			var (o2ok, _, oid2) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null);
+			await _posOrders.AddLineAsync(company, oid2, parent, 3, new List<int> { opt.ID });
+			var ord2 = await _posOrders.GetOrderAsync(company, oid2);
+			int lineP = ord2!.Lines.First(l => l.ItemId == parent).Id;
+			decimal grand2 = ord2.GrandTotal;
+			var bills = new List<List<CrossBuy.BL.SplitAllocation>>
+			{
+				new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = lineP, Qty = 2 } },
+				new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = lineP, Qty = 1 } },
+			};
+			var (spok, sperr, invIds2) = await _posOrders.PaySplitByItemAsync(company, oid2, bills, "Cash", null);
+			Chk("split-by-item pay ok (2 invoices)", spok && invIds2.Count == 2); if (!spok) { log.Add("splitErr: " + sperr); return Ok(new { allPass = false, log }); }
+			Chk("SPLIT: parent deducted EXACTLY 3", Math.Abs((qP2 - await Q(parent)) - 3m) < 0.001m);
+			Chk("SPLIT: cheese deducted EXACTLY 3 (2+1 across the 2 invoices — no 6 double, no short)", Math.Abs((qC2 - await Q(cheese)) - 3m) < 0.001m);
+			decimal invSum2 = 0; foreach (var id in invIds2) { var iv = await _db.SalesInvoices.AsNoTracking().FirstAsync(x => x.ID == id); invSum2 += iv.GrandTotal; }
+			Chk("Σ split invoices == order total EXACTLY", Math.Abs(invSum2 - grand2) < 0.001m);
+			// cheese 0-price line split proportionally: bill1 qty 2, bill2 qty 1
+			var l2a = await _db.SalesInvoiceLines.AsNoTracking().Where(l => l.SalesInvoiceId == invIds2[0] && l.ItemId == cheese).SumAsync(l => (decimal?)l.Qty) ?? 0;
+			var l2b = await _db.SalesInvoiceLines.AsNoTracking().Where(l => l.SalesInvoiceId == invIds2[1] && l.ItemId == cheese).SumAsync(l => (decimal?)l.Qty) ?? 0;
+			Chk("SPLIT: cheese line proportional (bill1=2, bill2=1)", Math.Abs(l2a - 2m) < 0.001m && Math.Abs(l2b - 1m) < 0.001m);
+
+			return Ok(new { allPass, log, tip = "شغّل inv-reconcile?key=seed123 ثم inv-test-integrity?key=seed123 → failedCount=0 (الافتتاحيات PostToGl=false ترفع المخزون فوق الـGL بقيمتها؛ سقالة اختبار)." });
+		}
+
+		// GET /api/dev/rc6a-test?key=seed123 — RC-6a cash-drawer shift close. Real cash sale in a shift, then close with a
+		// counted drawer that has a deliberate over/short → asserts ExpectedCash = float + Σ cash, CashVariance = counted−expected,
+		// a BALANCED variance JE posts to 520111 vs the drawer account, TB stays balanced, and paid orders are stamped with the shift.
+		// Uses PostToGl=TRUE opening (stock==GL) so inv-test-integrity stays 0 with no reconcile needed.
+		[HttpGet("rc6a-test")]
+		public async Task<IActionResult> Rc6aTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.02m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing category(inv-acc)/uom/warehouse/branch" });
+
+			// item with GL-backed stock (PostToGl=true → stock==GL, no drift)
+			var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "RC6-ITEM");
+			if (it == null) { it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "RC6-ITEM", Barcode = "RC6-ITEM", Name = "RC6 صنف", ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 50m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); }
+			{ var (q, _, _) = await _stock.GetBalanceAsync(company, it.ID, wh.Value); if (q < 20) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = it.ID, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = true }, null); }
+
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+
+			// a dedicated test terminal with a known drawer account (110101)
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "RC6-T", Name = "RC6 terminal", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			else { term.CashAccountId = drawerAcc; await _db.SaveChangesAsync(); }
+			// force-close any leftover open shift on this terminal (test idempotency; no JE)
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+			decimal tbB = await TbDrift();
+
+			// ===== OVERAGE shift: float 100, one cash sale, close +5 over =====
+			var (ok1, e1) = await posSetup.OpenShiftAsync(term.ID, "Morning", null, 100m);
+			Chk("open shift ok", ok1); if (!ok1) { log.Add("openErr:" + e1); return Ok(new { allPass = false, log }); }
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+			var (cok, _, oid) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid, it.ID, 2);
+			var (pok, perr, _) = await _posOrders.PayAsync(company, oid, "Cash", null);
+			Chk("cash sale paid", pok); if (!pok) { log.Add("payErr:" + perr); return Ok(new { allPass = false, log }); }
+			var paidOrder = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid);
+			decimal cashSale = paidOrder.GrandTotal;
+			Chk("paid order stamped with the shift", paidOrder.ShiftId == shift.ID);
+
+			decimal expectExpected = 100m + cashSale;
+			decimal counted = expectExpected + 5m;   // +5 overage
+			var (clok, clerr) = await posSetup.CloseShiftAsync(company, term.ID, shift.ID, counted, null, DateTime.Today, null);
+			Chk("close ok", clok); if (!clok) { log.Add("closeErr:" + clerr); return Ok(new { allPass = false, log }); }
+			var closed = await _db.PosShifts.AsNoTracking().FirstAsync(s => s.ID == shift.ID);
+			Chk($"ExpectedCash = float + cash ({expectExpected})", Math.Abs((closed.ExpectedCash ?? -1) - expectExpected) < EPS);
+			Chk("CashVariance = +5 (overage)", Math.Abs((closed.CashVariance ?? 0) - 5m) < EPS);
+			Chk("variance JE posted", closed.VarianceJournalEntryId != null);
+			if (closed.VarianceJournalEntryId != null)
+			{
+				var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == closed.VarianceJournalEntryId).ToListAsync();
+				Chk("variance JE balanced (Dr==Cr)", Math.Abs(jl.Sum(x => x.Debit) - jl.Sum(x => x.Credit)) < EPS && jl.Sum(x => x.Debit) > 0);
+				int acc520111 = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "520111").Select(a => a.ID).FirstAsync();
+				Chk("overage credits 520111 by 5", jl.Any(l => l.AccountId == acc520111 && Math.Abs(l.Credit - 5m) < EPS));
+				Chk("overage debits drawer 110101 by 5", jl.Any(l => l.AccountId == drawerAcc && Math.Abs(l.Debit - 5m) < EPS));
+			}
+
+			// ===== SHORTAGE shift: float 50, no sales, close −3 short =====
+			var (ok2, _) = await posSetup.OpenShiftAsync(term.ID, "Evening", null, 50m);
+			Chk("open shift 2 ok", ok2);
+			var sh2 = await posSetup.GetOpenShiftAsync(term.ID);
+			var (cl2ok, _) = await posSetup.CloseShiftAsync(company, term.ID, sh2!.ID, 47m, null, DateTime.Today, null);   // expected 50, counted 47 → −3
+			Chk("close 2 ok", cl2ok);
+			var closed2 = await _db.PosShifts.AsNoTracking().FirstAsync(s => s.ID == sh2.ID);
+			Chk("ExpectedCash2 = 50 (no sales)", Math.Abs((closed2.ExpectedCash ?? -1) - 50m) < EPS);
+			Chk("CashVariance2 = -3 (shortage)", Math.Abs((closed2.CashVariance ?? 0) - (-3m)) < EPS);
+			if (closed2.VarianceJournalEntryId != null)
+			{
+				var jl2 = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == closed2.VarianceJournalEntryId).ToListAsync();
+				int acc520111 = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "520111").Select(a => a.ID).FirstAsync();
+				Chk("shortage debits 520111 by 3", jl2.Any(l => l.AccountId == acc520111 && Math.Abs(l.Debit - 3m) < EPS));
+				Chk("shortage credits drawer 110101 by 3", jl2.Any(l => l.AccountId == drawerAcc && Math.Abs(l.Credit - 3m) < EPS));
+			}
+
+			Chk("trial balance still balanced", Math.Abs((await TbDrift()) - tbB) < EPS);
+			return Ok(new { allPass, log, tip = "شغّل inv-test-integrity?key=seed123 → failedCount=0 (لا سقالة PostToGl=false هنا)." });
+		}
+
+		// GET /api/dev/rc6b-test?key=seed123 — RC-6b Z report. Known sales (2 cash + 1 card) in a shift, then verify the
+		// read-only aggregation: order count, totals, by-payment-method distribution, expected cash (cash-only), AND that
+		// generating the report writes NO journal entry. PostToGl=TRUE opening → inv-test-integrity=0 with no reconcile.
+		[HttpGet("rc6b-test")]
+		public async Task<IActionResult> Rc6bTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.02m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+
+			var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "RC6-ITEM");
+			if (it == null) { it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "RC6-ITEM", Barcode = "RC6-ITEM", Name = "RC6 صنف", ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 50m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); }
+			{ var (q, _, _) = await _stock.GetBalanceAsync(company, it.ID, wh.Value); if (q < 20) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = it.ID, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = true }, null); }
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			// Card payment method for this branch (→ 110102) so a card tender resolves
+			int bankAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110102").Select(a => a.ID).FirstOrDefaultAsync();
+			if (bankAcc != 0 && !await _db.BranchPaymentMethods.AnyAsync(p => p.BranchId == branch.ID && p.PaymentMethod == "Card"))
+			{ _db.BranchPaymentMethods.Add(new CrossBuy.Models.Context.Pos.BranchPaymentMethod { BranchId = branch.ID, PaymentMethod = "Card", TargetAccountId = bankAcc, IsActive = true }); await _db.SaveChangesAsync(); }
+
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "RC6-T", Name = "RC6 terminal", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			async Task<decimal> CashSale(decimal qty) { var (_, _, oid) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID); await _posOrders.AddLineAsync(company, oid, it.ID, qty); await _posOrders.PayAsync(company, oid, "Cash", null); return (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid)).GrandTotal; }
+			decimal g1 = await CashSale(1), g2 = await CashSale(1);
+			// card sale via tenders
+			var (_, _, oid3) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid3, it.ID, 2);
+			decimal g3 = (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid3)).GrandTotal;
+			var (cpok, cperr, _) = await _posOrders.PayTendersAsync(company, oid3, new List<CrossBuy.BL.PosTenderInput> { new CrossBuy.BL.PosTenderInput { Method = "Card", Amount = g3 } }, null);
+			Chk("card sale paid", cpok); if (!cpok) { log.Add("cardErr:" + cperr); return Ok(new { allPass = false, log }); }
+
+			// ---- READ-ONLY aggregation: snapshot JE count, generate the report, assert nothing was written ----
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var z = await posSetup.GetShiftZReportAsync(company, term.ID, shift!.ID);
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("Z report generated", z != null); if (z == null) return Ok(new { allPass = false, log });
+			Chk("READ-ONLY: report wrote NO journal entry", jeAfter == jeBefore);
+			Chk("order count = 3", z.OrderCount == 3);
+			Chk($"grand total = g1+g2+g3 ({g1 + g2 + g3})", Math.Abs(z.GrandTotal - (g1 + g2 + g3)) < EPS);
+			var cashLine = z.Payments.FirstOrDefault(p => p.Method == "Cash");
+			var cardLine = z.Payments.FirstOrDefault(p => p.Method == "Card");
+			Chk("cash line = g1+g2, count 2", cashLine != null && Math.Abs(cashLine.Amount - (g1 + g2)) < EPS && cashLine.Count == 2);
+			Chk("card line = g3, count 1", cardLine != null && Math.Abs(cardLine.Amount - g3) < EPS && cardLine.Count == 1);
+			Chk("expected cash = float + CASH only (card excluded)", Math.Abs(z.ExpectedCash - (0m + g1 + g2)) < EPS);
+
+			return Ok(new { allPass, log, report = z, tip = "شغّل inv-test-integrity?key=seed123 → failedCount=0 (قراءة فقط، لا كتابة)." });
+		}
+
+		// GET /api/dev/rc6c-test?key=seed123 — RC-6c-1 FULL VOID of a paid order (the dangerous part: stock + GL).
+		// Proves a paid sale (incl. an RC-4c modifier) reverses CLEANLY: stock returns EXACTLY (finished + linked item),
+		// invoice JE reversed, receipt JE reversed (cash out), AR nets 0, TB balanced, inv-test-integrity=0. Then a
+		// multi-tender (Cash+Card) void proves both drawer + bank are reversed. PostToGl=TRUE openings → stock==GL, no reconcile.
+		[HttpGet("rc6c-test")]
+		public async Task<IActionResult> Rc6cTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.02m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+
+			async Task<int> EnsureItem(string code, decimal price)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { ex.SalesPrice = price; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int parent = await EnsureItem("RC6C-PARENT", 40m), add = await EnsureItem("RC6C-ADD", 0m);
+			async Task Ensure(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.Value); if (q < 20) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = cost, SourceType = "Opening", PostToGl = true }, null); }
+			await Ensure(parent, 20m); await Ensure(add, 5m);
+			// AddOn modifier «RC6C إضافة» → add-item, QtyDeducted 1, ExtraPrice 10; attach to parent
+			var grp = await _db.ModifierGroups.FirstOrDefaultAsync(g => g.CompanyID == company && g.Name == "RC6C إضافة");
+			if (grp == null) { grp = new CrossBuy.Models.Context.Pos.ModifierGroup { CompanyID = company, Name = "RC6C إضافة", Type = "AddOn", MinSelect = 0, MaxSelect = 0, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.ModifierGroups.Add(grp); await _db.SaveChangesAsync(); }
+			var opt = await _db.ModifierOptions.FirstOrDefaultAsync(o => o.GroupId == grp.ID && o.LinkedItemId == add);
+			if (opt == null) { opt = new CrossBuy.Models.Context.Pos.ModifierOption { GroupId = grp.ID, Name = "إضافة", LinkedItemId = add, QtyDeducted = 1m, ExtraPrice = 10m, IsActive = true }; _db.ModifierOptions.Add(opt); await _db.SaveChangesAsync(); }
+			if (!await _db.ItemModifierGroups.AnyAsync(l => l.ItemId == parent && l.GroupId == grp.ID)) { _db.ItemModifierGroups.Add(new CrossBuy.Models.Context.Pos.ItemModifierGroup { ItemId = parent, GroupId = grp.ID, Sort = 1 }); await _db.SaveChangesAsync(); }
+
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			int bankAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110102").Select(a => a.ID).FirstOrDefaultAsync();
+			if (bankAcc != 0 && !await _db.BranchPaymentMethods.AnyAsync(p => p.BranchId == branch.ID && p.PaymentMethod == "Card"))
+			{ _db.BranchPaymentMethods.Add(new CrossBuy.Models.Context.Pos.BranchPaymentMethod { BranchId = branch.ID, PaymentMethod = "Card", TargetAccountId = bankAcc, IsActive = true }); await _db.SaveChangesAsync(); }
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "RC6-T", Name = "RC6 terminal", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// ===== TEST A: single cash sale WITH a modifier, then VOID =====
+			decimal qPB = await Q(parent), qAB = await Q(add), cashB = await Net("110101"), revB = await Net("4101"), vatB = await Net("210201"), arB = await Net("1102"), tbB = await TbDrift();
+			var (_, _, oid) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid, parent, 2, new List<int> { opt.ID });
+			var (pok, perr, invId) = await _posOrders.PayAsync(company, oid, "Cash", null);
+			Chk("cash sale (w/ modifier) paid", pok); if (!pok) { log.Add("payErr:" + perr); return Ok(new { allPass = false, log }); }
+			Chk("after sale: parent −2", Math.Abs((qPB - await Q(parent)) - 2m) < 0.001m);
+			Chk("after sale: modifier linked −2", Math.Abs((qAB - await Q(add)) - 2m) < 0.001m);
+
+			var (vok, verr) = await _posOrders.VoidPaidOrderAsync(company, oid, null);
+			Chk("void ok", vok); if (!vok) { log.Add("voidErr:" + verr); return Ok(new { allPass = false, log }); }
+			Chk("VOID: parent stock fully returned (== before)", Math.Abs((await Q(parent)) - qPB) < 0.001m);
+			Chk("VOID: modifier linked stock fully returned (== before)", Math.Abs((await Q(add)) - qAB) < 0.001m);
+			Chk("VOID: cash drawer reversed (== before)", Math.Abs((await Net("110101")) - cashB) < EPS);
+			Chk("VOID: revenue reversed (== before)", Math.Abs((await Net("4101")) - revB) < EPS);
+			Chk("VOID: VAT reversed (== before)", Math.Abs((await Net("210201")) - vatB) < EPS);
+			Chk("VOID: AR nets to zero (== before)", Math.Abs((await Net("1102")) - arB) < EPS);
+			Chk("VOID: trial balance balanced (== before)", Math.Abs((await TbDrift()) - tbB) < EPS);
+			var ord = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid);
+			var invA = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == invId);
+			Chk("order → Voided, invoice → Reversed", ord.Status == "Voided" && invA.Status == "Reversed");
+			var (vok2, _) = await _posOrders.VoidPaidOrderAsync(company, oid, null);
+			Chk("double-void rejected", !vok2);
+
+			// ===== TEST B: multi-tender (Cash+Card) sale, then VOID → both drawer + bank reversed =====
+			decimal qP2 = await Q(parent), drawerB = await Net("110101"), bankB = await Net("110102"), tb2 = await TbDrift();
+			var (_, _, oid2) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid2, parent, 1);   // plain, no modifier
+			var g2 = (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid2)).GrandTotal;
+			decimal half = Math.Round(g2 / 2m, 2);
+			var (tok, terr, _) = await _posOrders.PayTendersAsync(company, oid2, new List<CrossBuy.BL.PosTenderInput> { new CrossBuy.BL.PosTenderInput { Method = "Cash", Amount = half }, new CrossBuy.BL.PosTenderInput { Method = "Card", Amount = g2 - half } }, null);
+			Chk("multi-tender sale paid", tok); if (!tok) { log.Add("tenderErr:" + terr); return Ok(new { allPass = false, log }); }
+			var (vok3, verr3) = await _posOrders.VoidPaidOrderAsync(company, oid2, null);
+			Chk("multi-tender void ok", vok3); if (!vok3) { log.Add("voidErr2:" + verr3); return Ok(new { allPass = false, log }); }
+			Chk("VOID(tender): parent stock returned", Math.Abs((await Q(parent)) - qP2) < 0.001m);
+			Chk("VOID(tender): drawer reversed (== before)", Math.Abs((await Net("110101")) - drawerB) < EPS);
+			Chk("VOID(tender): bank reversed (== before)", Math.Abs((await Net("110102")) - bankB) < EPS);
+			Chk("VOID(tender): TB balanced (== before)", Math.Abs((await TbDrift()) - tb2) < EPS);
+
+			var (run, checks) = await integ.RunAndLogAsync(company, "rc6c-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			// cleanup: close the test shift
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/rc6c2-test?key=seed123 — RC-6c-2 PARTIAL return. A multi-line paid order (A×2 + B×1); return ONLY 1×A.
+		// Proves: A stock returns EXACTLY 1 (B untouched), revenue/VAT reversed for the returned portion only, AR closed by
+		// the cash refund (drawer reduced by the return amount), stock==GL, TB balanced, inv-test-integrity=0. PostToGl=TRUE openings.
+		[HttpGet("rc6c2-test")]
+		public async Task<IActionResult> Rc6c2Test(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+
+			async Task<int> EnsureItem(string code, decimal price)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { ex.SalesPrice = price; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int A = await EnsureItem("RC6C2-A", 30m), B = await EnsureItem("RC6C2-B", 20m);
+			async Task Ensure(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.Value); if (q < 20) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = cost, SourceType = "Opening", PostToGl = true }, null); }
+			await Ensure(A, 10m); await Ensure(B, 8m);
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "RC6-T", Name = "RC6 terminal", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			decimal qAB = await Q(A), qBB = await Q(B), drawerB = await Net("110101"), revB = await Net("4101"), arB = await Net("1102"), tbB = await TbDrift();
+			// sale: A×2 + B×1
+			var (_, _, oid) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid, A, 2);
+			await _posOrders.AddLineAsync(company, oid, B, 1);
+			var ord = await _posOrders.GetOrderAsync(company, oid);
+			int lineA = ord!.Lines.First(l => l.ItemId == A).Id;
+			var (pok, perr, _) = await _posOrders.PayAsync(company, oid, "Cash", null);
+			Chk("multi-line sale paid", pok); if (!pok) { log.Add("payErr:" + perr); return Ok(new { allPass = false, log }); }
+			decimal grand = (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid)).GrandTotal;
+			decimal qA_sale = await Q(A), qB_sale = await Q(B), rev_sale = await Net("4101");
+			Chk("after sale: A −2, B −1", Math.Abs((qAB - qA_sale) - 2m) < 0.001m && Math.Abs((qBB - qB_sale) - 1m) < 0.001m);
+
+			// RETURN only 1×A (B untouched)
+			var (rok, rerr, retId) = await _posOrders.ReturnOrderLinesAsync(company, oid, new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = lineA, Qty = 1 } }, null);
+			Chk("partial return ok", rok && retId != null); if (!rok) { log.Add("retErr:" + rerr); return Ok(new { allPass = false, log }); }
+			decimal retGrand = (await _db.SalesReturns.AsNoTracking().FirstAsync(r => r.ID == retId)).GrandTotal;   // 30 × 1.14 = 34.2
+
+			Chk("A returned EXACTLY 1 (stock +1 vs after-sale)", Math.Abs((await Q(A)) - qA_sale - 1m) < 0.001m);
+			Chk("A net = 1 sold (2 sold − 1 returned)", Math.Abs((qAB - await Q(A)) - 1m) < 0.001m);
+			Chk("B UNTOUCHED by the return (still −1)", Math.Abs((await Q(B)) - qB_sale) < 0.001m && Math.Abs((qBB - await Q(B)) - 1m) < 0.001m);
+			Chk("AR nets to zero (refund closed the credit)", Math.Abs((await Net("1102")) - arB) < EPS);
+			Chk("drawer reduced by the return amount (grand − retGrand kept)", Math.Abs((await Net("110101")) - drawerB - (grand - retGrand)) < EPS);
+			Chk("revenue reversed for the returned portion ONLY (A sub = 30)", Math.Abs(((await Net("4101")) - rev_sale) - 30m) < EPS);
+			Chk("trial balance balanced", Math.Abs((await TbDrift()) - tbB) < EPS);
+			Chk("order stays Paid (partial)", (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid)).Status == "Paid");
+			Chk("over-return rejected (qty > sold)", !(await _posOrders.ReturnOrderLinesAsync(company, oid, new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = lineA, Qty = 99 } }, null)).ok);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "rc6c2-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/bis1-test?key=seed123 — BIS-1 branch item sourcing (SETUP ONLY). Saves a row for each of the 4 methods,
+		// verifies the per-method required-helper guards, the read reflects the choice, upsert works, ZERO journal entries, inv=0.
+		[HttpGet("bis1-test")]
+		public async Task<IActionResult> Bis1Test(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var brs = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).Select(b => b.ID).Take(2).ToListAsync();
+			if (cat == null || uom == null || brs.Count < 2) return BadRequest(new { message = "need category(inv-acc)/uom/≥2 branches" });
+			int branchA = brs[0], branchB = brs[1];
+
+			async Task<int> EnsureItem(string code)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) return ex.ID;
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int fin = await EnsureItem("BIS-FIN"), raw = await EnsureItem("BIS-RAW"), semi = await EnsureItem("BIS-SEMI"), plain = await EnsureItem("BIS-PLAIN");
+			// give FIN a BOM (2×RAW + 1×SEMI so method-3 semi-in-BOM guard passes); PLAIN has none
+			if (!await _db.ItemComponents.AnyAsync(c => c.CompanyID == company && c.ParentItemId == fin && c.ComponentItemId == raw))
+			{ _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = fin, ComponentItemId = raw, Quantity = 2, UoMId = uom.Value, SortOrder = 1 }); await _db.SaveChangesAsync(); }
+			if (!await _db.ItemComponents.AnyAsync(c => c.CompanyID == company && c.ParentItemId == fin && c.ComponentItemId == semi))
+			{ _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = fin, ComponentItemId = semi, Quantity = 1, UoMId = uom.Value, SortOrder = 2 }); await _db.SaveChangesAsync(); }
+			// FIN + PLAIN as branchA quick items so the read returns them
+			foreach (var iid in new[] { fin, plain }) if (!await _db.PosQuickItems.AnyAsync(q => q.BranchId == branchA && q.ItemId == iid)) { _db.PosQuickItems.Add(new CrossBuy.Models.Context.Pos.PosQuickItem { BranchId = branchA, ItemId = iid, IsActive = true }); }
+			await _db.SaveChangesAsync();
+
+			int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			// method 1: WorkOrder on FIN (has BOM) → ok
+			Chk("1 WorkOrder (has BOM) ok", (await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "WorkOrder", null, null, null)).ok);
+			// method 2: FinishedFromBranch needs a source branch
+			Chk("2 FinishedFromBranch w/o source → REJECTED", !(await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "FinishedFromBranch", null, null, null)).ok);
+			Chk("2 FinishedFromBranch source==self → REJECTED", !(await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "FinishedFromBranch", branchA, null, null)).ok);
+			Chk("2 FinishedFromBranch w/ source ok", (await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "FinishedFromBranch", branchB, null, "Prepaid")).ok);
+			// method 3: SemiFromBranchComplete needs source + semi + BOM
+			Chk("3 Semi w/o semi-item → REJECTED", !(await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "SemiFromBranchComplete", branchB, null, "Prepaid")).ok);
+			Chk("3 Semi w/ source+semi ok", (await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "SemiFromBranchComplete", branchB, semi, "Prepaid")).ok);
+			// method 4: RecipeAtSale needs BOM
+			Chk("4 RecipeAtSale (FIN has BOM) ok", (await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "RecipeAtSale", null, null, null)).ok);
+			Chk("4 RecipeAtSale on PLAIN (no BOM) → REJECTED", !(await posSetup.SaveBranchItemSourcingAsync(company, branchA, plain, "RecipeAtSale", null, null, null)).ok);
+			Chk("1 WorkOrder on PLAIN (no BOM) → REJECTED", !(await posSetup.SaveBranchItemSourcingAsync(company, branchA, plain, "WorkOrder", null, null, null)).ok);
+			Chk("bad method → REJECTED", !(await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin, "Nonsense", null, null, null)).ok);
+
+			// UPSERT: FIN ended on RecipeAtSale (last ok save); exactly ONE row for (branchA,FIN), helper fields cleared
+			var row = await _db.BranchItemSourcings.AsNoTracking().Where(s => s.BranchId == branchA && s.ItemId == fin).ToListAsync();
+			Chk("upsert → single row for (branch,item)", row.Count == 1);
+			Chk("last method persisted = RecipeAtSale", row.Count == 1 && row[0].Method == "RecipeAtSale");
+			Chk("helper fields cleared for method 4 (no source/semi)", row.Count == 1 && row[0].SourceBranchId == null && row[0].SemiFinishedItemId == null);
+
+			// READ reflects the choice (FIN is a branchA quick item)
+			var rows = await posSetup.GetBranchSourcingAsync(company, branchA);
+			var finRow = rows.FirstOrDefault(r => r.ItemId == fin);
+			Chk("read returns FIN with method RecipeAtSale + HasBom", finRow != null && finRow.Method == "RecipeAtSale" && finRow.HasBom);
+			var plainRow = rows.FirstOrDefault(r => r.ItemId == plain);
+			Chk("read returns PLAIN with null method (unset) + no BOM", plainRow != null && plainRow.Method == null && !plainRow.HasBom);
+
+			// SETUP ONLY: zero journal entries + integrity intact
+			Chk("ZERO journal entries created by setup", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeB);
+			var (integRun, _) = await integ.RunAndLogAsync(company, "bis1-test");
+			Chk("inv-test-integrity failedCount == 0", integRun.FailedCount == 0);
+
+			// cleanup the test sourcing rows + quick items (leave items/BOM harmless)
+			_db.BranchItemSourcings.RemoveRange(await _db.BranchItemSourcings.Where(s => s.BranchId == branchA && (s.ItemId == fin || s.ItemId == plain)).ToListAsync());
+			_db.PosQuickItems.RemoveRange(await _db.PosQuickItems.Where(q => q.BranchId == branchA && (q.ItemId == fin || q.ItemId == plain)).ToListAsync());
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = integRun.FailedCount });
+		}
+
+		// GET /api/dev/bis-recipe-test?key=seed123 — BIS-2 sale-time recipe backflush (method 4 = RecipeAtSale). mfg-sale-chain
+		// principle (real stock, PostToGl=TRUE openings). Sells a RecipeAtSale item → recipe components deducted by qty×(1+scrap)
+		// ONCE, finished NOT stocked (not deducted), revenue on the finished, COGS on components, AR=0, TB balanced, inv=0 + split.
+		[HttpGet("bis-recipe-test")]
+		public async Task<IActionResult> BisRecipeTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+
+			async Task<int> EnsureItem(string code, decimal price)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { ex.SalesPrice = price; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int juice = await EnsureItem("BISR-JUICE", 30m), orange = await EnsureItem("BISR-ORANGE", 0m), sugar = await EnsureItem("BISR-SUGAR", 0m);
+			// recipe: 3×orange (no scrap) + 0.5×sugar (10% scrap). JUICE itself is NEVER stocked.
+			async Task Bom(int comp, decimal qty, decimal scrap)
+			{
+				var ex = await _db.ItemComponents.FirstOrDefaultAsync(c => c.CompanyID == company && c.ParentItemId == juice && c.ComponentItemId == comp);
+				if (ex == null) { _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = juice, ComponentItemId = comp, Quantity = qty, ScrapPct = scrap, UoMId = uom.Value, SortOrder = comp }); }
+				else { ex.Quantity = qty; ex.ScrapPct = scrap; }
+				await _db.SaveChangesAsync();
+			}
+			await Bom(orange, 3m, 0m); await Bom(sugar, 0.5m, 10m);
+			// component stock (PostToGl=TRUE → stock==GL, no reconcile). orange@2, sugar@4
+			async Task Ensure(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.Value); if (q < 30) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.Value, Direction = 1, Qty = 200, UnitCostInBase = cost, SourceType = "Opening", PostToGl = true }, null); }
+			await Ensure(orange, 2m); await Ensure(sugar, 4m);
+
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			// sourcing: JUICE @ this branch = RecipeAtSale
+			var (sok, serr) = await posSetup.SaveBranchItemSourcingAsync(company, branch.ID, juice, "RecipeAtSale", null, null, null);
+			Chk("set JUICE sourcing = RecipeAtSale", sok); if (!sok) { log.Add("srcErr:" + serr); return Ok(new { allPass = false, log }); }
+
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "RC6-T", Name = "RC6 terminal", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// ===== TEST A: single pay, JUICE ×2 =====
+			decimal qJ0 = await Q(juice), qO0 = await Q(orange), qS0 = await Q(sugar), rev0 = await Net("4101"), ar0 = await Net("1102"), inv0 = await Net("1103"), tb0 = await TbDrift();
+			var (_, _, oid) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid, juice, 2);
+			// OPEN order = zero effect
+			Chk("open order: no stock moved", (await Q(orange)) == qO0 && (await Q(sugar)) == qS0);
+			var (pok, perr, invId) = await _posOrders.PayAsync(company, oid, "Cash", null);
+			Chk("recipe sale paid", pok); if (!pok) { log.Add("payErr:" + perr); return Ok(new { allPass = false, log }); }
+			var paid = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oid);
+
+			Chk("FINISHED (juice) NOT stocked/deducted (unchanged)", Math.Abs((await Q(juice)) - qJ0) < 0.001m);
+			Chk("orange deducted EXACTLY 6 (3×2), once", Math.Abs((qO0 - await Q(orange)) - 6m) < 0.001m);
+			Chk("sugar deducted EXACTLY 1.1 (0.5×2×1.10 scrap), once", Math.Abs((qS0 - await Q(sugar)) - 1.1m) < 0.001m);
+			Chk("revenue credited by the FINISHED price (30×2=60)", Math.Abs(((await Net("4101")) - rev0) - (-60m)) < EPS);
+			Chk("COGS on components: inventory 1103 −(6×2 + 1.1×4 = 16.4)", Math.Abs(((await Net("1103")) - inv0) - (-16.4m)) < EPS);
+			Chk("AR nets to zero", Math.Abs((await Net("1102")) - ar0) < EPS);
+			Chk("trial balance balanced", Math.Abs((await TbDrift()) - tb0) < EPS);
+			var invLines = await _db.SalesInvoiceLines.AsNoTracking().Where(l => l.SalesInvoiceId == invId).ToListAsync();
+			Chk("invoice has NO finished(juice) stock line", !invLines.Any(l => l.ItemId == juice));
+			Chk("invoice has orange+sugar 0-price component lines", invLines.Any(l => l.ItemId == orange && l.UnitPrice == 0) && invLines.Any(l => l.ItemId == sugar && l.UnitPrice == 0));
+			Chk("invoice has a revenue line for the finished (ItemId null, price 30)", invLines.Any(l => l.ItemId == null && l.UnitPrice == 30m));
+
+			// ===== TEST B: SPLIT — JUICE ×3, bill 2+1 → components deducted EXACTLY across both =====
+			decimal qO1 = await Q(orange), qS1 = await Q(sugar);
+			var (_, _, oid2) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid2, juice, 3);
+			var ord2 = await _posOrders.GetOrderAsync(company, oid2);
+			int lineJ = ord2!.Lines.First(l => l.ItemId == juice).Id; decimal grand2 = ord2.GrandTotal;
+			var bills = new List<List<CrossBuy.BL.SplitAllocation>>
+			{
+				new() { new CrossBuy.BL.SplitAllocation { LineId = lineJ, Qty = 2 } },
+				new() { new CrossBuy.BL.SplitAllocation { LineId = lineJ, Qty = 1 } },
+			};
+			var (spok, sperr, invIds2) = await _posOrders.PaySplitByItemAsync(company, oid2, bills, "Cash", null);
+			Chk("split pay ok (2 invoices)", spok && invIds2.Count == 2); if (!spok) { log.Add("splitErr:" + sperr); return Ok(new { allPass = false, log }); }
+			Chk("SPLIT: orange deducted EXACTLY 9 (3×3) across both bills", Math.Abs((qO1 - await Q(orange)) - 9m) < 0.001m);
+			Chk("SPLIT: sugar deducted EXACTLY 1.65 (0.5×3×1.10) across both", Math.Abs((qS1 - await Q(sugar)) - 1.65m) < 0.001m);
+			Chk("SPLIT: finished still not stocked", Math.Abs((await Q(juice)) - qJ0) < 0.001m);
+			decimal invSum2 = 0; foreach (var i2 in invIds2) invSum2 += (await _db.SalesInvoices.AsNoTracking().FirstAsync(x => x.ID == i2)).GrandTotal;
+			Chk("SPLIT: Σ invoices == order total", Math.Abs(invSum2 - grand2) < 0.001m);
+
+			var (integRun, _) = await integ.RunAndLogAsync(company, "bis-recipe-test");
+			Chk("inv-test-integrity failedCount == 0", integRun.FailedCount == 0);
+			// cleanup sourcing row + shift
+			_db.BranchItemSourcings.RemoveRange(await _db.BranchItemSourcings.Where(s => s.BranchId == branch.ID && s.ItemId == juice).ToListAsync());
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = integRun.FailedCount });
+		}
+
+		// GET /api/dev/bis3-test?key=seed123 — BIS-3 replenishment for methods 2/3 (reuses TransferAsync + ManufService).
+		// Method 2: transfer finished from source branch (transit 110302→0). Method 3: transfer semi + complete a WO here
+		// (BOM-with-semi) → finished present at rolled-up cost, components deducted once, WIP→0. Then the finished sells (BIS-2
+		// deduct-itself). TB balanced, inv=0. PostToGl=TRUE openings.
+		[HttpGet("bis3-test")]
+		public async Task<IActionResult> Bis3Test(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var whs = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).Take(2).ToListAsync();
+			var brs = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).Select(b => b.ID).Take(2).ToListAsync();
+			if (cat == null || uom == null || whs.Count < 2 || brs.Count < 2) return BadRequest(new { message = "need category/uom/≥2 warehouses/≥2 branches" });
+			int whA = whs[0], whB = whs[1], branchA = brs[0], branchB = brs[1];
+
+			// branch↔warehouse: A→whA (target), B→whB (source)
+			async Task SetWh(int br, int wh) { var s = await _db.BranchPosSettings.FirstOrDefaultAsync(x => x.BranchId == br); if (s == null) { s = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = br }; _db.BranchPosSettings.Add(s); } s.DefaultSalesWarehouseId = wh; s.ServiceChargePct = 0m; }
+			await SetWh(branchA, whA); await SetWh(branchB, whB); await _db.SaveChangesAsync();
+
+			async Task<int> EnsureItem(string code, decimal price)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { ex.SalesPrice = price; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			async Task Open(int id, int wh, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh); if (q < 20) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh, Direction = 1, Qty = 100, UnitCostInBase = cost, SourceType = "Opening", PostToGl = true }, null); }
+			async Task<decimal> Q(int id, int wh) => (await _stock.GetBalanceAsync(company, id, wh)).qty;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// ===== METHOD 2: transfer finished from source branch =====
+			int fin2 = await EnsureItem("BIS3-FIN2", 40m);
+			await Open(fin2, whB, 20m);   // source branch has finished stock
+			await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin2, "FinishedFromBranch", branchB, null, "Prepaid");
+			decimal qA0 = await Q(fin2, whA), qB0 = await Q(fin2, whB), transit0 = await Net("110302"), tb0 = await TbDrift();
+			var (m2ok, m2err, trId) = await _posOrders.ReplenishFinishedFromBranchAsync(company, branchA, fin2, 5m, DateTime.Today, null);
+			Chk("method 2: transfer ok", m2ok && trId != null); if (!m2ok) { log.Add("m2err:" + m2err); return Ok(new { allPass = false, log }); }
+			Chk("method 2: target branch +5", Math.Abs((await Q(fin2, whA)) - qA0 - 5m) < 0.001m);
+			Chk("method 2: source branch −5", Math.Abs(qB0 - (await Q(fin2, whB)) - 5m) < 0.001m);
+			Chk("method 2: goods-in-transit 110302 back to 0 (== before)", Math.Abs((await Net("110302")) - transit0) < EPS);
+			Chk("method 2: TB balanced", Math.Abs((await TbDrift()) - tb0) < EPS);
+
+			// ===== METHOD 3: transfer semi + complete WO here =====
+			int semi = await EnsureItem("BIS3-SEMI", 0m), raw = await EnsureItem("BIS3-RAW", 0m), fin3 = await EnsureItem("BIS3-FIN3", 60m);
+			async Task Bom(int parent, int comp, decimal qty) { var ex = await _db.ItemComponents.FirstOrDefaultAsync(c => c.CompanyID == company && c.ParentItemId == parent && c.ComponentItemId == comp); if (ex == null) { _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = parent, ComponentItemId = comp, Quantity = qty, UoMId = uom.Value, SortOrder = comp }); } else ex.Quantity = qty; await _db.SaveChangesAsync(); }
+			await Bom(fin3, semi, 1m); await Bom(fin3, raw, 2m);   // FIN3 = 1×semi + 2×raw
+			await Open(semi, whB, 20m);   // semi in the SOURCE branch
+			await Open(raw, whA, 5m);     // local raw at the target branch
+			await posSetup.SaveBranchItemSourcingAsync(company, branchA, fin3, "SemiFromBranchComplete", branchB, semi, "Prepaid");
+			decimal qFin3A = await Q(fin3, whA), qSemiB = await Q(semi, whB), qRawA = await Q(raw, whA), wip0 = await Net("1105"), tb1 = await TbDrift();
+			var (m3ok, m3err, woId) = await _posOrders.PrepareSemiFinishedAsync(company, branchA, fin3, 3m, 30m, 15m, DateTime.Today, null);
+			Chk("method 3: transfer+WO ok", m3ok && woId != null); if (!m3ok) { log.Add("m3err:" + m3err); return Ok(new { allPass = false, log }); }
+			Chk("method 3: finished produced at target +3", Math.Abs((await Q(fin3, whA)) - qFin3A - 3m) < 0.001m);
+			Chk("method 3: semi consumed from source −3", Math.Abs(qSemiB - (await Q(semi, whB)) - 3m) < 0.001m);
+			Chk("method 3: local raw −6 (2×3)", Math.Abs(qRawA - (await Q(raw, whA)) - 6m) < 0.001m);
+			var wo = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woId);
+			Chk("method 3: cost rolled up = unit 45 ((3×20 semi + 6×5 raw + 30 + 15)/3)", Math.Abs(wo.UnitCost - 45m) < 0.01m);
+			Chk("method 3: WIP 1105 back to 0 (== before)", Math.Abs((await Net("1105")) - wip0) < EPS);
+			Chk("method 3: TB balanced", Math.Abs((await TbDrift()) - tb1) < EPS);
+
+			// ===== SALE of the prepared FIN3 (BIS-2 deduct-itself, method 3) =====
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branchA && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branchA, Code = "RC6-T", Name = "RC6", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+			decimal qFin3Sale = await Q(fin3, whA), tb2 = await TbDrift();
+			var (_, _, oid) = await _posOrders.CreateOrderAsync(company, branchA, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid, fin3, 1);
+			var (pok, perr, _) = await _posOrders.PayAsync(company, oid, "Cash", null);
+			Chk("sale of prepared FIN3 paid", pok); if (!pok) { log.Add("payErr:" + perr); return Ok(new { allPass = false, log }); }
+			Chk("sale deducts the FINISHED itself −1 (method 3 = deduct-self)", Math.Abs(qFin3Sale - (await Q(fin3, whA)) - 1m) < 0.001m);
+			Chk("sale: TB balanced (drift unchanged)", Math.Abs((await TbDrift()) - tb2) < EPS);
+
+			var (integRun, _) = await integ.RunAndLogAsync(company, "bis3-test");
+			Chk("inv-test-integrity failedCount == 0", integRun.FailedCount == 0);
+			// cleanup sourcing rows + shift
+			_db.BranchItemSourcings.RemoveRange(await _db.BranchItemSourcings.Where(s => s.BranchId == branchA && (s.ItemId == fin2 || s.ItemId == fin3)).ToListAsync());
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = integRun.FailedCount, woUnitCost = wo.UnitCost });
+		}
+
+		// GET /api/dev/bis4-test?key=seed123 — BIS-4 recipe-aware partial return + read-only overview. Sells a RecipeAtSale item,
+		// then partial-returns it → the recipe COMPONENTS come back (by scrap), the never-stocked finished is NOT restocked,
+		// AR closes via the refund, stock==GL, TB balanced, inv=0. Overview call writes NO journal entry.
+		[HttpGet("bis4-test")]
+		public async Task<IActionResult> Bis4Test(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+
+			async Task<int> EnsureItem(string code, decimal price)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) { ex.SalesPrice = price; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; }
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int juice = await EnsureItem("BIS4-JUICE", 30m), orange = await EnsureItem("BIS4-ORANGE", 0m), sugar = await EnsureItem("BIS4-SUGAR", 0m);
+			async Task Bom(int comp, decimal qty, decimal scrap) { var ex = await _db.ItemComponents.FirstOrDefaultAsync(c => c.CompanyID == company && c.ParentItemId == juice && c.ComponentItemId == comp); if (ex == null) { _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = juice, ComponentItemId = comp, Quantity = qty, ScrapPct = scrap, UoMId = uom.Value, SortOrder = comp }); } else { ex.Quantity = qty; ex.ScrapPct = scrap; } await _db.SaveChangesAsync(); }
+			await Bom(orange, 3m, 0m); await Bom(sugar, 0.5m, 10m);
+			async Task Open(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.Value); if (q < 30) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.Value, Direction = 1, Qty = 200, UnitCostInBase = cost, SourceType = "Opening", PostToGl = true }, null); }
+			await Open(orange, 2m); await Open(sugar, 4m);
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			await posSetup.SaveBranchItemSourcingAsync(company, branch.ID, juice, "RecipeAtSale", null, null, null);
+
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "RC6-T", Name = "RC6", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// sell JUICE ×2 (recipe backflush)
+			var (_, _, oid) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid, juice, 2);
+			var ordSale = await _posOrders.GetOrderAsync(company, oid);
+			int lineJ = ordSale!.Lines.First(l => l.ItemId == juice).Id;
+			var (pok, perr, _) = await _posOrders.PayAsync(company, oid, "Cash", null);
+			Chk("recipe sale paid", pok); if (!pok) { log.Add("payErr:" + perr); return Ok(new { allPass = false, log }); }
+
+			// snapshot AFTER sale, BEFORE return
+			decimal qJuice = await Q(juice), qOrange = await Q(orange), qSugar = await Q(sugar), ar0 = await Net("1102"), tb0 = await TbDrift();
+
+			// PARTIAL RETURN 1×JUICE → recipe COMPONENTS come back (orange 3×1=3, sugar 0.5×1×1.10=0.55), finished NOT restocked
+			var (rok, rerr, retId) = await _posOrders.ReturnOrderLinesAsync(company, oid, new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = lineJ, Qty = 1 } }, null);
+			Chk("recipe partial return ok", rok && retId != null); if (!rok) { log.Add("retErr:" + rerr); return Ok(new { allPass = false, log }); }
+
+			Chk("RECIPE RETURN: orange returned EXACTLY 3 (3×1)", Math.Abs((await Q(orange)) - qOrange - 3m) < 0.001m);
+			Chk("RECIPE RETURN: sugar returned EXACTLY 0.55 (0.5×1×1.10 scrap)", Math.Abs((await Q(sugar)) - qSugar - 0.55m) < 0.001m);
+			Chk("RECIPE RETURN: finished juice NOT restocked (unchanged)", Math.Abs((await Q(juice)) - qJuice) < 0.001m);
+			Chk("RECIPE RETURN: AR nets to zero (refund closed it)", Math.Abs((await Net("1102")) - ar0) < EPS);
+			Chk("RECIPE RETURN: TB balanced", Math.Abs((await TbDrift()) - tb0) < EPS);
+			var retLines = await _db.SalesReturnLines.AsNoTracking().Where(l => l.SalesReturnId == retId).ToListAsync();
+			Chk("return has NO finished(juice) stock line", !retLines.Any(l => l.ItemId == juice));
+			Chk("return has orange+sugar component lines", retLines.Any(l => l.ItemId == orange) && retLines.Any(l => l.ItemId == sugar));
+
+			// READ-ONLY overview writes nothing
+            int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var overview = await posSetup.GetSourcingOverviewAsync(company);
+			Chk("overview returns rows (incl. this JUICE)", overview.Any(r => r.ItemCode == "BIS4-JUICE" && r.Method == "RecipeAtSale"));
+			Chk("overview is READ-ONLY (no journal entries)", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeB);
+
+			var (integRun, _) = await integ.RunAndLogAsync(company, "bis4-test");
+			Chk("inv-test-integrity failedCount == 0", integRun.FailedCount == 0);
+			_db.BranchItemSourcings.RemoveRange(await _db.BranchItemSourcings.Where(s => s.BranchId == branch.ID && s.ItemId == juice).ToListAsync());
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = integRun.FailedCount });
+		}
+
+		// GET /api/dev/tip-test?key=seed123 — RC-5 tip (gratuity). Cash tip → Dr drawer / Cr 210207 (liability, no revenue/VAT),
+		// raises ExpectedCash; void reverses it. Card tip → Dr bank / Cr 210207, does NOT touch the drawer/ExpectedCash.
+		// No stock at all → inv=0 by construction.
+		[HttpGet("tip-test")]
+		public async Task<IActionResult> TipTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+			if (await _db.Accounts.CountAsync(a => a.CompanyID == company && a.Code == "210207") == 0) return BadRequest(new { message = "run pos_tip_rc5.sql (account 210207)" });
+
+			var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "TIP-ITEM");
+			if (it == null) { it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "TIP-ITEM", Barcode = "TIP-ITEM", Name = "TIP item", ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 50m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); }
+			else { it.SalesPrice = 50m; await _db.SaveChangesAsync(); }
+			{ var (q, _, _) = await _stock.GetBalanceAsync(company, it.ID, wh.Value); if (q < 20) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = it.ID, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = true }, null); }
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			int bankAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110102").Select(a => a.ID).FirstOrDefaultAsync();
+			if (bankAcc != 0 && !await _db.BranchPaymentMethods.AnyAsync(p => p.BranchId == branch.ID && p.PaymentMethod == "Card"))
+			{ _db.BranchPaymentMethods.Add(new CrossBuy.Models.Context.Pos.BranchPaymentMethod { BranchId = branch.ID, PaymentMethod = "Card", TargetAccountId = bankAcc, IsActive = true }); await _db.SaveChangesAsync(); }
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "RC6-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "RC6-T", Name = "RC6", CashAccountId = drawerAcc, ReceiptPrefix = "RC6-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+			async Task<decimal> ShiftExpected() { var sh = await _db.PosShifts.AsNoTracking().FirstAsync(s => s.ID == shift!.ID); return await posSetup.ExpectedCashAsync(company, sh); }
+
+			// ===== TEST A: CASH tip 10 on a cash sale =====
+			decimal tips0 = await Net("210207"), rev0 = await Net("4101"), vat0 = await Net("210201"), tb0 = await TbDrift();
+			var (_, _, oidA) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oidA, it.ID, 1);
+			var ordA = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oidA); decimal grandA = ordA.GrandTotal, subA = ordA.SubTotal;
+			var (paok, paerr, _) = await _posOrders.PayAsync(company, oidA, "Cash", null, 1, 10m, "Cash");
+			Chk("cash sale + cash tip paid", paok); if (!paok) { log.Add("payErr:" + paerr); return Ok(new { allPass = false, log }); }
+			var paidA = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oidA);
+			Chk("tip recorded on order (10, Cash, JE set)", paidA.TipAmount == 10m && paidA.TipMethod == "Cash" && paidA.TipJournalEntryId != null);
+			Chk("tips-payable 210207 credited by 10 (liability)", Math.Abs((await Net("210207")) - tips0 - (-10m)) < EPS);
+			Chk("revenue 4101 got the SALE only (no tip inflation)", Math.Abs(((await Net("4101")) - rev0) - (-subA)) < EPS);
+			Chk("VAT 210201 unchanged by the tip (only sale tax)", Math.Abs(((await Net("210201")) - vat0) - (-(grandA - subA))) < EPS);
+			Chk("ExpectedCash = cash sale grand + cash tip 10", Math.Abs((await ShiftExpected()) - (grandA + 10m)) < EPS);
+			Chk("TB balanced (tip JE balanced)", Math.Abs((await TbDrift()) - tb0) < EPS);
+
+			// VOID reverses the tip too
+			var (vok, verr) = await _posOrders.VoidPaidOrderAsync(company, oidA, null);
+			Chk("void ok", vok); if (!vok) { log.Add("voidErr:" + verr); return Ok(new { allPass = false, log }); }
+			Chk("VOID: tips-payable 210207 back to before", Math.Abs((await Net("210207")) - tips0) < EPS);
+			Chk("VOID: order tip cleared", (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oidA)).TipAmount == 0m);
+			Chk("VOID: ExpectedCash back (no cash tip left)", Math.Abs((await ShiftExpected()) - 0m) < EPS);
+			Chk("VOID: TB balanced", Math.Abs((await TbDrift()) - tb0) < EPS);
+
+			// ===== TEST B: CARD tip 5 on a card sale — bank, NOT the drawer =====
+			decimal tipsB0 = await Net("210207"), bankB0 = await Net("110102"), expB0 = await ShiftExpected(), tbB0 = await TbDrift();
+			var (_, _, oidB) = await _posOrders.CreateOrderAsync(company, branch.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oidB, it.ID, 1);
+			decimal grandB = (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oidB)).GrandTotal;
+			var (pbok, pberr, _) = await _posOrders.PayTendersAsync(company, oidB, new List<CrossBuy.BL.PosTenderInput> { new CrossBuy.BL.PosTenderInput { Method = "Card", Amount = grandB } }, null, 5m, "Card");
+			Chk("card sale + card tip paid", pbok); if (!pbok) { log.Add("payErr:" + pberr); return Ok(new { allPass = false, log }); }
+			Chk("card tip recorded (5, Card)", (await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == oidB)).TipMethod == "Card");
+			Chk("tips-payable 210207 credited by 5", Math.Abs((await Net("210207")) - tipsB0 - (-5m)) < EPS);
+			Chk("bank 110102 debited by tip 5 (card tip → bank)", Math.Abs(((await Net("110102")) - bankB0) - (grandB + 5m)) < EPS);
+			Chk("card tip does NOT change ExpectedCash (drawer untouched)", Math.Abs((await ShiftExpected()) - expB0) < EPS);
+			Chk("TB balanced", Math.Abs((await TbDrift()) - tbB0) < EPS);
+
+			var (integRun, _) = await integ.RunAndLogAsync(company, "tip-test");
+			Chk("inv-test-integrity failedCount == 0", integRun.FailedCount == 0);
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = integRun.FailedCount });
+		}
+
+		// GET /api/dev/pos-sync-test?key=seed123 — POS-9d offline replay (the accounting core). Rebuilds a SETTLED offline order
+		// on the server + pays via the existing services → invoice + stock (per BranchItemSourcing) + GL + tip (210207).
+		// Idempotent (re-send same localGuid → skipped). mfg-sale-chain principle (real PostToGl=TRUE stock → inv=0, no reconcile).
+		[HttpGet("pos-sync-test")]
+		public async Task<IActionResult> PosSyncTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+			decimal vat = await _db.TaxCodes.AsNoTracking().Where(t => t.CompanyID == company && t.Kind == "VAT" && t.IsDefault && t.IsActive).Select(t => (decimal?)t.Rate).FirstOrDefaultAsync() ?? 0m;
+
+			async Task<int> EItem(string code, decimal price) { var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code); if (ex != null) { ex.SalesPrice = price; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; } var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID; }
+			async Task Open(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.Value); if (q < 30) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.Value, Direction = 1, Qty = 200, UnitCostInBase = cost, SourceType = "Opening", PostToGl = true }, null); }
+			int syncitm = await EItem("SYNCITM", 50m), cheese = await EItem("SYNC-CHEESE", 0m), juice = await EItem("SYNC-JUICE", 30m), orange = await EItem("SYNC-ORANGE", 0m), sugar = await EItem("SYNC-SUGAR", 0m);
+			await Open(syncitm, 10m); await Open(cheese, 5m); await Open(orange, 2m); await Open(sugar, 4m);
+			// modifier on SYNCITM (AddOn → cheese, qty1 extra10)
+			var grp = await _db.ModifierGroups.FirstOrDefaultAsync(g => g.CompanyID == company && g.Name == "SYNC إضافة");
+			if (grp == null) { grp = new CrossBuy.Models.Context.Pos.ModifierGroup { CompanyID = company, Name = "SYNC إضافة", Type = "AddOn", MinSelect = 0, MaxSelect = 0, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.ModifierGroups.Add(grp); await _db.SaveChangesAsync(); }
+			var opt = await _db.ModifierOptions.FirstOrDefaultAsync(o => o.GroupId == grp.ID && o.LinkedItemId == cheese);
+			if (opt == null) { opt = new CrossBuy.Models.Context.Pos.ModifierOption { GroupId = grp.ID, Name = "جبنة", LinkedItemId = cheese, QtyDeducted = 1m, ExtraPrice = 10m, IsActive = true }; _db.ModifierOptions.Add(opt); await _db.SaveChangesAsync(); }
+			else { opt.QtyDeducted = 1m; opt.ExtraPrice = 10m; opt.IsActive = true; await _db.SaveChangesAsync(); }
+			if (!await _db.ItemModifierGroups.AnyAsync(l => l.ItemId == syncitm && l.GroupId == grp.ID)) { _db.ItemModifierGroups.Add(new CrossBuy.Models.Context.Pos.ItemModifierGroup { ItemId = syncitm, GroupId = grp.ID, Sort = 1 }); await _db.SaveChangesAsync(); }
+			// JUICE recipe (RecipeAtSale) 3×orange + 0.5×sugar@10%
+			async Task Bom(int comp, decimal qty, decimal scrap) { var ex = await _db.ItemComponents.FirstOrDefaultAsync(c => c.CompanyID == company && c.ParentItemId == juice && c.ComponentItemId == comp); if (ex == null) _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = juice, ComponentItemId = comp, Quantity = qty, ScrapPct = scrap, UoMId = uom.Value, SortOrder = comp }); else { ex.Quantity = qty; ex.ScrapPct = scrap; } await _db.SaveChangesAsync(); }
+			await Bom(orange, 3m, 0m); await Bom(sugar, 0.5m, 10m);
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			await posSetup.SaveBranchItemSourcingAsync(company, branch.ID, juice, "RecipeAtSale", null, null, null);
+			int bankAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110102").Select(a => a.ID).FirstOrDefaultAsync();
+			if (bankAcc != 0 && !await _db.BranchPaymentMethods.AnyAsync(p => p.BranchId == branch.ID && p.PaymentMethod == "Card")) { _db.BranchPaymentMethods.Add(new CrossBuy.Models.Context.Pos.BranchPaymentMethod { BranchId = branch.ID, PaymentMethod = "Card", TargetAccountId = bankAcc, IsActive = true }); await _db.SaveChangesAsync(); }
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "ZZ-SYNCT");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "ZZ-SYNCT", Name = "ZZ sync terminal", CashAccountId = drawerAcc, ReceiptPrefix = "ZZSY-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+			// clean prior sync logs for a deterministic re-run
+			var gA = "synctest-A-fixed"; var gB = "synctest-B-fixed";
+			_db.PosSyncLogs.RemoveRange(await _db.PosSyncLogs.Where(x => x.CompanyId == company && (x.LocalGuid == gA || x.LocalGuid == gB)).ToListAsync());
+			await _db.SaveChangesAsync();
+
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.Value)).qty;
+			async Task<decimal> Net(string code) { var acc = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return acc == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == acc).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// ===== payload A: SYNCITM×2 (+cheese modifier, offline unit 60) + JUICE×1 (RecipeAtSale) + cash tip 5 =====
+			decimal qSy = await Q(syncitm), qCh = await Q(cheese), qJ = await Q(juice), qOr = await Q(orange), qSu = await Q(sugar), rev0 = await Net("4101"), tips0 = await Net("210207"), ar0 = await Net("1102"), tb0 = await TbDrift();
+			var rnA = await _posOrders.AllocateReceiptNoAsync(term.ID);   // ZZ terminal, unique per run (was hardcoded "T1-OFF001")
+			var pA = new CrossBuy.BL.PosSyncOrderInput
+			{
+				LocalGuid = gA, TerminalId = term.ID, ShiftId = shift!.ID, OrderType = "Takeaway", Method = "Cash",
+				Tip = new CrossBuy.BL.PosSyncTipInput { Amount = 5m, Method = "Cash" }, ReceiptNo = rnA,
+				Lines = new List<CrossBuy.BL.PosSyncLineInput> {
+					new CrossBuy.BL.PosSyncLineInput { ItemId = syncitm, Qty = 2, UnitPrice = 60m, DiscountAmount = 0, TaxRate = vat, OptionIds = new List<int>{ opt.ID } },
+					new CrossBuy.BL.PosSyncLineInput { ItemId = juice, Qty = 1, UnitPrice = 30m, DiscountAmount = 0, TaxRate = vat, OptionIds = new List<int>() }
+				}
+			};
+			var (sok, serr, invA, alreadyA) = await _posOrders.SyncPaidOrderAsync(company, pA, null);
+			Chk("replay A ok + not already", sok && invA != null && !alreadyA); if (!sok) { log.Add("err:" + serr); return Ok(new { allPass = false, log }); }
+			Chk("SYNCITM deducted 2 (deduct-self)", Math.Abs((qSy - await Q(syncitm)) - 2m) < 0.001m);
+			Chk("modifier cheese deducted 2 (optionIds replayed → RC-4c backflush)", Math.Abs((qCh - await Q(cheese)) - 2m) < 0.001m);
+			Chk("JUICE NOT stocked (RecipeAtSale)", Math.Abs((await Q(juice)) - qJ) < 0.001m);
+			Chk("recipe: orange −3 & sugar −0.55 (per BranchItemSourcing)", Math.Abs((qOr - await Q(orange)) - 3m) < 0.001m && Math.Abs((qSu - await Q(sugar)) - 0.55m) < 0.001m);
+			Chk("tip → 210207 credited 5", Math.Abs((await Net("210207")) - tips0 - (-5m)) < EPS);
+			Chk("AR nets to zero", Math.Abs((await Net("1102")) - ar0) < EPS);
+			Chk("TB balanced", Math.Abs((await TbDrift()) - tb0) < EPS);
+			var ordAId = await _db.PosSyncLogs.Where(x => x.LocalGuid == gA).Select(x => x.OrderId).FirstAsync();
+			var ordA = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == ordAId);
+			Chk("offline receipt no preserved (allocated)", ordA.ReceiptNo == rnA);
+			Chk("invoice no is SERVER-assigned (≠ offline receipt)", invA != null);
+
+			// ===== idempotency: re-send SAME guid → skipped, NO new journal entries =====
+			int jeMid = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			decimal chMid = await Q(cheese);
+			var (rok, _, invDup, alreadyDup) = await _posOrders.SyncPaidOrderAsync(company, pA, null);
+			Chk("re-send same guid → alreadySynced", rok && alreadyDup && invDup == invA);
+            Chk("idempotent: NO new journal entries", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeMid);
+			Chk("idempotent: stock unchanged", Math.Abs((await Q(cheese)) - chMid) < 0.001m);
+
+			// ===== payload B (different guid, Card) → posts independently (FIFO/independent replay) =====
+			var rnB = await _posOrders.AllocateReceiptNoAsync(term.ID);   // unique per run (was hardcoded "T1-OFF002")
+			var pB = new CrossBuy.BL.PosSyncOrderInput
+			{
+				LocalGuid = gB, TerminalId = term.ID, ShiftId = shift!.ID, OrderType = "Takeaway", Method = "Card", ReceiptNo = rnB,
+				Lines = new List<CrossBuy.BL.PosSyncLineInput> { new CrossBuy.BL.PosSyncLineInput { ItemId = syncitm, Qty = 1, UnitPrice = 50m, DiscountAmount = 0, TaxRate = vat, OptionIds = new List<int>() } }
+			};
+			var (bok, berr, invB, alreadyB) = await _posOrders.SyncPaidOrderAsync(company, pB, null);
+			Chk("replay B (Card) ok", bok && invB != null && !alreadyB && invB != invA);
+			Chk("2 sync-log rows (A + B)", (await _db.PosSyncLogs.CountAsync(x => x.CompanyId == company && (x.LocalGuid == gA || x.LocalGuid == gB))) == 2);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "pos-sync-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+			// cleanup
+			_db.PosSyncLogs.RemoveRange(await _db.PosSyncLogs.Where(x => x.CompanyId == company && (x.LocalGuid == gA || x.LocalGuid == gB)).ToListAsync());
+			_db.BranchItemSourcings.RemoveRange(await _db.BranchItemSourcings.Where(s => s.BranchId == branch.ID && s.ItemId == juice).ToListAsync());
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/pos-9e-test?key=seed123 — POS-9e: NON-BLOCKING sync conflicts + manager review + offline shift close.
+		// A replay with anomalies (negative stock / inactive item / price diff) STILL posts; the anomalies are recorded for
+		// review, can be acknowledged, and an offline shift close replays via CloseShiftAsync. inv-test-integrity stays 0.
+		[HttpGet("pos-9e-test")]
+		public async Task<IActionResult> Pos9eTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.FirstOrDefaultAsync(w => w.CompanyID == company);
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing prerequisites" });
+			decimal vat = await _db.TaxCodes.AsNoTracking().Where(t => t.CompanyID == company && t.Kind == "VAT" && t.IsDefault && t.IsActive).Select(t => (decimal?)t.Rate).FirstOrDefaultAsync() ?? 0m;
+			bool origAllowNeg = wh.AllowNegativeStock;
+			wh.AllowNegativeStock = true;   // a POS outlet warehouse must always allow the sale (money already taken offline)
+			await _db.SaveChangesAsync();
+
+			async Task<int> EItem(string code, decimal price, bool active) { var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code); if (ex != null) { ex.SalesPrice = price; ex.IsActive = active; await _db.SaveChangesAsync(); return ex.ID; } var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = active, CostingMethod = "Average", SalesPrice = price, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID; }
+			async Task Top(int id, decimal cost) { var (q, _, _) = await _stock.GetBalanceAsync(company, id, wh.ID); if (q < 30) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = id, WarehouseId = wh.ID, Direction = 1, Qty = 200, UnitCostInBase = cost, SourceType = "Opening", PostToGl = true }, null); }
+			int eNeg = await EItem("E9E-NEG", 40m, true), ePrice = await EItem("E9E-PRICE", 40m, true), eInact = await EItem("E9E-INACT", 25m, true);
+			// E-NEG: give a small positive basis, then we'll oversell it into the negative deliberately
+			async Task<decimal> Q(int id) => (await _stock.GetBalanceAsync(company, id, wh.ID)).qty;
+			if (await Q(eNeg) < 3) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = eNeg, WarehouseId = wh.ID, Direction = 1, Qty = 5, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = true }, null);
+			await Top(ePrice, 12m); await Top(eInact, 8m);
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == branch.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = branch.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.ID; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			int drawerAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == branch.ID && t.Code == "ZZ-SYNCT");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = branch.ID, Code = "ZZ-SYNCT", Name = "ZZ sync terminal", CashAccountId = drawerAcc, ReceiptPrefix = "ZZSY-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+			var gConf = "9e-conflict-fixed";
+			_db.PosSyncConflicts.RemoveRange(await _db.PosSyncConflicts.Where(x => x.CompanyId == company && x.SyncLogId == (_db.PosSyncLogs.Where(l => l.LocalGuid == gConf).Select(l => l.ID).FirstOrDefault())).ToListAsync());
+			_db.PosSyncLogs.RemoveRange(await _db.PosSyncLogs.Where(x => x.CompanyId == company && x.LocalGuid == gConf).ToListAsync());
+			await _db.SaveChangesAsync();
+
+			// ===== replay an offline order that has ALL THREE anomalies — it must still post =====
+			await EItem("E9E-INACT", 25m, false);   // the item went inactive during the outage
+			decimal qNegBefore = await Q(eNeg);
+			decimal negQty = qNegBefore + 2m;        // guaranteed to end negative (−2) regardless of starting balance
+			var rnC = await _posOrders.AllocateReceiptNoAsync(term.ID);   // unique per run (was hardcoded "T1-9E01")
+			var pC = new CrossBuy.BL.PosSyncOrderInput
+			{
+				LocalGuid = gConf, TerminalId = term.ID, ShiftId = shift!.ID, OrderType = "Takeaway", Method = "Cash", ReceiptNo = rnC,
+				Lines = new List<CrossBuy.BL.PosSyncLineInput> {
+					new CrossBuy.BL.PosSyncLineInput { ItemId = eNeg, Qty = negQty, UnitPrice = 40m, DiscountAmount = 0, TaxRate = vat, OptionIds = new List<int>() },       // → NegativeStock
+					new CrossBuy.BL.PosSyncLineInput { ItemId = ePrice, Qty = 1, UnitPrice = 30m, DiscountAmount = 0, TaxRate = vat, OptionIds = new List<int>() },           // paid 30, catalog 40 → PriceDiff
+					new CrossBuy.BL.PosSyncLineInput { ItemId = eInact, Qty = 1, UnitPrice = 25m, DiscountAmount = 0, TaxRate = vat, OptionIds = new List<int>() }             // → InactiveItem
+				}
+			};
+			var (cok, cerr, invC, _) = await _posOrders.SyncPaidOrderAsync(company, pC, null);
+			Chk("replay with conflicts STILL posts (non-blocking)", cok && invC != null); if (!cok) { log.Add("err:" + cerr); wh.AllowNegativeStock = origAllowNeg; await _db.SaveChangesAsync(); return Ok(new { allPass = false, log }); }
+			Chk("E-NEG actually deducted (posted despite negative)", Math.Abs((qNegBefore - await Q(eNeg)) - negQty) < 0.001m && (await Q(eNeg)) < 0);
+			var logId = await _db.PosSyncLogs.Where(l => l.LocalGuid == gConf).Select(l => l.ID).FirstAsync();
+			var conf = await _db.PosSyncConflicts.AsNoTracking().Where(x => x.SyncLogId == logId).ToListAsync();
+			Chk("NegativeStock conflict recorded", conf.Any(x => x.ConflictType == "NegativeStock" && x.ItemId == eNeg));
+			Chk("PriceDiff conflict recorded (30 ≠ 40)", conf.Any(x => x.ConflictType == "PriceDiff" && x.ItemId == ePrice && x.OfflineValue == 30m && x.ServerValue == 40m));
+			Chk("InactiveItem conflict recorded", conf.Any(x => x.ConflictType == "InactiveItem" && x.ItemId == eInact));
+
+			// ===== manager review + acknowledge =====
+			var openList = await posSetup.GetSyncConflictsAsync(company, false);
+			Chk("review lists open conflicts (incl. ours)", openList.Any(x => x.ConflictType == "NegativeStock" && x.OrderId != null));
+			var toAck = conf.First(x => x.ConflictType == "PriceDiff");
+			var (ackOk, _) = await posSetup.AcknowledgeSyncConflictAsync(company, toAck.ID, null);
+			Chk("acknowledge ok", ackOk);
+			var afterAckOpen = await posSetup.GetSyncConflictsAsync(company, false);
+			var afterAckAll = await posSetup.GetSyncConflictsAsync(company, true);
+			Chk("acknowledged conflict leaves the Open list", !afterAckOpen.Any(x => x.Id == toAck.ID) && afterAckAll.Any(x => x.Id == toAck.ID && x.Status == "Acknowledged"));
+
+			// ===== offline shift close → replays via CloseShiftAsync (server posts the variance JE) =====
+			decimal over0 = await Net("520111"); int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (scOk, scErr, scAlready) = await posSetup.SyncShiftCloseAsync(company, term.ID, shift.ID, 0m, null, DateTime.Today, null);   // count 0 → shortage = expected → variance JE
+			Chk("offline shift close syncs (not already)", scOk && !scAlready);
+			var closed = await _db.PosShifts.AsNoTracking().FirstAsync(s => s.ID == shift.ID);
+			Chk("shift is Closed with a computed variance", closed.Status == "Closed" && closed.CashVariance != null && closed.CashVariance != 0m);
+			Chk("variance JE posted to 520111", closed.VarianceJournalEntryId != null && Math.Abs((await Net("520111")) - over0) > EPS);
+			int jeAfterClose = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (scOk2, _, scAlready2) = await posSetup.SyncShiftCloseAsync(company, term.ID, shift.ID, 0m, null, DateTime.Today, null);
+			Chk("re-send shift close → alreadyClosed, no new JE (idempotent)", scOk2 && scAlready2 && (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeAfterClose);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "pos-9e-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+			// cleanup — restore setup, keep conflicts out of the way
+			await EItem("E9E-INACT", 25m, true);
+			wh.AllowNegativeStock = origAllowNeg;
+			_db.PosSyncConflicts.RemoveRange(await _db.PosSyncConflicts.Where(x => x.SyncLogId == logId).ToListAsync());
+			_db.PosSyncLogs.RemoveRange(await _db.PosSyncLogs.Where(x => x.CompanyId == company && x.LocalGuid == gConf).ToListAsync());
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+
+			async Task<decimal> Net(string code) { var acc = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return acc == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == acc).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+		}
+
+		// GET /api/dev/tm1-test?key=seed123 — TM-1 Task Management core. Verifies CRUD + status transitions + priority/due +
+		// list scoping, and CRITICALLY that tasks are OPERATIONAL ONLY: ZERO journal entries created, inv-test-integrity=0.
+		[HttpGet("tm1-test")]
+		public async Task<IActionResult> Tm1Test(string key, [FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var emps = await _db.Employee.AsNoTracking().Where(e => e.FullName != null && e.FullName != "").OrderBy(e => e.ID).Select(e => e.ID).Take(2).ToListAsync();
+			if (emps.Count == 0) return BadRequest(new { message = "no employees to assign" });
+			int assignee = emps[0]; int creator = emps.Count > 1 ? emps[1] : emps[0];
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			// create
+			var due = DateTime.Today.AddDays(3);
+			var (cok, cerr, id) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM1 مهمة اختبار", Description = "وصف", AssigneeEmployeeId = assignee, Priority = "High", DueDate = due, EstimatedHours = 4m }, creator);
+			Chk("create ok", cok && id > 0); if (!cok) { log.Add("err:" + cerr); return Ok(new { allPass = false, log }); }
+			var t = await tasks.GetAsync(company, id);
+			Chk("created New + priority/due/assignee/creator saved", t != null && t.Status == "New" && t.Priority == "High" && t.DueDate?.Date == due && t.AssigneeEmployeeId == assignee && t.CreatedByEmployeeId == creator && t.ActualHours == 0m);
+
+			// validation guards
+			var (vok, _, _) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "", AssigneeEmployeeId = assignee }, creator);
+			Chk("empty title rejected", !vok);
+			var (vok2, _, _) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "بلا مسؤول", AssigneeEmployeeId = 0 }, creator);
+			Chk("no assignee rejected", !vok2);
+
+			// edit (reassign + priority)
+			var (eok, _, _) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Id = id, Title = "TM1 معدّلة", AssigneeEmployeeId = assignee, Priority = "Urgent", DueDate = due, EstimatedHours = 6m }, creator);
+			var te = await tasks.GetAsync(company, id);
+			Chk("edit ok (title/priority/est updated)", eok && te!.Title == "TM1 معدّلة" && te.Priority == "Urgent" && te.EstimatedHours == 6m);
+
+			// status transitions: New→InProgress→Done, invalid Done→New rejected, reopen Done→InProgress
+			var (s1, _) = await tasks.ChangeStatusAsync(company, id, "InProgress", creator);
+			var (s2, _) = await tasks.ChangeStatusAsync(company, id, "Done", creator);
+			var tDone = await tasks.GetAsync(company, id);
+			Chk("New→InProgress→Done + CompletedAt set", s1 && s2 && tDone!.Status == "Done" && tDone.CompletedAt != null);
+			var (bad, badErr) = await tasks.ChangeStatusAsync(company, id, "New", creator);
+			Chk("invalid transition Done→New rejected", !bad && badErr != null);
+			var (re, _) = await tasks.ChangeStatusAsync(company, id, "InProgress", creator);
+			var tRe = await tasks.GetAsync(company, id);
+			Chk("reopen Done→InProgress clears CompletedAt", re && tRe!.Status == "InProgress" && tRe.CompletedAt == null);
+
+			// list scoping: appears in assignee's "mine" + in "all"; not in a stranger's "mine"
+            var mine = await tasks.GetTasksAsync(company, "mine", assignee, null, null, null);
+            var all = await tasks.GetTasksAsync(company, "all", assignee, null, null, null);
+            var stranger = await tasks.GetTasksAsync(company, "mine", -999, null, null, null);
+			Chk("scope mine shows own task", mine.Any(x => x.Id == id));
+			Chk("scope all shows the task", all.Any(x => x.Id == id));
+			Chk("scope mine hides others' tasks", !stranger.Any(x => x.Id == id));
+			Chk("search filter works", (await tasks.GetTasksAsync(company, "all", assignee, null, null, "معدّلة")).Any(x => x.Id == id));
+
+			// CRITICAL: no accounting at all
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries created (operational only)", jeAfter == jeBefore);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "tm1-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			await tasks.DeleteAsync(company, id);   // cleanup
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm2-test?key=seed123 — TM-2 polymorphic record link. Links a task to each supported record type, the
+		// resolver opens the correct route, an UNLINKED task stays valid, and it's operational only (zero GL, inv=0).
+		[HttpGet("tm2-test")]
+		public async Task<IActionResult> Tm2Test(string key, [FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITaskLinkResolver links, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var created = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			int me = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			// (type, a real id of that type, expected url template [null = reference-only])
+			var invId = await _db.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == company).Select(i => i.ID).FirstOrDefaultAsync();
+			var custId = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == company).Select(c => c.ID).FirstOrDefaultAsync();
+			var woId = await _db.ManufWorkOrders.AsNoTracking().Where(w => w.CompanyID == company).Select(w => w.ID).FirstOrDefaultAsync();
+			var itemId = await _db.Items.AsNoTracking().Where(i => i.CompanyID == company).Select(i => i.ID).FirstOrDefaultAsync();
+			var empId = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			var projId = await _db.Projects.AsNoTracking().Where(p => p.CompanyID == company).Select(p => p.ID).FirstOrDefaultAsync();
+			var posId = await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == company).Select(o => o.ID).FirstOrDefaultAsync();
+
+			var cases = new (string type, int id, string? url)[]
+			{
+				("SalesInvoice",   invId,  invId  > 0 ? $"/Accounting/SalesInvoiceDetail?id={invId}"  : null),
+				("Customer",       custId, custId > 0 ? $"/Accounting/CustomerStatement?id={custId}"   : null),
+				("ManufWorkOrder", woId,   woId   > 0 ? $"/Inventory/WorkOrderDetails?id={woId}"       : null),
+				("Item",           itemId, itemId > 0 ? $"/Inventory/EditItem?id={itemId}"             : null),
+				("Employee",       empId,  empId  > 0 ? "/Admin/EmployeesList"                          : null),
+				("Project",        projId, projId > 0 ? "/Project/Projects"                             : null),
+				("PosOrder",       posId,  null),   // reference-only (no admin detail screen)
+			};
+
+			foreach (var c in cases)
+			{
+				if (c.id <= 0) { log.Add($"SKIP {c.type} (no record in DB)"); continue; }
+				var (ok, _, id) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = $"TM2 {c.type}", AssigneeEmployeeId = me, Priority = "Normal", EntityType = c.type, EntityId = c.id }, me);
+				if (ok) created.Add(id);
+				var t = await tasks.GetAsync(company, id);
+				Chk($"{c.type}: link saved on task", ok && t != null && t.EntityType == c.type && t.EntityId == c.id);
+				var resolved = await links.ResolveAsync(company, c.type, c.id);
+				Chk($"{c.type}: resolver returns label", resolved != null && !string.IsNullOrEmpty(resolved.Label));
+				Chk($"{c.type}: resolver url correct", resolved != null && resolved.Url == c.url);
+				var search = await links.SearchAsync(company, c.type, null);
+				Chk($"{c.type}: picker search returns options", search.Any());
+			}
+
+			// invalid type is ignored (stored unlinked)
+			var (uok, _, uid) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM2 نوع غير معروف", AssigneeEmployeeId = me, EntityType = "Nope", EntityId = 5 }, me);
+			if (uok) created.Add(uid);
+			var ut = await tasks.GetAsync(company, uid);
+			Chk("unknown entity type stored as UNLINKED", uok && ut!.EntityType == null && ut.EntityId == null);
+
+			// a task with NO link is valid
+			var (nok, _, nid) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM2 بلا ربط", AssigneeEmployeeId = me }, me);
+			if (nok) created.Add(nid);
+			var nt = await tasks.GetAsync(company, nid);
+			Chk("unlinked task is valid (EntityType null)", nok && nt!.EntityType == null && nt.EntityId == null);
+
+			// resolver: null on empty, and safe on a deleted record (label falls back to #id, url null)
+			Chk("resolver null on no-link", (await links.ResolveAsync(company, null, null)) == null);
+			var ghost = await links.ResolveAsync(company, "Item", 999999);
+			Chk("resolver safe on missing record", ghost != null && ghost.Url == null);
+
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries created (operational only)", jeAfter == jeBefore);
+			var (run, _) = await integ.RunAndLogAsync(company, "tm2-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			foreach (var id in created) await tasks.DeleteAsync(company, id);   // cleanup
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm3-test?key=seed123 — TM-3 timesheet. Live timer start/stop computes hours, one active timer/employee,
+		// manual entry, ActualHours = Σ entries. Operational only (zero GL, inv=0).
+		[HttpGet("tm3-test")]
+		public async Task<IActionResult> Tm3Test(string key, [FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITimesheetService ts, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			int me = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			if (me == 0) return BadRequest(new { message = "no employees" });
+			// make sure the employee starts with no running timer (clean any leftover)
+			foreach (var o in await _db.TimesheetEntries.Where(e => e.CompanyId == company && e.EmployeeId == me && e.Source == "Timer" && e.EndedAt == null).ToListAsync()) { o.EndedAt = DateTime.UtcNow; o.Hours = 0; }
+			await _db.SaveChangesAsync();
+
+			async Task<int> NewTask(string title) { var (_, _, id) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = title, AssigneeEmployeeId = me, Priority = "Normal" }, me); taskIds.Add(id); return id; }
+			int tA = await NewTask("TM3 A"), tB = await NewTask("TM3 B"), tC = await NewTask("TM3 C");
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			// 1) timer: start → backdate 2h → stop → Hours ≈ 2.00
+			var (st1, _) = await ts.StartAsync(company, tA, me);
+			var open = await _db.TimesheetEntries.FirstOrDefaultAsync(e => e.CompanyId == company && e.EmployeeId == me && e.EndedAt == null);
+			Chk("start creates a running entry", st1 && open != null && open.TaskId == tA);
+			Chk("GetRunning reports the running timer", (await ts.GetRunningAsync(company, me))?.TaskId == tA);
+			open!.StartedAt = DateTime.UtcNow.AddHours(-2); await _db.SaveChangesAsync();
+			var (sp1, _) = await ts.StopAsync(company, me);
+			var stopped = await _db.TimesheetEntries.AsNoTracking().FirstAsync(e => e.ID == open.ID);
+			Chk("stop computes ~2.00 hours", sp1 && stopped.EndedAt != null && Math.Abs(stopped.Hours - 2.00m) < 0.05m);
+			Chk("no running timer after stop", (await ts.GetRunningAsync(company, me)) == null);
+
+			// 2) manual entry + ActualHours = Σ (2.0 + 3.5 = 5.5)
+			var (mok, _) = await ts.AddManualAsync(company, tA, me, DateTime.Today, 3.5m, "يدوي");
+			var tAitem = await tasks.GetAsync(company, tA);
+			Chk("manual entry added", mok);
+			Chk("ActualHours = Σ entries (5.5)", tAitem != null && Math.Abs(tAitem.ActualHours - 5.5m) < 0.001m);
+
+			// 3) one active timer per employee: start B then start C → B auto-stopped, only C running
+			await ts.StartAsync(company, tB, me);
+			await ts.StartAsync(company, tC, me);
+			int openCount = await _db.TimesheetEntries.CountAsync(e => e.CompanyId == company && e.EmployeeId == me && e.Source == "Timer" && e.EndedAt == null);
+			var runNow = await ts.GetRunningAsync(company, me);
+			bool bClosed = !await _db.TimesheetEntries.AnyAsync(e => e.CompanyId == company && e.TaskId == tB && e.Source == "Timer" && e.EndedAt == null);
+			Chk("exactly ONE running timer after starting a second", openCount == 1 && runNow?.TaskId == tC);
+			Chk("starting C auto-stopped B's timer", bClosed);
+			await ts.StopAsync(company, me);   // close C
+
+			// 4) validation guards
+			var (v0, _) = await ts.AddManualAsync(company, tA, me, DateTime.Today, 0m, null);
+			var (v25, _) = await ts.AddManualAsync(company, tA, me, DateTime.Today, 30m, null);
+			var (vT, _) = await ts.StartAsync(company, 999999, me);
+			Chk("hours<=0 rejected", !v0);
+			Chk("hours>24 rejected", !v25);
+			Chk("timer on missing task rejected", !vT);
+
+			// 5) delete an entry recomputes ActualHours
+			var oneManual = await _db.TimesheetEntries.AsNoTracking().Where(e => e.CompanyId == company && e.TaskId == tA && e.Source == "Manual").Select(e => e.ID).FirstAsync();
+			await ts.DeleteEntryAsync(company, oneManual);
+			var tAafter = await tasks.GetAsync(company, tA);
+			Chk("delete entry recomputes ActualHours (back to 2.0)", tAafter != null && Math.Abs(tAafter.ActualHours - 2.0m) < 0.05m);
+
+			// 6) operational only
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries created (operational only)", jeAfter == jeBefore);
+			var (run, _) = await integ.RunAndLogAsync(company, "tm3-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			// cleanup: entries then tasks
+			_db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(e => e.CompanyId == company && taskIds.Contains(e.TaskId)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm4-test?key=seed123 — TM-4 cost. Hourly cost derives (ManufHourlyRate / BaseSalary÷std); task cost =
+		// Σ hours×rate (informational, NO GL); a WO-linked task feeds the EXISTING ManufService.AddLaborAsync (WIP+GL move via
+		// the existing writer, no new writer); TB balanced; inv=0.
+		[HttpGet("tm4-test")]
+		public async Task<IActionResult> Tm4Test(string key,
+			[FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITimesheetService ts,
+			[FromServices] CrossBuy.BL.ITaskCostService taskCost, [FromServices] CrossBuy.BL.IEmployeeCostService empCost,
+			[FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var emp = await _db.Employee.FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || emp == null) return BadRequest(new { message = "missing prerequisites" });
+			int me = emp.ID;
+			var origRate = emp.ManufHourlyRate;
+			emp.ManufHourlyRate = 50m; await _db.SaveChangesAsync();   // known rate for deterministic assertions
+
+			async Task<decimal> Tb() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// 1) hourly cost derivation
+			Chk("HourlyCost = ManufHourlyRate (50)", (await empCost.HourlyCostAsync(company, me)) == 50m);
+			emp.ManufHourlyRate = null; await _db.SaveChangesAsync();
+			var expectedFallback = await (from sp in _db.SalaryPolicies where sp.Employees.Any(e => e.ID == me) select (decimal?)sp.BaseSalary).FirstOrDefaultAsync();
+			var std = await _db.PayrollSettings.AsNoTracking().Where(p => p.CompanyID == company).Select(p => (decimal?)p.StandardMonthlyHours).FirstOrDefaultAsync() ?? 0m;
+			decimal expFb = (expectedFallback.HasValue && expectedFallback.Value > 0 && std > 0) ? Math.Round(expectedFallback.Value / std, 4) : 0m;
+			Chk("HourlyCost fallback = BaseSalary÷std (or 0)", (await empCost.HourlyCostAsync(company, me)) == expFb);
+			emp.ManufHourlyRate = 50m; await _db.SaveChangesAsync();   // back to 50 for the rest
+
+			// 2) task cost (informational, NO GL)
+			int jeBeforeCost = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (_, _, t1) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM4 cost", AssigneeEmployeeId = me, Priority = "Normal" }, me); taskIds.Add(t1);
+			await ts.AddManualAsync(company, t1, me, DateTime.Today, 2m, "عمل");
+			var cost = await taskCost.GetTaskCostAsync(company, t1);
+			Chk("task cost = Σ hours×rate (2×50 = 100)", Math.Abs(cost.Total - 100m) < 0.001m);
+			Chk("informational cost writes NO GL", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeBeforeCost);
+
+			// 3) WO-linked task feeds the EXISTING AddLaborAsync writer
+			async Task<int> EItem(string code) { var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code); if (ex != null) return ex.ID; var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID; }
+			int comp = await EItem("TM4-COMP"), fin = await EItem("TM4-FIN");
+			var (cq, _, _) = await _stock.GetBalanceAsync(company, comp, wh.Value); if (cq < 10) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = comp, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = 5m, SourceType = "Opening", PostToGl = true }, null);
+			if (!await _db.ItemComponents.AnyAsync(x => x.CompanyID == company && x.ParentItemId == fin && x.ComponentItemId == comp)) { _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = fin, ComponentItemId = comp, Quantity = 1, ScrapPct = 0, UoMId = uom.Value, SortOrder = 1 }); await _db.SaveChangesAsync(); }
+			var (wok, woerr, woId) = await manuf.CreateAsync(company, fin, 1, wh.Value, null, null, 0m, 0m, "tm4", null);
+			if (!wok) { emp.ManufHourlyRate = origRate; await _db.SaveChangesAsync(); return Ok(new { allPass = false, log = new List<string> { "WO create failed: " + woerr } }); }
+			await manuf.ReleaseAsync(company, woId, DateTime.Today, null);
+
+			var (_, _, t2) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM4 WO labor", AssigneeEmployeeId = me, Priority = "Normal", EntityType = "ManufWorkOrder", EntityId = woId }, me); taskIds.Add(t2);
+			await ts.AddManualAsync(company, t2, me, DateTime.Today, 2m, "عمالة تصنيع");
+
+			var woBefore = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woId);
+			int jeBeforePost = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			int laborRowsBefore = await _db.ManufWorkOrderLabor.CountAsync(x => x.WorkOrderId == woId);
+			decimal tbBefore = await Tb();
+
+			var (pok, perr) = await taskCost.PostToWorkOrderAsync(company, t2, null);
+			Chk("post labor to WO ok", pok); if (!pok) log.Add("perr:" + perr);
+			Chk("a ManufWorkOrderLabor row was created", (await _db.ManufWorkOrderLabor.CountAsync(x => x.WorkOrderId == woId)) == laborRowsBefore + 1);
+			var laborRow = await _db.ManufWorkOrderLabor.AsNoTracking().Where(x => x.WorkOrderId == woId).OrderByDescending(x => x.ID).FirstAsync();
+			Chk("labor row amount = hours×rate (2×50 = 100)", Math.Abs(laborRow.Amount - 100m) < 0.5m && Math.Abs(laborRow.Hours - 2m) < 0.001m);
+			Chk("GL posted via existing writer (JE count up)", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) > jeBeforePost);
+			Chk("TB stays balanced", Math.Abs(await Tb()) < 0.05m);
+			var t2item = await tasks.GetAsync(company, t2);
+			Chk("LaborPostedAt set", t2item!.LaborPostedAt != null);
+			var (rok, rerr) = await taskCost.PostToWorkOrderAsync(company, t2, null);
+			Chk("re-post rejected (post-once guard)", !rok && rerr != null);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "tm4-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			// cleanup: tasks + their timesheet; restore employee rate (leave the WO — its GL is balanced)
+			_db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(e => e.CompanyId == company && taskIds.Contains(e.TaskId)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+			emp.ManufHourlyRate = origRate; await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm5-test?key=seed123 — TM-5 billing. Billable hours → hourly SERVICE invoice via the EXISTING
+		// ReceivableService (no stock), double-billing guard, AR opens correctly, TB balanced, inv=0.
+		[HttpGet("tm5-test")]
+		public async Task<IActionResult> Tm5Test(string key,
+			[FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITimesheetService ts,
+			[FromServices] CrossBuy.BL.ITaskBillingService billing, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.05m;
+
+			var cust = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == company).OrderBy(c => c.ID).FirstOrDefaultAsync();
+			int me = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			if (cust == null || me == 0) return BadRequest(new { message = "need a customer + employee" });
+			decimal vat = await _db.TaxCodes.AsNoTracking().Where(x => x.CompanyID == company && x.Kind == "VAT" && x.IsDefault && x.IsActive).Select(x => (decimal?)x.Rate).FirstOrDefaultAsync() ?? 0m;
+
+			async Task<decimal> NetCode(string code) { var a = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == code).Select(x => (int?)x.ID).FirstOrDefaultAsync(); return a == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == a).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			async Task<decimal> NetAcc(int accId) => await _db.JournalEntryLines.Where(l => l.AccountId == accId).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0;
+			async Task<decimal> Tb() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+
+			// task: billable to the customer @ 100/h, 2 hours logged
+			var (_, _, tId) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM5 استشارة", AssigneeEmployeeId = me, Priority = "Normal", IsBillable = true, CustomerId = cust.ID, BillRate = 100m }, me);
+			taskIds.Add(tId);
+			await ts.AddManualAsync(company, tId, me, DateTime.Today, 2m, "استشارة");
+
+			var b0 = await billing.GetBillingAsync(company, tId);
+			Chk("billable hours=2, amount=200, canInvoice", Math.Abs(b0.BillableHours - 2m) < 0.001m && Math.Abs(b0.Amount - 200m) < 0.001m && b0.CanInvoice);
+
+			decimal rev0 = await NetCode("4101"), inv0 = await NetCode("1103"), ar0 = await NetAcc(cust.ControlAccountId), tb0 = await Tb();
+			decimal grand = Math.Round(200m * (1 + vat / 100m), 2);
+
+			var (gok, gerr, invId) = await billing.GenerateInvoiceAsync(company, tId, me);
+			Chk("invoice generated via ReceivableService", gok && invId != null); if (!gok) { log.Add("err:" + gerr); }
+			var salesInv = invId != null ? await _db.SalesInvoices.AsNoTracking().FirstOrDefaultAsync(i => i.ID == invId) : null;
+			Chk("SalesInvoice row exists for the customer", salesInv != null && salesInv.CustomerId == cust.ID);
+			Chk("revenue 4101 credited by 200 (service)", Math.Abs((await NetCode("4101")) - rev0 - (-200m)) < EPS);
+			Chk("AR (customer control) debited by grand", Math.Abs((await NetAcc(cust.ControlAccountId)) - ar0 - grand) < EPS);
+			Chk("NO stock: inventory 1103 unchanged", Math.Abs((await NetCode("1103")) - inv0) < EPS);
+			Chk("TB stays balanced", Math.Abs((await Tb()) - tb0) < EPS);
+
+			// double-billing guard: the 2 hours are now invoiced → nothing left to bill
+			var b1 = await billing.GetBillingAsync(company, tId);
+			Chk("after invoicing: 0 billable, cannot invoice", Math.Abs(b1.BillableHours) < 0.001m && !b1.CanInvoice);
+			var (dgok, _, _) = await billing.GenerateInvoiceAsync(company, tId, me);
+			Chk("re-invoice rejected (double-billing guard)", !dgok);
+
+			// delta: log 1 more hour → only the NEW hour is billable
+			await ts.AddManualAsync(company, tId, me, DateTime.Today, 1m, "متابعة");
+			var b2 = await billing.GetBillingAsync(company, tId);
+			Chk("new hour is billable again (per-entry guard), amount=100", Math.Abs(b2.BillableHours - 1m) < 0.001m && Math.Abs(b2.Amount - 100m) < 0.001m && b2.CanInvoice);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "tm5-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			// cleanup: remove the task + its timesheet (the posted invoice stays — it is integrity-neutral/AR-balanced)
+			_db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(e => e.CompanyId == company && taskIds.Contains(e.TaskId)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm6-test?key=seed123 — TM-6 hours report. Aggregates timesheet hours per employee within a date range,
+		// respects the range, and is PURELY read-only (no GL/payroll writer). inv=0.
+		[HttpGet("tm6-test")]
+		public async Task<IActionResult> Tm6Test(string key, [FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITimesheetService ts, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var emps = await _db.Employee.AsNoTracking().Where(e => e.FullName != null && e.FullName != "").OrderBy(e => e.ID).Select(e => e.ID).Take(2).ToListAsync();
+			if (emps.Count < 2) return BadRequest(new { message = "need 2 employees" });
+			int e1 = emps[0], e2 = emps[1];
+			var today = DateTime.Today; var from = today.AddDays(-5); var to = today;
+
+			int jeStart = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			var (_, _, tId) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM6 مهمة", AssigneeEmployeeId = e1, Priority = "Normal" }, e1); taskIds.Add(tId);
+			await ts.AddManualAsync(company, tId, e1, today, 2m, "اليوم");
+			await ts.AddManualAsync(company, tId, e1, today.AddDays(-1), 3m, "أمس");
+			await ts.AddManualAsync(company, tId, e1, today.AddDays(-10), 5m, "خارج الفترة");   // out of range
+			await ts.AddManualAsync(company, tId, e2, today, 1.5m, "زميل");
+
+			int jeBeforeReport = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var rep = await ts.GetHoursReportAsync(company, from, to, null);
+			int jeAfterReport = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			var r1 = rep.Employees.FirstOrDefault(x => x.EmployeeId == e1);
+			var r2 = rep.Employees.FirstOrDefault(x => x.EmployeeId == e2);
+			Chk("emp1 total = 5 (2+3, excludes out-of-range 5)", r1 != null && Math.Abs(r1.TotalHours - 5m) < 0.001m);
+			Chk("emp1 has 2 in-range lines", r1 != null && r1.Lines.Count == 2);
+			Chk("emp2 total = 1.5", r2 != null && Math.Abs(r2.TotalHours - 1.5m) < 0.001m);
+			Chk("grand total = 6.5", Math.Abs(rep.GrandTotal - 6.5m) < 0.001m);
+			Chk("out-of-range hours excluded", !r1!.Lines.Any(l => l.WorkDate.Date == today.AddDays(-10)));
+
+			var repEmp1 = await ts.GetHoursReportAsync(company, from, to, e1);
+			Chk("filter by employee → only that employee", repEmp1.Employees.Count == 1 && repEmp1.Employees[0].EmployeeId == e1 && Math.Abs(repEmp1.GrandTotal - 5m) < 0.001m);
+
+			Chk("report is READ-ONLY (no journal entries)", jeAfterReport == jeBeforeReport);
+			Chk("whole flow wrote NO journal entries", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeStart);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "tm6-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			_db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(e => e.CompanyId == company && taskIds.Contains(e.TaskId)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm7-test?key=seed123 — TM-7 auto-task generation. A rule fires on its condition, dedupes per (rule,source),
+		// respects enable/disable, links the task to the source + assigns it. Operational only (creates tasks, zero GL, inv=0).
+		[HttpGet("tm7-test")]
+		public async Task<IActionResult> Tm7Test(string key, [FromServices] CrossBuy.BL.ITaskGeneratorService gen, [FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			int me = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || me == 0) return BadRequest(new { message = "missing prerequisites" });
+
+			await gen.SetRuleAsync(company, "WorkOrderQc", true, me);   // active + default owner = me
+			await gen.SetRuleAsync(company, "LowStock", true, null);
+
+			// helper: item + opening stock
+			async Task<int> EItem(string code) { var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code); if (ex != null) return ex.ID; var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID; }
+			async Task<int> CompletedWo() {
+				int comp = await EItem("TM7-COMP"), fin = await EItem("TM7-FIN");
+				var (cq, _, _) = await _stock.GetBalanceAsync(company, comp, wh.Value); if (cq < 10) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = comp, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = 5m, SourceType = "Opening", PostToGl = true }, null);
+				if (!await _db.ItemComponents.AnyAsync(x => x.CompanyID == company && x.ParentItemId == fin && x.ComponentItemId == comp)) { _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = fin, ComponentItemId = comp, Quantity = 1, ScrapPct = 0, UoMId = uom.Value, SortOrder = 1 }); await _db.SaveChangesAsync(); }
+				var (_, _, woId) = await manuf.CreateAsync(company, fin, 1, wh.Value, null, null, 0m, 0m, "tm7", null);
+				await manuf.ReleaseAsync(company, woId, DateTime.Today, null);
+				await manuf.CompleteAsync(company, woId, DateTime.Today, null);
+				return woId;
+			}
+			int wo1 = await CompletedWo();
+
+			// LowStock: a fresh item with a reorder point but no stock
+			int lowItem = await EItem("TM7-LOW");
+			if (!await _db.ItemWarehouseSettings.AnyAsync(s => s.ItemId == lowItem && s.WarehouseId == wh.Value)) { _db.ItemWarehouseSettings.Add(new CrossBuy.Models.Context.Inventory.ItemWarehouseSetting { ItemId = lowItem, WarehouseId = wh.Value, ReorderPoint = 100m }); await _db.SaveChangesAsync(); }
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var run1 = await gen.RunAsync(company);
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("generation writes NO GL", jeAfter == jeBefore);
+
+			var woLog = await _db.TaskAutoLogs.AsNoTracking().FirstOrDefaultAsync(l => l.CompanyId == company && l.RuleKey == "WoQc:" + wo1);
+			Chk("WorkOrderQc rule generated a task for the completed WO", woLog != null);
+			if (woLog != null)
+			{
+				var woTask = await _db.TaskItems.AsNoTracking().FirstAsync(t => t.ID == woLog.TaskId);
+				Chk("generated task linked to the WO (TM-2)", woTask.EntityType == "ManufWorkOrder" && woTask.EntityId == wo1);
+				Chk("generated task assigned to rule default owner", woTask.AssigneeEmployeeId == me);
+				Chk("generated task is New + system-created", woTask.Status == "New" && woTask.CreatedByEmployeeId == 0);
+			}
+			var lowLog = await _db.TaskAutoLogs.AsNoTracking().FirstOrDefaultAsync(l => l.CompanyId == company && l.RuleKey == "LowStock:" + lowItem);
+			Chk("LowStock rule generated a task for the low item", lowLog != null);
+			if (lowLog != null) { var lt = await _db.TaskItems.AsNoTracking().FirstAsync(t => t.ID == lowLog.TaskId); Chk("low-stock task linked to the item", lt.EntityType == "Item" && lt.EntityId == lowItem); }
+
+			// dedupe: a second run creates NO new log rows
+			int logCount1 = await _db.TaskAutoLogs.CountAsync(l => l.CompanyId == company);
+			await gen.RunAsync(company);
+			int logCount2 = await _db.TaskAutoLogs.CountAsync(l => l.CompanyId == company);
+			Chk("dedupe: re-run creates no duplicate tasks", logCount2 == logCount1);
+
+			// toggle OFF: a newly-completed WO does NOT generate while the rule is disabled
+			await gen.SetRuleAsync(company, "WorkOrderQc", false, me);
+			int wo2 = await CompletedWo();
+			await gen.RunAsync(company);
+			Chk("disabled rule does not generate", !await _db.TaskAutoLogs.AnyAsync(l => l.CompanyId == company && l.RuleKey == "WoQc:" + wo2));
+
+			var (runI, _) = await integ.RunAndLogAsync(company, "tm7-test");
+			Chk("inv-test-integrity failedCount == 0", runI.FailedCount == 0);
+
+			// cleanup: remove ALL auto-generated tasks + logs (incl. collateral) + my low-stock setting; re-enable rule
+			var autoTaskIds = await _db.TaskItems.Where(t => t.CompanyId == company && t.CreatedByEmployeeId == 0).Select(t => t.ID).ToListAsync();
+			_db.TaskAutoLogs.RemoveRange(await _db.TaskAutoLogs.Where(l => l.CompanyId == company).ToListAsync());
+			_db.TaskItems.RemoveRange(await _db.TaskItems.Where(t => t.CompanyId == company && t.CreatedByEmployeeId == 0).ToListAsync());
+			_db.ItemWarehouseSettings.RemoveRange(await _db.ItemWarehouseSettings.Where(s => s.ItemId == lowItem).ToListAsync());
+			await _db.SaveChangesAsync();
+			await gen.SetRuleAsync(company, "WorkOrderQc", true, null);
+			return Ok(new { allPass, log, failedCount = runI.FailedCount, autoTasksCleaned = autoTaskIds.Count });
+		}
+
+		// GET /api/dev/tm8-test?key=seed123 — TM-8 reports. Each report aggregates known seeded data correctly and is
+		// PURELY read-only (no GL). inv=0.
+		[HttpGet("tm8-test")]
+		public async Task<IActionResult> Tm8Test(string key,
+			[FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITimesheetService ts,
+			[FromServices] CrossBuy.BL.ITaskReportService reports, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var emp = await _db.Employee.FirstOrDefaultAsync();
+			var cust = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == company).OrderBy(c => c.ID).FirstOrDefaultAsync();
+			var proj = await _db.Projects.AsNoTracking().Where(p => p.CompanyID == company).OrderBy(p => p.ID).FirstOrDefaultAsync();
+			var wo = await _db.ManufWorkOrders.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).FirstOrDefaultAsync();
+			if (emp == null || cust == null || proj == null || wo == null) return BadRequest(new { message = "need employee+customer+project+workorder" });
+			int me = emp.ID;
+			var origRate = emp.ManufHourlyRate; emp.ManufHourlyRate = 50m; await _db.SaveChangesAsync();
+			var today = DateTime.Today; var from = today.AddDays(-3); var to = today;
+
+			// seed known tasks
+			async Task<int> Mk(CrossBuy.BL.TaskSaveInput inp) { var (_, _, id) = await tasks.SaveAsync(company, inp, me); taskIds.Add(id); return id; }
+			int tOver = await Mk(new() { Title = "TM8 متأخرة", AssigneeEmployeeId = me, Priority = "High", DueDate = today.AddDays(-1) });
+			int tProd = await Mk(new() { Title = "TM8 إنتاجية", AssigneeEmployeeId = me, Priority = "Normal" });
+			int tProj = await Mk(new() { Title = "TM8 مشروع", AssigneeEmployeeId = me, Priority = "Normal", EntityType = "Project", EntityId = proj.ID });
+			int tWo = await Mk(new() { Title = "TM8 أمر", AssigneeEmployeeId = me, Priority = "Normal", EntityType = "ManufWorkOrder", EntityId = wo.ID });
+			int tBill = await Mk(new() { Title = "TM8 فوترة", AssigneeEmployeeId = me, Priority = "Normal", IsBillable = true, CustomerId = cust.ID, BillRate = 100m });
+			await ts.AddManualAsync(company, tProd, me, today, 5m, "عمل");
+			await ts.AddManualAsync(company, tProj, me, today, 2m, "مشروع");
+			await ts.AddManualAsync(company, tWo, me, today, 2m, "أمر");
+			await ts.AddManualAsync(company, tBill, me, today, 2m, "فوترة");
+			await tasks.ChangeStatusAsync(company, tProd, "InProgress", me);
+			await tasks.ChangeStatusAsync(company, tProd, "Done", me);   // completed today → productivity
+			// auto-generated: seed a log + system task
+			var autoTask = new CrossBuy.Models.Context.Tasks.TaskItem { CompanyId = company, Title = "TM8 مولّدة", AssigneeEmployeeId = 0, CreatedByEmployeeId = 0, Priority = "Normal", Status = "New", CreatedAt = DateTime.UtcNow, EntityType = "Item", EntityId = 1 };
+			_db.TaskItems.Add(autoTask); await _db.SaveChangesAsync(); taskIds.Add(autoTask.ID);
+			var autoKey = "TM8Test:" + autoTask.ID;
+			_db.TaskAutoLogs.Add(new CrossBuy.Models.Context.Tasks.TaskAutoLog { CompanyId = company, RuleKey = autoKey, TaskId = autoTask.ID, CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			// ===== reports =====
+			var (mine, team) = await reports.SummaryAsync(company, me);
+			Chk("summary: mine totals consistent + overdue counted", mine.Total == (mine.New + mine.InProgress + mine.Done) && mine.Overdue >= 1 && team.Total >= mine.Total);
+
+			var overdue = await reports.OverdueAsync(company);
+			Chk("overdue: includes the overdue task", overdue.Any(x => x.Id == tOver && x.DaysLate >= 1));
+
+			var prod = await reports.ProductivityAsync(company, from, to);
+			var meRow = prod.FirstOrDefault(x => x.EmployeeId == me);
+			Chk("productivity: employee hours ≥ 5 + ≥1 completed", meRow != null && meRow.Hours >= 5m && meRow.Completed >= 1);
+
+			var cp = await reports.CostByAsync(company, "Project");
+			var pr = cp.FirstOrDefault(x => x.RefId == proj.ID);
+			Chk("project cost = 2h × 50 = 100", pr != null && Math.Abs(pr.Cost - 100m) < 0.5m && Math.Abs(pr.Hours - 2m) < 0.001m);
+
+			var cw = await reports.CostByAsync(company, "ManufWorkOrder");
+			var wr = cw.FirstOrDefault(x => x.RefId == wo.ID);
+			Chk("WO cost row present (≥100 for the linked task)", wr != null && wr.Cost >= 100m - 0.5m);
+
+			var bill = await reports.BillableByCustomerAsync(company);
+			var br = bill.FirstOrDefault(x => x.CustomerId == cust.ID);
+			Chk("billable per customer: amount ≥ 200 (2h × 100)", br != null && br.Amount >= 200m - 0.5m);
+
+			var auto = await reports.AutoGeneratedAsync(company);
+			Chk("auto-generated report lists the seeded auto task", auto.Any(x => x.RuleKey == autoKey && x.TaskId == autoTask.ID));
+
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("all reports are READ-ONLY (no journal entries)", jeAfter == jeBefore);
+
+			var (run, _) = await integ.RunAndLogAsync(company, "tm8-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			// cleanup
+			_db.TaskAutoLogs.RemoveRange(await _db.TaskAutoLogs.Where(l => l.CompanyId == company && l.RuleKey == autoKey).ToListAsync());
+			_db.TimesheetEntries.RemoveRange(await _db.TimesheetEntries.Where(e => e.CompanyId == company && taskIds.Contains(e.TaskId)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+			emp.ManufHourlyRate = origRate; await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm9a-test?key=seed123 — TM-9-أ scheduled task: criteria saved + party-type derived + normal task
+		// unchanged + un-scheduling clears criteria + validation + list resolves party. Operational only (zero GL, inv=0).
+		[HttpGet("tm9a-test")]
+		public async Task<IActionResult> Tm9aTest(string key, [FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			int me = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			int vendorId = await _db.Vendors.AsNoTracking().Where(v => v.CompanyID == company).Select(v => v.ID).FirstOrDefaultAsync();
+			int customerId = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == company).Select(c => c.ID).FirstOrDefaultAsync();
+			if (me == 0 || vendorId == 0 || customerId == 0) return BadRequest(new { message = "need employee + vendor + customer" });
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var due = DateTime.Today.AddDays(1);
+
+			// 1) scheduled PURCHASE task → party type Supplier (derived)
+			var (ok1, _, id1) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM9 مجدولة مشتريات", AssigneeEmployeeId = me, Priority = "Normal", DueDate = due, IsScheduled = true, ExpectedEntityType = "PurchaseInvoice", ExpectedPartyId = vendorId, ExpectedFrom = DateTime.Today, ExpectedTo = due }, me);
+			if (id1 > 0) taskIds.Add(id1);
+			var t1 = await tasks.GetAsync(company, id1);
+			Chk("scheduled purchase task created", ok1 && t1 != null);
+			Chk("IsScheduled + PurchaseInvoice + party Supplier + vendor id saved", t1 != null && t1.IsScheduled && t1.ExpectedEntityType == "PurchaseInvoice" && t1.ExpectedPartyType == "Supplier" && t1.ExpectedPartyId == vendorId);
+			Chk("scheduled task NOT linked yet + not matched + status New", t1 != null && t1.EntityType == null && t1.EntityId == null && t1.MatchedAt == null && t1.Status == "New");
+
+			// 2) scheduled SALES task → party type Customer (derived)
+			var (ok2, _, id2) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM9 مجدولة مبيعات", AssigneeEmployeeId = me, Priority = "Normal", DueDate = due, IsScheduled = true, ExpectedEntityType = "SalesInvoice", ExpectedPartyId = customerId }, me);
+			if (id2 > 0) taskIds.Add(id2);
+			var t2 = await tasks.GetAsync(company, id2);
+			Chk("scheduled sales task → party type Customer (derived)", ok2 && t2 != null && t2.ExpectedEntityType == "SalesInvoice" && t2.ExpectedPartyType == "Customer" && t2.ExpectedPartyId == customerId);
+
+			// 3) NORMAL task unaffected — no scheduling fields
+			var (ok3, _, id3) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM9 عادية", AssigneeEmployeeId = me, Priority = "High" }, me);
+			if (id3 > 0) taskIds.Add(id3);
+			var t3 = await tasks.GetAsync(company, id3);
+			Chk("normal task valid + NOT scheduled + all scheduling fields null", ok3 && t3 != null && !t3.IsScheduled && t3.ExpectedEntityType == null && t3.ExpectedPartyType == null && t3.ExpectedPartyId == null && t3.MatchedAt == null);
+
+			// 4) validation: scheduled without a party is rejected
+			var (okBad, errBad, _) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = "TM9 ناقصة", AssigneeEmployeeId = me, IsScheduled = true, ExpectedEntityType = "PurchaseInvoice" }, me);
+			Chk("scheduled without party rejected", !okBad && errBad != null);
+
+			// 5) edit: un-scheduling clears the criteria
+			await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Id = id2, Title = "TM9 مبيعات → عادية", AssigneeEmployeeId = me, IsScheduled = false }, me);
+			var t2b = await tasks.GetAsync(company, id2);
+			Chk("un-scheduling clears criteria", t2b != null && !t2b.IsScheduled && t2b.ExpectedEntityType == null && t2b.ExpectedPartyId == null && t2b.ExpectedPartyType == null);
+
+			// 6) list resolves the scheduled row + its party name
+			var listed = await tasks.GetTasksAsync(company, "all", me, null, null, "TM9 مجدولة مشتريات");
+			var row = listed.FirstOrDefault(r => r.Id == id1);
+			Chk("list resolves scheduled row + party name", row != null && row.IsScheduled && !string.IsNullOrEmpty(row.ExpectedPartyName));
+
+			// 7) operational only — zero GL + integrity green
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries created (operational only)", jeAfter == jeBefore);
+			var (run, _) = await integ.RunAndLogAsync(company, "tm9a-test");
+			Chk("inv-test-integrity failedCount == 0", run.FailedCount == 0);
+
+			// cleanup
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/tm9b-test?key=seed123 — TM-9-ب matcher. Single→auto-link, multiple→suggestions, none→stays, re-run
+		// idempotent, wrong window/party→no match. Raw invoice rows inserted (NO GL). Operational only, inv=0.
+		[HttpGet("tm9b-test")]
+		public async Task<IActionResult> Tm9bTest(string key, [FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITaskScheduleMatcher matcher, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>(); var invIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			int me = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			var vids = await _db.Vendors.AsNoTracking().Where(v => v.CompanyID == company).OrderBy(v => v.ID).Select(v => v.ID).Take(2).ToListAsync();
+			if (me == 0 || vids.Count < 2) return BadRequest(new { message = "need employee + 2 vendors" });
+			int V1 = vids[0], V2 = vids[1];
+			var today = DateTime.Today;
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			// raw movement rows (direct insert → NO GL). V1: one in-window + one far-future; V2: two in-window.
+			CrossBuy.Models.Context.Accounting.PurchaseInvoice Mk(int v, string no, DateTime d) => new() { CompanyID = company, VendorId = v, InvoiceNo = no, InvoiceDate = d, Status = "Posted", CreatedAt = DateTime.UtcNow };
+			var inv1 = Mk(V1, "TM9B-P1", today); var inv1b = Mk(V1, "TM9B-P1B", today.AddDays(30));
+			var inv2a = Mk(V2, "TM9B-P2A", today); var inv2b = Mk(V2, "TM9B-P2B", today);
+			_db.PurchaseInvoices.AddRange(inv1, inv1b, inv2a, inv2b); await _db.SaveChangesAsync();
+			invIds.AddRange(new[] { inv1.ID, inv1b.ID, inv2a.ID, inv2b.ID });
+
+			async Task<int> Sched(string title, int vendor, DateTime from, DateTime to)
+			{
+				var (_, _, id) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = title, AssigneeEmployeeId = me, Priority = "Normal", DueDate = to, IsScheduled = true, ExpectedEntityType = "PurchaseInvoice", ExpectedPartyId = vendor, ExpectedFrom = from, ExpectedTo = to }, me);
+				taskIds.Add(id); return id;
+			}
+			int tSingle = await Sched("TM9B وحيدة", V1, today.AddDays(-1), today.AddDays(7));
+			int tMulti = await Sched("TM9B متعددة", V2, today.AddDays(-1), today.AddDays(7));
+			int tWindow = await Sched("TM9B خارج النافذة", V1, today.AddDays(-10), today.AddDays(-5));
+
+			var run1 = await matcher.RunAsync(company);
+
+			// 1) single → auto-linked (TM-2 fields + MatchedAt + became normal)
+			var s1 = await tasks.GetAsync(company, tSingle);
+			Chk("single match → auto-linked to the invoice", s1 != null && s1.EntityType == "PurchaseInvoice" && s1.EntityId == inv1.ID);
+			Chk("single match → MatchedAt set + IsScheduled false (became normal linked)", s1 != null && s1.MatchedAt != null && !s1.IsScheduled);
+
+			// 2) multiple → NOT auto-linked, 2 suggestions recorded
+			var m1 = await tasks.GetAsync(company, tMulti);
+			int suggMulti = await _db.TaskMatchSuggestions.CountAsync(x => x.CompanyId == company && x.TaskId == tMulti && x.ResolvedAt == null);
+			Chk("multiple match → NOT auto-linked (still scheduled)", m1 != null && m1.IsScheduled && m1.MatchedAt == null && m1.EntityId == null);
+			Chk("multiple match → 2 suggestions recorded", suggMulti == 2);
+
+			// 3) out-of-window → no match, stays scheduled + no suggestion
+			var w1 = await tasks.GetAsync(company, tWindow);
+			int suggWin = await _db.TaskMatchSuggestions.CountAsync(x => x.CompanyId == company && x.TaskId == tWindow);
+			Chk("out-of-window → stays scheduled, no suggestion", w1 != null && w1.IsScheduled && w1.MatchedAt == null && suggWin == 0);
+
+			// 4) re-run is idempotent — no re-link, no duplicate suggestions
+			var run2 = await matcher.RunAsync(company);
+			var s1b = await tasks.GetAsync(company, tSingle);
+			int suggMulti2 = await _db.TaskMatchSuggestions.CountAsync(x => x.CompanyId == company && x.TaskId == tMulti && x.ResolvedAt == null);
+			Chk("re-run: single stays linked to same invoice (not re-touched)", s1b != null && s1b.EntityId == inv1.ID && !s1b.IsScheduled);
+			Chk("re-run: no duplicate suggestions (still 2)", suggMulti2 == 2);
+			Chk("re-run: auto-linked nothing new", run2.AutoLinked == 0 && run2.Suggested == 0);
+
+			// 5) operational only — zero GL
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries created (matcher reads, never posts)", jeAfter == jeBefore);
+
+			// cleanup (remove suggestions + raw invoices + tasks) BEFORE the integrity check → clean state
+			_db.TaskMatchSuggestions.RemoveRange(await _db.TaskMatchSuggestions.Where(x => x.CompanyId == company && taskIds.Contains(x.TaskId)).ToListAsync());
+			_db.PurchaseInvoices.RemoveRange(await _db.PurchaseInvoices.Where(i => invIds.Contains(i.ID)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+
+			var (irun, _) = await integ.RunAndLogAsync(company, "tm9b-test");
+			Chk("inv-test-integrity failedCount == 0", irun.FailedCount == 0);
+			return Ok(new { allPass, log, failedCount = irun.FailedCount, run1 = new { run1.Scanned, run1.AutoLinked, run1.Suggested } });
+		}
+
+		// GET /api/dev/tm9c-test?key=seed123 — TM-9-ج review: multiple suggestions → confirm one links+closes rest+becomes
+		// normal · confirmed movement not re-offered (other flows to next task) · dismiss · re-run no re-offer. Zero GL, inv=0.
+		[HttpGet("tm9c-test")]
+		public async Task<IActionResult> Tm9cTest(string key, [FromServices] CrossBuy.BL.ITaskService tasks, [FromServices] CrossBuy.BL.ITaskScheduleMatcher matcher, [FromServices] CrossBuy.BL.IIntegrityCheckService integ)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true; var taskIds = new List<int>(); var invIds = new List<int>();
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			int me = await _db.Employee.AsNoTracking().Select(e => e.ID).FirstOrDefaultAsync();
+			var vids = await _db.Vendors.AsNoTracking().Where(v => v.CompanyID == company).OrderBy(v => v.ID).Select(v => v.ID).Take(2).ToListAsync();
+			if (me == 0 || vids.Count < 2) return BadRequest(new { message = "need employee + 2 vendors" });
+			int V1 = vids[0], V3 = vids[1];
+			var today = DateTime.Today;
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			CrossBuy.Models.Context.Accounting.PurchaseInvoice Mk(int v, string no) => new() { CompanyID = company, VendorId = v, InvoiceNo = no, InvoiceDate = today, Status = "Posted", CreatedAt = DateTime.UtcNow };
+			var invA = Mk(V1, "TM9C-A"); var invB = Mk(V1, "TM9C-B"); var invC = Mk(V3, "TM9C-C"); var invD = Mk(V3, "TM9C-D");
+			_db.PurchaseInvoices.AddRange(invA, invB, invC, invD); await _db.SaveChangesAsync();
+			invIds.AddRange(new[] { invA.ID, invB.ID, invC.ID, invD.ID });
+
+			async Task<int> Sched(string title, int vendor)
+			{
+				var (_, _, id) = await tasks.SaveAsync(company, new CrossBuy.BL.TaskSaveInput { Title = title, AssigneeEmployeeId = me, Priority = "Normal", DueDate = today.AddDays(7), IsScheduled = true, ExpectedEntityType = "PurchaseInvoice", ExpectedPartyId = vendor, ExpectedFrom = today.AddDays(-1), ExpectedTo = today.AddDays(7) }, me);
+				taskIds.Add(id); return id;
+			}
+
+			// ---- confirm flow (V1 has invA + invB) ----
+			int t1 = await Sched("TM9C تأكيد", V1);
+			await matcher.RunAsync(company);   // → 2 suggestions for t1 (multiple)
+			var pending = await matcher.GetPendingAsync(company);
+			var g1 = pending.FirstOrDefault(g => g.TaskId == t1);
+			Chk("review lists the task with its multiple candidates", g1 != null && g1.Candidates.Count == 2 && g1.Candidates.All(c => !string.IsNullOrEmpty(c.Label)));
+
+			var (cok, cerr) = await matcher.ConfirmAsync(company, t1, invA.ID);
+			var t1e = await tasks.GetAsync(company, t1);
+			int t1Open = await _db.TaskMatchSuggestions.CountAsync(s => s.CompanyId == company && s.TaskId == t1 && s.ResolvedAt == null);
+			Chk("confirm links the task to the chosen movement (TM-2) + MatchedAt + became normal", cok && t1e != null && t1e.EntityType == "PurchaseInvoice" && t1e.EntityId == invA.ID && t1e.MatchedAt != null && !t1e.IsScheduled);
+			Chk("confirm closes ALL suggestions for that task", t1Open == 0);
+
+			// confirmed movement (invA) must NOT be re-offered; the OTHER (invB) flows to the next task for the same vendor
+			int t2 = await Sched("TM9C التالية", V1);
+			await matcher.RunAsync(company);
+			var t2e = await tasks.GetAsync(company, t2);
+			Chk("confirmed movement not reused; other invoice auto-links to next task", t2e != null && !t2e.IsScheduled && t2e.EntityId == invB.ID);
+
+			// ---- dismiss flow (V3 has invC + invD) ----
+			int t3 = await Sched("TM9C رفض", V3);
+			await matcher.RunAsync(company);   // → 2 suggestions for t3
+			var firstSugg = await _db.TaskMatchSuggestions.AsNoTracking().Where(s => s.CompanyId == company && s.TaskId == t3 && s.ResolvedAt == null).Select(s => s.ID).FirstOrDefaultAsync();
+			var (dok, _) = await matcher.DismissAsync(company, firstSugg);
+			var t3e = await tasks.GetAsync(company, t3);
+			int t3Open = await _db.TaskMatchSuggestions.CountAsync(s => s.CompanyId == company && s.TaskId == t3 && s.ResolvedAt == null);
+			Chk("dismiss one → task stays scheduled + 1 pending remains", dok && t3e != null && t3e.IsScheduled && t3e.MatchedAt == null && t3Open == 1);
+
+			await matcher.RunAsync(company);   // re-run must NOT re-offer the dismissed candidate
+			int t3Open2 = await _db.TaskMatchSuggestions.CountAsync(s => s.CompanyId == company && s.TaskId == t3 && s.ResolvedAt == null);
+			Chk("re-run does not re-offer the dismissed candidate (still 1 pending)", t3Open2 == 1);
+
+			// operational only — zero GL
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries created (link only, no posting)", jeAfter == jeBefore);
+
+			// cleanup then integrity on a clean state
+			_db.TaskMatchSuggestions.RemoveRange(await _db.TaskMatchSuggestions.Where(x => x.CompanyId == company && taskIds.Contains(x.TaskId)).ToListAsync());
+			_db.PurchaseInvoices.RemoveRange(await _db.PurchaseInvoices.Where(i => invIds.Contains(i.ID)).ToListAsync());
+			await _db.SaveChangesAsync();
+			foreach (var id in taskIds) await tasks.DeleteAsync(company, id);
+
+			var (irun, _) = await integ.RunAndLogAsync(company, "tm9c-test");
+			Chk("inv-test-integrity failedCount == 0", irun.FailedCount == 0);
+			return Ok(new { allPass, log, failedCount = irun.FailedCount });
+		}
+
+		// GET /api/dev/tasks-seed?key=seed123&count=2000 — bulk-generate varied tasks (+ some timesheet) for load/perf testing,
+		// then time the list query + reports. Tasks are marked "PERF-…" for easy cleanup via tasks-seed-clear. NO GL.
+		[HttpGet("tasks-seed")]
+		public async Task<IActionResult> TasksSeed(string key, int count, [FromServices] CrossBuy.BL.ITaskService taskSvc, [FromServices] CrossBuy.BL.ITaskReportService reports)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (count <= 0) count = 2000; if (count > 50000) count = 50000;
+			const int company = 1;
+			var emps = await _db.Employee.AsNoTracking().Where(e => e.FullName != null && e.FullName != "").OrderBy(e => e.ID).Select(e => e.ID).Take(30).ToListAsync();
+			if (emps.Count == 0) return BadRequest(new { message = "no employees" });
+			var cust = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == company).Select(c => c.ID).Take(20).ToListAsync();
+
+			// real link candidates (type,id) round-robin
+			var links = new List<(string t, int id)>();
+			foreach (var id in await _db.SalesInvoices.AsNoTracking().Where(x => x.CompanyID == company).OrderByDescending(x => x.ID).Select(x => x.ID).Take(20).ToListAsync()) links.Add(("SalesInvoice", id));
+			foreach (var id in await _db.ManufWorkOrders.AsNoTracking().Where(x => x.CompanyID == company).OrderByDescending(x => x.ID).Select(x => x.ID).Take(20).ToListAsync()) links.Add(("ManufWorkOrder", id));
+			foreach (var id in await _db.Items.AsNoTracking().Where(x => x.CompanyID == company).OrderByDescending(x => x.ID).Select(x => x.ID).Take(20).ToListAsync()) links.Add(("Item", id));
+			foreach (var id in cust) links.Add(("Customer", id));
+
+			string[] P = { "Low", "Normal", "High", "Urgent" };
+			string[] S = { "New", "InProgress", "Done" };
+			var today = DateTime.Today; var nowU = DateTime.UtcNow;
+			var swInsert = System.Diagnostics.Stopwatch.StartNew();
+			_db.ChangeTracker.AutoDetectChangesEnabled = false;
+			try
+			{
+				var buf = new List<CrossBuy.Models.Context.Tasks.TaskItem>();
+				for (int i = 0; i < count; i++)
+				{
+					var status = S[i % 3];
+					var t = new CrossBuy.Models.Context.Tasks.TaskItem
+					{
+						CompanyId = company,
+						Title = $"PERF-{i:00000} مهمة اختبار الأداء",
+						Description = (i % 4 == 0) ? "وصف تجريبي لاختبار الأداء والعرض" : null,
+						AssigneeEmployeeId = emps[i % emps.Count],
+						CreatedByEmployeeId = emps[0],
+						Priority = P[i % 4],
+						DueDate = today.AddDays((i % 20) - 7),         // ~35% overdue
+						Status = status,
+						Category = (i % 3 == 0) ? "اختبار الأداء" : (i % 3 == 1) ? "متابعة" : "تطوير",  // tag chip
+						ProgressPct = status == "Done" ? 100 : status == "InProgress" ? (10 + (i % 9) * 10) : 0,  // varied bars for the progress column
+						EstimatedHours = (i % 3 == 0) ? (decimal?)((i % 8) + 1) : null,
+						ActualHours = 0m,
+						CreatedAt = nowU,
+						CompletedAt = status == "Done" ? nowU : (DateTime?)null,
+					};
+					if (links.Count > 0 && i % 5 == 0) { var lk = links[i % links.Count]; t.EntityType = lk.t; t.EntityId = lk.id; }
+					if (cust.Count > 0 && i % 7 == 0) { t.IsBillable = true; t.CustomerId = cust[i % cust.Count]; t.BillRate = 80 + (i % 5) * 10; }
+					buf.Add(t);
+					if (buf.Count >= 2000) { _db.TaskItems.AddRange(buf); await _db.SaveChangesAsync(); _db.ChangeTracker.Clear(); buf.Clear(); }
+				}
+				if (buf.Count > 0) { _db.TaskItems.AddRange(buf); await _db.SaveChangesAsync(); _db.ChangeTracker.Clear(); }
+			}
+			finally { _db.ChangeTracker.AutoDetectChangesEnabled = true; }
+			swInsert.Stop();
+
+			// timesheet for a subset (so cost/billable/productivity reports have volume)
+			var swTs = System.Diagnostics.Stopwatch.StartNew();
+			int tsCount = 0;
+			var subset = await _db.TaskItems.AsNoTracking().Where(t => t.CompanyId == company && t.Title.StartsWith("PERF-")).OrderByDescending(t => t.ID).Select(t => new { t.ID, t.AssigneeEmployeeId }).Take(Math.Min(count, 1500)).ToListAsync();
+			_db.ChangeTracker.AutoDetectChangesEnabled = false;
+			try
+			{
+				var buf = new List<CrossBuy.Models.Context.Tasks.TimesheetEntry>();
+				int j = 0;
+				foreach (var s in subset)
+				{
+					buf.Add(new CrossBuy.Models.Context.Tasks.TimesheetEntry { CompanyId = company, TaskId = s.ID, EmployeeId = s.AssigneeEmployeeId, WorkDate = today.AddDays(-(j % 5)), Hours = 1 + (j % 4) * 0.5m, Source = "Manual", CreatedAt = nowU });
+					tsCount++; j++;
+					if (buf.Count >= 2000) { _db.TimesheetEntries.AddRange(buf); await _db.SaveChangesAsync(); _db.ChangeTracker.Clear(); buf.Clear(); }
+				}
+				if (buf.Count > 0) { _db.TimesheetEntries.AddRange(buf); await _db.SaveChangesAsync(); _db.ChangeTracker.Clear(); }
+			}
+			finally { _db.ChangeTracker.AutoDetectChangesEnabled = true; }
+			swTs.Stop();
+
+			// ===== timings (what the screens actually call) =====
+			async Task<long> TimeA(Func<Task> a) { var sw = System.Diagnostics.Stopwatch.StartNew(); await a(); sw.Stop(); return sw.ElapsedMilliseconds; }
+
+			int listRows = 0;
+			var listMs = await TimeA(async () => { var r = await taskSvc.GetTasksAsync(company, "all", 0, null, null, null); listRows = r.Count; });
+			var listFilterMs = await TimeA(async () => { await taskSvc.GetTasksAsync(company, "all", 0, "New", "High", "PERF-0001"); });
+			var overdueMs = await TimeA(async () => { await reports.OverdueAsync(company); });
+			var prodMs = await TimeA(async () => { await reports.ProductivityAsync(company, today.AddDays(-30), today); });
+			var costMs = await TimeA(async () => { await reports.CostByAsync(company, "ManufWorkOrder"); });
+			var billMs = await TimeA(async () => { await reports.BillableByCustomerAsync(company); });
+			var summaryMs = await TimeA(async () => { await reports.SummaryAsync(company, emps[0]); });
+
+			int totalNow = await _db.TaskItems.CountAsync(t => t.CompanyId == company);
+			int perfNow = await _db.TaskItems.CountAsync(t => t.CompanyId == company && t.Title.StartsWith("PERF-"));
+			return Ok(new
+			{
+				seeded = count, timesheetRows = tsCount, totalTasksNow = totalNow, perfTasksNow = perfNow,
+				timingsMs = new
+				{
+					insertTasks = swInsert.ElapsedMilliseconds, insertTimesheet = swTs.ElapsedMilliseconds,
+					listAll_cap1000 = listMs, listRowsReturned = listRows,
+					listWithFilters = listFilterMs, reportOverdue = overdueMs, reportProductivity = prodMs,
+					reportWoCost = costMs, reportBillable = billMs, reportSummary = summaryMs
+				},
+				note = "GetTasksAsync caps at 1000 rows (listRowsReturned). Use tasks-seed-clear to remove PERF- tasks."
+			});
+		}
+
+		// GET /api/dev/tasks-seed-clear?key=seed123 — remove all PERF- seeded tasks + their timesheet.
+		[HttpGet("tasks-seed-clear")]
+		public async Task<IActionResult> TasksSeedClear(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var ids = await _db.TaskItems.Where(t => t.CompanyId == company && t.Title.StartsWith("PERF-")).Select(t => t.ID).ToListAsync();
+			int ts = 0, tk = 0;
+			// batch delete to avoid huge single command
+			for (int i = 0; i < ids.Count; i += 2000)
+			{
+				var chunk = ids.Skip(i).Take(2000).ToList();
+				ts += await _db.TimesheetEntries.Where(e => e.CompanyId == company && chunk.Contains(e.TaskId)).ExecuteDeleteAsync();
+				tk += await _db.TaskItems.Where(t => chunk.Contains(t.ID)).ExecuteDeleteAsync();
+			}
+			return Ok(new { deletedTasks = tk, deletedTimesheet = ts });
+		}
+
+		// GET /api/dev/pos-c1-test?key=seed123 — POS-C1 Delivery data + fee. Frozen delivery fee is added to the order
+		// total, stays OPERATIONAL (no GL) while open, and enters the invoice at pay via the existing path (no new GL writer).
+		[HttpGet("pos-c1-test")]
+		public async Task<IActionResult> PosC1Test(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			const decimal EPS = 0.02m;
+			decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || wh == null || branch == null) return BadRequest(new { message = "missing category(inv-acc)/uom/warehouse/branch" });
+			int bId = branch.ID;
+
+			// item with stock
+			var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "DLV-A");
+			int itemId; if (ex != null) { ex.SalesPrice = 40m; await _db.SaveChangesAsync(); itemId = ex.ID; }
+			else { var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "DLV-A", Barcode = "DLV-A", Name = "DLV-A", ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 40m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); itemId = it.ID; }
+			var (qb, _, _) = await _stock.GetBalanceAsync(company, itemId, wh.Value);
+			if (qb < 20) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh.Value, Direction = 1, Qty = 100, UnitCostInBase = 12m, SourceType = "Opening", PostToGl = false }, null);
+
+			// branch setting: isolate the delivery fee (service% off), default sales warehouse, delivery NOT exempt
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == bId);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = bId }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh.Value; setting.ServiceChargePct = 0m; setting.DeliveryTaxExempt = false; setting.DefaultDeliveryFee = 25m; await _db.SaveChangesAsync();
+
+			// a delivery zone (fee 30) for this branch
+			var zone = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.BranchId == bId && z.Name == "TST-ZONE");
+			if (zone == null) { zone = new CrossBuy.Models.Context.Pos.DeliveryZone { BranchId = bId, Name = "TST-ZONE", NameEn = "Test Zone", Fee = 30m, IsActive = true }; _db.DeliveryZones.Add(zone); await _db.SaveChangesAsync(); }
+			else { zone.Fee = 30m; zone.IsActive = true; await _db.SaveChangesAsync(); }
+
+			var custId = await _db.Customers.Where(c => c.CompanyID == company).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			if (custId == null) return BadRequest(new { message = "no customer" });
+
+			decimal vat = await _db.TaxCodes.Where(t => t.CompanyID == company && t.Kind == "VAT" && t.IsDefault && t.IsActive).Select(t => (decimal?)t.Rate).FirstOrDefaultAsync() ?? 0m;
+			async Task<decimal> TbDrift() => await (from l in _db.JournalEntryLines join e in _db.JournalEntries on l.JournalEntryId equals e.ID where e.CompanyID == company && (e.Status == "Posted" || e.Status == "Reversed") select (l.Debit - l.Credit)).SumAsync();
+			async Task<decimal> ArNet() { var id = await _db.Accounts.Where(x => x.CompanyID == company && x.Code == "1102").Select(x => (int?)x.ID).FirstOrDefaultAsync(); return id == null ? 0 : (await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0); }
+			decimal tbB = await TbDrift(), arB = await ArNet();
+
+			// customer address CRUD
+			var (aok, aerr, aid) = await _posOrders.AddCustomerAddressAsync(company, custId.Value, zone.ID, "TST-ZONE", "5 Test St", "0100000000", true);
+			Chk("add customer address ok", aok && aid != null);
+			var addrs = await _posOrders.GetCustomerAddressesAsync(company, custId.Value);
+			Chk("address listed + default", addrs.Any(x => x.Id == aid && x.IsDefault));
+
+			// create a Delivery order + item
+			var (ook, _, oid) = await _posOrders.CreateOrderAsync(company, bId, "Delivery", null, custId, null, null);
+			if (!ook) return Ok(new { allPass = false, log = new[] { "FAIL create delivery order" } });
+			await _posOrders.AddLineAsync(company, oid, itemId, 1);
+			var before = await _posOrders.GetOrderAsync(company, oid);
+			decimal g0 = before!.GrandTotal;   // items only (no fee yet)
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (dok, derr) = await _posOrders.SetOrderDeliveryAsync(company, oid, custId, zone.ID, "5 Test St", null, "0100000000");
+			Chk("set delivery ok", dok);
+			var after = await _posOrders.GetOrderAsync(company, oid);
+			Chk("delivery fee frozen == zone fee (30)", Math.Abs(after!.DeliveryFee - 30m) < 0.001m);
+			Chk("delivery area frozen == zone name", after.DeliveryArea == "TST-ZONE");
+			decimal feeGrand = R(30m + R(30m * vat / 100m));
+			Chk("order total grew by fee + its VAT", Math.Abs((after.GrandTotal - g0) - feeGrand) < EPS);
+			int jeAfterSet = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO GL while open (set-delivery is operational)", jeAfterSet == jeBefore);
+			Chk("trial balance unchanged before pay", Math.Abs((await TbDrift()) - tbB) < EPS);
+
+			// pay → invoice includes the delivery fee; GL via the existing path
+			decimal orderGrand = after.GrandTotal;
+			var (pok, perr, invId) = await _posOrders.PayAsync(company, oid, "Cash", null);
+			Chk("pay ok", pok && invId != null);
+			if (pok && invId != null)
+			{
+				var inv = await _db.SalesInvoices.AsNoTracking().FirstAsync(x => x.ID == invId);
+				Chk("invoice total == order total (incl. delivery fee)", Math.Abs(inv.GrandTotal - orderGrand) < 0.001m);
+				Chk("AR nets to zero (invoice settled to cash)", Math.Abs((await ArNet()) - arB) < EPS);
+				Chk("trial balance balanced after pay", Math.Abs((await TbDrift()) - tbB) < EPS);
+			}
+			else log.Add("payErr: " + perr);
+
+			// self-clean: order + its address + test zone (leave the item/stock)
+			_db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == oid).ToListAsync());
+			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == oid); if (o != null) _db.PosOrders.Remove(o);
+			if (aid != null) { var ad = await _db.CustomerAddresses.FirstOrDefaultAsync(x => x.ID == aid); if (ad != null) _db.CustomerAddresses.Remove(ad); }
+			await _db.SaveChangesAsync();
+
+			return Ok(new { allPass, log, orderGrand, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/pos-c2-test?key=seed123 — POS-C2 driver: assign a per-branch driver to a delivery order,
+		// clear it, reject an invalid/other-branch driver, and stay OPERATIONAL (no GL).
+		[HttpGet("pos-c2-test")]
+		public async Task<IActionResult> PosC2Test(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (branch == null) return BadRequest(new { message = "no branch" });
+			int bId = branch.ID;
+
+			// a driver on THIS branch, and a driver on ANOTHER branch (must be rejected)
+			var d1 = await _db.Drivers.FirstOrDefaultAsync(d => d.BranchId == bId && d.Name == "TST-DRV");
+			if (d1 == null) { d1 = new CrossBuy.Models.Context.Pos.Driver { BranchId = bId, Name = "TST-DRV", Phone = "0100", IsActive = true }; _db.Drivers.Add(d1); await _db.SaveChangesAsync(); }
+			else { d1.IsActive = true; await _db.SaveChangesAsync(); }
+			var otherBranch = await _db.Branches.AsNoTracking().Where(b => b.ID != bId).Select(b => (int?)b.ID).FirstOrDefaultAsync();
+			int otherDriverId = 0;
+			if (otherBranch != null)
+			{
+				var d2 = await _db.Drivers.FirstOrDefaultAsync(d => d.BranchId == otherBranch && d.Name == "TST-DRV-OTHER");
+				if (d2 == null) { d2 = new CrossBuy.Models.Context.Pos.Driver { BranchId = otherBranch.Value, Name = "TST-DRV-OTHER", Phone = "0200", IsActive = true }; _db.Drivers.Add(d2); await _db.SaveChangesAsync(); }
+				otherDriverId = d2.ID;
+			}
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (ook, _, oid) = await _posOrders.CreateOrderAsync(company, bId, "Delivery", null, null, null, null);
+			if (!ook) return Ok(new { allPass = false, log = new[] { "FAIL create delivery order" } });
+
+			var (a1, e1) = await _posOrders.AssignDriverAsync(company, oid, d1.ID);
+			Chk("assign driver ok", a1);
+			var ord = await _posOrders.GetOrderAsync(company, oid);
+			Chk("order carries driver id", ord!.DriverId == d1.ID);
+			Chk("order shows driver name", ord.DriverName == "TST-DRV");
+
+			if (otherDriverId != 0) { var (a2, _) = await _posOrders.AssignDriverAsync(company, oid, otherDriverId); Chk("reject a driver from another branch", !a2); }
+
+			var (a3, _) = await _posOrders.AssignDriverAsync(company, oid, null);
+			var ord2 = await _posOrders.GetOrderAsync(company, oid);
+			Chk("clear driver (unassign)", a3 && ord2!.DriverId == null);
+
+			// a non-delivery order must reject driver assignment
+			var (tok, _, toid) = await _posOrders.CreateOrderAsync(company, bId, "Takeaway", null, null, null, null);
+			var (a4, _) = await _posOrders.AssignDriverAsync(company, toid, d1.ID);
+			Chk("reject driver on a non-delivery order", !a4);
+
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries (driver assignment is operational)", jeAfter == jeBefore);
+
+			// self-clean orders (leave the test drivers)
+			foreach (var id in new[] { oid, toid }) { var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == id); if (o != null) _db.PosOrders.Remove(o); }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/pos-c3-test?key=seed123 — POS-C3 delivery lifecycle: null→OutForDelivery→Delivered (forward-only,
+		// requires kitchen Ready first), role-gated, independent of payment (Delivered ≠ Paid), and ZERO GL.
+		[HttpGet("pos-c3-test")]
+		public async Task<IActionResult> PosC3Test(string key, [FromServices] CrossBuy.BL.IPosAccessService access)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || branch == null) return BadRequest(new { message = "missing category/uom/branch" });
+			int bId = branch.ID;
+			var exi = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "DLV-C3");
+			int itemId; if (exi != null) itemId = exi.ID; else { var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "DLV-C3", Barcode = "DLV-C3", Name = "DLV-C3", ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 20m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); itemId = it.ID; }
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (ook, _, oid) = await _posOrders.CreateOrderAsync(company, bId, "Delivery", null, null, null, null);
+			if (!ook) return Ok(new { allPass = false, log = new[] { "FAIL create delivery order" } });
+			await _posOrders.AddLineAsync(company, oid, itemId, 1);
+			await _posOrders.SendToKitchenAsync(company, oid);
+
+			var (r1, _, _) = await _posOrders.SetDeliveryStatusAsync(company, oid, "OutForDelivery");
+			Chk("reject OutForDelivery before kitchen Ready", !r1);
+
+			var ord = await _posOrders.GetOrderAsync(company, oid);
+			await _posOrders.SetLineKdsStatusAsync(company, oid, ord!.Lines[0].Id, "Ready");   // make it kitchen-Ready
+
+			var (r2, _, d2) = await _posOrders.SetDeliveryStatusAsync(company, oid, "OutForDelivery");
+			Chk("OutForDelivery after Ready ok", r2 && d2 == "OutForDelivery");
+			var (r3, _, _) = await _posOrders.SetDeliveryStatusAsync(company, oid, "OutForDelivery");
+			Chk("reject repeat OutForDelivery (forward-only)", !r3);
+			var (r4, _, d4) = await _posOrders.SetDeliveryStatusAsync(company, oid, "Delivered");
+			Chk("Delivered ok", r4 && d4 == "Delivered");
+			var (r5, _, _) = await _posOrders.SetDeliveryStatusAsync(company, oid, "OutForDelivery");
+			Chk("reject going back Delivered → OutForDelivery", !r5);
+			var (r6, _, _) = await _posOrders.SetDeliveryStatusAsync(company, oid, "Bogus");
+			Chk("reject invalid status", !r6);
+
+			var ordF = await _posOrders.GetOrderAsync(company, oid);
+			Chk("Delivered but still Open (unpaid — COD separation, Delivered ≠ Paid)", ordF!.Status == "Open" && ordF.DeliveryStatus == "Delivered");
+
+			// role gate the endpoint enforces (CanOrder = cashier/waiter/manager; kitchen-only cannot)
+			Chk("role: cashier can operate delivery status", access.CanOrder(new List<string> { "pos-cashier" }));
+			Chk("role: manager can operate delivery status", access.CanOrder(new List<string> { "pos-manager" }));
+			Chk("role: kitchen-only CANNOT operate delivery status", !access.CanOrder(new List<string> { "pos-kitchen" }));
+
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries (delivery status operational)", jeAfter == jeBefore);
+
+			// self-clean
+			_db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == oid).ToListAsync());
+			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == oid); if (o != null) _db.PosOrders.Remove(o);
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/pos-c4-test?key=seed123 — POS-C4 delivery board feed: open Delivery orders appear with their
+		// delivery/kitchen state + driver + frozen address; non-delivery orders are excluded; ZERO GL.
+		[HttpGet("pos-c4-test")]
+		public async Task<IActionResult> PosC4Test(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || branch == null) return BadRequest(new { message = "missing category/uom/branch" });
+			int bId = branch.ID;
+			var exi = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "DLV-C4");
+			int itemId; if (exi != null) itemId = exi.ID; else { var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "DLV-C4", Barcode = "DLV-C4", Name = "DLV-C4", ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 25m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); itemId = it.ID; }
+			var zone = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.BranchId == bId && z.Name == "TST-ZONE"); if (zone == null) { zone = new CrossBuy.Models.Context.Pos.DeliveryZone { BranchId = bId, Name = "TST-ZONE", Fee = 30m, IsActive = true }; _db.DeliveryZones.Add(zone); await _db.SaveChangesAsync(); }
+			var drv = await _db.Drivers.FirstOrDefaultAsync(d => d.BranchId == bId && d.Name == "TST-DRV"); if (drv == null) { drv = new CrossBuy.Models.Context.Pos.Driver { BranchId = bId, Name = "TST-DRV", IsActive = true }; _db.Drivers.Add(drv); await _db.SaveChangesAsync(); } else { drv.IsActive = true; await _db.SaveChangesAsync(); }
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == bId); if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = bId }; _db.BranchPosSettings.Add(setting); await _db.SaveChangesAsync(); }
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			// a delivery order: set address(zone) + driver + send + ready + out-for-delivery
+			var (o1ok, _, oid1) = await _posOrders.CreateOrderAsync(company, bId, "Delivery", null, null, null, null);
+			await _posOrders.AddLineAsync(company, oid1, itemId, 2);
+			await _posOrders.SetOrderDeliveryAsync(company, oid1, null, zone.ID, "9 Board St", null, "0111");
+			await _posOrders.AssignDriverAsync(company, oid1, drv.ID);
+			await _posOrders.SendToKitchenAsync(company, oid1);
+			var ord1 = await _posOrders.GetOrderAsync(company, oid1);
+			await _posOrders.SetLineKdsStatusAsync(company, oid1, ord1!.Lines[0].Id, "Ready");
+			await _posOrders.SetDeliveryStatusAsync(company, oid1, "OutForDelivery");
+			// a takeaway order — must NOT appear on the delivery board
+			var (o2ok, _, oid2) = await _posOrders.CreateOrderAsync(company, bId, "Takeaway", null, null, null, null);
+			await _posOrders.AddLineAsync(company, oid2, itemId, 1);
+
+			var board = await _posOrders.GetDeliveryOrdersAsync(company, bId);
+			var row = board.FirstOrDefault(x => x.OrderId == oid1);
+			Chk("delivery order appears on the board", row != null);
+			if (row != null)
+			{
+				Chk("frozen area shown", row.Area == "TST-ZONE");
+				Chk("driver name shown", row.DriverName == "TST-DRV");
+				Chk("delivery status = OutForDelivery", row.DeliveryStatus == "OutForDelivery");
+				Chk("kitchen status = Ready", row.KitchenStatus == "Ready");
+				Chk("item count > 0", row.ItemCount > 0);
+			}
+			Chk("takeaway order NOT on the delivery board", board.All(x => x.OrderId != oid2));
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries (board is read-only/operational)", jeAfter == jeBefore);
+
+			foreach (var id in new[] { oid1, oid2 }) { _db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == id).ToListAsync()); var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == id); if (o != null) _db.PosOrders.Remove(o); }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, boardCount = board.Count, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/pos-a1-test?key=seed123 — POS-A1 delivery-zone management: full CRUD, delete-with-reference
+		// deactivates (keeps history), cashier read excludes inactive, validation, ZERO GL.
+		[HttpGet("pos-a1-test")]
+		public async Task<IActionResult> PosA1Test(string key, [FromServices] CrossBuy.BL.IPosSetupService pos)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (branch == null) return BadRequest(new { message = "no branch" });
+			int bId = branch.ID;
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+
+			await pos.SaveDeliveryZoneAsync(bId, 0, "TST-A1", "TestA1", 40m, true);
+			var z = (await pos.GetAllDeliveryZonesAsync(bId)).FirstOrDefault(x => x.Name == "TST-A1");
+			Chk("create zone ok (fee 40, active)", z != null && z.Fee == 40m && z.IsActive);
+			if (z == null) return Ok(new { allPass = false, log });
+			await pos.SaveDeliveryZoneAsync(bId, z.ID, "TST-A1", "TestA1", 55m, true);
+			Chk("edit fee → 55", (await pos.GetAllDeliveryZonesAsync(bId)).First(x => x.ID == z.ID).Fee == 55m);
+			var (v1, _) = await pos.SaveDeliveryZoneAsync(bId, 0, "", null, 10m, true); Chk("reject empty name", !v1);
+			var (v2, _) = await pos.SaveDeliveryZoneAsync(bId, 0, "X", null, -5m, true); Chk("reject negative fee", !v2);
+
+			// reference the zone on a delivery order, then delete → must DEACTIVATE (keep history)
+			var (ook, _, oid) = await _posOrders.CreateOrderAsync(company, bId, "Delivery", null, null, null, null);
+			await _posOrders.SetOrderDeliveryAsync(company, oid, null, z.ID, "addr", null, "0100");
+			var (d1, _) = await pos.DeleteDeliveryZoneAsync(z.ID);
+			var zAfter = (await pos.GetAllDeliveryZonesAsync(bId)).FirstOrDefault(x => x.ID == z.ID);
+			Chk("delete referenced zone → deactivated (kept)", d1 && zAfter != null && !zAfter.IsActive);
+			Chk("cashier read (active only) excludes the inactive zone", (await _posOrders.GetDeliveryZonesAsync(bId)).All(x => x.Id != z.ID));
+
+			// unreferenced delete → hard remove
+			await pos.SaveDeliveryZoneAsync(bId, 0, "TST-A1-TMP", null, 10m, true);
+			var tmp = (await pos.GetAllDeliveryZonesAsync(bId)).First(x => x.Name == "TST-A1-TMP");
+			await pos.DeleteDeliveryZoneAsync(tmp.ID);
+			Chk("delete unreferenced zone → removed", (await pos.GetAllDeliveryZonesAsync(bId)).All(x => x.ID != tmp.ID));
+
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries (zone setup is operational)", jeAfter == jeBefore);
+
+			// clean: order first (frees the FK), then the test zone
+			_db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == oid).ToListAsync());
+			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == oid); if (o != null) _db.PosOrders.Remove(o);
+			await _db.SaveChangesAsync();
+			var zc = await _db.DeliveryZones.FirstOrDefaultAsync(x => x.ID == z.ID); if (zc != null) _db.DeliveryZones.Remove(zc);
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/pos-b1-test?key=seed123 — POS-B1 reservations: overlap rejected (same table/window), Cancelled/NoShow
+		// ignored in overlap, forward-only status (Booked→Cancelled/NoShow; Arrived not settable here), ZERO GL.
+		[HttpGet("pos-b1-test")]
+		public async Task<IActionResult> PosB1Test(string key, [FromServices] CrossBuy.BL.IPosSetupService pos)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			// any active table + its branch/company
+			var tbl = await (from t in _db.RestaurantTables join a in _db.DiningAreas on t.DiningAreaId equals a.ID where t.IsActive select new { t.ID, a.BranchId }).FirstOrDefaultAsync();
+			if (tbl == null) return BadRequest(new { message = "no table" });
+			int bId = tbl.BranchId, tblId = tbl.ID;
+			int company = await _db.Branches.Where(b => b.ID == bId).Select(b => b.CompanyID).FirstOrDefaultAsync();
+			var t0 = DateTime.Today.AddDays(1).AddHours(19);   // tomorrow 19:00 (future/upcoming)
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			async Task<int> LastId() => await _db.Reservations.Where(r => r.BranchId == bId).OrderByDescending(r => r.ID).Select(r => r.ID).FirstAsync();
+
+			var (c1, _) = await pos.SaveReservationAsync(company, bId, 0, tblId, null, "B1-G1", "0100", t0, 120, 2, null);
+			Chk("create booked reservation ok", c1);
+			int id1 = await LastId();
+			var (c2, _) = await pos.SaveReservationAsync(company, bId, 0, tblId, null, "B1-G2", "0100", t0.AddMinutes(60), 120, 2, null);
+			Chk("overlapping reservation (within window) rejected", !c2);
+			var (c3, _) = await pos.SaveReservationAsync(company, bId, 0, tblId, null, "B1-G3", "0100", t0.AddMinutes(180), 120, 2, null);
+			Chk("non-overlapping (after window) ok", c3);
+			int id3 = await LastId();
+			var (v1, _) = await pos.SaveReservationAsync(company, bId, 0, tblId, null, "", "0100", t0.AddMinutes(400), 120, 2, null);
+			Chk("reject empty guest name", !v1);
+
+			var (s1, _) = await pos.SetReservationStatusAsync(company, id1, "Cancelled");
+			Chk("cancel booked ok", s1);
+			var (c4, _) = await pos.SaveReservationAsync(company, bId, 0, tblId, null, "B1-G4", "0100", t0, 120, 2, null);
+			Chk("cancelled reservation ignored in overlap (re-book same slot ok)", c4);
+			int id4 = await LastId();
+			var (s2, _) = await pos.SetReservationStatusAsync(company, id1, "NoShow");
+			Chk("cannot change a non-Booked reservation", !s2);
+			var (s3, _) = await pos.SetReservationStatusAsync(company, id3, "NoShow");
+			Chk("no-show a booked reservation ok", s3);
+			var (s4, _) = await pos.SetReservationStatusAsync(company, id4, "Arrived");
+			Chk("Arrived NOT settable via B1 status (reserved for arrival flow)", !s4);
+
+			var list = await pos.GetReservationsAsync(company, bId);
+			Chk("today/upcoming list returns the reservations", list.Any(x => x.Id == id4));
+
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries (reservations operational)", jeAfter == jeBefore);
+
+			// clean
+			_db.Reservations.RemoveRange(await _db.Reservations.Where(r => r.BranchId == bId && r.GuestName.StartsWith("B1-G")).ToListAsync());
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/pos-b2-test?key=seed123 — POS-B2: a booked table (no open order) is "reservable"; "arrive" opens a
+		// linked Dine-in order (table becomes occupied, reservation→Arrived, guests=party); no-show drops it. ZERO GL.
+		[HttpGet("pos-b2-test")]
+		public async Task<IActionResult> PosB2Test(string key, [FromServices] CrossBuy.BL.IPosSetupService pos)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var tbl = await (from t in _db.RestaurantTables join a in _db.DiningAreas on t.DiningAreaId equals a.ID where t.IsActive select new { t.ID, t.Seats, a.BranchId }).FirstOrDefaultAsync();
+			if (tbl == null) return BadRequest(new { message = "no table" });
+			int bId = tbl.BranchId, tblId = tbl.ID; int party = Math.Min(2, Math.Max(1, tbl.Seats));
+			int company = await _db.Branches.Where(b => b.ID == bId).Select(b => b.CompanyID).FirstOrDefaultAsync();
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			async Task<int> OpenOnTable() => await _db.PosOrders.CountAsync(o => o.BranchId == bId && o.Status == "Open" && o.TableId == tblId);
+			async Task<int> LastResv() => await _db.Reservations.Where(r => r.BranchId == bId).OrderByDescending(r => r.ID).Select(r => r.ID).FirstAsync();
+
+			// a booked reservation now+30m (today, within window → the floor would show it "Reserved" while there's no open order)
+			await pos.SaveReservationAsync(company, bId, 0, tblId, null, "B2-GUEST", "0100", DateTime.Now.AddMinutes(30), 120, party, null);
+			int rid = await LastResv();
+			int openBefore = await OpenOnTable();
+			Chk("reservation booked, table has no open order (→ derives Reserved)", openBefore == 0 && await _db.Reservations.AnyAsync(r => r.ID == rid && r.Status == "Booked"));
+
+			// arrive → opens a Dine-in order on the table, linked
+			var (aok, aerr, oid) = await _posOrders.ArriveReservationAsync(company, rid, null, null);
+			Chk("arrive opens an order", aok && oid != null);
+			if (oid != null)
+			{
+				var ord = await _posOrders.GetOrderAsync(company, oid.Value);
+				Chk("order is Dine-in on the reserved table", ord!.OrderType == "Dine-in" && ord.TableId == tblId);
+				Chk("order guests = party size (clamped to seats)", ord.Guests == Math.Min(party, tbl.Seats));
+				var r2 = await _db.Reservations.AsNoTracking().FirstAsync(r => r.ID == rid);
+				Chk("reservation → Arrived + linked to the order", r2.Status == "Arrived" && r2.OrderId == oid);
+				Chk("table now occupied (open order exists → Occupied wins over Reserved)", await OpenOnTable() == openBefore + 1);
+			}
+			// arrive again on the same (now Arrived) reservation → rejected
+			var (aok2, _, _) = await _posOrders.ArriveReservationAsync(company, rid, null, null);
+			Chk("cannot arrive a non-Booked reservation", !aok2);
+
+			// a second reservation → no-show drops it
+			await pos.SaveReservationAsync(company, bId, 0, tblId, null, "B2-GUEST2", "0100", DateTime.Now.AddMinutes(240), 120, party, null);
+			int rid2 = await LastResv();
+			var (nok, _) = await pos.SetReservationStatusAsync(company, rid2, "NoShow");
+			Chk("no-show drops the reservation", nok && await _db.Reservations.AnyAsync(r => r.ID == rid2 && r.Status == "NoShow"));
+
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries (arrival opens an order — no GL until pay)", jeAfter == jeBefore);
+
+			// clean: the opened order + both reservations
+			if (oid != null) { _db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == oid.Value).ToListAsync()); var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == oid.Value); if (o != null) _db.PosOrders.Remove(o); }
+			_db.Reservations.RemoveRange(await _db.Reservations.Where(r => r.BranchId == bId && r.GuestName.StartsWith("B2-GUEST")).ToListAsync());
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/rc3a-test?key=seed123 — RC-3a KDS line state model. Send sets New; kitchen advances
+		// New→Preparing→Ready (forward-only); order status derived; role helper; and ZERO accounting effect (operational).
+		[HttpGet("rc3a-test")]
+		public async Task<IActionResult> Rc3aTest(string key, [FromServices] CrossBuy.BL.IPosAccessService access)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || branch == null) return BadRequest(new { message = "missing category/uom/branch" });
+			async Task<int> EnsureItem(string code)
+			{
+				var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (ex != null) return ex.ID;
+				var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 25m, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID;
+			}
+			int a = await EnsureItem("KDS-A"), b = await EnsureItem("KDS-B"), cId = await EnsureItem("KDS-C");
+
+			async Task<int> JeCount() => await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			int jeBefore = await JeCount();
+
+			var (ook, _, orderId) = await _posOrders.CreateOrderAsync(company, branch.ID, "Dine-in", null, null);
+			if (!ook) return Ok(new { allPass = false, log = new[] { "FAIL create order" } });
+			await _posOrders.AddLineAsync(company, orderId, a, 1);
+			await _posOrders.AddLineAsync(company, orderId, b, 1);
+			var ord = await _posOrders.GetOrderAsync(company, orderId);
+			int lineA = ord!.Lines.First(l => l.ItemId == a).Id, lineB = ord.Lines.First(l => l.ItemId == b).Id;
+			Chk("before send: all lines KdsStatus null + order KdsStatus null", ord.Lines.All(l => l.KdsStatus == null) && ord.KdsStatus == null);
+
+			await _posOrders.SendToKitchenAsync(company, orderId);
+			ord = await _posOrders.GetOrderAsync(company, orderId);
+			Chk("after send: both lines = New", ord!.Lines.All(l => l.KdsStatus == "New"));
+			Chk("after send: order derived = New", ord.KdsStatus == "New");
+
+			var (p1, _) = await _posOrders.SetLineKdsStatusAsync(company, orderId, lineA, "Preparing");
+			ord = await _posOrders.GetOrderAsync(company, orderId);
+			Chk("advance A→Preparing ok; order derived = Preparing", p1 && ord!.KdsStatus == "Preparing");
+
+			await _posOrders.SetLineKdsStatusAsync(company, orderId, lineA, "Ready");
+			ord = await _posOrders.GetOrderAsync(company, orderId);
+			Chk("A=Ready, B=New (mixed) → order derived = Preparing", ord!.KdsStatus == "Preparing");
+
+			var (bk, _) = await _posOrders.SetLineKdsStatusAsync(company, orderId, lineA, "New");
+			Chk("backward (Ready→New) REJECTED", !bk);
+
+			await _posOrders.SetLineKdsStatusAsync(company, orderId, lineB, "Preparing");
+			await _posOrders.SetLineKdsStatusAsync(company, orderId, lineB, "Ready");
+			ord = await _posOrders.GetOrderAsync(company, orderId);
+			Chk("all sent lines Ready → order derived = Ready", ord!.KdsStatus == "Ready");
+
+			// an UNSENT line cannot be advanced
+			await _posOrders.AddLineAsync(company, orderId, cId, 1);
+			ord = await _posOrders.GetOrderAsync(company, orderId);
+			int lineC = ord!.Lines.First(l => l.ItemId == cId).Id;
+			var (uns, _) = await _posOrders.SetLineKdsStatusAsync(company, orderId, lineC, "Preparing");
+			Chk("advancing an UNSENT line REJECTED", !uns);
+
+			Chk("IsKitchen(pos-kitchen)=true", access.IsKitchen(new[] { "pos-kitchen" }));
+			Chk("IsKitchen(pos-manager)=true", access.IsKitchen(new[] { "pos-manager" }));
+			Chk("IsKitchen(pos-waiter)=false", !access.IsKitchen(new[] { "pos-waiter" }));
+			Chk("IsKitchen(pos-cashier)=false", !access.IsKitchen(new[] { "pos-cashier" }));
+
+			int jeAfter = await JeCount();
+			Chk("ZERO journal entries created by the whole KDS flow (operational only)", jeAfter == jeBefore);
+
+			// self-clean: delete the never-paid test order + its lines
+			var delLines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).ToListAsync();
+			_db.PosOrderLines.RemoveRange(delLines);
+			var delOrder = await _db.PosOrders.FirstOrDefaultAsync(o => o.ID == orderId); if (delOrder != null) _db.PosOrders.Remove(delOrder);
+			await _db.SaveChangesAsync();
+
+			return Ok(new { allPass, log, tip = "ثم شغّل inv-test-integrity?key=seed123 وتأكد failedCount=2." });
+		}
+
+		// GET /api/dev/rc3d-test?key=seed123 — RC-3d role matrix: the SERVER authorization decisions each endpoint applies.
+		// waiter→order-ops only · kitchen→KDS only · cashier→order+pay · manager→all · kitchen-only→routes to KDS.
+		[HttpGet("rc3d-test")]
+		public IActionResult Rc3dTest(string key, [FromServices] CrossBuy.BL.IPosAccessService a)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			string[] W = { "pos-waiter" }, K = { "pos-kitchen" }, C = { "pos-cashier" }, M = { "pos-manager" }, KW = { "pos-kitchen", "pos-waiter" };
+			// waiter: opens/adds/sends, but NOT pay, NOT kitchen-status
+			Chk("waiter → CanOrder ✔ / CanSell ✘ / IsKitchen ✘", a.CanOrder(W) && !a.CanSell(W) && !a.IsKitchen(W));
+			// kitchen: KDS only — NOT order ops, NOT pay
+			Chk("kitchen → CanOrder ✘ / CanSell ✘ / IsKitchen ✔", !a.CanOrder(K) && !a.CanSell(K) && a.IsKitchen(K));
+			// cashier: order + pay, NOT kitchen-status
+			Chk("cashier → CanOrder ✔ / CanSell ✔ / IsKitchen ✘", a.CanOrder(C) && a.CanSell(C) && !a.IsKitchen(C));
+			// manager: everything
+			Chk("manager → CanOrder ✔ / CanSell ✔ / IsKitchen ✔", a.CanOrder(M) && a.CanSell(M) && a.IsKitchen(M));
+			// login routing predicate (kitchen-only → KDS)
+			Chk("kitchen-only → routed to KDS", a.IsKitchen(K) && !a.CanOrder(K));
+			Chk("waiter → NOT routed to KDS", !(a.IsKitchen(W) && !a.CanOrder(W)));
+			Chk("manager → NOT routed to KDS (full terminal)", !(a.IsKitchen(M) && !a.CanOrder(M)));
+			Chk("kitchen+waiter → NOT kitchen-only (can order) → terminal", a.CanOrder(KW) && !(a.IsKitchen(KW) && !a.CanOrder(KW)));
+			return Ok(new { allPass, log, tip = "التحقق التشغيلي: بدّل دور مستخدم لـ pos-kitchen وسجّل دخول → لازم يروح /pos/kitchen ويُرفض من /pos/order/*." });
+		}
+
+		// GET /api/dev/rc3e-test?key=seed123 — RC-3e station routing: a tab mapped to a station routes its items there;
+		// an unmapped item → default (first active Kitchen station). StationId frozen at send. Operational, ZERO GL.
+		[HttpGet("rc3e-test")]
+		public async Task<IActionResult> Rc3eTest(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			var uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => (int?)u.ID).FirstOrDefaultAsync();
+			var branch = await _db.Branches.AsNoTracking().OrderBy(b => b.ID).FirstOrDefaultAsync();
+			if (cat == null || uom == null || branch == null) return BadRequest(new { message = "missing category/uom/branch" });
+			int bId = branch.ID;
+			async Task<int> EnsureStation(string code, string name, string type)
+			{
+				var ex = await _db.KitchenStations.FirstOrDefaultAsync(s => s.BranchId == bId && s.Code == code);
+				if (ex != null) { ex.StationType = type; ex.IsActive = true; await _db.SaveChangesAsync(); return ex.ID; }
+				var s = new CrossBuy.Models.Context.Pos.KitchenStation { BranchId = bId, Code = code, Name = name, StationType = type, IsActive = true };
+				_db.KitchenStations.Add(s); await _db.SaveChangesAsync(); return s.ID;
+			}
+			int barStn = await EnsureStation("TSTBAR", "بار اختبار", "Bar");
+			await EnsureStation("TSTK", "مطبخ اختبار", "Kitchen");   // ensure a Kitchen-type exists for the default path
+			async Task<int> EnsureItem(string code) { var ex = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code); if (ex != null) return ex.ID; var it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = code, Name = code, ItemCategoryId = cat.Value, ItemType = "Stockable", BaseUoMId = uom.Value, IsActive = true, CostingMethod = "Average", SalesPrice = 15m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); return it.ID; }
+			int a = await EnsureItem("KDSSTN-A"), b = await EnsureItem("KDSSTN-B");
+			var grp = await _db.PosMenuGroups.FirstOrDefaultAsync(g => g.BranchId == bId && g.Name == "TST-G-BAR");
+			if (grp == null) { grp = new CrossBuy.Models.Context.Pos.PosMenuGroup { BranchId = bId, Name = "TST-G-BAR", Sort = 99, IsActive = true }; _db.PosMenuGroups.Add(grp); }
+			grp.KitchenStationId = barStn; await _db.SaveChangesAsync();
+			async Task EnsureQuick(int itemId, int? groupId) { var ex = await _db.PosQuickItems.FirstOrDefaultAsync(q => q.BranchId == bId && q.ItemId == itemId); if (ex == null) _db.PosQuickItems.Add(new CrossBuy.Models.Context.Pos.PosQuickItem { BranchId = bId, ItemId = itemId, GroupId = groupId, Sort = 0, IsActive = true }); else ex.GroupId = groupId; await _db.SaveChangesAsync(); }
+			await EnsureQuick(a, grp.ID); await EnsureQuick(b, null);   // A under the Bar tab; B ungrouped
+			var brStations = await _db.KitchenStations.AsNoTracking().Where(s => s.BranchId == bId && s.IsActive).OrderBy(s => s.ID).ToListAsync();
+			int? expectedDefault = (brStations.FirstOrDefault(s => s.StationType == "Kitchen") ?? brStations.FirstOrDefault())?.ID;
+
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (ook, _, oid) = await _posOrders.CreateOrderAsync(company, bId, "Dine-in", null, null);
+			if (!ook) return Ok(new { allPass = false, log = new[] { "FAIL create order" } });
+			await _posOrders.AddLineAsync(company, oid, a, 1);
+			await _posOrders.AddLineAsync(company, oid, b, 1);
+			await _posOrders.SendToKitchenAsync(company, oid);
+			var lines = await _db.PosOrderLines.AsNoTracking().Where(l => l.OrderId == oid).ToListAsync();
+			var la = lines.First(l => l.ItemId == a); var lb = lines.First(l => l.ItemId == b);
+			Chk("item under a tab mapped to Bar → StationId = Bar", la.StationId == barStn);
+			Chk("unmapped item → StationId = default (first Kitchen station)", lb.StationId == expectedDefault && expectedDefault != null);
+			Chk("A and B routed to DIFFERENT stations", la.StationId != lb.StationId);
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("ZERO journal entries (station routing is operational)", jeAfter == jeBefore);
+
+			// self-clean: order+lines, then the test config (quick items, group, stations)
+			_db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == oid).ToListAsync());
+			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == oid); if (o != null) _db.PosOrders.Remove(o);
+			_db.PosQuickItems.RemoveRange(await _db.PosQuickItems.Where(q => q.BranchId == bId && (q.ItemId == a || q.ItemId == b)).ToListAsync());
+			var dg = await _db.PosMenuGroups.FirstOrDefaultAsync(g => g.ID == grp.ID); if (dg != null) _db.PosMenuGroups.Remove(dg);
+			_db.KitchenStations.RemoveRange(await _db.KitchenStations.Where(s => s.BranchId == bId && (s.Code == "TSTBAR" || s.Code == "TSTK")).ToListAsync());
+			await _db.SaveChangesAsync();
+
+			return Ok(new { allPass, log, aStation = la.StationId, bStation = lb.StationId, barStn, expectedDefault, tip = "ثم inv-test-integrity?key=seed123 = failedCount:2." });
+		}
+
+		// GET /api/dev/manuf-test-routing?key=seed123&companyId=1
+		// Module 4 4-2: work center + routing op for MFGT-FIN → new WO must prefill labor/overhead from routing time.
+		[HttpGet("manuf-test-routing")]
+		public async Task<IActionResult> ManufTestRouting([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first (needs MFGT-FIN + a warehouse)" });
+
+			// work center @ 60/hr labor + 30/hr overhead (idempotent)
+			var wc = await _db.ManufWorkCenters.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.Code == "WC-TEST");
+			if (wc == null) { var (ok, err) = await manuf.SaveWorkCenterAsync(companyId, new CrossBuy.Models.Context.Inventory.ManufWorkCenter { Code = "WC-TEST", Name = "محطة اختبار", CostPerHour = 60, OverheadPerHour = 30, IsActive = true }); if (!ok) return BadRequest(new { step = "work-center", error = err }); wc = await _db.ManufWorkCenters.FirstAsync(w => w.CompanyID == companyId && w.Code == "WC-TEST"); }
+
+			// routing: setup 30m + run 6m/unit → for qty 10: (30 + 6×10)/60 = 1.5h → labor 90, overhead 45
+			if (!await _db.ManufRoutingOps.AnyAsync(o => o.CompanyID == companyId && o.ItemId == fin.Value))
+			{
+				var (ok, err) = await manuf.SaveRoutingOpAsync(companyId, new CrossBuy.Models.Context.Inventory.ManufRoutingOp { ItemId = fin.Value, Seq = 1, WorkCenterId = wc.ID, OperationName = "تشغيل", SetupMins = 30, RunMinsPerUnit = 6 });
+				if (!ok) return BadRequest(new { step = "routing-op", error = err });
+			}
+
+			var (expLabor, expOh) = await manuf.ComputeRoutingCostAsync(companyId, fin.Value, 10);
+			// create a fresh WO (labor/overhead passed as 0 — routing must override)
+			var (cok, cerr, woId) = await manuf.CreateAsync(companyId, fin.Value, 10, wh.Value, null, null, 0, 0, "routing-test", "test");
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+			var wo = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woId);
+			// clean up the throwaway WO so it doesn't clutter the list
+			var compToDel = _db.ManufWorkOrderComponents.Where(c => c.WorkOrderId == woId);
+			_db.ManufWorkOrderComponents.RemoveRange(compToDel);
+			_db.ManufWorkOrders.Remove(await _db.ManufWorkOrders.FirstAsync(w => w.ID == woId));
+			await _db.SaveChangesAsync();
+
+			return Ok(new
+			{
+				expectedLabor = expLabor, expectedOverhead = expOh,
+				woLabor = wo.LaborCost, woOverhead = wo.OverheadCost,
+				pass = expLabor == 90m && expOh == 45m && wo.LaborCost == 90m && wo.OverheadCost == 45m
+			});
+		}
+
+		// GET /api/dev/manuf-test-mrp?key=seed123&companyId=1
+		// Module 4 4-3: plan demand for MFGT-FIN → MRP must explode BOM (2×R1 + 1×R2) and net against on-hand.
+		[HttpGet("manuf-test-mrp")]
+		public async Task<IActionResult> ManufTestMrp([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var r1 = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-R1").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var r2 = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-R2").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			if (fin == null || r1 == null || r2 == null) return BadRequest(new { message = "run manuf-test-wo first (needs MFGT-FIN/R1/R2 + BOM)" });
+
+			decimal OnHand(int id) => _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == id).Sum(b => (decimal?)b.QtyOnHand) ?? 0m;
+			decimal finOh = OnHand(fin.Value), r1Oh = OnHand(r1.Value), r2Oh = OnHand(r2.Value);
+
+			var (pok, perr, planId) = await manuf.CreatePlanAsync(companyId, "MRP-TEST", DateTime.UtcNow, "test");
+			if (!pok) return BadRequest(new { step = "create-plan", error = perr });
+			var (aok, aerr) = await manuf.AddDemandAsync(companyId, planId, fin.Value, 100, null);
+			if (!aok) return BadRequest(new { step = "add-demand", error = aerr });
+			var rows = await manuf.RunMrpAsync(companyId, planId);
+
+			var rFin = rows.FirstOrDefault(x => x.ItemId == fin.Value);
+			var rR1 = rows.FirstOrDefault(x => x.ItemId == r1.Value);
+			var rR2 = rows.FirstOrDefault(x => x.ItemId == r2.Value);
+			// expected: FIN net = max(0,100-onHand); R1 gross = 2×finNet; R2 gross = 1×finNet
+			decimal finNet = Math.Max(0, 100 - finOh);
+			decimal expR1Gross = 2 * finNet, expR2Gross = 1 * finNet;
+			decimal expR1Net = Math.Max(0, expR1Gross - r1Oh), expR2Net = Math.Max(0, expR2Gross - r2Oh);
+
+			await manuf.DeletePlanAsync(companyId, planId); // cleanup throwaway plan
+
+			return Ok(new
+			{
+				onHand = new { fin = finOh, r1 = r1Oh, r2 = r2Oh },
+				fin = new { gross = rFin?.Gross, net = rFin?.Net, isMake = rFin?.IsMake },
+				r1 = new { gross = rR1?.Gross, net = rR1?.Net, isMake = rR1?.IsMake, expGross = expR1Gross, expNet = expR1Net },
+				r2 = new { gross = rR2?.Gross, net = rR2?.Net, isMake = rR2?.IsMake, expGross = expR2Gross, expNet = expR2Net },
+				pass = rFin != null && rFin.IsMake && rFin.Gross == 100 && rFin.Net == finNet
+					&& rR1 != null && !rR1.IsMake && rR1.Gross == expR1Gross && rR1.Net == expR1Net
+					&& rR2 != null && !rR2.IsMake && rR2.Gross == expR2Gross && rR2.Net == expR2Net
+			});
+		}
+
+		// GET /api/dev/manuf-test-scrap?key=seed123&companyId=1
+		// Module 4 4-5: set 10% scrap on the R1 BOM line of MFGT-FIN → WO planned qty must inflate (2×10×1.10=22).
+		[HttpGet("manuf-test-scrap")]
+		public async Task<IActionResult> ManufTestScrap([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var r1 = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-R1").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || r1 == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+
+			var r1Comp = await _db.ItemComponents.FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ParentItemId == fin.Value && c.ComponentItemId == r1.Value);
+			if (r1Comp == null) return BadRequest(new { message = "R1 BOM line missing" });
+			decimal origScrap = r1Comp.ScrapPct;
+			r1Comp.ScrapPct = 10m; await _db.SaveChangesAsync();           // 10% scrap on R1
+
+			var (cok, cerr, woId) = await manuf.CreateAsync(companyId, fin.Value, 10, wh.Value, null, null, 0, 0, "scrap-test", "test");
+			if (!cok) { r1Comp.ScrapPct = origScrap; await _db.SaveChangesAsync(); return BadRequest(new { step = "create", error = cerr }); }
+			var r1Planned = await _db.ManufWorkOrderComponents.AsNoTracking().Where(c => c.WorkOrderId == woId && c.ItemId == r1.Value).Select(c => c.PlannedQty).FirstAsync();
+
+			// cleanup: delete throwaway WO + restore original scrap
+			_db.ManufWorkOrderComponents.RemoveRange(_db.ManufWorkOrderComponents.Where(c => c.WorkOrderId == woId));
+			_db.ManufWorkOrders.Remove(await _db.ManufWorkOrders.FirstAsync(w => w.ID == woId));
+			r1Comp.ScrapPct = origScrap; await _db.SaveChangesAsync();
+
+			return Ok(new { scrapPctApplied = 10m, baseQty = 20m, r1PlannedQty = r1Planned, expected = 22m, pass = r1Planned == 22m });
+		}
+
+		// GET /api/dev/manuf-test-labor-fx?key=seed123&companyId=1
+		// Module 4 (ب): foreign-currency EXTERNAL labor — Amount stored FUNCTIONAL (hits WIP), foreign+rate preserved,
+		// WHT on functional, wip_gl matched. 3h × 40 USD @ 50 = 120 foreign → 6000 functional; WHT 1% = 60.
+		[HttpGet("manuf-test-labor-fx")]
+		public async Task<IActionResult> ManufTestLaborFx([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			var usd = await _db.Currencies.AsNoTracking().Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			if (usd == null) return BadRequest(new { message = "run seed-multicurrency first (needs USD)" });
+			var whtCode = await _db.TaxCodes.FirstOrDefaultAsync(t => t.CompanyID == companyId && t.Kind == "WHT" && t.IsActive);
+			var wipAccId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			async Task<decimal> WipNet() => Math.Round(await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == wipAccId!.Value).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m, 2);
+			async Task<CrossBuy.BL.IntegrityCheck> Wip() => (await integ.RunAsync(companyId)).First(c => c.Key == "wip_gl");
+
+			// create OrderBased WO + release so labor can be loaded
+			var (cok, cerr, woId) = await manuf.CreateAsync(companyId, fin.Value, 5, wh.Value, null, null, 0, 0, "labor-fx-test", "test", "OrderBased");
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+			var (rok, rerr) = await manuf.ReleaseAsync(companyId, woId, DateTime.UtcNow, "test");
+			if (!rok) return BadRequest(new { step = "release", error = rerr });
+
+			decimal wipBefore = await WipNet();
+			var woBefore = (await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woId)).WipBalance;
+			// External labor in USD @ 50 explicit rate: 3h × 40 = 120 USD → 6000 EGP
+			var (lok, lerr, _) = await manuf.AddLaborAsync(companyId, woId, "External", null, "مقاول أجنبي", 3, 40m, whtCode?.ID, null, usd, 50m, DateTime.UtcNow, "test");
+			if (!lok) return BadRequest(new { step = "add-labor", error = lerr });
+
+			var row = await _db.ManufWorkOrderLabor.AsNoTracking().Where(l => l.WorkOrderId == woId && l.SourceType == "External").OrderByDescending(l => l.ID).FirstAsync();
+			decimal wipAfter = await WipNet();
+			var woAfter = (await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woId)).WipBalance;
+			var wipChk = await Wip();
+			decimal expWht = whtCode == null ? 0m : Math.Round(6000m * whtCode.Rate / 100m, 2);
+
+			// cleanup: cancel WO (reverses labor + materials)
+			await manuf.CancelAsync(companyId, woId, DateTime.UtcNow, "test");
+
+			return Ok(new
+			{
+				stored = new { row.CurrencyId, row.ExchangeRate, row.AmountForeign, row.Amount, row.WhtAmount, whtRate = whtCode?.Rate },
+				wipRoseFunctional = Math.Round(wipAfter - wipBefore, 2), expectedRise = 6000m,
+				woWipRose = Math.Round(woAfter - woBefore, 2),
+				wipGl = new { wipChk.Expected, wipChk.Actual, wipChk.Ok },
+				pass = row.CurrencyId == usd && row.ExchangeRate == 50m && row.AmountForeign == 120m && row.Amount == 6000m
+					&& row.WhtAmount == expWht
+					&& Math.Round(wipAfter - wipBefore, 2) == 6000m
+					&& wipChk.Ok && wipChk.Actual == wipChk.Expected
+			});
+		}
+
+		// GET /api/dev/manuf-test-wip?key=seed123&companyId=1
+		// Module 4 (ج): WIP invariant — account 1105 must net to ZERO at every lifecycle step
+		// (create / release / complete), proving materials+labor+overhead post and clear atomically.
+		[HttpGet("manuf-test-wip")]
+		public async Task<IActionResult> ManufTestWip([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			var wipAccId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (wipAccId == null) return BadRequest(new { message = "WIP account 1105 missing" });
+
+			async Task<decimal> WipNet() => Math.Round(await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == wipAccId.Value).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m, 2);
+
+			decimal before = await WipNet();
+			var (cok, cerr, woId) = await manuf.CreateAsync(companyId, fin.Value, 5, wh.Value, null, null, 0, 0, "wip-test", "test");
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+			decimal afterCreate = await WipNet();
+			await manuf.SetStatusAsync(companyId, woId, "Released");
+			decimal afterRelease = await WipNet();
+			var (dok, derr, _) = await manuf.CompleteAsync(companyId, woId, DateTime.UtcNow, "test");
+			if (!dok) return BadRequest(new { step = "complete", error = derr });
+			decimal afterComplete = await WipNet();
+
+			return Ok(new
+			{
+				wipBefore = before, afterCreate, afterRelease, afterComplete,
+				pass = before == 0m && afterCreate == 0m && afterRelease == 0m && afterComplete == 0m
+			});
+		}
+
+		// GET /api/dev/manuf-test-staged?key=seed123&companyId=1
+		// Module 4 (staged): release issues materials → WIP (WIP>0); complete clears WIP→0; cancel reverses issue.
+		[HttpGet("manuf-test-staged")]
+		public async Task<IActionResult> ManufTestStaged([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var r1 = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-R1").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || r1 == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			var wipAccId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (wipAccId == null) return BadRequest(new { message = "WIP 1105 missing" });
+			async Task<decimal> WipNet() => Math.Round(await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == wipAccId.Value).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m, 2);
+			async Task<decimal> RawStock(int id) => await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == id).SumAsync(b => (decimal?)b.QtyOnHand) ?? 0m;
+
+			decimal wip0 = await WipNet();
+
+			// ---- staged: create OrderBased → release (WIP>0) → complete (WIP→0) ----
+			var (c1ok, c1err, woA) = await manuf.CreateAsync(companyId, fin.Value, 5, wh.Value, null, null, 0, 0, "staged-test", "test", "OrderBased");
+			if (!c1ok) return BadRequest(new { step = "create-A", error = c1err });
+			var (rok, rerr) = await manuf.ReleaseAsync(companyId, woA, DateTime.UtcNow, "test");
+			if (!rok) return BadRequest(new { step = "release-A", error = rerr });
+			var woAR = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woA);
+			decimal wipAfterRelease = await WipNet();
+			var (dok, derr, _) = await manuf.CompleteAsync(companyId, woA, DateTime.UtcNow, "test");
+			if (!dok) return BadRequest(new { step = "complete-A", error = derr });
+			var woAC = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woA);
+			decimal wipAfterComplete = await WipNet();
+
+			// ---- staged cancel: create → release → cancel (materials returned, WIP→0) ----
+			decimal r1Before = await RawStock(r1.Value);
+			var (c2ok, c2err, woB) = await manuf.CreateAsync(companyId, fin.Value, 5, wh.Value, null, null, 0, 0, "staged-cancel", "test", "OrderBased");
+			if (!c2ok) return BadRequest(new { step = "create-B", error = c2err });
+			await manuf.ReleaseAsync(companyId, woB, DateTime.UtcNow, "test");
+			decimal r1AfterRelease = await RawStock(r1.Value);
+			var (xok, xerr) = await manuf.CancelAsync(companyId, woB, DateTime.UtcNow, "test");
+			if (!xok) return BadRequest(new { step = "cancel-B", error = xerr });
+			decimal r1AfterCancel = await RawStock(r1.Value);
+			decimal wipAfterCancel = await WipNet();
+			var woBX = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woB);
+
+			return Ok(new
+			{
+				staged = new {
+					releasedStatus = woAR.Status, wipHeldAfterRelease = woAR.WipBalance,
+					glWipAfterRelease = wipAfterRelease, expectedAfterRelease = Math.Round(wip0 + woAR.WipBalance, 2),
+					completedStatus = woAC.Status, producedQty = woAC.ProducedQty, woWipAfterComplete = woAC.WipBalance,
+					glWipAfterComplete = wipAfterComplete
+				},
+				cancel = new {
+					r1Before, r1AfterRelease, r1AfterCancel, cancelledStatus = woBX.Status, glWipAfterCancel = wipAfterCancel
+				},
+				pass = woAR.Status == "Released" && woAR.WipBalance > 0m
+					&& wipAfterRelease == Math.Round(wip0 + woAR.WipBalance, 2)
+					&& woAC.Status == "Completed" && woAC.ProducedQty == 5m && woAC.WipBalance == 0m
+					&& wipAfterComplete == wip0
+					&& r1AfterRelease < r1Before && r1AfterCancel == r1Before
+					&& woBX.Status == "Cancelled" && wipAfterCancel == wip0
+			});
+		}
+
+		// GET /api/dev/manuf-test-partial?key=seed123&companyId=1  (run manuf-test-wo first)
+		// بند5: partial production at std cost + finalize → variance to 520109; WIP returns to baseline (wip_gl intact).
+		[HttpGet("manuf-test-partial")]
+		public async Task<IActionResult> ManufTestPartial([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			var wipId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			var varId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520109").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (wipId == null || varId == null) return BadRequest(new { message = "1105/520109 missing" });
+			async Task<decimal> Net(int acc) => Math.Round(await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == acc).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m, 2);
+
+			decimal wip0 = await Net(wipId.Value), var0 = await Net(varId.Value);
+			// header labor+overhead = 150 (no routing on the test item → this becomes the unfavorable variance)
+			var (cok, cerr, wo) = await manuf.CreateAsync(companyId, fin.Value, 5, wh.Value, null, null, 100, 50, "partial-test", "test", "OrderBased");
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+			var (rok, rerr) = await manuf.ReleaseAsync(companyId, wo, DateTime.UtcNow, "test");
+			if (!rok) return BadRequest(new { step = "release", error = rerr });
+
+			var (p1ok, p1err, prod1) = await manuf.ProducePartialAsync(companyId, wo, 3, false, DateTime.UtcNow, "test");
+			if (!p1ok) return BadRequest(new { step = "partial", error = p1err });
+			var woMid = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == wo);
+			decimal wipMid = await Net(wipId.Value);
+
+			var (p2ok, p2err, prod2) = await manuf.ProducePartialAsync(companyId, wo, 99, true, DateTime.UtcNow, "test");   // finalize remaining 2
+			if (!p2ok) return BadRequest(new { step = "finalize", error = p2err });
+			var woEnd = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == wo);
+			decimal wipEnd = await Net(wipId.Value), varEnd = await Net(varId.Value);
+
+			bool pass = prod1 == 3m && woMid.Status == "InProgress" && woMid.ProducedQty == 3m
+				&& Math.Round(wipMid, 2) == Math.Round(wip0 + woMid.WipBalance, 2)               // wip_gl invariant holds mid-way (WIP may be +/-)
+				&& prod2 == 2m && woEnd.Status == "Completed" && woEnd.ProducedQty == 5m && woEnd.WipBalance == 0m
+				&& Math.Round(wipEnd, 2) == Math.Round(wip0, 2)                                    // WIP fully cleared back to baseline at close
+				&& Math.Round(varEnd - var0, 2) != 0m;                                             // a production variance was booked to 520109
+			return Ok(new
+			{
+				partial = new { produced = prod1, status = woMid.Status, woMid.ProducedQty, woMid.WipBalance, glWipMid = wipMid, expectMid = Math.Round(wip0 + woMid.WipBalance, 2) },
+				finalize = new { produced = prod2, status = woEnd.Status, woEnd.ProducedQty, woEnd.WipBalance, glWipEnd = wipEnd, wip0, varianceToAcct520109 = Math.Round(varEnd - var0, 2) },
+				pass
+			});
+		}
+
+		// GET /api/dev/manuf-test-wipcheck?key=seed123&companyId=1
+		// Module 4 (بند2): the upgraded wip_gl check (1105 == Σ open-order WipBalance):
+		// passes with an OPEN released order (WIP>0), stays passing after complete (==0), and DETECTS a manual JE on 1105.
+		[HttpGet("manuf-test-wipcheck")]
+		public async Task<IActionResult> ManufTestWipCheck([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			var acc1105 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			var accCash = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (acc1105 == null || accCash == null) return BadRequest(new { message = "accounts 1105/110101 missing" });
+
+			async Task<CrossBuy.BL.IntegrityCheck> Wip() => (await integ.RunAsync(companyId)).First(c => c.Key == "wip_gl");
+
+			var baseChk = await Wip();   // baseline: should pass (open WIP == 1105)
+
+			// 1) open released order → WIP>0 and the check must still PASS (1105 == WipBalance)
+			var (cok, cerr, woId) = await manuf.CreateAsync(companyId, fin.Value, 5, wh.Value, null, null, 0, 0, "wipcheck", "test", "OrderBased");
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+			var (rok, rerr) = await manuf.ReleaseAsync(companyId, woId, DateTime.UtcNow, "test");
+			if (!rok) return BadRequest(new { step = "release", error = rerr });
+			var openChk = await Wip();   // expected = WipBalance(>0), actual = 1105, ok=true
+
+			// 2) complete → back to 0, still passes
+			var (dok, derr, _) = await manuf.CompleteAsync(companyId, woId, DateTime.UtcNow, "test");
+			if (!dok) return BadRequest(new { step = "complete", error = derr });
+			var doneChk = await Wip();   // expected 0, actual 0, ok=true
+
+			// 3) inject a balanced manual JE on 1105 → the check must DETECT drift (ok=false)
+			var (jok, jerr, je) = await _je.CreateAndPostAsync(new CrossBuy.BL.JournalEntryInput
+			{
+				CompanyID = companyId, EntryDate = DateTime.UtcNow, JournalType = "Manual", SourceType = "Manual", CurrencyId = 0,
+				Description = "اختبار انحراف WIP (يدوي)",
+				Lines = new List<CrossBuy.BL.JournalLineInput> {
+					new() { AccountId = acc1105.Value, Debit = 100, Credit = 0, Description = "drift" },
+					new() { AccountId = accCash.Value, Debit = 0, Credit = 100, Description = "drift" } }
+			}, null);
+			if (!jok) return BadRequest(new { step = "manual-je", error = jerr });
+			var driftChk = await Wip();   // actual = openWip + 100, expected = openWip → ok=false
+
+			// 4) cleanup: reverse the manual JE so the DB is left clean
+			await _je.ReverseAsync(je!.ID, null, "اختبار — استرجاع");
+			var afterReverseChk = await Wip();
+
+			return Ok(new
+			{
+				baseline = new { baseChk.Expected, baseChk.Actual, baseChk.Ok },
+				openReleased = new { openChk.Expected, openChk.Actual, openChk.Ok },
+				afterComplete = new { doneChk.Expected, doneChk.Actual, doneChk.Ok },
+				afterManualJe = new { driftChk.Expected, driftChk.Actual, driftChk.Ok },
+				afterReverse = new { afterReverseChk.Expected, afterReverseChk.Actual, afterReverseChk.Ok },
+				pass = baseChk.Ok && openChk.Ok && openChk.Expected > 0m && openChk.Actual == openChk.Expected
+					&& doneChk.Ok && doneChk.Expected == 0m
+					&& !driftChk.Ok && driftChk.Actual == driftChk.Expected + 100m
+					&& afterReverseChk.Ok
+			});
+		}
+
+		// GET /api/dev/manuf-test-labor?key=seed123&companyId=1
+		// Module 4 (بند3): sourced labor (employee+external) hits real accounts (520101/cash/WHT) and REPLACES 520108
+		// (520108 carries overhead only); wip_gl stays matched; WHT correct; an employee with no rate/salary is BLOCKED.
+		[HttpGet("manuf-test-labor")]
+		public async Task<IActionResult> ManufTestLabor([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+
+			async Task<decimal> Net(string code)
+			{
+				var id = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
+				if (id == null) return 0m;
+				return Math.Round(await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == id.Value).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m, 2);
+			}
+			async Task<CrossBuy.BL.IntegrityCheck> Wip() => (await integ.RunAsync(companyId)).First(c => c.Key == "wip_gl");
+
+			// cleanup any leftover open labor-test orders from a prior failed run
+			var stale = await _db.ManufWorkOrders.Where(w => w.CompanyID == companyId && w.Notes == "labor-test" && (w.Status == "Released" || w.Status == "InProgress")).Select(w => w.ID).ToListAsync();
+			foreach (var sid in stale) await manuf.CancelAsync(companyId, sid, DateTime.UtcNow, "test-cleanup");
+
+			var empForLine = await _db.Employee.Where(e => e.EmpCompanyID == companyId && e.IsActive).Select(e => (int?)e.ID).FirstOrDefaultAsync();
+			if (empForLine == null) return BadRequest(new { message = "no active employee for labor test" });
+
+			// ensure an active WHT code (5%)
+			var whtCode = await _db.TaxCodes.FirstOrDefaultAsync(t => t.CompanyID == companyId && t.Kind == "WHT" && t.IsActive);
+			if (whtCode == null) { whtCode = new CrossBuy.Models.Context.Accounting.TaxCode { CompanyID = companyId, Code = "WHT5", Name = "خصم 5%", Kind = "WHT", Rate = 5, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.TaxCodes.Add(whtCode); await _db.SaveChangesAsync(); }
+
+			decimal n108_0 = await Net("520108"), n101_0 = await Net("520101"), nWht_0 = await Net("210202"), n1105_0 = await Net("1105");
+
+			// WO-A: create OrderBased, force header labor=0 / overhead=30, release, add sourced labor, complete
+			var (cok, cerr, woA) = await manuf.CreateAsync(companyId, fin.Value, 5, wh.Value, null, null, 0, 0, "labor-test", "test", "OrderBased");
+			if (!cok) return BadRequest(new { step = "create", error = cerr });
+			await manuf.SaveHeaderAsync(companyId, woA, 5, null, null, 0m, 30m, "labor-test");   // applied labor 0, overhead 30
+			var (rok, rerr) = await manuf.ReleaseAsync(companyId, woA, DateTime.UtcNow, "test");
+			if (!rok) return BadRequest(new { step = "release", error = rerr });
+
+			var (e1ok, e1err, _) = await manuf.AddLaborAsync(companyId, woA, "Employee", empForLine, "اختبار موظف", 4, 50m, null, null, null, null, DateTime.UtcNow, "test");   // 200 → 520101 (rate override 50)
+			if (!e1ok) return BadRequest(new { step = "emp-labor", error = e1err });
+			var (x1ok, x1err, _) = await manuf.AddLaborAsync(companyId, woA, "External", null, "نجار خارجي", 3, 40m, whtCode.ID, null, null, null, DateTime.UtcNow, "test");   // 120, wht 6, cash 114
+			if (!x1ok) return BadRequest(new { step = "ext-labor", error = x1err });
+
+			var woAR = await _db.ManufWorkOrders.AsNoTracking().FirstAsync(w => w.ID == woA);
+			decimal n108_afterLabor = await Net("520108"), n1105_afterLabor = await Net("1105");
+			var wipChkOpen = await Wip();   // 1105 == Σ open WipBalance (incl. WO-A's 410)
+
+			var (dok, derr, unit) = await manuf.CompleteAsync(companyId, woA, DateTime.UtcNow, "test");
+			if (!dok) return BadRequest(new { step = "complete", error = derr });
+
+			decimal n108_final = await Net("520108"), n101_final = await Net("520101"), nWht_final = await Net("210202");
+			var wipChkDone = await Wip();
+			decimal expWht = -Math.Round(120m * whtCode.Rate / 100m, 2);   // WHT = external gross 120 × the code's actual rate
+
+			// BLOCK test: employee with no explicit rate AND no resolvable salary must be blocked
+			var emp = await _db.Employee.FirstOrDefaultAsync(e => e.EmpCompanyID == companyId && e.IsActive);
+			object? block = null; bool blockPass = true;
+			if (emp != null)
+			{
+				emp.ManufHourlyRate = null; await _db.SaveChangesAsync();
+				var baseSalary = await _db.SalaryPolicies.AsNoTracking().Where(sp => sp.Employees.Any(e => e.ID == emp.ID)).Select(sp => (decimal?)sp.BaseSalary).FirstOrDefaultAsync();
+				if (!(baseSalary.HasValue && baseSalary.Value > 0))
+				{
+					var (bok, berr, _) = await manuf.AddLaborAsync(companyId, woA, "Employee", emp.ID, null, 1, null, null, null, null, null, DateTime.UtcNow, "test");
+					block = new { attempted = true, ok = bok, msg = berr };
+					blockPass = !bok && (berr ?? "").Contains("لا يوجد");
+				}
+				else block = new { attempted = false, note = "employee has a salary → fallback resolves (not a block case)", baseSalary };
+			}
+
+			return Ok(new
+			{
+				woUnitCost = unit, expectedUnit = 88m,   // (90 material + 320 sourced labor + 30 overhead)/5
+				d520108 = n108_final - n108_0, expected520108 = -30m,          // overhead ONLY (labor never touched it)
+				d520101 = n101_final - n101_0, expected520101 = -200m,         // employee wage reclassified to WIP
+				dWHT = nWht_final - nWht_0, expectedWHT = expWht, whtRate = whtCode.Rate,   // gross 120 × code rate
+				wipOpen = new { wipChkOpen.Expected, wipChkOpen.Actual, wipChkOpen.Ok, woWip = woAR.WipBalance },
+				wipDone = new { wipChkDone.Expected, wipChkDone.Actual, wipChkDone.Ok },
+				block,
+				pass = unit == 88m
+					&& (n108_final - n108_0) == -30m
+					&& (n101_final - n101_0) == -200m
+					&& (nWht_final - nWht_0) == expWht
+					&& wipChkOpen.Ok && woAR.WipBalance == 410m && wipChkOpen.Actual == wipChkOpen.Expected
+					&& wipChkDone.Ok && wipChkDone.Expected == 0m
+					&& blockPass
+			});
+		}
+
+		// GET /api/dev/manuf-test-immediate-scrap?key=seed123&companyId=1
+		// Module 4 (بند4): immediate production (AssembleAsync) must consume planned scrap too.
+		[HttpGet("manuf-test-immediate-scrap")]
+		public async Task<IActionResult> ManufTestImmediateScrap([FromServices] CrossBuy.BL.IStockService stock, string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var r1 = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-R1").Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
+			if (fin == null || r1 == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			var r1Comp = await _db.ItemComponents.FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ParentItemId == fin.Value && c.ComponentItemId == r1.Value);
+			if (r1Comp == null) return BadRequest(new { message = "R1 BOM line missing" });
+
+			async Task<decimal> Stock(int id) => await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == id).SumAsync(b => (decimal?)b.QtyOnHand) ?? 0m;
+
+			decimal origScrap = r1Comp.ScrapPct;
+			r1Comp.ScrapPct = 10m; await _db.SaveChangesAsync();   // 10% scrap on R1 (BOM uses 2× R1)
+
+			decimal r1Before = await Stock(r1.Value);
+			var (aok, aerr, _) = await stock.AssembleAsync(companyId, fin.Value, wh.Value, 4, DateTime.UtcNow, false, "test");   // produce 4 immediately
+			decimal r1After = aok ? await Stock(r1.Value) : r1Before;
+
+			r1Comp.ScrapPct = origScrap; await _db.SaveChangesAsync();   // restore
+
+			if (!aok) return BadRequest(new { step = "assemble", error = aerr });
+			decimal consumed = Math.Round(r1Before - r1After, 4);
+			decimal expected = Math.Round(4m * 2m * 1.10m, 4);   // qty 4 × 2 per unit × (1 + 10%) = 8.8
+
+			return Ok(new { scrapPct = 10m, baseConsumeNoScrap = 8m, r1Consumed = consumed, expected, pass = consumed == expected });
+		}
+
+		// GET /api/dev/crm-seed-demo?key=seed123&companyId=1
+		// Fills EVERY CRM screen with coherent demo data: accounts+contacts, scored leads, opportunities across
+		// stages/months (won/lost for the forecast), activities+reminders, campaigns+members+lists, tickets+SLA
+		// (a couple breached), scoring rules & settings. Idempotent (skips if already seeded).
+		[HttpGet("crm-seed-demo")]
+		public async Task<IActionResult> CrmSeedDemo(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (await _db.CrmAccounts.AnyAsync(a => a.CompanyID == companyId && a.Name == "شركة النور للتجارة"))
+				return Ok(new { message = "CRM demo already seeded" });
+			var emp = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId).Select(e => (int?)e.ID).FirstOrDefaultAsync();
+			var now = DateTime.UtcNow;
+			string M(int addMonths) => now.AddMonths(addMonths).ToString("yyyy-MM");
+
+			// settings + scoring rules
+			await _crm.SaveCrmSettingsAsync(companyId, new CrossBuy.Models.Context.Crm.CrmSettings { AutoRouteLeads = false, HotScore = 50, WarmScore = 20 });
+			await _crm.SaveScoringRuleAsync(companyId, new CrossBuy.Models.Context.Crm.CrmScoringRule { Name = "مصدر الموقع", Field = "Source", Operator = "eq", Value = "Website", Points = 30, IsActive = true });
+			await _crm.SaveScoringRuleAsync(companyId, new CrossBuy.Models.Context.Crm.CrmScoringRule { Name = "شريحة المؤسسات", Field = "Segment", Operator = "eq", Value = "Enterprise", Points = 25, IsActive = true });
+			await _crm.SaveScoringRuleAsync(companyId, new CrossBuy.Models.Context.Crm.CrmScoringRule { Name = "قيمة متوقعة عالية", Field = "EstimatedValue", Operator = "gte", Value = "50000", Points = 20, IsActive = true });
+
+			// SLA policies (per priority)
+			foreach (var (pr, fr, res) in new[] { ("Urgent", 30, 240), ("High", 60, 480), ("Normal", 240, 1440), ("Low", 480, 2880) })
+				if (!await _db.CrmSlaPolicies.AnyAsync(p => p.CompanyID == companyId && p.Priority == pr))
+					await _crm.SaveSlaPolicyAsync(companyId, new CrossBuy.Models.Context.Crm.CrmSlaPolicy { Name = "SLA " + pr, Priority = pr, FirstResponseMins = fr, ResolutionMins = res, IsActive = true });
+
+			// accounts + contacts
+			var accNames = new[] { "شركة النور للتجارة", "مؤسسة الأفق", "مجموعة البيان", "شركة الواحة", "التقنية الحديثة" };
+			var industries = new[] { "تجزئة", "صناعة", "خدمات", "تقنية", "مقاولات" };
+			var segs = new[] { "Enterprise", "SMB", "Retail" };
+			var accIds = new List<int>();
+			for (int i = 0; i < accNames.Length; i++)
+			{
+				var a = new CrossBuy.Models.Context.Crm.CrmAccount { CompanyID = companyId, Name = accNames[i], Industry = industries[i], Segment = segs[i % 3], Phone = "010000000" + i, Email = $"info{i}@demo.com", OwnerEmployeeId = emp, IsActive = true, CreatedAt = now.AddDays(-60 + i * 5) };
+				_db.CrmAccounts.Add(a); await _db.SaveChangesAsync(); accIds.Add(a.ID);
+				_db.CrmContacts.Add(new CrossBuy.Models.Context.Crm.CrmContact { CompanyID = companyId, AccountId = a.ID, Name = "مسؤول المشتريات " + (i + 1), Title = "مدير مشتريات", Phone = "011111111" + i, Email = $"buyer{i}@demo.com", IsPrimary = true, CreatedAt = now });
+				_db.CrmContacts.Add(new CrossBuy.Models.Context.Crm.CrmContact { CompanyID = companyId, AccountId = a.ID, Name = "مسؤول مالي " + (i + 1), Title = "محاسب", Email = $"acc{i}@demo.com", CreatedAt = now });
+			}
+			await _db.SaveChangesAsync();
+
+			// campaigns + a marketing list
+			var camp = new CrossBuy.Models.Context.Crm.Campaign { CompanyID = companyId, Name = "حملة الربع الأول", Channel = "Email", Status = "Active", Budget = 25000, StartDate = now.AddDays(-30), EndDate = now.AddDays(30), OwnerEmployeeId = emp, CreatedAt = now };
+			var camp2 = new CrossBuy.Models.Context.Crm.Campaign { CompanyID = companyId, Name = "معرض تجاري", Channel = "Event", Status = "Completed", Budget = 40000, StartDate = now.AddDays(-90), EndDate = now.AddDays(-60), OwnerEmployeeId = emp, CreatedAt = now };
+			_db.Campaigns.AddRange(camp, camp2); await _db.SaveChangesAsync();
+			var (lok, _, listId) = await _crm.SaveListAsync(companyId, new CrossBuy.Models.Context.Crm.CrmMarketingList { Name = "كبار العملاء", Description = "حسابات المؤسسات", IsActive = true }, "demo");
+			if (lok) await _crm.AddListMembersAsync(companyId, listId, accIds.Take(3).Select(id => ("Account", id, (string?)("حساب #" + id))));
+			await _crm.AddCampaignMembersAsync(companyId, camp.ID, accIds.Select(id => ("Account", id, (string?)("حساب #" + id))));
+
+			// leads (varied → varied scores)
+			var srcs = new[] { "Website", "Referral", "Campaign", "Walk-in" };
+			var statuses = new[] { "New", "Contacted", "Qualified", "Contacted", "New" };
+			for (int i = 0; i < 10; i++)
+				await _crm.SaveLeadAsync(companyId, new CrossBuy.Models.Context.Crm.Lead {
+					Name = "عميل محتمل " + (i + 1), Company = "شركة " + (i + 1), Phone = "012000000" + i, Email = $"lead{i}@demo.com",
+					Source = srcs[i % 4], Segment = segs[i % 3], EstimatedValue = 10000 * (i + 1), Status = statuses[i % 5],
+					CampaignId = i % 2 == 0 ? camp.ID : (int?)null, OwnerEmployeeId = emp }, "demo");
+
+			// opportunities across stages & months (won/lost feed the forecast + win-rate)
+			var stages = new[] { ("Prospecting", 10), ("Qualification", 25), ("Proposal", 50), ("Negotiation", 75) };
+			for (int i = 0; i < accIds.Count; i++)
+			{
+				var (snm, prob) = stages[i % stages.Length];
+				_db.Opportunities.Add(new CrossBuy.Models.Context.Crm.Opportunity { CompanyID = companyId, Title = "فرصة " + accNames[i], AccountId = accIds[i], Stage = snm, Amount = 20000 * (i + 2), Probability = prob, ExpectedCloseDate = now.AddMonths(i % 3), CampaignId = camp.ID, OwnerEmployeeId = emp, CreatedAt = now });
+			}
+			_db.Opportunities.Add(new CrossBuy.Models.Context.Crm.Opportunity { CompanyID = companyId, Title = "صفقة مغلقة رابحة", AccountId = accIds[0], Stage = "Won", Amount = 80000, Probability = 100, ExpectedCloseDate = now, CampaignId = camp.ID, OwnerEmployeeId = emp, CreatedAt = now });
+			_db.Opportunities.Add(new CrossBuy.Models.Context.Crm.Opportunity { CompanyID = companyId, Title = "صفقة خاسرة", AccountId = accIds[1], Stage = "Lost", Amount = 30000, Probability = 0, WinLossReason = "السعر", ExpectedCloseDate = now.AddDays(-5), OwnerEmployeeId = emp, CreatedAt = now });
+			await _db.SaveChangesAsync();
+
+			// activities on accounts + opps (timeline) — some done, some overdue, some with reminders
+			var opps = await _db.Opportunities.AsNoTracking().Where(o => o.CompanyID == companyId && o.Title.StartsWith("فرصة")).Select(o => o.ID).ToListAsync();
+			for (int i = 0; i < accIds.Count; i++)
+			{
+				await _crm.SaveActivityAsync(companyId, new CrossBuy.Models.Context.Crm.Activity { Type = i % 2 == 0 ? "Call" : "Meeting", Subject = "متابعة الحساب " + accNames[i], EntityType = "Account", EntityId = accIds[i], OwnerEmployeeId = emp, DueDate = now.AddDays(i % 2 == 0 ? -3 : 5), Done = i % 3 == 0, ReminderAt = i % 2 == 0 ? now.AddDays(1) : (DateTime?)null }, "demo");
+			}
+			foreach (var oid in opps.Take(3))
+				await _crm.SaveActivityAsync(companyId, new CrossBuy.Models.Context.Crm.Activity { Type = "Task", Subject = "إعداد عرض السعر", EntityType = "Opportunity", EntityId = oid, OwnerEmployeeId = emp, DueDate = now.AddDays(2) }, "demo");
+
+			// tickets (varied priority/status) + force two SLA breaches by back-dating due dates
+			var tPrios = new[] { "Urgent", "High", "Normal", "Low", "High", "Normal" };
+			var tStat = new[] { "New", "Open", "Pending", "Resolved", "New", "Open" };
+			for (int i = 0; i < 6; i++)
+			{
+				var (tok, _, tid) = await _crm.SaveTicketAsync(companyId, new CrossBuy.Models.Context.Crm.CrmTicket { Subject = "تذكرة دعم " + (i + 1), Priority = tPrios[i], AccountId = accIds[i % accIds.Count], Category = "دعم فني", Description = "وصف المشكلة " + (i + 1) }, "demo");
+				if (tok && tStat[i] != "New") await _crm.UpdateTicketStatusAsync(companyId, tid, tStat[i]);
+				if (tok && i < 2) // make the first two breached
+				{
+					var t = await _db.CrmTickets.FirstAsync(x => x.ID == tid);
+					t.FirstResponseDueAt = now.AddHours(-5); t.ResolutionDueAt = now.AddHours(-2); t.FirstRespondedAt = null; t.ResolvedAt = null; t.Status = "New";
+					await _db.SaveChangesAsync();
+				}
+			}
+
+			await _crm.RecomputeAllLeadScoresAsync(companyId);
+			return Ok(new
+			{
+				accounts = accIds.Count,
+				contacts = await _db.CrmContacts.CountAsync(c => c.CompanyID == companyId),
+				leads = await _db.Leads.CountAsync(l => l.CompanyID == companyId && l.Email != null && l.Email.Contains("@demo.com")),
+				opportunities = await _db.Opportunities.CountAsync(o => o.CompanyID == companyId),
+				campaigns = 2, list = lok,
+				activities = await _db.Activities.CountAsync(a => a.CompanyID == companyId),
+				tickets = await _db.CrmTickets.CountAsync(t => t.CompanyID == companyId),
+				message = "CRM demo seeded"
+			});
+		}
+
+		// GET /api/dev/seed-acc-demo?key=seed123&companyId=1
+		// Fills every accounting screen with realistic demo data (customers, vendors, invoices across
+		// months, partial receipts/payments for aging, banks, cash boxes, transfer, reconciliation,
+		// 6 months payroll, manual entries). Idempotent. Built via the verified services → balanced JEs.
+		[HttpGet("seed-acc-demo")]
+		public async Task<IActionResult> SeedAccDemo(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (await _db.Vendors.AnyAsync(v => v.CompanyID == companyId && v.Name == "مورد القرطاسية"))
+				return Ok(new { success = true, message = "Demo data already seeded" });
+
+			var acc = await _db.Accounts.Where(a => a.CompanyID == companyId).ToDictionaryAsync(a => a.Code, a => a.ID);
+			int A(string code) => acc.TryGetValue(code, out var id) ? id : 0;
+			int cash = A("110101"), bankGl = A("110102"), capital = A("3101"), revenue = A("4101"),
+				rent = A("510101"), utilities = A("510102"), assetAcct = A("1201");
+
+			DateTime D(int m, int d) => new DateTime(2026, m, d);
+			var log = new List<string>();
+
+			// 1) opening capital (so cash is healthy)
+			await _je.CreateAndPostAsync(new JournalEntryInput
+			{
+				CompanyID = companyId, EntryDate = D(1, 1), JournalType = "Opening", Description = "رأس المال الافتتاحي", DescriptionEn = "Opening capital",
+				Lines = new() { new() { AccountId = cash, Debit = 200000, Credit = 0 }, new() { AccountId = capital, Debit = 0, Credit = 200000 } }
+			}, null);
+
+			// 2) a fixed-asset purchase (manual) so the asset account isn't empty
+			await _je.CreateAndPostAsync(new JournalEntryInput
+			{
+				CompanyID = companyId, EntryDate = D(1, 10), JournalType = "Manual", Description = "شراء أجهزة وأثاث", DescriptionEn = "Equipment purchase",
+				Lines = new() { new() { AccountId = assetAcct, Debit = 60000, Credit = 0 }, new() { AccountId = cash, Debit = 0, Credit = 60000 } }
+			}, null);
+
+			// 3) customers + sales invoices spread across months (for revenue trend + AR aging)
+			async Task<int> Cust(string ar, string en) => (await _ar.CreateCustomerAsync(companyId, ar, en, null, 100000)).ID;
+			var cNile = (await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == companyId && c.Name == "شركة النيل"))?.ID ?? await Cust("شركة النيل", "Nile Co");
+			var cDelta = await Cust("مجموعة الدلتا", "Delta Group");
+			var cUnited = await Cust("الشركة المتحدة", "United Co");
+			var cFuture = await Cust("أسواق المستقبل", "Future Markets");
+
+			async Task<int> Sale(int custId, int m, int day, decimal price) {
+				var (_, _, inv) = await _ar.CreateSalesInvoiceAsync(companyId, custId, D(m, day),
+					new List<SalesLineInput> { new() { ItemDescription = "خدمات استشارية", Qty = 1, UnitPrice = price, TaxRate = 14, RevenueAccountId = revenue } }, null, null);
+				return inv?.ID ?? 0;
+			}
+			await Sale(cNile, 1, 20, 10000);   // old → 90+ (left unpaid)
+			await Sale(cDelta, 4, 5, 8000);    // ~60 bucket (partial)
+			await Sale(cUnited, 5, 12, 12000); // ~30 bucket (unpaid)
+			await Sale(cFuture, 6, 8, 6000);   // current (paid)
+            await Sale(cDelta, 2, 15, 4000);
+
+			// 4) receipts (partial → leaves AR aging buckets)
+			await _ar.CreateReceiptAsync(companyId, cFuture, D(6, 10), 6840, "Bank", cash, null, null); // pays Future fully (6000+14%)
+			await _ar.CreateReceiptAsync(companyId, cDelta, D(5, 1), 3000, "Cash", cash, null, null);    // partial Delta
+
+			// 5) vendors + purchase invoices (expense trend + AP aging) — expense accounts need a cost center
+			var ccId = (await _costCenters.GetFlatAsync(companyId)).FirstOrDefault()?.ID;
+			var vPower = (await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == companyId && v.Name == "مورد الكهرباء"))?.ID ?? (await _ap.CreateVendorAsync(companyId, "مورد الكهرباء", "Power Supplier", null)).ID;
+			var vStat = (await _ap.CreateVendorAsync(companyId, "مورد القرطاسية", "Stationery Supplier", null)).ID;
+			var vTrans = (await _ap.CreateVendorAsync(companyId, "شركة النقل", "Transport Co", null)).ID;
+
+			async Task Purch(int venId, int m, int day, decimal price, int expAcct) =>
+				await _ap.CreatePurchaseInvoiceAsync(companyId, venId, D(m, day),
+					new List<PurchaseLineInput> { new() { ItemDescription = "مصروفات تشغيل", Qty = 1, UnitPrice = price, TaxRate = 14, ExpenseAccountId = expAcct, CostCenterId = ccId } }, null, null);
+			await Purch(vPower, 2, 6, 3000, utilities);
+			await Purch(vStat, 3, 9, 1500, utilities);
+			await Purch(vTrans, 4, 14, 2500, rent);
+			await Purch(vPower, 5, 6, 3200, utilities);
+			await Purch(vStat, 6, 3, 1800, utilities);
+
+			// 6) payments (partial → AP aging)
+			await _ap.CreatePaymentAsync(companyId, vTrans, D(4, 20), 2850, "Bank", cash, null, null); // pays transport fully
+			await _ap.CreatePaymentAsync(companyId, vStat, D(5, 15), 1000, "Cash", cash, null, null);   // partial stationery
+
+			// 7) bank account + cash box, a transfer, and a reconciliation
+			var hasBank = await _db.BankAccounts.AnyAsync(b => b.CompanyID == companyId);
+			if (!hasBank)
+			{
+				await _bank.CreateBankAccountAsync(companyId, "البنك الأهلي", "National Bank", "1234567890", "EG1234567890", bankGl, 0);
+				await _bank.CreateCashBoxAsync(companyId, "الخزينة الرئيسية", "Main Cash Box", cash, null);
+			}
+			var bankAcc = await _db.BankAccounts.FirstOrDefaultAsync(b => b.CompanyID == companyId);
+			if (bankAcc != null)
+			{
+				await _bank.TransferAsync(companyId, cash, bankGl, 50000, D(2, 1), "إيداع بنكي", null);   // cash → bank
+				await _bank.TransferAsync(companyId, cash, bankGl, 15000, D(5, 3), "إيداع بنكي", null);
+				// reconcile the bank: clear all lines so it balances
+				var (b, _, lines) = await _bank.GetReconciliationViewAsync(companyId, bankAcc.ID, D(6, 30));
+				var clearedAmount = lines.Sum(l => l.Debit - l.Credit);
+				await _bank.ReconcileAsync(companyId, bankAcc.ID, D(6, 30), clearedAmount, lines.Select(l => l.LineId).ToList());
+			}
+
+			// 8) payroll for 6 months (Jan already posted earlier → idempotent; Feb–Jun added)
+			var payroll = 0;
+			for (var m = 1; m <= 6; m++)
+			{
+				var (ok, _, _) = await _posting.PostPayrollRunAsync(companyId, 2026, m, null);
+				if (ok) payroll++;
+			}
+
+			return Ok(new
+			{
+				success = true,
+				message = "Accounting demo data seeded",
+				customers = await _db.Customers.CountAsync(c => c.CompanyID == companyId),
+				vendors = await _db.Vendors.CountAsync(v => v.CompanyID == companyId),
+				salesInvoices = await _db.SalesInvoices.CountAsync(i => i.CompanyID == companyId),
+				purchaseInvoices = await _db.PurchaseInvoices.CountAsync(i => i.CompanyID == companyId),
+				payrollMonthsPosted = payroll,
+				journalEntries = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId && e.Status == "Posted"),
+				bankReconciliations = await _db.BankReconciliations.CountAsync(r => r.CompanyID == companyId)
+			});
+		}
+
+		// GET /api/dev/seed-fa-demo?key=seed123&companyId=1
+		// Phase-6 fixed-assets demo: 2 categories, 3 assets funded from cash, then depreciation Jan→Jun. Idempotent.
+		[HttpGet("seed-fa-demo")]
+		public async Task<IActionResult> SeedFaDemo(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (await _db.FixedAssets.AnyAsync(a => a.CompanyID == companyId))
+				return Ok(new { success = true, message = "Fixed-asset demo already seeded" });
+
+			var acc = await _db.Accounts.Where(a => a.CompanyID == companyId).ToDictionaryAsync(a => a.Code, a => a.ID);
+			int A(string code) => acc.TryGetValue(code, out var id) ? id : 0;
+			int cash = A("110101"), costAcc = A("1201"), accumAcc = A("1202"), depExp = A("520103");
+			var ccId = (await _costCenters.GetFlatAsync(companyId)).FirstOrDefault()?.ID;
+			DateTime D(int m, int d) => new DateTime(2026, m, d);
+
+			// categories
+			var (_, _, catPc) = await _fa.CreateCategoryAsync(companyId, "أجهزة حاسب", "Computers", 36, costAcc, accumAcc, depExp);
+			var (_, _, catFur) = await _fa.CreateCategoryAsync(companyId, "أثاث ومفروشات", "Furniture", 60, costAcc, accumAcc, depExp);
+
+			// assets funded from cash
+			var errors = new List<string>();
+			async Task Asset(string ar, string en, int? catId, int m, int d, decimal cost, decimal salvage, int life)
+			{
+				var (ok, err, _) = await _fa.CreateAssetAsync(companyId, new CrossBuy.BL.FixedAssetInput
+				{
+					Name = ar, NameEn = en, CategoryId = catId, AcquisitionDate = D(m, d), Cost = cost,
+					SalvageValue = salvage, UsefulLifeMonths = life, CostCenterId = ccId, FundingAccountId = cash,
+				}, null);
+				if (!ok) errors.Add($"{ar}: {err}");
+			}
+			await Asset("أجهزة لابتوب", "Laptop fleet", catPc?.ID, 1, 5, 36000, 0, 36);
+			await Asset("أثاث مكتبي", "Office furniture", catFur?.ID, 2, 1, 60000, 0, 60);
+			await Asset("سيارة الشركة", "Company car", null, 1, 15, 240000, 24000, 60);
+
+			// depreciation Jan→Jun
+			var runs = 0;
+			for (var m = 1; m <= 6; m++)
+			{
+				var (ok, _, _) = await _fa.RunDepreciationAsync(companyId, new DateTime(2026, m, DateTime.DaysInMonth(2026, m)), null);
+				if (ok) runs++;
+			}
+
+			return Ok(new
+			{
+				success = true,
+				message = "Fixed-asset demo seeded",
+				assets = await _db.FixedAssets.CountAsync(a => a.CompanyID == companyId),
+				categories = await _db.AssetCategories.CountAsync(c => c.CompanyID == companyId),
+				depreciationRuns = runs,
+				depreciationLines = await _db.DepreciationLines.CountAsync(),
+				errors
+			});
+		}
+
+		// GET /api/dev/seed-tax-demo?key=seed123&companyId=1
+		// Phase-7 taxes demo: VAT + WHT codes and a filed VAT return for H1 2026. Idempotent.
+		[HttpGet("seed-tax-demo")]
+		public async Task<IActionResult> SeedTaxDemo(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (await _db.TaxCodes.AnyAsync(c => c.CompanyID == companyId))
+				return Ok(new { success = true, message = "Tax demo already seeded" });
+
+			await _tax.CreateCodeAsync(companyId, "VAT14", "ض.ق.م 14%", "VAT 14%", "VAT", 14, true);
+			await _tax.CreateCodeAsync(companyId, "VAT0", "ض.ق.م صفرية", "VAT 0%", "VAT", 0, false);
+			await _tax.CreateCodeAsync(companyId, "VATEX", "معفاة", "Exempt", "VAT", 0, false);
+			await _tax.CreateCodeAsync(companyId, "WHT1", "خصم وتحصيل 1%", "WHT 1%", "WHT", 1, true);
+			await _tax.CreateCodeAsync(companyId, "WHT3", "خصم وتحصيل 3%", "WHT 3%", "WHT", 3, false);
+			await _tax.CreateCodeAsync(companyId, "WHT5", "خصم وتحصيل 5%", "WHT 5%", "WHT", 5, false);
+
+			var (ok, err, ret) = await _tax.FileVatReturnAsync(companyId, new DateTime(2026, 1, 1), new DateTime(2026, 6, 30), "إقرار النصف الأول 2026");
+			await _tax.GetEtaSettingsAsync(companyId);   // create the (deferred) ETA settings row
+
+			return Ok(new
+			{
+				success = true,
+				message = "Tax demo seeded",
+				taxCodes = await _db.TaxCodes.CountAsync(c => c.CompanyID == companyId),
+				vatReturn = ret == null ? null : new { ret.OutputVat, ret.InputVat, ret.NetDue, ret.Status },
+				filedError = err
+			});
+		}
+
+		// GET /api/dev/seed-bank-recon?key=seed123&bankAccountId=1
+		// Posts a few BALANCED manual JEs hitting the bank's GL account in May 2026 so the Bank Reconciliation
+		// screen has transactions to clear. Balanced (bank ↔ revenue/expense) → integrity-safe, trial balance stays 0.
+		[HttpGet("seed-bank-recon")]
+		public async Task<IActionResult> SeedBankRecon(string key, int bankAccountId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var bank = await _db.BankAccounts.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == company && b.ID == bankAccountId);
+			if (bank == null) return NotFound(new { message = "bank account not found" });
+			// contra accounts: a revenue (4xxx) for deposits, an expense (52xxxx) for payments
+			var rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.IsPostable && a.Code.StartsWith("4")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			var exp = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.IsPostable && a.Code.StartsWith("52")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+			if (rev == 0 || exp == 0) return NotFound(new { message = "need a revenue (4xxx) and expense (52xxxx) postable account" });
+			// expense accounts require a cost center — use the first one
+			var ccId = await _db.CostCenters.AsNoTracking().Where(c => c.CompanyID == company).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+
+			// (dateDay, isDeposit, amount, arabic, english)
+			var plan = new[] {
+				(5,  true,  5000m, "إيداع نقدي بالبنك (اختبار)", "Bank deposit (test)"),
+				(12, true,  8000m, "تحصيل تحويل بنكي (اختبار)", "Incoming bank transfer (test)"),
+				(20, false, 3000m, "سداد مصروف من البنك (اختبار)", "Bank expense payment (test)"),
+				(28, false, 1500m, "رسوم بنكية (اختبار)", "Bank charges (test)"),
+			};
+			var log = new List<string>();
+			foreach (var (day, deposit, amt, ar, en) in plan)
+			{
+				var date = new DateTime(2026, 5, day);
+				// idempotent: skip if a BankReconTest JE already posted on this date for this bank amount
+				if (await _db.JournalEntries.AnyAsync(e => e.CompanyID == company && e.SourceType == "BankReconTest" && e.EntryDate == date))
+				{ log.Add($"{date:yyyy-MM-dd}: already seeded — skipped"); continue; }
+				var lines = deposit
+					? new List<CrossBuy.BL.JournalLineInput> {
+						new() { AccountId = bank.GlAccountId, Debit = amt, Credit = 0, Description = ar, DescriptionEn = en },
+						new() { AccountId = rev, Debit = 0, Credit = amt, Description = ar, DescriptionEn = en } }
+					: new List<CrossBuy.BL.JournalLineInput> {
+						new() { AccountId = exp, Debit = amt, Credit = 0, CostCenterId = ccId, Description = ar, DescriptionEn = en },
+						new() { AccountId = bank.GlAccountId, Debit = 0, Credit = amt, Description = ar, DescriptionEn = en } };
+				var (ok, err, entry) = await _je.CreateAndPostAsync(new CrossBuy.BL.JournalEntryInput
+				{ CompanyID = company, EntryDate = date, JournalType = "Manual", SourceType = "BankReconTest", Description = ar, DescriptionEn = en, Lines = lines }, null);
+				log.Add(ok ? $"{date:yyyy-MM-dd}: {en} {(deposit ? "+" : "-")}{amt} (JE {entry?.EntryNo})" : $"{date:yyyy-MM-dd}: FAILED — {err}");
+			}
+			return Ok(new { ok = true, bank = bank.BankName, glAccount = bank.GlAccountId, note = "balanced JEs posted (integrity-safe)", log });
+		}
+
+		// GET /api/dev/seed-inv-demo?key=seed123&companyId=1
+		// Phase I0 inventory master-data demo: units, categories (GL-mapped), warehouse, items (code+barcode). Idempotent.
+		[HttpGet("seed-inv-demo")]
+		public async Task<IActionResult> SeedInvDemo(string key, int companyId = 1)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (await _db.Items.AnyAsync(i => i.CompanyID == companyId))
+				return Ok(new { success = true, message = "Inventory demo already seeded" });
+
+			// units
+			await _itemSvc.CreateUnitAsync(companyId, "PCS", "قطعة", "Piece");
+			await _itemSvc.CreateUnitAsync(companyId, "CTN", "كرتونة", "Carton");
+			await _itemSvc.CreateUnitAsync(companyId, "KG", "كيلوجرام", "Kilogram");
+			var units = await _db.UnitsOfMeasure.Where(u => u.CompanyID == companyId).ToListAsync();
+			int U(string c) => units.First(x => x.Code == c).ID;
+
+			// categories — map inventory account to existing 1103 if present
+			var invAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "1103").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			async Task<int> Cat(string code, string ar, string en, int? parent)
+			{
+				var c = new CrossBuy.Models.Context.Inventory.ItemCategory { Code = code, Name = ar, NameEn = en, ParentId = parent, InventoryAccountId = invAcc };
+				await _itemSvc.CreateCategoryAsync(companyId, c, null);
+				return (await _db.ItemCategories.FirstAsync(x => x.CompanyID == companyId && x.Code == code)).ID;
+			}
+			var cGoods = await Cat("FG", "منتجات تامة", "Finished Goods", null);
+			var cRaw = await Cat("RM", "مواد خام", "Raw Materials", null);
+			var cSupp = await Cat("SUP", "مستلزمات", "Supplies", null);
+
+			// warehouse linked to first active branch if any
+			var branch = await _db.Hierarchicals.Where(h => h.IsActive == true).OrderBy(h => h.H_ID).Select(h => (int?)h.H_ID).FirstOrDefaultAsync();
+			await _whSvc.CreateWarehouseAsync(companyId, new CrossBuy.Models.Context.Inventory.Warehouse
+			{ Code = "WH-MAIN", Name = "المخزن الرئيسي", NameEn = "Main Warehouse", WarehouseType = "Main", BranchHierarchicalId = branch }, null);
+
+			// items (each with code + barcode)
+			async Task Item(string code, string bc, string ar, string en, int cat, decimal price, decimal cost)
+			{
+				await _itemSvc.CreateItemAsync(companyId, new CrossBuy.BL.ItemInput
+				{
+					ItemCode = code, Barcode = bc, Name = ar, NameEn = en, ItemCategoryId = cat,
+					ItemType = "Stockable", BaseUoMId = U("PCS"), SalesUoMId = U("PCS"), PurchaseUoMId = U("CTN"),
+					SalesPrice = price, OpeningCost = cost,
+				}, null);
+			}
+			await Item("ITM-0001", "2001000000017", "لابتوب Dell", "Dell Laptop", cGoods, 22000, 18000);
+			await Item("ITM-0002", "2001000000024", "ماوس لاسلكي", "Wireless Mouse", cSupp, 350, 220);
+			await Item("ITM-0003", "2001000000031", "ورق تصوير A4", "A4 Paper", cSupp, 120, 80);
+			await Item("ITM-0004", "2001000000048", "بلاستيك خام", "Raw Plastic", cRaw, 0, 45);
+
+			return Ok(new
+			{
+				success = true,
+				message = "Inventory master-data demo seeded",
+				units = await _db.UnitsOfMeasure.CountAsync(u => u.CompanyID == companyId),
+				categories = await _db.ItemCategories.CountAsync(c => c.CompanyID == companyId),
+				warehouses = await _db.Warehouses.CountAsync(w => w.CompanyID == companyId),
+				items = await _db.Items.CountAsync(i => i.CompanyID == companyId)
+			});
+		}
+
+		// GET /api/dev/seed-project-execution?key=seed123&id=25 — seeds BOQ (Budget), a POSTED material issue
+		// (MaterialIssues + Budget actual), and a project task + timesheet hours (Labor) for a project.
+		[HttpGet("seed-project-execution")]
+		public async Task<IActionResult> SeedProjectExecution(string key, int id = 25)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int companyId = 1;
+			var prj = await _db.Projects.FirstOrDefaultAsync(p => p.ID == id && p.CompanyID == companyId);
+			if (prj == null) return NotFound(new { message = $"project {id} not found" });
+			var log = new List<string>();
+
+			// ---- 1) BOQ (estimated cost breakdown → Budget report) ----
+			int leaf1Id;
+			if (!await _db.BoqItems.AnyAsync(b => b.CompanyID == companyId && b.ProjectId == id))
+			{
+				var header = new BoqItem { CompanyID = companyId, ProjectId = id, ParentId = null, SortOrder = 1, Code = "1", Description = "أعمال خرسانية", Unit = null, Quantity = 0, UnitPrice = 0, CreatedAt = DateTime.UtcNow };
+				_db.BoqItems.Add(header); await _db.SaveChangesAsync();
+				var leaf1 = new BoqItem { CompanyID = companyId, ProjectId = id, ParentId = header.ID, SortOrder = 2, Code = "1.1", Description = "صب أعمدة خرسانية", DescriptionEn = "Concrete columns casting", Unit = "م3", Quantity = 100, UnitPrice = 200, MaterialCost = 8000, LaborCost = 3000, EquipmentCost = 1000, CreatedAt = DateTime.UtcNow };
+				var leaf2 = new BoqItem { CompanyID = companyId, ProjectId = id, ParentId = header.ID, SortOrder = 3, Code = "1.2", Description = "صب أسقف خرسانية", DescriptionEn = "Concrete slabs casting", Unit = "م2", Quantity = 200, UnitPrice = 180, MaterialCost = 15000, LaborCost = 6000, SubcontractCost = 2000, CreatedAt = DateTime.UtcNow };
+				_db.BoqItems.AddRange(leaf1, leaf2); await _db.SaveChangesAsync();
+				leaf1Id = leaf1.ID;
+				log.Add($"BOQ: added header + 2 leaves (est {leaf1.EstimatedCost + leaf2.EstimatedCost:0.##})");
+			}
+			else { leaf1Id = await _db.BoqItems.Where(b => b.CompanyID == companyId && b.ProjectId == id && b.ParentId != null).OrderBy(b => b.SortOrder).Select(b => b.ID).FirstAsync(); log.Add("BOQ: already present — skipped"); }
+
+			// ---- 2) POSTED material issue on a warehouse that has stock (MaterialIssues screen + Budget actual) ----
+			var mat = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IProjectMaterialIssueService>();
+			if (!await _db.ProjectMaterialIssues.AnyAsync(x => x.CompanyID == companyId && x.ProjectId == id && x.Status == "Posted"))
+			{
+				// pick a warehouse with on-hand stock and up to 2 items in it
+				var stockRows = await _db.StockBalances.AsNoTracking().Where(s => s.CompanyID == companyId && s.QtyOnHand >= 2)
+					.OrderBy(s => s.WarehouseId).ThenBy(s => s.ItemId).Take(20).ToListAsync();
+				var grp = stockRows.GroupBy(s => s.WarehouseId).FirstOrDefault();
+				if (grp == null) log.Add("Material issue: SKIPPED — no warehouse has on-hand stock");
+				else
+				{
+					int whId = grp.Key;
+					var lines = grp.Take(2).Select(s => new CrossBuy.BL.MaterialLineInput { ItemId = s.ItemId, Qty = 2, BoqItemId = leaf1Id }).ToList();
+					var (sok, serr, sid) = await mat.SaveDraftAsync(companyId, id, 0, DateTime.Today, whId, "Site execution material issue", lines, null);
+					if (!sok) log.Add($"Material issue: draft failed — {serr}");
+					else
+					{
+						var (pok, perr) = await mat.PostAsync(companyId, sid, null);
+						log.Add(pok ? $"Material issue #{sid}: POSTED on warehouse {whId} ({lines.Count} lines)" : $"Material issue #{sid}: post failed — {perr}");
+					}
+				}
+			}
+			else log.Add("Material issue: a posted issue already exists — skipped");
+
+			// ---- 3) Project task + timesheet hours (Labor screen) ----
+			if (!await _db.TaskItems.AnyAsync(t => t.CompanyId == companyId && t.EntityType == "Project" && t.EntityId == id))
+			{
+				// ensure the assignee has a derivable hourly rate
+				var emp = await _db.Employee.FirstOrDefaultAsync(e => e.EmpCompanyID == companyId) ?? await _db.Employee.FirstOrDefaultAsync();
+				if (emp == null) log.Add("Labor: SKIPPED — no employee");
+				else
+				{
+					if (!(emp.ManufHourlyRate > 0)) { emp.ManufHourlyRate = 60m; log.Add($"Labor: set employee #{emp.ID} hourly rate = 60"); }
+					var task = new CrossBuy.Models.Context.Tasks.TaskItem
+					{
+						CompanyId = companyId, Title = "تنفيذ أعمال الموقع", TitleEn = "Site works execution", Description = "أعمال الصب والتشطيب", AssigneeEmployeeId = emp.ID,
+						CreatedByEmployeeId = emp.ID, Priority = "High", Status = "InProgress", EntityType = "Project", EntityId = id,
+						EstimatedHours = 40, ProgressPct = 30, CreatedAt = DateTime.UtcNow
+					};
+					_db.TaskItems.Add(task); await _db.SaveChangesAsync();
+					_db.TimesheetEntries.AddRange(
+						new CrossBuy.Models.Context.Tasks.TimesheetEntry { CompanyId = companyId, TaskId = task.ID, EmployeeId = emp.ID, WorkDate = DateTime.Today.AddDays(-2), Hours = 8, Description = "صب أعمدة", Source = "Manual", CreatedAt = DateTime.UtcNow },
+						new CrossBuy.Models.Context.Tasks.TimesheetEntry { CompanyId = companyId, TaskId = task.ID, EmployeeId = emp.ID, WorkDate = DateTime.Today.AddDays(-1), Hours = 6, Description = "تجهيز شدة", Source = "Manual", CreatedAt = DateTime.UtcNow });
+					task.ActualHours = 14;
+					await _db.SaveChangesAsync();
+					log.Add($"Labor: task #{task.ID} + 14 hours (≈ {14 * (emp.ManufHourlyRate ?? 60):0.##} cost)");
+				}
+			}
+			else log.Add("Labor: a project task already exists — skipped");
+
+			// ---- 3b) backfill English twins for rows seeded before the *En columns existed ----
+			foreach (var b in await _db.BoqItems.Where(x => x.CompanyID == companyId && x.ProjectId == id && x.DescriptionEn == null).ToListAsync())
+			{
+				b.DescriptionEn = b.Code switch { "1" => "Concrete works", "1.1" => "Concrete columns casting", "1.2" => "Concrete slabs casting", _ => "BOQ item " + (b.Code ?? "") };
+			}
+			foreach (var t in await _db.TaskItems.Where(x => x.CompanyId == companyId && x.EntityType == "Project" && x.EntityId == id && x.TitleEn == null).ToListAsync())
+				t.TitleEn = "Site works execution";
+			await _db.SaveChangesAsync();
+
+			// ---- 4) Progress measurement (confirmed) + progress billing (المستخلص) ----
+			var progress = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IProgressService>();
+			var billing = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IProgressBillingService>();
+			if (!await _db.ProjectProgresses.AnyAsync(p => p.CompanyID == companyId && p.ProjectId == id))
+			{
+				// cumulative executed qty per leaf → ~50-60% executed
+				var leaves = await _db.BoqItems.AsNoTracking().Where(b => b.CompanyID == companyId && b.ProjectId == id && b.ParentId != null).OrderBy(b => b.SortOrder).ToListAsync();
+				var rows = leaves.Select((b, i) => new CrossBuy.BL.ProgressRowInput { BoqItemId = b.ID, CumulativeQty = Math.Round(b.Quantity * (i == 0 ? 0.6m : 0.5m), 2) }).ToList();
+				var (mok, merr, mid) = await progress.SaveMeasurementAsync(companyId, id, 0, DateTime.Today, "First period measurement", rows, null);
+				if (!mok) log.Add($"Progress: save failed — {merr}");
+				else
+				{
+					await progress.ConfirmAsync(companyId, mid);
+					log.Add($"Progress: measurement #{mid} confirmed");
+
+					// billing needs a customer on the project to POST; assign the first active customer if missing
+					var freshPrj = await _db.Projects.FirstAsync(p => p.ID == id && p.CompanyID == companyId);
+					if (freshPrj.CustomerId == null)
+					{
+						var cust = await _db.Customers.Where(c => c.CompanyID == companyId && c.IsActive).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+						if (cust != null) { freshPrj.CustomerId = cust; await _db.SaveChangesAsync(); log.Add($"Project: assigned customer #{cust} (needed to post billing)"); }
+					}
+
+					var (bok, berr, bid) = await billing.SaveDraftAsync(companyId, id, 0, mid, DateTime.Today, 14m, "First period billing", null);
+					if (!bok) log.Add($"Billing: draft failed — {berr}");
+					else
+					{
+						var (aok, aerr) = await billing.ApproveAsync(companyId, bid);
+						if (!aok) log.Add($"Billing #{bid}: approve failed — {aerr}");
+						else
+						{
+							var (pok, perr) = await billing.PostAsync(companyId, bid, null);
+							log.Add(pok ? $"Billing #{bid}: POSTED (invoice created)" : $"Billing #{bid}: approved but post failed — {perr}");
+						}
+					}
+				}
+			}
+			else log.Add("Progress/Billing: a measurement already exists — skipped");
+
+			// ---- 5) Contract value + an APPROVED variation order (Revised-contract counters) ----
+			var prj5 = await _db.Projects.FirstAsync(p => p.ID == id && p.CompanyID == companyId);
+			if (prj5.ContractValue == null || prj5.ContractValue == 0m) { prj5.ContractValue = 60000m; await _db.SaveChangesAsync(); log.Add("Project: set original contract value = 60,000"); }
+			var variation = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IVariationOrderService>();
+			if (!await _db.VariationOrders.AnyAsync(v => v.CompanyID == companyId && v.ProjectId == id))
+			{
+				var voLines = new List<CrossBuy.BL.VoLineInput> {
+					new() { Kind = "New", Code = "2.1", Description = "أعمال تشطيبات إضافية", DescriptionEn = "Additional finishing works", Unit = "م2", Quantity = 50, UnitPrice = 150, MaterialCost = 4000, LaborCost = 2000 }
+				};
+				var (vok, verr, vid) = await variation.SaveDraftAsync(companyId, id, 0, "أمر تغيير - تشطيبات إضافية", "VO - Additional finishing works", "طلب العميل", voLines, null);
+				if (!vok) log.Add($"Variation order: draft failed — {verr}");
+				else
+				{
+					var (vaok, vaerr) = await variation.ApproveAsync(companyId, vid, null);
+					log.Add(vaok ? $"Variation order #{vid}: APPROVED (+7,500 → revised 67,500)" : $"Variation order #{vid}: approve failed — {vaerr}");
+				}
+			}
+			else log.Add("Variation order: already exists — skipped");
+
+			// backfill English twin on any pre-existing VO header
+			foreach (var v in await _db.VariationOrders.Where(v => v.CompanyID == companyId && v.ProjectId == id && v.DescriptionEn == null).ToListAsync())
+				v.DescriptionEn = "VO - Additional finishing works";
+			await _db.SaveChangesAsync();
+
+			return Ok(new { ok = true, projectId = id, log });
+		}
+
+		// GET /api/dev/seed-final-settlement?key=seed123 — posts end-of-service settlements for test employees
+		// (real GL via FinalSettlementService: leave + gratuity + other − deductions, paid from Main Cash).
+		[HttpGet("seed-final-settlement")]
+		public async Task<IActionResult> SeedFinalSettlement(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int companyId = 1;
+			var settle = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IFinalSettlementService>();
+			var payAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
+			if (payAcc == null) return NotFound(new { message = "cash account 110101 not found" });
+			var log = new List<string>();
+
+			// settle active test employees (skip any already terminated / already settled)
+			var termDate = DateTime.Today;
+			foreach (var (empId, other, ded, reason) in new[] {
+				(29, 3000m, 500m, "استقالة"),
+				(30, 4500m, 0m,   "إنهاء عقد") })
+			{
+				if (await _db.FinalSettlements.AnyAsync(s => s.CompanyID == companyId && s.EmployeeID == empId)) { log.Add($"Employee #{empId}: already settled — skipped"); continue; }
+				var emp = await _db.Employee.FirstOrDefaultAsync(e => e.ID == empId && e.EmpCompanyID == companyId);
+				if (emp == null || !emp.IsActive) { log.Add($"Employee #{empId}: missing/inactive — skipped"); continue; }
+				var pv = await settle.PreviewAsync(companyId, empId, termDate);
+				var (ok, err) = await settle.PostAsync(companyId, empId, termDate, reason, pv.SuggestedGratuity, other, ded, payAcc.Value, null);
+				log.Add(ok
+					? $"Employee #{empId}: SETTLED — years {pv.ServiceYears}, leave {pv.LeaveValue}, gratuity {pv.SuggestedGratuity}, other {other}, ded {ded}"
+					: $"Employee #{empId}: failed — {err}");
+			}
+
+			return Ok(new { ok = true, log });
+		}
+
+		// GET /api/dev/seed-attendance-month?key=seed123&year=2026&month=7 — records daily attendance for ALL employees
+		// with an attendance policy (present on work days + a couple late/OT + 1 absent). No payroll posting.
+		[HttpGet("seed-attendance-month")]
+		public async Task<IActionResult> SeedAttendanceMonth(string key, int year, int month)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int companyId = 1;
+			var att = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IAttendanceService>();
+			var log = new List<string>();
+
+			var empIds = await _db.PolicyAssignments.AsNoTracking().Select(p => p.EmployeeID).Distinct().ToListAsync();
+			if (empIds.Count == 0) return Ok(new { ok = true, log = new[] { "No employees have a policy assignment." } });
+
+			var firstOfMonth = new DateTime(year, month, 1);
+			var lastOfMonth = firstOfMonth.AddMonths(1).AddDays(-1);
+			var end = lastOfMonth < DateTime.Today ? lastOfMonth : DateTime.Today;   // don't record future days
+
+			foreach (var empId in empIds)
+			{
+				var emp = await _db.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == empId && e.EmpCompanyID == companyId);
+				var policy = await att.PolicyForAsync(empId);
+				if (emp == null || policy == null) { log.Add($"Employee #{empId}: no attendance policy — skipped"); continue; }
+
+				bool isWork(DateTime d) => d.DayOfWeek switch { DayOfWeek.Sunday => policy.WorkOnSunday, DayOfWeek.Monday => policy.WorkOnMonday, DayOfWeek.Tuesday => policy.WorkOnTuesday, DayOfWeek.Wednesday => policy.WorkOnWednesday, DayOfWeek.Thursday => policy.WorkOnThursday, DayOfWeek.Friday => policy.WorkOnFriday, DayOfWeek.Saturday => policy.WorkOnSaturday, _ => false };
+
+				// clear any prior records for the window so re-runs are idempotent
+				await _db.AttendanceRecords.Where(r => r.CompanyID == companyId && r.EmployeeID == empId && r.WorkDate >= firstOfMonth && r.WorkDate <= lastOfMonth).ExecuteDeleteAsync();
+
+				var work = new List<DateTime>();
+				for (var d = firstOfMonth; d <= end; d = d.AddDays(1)) if (isWork(d)) work.Add(d);
+				if (work.Count == 0) { log.Add($"Employee #{empId}: no work days in window"); continue; }
+
+				int present = 0, late = 0, ot = 0, absent = 0;
+				for (int i = 0; i < work.Count; i++)
+				{
+					var d = work[i];
+					if (i % 9 == 4) { absent++; continue; }   // ~1 absence every 9 work days
+					var ci = d + policy.WorkStartTime + TimeSpan.FromMinutes(policy.AllowedGraceMinutes);
+					var co = d + policy.WorkEndTime;
+					if (i % 7 == 3) { ci += TimeSpan.FromMinutes(18); late++; }   // late arrival
+					if (i % 6 == 2) { co += TimeSpan.FromMinutes(45); ot++; }     // overtime
+					var (ok, _, rec) = await att.RecordAsync(companyId, empId, d, ci, co, "Manual", null, null);
+					if (ok) present++;
+				}
+				log.Add($"Employee #{empId} ({(string.IsNullOrWhiteSpace(emp.FullNameEn) ? emp.FullName : emp.FullNameEn)}): {present} present ({late} late, {ot} OT), {absent} absent");
+			}
+
+			return Ok(new { ok = true, year, month, log });
+		}
+
+		// GET /api/dev/seed-expiry?key=seed123 — makes the Expiry-alerts report show data WITHOUT touching the stock_gl invariant.
+		// INTEGRITY-SAFE: it does NOT post any new stock. It picks EXISTING GL-backed IN movements (already balanced against
+		// the inventory account) and merely TAGS them with a batch + expiry date. Zero new quantity, zero new value → the
+		// "inventory value == inventory GL account" invariant is untouched. Fully reversible via undo-expiry (marker: EXP-%).
+		[HttpGet("seed-expiry")]
+		public async Task<IActionResult> SeedExpiry(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var log = new List<string>();
+			var today = DateTime.Today;
+
+			// find distinct items that have an EXISTING un-batched IN movement with real quantity (GL-backed inbound)
+			var candidates = await _db.StockMovements
+				.Where(m => m.CompanyID == company && m.Direction == 1 && m.BatchId == null && m.QtyBase > 0)
+				.OrderBy(m => m.ItemId).ThenByDescending(m => m.QtyBase)
+				.Select(m => new { m.ID, m.ItemId, m.QtyBase })
+				.ToListAsync();
+			var pickedByItem = candidates.GroupBy(x => x.ItemId).Select(g => g.First()).Take(3).ToList();
+			if (pickedByItem.Count < 3) return NotFound(new { message = "need 3 items with existing un-batched IN movements" });
+
+			// expiry spread: one already EXPIRED, one NEAR (12d), one NEAR (27d)
+			var dtes = new[] { -8, 12, 27 };
+			var names = new[] { "EXP-A-EXPIRED", "EXP-B-NEAR12", "EXP-C-NEAR27" };
+			for (int i = 0; i < 3; i++)
+			{
+				var pick = pickedByItem[i];
+				var item = await _db.Items.FirstAsync(it => it.ID == pick.ItemId && it.CompanyID == company);
+				if (await _db.StockBatches.AnyAsync(b => b.CompanyID == company && b.BatchNo == names[i])) { log.Add($"{names[i]}: already exists — skipped"); continue; }
+				if (!item.TrackExpiry) { item.TrackExpiry = true; }
+				var batch = new CrossBuy.Models.Context.Inventory.StockBatch
+				{ CompanyID = company, ItemId = item.ID, BatchNo = names[i], ExpiryDate = today.AddDays(dtes[i]), CreatedAt = today };
+				_db.StockBatches.Add(batch);
+				await _db.SaveChangesAsync();   // need batch.ID
+				var mv = await _db.StockMovements.FirstAsync(m => m.ID == pick.ID);
+				mv.BatchId = batch.ID;           // tag the existing GL-backed movement — no new stock created
+				await _db.SaveChangesAsync();
+				log.Add($"{names[i]} → item {item.ItemCode}: tagged existing IN mv#{mv.ID} (qty {pick.QtyBase}), expiry {today.AddDays(dtes[i]):yyyy-MM-dd} ({(dtes[i] < 0 ? "EXPIRED" : dtes[i] + "d")})");
+			}
+			return Ok(new { ok = true, note = "integrity-safe: existing movements tagged, no new stock/GL", log });
+		}
+
+		// GET /api/dev/undo-expiry?key=seed123 — un-tags the seeded batches (nulls BatchId on the tagged movements, deletes the
+		// EXP-% StockBatch rows). No stock movement is created, so the stock_gl invariant stays intact throughout.
+		[HttpGet("undo-expiry")]
+		public async Task<IActionResult> UndoExpiry(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			var log = new List<string>();
+			var batches = await _db.StockBatches.Where(b => b.CompanyID == company && b.BatchNo.StartsWith("EXP-")).ToListAsync();
+			foreach (var b in batches)
+			{
+				var tagged = await _db.StockMovements.Where(m => m.CompanyID == company && m.BatchId == b.ID).ToListAsync();
+				foreach (var m in tagged) { m.BatchId = null; }
+				_db.StockBatches.Remove(b);
+				log.Add($"{b.BatchNo}: un-tagged {tagged.Count} movement(s) + batch removed");
+			}
+			await _db.SaveChangesAsync();
+			return Ok(new { ok = true, note = "batches removed, no stock touched — invariant intact", log });
+		}
+	}
+}

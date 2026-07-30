@@ -1,0 +1,138 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Crm
+@model List<OppRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+    var pstages = ViewBag.Stages as List<CrmPipelineStage> ?? new();
+    if (pstages.Count == 0)   // graceful fallback before the default pipeline is seeded
+        pstages = new[] { "Prospecting", "Qualification", "Proposal", "Negotiation", "Won", "Lost" }
+            .Select((c, i) => new CrmPipelineStage { Name = c, Sort = i, IsWon = c == "Won", IsLost = c == "Lost", Probability = c == "Won" ? 100 : (c == "Lost" ? 0 : (i + 1) * 20) }).ToList();
+    string locName(string code) => code switch { "Prospecting" => Localizer["Prospecting"].Value, "Qualification" => Localizer["Qualification"].Value, "Proposal" => Localizer["Proposal"].Value, "Negotiation" => Localizer["Negotiation"].Value, "Won" => Localizer["Won"].Value, "Lost" => Localizer["Lost"].Value, _ => code };
+    var pal = new[] { "info", "primary", "warning", "primary" };
+    string stageCls(CrmPipelineStage s, int i) => s.IsWon ? "success" : (s.IsLost ? "danger" : pal[i % pal.Length]);
+}
+<style>
+    .prob-ring { position: relative; width: 58px; height: 58px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: conic-gradient(currentColor calc(var(--p) * 1%), var(--bs-gray-200, #eff2f5) 0); }
+    .prob-ring::after { content: ""; position: absolute; inset: 5px; background: var(--bs-card-bg, #fff); border-radius: 50%; }
+    .prob-ring > span { position: relative; z-index: 1; font-weight: 700; font-size: .9rem; line-height: 1; }
+    .kanban-card { transition: box-shadow .15s ease, transform .15s ease; }
+    .kanban-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.08); transform: translateY(-1px); }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Sales pipeline"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">@SR["CRM"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Pipeline"]</li></ul></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Opportunities","Crm")" class="btn btn-sm btn-light"><i class="ki-outline ki-row-horizontal fs-3"></i>@Localizer["List view"]</a>
+            <button class="btn btn-sm btn-primary" onclick="location.href='@Url.Action("Opportunities","Crm")'"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New opportunity"]</button>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
+        <div class="text-muted fs-7 mb-3"><i class="ki-outline ki-information-5 fs-5 me-1"></i>@Localizer["Drag a deal between columns to change its stage"]</div>
+
+        <div id="board" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-5">
+            @{ var si = 0; }
+            @foreach (var s in pstages)
+            {
+                var cls = stageCls(s, si); si++;
+                var col = Model.Where(o => o.Stage == s.Name).ToList();
+                <div class="col">
+                    <div class="card card-bordered h-100">
+                        <div class="card-header min-h-55px">
+                            <div class="card-title">
+                                <span class="bullet bullet-dot bg-@cls h-10px w-10px me-3"></span>
+                                <span class="fw-bold fs-5 text-gray-900">@locName(s.Name)</span>
+                            </div>
+                            <div class="card-toolbar">
+                                <span class="badge badge-light-@cls fw-bold col-count">@col.Count</span>
+                            </div>
+                        </div>
+                        <div class="card-body pt-4 kanban-col draggable-zone" data-stage="@s.Name" data-cls="@cls" style="min-height:130px;">
+                            <div class="d-flex align-items-center mb-5">
+                                <span class="symbol symbol-40px me-3"><span class="symbol-label bg-light-@cls"><i class="ki-outline ki-chart-simple fs-2 text-@cls"></i></span></span>
+                                <div class="d-flex flex-column">
+                                    <span class="fs-3 fw-bold text-gray-900 lh-1 col-sum">@col.Sum(o => o.Amount).ToString("N0")</span>
+                                    <span class="fs-8 text-muted fw-semibold mt-1">@Localizer["Total value"]</span>
+                                </div>
+                            </div>
+                            @foreach (var o in col)
+                            {
+                                var init = string.IsNullOrWhiteSpace(o.CustomerName) ? "?" : o.CustomerName.Trim().Substring(0, 1);
+                                <div class="card border border-gray-300 mb-4 kanban-card draggable" draggable="true" data-id="@o.Id" data-amount="@o.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture)" style="cursor:grab;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <span class="symbol symbol-45px flex-shrink-0"><span class="symbol-label bg-light-@cls k-tint"><span class="fs-4 fw-bold text-@cls k-color">@init</span></span></span>
+                                            <div class="d-flex flex-column flex-grow-1 mx-3">
+                                                <span class="fw-bold text-gray-900 fs-5 lh-1">@(isEn ? (string.IsNullOrWhiteSpace(o.TitleEn) ? o.Title : o.TitleEn) : o.Title)</span>
+                                                <span class="text-muted fw-semibold fs-8 mt-1">@(o.CustomerName ?? Localizer["No account"].Value)</span>
+                                            </div>
+                                            <div class="border-start border-gray-300 h-40px mx-2"></div>
+                                            <div class="prob-ring text-@cls k-color mx-1" style="--p:@o.Probability"><span>@o.Probability%</span></div>
+                                        </div>
+                                        <div class="separator separator-dashed my-3"></div>
+                                        <div class="d-flex flex-stack">
+                                            <div class="d-flex align-items-center">
+                                                <span class="symbol symbol-40px me-3"><span class="symbol-label bg-light-@cls k-tint"><i class="ki-outline ki-wallet fs-2 text-@cls k-color"></i></span></span>
+                                                <div class="d-flex flex-column">
+                                                    <span class="text-muted fw-semibold fs-8">@SR["Amount"]</span>
+                                                    <span class="fw-bolder text-gray-900 fs-4 lh-1">@o.Amount.ToString("N0")</span>
+                                                </div>
+                                            </div>
+                                            @if (o.ExpectedCloseDate != null)
+                                            {
+                                                <div class="d-flex align-items-center">
+                                                    <div class="d-flex flex-column text-end">
+                                                        <span class="text-muted fw-semibold fs-8">@Localizer["Expected close"]</span>
+                                                        <span class="fw-semibold text-gray-700 fs-8">@o.ExpectedCloseDate.Value.ToString("yyyy-MM-dd")</span>
+                                                    </div>
+                                                    <span class="symbol symbol-40px ms-3"><span class="symbol-label bg-light-info"><i class="ki-outline ki-calendar fs-2 text-primary"></i></span></span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div></div>
+</div>
+@Html.AntiForgeryToken()
+@section Scripts {
+<script>
+(function(){
+  var moveUrl='@Url.Action("MoveOpportunity","Crm")';
+  var token=document.querySelector('input[name="__RequestVerificationToken"]').value;
+  var dragged=null, fromCol=null;
+  function recount(col){ var cards=col.querySelectorAll('.kanban-card'); var sum=0; cards.forEach(function(c){sum+=parseFloat(c.getAttribute('data-amount'))||0;});
+    var wrap=col.closest('.card'); var cc=wrap.querySelector('.col-count'); if(cc)cc.textContent=cards.length; var cs=wrap.querySelector('.col-sum'); if(cs)cs.textContent=sum.toLocaleString(undefined,{maximumFractionDigits:0}); }
+  var COLORS=['info','primary','warning','success','danger','secondary'];
+  function recolor(card,cls){ if(!cls)return;
+    card.querySelectorAll('.k-tint').forEach(function(e){ COLORS.forEach(function(c){e.classList.remove('bg-light-'+c);}); e.classList.add('bg-light-'+cls); });
+    card.querySelectorAll('.k-color').forEach(function(e){ COLORS.forEach(function(c){e.classList.remove('text-'+c);}); e.classList.add('text-'+cls); }); }
+  document.getElementById('board').addEventListener('dragstart',function(e){ var c=e.target.closest('.kanban-card'); if(!c)return; dragged=c; fromCol=c.closest('.kanban-col'); c.style.opacity='0.4'; e.dataTransfer.effectAllowed='move'; });
+  document.getElementById('board').addEventListener('dragend',function(e){ if(dragged)dragged.style.opacity=''; });
+  [].slice.call(document.querySelectorAll('.kanban-col')).forEach(function(col){
+    col.addEventListener('dragover',function(e){ e.preventDefault(); col.style.background='#eef4f1'; });
+    col.addEventListener('dragleave',function(e){ col.style.background=''; });
+    col.addEventListener('drop',function(e){ e.preventDefault(); col.style.background=''; if(!dragged||col===fromCol)return;
+      var id=dragged.getAttribute('data-id'), stage=col.getAttribute('data-stage'), src=fromCol;
+      col.appendChild(dragged); recolor(dragged, col.getAttribute('data-cls')); recount(col); recount(src);
+      var body=new URLSearchParams(); body.set('id',id); body.set('stage',stage); body.set('__RequestVerificationToken',token);
+      fetch(moveUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()})
+        .then(function(r){return r.json();})
+        .then(function(d){ if(!d.ok){ src.appendChild(dragged); recount(col); recount(src); alert(d.error||'@Localizer["Move failed"]'); } })
+        .catch(function(){ src.appendChild(dragged); recount(col); recount(src); });
+    });
+  });
+})();
+</script>
+}

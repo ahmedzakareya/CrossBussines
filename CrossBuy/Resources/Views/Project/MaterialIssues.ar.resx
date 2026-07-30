@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Material issue" xml:space="preserve"><value>صرف مواد للمشروع</value></data>
+  <data name="Material issues" xml:space="preserve"><value>أذون صرف المواد</value></data>
+  <data name="Projects" xml:space="preserve"><value>المشاريع</value></data>
+  <data name="New issue" xml:space="preserve"><value>أذن جديد</value></data>
+  <data name="No issues yet" xml:space="preserve"><value>لا توجد أذون بعد</value></data>
+  <data name="Lines" xml:space="preserve"><value>الأسطر</value></data>
+  <data name="Select warehouse to load items" xml:space="preserve"><value>اختر مخزنًا لتحميل الأصناف</value></data>
+  <data name="Select a warehouse to load its items and balances." xml:space="preserve"><value>اختر مخزنًا لتحميل أصنافه وأرصدته.</value></data>
+  <data name="Items to issue" xml:space="preserve"><value>الأصناف المطلوب صرفها</value></data>
+  <data name="Available" xml:space="preserve"><value>المتاح</value></data>
+  <data name="Issue qty" xml:space="preserve"><value>كمية الصرف</value></data>
+  <data name="BOQ item" xml:space="preserve"><value>بند BOQ</value></data>
+  <data name="Post issue" xml:space="preserve"><value>ترحيل الأذن</value></data>
+  <data name="Post this material issue? Stock will be reduced." xml:space="preserve"><value>ترحيل أذن الصرف؟ سيُخصم من المخزون.</value></data>
+  <data name="Delete issue?" xml:space="preserve"><value>حذف الأذن؟</value></data>
+  <data name="No stock in this warehouse." xml:space="preserve"><value>لا يوجد رصيد في هذا المخزن.</value></data>
+  <data name="Entry on post: Dr project execution cost (510104) / Cr inventory (1103) — tagged to the project. Stock is issued via the inventory service." xml:space="preserve"><value>القيد عند الترحيل: مدين تكلفة تنفيذ المشاريع (510104) / دائن المخزون (1103) — موسوم بالمشروع. الصرف يتم عبر خدمة المخزون.</value></data>
+  <data name="Draft" xml:space="preserve"><value>مسودة</value></data>
+  <data name="Posted" xml:space="preserve"><value>مرحّل</value></data>
+</root>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Purchase order" xml:space="preserve">
+    <value>أمر شراء</value>
+  </data>
+  <data name="Inter-branch transfer" xml:space="preserve">
+    <value>تحويل بين الفروع</value>
+  </data>
+  <data name="Stock count" xml:space="preserve">
+    <value>تسوية جرد</value>
+  </data>
+  <data name="Approved" xml:space="preserve">
+    <value>معتمَد</value>
+  </data>
+  <data name="Rejected" xml:space="preserve">
+    <value>مرفوض</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>بانتظار الاعتماد</value>
+  </data>
+  <data name="Inventory approvals" xml:space="preserve">
+    <value>اعتمادات المخزون</value>
+  </data>
+  <data name="Approvals" xml:space="preserve">
+    <value>الموافقات</value>
+  </data>
+  <data name="pending" xml:space="preserve">
+    <value>بانتظار الاعتماد</value>
+  </data>
+  <data name="Document" xml:space="preserve">
+    <value>المستند</value>
+  </data>
+  <data name="Requested by" xml:space="preserve">
+    <value>مُقدِّم الطلب</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>الإجراء</value>
+  </data>
+  <data name="Can't approve your own (SoD)" xml:space="preserve">
+    <value>لا يمكنك اعتماد طلبك (فصل مهام)</value>
+  </data>
+  <data name="Approve &amp; execute this document?" xml:space="preserve">
+    <value>اعتماد وتنفيذ المستند؟</value>
+  </data>
+  <data name="Reject this document?" xml:space="preserve">
+    <value>رفض المستند؟</value>
+  </data>
+  <data name="No approval requests" xml:space="preserve">
+    <value>لا توجد طلبات اعتماد</value>
+  </data>
+</root>

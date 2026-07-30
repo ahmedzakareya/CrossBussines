@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Leave encashment &amp; provision" xml:space="preserve">
+    <value>بدل الإجازات ومخصصها</value>
+  </data>
+  <data name="HR" xml:space="preserve">
+    <value>الموارد البشرية</value>
+  </data>
+  <data name="Leave &amp; attendance" xml:space="preserve">
+    <value>الإجازات والحضور</value>
+  </data>
+  <data name="Leave encashment" xml:space="preserve">
+    <value>بدل الإجازة النقدي</value>
+  </data>
+  <data name="Select employee…" xml:space="preserve">
+    <value>اختر موظفًا…</value>
+  </data>
+  <data name="No encashable balance for this employee." xml:space="preserve">
+    <value>لا يوجد رصيد قابل للصرف لهذا الموظف.</value>
+  </data>
+  <data name="Daily rate" xml:space="preserve">
+    <value>الأجر اليومي</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>القيمة</value>
+  </data>
+  <data name="Encash" xml:space="preserve">
+    <value>صرف</value>
+  </data>
+  <data name="d" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="Pay out this leave balance in cash?" xml:space="preserve">
+    <value>صرف رصيد الإجازة نقدًا؟</value>
+  </data>
+  <data name="Pay" xml:space="preserve">
+    <value>صرف</value>
+  </data>
+  <data name="Daily rate = (base + allowances) ÷ 30. Entry: Dr 520104 / Cr bank. Paid days reduce the balance." xml:space="preserve">
+    <value>الأجر اليومي = (الأساسي + البدلات) ÷ 30. القيد: مدين 520104 بدل إجازات / دائن البنك. الأيام المصروفة تُخصم من الرصيد.</value>
+  </data>
+  <data name="Pick an employee to view encashable balance." xml:space="preserve">
+    <value>اختر موظفًا لعرض رصيده القابل للصرف.</value>
+  </data>
+  <data name="Encashable leave types" xml:space="preserve">
+    <value>أنواع الإجازات القابلة للصرف</value>
+  </data>
+  <data name="Mark which types may be paid out and included in the provision (usually annual leave only)." xml:space="preserve">
+    <value>حدّد الأنواع التي يجوز صرفها نقدًا وإدراجها في المخصص (عادةً الإجازة السنوية فقط).</value>
+  </data>
+  <data name="No leave types." xml:space="preserve">
+    <value>لا توجد أنواع إجازات.</value>
+  </data>
+  <data name="Leave provision" xml:space="preserve">
+    <value>مخصص الإجازات</value>
+  </data>
+  <data name="As of date" xml:space="preserve">
+    <value>حتى تاريخ</value>
+  </data>
+  <data name="Compute" xml:space="preserve">
+    <value>احتساب</value>
+  </data>
+  <data name="Total earned days" xml:space="preserve">
+    <value>إجمالي الأيام المستحقة</value>
+  </data>
+  <data name="Required provision" xml:space="preserve">
+    <value>المخصص المطلوب</value>
+  </data>
+  <data name="Current balance (210206)" xml:space="preserve">
+    <value>الرصيد الحالي (210206)</value>
+  </data>
+  <data name="Adjustment to post" xml:space="preserve">
+    <value>التسوية المطلوبة</value>
+  </data>
+  <data name="Post the provision adjustment?" xml:space="preserve">
+    <value>ترحيل تسوية المخصص؟</value>
+  </data>
+  <data name="Post adjustment" xml:space="preserve">
+    <value>ترحيل التسوية</value>
+  </data>
+  <data name="Increase ← Dr 520106 / Cr 210206; release ← reverse. Only the difference is posted to match the liability." xml:space="preserve">
+    <value>القيد: زيادة المخصص ← مدين 520106 / دائن 210206؛ الرد ← العكس. يُرحَّل الفرق فقط لمطابقة الالتزام المستحق.</value>
+  </data>
+</root>

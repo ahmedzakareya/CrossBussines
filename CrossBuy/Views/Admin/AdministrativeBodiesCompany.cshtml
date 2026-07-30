@@ -1,0 +1,170 @@
+﻿@model CrossBuy.ViewModel.AdministrativeBodiesCompanyDto
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    ViewData["Title"] = Localizer["Administrative Bodies in the Company"].Value;
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+}
+
+
+<div class="d-flex flex-column flex-column-fluid">
+	<!--begin::Toolbar-->
+	<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+		<!--begin::Toolbar container-->
+		<div id="kt_app_toolbar_container" class="app-container container-fluid d-flex align-items-stretch">
+			<!--begin::Toolbar wrapper-->
+			<div class="app-toolbar-wrapper d-flex flex-stack flex-wrap gap-4 w-100">
+				<!--begin::Page title-->
+				<div class="page-title d-flex flex-column justify-content-center gap-1 me-3">
+					<!--begin::Title-->
+					<h1 class="page-heading d-flex flex-column justify-content-center text-gray-900 fw-bold fs-3 m-0">@CrossBuy.Resources.SharedResources.AdministrativeBodiesIntheCompany</h1>
+					<!--end::Title-->
+					<!--begin::Breadcrumb-->
+					<ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+						<!--begin::Item-->
+						<li class="breadcrumb-item text-muted">
+							<a href="index.html" class="text-muted text-hover-primary">@Localizer["Home"]</a>
+						</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item">
+							<span class="bullet bg-gray-500 w-5px h-2px"></span>
+						</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item text-muted">@Localizer["Apps"]</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item">
+							<span class="bullet bg-gray-500 w-5px h-2px"></span>
+						</li>
+						<!--end::Item-->
+						<!--begin::Item-->
+						<li class="breadcrumb-item text-muted">@Localizer["Contacts"]</li>
+						<!--end::Item-->
+					</ul>
+					<!--end::Breadcrumb-->
+				</div>
+				<!--end::Page title-->
+				<!--begin::Actions-->
+				<div class="d-flex align-items-center gap-2 gap-lg-3">
+					<a href="#" class="btn btn-flex btn-outline btn-color-gray-700 btn-active-color-primary bg-body h-40px fs-7 fw-bold" data-bs-toggle="modal" data-bs-target="#kt_modal_view_users">@Localizer["Add Member"]</a>
+					<a href="#" class="btn btn-flex btn-primary h-40px fs-7 fw-bold" data-bs-toggle="modal" data-bs-target="#kt_modal_create_campaign">@Localizer["New Campaign"]</a>
+				</div>
+				<!--end::Actions-->
+			</div>
+			<!--end::Toolbar wrapper-->
+		</div>
+		<!--end::Toolbar container-->
+	</div>
+	<!--end::Toolbar-->
+	<!--begin::Content-->
+	<div id="kt_app_content" class="app-content flex-column-fluid">
+		<!--begin::Content container-->
+		<div id="kt_app_content_container" class="app-container container-fluid">
+
+			<!--begin::Content-->
+			<div id="kt_account_settings_profile_details" class="collapse show">
+				<!--begin::Form-->
+				<form id="kt_account_profile_details_form" class="form">
+					<!--begin::Card body-->
+					<div class="card-body border-top p-9">
+						<input type="hidden" name="A_ID" asp-for="A_ID" />
+
+
+						<!--begin::Input group-->
+						<div class="row mb-6">
+							<!--begin::Label-->
+							<label class="col-lg-3 col-form-label required fw-semibold fs-6">@CrossBuy.Resources.SharedResources.NameAr : </label>
+							<!--end::Label-->
+							<!--begin::Col-->
+							<div class="col-lg-9 fv-row">
+								<input type="text" placeholder="@CrossBuy.Resources.SharedResources.NameAr" asp-for="NameAr" class="form-control" />
+
+							</div>
+							<!--end::Col-->
+						</div>
+						<!--end::Input group-->
+						<!--begin::Input group-->
+						<div class="row mb-6">
+							<!--begin::Label-->
+							<label class="col-lg-3 col-form-label required fw-semibold fs-6">@CrossBuy.Resources.SharedResources.NameEn : </label>
+							<!--end::Label-->
+							<!--begin::Col-->
+							<div class="col-lg-9 fv-row">
+								<input type="text" placeholder="@CrossBuy.Resources.SharedResources.NameEn" asp-for="NameEN" class="form-control" />
+
+							</div>
+							<!--end::Col-->
+						</div>
+						<!--end::Input group-->
+						<!--begin::Input group-->
+						<div class="row mb-6">
+							<label class="col-lg-3 col-form-label required fw-semibold fs-6">@CrossBuy.Resources.SharedResources.Notes : </label>
+							<div class="form-floating">
+								<textarea class="form-control" name="Description" asp-for="Notes" placeholder="@CrossBuy.Resources.SharedResources.Notes" id="Notes" style="height: 100px ; font-weight:bold"></textarea>
+								<label for="floatingTextarea2" class="fw-bold">@CrossBuy.Resources.SharedResources.Notes</label>
+							</div>
+						</div>
+						<!--end::Input group-->
+
+					</div>
+					<!--end::Card body-->
+					<!--begin::Actions-->
+					<div class="card-footer d-flex justify-content-end py-6 px-9">
+						<button type="reset" class="btn btn-light btn-active-light-primary me-2">@CrossBuy.Resources.SharedResources.Cancel</button>
+						<button type="submit" class="btn btn-primary" id="kt_account_profile_details_submit">@CrossBuy.Resources.SharedResources.Save</button>
+					</div>
+					<!--end::Actions-->
+				</form>
+				<!--end::Form-->
+			</div>
+			<!--end::Content-->
+
+		</div>
+		<!--end::Content container-->
+	</div>
+	<!--end::Content-->
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+	$(document).ready(function () {
+		$('#kt_account_profile_details_form').on('submit', function (e) {
+			e.preventDefault();
+
+			var form = $(this);
+			var formData = form.serialize();
+			var idValue = form.find('input[name="A_ID"]').val();
+
+			if (idValue && parseInt(idValue) !== 0) {
+				CB.confirm({ type: 'edit' }).then((ok) => {
+					if (ok) {
+						sendData(formData);
+					}
+				});
+			} else {
+				sendData(formData);
+			}
+		});
+
+		function sendData(formData) {
+			$.ajax({
+				type: "POST",
+				url: '@Url.Action("AdministrativeBodiesCompany", "Admin")',
+				data: formData,
+				success: function (response) {
+					CB.toast.success('@CrossBuy.Resources.SharedResources.Success');
+					setTimeout(function () {
+						window.location.href = '@Url.Action("AdministrativeBodiesCompanyList", "Admin")';
+					}, 1200);
+				},
+				error: function (xhr, status, error) {
+					CB.toast.error('@Html.Raw(CrossBuy.Resources.SharedResources.SaveFailed)');
+				}
+			});
+		}
+	});
+</script>
+
+

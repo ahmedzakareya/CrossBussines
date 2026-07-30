@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Segment" xml:space="preserve">
+    <value>Segment</value>
+  </data>
+  <data name="Est. value" xml:space="preserve">
+    <value>Valeur est.</value>
+  </data>
+  <data name="equals" xml:space="preserve">
+    <value>égal à</value>
+  </data>
+  <data name="contains" xml:space="preserve">
+    <value>contient</value>
+  </data>
+  <data name="≥" xml:space="preserve">
+    <value>≥</value>
+  </data>
+  <data name="Lead scoring &amp; automation" xml:space="preserve">
+    <value>Scoring des prospects &amp; automatisation</value>
+  </data>
+  <data name="Scoring" xml:space="preserve">
+    <value>Scoring</value>
+  </data>
+  <data name="Recompute scores for all leads?" xml:space="preserve">
+    <value>Recalculer les scores pour tous les prospects ?</value>
+  </data>
+  <data name="Recompute scores" xml:space="preserve">
+    <value>Recalculer les scores</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="Save settings?" xml:space="preserve">
+    <value>Enregistrer les paramètres ?</value>
+  </data>
+  <data name="Auto-route leads (round-robin to reps)" xml:space="preserve">
+    <value>Répartition automatique des prospects (tour de rôle entre commerciaux)</value>
+  </data>
+  <data name="Hot threshold" xml:space="preserve">
+    <value>Seuil chaud</value>
+  </data>
+  <data name="Warm threshold" xml:space="preserve">
+    <value>Seuil tiède</value>
+  </data>
+  <data name="Score ≥ Hot = hot, ≥ Warm = warm, otherwise cold." xml:space="preserve">
+    <value>Score ≥ Chaud = chaud, ≥ Tiède = tiède, sinon froid.</value>
+  </data>
+  <data name="New scoring rule" xml:space="preserve">
+    <value>Nouvelle règle de scoring</value>
+  </data>
+  <data name="Save rule?" xml:space="preserve">
+    <value>Enregistrer la règle ?</value>
+  </data>
+  <data name="Field" xml:space="preserve">
+    <value>Champ</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>Opérateur</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Valeur</value>
+  </data>
+  <data name="Points" xml:space="preserve">
+    <value>Points</value>
+  </data>
+  <data name="Rules" xml:space="preserve">
+    <value>Règles</value>
+  </data>
+  <data name="Condition" xml:space="preserve">
+    <value>Condition</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Désactivé</value>
+  </data>
+  <data name="No rules yet" xml:space="preserve">
+    <value>Aucune règle pour le moment</value>
+  </data>
+  <data name="Edit rule" xml:space="preserve">
+    <value>Modifier la règle</value>
+  </data>
+</root>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Save settings?" xml:space="preserve">
+    <value>Save settings?</value>
+  </data>
+  <data name="Inventory settings" xml:space="preserve">
+    <value>Inventory settings</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Inter-branch transfer" xml:space="preserve">
+    <value>Inter-branch transfer</value>
+  </data>
+  <data name="GL behavior when branches differ" xml:space="preserve">
+    <value>GL behavior when branches differ</value>
+  </data>
+  <data name="Cost-center posting (recommended)" xml:space="preserve">
+    <value>Cost-center posting (recommended)</value>
+  </data>
+  <data name="No GL (cost-only relocation)" xml:space="preserve">
+    <value>No GL (cost-only relocation)</value>
+  </data>
+  <data name="When the two warehouses are in different branches: Cost-center posting moves value through a goods-in-transit account (so branch profitability is correct). No GL relocates qty/cost only. Same-branch transfers never post." xml:space="preserve">
+    <value>When the two warehouses are in different branches: Cost-center posting moves value through a goods-in-transit account (so branch profitability is correct). No GL relocates qty/cost only. Same-branch transfers never post.</value>
+  </data>
+  <data name="Write-off / damage" xml:space="preserve">
+    <value>Write-off / damage</value>
+  </data>
+  <data name="How write-offs are recorded" xml:space="preserve">
+    <value>How write-offs are recorded</value>
+  </data>
+  <data name="Separate write-off document (recommended)" xml:space="preserve">
+    <value>Separate write-off document (recommended)</value>
+  </data>
+  <data name="Reason within a stock adjustment" xml:space="preserve">
+    <value>Reason within a stock adjustment</value>
+  </data>
+  <data name="Separate document creates a numbered write-off doc (WOF-) with its own approval trail — preferred by auditors. Reason mode records it as a stock adjustment carrying the write-off reason. Both post the same entry: Dr write-off expense (510103) / Cr inventory (1103)." xml:space="preserve">
+    <value>Separate document creates a numbered write-off doc (WOF-) with its own approval trail — preferred by auditors. Reason mode records it as a stock adjustment carrying the write-off reason. Both post the same entry: Dr write-off expense (510103) / Cr inventory (1103).</value>
+  </data>
+  <data name="Approvals" xml:space="preserve">
+    <value>Approvals</value>
+  </data>
+  <data name="Document approval threshold" xml:space="preserve">
+    <value>Document approval threshold</value>
+  </data>
+  <data name="Documents above this value require approval (used by the approvals task)." xml:space="preserve">
+    <value>Documents above this value require approval (used by the approvals task).</value>
+  </data>
+  <data name="Gross-margin floor (min price)" xml:space="preserve">
+    <value>Gross-margin floor (min price)</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Off (no check)" xml:space="preserve">
+    <value>Off (no check)</value>
+  </data>
+  <data name="Warn (allow + notify)" xml:space="preserve">
+    <value>Warn (allow + notify)</value>
+  </data>
+  <data name="Block (reject)" xml:space="preserve">
+    <value>Block (reject)</value>
+  </data>
+  <data name="Minimum margin %" xml:space="preserve">
+    <value>Minimum margin %</value>
+  </data>
+  <data name="On sales (order/invoice) the net sell price — converted to the functional currency — is compared to (current average cost × (1 + margin%)). Foreign documents are converted first, so the floor works in any invoice currency. Each item can override the % on its card. Items with no known cost are skipped (no false block). Quotations only warn." xml:space="preserve">
+    <value>On sales (order/invoice) the net sell price — converted to the functional currency — is compared to (current average cost × (1 + margin%)). Foreign documents are converted first, so the floor works in any invoice currency. Each item can override the % on its card. Items with no known cost are skipped (no false block). Quotations only warn.</value>
+  </data>
+  <data name="Discount approval" xml:space="preserve">
+    <value>Discount approval</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Warn" xml:space="preserve">
+    <value>Warn</value>
+  </data>
+  <data name="Block (needs manage)" xml:space="preserve">
+    <value>Block (needs manage)</value>
+  </data>
+  <data name="Max line discount %" xml:space="preserve">
+    <value>Max line discount %</value>
+  </data>
+  <data name="On saving a sales order/invoice: if any line's discount exceeds this ceiling, Warn allows + notifies, and Block rejects unless the user has manage authority (approval). Discount% = discount amount ÷ (price×qty)." xml:space="preserve">
+    <value>On saving a sales order/invoice: if any line's discount exceeds this ceiling, Warn allows + notifies, and Block rejects unless the user has manage authority (approval). Discount% = discount amount ÷ (price×qty).</value>
+  </data>
+</root>

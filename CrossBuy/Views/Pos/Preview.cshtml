@@ -1,0 +1,201 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var menu = ViewBag.Menu as List<PosQuickMenuGroupDto> ?? new();
+    var images = ViewBag.Images as Dictionary<int, string?> ?? new();
+    var setting = ViewBag.PosSetting as BranchPosSetting;
+    var svcPct = setting?.ServiceChargePct ?? 0m;
+    string CUR = Localizer["EGP"].Value;
+    decimal Money(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+    // sample order rows (static mock, for the preview look only — NO selling)
+    var flat = menu.SelectMany(g => g.Items).Where(i => i.Price != null).ToList();
+    var sampleQ = new[] { 2m, 1m, 2m };
+    var sample = flat.Take(3).Select((it, i) => (it, qty: sampleQ[i])).ToList();
+    decimal sub = sample.Sum(s => (s.it.Price ?? 0) * s.qty);
+    decimal svc = Money(sub * svcPct / 100m);
+    decimal tax = Money((sub + svc) * 0.14m);           // nominal 14% — illustrative in preview
+    decimal grand = Money(sub + svc + tax);
+}
+@* Trimmed Metronic bundle lacks POS-demo classes/assets — POS look reproduced with a self-contained
+   style block on Metronic CSS variables. Everything here is a READ-ONLY preview (no selling). *@
+<style>
+    .cbpos-cats { display: flex; flex-wrap: wrap; gap: .9rem; }
+    .cbpos-cat { width: 140px; height: 180px; border: 1px dashed var(--bs-gray-300); border-radius: 1rem; background: var(--bs-body-bg);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; cursor: default; transition: all .15s ease; text-decoration: none; }
+    .cbpos-cat:hover { border-color: var(--bs-primary); }
+    .cbpos-cat.active { border-style: solid; border-width: 2px; border-color: var(--bs-primary); box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb), .15); }
+    .cbpos-cat .cbpos-cat-ico { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: .85rem; overflow: hidden; background: rgba(var(--bs-primary-rgb), .1); }
+    .cbpos-cat .cbpos-cat-ico img { width: 100%; height: 100%; object-fit: cover; }
+    .cbpos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1.5rem; }
+    .cbpos-item { border: 1px solid var(--bs-gray-200); border-radius: 1.15rem; background: var(--bs-body-bg); padding: 1.5rem 1.25rem; text-align: center; transition: box-shadow .15s ease, transform .15s ease; }
+    .cbpos-item:hover { box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.08); transform: translateY(-2px); }
+    .cbpos-item .cbpos-thumb { width: 180px; height: 180px; max-width: 100%; border-radius: 1rem; object-fit: cover; margin: 0 auto 1rem; display: block; }
+    .cbpos-item .cbpos-thumb.ph { display: flex; align-items: center; justify-content: center; background: rgba(var(--bs-primary-rgb), .1); }
+    .cbpos-pay { border: 3px solid var(--bs-gray-200); border-radius: .85rem; background: var(--bs-gray-100); padding: 1rem .5rem; text-align: center; color: var(--bs-gray-700); }
+    .cbpos-dialer .btn { pointer-events: none; }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Cashier screen preview"]</h1>
+            <span class="text-muted fs-7">@Localizer["How the buttons & tabs will look to the cashier — preview only, no selling or payment."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (fC != null && !branches.Any()) { <div class="alert alert-warning"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["This company has no branches."]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-eye fs-3x mb-3 d-block"></i>@Localizer["Select a branch to preview the cashier screen."]</div></div>
+        }
+        else if (!menu.Any())
+        {
+            <div class="alert alert-info d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2x me-3"></i>
+                <div>@Localizer["No quick items for this branch yet. Add them in "]<a asp-action="QuickMenu" asp-route-companyId="@fC" asp-route-branchId="@fB">@Localizer["Quick items"]</a>@Localizer[", then come back to preview."]</div></div>
+        }
+        else
+        {
+            <div class="alert alert-primary d-flex align-items-center mb-5"><i class="ki-outline ki-eye fs-2x me-3"></i>
+                <div><span class="fw-bold">@Localizer["Preview only."]</span> @Localizer["The order and figures below are a sample for display only — no selling, payment, or stock movement. Cashier operation is a later phase."]</div></div>
+
+            <div class="d-flex flex-column flex-xl-row">
+                <!--begin::Menu side-->
+                <div class="d-flex flex-row-fluid me-xl-9 mb-10 mb-xl-0">
+                    <div class="w-100">
+                        <ul class="nav cbpos-cats mb-8" role="tablist">
+                            @{ var first = true; }
+                            @foreach (var g in menu)
+                            {
+                                var tid = "pvtab_" + (g.GroupId?.ToString() ?? "none");
+                                var thumb = g.Items.Select(i => { images.TryGetValue(i.ItemId, out var im); return im; }).FirstOrDefault(im => !string.IsNullOrEmpty(im));
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link cbpos-cat @(first ? "active" : "")" data-bs-toggle="pill" href="#@tid" role="tab">
+                                        <span class="cbpos-cat-ico">
+                                            @if (!string.IsNullOrEmpty(thumb)) { <img src="@thumb" alt="" /> }
+                                            else { <i class="ki-outline ki-basket fs-3x text-primary"></i> }
+                                        </span>
+                                        <span class="text-center">
+                                            <span class="text-gray-800 fw-bold fs-3 d-block text-truncate mw-120px">@g.GroupName</span>
+                                            <span class="text-gray-500 fw-semibold fs-7">@g.Items.Count @Localizer["options"]</span>
+                                        </span>
+                                    </a>
+                                </li>
+                                first = false;
+                            }
+                        </ul>
+                        <div class="tab-content">
+                            @{ first = true; }
+                            @foreach (var g in menu)
+                            {
+                                var tid = "pvtab_" + (g.GroupId?.ToString() ?? "none");
+                                <div class="tab-pane fade @(first ? "show active" : "")" id="@tid" role="tabpanel">
+                                    <div class="cbpos-grid">
+                                        @foreach (var it in g.Items)
+                                        {
+                                            images.TryGetValue(it.ItemId, out var img);
+                                            <div class="cbpos-item">
+                                                @if (!string.IsNullOrEmpty(img)) { <img src="@img" class="cbpos-thumb" alt="" /> }
+                                                else { <span class="cbpos-thumb ph"><i class="ki-outline ki-cup fs-3x text-primary"></i></span> }
+                                                <div class="fw-bold text-gray-800 fs-3">@it.Name</div>
+                                                <div class="text-gray-500 fw-semibold fs-7 mb-3">@(string.IsNullOrEmpty(it.QuickCode) ? it.Code : ("PLU " + it.QuickCode))</div>
+                                                <span class="text-primary fw-bold fs-1">@(it.Price?.ToString("0.##") ?? "—") <span class="fs-6">@CUR</span></span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                first = false;
+                            }
+                        </div>
+                    </div>
+                </div>
+                <!--end::Menu side-->
+                <!--begin::Order side (Metronic POS look, static preview)-->
+                <div class="flex-row-auto w-xl-450px">
+                    <div class="card card-flush bg-body">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title fw-bold text-gray-800 fs-2qx">@Localizer["Current Order"]</h3>
+                            <div class="card-toolbar"><span class="btn btn-light-primary fs-5 fw-bold py-3 disabled" tabindex="-1">@Localizer["Clear All"]</span></div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <!--begin::Order items (sample)-->
+                            <div class="table-responsive mb-6">
+                                <table class="table align-middle gs-0 gy-4 my-0">
+                                    <thead><tr><th class="min-w-150px"></th><th class="w-100px"></th><th class="w-70px"></th></tr></thead>
+                                    <tbody>
+                                        @foreach (var (it, qty) in sample)
+                                        {
+                                            images.TryGetValue(it.ItemId, out var rimg);
+                                            <tr>
+                                                <td class="pe-0"><div class="d-flex align-items-center">
+                                                    @if (!string.IsNullOrEmpty(rimg)) { <img src="@rimg" class="w-50px h-50px rounded-3 me-3" alt="" /> }
+                                                    else { <span class="w-50px h-50px rounded-3 me-3 d-inline-flex align-items-center justify-content-center bg-light-primary"><i class="ki-outline ki-cup fs-2 text-primary"></i></span> }
+                                                    <span class="fw-bold text-gray-800 fs-6">@it.Name</span></div></td>
+                                                <td class="pe-0"><div class="cbpos-dialer position-relative d-flex align-items-center">
+                                                    <span class="btn btn-icon btn-sm btn-light btn-icon-gray-500" tabindex="-1"><i class="ki-outline ki-minus fs-2"></i></span>
+                                                    <input type="text" class="form-control border-0 text-center px-0 fs-3 fw-bold text-gray-800 w-40px" readonly value="@qty" />
+                                                    <span class="btn btn-icon btn-sm btn-light btn-icon-gray-500" tabindex="-1"><i class="ki-outline ki-plus fs-2"></i></span>
+                                                </div></td>
+                                                <td class="text-end"><span class="fw-bold text-primary fs-3">@Money((it.Price ?? 0) * qty).ToString("0.##")</span></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!--end::Order items-->
+                            <!--begin::Summary-->
+                            <div class="d-flex flex-stack bg-success rounded-3 p-6 mb-10">
+                                <div class="fs-6 fw-bold text-white">
+                                    <span class="d-block lh-1 mb-2">@SR["Subtotal"]</span>
+                                    <span class="d-block mb-2">@Localizer["Service"] (@svcPct.ToString("0.##")%)</span>
+                                    <span class="d-block mb-8">@SR["Tax"] (14%)</span>
+                                    <span class="d-block fs-2qx lh-1">@SR["Total"]</span>
+                                </div>
+                                <div class="fs-6 fw-bold text-white text-end">
+                                    <span class="d-block lh-1 mb-2">@sub.ToString("0.##")</span>
+                                    <span class="d-block mb-2">@svc.ToString("0.##")</span>
+                                    <span class="d-block mb-8">@tax.ToString("0.##")</span>
+                                    <span class="d-block fs-2qx lh-1">@grand.ToString("0.##")</span>
+                                </div>
+                            </div>
+                            <!--end::Summary-->
+                            <!--begin::Payment method-->
+                            <h2 class="fw-bold text-gray-800 mb-4">@Localizer["Payment Method"]</h2>
+                            <div class="row g-3 mb-8">
+                                <div class="col-4"><div class="cbpos-pay"><i class="ki-outline ki-dollar fs-2hx mb-2 d-block"></i><span class="fs-7 fw-bold">@Localizer["Cash"]</span></div></div>
+                                <div class="col-4"><div class="cbpos-pay"><i class="ki-outline ki-credit-cart fs-2hx mb-2 d-block"></i><span class="fs-7 fw-bold">@Localizer["Card"]</span></div></div>
+                                <div class="col-4"><div class="cbpos-pay"><i class="ki-outline ki-wallet fs-2hx mb-2 d-block"></i><span class="fs-7 fw-bold">@Localizer["Wallet"]</span></div></div>
+                            </div>
+                            <button type="button" class="btn btn-primary fs-1 w-100 py-4 disabled" tabindex="-1"><i class="ki-outline ki-lock-2 fs-1"></i>@Localizer["Checkout (disabled in preview)"]</button>
+                            <!--end::Payment method-->
+                        </div>
+                    </div>
+                </div>
+                <!--end::Order side-->
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+var base='@Url.Action("Preview","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+</script>
+}

@@ -1,0 +1,77 @@
+@using CrossBuy.BL
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+    var rules = ViewBag.Rules as List<TaskAutoRuleDto> ?? new();
+    var employees = ViewBag.Employees as List<(int Id, string Name)> ?? new();
+    ViewData["Title"] = T("قواعد التوليد التلقائي", "Auto-task rules");
+}
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+    <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading fw-bold fs-3 m-0">@T("قواعد التوليد التلقائي للمهام", "Auto-task generation rules")</h1>
+            <span class="text-muted fs-7">@T("أحداث النظام تولّد مهامًا تلقائيًّا (دوريًّا). فعّل/أوقف كل قاعدة وحدّد المسؤول الافتراضي. تشغيلي فقط — لا أثر محاسبي.", "System events auto-generate tasks (periodically). Toggle each rule and set a default owner. Operational only — no accounting effect.")</span>
+        </div>
+        <form asp-action="RunGenerator" method="post" data-cb-confirm data-cb-action="generic" data-cb-confirm-text="@T("تشغيل", "Run")" data-cb-title="@T("تشغيل التوليد الآن؟", "Run generation now?")">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-sm btn-primary"><i class="ki-outline ki-abstract-14 fs-4"></i>@T("تشغيل الآن", "Run now")</button>
+        </form>
+    </div>
+</div>
+<!--end::Toolbar-->
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-fluid">
+        <div class="card">
+            <div class="card-body py-4">
+                <table class="table table-row-dashed align-middle fs-7">
+                    <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase">
+                        <th>@T("القاعدة", "Rule")</th><th class="w-300px">@T("المسؤول الافتراضي", "Default owner")</th><th class="w-120px text-center">@T("مفعّلة", "Active")</th><th class="w-120px"></th>
+                    </tr></thead>
+                    <tbody>
+                        @foreach (var r in rules)
+                        {
+                            <tr>
+                                <td class="fw-bold text-gray-800">@(isAr ? r.LabelAr : r.LabelEn)<div class="text-muted fs-8">@r.RuleType</div></td>
+                                <td>
+                                    <form asp-action="SaveAutoRule" method="post" class="d-flex align-items-center gap-2" id="ruleForm_@r.RuleType">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="ruleType" value="@r.RuleType" />
+                                        <input type="hidden" name="isActive" value="@r.IsActive.ToString().ToLower()" />
+                                        <select name="defaultAssigneeEmployeeId" class="form-select form-select-solid form-select-sm" data-control="select2" data-placeholder="@T("غير مُسنَد (يوزّعه المدير)", "Unassigned (manager routes)")">
+                                            <option value="">@T("غير مُسنَد (يوزّعه المدير)", "Unassigned (manager routes)")</option>
+                                            @foreach (var e in employees)
+                                            {
+                                                <option value="@e.Id" selected="@(r.DefaultAssigneeEmployeeId == e.Id)">@e.Name</option>
+                                            }
+                                        </select>
+                                    </form>
+                                </td>
+                                <td class="text-center">
+                                    <div class="form-check form-switch d-inline-block">
+                                        <input class="form-check-input" type="checkbox" @(r.IsActive ? "checked" : "")
+                                               onchange="cbToggleRule('@r.RuleType', this.checked)" />
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <button type="submit" form="ruleForm_@r.RuleType" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check fs-6"></i>@T("حفظ", "Save")</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="text-muted fs-8 mt-3"><i class="ki-outline ki-information-5 fs-6 me-1"></i>@T("لا تتكرّر المهمة لنفس الحدث: مفتاح فريد لكل (قاعدة + سجل).", "A task is generated once per (rule + source): a unique key prevents duplicates.")</div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+<script>
+    function cbToggleRule(ruleType, checked) {
+        var f = document.getElementById('ruleForm_' + ruleType);
+        f.querySelector('input[name="isActive"]').value = checked ? 'true' : 'false';
+        f.submit();
+    }
+</script>
+}

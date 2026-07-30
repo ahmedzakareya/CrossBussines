@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Jan" xml:space="preserve">
+    <value>janv.</value>
+  </data>
+  <data name="Feb" xml:space="preserve">
+    <value>févr.</value>
+  </data>
+  <data name="Mar" xml:space="preserve">
+    <value>mars</value>
+  </data>
+  <data name="Apr" xml:space="preserve">
+    <value>avr.</value>
+  </data>
+  <data name="May" xml:space="preserve">
+    <value>mai</value>
+  </data>
+  <data name="Jun" xml:space="preserve">
+    <value>juin</value>
+  </data>
+  <data name="Jul" xml:space="preserve">
+    <value>juil.</value>
+  </data>
+  <data name="Aug" xml:space="preserve">
+    <value>août</value>
+  </data>
+  <data name="Sep" xml:space="preserve">
+    <value>sept.</value>
+  </data>
+  <data name="Oct" xml:space="preserve">
+    <value>oct.</value>
+  </data>
+  <data name="Nov" xml:space="preserve">
+    <value>nov.</value>
+  </data>
+  <data name="Dec" xml:space="preserve">
+    <value>déc.</value>
+  </data>
+  <data name="Payroll Journal" xml:space="preserve">
+    <value>Journal de paie</value>
+  </data>
+  <data name="Payroll" xml:space="preserve">
+    <value>Paie</value>
+  </data>
+  <data name="Year" xml:space="preserve">
+    <value>Année</value>
+  </data>
+  <data name="Month" xml:space="preserve">
+    <value>Mois</value>
+  </data>
+  <data name="Preview" xml:space="preserve">
+    <value>Aperçu</value>
+  </data>
+  <data name="Posted ({0})" xml:space="preserve">
+    <value>Comptabilisé ({0})</value>
+  </data>
+  <data name="Post the payroll journal?" xml:space="preserve">
+    <value>Comptabiliser le journal de paie ?</value>
+  </data>
+  <data name="Post journal" xml:space="preserve">
+    <value>Comptabiliser le journal</value>
+  </data>
+  <data name="Search employee or cost center..." xml:space="preserve">
+    <value>Rechercher un employé ou un centre de coûts...</value>
+  </data>
+  <data name="No computed payroll for this period" xml:space="preserve">
+    <value>Aucune paie calculée pour cette période</value>
+  </data>
+  <data name="Cost Center" xml:space="preserve">
+    <value>Centre de coûts</value>
+  </data>
+  <data name="Gross" xml:space="preserve">
+    <value>Brut</value>
+  </data>
+  <data name="SI (emp)" xml:space="preserve">
+    <value>AS (emp)</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>Net</value>
+  </data>
+  <data name="Totals" xml:space="preserve">
+    <value>Totaux</value>
+  </data>
+  <data name="No matching results" xml:space="preserve">
+    <value>Aucun résultat correspondant</value>
+  </data>
+  <data name="Journal: Dr salaries expense (split by cost center) / Cr payroll payable (+ tax &amp; SI if any)." xml:space="preserve">
+    <value>Journal : Débit charges de salaires (réparties par centre de coûts) / Crédit paie à payer (+ taxe &amp; AS le cas échéant).</value>
+  </data>
+</root>

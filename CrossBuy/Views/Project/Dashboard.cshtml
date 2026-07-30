@@ -1,0 +1,297 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model ProjectDashboardDto
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string nm(string? a, string? b) => (isAr ? (a ?? b) : (b ?? a)) ?? "-";
+    string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+    var statusMeta = new Dictionary<string, (string label, string color)>
+    {
+        ["Active"] = (Localizer["Active"].Value, "success"),
+        ["Completed"] = (Localizer["Completed"].Value, "primary"),
+        ["OnHold"] = (Localizer["On hold"].Value, "warning"),
+        ["Draft"] = (Localizer["Draft"].Value, "secondary"),
+        ["Cancelled"] = (Localizer["Cancelled"].Value, "danger"),
+    };
+    (string label, string color) sm(string k) => statusMeta.TryGetValue(k, out var v) ? v : (k, "secondary");
+    var hexByColor = new Dictionary<string, string> { ["success"] = "#50cd89", ["primary"] = "#1f7d57", ["warning"] = "#ffc700", ["secondary"] = "#a1a5b7", ["danger"] = "#f1416c" };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Projects & Contracting"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Dashboard"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a href="@Url.Action("Profitability","Project")" class="btn btn-sm btn-light fw-bold">@Localizer["Profitability"]</a>
+                <a href="@Url.Action("Projects","Project")" class="btn btn-sm btn-primary fw-bold"><i class="ki-outline ki-briefcase fs-3"></i>@Localizer["Projects"]</a>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            <!--begin::Row 1 — status distribution + portfolio card-->
+            <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Projects by status"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@Model.Total @Localizer["projects"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body pt-0 d-flex flex-center flex-wrap gap-6">
+                            <div id="prj_status_chart" style="min-width:260px;height:280px;"></div>
+                            <div class="d-flex flex-column gap-3">
+                                @foreach (var s in Model.StatusDist)
+                                {
+                                    var m = sm(s.Key);
+                                    <div class="d-flex align-items-center">
+                                        <span class="bullet bullet-dot h-8px w-8px me-3 bg-@m.color"></span>
+                                        <span class="text-gray-700 fw-semibold flex-grow-1 me-4">@m.label</span>
+                                        <span class="text-gray-900 fw-bold">@s.Count</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--begin::Portfolio card (brand green)-->
+                <div class="col-xl-4">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#1f6253">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@Localizer["Contract portfolio"]</span></h3>
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Projects","Project")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex justify-content-between flex-column pt-1 px-0 pb-5">
+                            <div class="px-9 mb-4">
+                                <div class="text-white fs-2tx fw-bold lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.ContractValue)" data-kt-countup-decimal-places="2">@Model.ContractValue.ToString("N2")</div>
+                                <div class="fw-semibold fs-7 text-white opacity-75 mt-1">@Localizer["Total contract value"]</div>
+                            </div>
+                            <div class="px-9">
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Total budget"]</span><span class="fw-bold fs-7">@Model.Budget.ToString("N2")</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Active"]</span><span class="fw-bold fs-7">@Model.Active</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Completed"]</span><span class="fw-bold fs-7">@Model.Completed</span></div>
+                                <div class="d-flex flex-stack text-white"><span class="fw-bold fs-7">@Localizer["Revenue"] (@Model.Year)</span><span class="fw-bold fs-7">@Model.Revenue.ToString("N2")</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Portfolio-->
+            </div>
+            <!--end::Row 1-->
+
+            <!--begin::Row 2 — stat cards-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                @{
+                    var pft = Model.Profit >= 0;
+                    var stats = new (string label, string value, string icon, string color, string badge, string badgeColor)[] {
+                        (Localizer["Total projects"].Value, Model.Total.ToString(), "ki-briefcase", "primary", $"{Model.Active} {Localizer["active"].Value}", "primary"),
+                        (Localizer["Active"].Value, Model.Active.ToString(), "ki-rocket", "success", Localizer["In progress"].Value, "success"),
+                        (Localizer["Completed"].Value, Model.Completed.ToString(), "ki-check-circle", "info", Localizer["Delivered"].Value, "info"),
+                        (Localizer["Contract value"].Value, Model.ContractValue.ToString("N0"), "ki-dollar", "dark", Localizer["Total"].Value, "dark"),
+                        (Localizer["Revenue"].Value, Model.Revenue.ToString("N0"), "ki-chart-line-up", "success", Model.Year.ToString(), "success"),
+                        (Localizer["Profit"].Value, Model.Profit.ToString("N0"), pft ? "ki-arrow-up-right" : "ki-arrow-down-right", pft ? "success" : "danger", pft ? Localizer["Positive"].Value : Localizer["Negative"].Value, pft ? "success" : "danger"),
+                    };
+                }
+                @foreach (var s in stats)
+                {
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card h-100">
+                            <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                                <div class="d-flex flex-stack w-100 mb-4">
+                                    <div class="symbol symbol-40px"><span class="symbol-label bg-light-@s.color"><i class="ki-outline @s.icon fs-2x text-@s.color"></i></span></div>
+                                    <span class="badge badge-light-@s.badgeColor fs-8 fw-bold">@s.badge</span>
+                                </div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2">@s.value</span>
+                                <div class="m-0 mt-2"><span class="fw-semibold fs-7 text-gray-500">@s.label</span></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <!--end::Row 2-->
+
+            <!--begin::Row 3 — recent projects + top by value-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Recent projects"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-6">@Model.Total @Localizer["projects"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Projects","Project")" class="btn btn-sm btn-light">@SR["View"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                <thead>
+                                    <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                        <th>@SR["Code"]</th><th>@Localizer["Project"]</th><th>@Localizer["Customer"]</th>
+                                        <th class="text-end">@Localizer["Contract value"]</th><th class="text-center">@SR["Status"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Recent.Count == 0)
+                                    {
+                                        <tr><td colspan="5" class="text-center text-muted py-10">@SR["NoData"]</td></tr>
+                                    }
+                                    @foreach (var p in Model.Recent)
+                                    {
+                                        var m = sm(p.Status);
+                                        <tr>
+                                            <td><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:#1f6253;">@p.Code</span></td>
+                                            <td class="fw-bold text-gray-900">@nm(p.Name, p.NameEn)</td>
+                                            <td class="text-gray-600 fw-semibold">@(p.Customer ?? "—")</td>
+                                            <td class="text-end fw-bold text-gray-800">@(p.ContractValue.HasValue ? p.ContractValue.Value.ToString("N2") : "—")</td>
+                                            <td class="text-center"><span class="badge badge-light-@m.color">@m.label</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Top projects by value"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["Contract value"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between pt-2 pb-5">
+                            @if (Model.TopByValue.Count == 0)
+                            {
+                                <div class="text-center text-muted py-15">@SR["NoData"]</div>
+                            }
+                            else
+                            {
+                                var barColors = new[] { "primary", "success", "info", "warning", "danger", "dark" };
+                                var idx = 0;
+                                foreach (var b in Model.TopByValue)
+                                {
+                                    var bc = barColors[idx % barColors.Length]; idx++;
+                                    <div class="d-flex flex-stack mb-2">
+                                        <span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@nm(b.Name, b.NameEn)</span>
+                                        <span class="text-gray-900 fw-bold me-3">@b.Value.ToString("N0")</span>
+                                    </div>
+                                    <div class="d-flex align-items-center w-100 mb-4">
+                                        <div class="progress h-6px w-100 me-2 bg-light-@bc"><div class="progress-bar bg-@bc" style="width:@(b.Pct)%"></div></div>
+                                        <span class="text-gray-500 fw-semibold fs-7">@b.Pct%</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 3-->
+
+            <!--begin::Row 4 — profitability + quick access-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-7">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Profitability"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["Revenue"] − @Localizer["Cost"] (@Model.Year)</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Profitability","Project")" class="btn btn-sm btn-light">@SR["View"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table align-middle fs-6 gy-3 my-0" style="font-variant-numeric:tabular-nums;">
+                                <thead>
+                                    <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #1f7d57;">
+                                        <th class="ps-2">@Localizer["Project"]</th>
+                                        <th class="text-end">@Localizer["Revenue"]</th>
+                                        <th class="text-end">@Localizer["Cost"]</th>
+                                        <th class="text-end pe-2">@Localizer["Profit"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.TopByProfit.Count == 0)
+                                    {
+                                        <tr><td colspan="4" class="text-center text-muted py-10">@SR["NoData"]</td></tr>
+                                    }
+                                    @foreach (var r in Model.TopByProfit)
+                                    {
+                                        <tr style="border-bottom:1px dashed #eef1f6;">
+                                            <td class="ps-2"><span class="badge fw-bold fs-8 me-2" style="background:#eaf3ef;color:#1f6253;">@r.Code</span><span class="fw-semibold text-gray-800">@r.Name</span></td>
+                                            <td class="text-end fw-bold @(r.Revenue > 0 ? "text-gray-900" : "text-gray-300")">@(r.Revenue > 0 ? r.Revenue.ToString("N2") : "—")</td>
+                                            <td class="text-end fw-bold @(r.Cost > 0 ? "text-gray-900" : "text-gray-300")">@(r.Cost > 0 ? r.Cost.ToString("N2") : "—")</td>
+                                            <td class="text-end pe-2 fw-bold text-@(r.Profit >= 0 ? "success" : "danger")">@r.Profit.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7"><h3 class="card-title fw-bold text-gray-900">@Localizer["Quick Access"]</h3></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3">
+                                @{
+                                    var links = new (string action, string label, string icon, string color)[] {
+                                        ("Projects", Localizer["Projects"].Value, "ki-briefcase", "primary"),
+                                        ("Profitability", Localizer["Profitability"].Value, "ki-chart-pie-simple", "success"),
+                                        ("Advance", Localizer["Advances"].Value, "ki-wallet", "info"),
+                                        ("Billing", Localizer["Progress billing"].Value, "ki-bill", "warning"),
+                                        ("MaterialIssues", Localizer["Material issues"].Value, "ki-parcel", "dark"),
+                                        ("Subcontracts", Localizer["Subcontracts"].Value, "ki-people", "primary"),
+                                    };
+                                }
+                                @foreach (var l in links)
+                                {
+                                    <div class="col-6 col-md-4">
+                                        <a href="@Url.Action(l.action,"Project")" class="d-flex flex-column flex-center bg-hover-light rounded h-100 py-5 border border-gray-200 text-decoration-none">
+                                            <i class="ki-outline @l.icon fs-2x text-@l.color mb-2"></i>
+                                            <span class="fs-8 fw-semibold text-gray-800 text-center px-1">@l.label</span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 4-->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!window.ApexCharts) return;
+            var labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusDist.Select(s => sm(s.Key).label)));
+            var counts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusDist.Select(s => s.Count)));
+            var colors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusDist.Select(s => hexByColor.TryGetValue(sm(s.Key).color, out var h) ? h : "#a1a5b7")));
+            if (!counts.length) return;
+            new ApexCharts(document.querySelector('#prj_status_chart'), {
+                chart: { type: 'donut', height: 280, fontFamily: 'inherit' },
+                series: counts, labels: labels, colors: colors,
+                legend: { show: false },
+                dataLabels: { enabled: true, formatter: function (v) { return Math.round(v) + '%'; } },
+                plotOptions: { pie: { donut: { size: '62%', labels: { show: true, total: { show: true, label: '@Localizer["Total"]', fontWeight: 700 } } } } },
+                stroke: { width: 2 }
+            }).render();
+        })();
+    </script>
+}

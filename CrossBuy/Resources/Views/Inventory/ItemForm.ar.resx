@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Save these changes?" xml:space="preserve">
+    <value>هل تريد حفظ التعديلات؟</value>
+  </data>
+  <data name="Edit item" xml:space="preserve">
+    <value>تعديل صنف</value>
+  </data>
+  <data name="Add item" xml:space="preserve">
+    <value>إضافة صنف</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Thumbnail" xml:space="preserve">
+    <value>صورة الصنف</value>
+  </data>
+  <data name="Change image" xml:space="preserve">
+    <value>تغيير الصورة</value>
+  </data>
+  <data name="Remove image" xml:space="preserve">
+    <value>إزالة الصورة</value>
+  </data>
+  <data name="Set the item image. Formats: png, jpg, jpeg, webp, avif." xml:space="preserve">
+    <value>اضبط صورة الصنف. الصيغ: png, jpg, jpeg, webp, avif.</value>
+  </data>
+  <data name="Inactive items are hidden from purchase and sales operations." xml:space="preserve">
+    <value>الأصناف الموقوفة لا تظهر في عمليات الشراء والبيع.</value>
+  </data>
+  <data name="Tracking" xml:space="preserve">
+    <value>خيارات التتبّع</value>
+  </data>
+  <data name="Track batch" xml:space="preserve">
+    <value>تتبّع الدفعة (Batch)</value>
+  </data>
+  <data name="Track expiry" xml:space="preserve">
+    <value>تتبّع الصلاحية (Expiry)</value>
+  </data>
+  <data name="Track serial" xml:space="preserve">
+    <value>تتبّع السيريال (Serial)</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>افتتاحي</value>
+  </data>
+  <data name="Receipt" xml:space="preserve">
+    <value>استلام</value>
+  </data>
+  <data name="Issue" xml:space="preserve">
+    <value>صرف</value>
+  </data>
+  <data name="Adjustment" xml:space="preserve">
+    <value>تسوية</value>
+  </data>
+  <data name="Purchase" xml:space="preserve">
+    <value>شراء</value>
+  </data>
+  <data name="Sale" xml:space="preserve">
+    <value>بيع</value>
+  </data>
+  <data name="Transfer in" xml:space="preserve">
+    <value>تحويل وارد</value>
+  </data>
+  <data name="Transfer out" xml:space="preserve">
+    <value>تحويل صادر</value>
+  </data>
+  <data name="Item analytics" xml:space="preserve">
+    <value>تحليلات الصنف</value>
+  </data>
+  <data name="Ledger" xml:space="preserve">
+    <value>دفتر الحركة</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>الرصيد الحالي</value>
+  </data>
+  <data name="Avg cost" xml:space="preserve">
+    <value>متوسط التكلفة</value>
+  </data>
+  <data name="Avg purchase" xml:space="preserve">
+    <value>متوسط الشراء</value>
+  </data>
+  <data name="Last op" xml:space="preserve">
+    <value>آخر عملية</value>
+  </data>
+  <data name="On hand per warehouse" xml:space="preserve">
+    <value>الرصيد لكل مخزن</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>القيمة</value>
+  </data>
+  <data name="% of total" xml:space="preserve">
+    <value>النسبة من الإجمالي</value>
+  </data>
+  <data name="Last purchase" xml:space="preserve">
+    <value>آخر شراء</value>
+  </data>
+  <data name="Last entry" xml:space="preserve">
+    <value>آخر دخول</value>
+  </data>
+  <data name="Last exit" xml:space="preserve">
+    <value>آخر خروج</value>
+  </data>
+  <data name="Balance over time" xml:space="preserve">
+    <value>الرصيد عبر الزمن</value>
+  </data>
+  <data name="No movements yet" xml:space="preserve">
+    <value>لا توجد حركات بعد</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>البيانات العامة</value>
+  </data>
+  <data name="Item code" xml:space="preserve">
+    <value>كود الصنف</value>
+  </data>
+  <data name="Barcode" xml:space="preserve">
+    <value>الباركود</value>
+  </data>
+  <data name="Generate" xml:space="preserve">
+    <value>توليد</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>الاسم (عربي)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>الاسم (إنجليزي)</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>اختر</value>
+  </data>
+  <data name="Base UoM" xml:space="preserve">
+    <value>وحدة القياس الأساسية</value>
+  </data>
+  <data name="Composite item (Kit)" xml:space="preserve">
+    <value>صنف مركّب (Kit)</value>
+  </data>
+  <data name="Composite type" xml:space="preserve">
+    <value>نوع التركيب</value>
+  </data>
+  <data name="Bundle — explodes on sale" xml:space="preserve">
+    <value>حزمة بيع — تتفكّك عند البيع</value>
+  </data>
+  <data name="Assembly — own stock" xml:space="preserve">
+    <value>تجميع — برصيد مستقل</value>
+  </data>
+  <data name="Production method" xml:space="preserve">
+    <value>طريقة التصنيع</value>
+  </data>
+  <data name="Order-based (staged)" xml:space="preserve">
+    <value>أمر تشغيل بمراحل</value>
+  </data>
+  <data name="Immediate" xml:space="preserve">
+    <value>إنتاج فوري</value>
+  </data>
+  <data name="Staged: plan → issue materials to WIP → receive. Immediate: consume materials and produce in one click, no stages." xml:space="preserve">
+    <value>بمراحل: تخطيط → صرف مواد إلى الإنتاج تحت التشغيل → استلام التام. فوري: تُخصم المواد ويُنتَج الصنف بضغطة واحدة دون مراحل.</value>
+  </data>
+  <data name="Pricing &amp; costing" xml:space="preserve">
+    <value>التسعير والتقييم</value>
+  </data>
+  <data name="Purchase UoM" xml:space="preserve">
+    <value>وحدة الشراء</value>
+  </data>
+  <data name="Sales UoM" xml:space="preserve">
+    <value>وحدة البيع</value>
+  </data>
+  <data name="Costing" xml:space="preserve">
+    <value>طريقة التقييم</value>
+  </data>
+  <data name="From category" xml:space="preserve">
+    <value>حسب الفئة</value>
+  </data>
+  <data name="Moving Average" xml:space="preserve">
+    <value>المتوسط المرجح</value>
+  </data>
+  <data name="Sales price" xml:space="preserve">
+    <value>سعر البيع</value>
+  </data>
+  <data name="Opening cost" xml:space="preserve">
+    <value>التكلفة الافتتاحية</value>
+  </data>
+  <data name="Tax code" xml:space="preserve">
+    <value>كود الضريبة</value>
+  </data>
+  <data name="Min margin % (override)" xml:space="preserve">
+    <value>الحدّ الأدنى للربح % (تجاوز)</value>
+  </data>
+  <data name="settings default" xml:space="preserve">
+    <value>افتراضي الإعدادات</value>
+  </data>
+  <data name="Leave empty to use the global floor from inventory settings." xml:space="preserve">
+    <value>اتركه فارغًا لاستخدام الحدّ الأدنى العام من إعدادات المخزون.</value>
+  </data>
+  <data name="Units &amp; barcodes" xml:space="preserve">
+    <value>الوحدات والباركود</value>
+  </data>
+  <data name="Stock is kept in the base unit. Define larger units (carton, dozen…) and how many base units each equals, with an optional barcode per unit." xml:space="preserve">
+    <value>المخزون يُحسب بالوحدة الأساسية. عرّف هنا الوحدات الأكبر (كرتونة، درزن…) وكم تساوي بالوحدة الأساسية، ولكل وحدة باركود اختياري.</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>الوحدة</value>
+  </data>
+  <data name="= base units" xml:space="preserve">
+    <value>= كم بالوحدة الأساسية</value>
+  </data>
+  <data name="Add unit" xml:space="preserve">
+    <value>إضافة وحدة</value>
+  </data>
+  <data name="Components (BOM)" xml:space="preserve">
+    <value>المكوّنات (BOM)</value>
+  </data>
+  <data name="Manufactured item" xml:space="preserve">
+    <value>صنف مُصنَّع</value>
+  </data>
+  <data name="Produced via a work order from the components below" xml:space="preserve">
+    <value>يُنتَج عبر أمر تشغيل ويُسحب من المكوّنات التالية</value>
+  </data>
+  <data name="Manufactured from" xml:space="preserve">
+    <value>مُصنَّع من</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>المكوّن</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Scrap %" xml:space="preserve">
+    <value>هالك %</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>تكلفة الوحدة</value>
+  </data>
+  <data name="No components yet — add them below." xml:space="preserve">
+    <value>لم تُعرَّف مكوّنات بعد — أضِفها بالأسفل.</value>
+  </data>
+  <data name="Routing operations" xml:space="preserve">
+    <value>عمليات التصنيع</value>
+  </data>
+  <data name="Op" xml:space="preserve">
+    <value>عملية</value>
+  </data>
+  <data name="Standard cost per unit" xml:space="preserve">
+    <value>التكلفة المعيارية لكل وحدة</value>
+  </data>
+  <data name="Materials (BOM)" xml:space="preserve">
+    <value>المواد (BOM)</value>
+  </data>
+  <data name="Labor (routing)" xml:space="preserve">
+    <value>العمالة (المسار)</value>
+  </data>
+  <data name="Overhead (routing)" xml:space="preserve">
+    <value>الأوفرهيد (المسار)</value>
+  </data>
+  <data name="Standard total" xml:space="preserve">
+    <value>الإجمالي المعياري</value>
+  </data>
+  <data name="Edit routing" xml:space="preserve">
+    <value>تعديل مسار التصنيع</value>
+  </data>
+  <data name="Standard cost is indicative (current avg component cost + routing time). Actual cost is computed when the work order is completed." xml:space="preserve">
+    <value>التكلفة المعيارية تقديرية (متوسط تكلفة المكوّنات الحالية + وقت المسار). التكلفة الفعلية تُحتسب عند تنفيذ أمر التشغيل.</value>
+  </data>
+  <data name="Components of the composite item. On sale (bundle) or assembly, these are deducted from stock." xml:space="preserve">
+    <value>مكوّنات الصنف المركّب. عند البيع (حزمة) أو التجميع، تُخصم هذه المكوّنات من المخزون.</value>
+  </data>
+  <data name="Add component" xml:space="preserve">
+    <value>إضافة مكوّن</value>
+  </data>
+  <data name="Storefront (public catalog)" xml:space="preserve">
+    <value>المتجر (الكتالوج العام)</value>
+  </data>
+  <data name="Old price" xml:space="preserve">
+    <value>السعر القديم</value>
+  </data>
+  <data name="Badge" xml:space="preserve">
+    <value>الشارة</value>
+  </data>
+  <data name="Rating (0-5)" xml:space="preserve">
+    <value>التقييم (0-5)</value>
+  </data>
+  <data name="Vendor" xml:space="preserve">
+    <value>البائع</value>
+  </data>
+  <data name="Hover image" xml:space="preserve">
+    <value>صورة التمرير (Hover)</value>
+  </data>
+  <data name="These fields are for the public storefront display only — they do not affect stock or accounting." xml:space="preserve">
+    <value>هذه الحقول لعرض المتجر العام فقط — لا تؤثر على المخزون أو المحاسبة.</value>
+  </data>
+  <data name="Product gallery (extra images)" xml:space="preserve">
+    <value>معرض صور الصنف (صور إضافية)</value>
+  </data>
+  <data name="Extra images shown in the storefront product gallery. Display only — no effect on stock or accounting." xml:space="preserve">
+    <value>صور إضافية تظهر في معرض المنتج بالمتجر. للعرض فقط — لا تؤثر على المخزون أو المحاسبة.</value>
+  </data>
+  <data name="Add images" xml:space="preserve">
+    <value>إضافة صور</value>
+  </data>
+  <data name="You can select multiple images at once." xml:space="preserve">
+    <value>يمكنك اختيار أكثر من صورة في نفس الوقت.</value>
+  </data>
+  <data name="Extra images shown in the storefront product gallery. The first one is also used as the catalog hover image. Display only." xml:space="preserve">
+    <value>صور إضافية تظهر في معرض المنتج بالمتجر، وأول صورة تُستخدم كصورة التمرير في الكتالوج. للعرض فقط.</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديدة</value>
+  </data>
+  <data name="Drop images here or click to upload" xml:space="preserve">
+    <value>أفلت الصور هنا أو اضغط للرفع</value>
+  </data>
+  <data name="You can add several images at once" xml:space="preserve">
+    <value>تقدر تضيف أكثر من صورة مرة واحدة</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>إزالة</value>
+  </data>
+  <data name="Only image files are allowed (PNG, JPG, WEBP)." xml:space="preserve">
+    <value>يُسمح بملفات الصور فقط (PNG، JPG، WEBP).</value>
+  </data>
+  <data name="Too many images." xml:space="preserve">
+    <value>عدد الصور كبير جدًا.</value>
+  </data>
+  <data name="Drag &amp; drop images here" xml:space="preserve">
+    <value>اسحب الصور وأفلتها هنا</value>
+  </data>
+  <data name="or click to choose — you can add several at once" xml:space="preserve">
+    <value>أو اضغط للاختيار — تقدر تضيف أكثر من صورة مرة واحدة</value>
+  </data>
+  <data name="Only image files are allowed (PNG, JPG, WEBP…)." xml:space="preserve">
+    <value>يُسمح بملفات الصور فقط (PNG، JPG، WEBP…).</value>
+  </data>
+  <data name="Drag &amp; drop images onto the box above, or click ‘Add images’. You can add several at once." xml:space="preserve">
+    <value>اسحب الصور وأفلتها على المربع بالأعلى، أو اضغط ‘إضافة صور’. تقدر تضيف أكثر من صورة مرة واحدة.</value>
+  </data>
+</root>

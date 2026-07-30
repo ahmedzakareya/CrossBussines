@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="New Sales Invoice" xml:space="preserve">
+    <value>فاتورة بيع جديدة</value>
+  </data>
+  <data name="Sales" xml:space="preserve">
+    <value>فواتير البيع</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديدة</value>
+  </data>
+  <data name="Select customer" xml:space="preserve">
+    <value>اختر العميل</value>
+  </data>
+  <data name="FX rate" xml:space="preserve">
+    <value>سعر الصرف</value>
+  </data>
+  <data name="Auto" xml:space="preserve">
+    <value>تلقائي</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>المشروع</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>بدون</value>
+  </data>
+  <data name="Lines" xml:space="preserve">
+    <value>بنود الفاتورة</value>
+  </data>
+  <data name="Scan barcode + Enter" xml:space="preserve">
+    <value>امسح الباركود ثم Enter</value>
+  </data>
+  <data name="Add line" xml:space="preserve">
+    <value>إضافة بند</value>
+  </data>
+  <data name="Item (stock)" xml:space="preserve">
+    <value>الصنف (مخزون)</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>كمية</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>خصم</value>
+  </data>
+  <data name="Tax%" xml:space="preserve">
+    <value>ضريبة%</value>
+  </data>
+  <data name="Revenue acct" xml:space="preserve">
+    <value>حساب الإيراد</value>
+  </data>
+  <data name="Sub / Tax / Total" xml:space="preserve">
+    <value>الصافي / الضريبة / الإجمالي</value>
+  </data>
+  <data name="Issue &amp; post" xml:space="preserve">
+    <value>إصدار وترحيل</value>
+  </data>
+  <data name="— None —" xml:space="preserve">
+    <value>— بدون (بند عادي) —</value>
+  </data>
+  <data name="Add at least one line" xml:space="preserve">
+    <value>أضف بندًا واحدًا على الأقل</value>
+  </data>
+</root>

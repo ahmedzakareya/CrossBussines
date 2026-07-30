@@ -1,0 +1,116 @@
+@using CrossBuy.Models.Context.Crm
+@using CrossBuy.BL
+@model CrmTicket
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isEdit = Model.ID > 0;
+    var accountName = ViewBag.AccountName as string;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var subjectDisp = !isAr && !string.IsNullOrWhiteSpace(Model.SubjectEn) ? Model.SubjectEn! : Model.Subject;
+    var now = DateTime.UtcNow;
+    var priorities = new[] { ("Urgent", Localizer["Urgent"].Value), ("High", Localizer["High"].Value), ("Normal", Localizer["Normal"].Value), ("Low", Localizer["Low"].Value) };
+    var statuses = new[] { ("New", Localizer["New"].Value), ("Open", Localizer["Open"].Value), ("Pending", Localizer["Pending"].Value), ("Resolved", Localizer["Resolved"].Value), ("Closed", Localizer["Closed"].Value) };
+    string stNm(string s) => statuses.FirstOrDefault(x => x.Item1 == s).Item2 ?? s;
+    bool isClosed = Model.Status == "Resolved" || Model.Status == "Closed";
+    bool frBreached = Model.FirstResponseDueAt.HasValue && Model.FirstRespondedAt == null && !isClosed && now > Model.FirstResponseDueAt.Value;
+    bool resBreached = Model.ResolutionDueAt.HasValue && Model.ResolvedAt == null && !isClosed && now > Model.ResolutionDueAt.Value;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? ("#" + Model.ID + " — " + subjectDisp) : Localizer["New ticket"].Value)</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Tickets","Crm")" class="text-muted text-hover-primary">@Localizer["Tickets"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isEdit ? "#" + Model.ID : Localizer["New"].Value)</li></ul></div>
+        <a href="@Url.Action("Tickets","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
+        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
+
+        <div class="row g-5">
+            <div class="col-lg-7">
+                <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Ticket details"]</div></div>
+                    <div class="card-body">
+                        <form asp-action="SaveTicket" method="post" class="row g-4" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save ticket?"]">@Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.ID" />
+                            <div class="col-md-8"><label class="required fw-semibold fs-7 text-muted mb-1">@Localizer["Subject"]</label><input name="subject" class="form-control form-control-solid" value="@Model.Subject" required /></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Priority"]</label>
+                                <select name="priority" class="form-select form-select-solid">@foreach (var p in priorities) { <option value="@p.Item1" selected="@(Model.Priority==p.Item1)">@p.Item2</option> }</select></div>
+                            <div class="col-md-12"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Subject (EN)"]</label><input name="subjectEn" class="form-control form-control-solid" value="@Model.SubjectEn" placeholder="@Localizer["Optional English subject"]" /></div>
+                            <div class="col-md-8"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Account"]</label>
+                                <select id="t_account" name="accountId" class="form-select form-select-solid" style="width:100%">@if (Model.AccountId.HasValue) { <option value="@Model.AccountId" selected>@accountName</option> }</select></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Category"]</label><input name="category" class="form-control form-control-solid" value="@Model.Category" placeholder="@Localizer["Inquiry / complaint / support"]" /></div>
+                            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Category (EN)"]</label><input name="categoryEn" class="form-control form-control-solid" value="@Model.CategoryEn" /></div>
+                            <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Description"]</label><textarea name="description" class="form-control form-control-solid" rows="4">@Model.Description</textarea></div>
+                            <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Description (EN)"]</label><textarea name="descriptionEn" class="form-control form-control-solid" rows="3" placeholder="@Localizer["Optional English description"]">@Model.DescriptionEn</textarea></div>
+                            <div class="col-12 d-flex justify-content-end"><button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
+                        </form>
+                    </div>
+                </div>
+
+                @if (isEdit && ViewBag.Timeline != null)
+                {
+                    @await Html.PartialAsync("_Timeline", (List<Activity>)ViewBag.Timeline)
+                }
+            </div>
+
+            <div class="col-lg-5">
+                @if (isEdit)
+                {
+                    <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@SR["Status"]</div></div>
+                        <div class="card-body">
+                            @{ var stColor = Model.Status == "Pending" ? "background:#fef3e2;color:#b96a00;" : (Model.Status == "Closed" ? "background:#f2f4f7;color:#475467;" : "background:#eaf3ef;color:#13433a;"); }
+                            <div class="mb-4"><span class="badge fw-bold fs-6" style="@stColor">@stNm(Model.Status)</span></div>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var st in statuses)
+                                {
+                                    if (st.Item1 != Model.Status)
+                                    {
+                                        <form asp-action="UpdateTicketStatus" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Change status to"] @(st.Item2)@Localizer["?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><input type="hidden" name="status" value="@st.Item1" />
+                                            <button class="btn btn-sm btn-light-primary">@st.Item2</button></form>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["SLA"]</div></div>
+                        <div class="card-body">
+                            <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["First response due"]</span>
+                                <span class="fw-bold @(frBreached?"text-danger":"text-gray-800")">@(Model.FirstResponseDueAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</span></div>
+                            <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["First responded"]</span>
+                                <span class="fw-bold text-primary">@(Model.FirstRespondedAt?.ToString("yyyy-MM-dd HH:mm") ?? (frBreached ? Localizer["overdue"].Value : "—"))</span></div>
+                            <div class="separator my-3"></div>
+                            <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["Resolution due"]</span>
+                                <span class="fw-bold @(resBreached?"text-danger":"text-gray-800")">@(Model.ResolutionDueAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</span></div>
+                            <div class="d-flex flex-stack mb-3"><span class="text-muted fs-7">@Localizer["Resolved"]</span>
+                                <span class="fw-bold text-primary">@(Model.ResolvedAt?.ToString("yyyy-MM-dd HH:mm") ?? (resBreached ? Localizer["overdue"].Value : "—"))</span></div>
+                            @if (frBreached || resBreached)
+                            {
+                                <div class="alert alert-danger d-flex align-items-center mt-2 mb-0 py-2"><i class="ki-outline ki-information fs-3 text-danger me-2"></i><span class="fs-7">@Localizer["SLA target breached"]</span></div>
+                            }
+                            else if (Model.FirstResponseDueAt.HasValue)
+                            {
+                                <div class="d-flex align-items-center mt-2 mb-0 py-2 px-3 rounded" style="background:#eaf3ef;"><i class="ki-outline ki-check-circle fs-3 me-2" style="color:#13433a;"></i><span class="fs-7" style="color:#13433a;">@Localizer["Within SLA"]</span></div>
+                            }
+                            else
+                            {
+                                <div class="text-muted fs-8 mt-2">@Localizer["No SLA policy matches this priority"]</div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="card"><div class="card-body text-muted">@Localizer["Save the ticket first to see status, SLA and the conversation."]</div></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+if(window.jQuery){ jQuery('#t_account').select2({ placeholder:'@Localizer["Search account…"]', allowClear:true, minimumInputLength:1,
+  ajax:{ url:'@Url.Action("AccountPickData","Crm")', dataType:'json', delay:250, data:function(p){return {term:p.term};}, processResults:function(d){return {results:d.results};} } }); }
+</script>
+}

@@ -1,0 +1,92 @@
+@using CrossBuy.Models.Context.Admin
+@model List<Appraisal>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var cycles = ViewBag.Cycles as List<AppraisalCycle> ?? new();
+    var templates = ViewBag.Templates as List<AppraisalTemplate> ?? new();
+    var names = ViewBag.Names as Dictionary<int, string> ?? new();
+    var cycleNames = ViewBag.CycleNames as Dictionary<int, string> ?? new();
+    var statusStyle = new[] { "background:#f2f4f7;color:#475467;", "background:#e9f1ee;color:#1f6253;", "background:#eaf3ef;color:#13433a;" };
+    var statusText = new[] { SR["Draft"].Value, Localizer["Submitted"].Value, Localizer["Acknowledged"].Value };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Performance appraisal"]</h1>
+        <a href="@Url.Action("AppraisalTemplates","Admin")" class="btn btn-light-primary"><i class="ki-outline ki-questionnaire-tablet fs-2"></i>@Localizer["Templates"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrMsg"] != null) { <div class="alert alert-success">@TempData["HrMsg"]</div> }
+        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
+
+        <div class="row g-5">
+            <div class="col-lg-5">
+                <div class="card card-flush mb-5">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Appraisal cycles"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <form asp-action="SaveAppraisalCycle" method="post" class="row g-2 mb-4">@Html.AntiForgeryToken()
+                            <div class="col-5"><input name="name" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["Cycle name"]" required /></div>
+                            <div class="col-3"><input name="year" type="number" class="form-control form-control-solid form-control-sm" value="@DateTime.Today.Year" /></div>
+                            <div class="col-4"><button class="btn btn-sm btn-primary w-100">@SR["Add"]</button></div>
+                        </form>
+                        <table class="table align-middle gy-2 mb-0">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th>@Localizer["Cycle"]</th><th>@Localizer["Year"]</th><th>@SR["Status"]</th><th></th></tr></thead>
+                            <tbody>
+                            @foreach (var c in cycles)
+                            {
+                                <tr>
+                                    <td>@c.Name</td><td>@c.Year</td>
+                                    <td><span class="badge fw-bold" style="@(c.Status == "Closed" ? "background:#f2f4f7;color:#98a2b3;" : "background:#eaf3ef;color:#13433a;")">@(c.Status == "Closed" ? Localizer["Closed"] : Localizer["Open"])</span></td>
+                                    <td class="text-end">
+                                        <form asp-action="SetAppraisalCycleStatus" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.ID" /><input type="hidden" name="status" value="@(c.Status == "Closed" ? "Open" : "Closed")" /><button class="btn btn-sm btn-light">@(c.Status == "Closed" ? Localizer["Open cycle"] : SR["Close"])</button></form>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card card-flush">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["New appraisal"]</h2></div></div>
+                    <div class="card-body pt-2">
+                        <form asp-action="CreateAppraisal" method="post">@Html.AntiForgeryToken()
+                            <label class="fw-semibold fs-7 mb-1">@Localizer["Cycle"]</label>
+                            <select name="cycleId" class="form-select form-select-solid mb-3" data-control="select2" required>@foreach (var c in cycles.Where(x => x.Status != "Closed")) { <option value="@c.ID">@c.Name (@c.Year)</option> }</select>
+                            <label class="fw-semibold fs-7 mb-1">@Localizer["Template"]</label>
+                            <select name="templateId" class="form-select form-select-solid mb-3" data-control="select2" required>@foreach (var t in templates.Where(x => x.IsActive)) { <option value="@t.ID">@t.Name</option> }</select>
+                            <label class="fw-semibold fs-7 mb-1">@SR["Employee"]</label>
+                            <select name="employeeId" class="form-select form-select-solid mb-3" data-control="select2" required>@foreach (var e in ViewBag.Employees) { <option value="@e.ID">@e.FullName</option> }</select>
+                            <label class="fw-semibold fs-7 mb-1">@Localizer["Appraising manager"]</label>
+                            <select name="managerId" class="form-select form-select-solid mb-3" data-control="select2">@foreach (var e in ViewBag.Employees) { <option value="@e.ID">@e.FullName</option> }</select>
+                            <button class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Create & score"]</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card card-flush">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Appraisals"]</h2></div></div>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th>@Localizer["Cycle"]</th><th class="text-center">@Localizer["Score"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
+                        <tbody>
+                        @if (!Model.Any()) { <tr><td colspan="5" class="text-center text-muted py-8">@Localizer["No appraisals"]</td></tr> }
+                        @foreach (var a in Model)
+                        {
+                            <tr style="border-bottom:1px dashed #eef1f6;">
+                                <td class="ps-4 fw-bold text-gray-900">@(names.TryGetValue(a.EmployeeID, out var en) ? en : ("#" + a.EmployeeID))</td>
+                                <td class="text-muted fs-7">@(cycleNames.TryGetValue(a.CycleId, out var cn) ? cn : ("#" + a.CycleId))</td>
+                                <td class="text-center fw-bolder" style="color:#13433a;">@a.TotalScore.ToString("0.#")%</td>
+                                <td class="text-center"><span class="badge fw-bold" style="@statusStyle[a.Status]">@statusText[a.Status]</span></td>
+                                <td class="text-end"><a href="@Url.Action("AppraisalScore","Admin", new { id = a.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-6"></i>@(a.Status == 0 ? Localizer["Enter score"] : SR["View"])</a></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>

@@ -1,0 +1,42 @@
+@using CrossBuy.Models.Context.Accounting
+@model SalesReturn
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string M(decimal v) => v.ToString("N2");
+    var cust = ViewBag.Customer as Customer;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Credit Note"] @Model.ReturnNo</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("SalesReturns","Accounting")" class="text-muted">@Localizer["Sales returns"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Model.ReturnNo</li></ul></div>
+        <div class="d-flex gap-2"><a href="@Url.Action("SalesReturns","Accounting")" class="btn btn-light btn-sm">@SR["Back"]</a><button onclick="window.print()" class="btn btn-primary btn-sm"><i class="ki-outline ki-printer fs-3"></i>@SR["Print"]</button></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-body py-6"><div class="row g-6">
+            <div class="col-md-4"><div class="text-muted fs-7">@SR["Customer"]</div><div class="fw-bold fs-5 text-gray-900">@(cust == null ? "—" : (isAr ? cust.Name : (cust.NameEn ?? cust.Name)))</div></div>
+            <div class="col-md-2"><div class="text-muted fs-7">@SR["Date"]</div><div class="fw-bold fs-5">@Model.ReturnDate.ToString("yyyy-MM-dd")</div></div>
+            <div class="col-md-3"><div class="text-muted fs-7">@Localizer["Original invoice"]</div><div class="fw-bold fs-5">@(Model.OriginalInvoiceId.HasValue ? "#" + Model.OriginalInvoiceId : "—")</div></div>
+            <div class="col-md-3 text-md-end"><div class="text-muted fs-7">@Localizer["Return total"]</div><div class="fw-bold fs-3 text-danger">@M(Model.GrandTotal) <span class="fs-7 text-muted">EGP</span></div></div>
+        </div>
+        @if (Model.JournalEntryId != null) { <div class="mt-4"><a href="@Url.Action("JournalEntry","Accounting", new { id = Model.JournalEntryId })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-document fs-4"></i>@Localizer["Journal entry"] #@Model.JournalEntryId</a></div> }
+        @if (!string.IsNullOrWhiteSpace(Model.Notes)) { <div class="text-muted fs-7 mt-3">@Model.Notes</div> }
+        </div></div>
+        <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Returned lines"]</h3></div>
+            <div class="card-body pt-2"><div class="table-responsive">
+                <table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@SR["Price"]</th><th class="text-end">@Localizer["Disc"]</th><th class="text-end">@Localizer["Tax%"]</th><th class="text-end pe-4">@SR["Total"]</th></tr></thead>
+                    <tbody>
+                    @foreach (var l in Model.Lines.OrderBy(x => x.LineNo))
+                    {
+                        <tr style="border-bottom:1px dashed #eef1f6;"><td class="ps-4 text-muted">@l.LineNo</td><td class="fw-semibold text-gray-800">@l.ItemDescription</td><td class="text-end">@l.Qty.ToString("0.##")</td><td class="text-end">@M(l.UnitPrice)</td><td class="text-end text-muted">@M(l.DiscountAmount)</td><td class="text-end text-muted">@l.TaxRate.ToString("0.##")%</td><td class="text-end fw-bold pe-4">@M(l.LineTotal)</td></tr>
+                    }
+                    </tbody>
+                    <tfoot><tr class="fw-bolder fs-6" style="background:#eaf3ef;border-top:2px solid #13433a;"><td colspan="6" class="ps-4 text-end" style="color:#1f6253;">@Localizer["Sub / Tax / Total"]</td><td class="text-end pe-4" style="color:#13433a;">@M(Model.SubTotal) / @M(Model.TaxTotal) / @M(Model.GrandTotal)</td></tr></tfoot>
+                </table>
+            </div></div>
+        </div>
+    </div></div>
+</div>

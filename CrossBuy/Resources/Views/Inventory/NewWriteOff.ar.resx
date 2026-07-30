@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Damaged" xml:space="preserve">
+    <value>تالف</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>منتهي الصلاحية</value>
+  </data>
+  <data name="Lost" xml:space="preserve">
+    <value>فاقد</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>أخرى</value>
+  </data>
+  <data name="New write-off / damage" xml:space="preserve">
+    <value>إعدام / تلف جديد</value>
+  </data>
+  <data name="Write-offs" xml:space="preserve">
+    <value>الإعدام</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Post write-off" xml:space="preserve">
+    <value>ترحيل الإعدام</value>
+  </data>
+  <data name="Select a warehouse first" xml:space="preserve">
+    <value>اختر المخزن أولًا</value>
+  </data>
+  <data name="No items" xml:space="preserve">
+    <value>لا توجد أصناف</value>
+  </data>
+  <data name="Current mode: 'Reason within adjustment' — this write-off is recorded as a stock adjustment." xml:space="preserve">
+    <value>الوضع الحالي: «سبب ضمن تسوية الجرد» — سيُسجَّل هذا الإعدام كتسوية جرد تحمل السبب.</value>
+  </data>
+  <data name="Current mode: 'Separate document' — a WOF- numbered document is created." xml:space="preserve">
+    <value>الوضع الحالي: «مستند إعدام مستقل» — سيُنشأ مستند بترقيم WOF- خاص.</value>
+  </data>
+  <data name="Entry: Dr write-off expense (510103) / Cr inventory (1103). Expired batches may be written off." xml:space="preserve">
+    <value>القيد: مدين مصروف الإعدام (510103) / دائن المخزون (1103). الدفعات المنتهية مسموح بإعدامها.</value>
+  </data>
+  <data name="Select to load items" xml:space="preserve">
+    <value>اختر لتحميل الأصناف</value>
+  </data>
+  <data name="Default reason" xml:space="preserve">
+    <value>السبب الافتراضي</value>
+  </data>
+  <data name="Select a warehouse to load its items and balances." xml:space="preserve">
+    <value>اختر المخزن أولًا لتحميل أصنافه وأرصدتها.</value>
+  </data>
+  <data name="Items to write off" xml:space="preserve">
+    <value>أصناف الإعدام</value>
+  </data>
+  <data name="Scan to add item" xml:space="preserve">
+    <value>امسح لإضافة صنف</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>المتاح</value>
+  </data>
+  <data name="Write-off qty" xml:space="preserve">
+    <value>كمية الإعدام</value>
+  </data>
+  <data name="Picked from (section/rack)" xml:space="preserve">
+    <value>يُصرف من (سيكشن/رف)</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Batch" xml:space="preserve">
+    <value>الدفعة</value>
+  </data>
+  <data name="Serial" xml:space="preserve">
+    <value>السيريال</value>
+  </data>
+  <data name="No balances in this warehouse." xml:space="preserve">
+    <value>لا توجد أرصدة في هذا المخزن.</value>
+  </data>
+  <data name="Post this stock write-off? The quantities will be permanently removed." xml:space="preserve">
+    <value>ترحيل إعدام المخزون؟ سيتم خصم الكميات نهائيًا.</value>
+  </data>
+</root>

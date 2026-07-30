@@ -1,0 +1,21 @@
+@using CrossBuy.Controllers
+@model List<QuoteRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string stCls(string s) => s switch { "Draft" => "secondary", "Sent" => "info", "Accepted" => "primary", "Converted" => "success", "Rejected" => "danger", "Expired" => "warning", _ => "light" };
+    string stName(string s) => s switch { "Draft" => SR["Draft"].Value, "Sent" => Localizer["Sent"].Value, "Accepted" => Localizer["Accepted"].Value, "Converted" => Localizer["Converted"].Value, "Rejected" => Localizer["Rejected"].Value, "Expired" => Localizer["Expired"].Value, _ => s };
+}
+@foreach (var q in Model)
+{
+    <tr>
+        <td class="fw-bold text-gray-800">@q.QuoteNo</td>
+        <td class="text-muted">@q.QuoteDate.ToString("yyyy-MM-dd")</td>
+        <td class="text-muted">@(q.ValidUntil?.ToString("yyyy-MM-dd") ?? "—")</td>
+        <td>@(q.PartyName == null ? "—" : (isAr ? q.PartyName : (q.PartyNameEn ?? q.PartyName)))</td>
+        <td class="text-end fw-bold text-gray-800">@q.GrandTotal.ToString("N2")</td>
+        <td class="text-center"><span class="badge badge-light-@stCls(q.Status)">@stName(q.Status)</span></td>
+        <td class="text-center"><a href="@Url.Action("QuotationDetails","Inventory", new { id = q.Id })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-5"></i></a></td>
+    </tr>
+}

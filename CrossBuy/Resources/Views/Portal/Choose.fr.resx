@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Choose destination" xml:space="preserve">
+    <value>Choisir la destination</value>
+  </data>
+  <data name="LanguageSwitchLabel" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+  <data name="Welcome, " xml:space="preserve">
+    <value>Bienvenue, </value>
+  </data>
+  <data name="Choose the portal that fits your needs today" xml:space="preserve">
+    <value>Choisissez le portail qui correspond à vos besoins aujourd'hui</value>
+  </data>
+  <data name="Items, stock &amp; movements" xml:space="preserve">
+    <value>Articles, stock &amp; mouvements</value>
+  </data>
+  <data name="Enter" xml:space="preserve">
+    <value>Entrer</value>
+  </data>
+  <data name="Accounts, journals &amp; reports" xml:space="preserve">
+    <value>Comptes, journaux &amp; rapports</value>
+  </data>
+  <data name="Control panel" xml:space="preserve">
+    <value>Panneau de configuration</value>
+  </data>
+  <data name="Quick access to all systems" xml:space="preserve">
+    <value>Accès rapide à tous les systèmes</value>
+  </data>
+  <data name="Back-office" xml:space="preserve">
+    <value>Back-office</value>
+  </data>
+  <data name="Companies, employees, roles &amp; data" xml:space="preserve">
+    <value>Sociétés, employés, rôles &amp; données</value>
+  </data>
+  <data name="People" xml:space="preserve">
+    <value>Personnel</value>
+  </data>
+  <data name="Profile, leaves, payslips &amp; alerts" xml:space="preserve">
+    <value>Profil, congés, bulletins de paie &amp; alertes</value>
+  </data>
+  <data name="Work orders &amp; production costing" xml:space="preserve">
+    <value>Ordres de travail &amp; calcul des coûts de production</value>
+  </data>
+  <data name="Leads, deals, campaigns &amp; tickets" xml:space="preserve">
+    <value>Prospects, affaires, campagnes &amp; tickets</value>
+  </data>
+  <data name="Your data security is our priority" xml:space="preserve">
+    <value>La sécurité de vos données est notre priorité</value>
+  </data>
+  <data name="Top security &amp; privacy standards to protect your data" xml:space="preserve">
+    <value>Normes de sécurité &amp; de confidentialité de premier ordre pour protéger vos données</value>
+  </data>
+  <data name="Advanced security" xml:space="preserve">
+    <value>Sécurité avancée</value>
+  </data>
+  <data name="Modern security tech" xml:space="preserve">
+    <value>Technologie de sécurité moderne</value>
+  </data>
+  <data name="Backups" xml:space="preserve">
+    <value>Sauvegardes</value>
+  </data>
+  <data name="Periodic backups" xml:space="preserve">
+    <value>Sauvegardes périodiques</value>
+  </data>
+  <data name="24/7 support" xml:space="preserve">
+    <value>Support 24/7</value>
+  </data>
+  <data name="Always-on support" xml:space="preserve">
+    <value>Support permanent</value>
+  </data>
+  <data name="High performance" xml:space="preserve">
+    <value>Haute performance</value>
+  </data>
+  <data name="Fast &amp; reliable" xml:space="preserve">
+    <value>Rapide &amp; fiable</value>
+  </data>
+  <data name="Reports &amp; Analytics" xml:space="preserve"><value>Rapports &amp; analyses</value></data>
+  <data name="Technical support" xml:space="preserve"><value>Support technique</value></data>
+  <data name="Users &amp; permissions" xml:space="preserve"><value>Utilisateurs &amp; permissions</value></data>
+  <data name="System settings &amp; data" xml:space="preserve"><value>Paramètres &amp; données du système</value></data>
+  <data name="Reports &amp; statistics" xml:space="preserve"><value>Rapports &amp; statistiques</value></data>
+  <data name="Items &amp; warehouses" xml:space="preserve"><value>Articles &amp; entrepôts</value></data>
+  <data name="Stock movements &amp; purchases" xml:space="preserve"><value>Mouvements de stock &amp; achats</value></data>
+  <data name="Counting &amp; receiving" xml:space="preserve"><value>Inventaire &amp; réception</value></data>
+  <data name="Personal profile &amp; data" xml:space="preserve"><value>Profil &amp; données personnelles</value></data>
+  <data name="Leaves &amp; attendance" xml:space="preserve"><value>Congés &amp; présence</value></data>
+  <data name="Requests &amp; notifications" xml:space="preserve"><value>Demandes &amp; notifications</value></data>
+  <data name="Journals &amp; accounts" xml:space="preserve"><value>Journaux &amp; comptes</value></data>
+  <data name="Invoices &amp; payments" xml:space="preserve"><value>Factures &amp; paiements</value></data>
+  <data name="Financial reports" xml:space="preserve"><value>Rapports financiers</value></data>
+  <data name="Custom reports" xml:space="preserve"><value>Rapports personnalisés</value></data>
+  <data name="Key performance indicators" xml:space="preserve"><value>Indicateurs de performance</value></data>
+  <data name="Analytics &amp; charts" xml:space="preserve"><value>Analyses &amp; graphiques</value></data>
+  <data name="Support tickets &amp; follow-up" xml:space="preserve"><value>Tickets de support &amp; suivi</value></data>
+  <data name="Knowledge base" xml:space="preserve"><value>Base de connaissances</value></data>
+  <data name="Direct contact" xml:space="preserve"><value>Contact direct</value></data>
+  <data name="Work orders &amp; production tracking (WIP)" xml:space="preserve"><value>Ordres de fabrication &amp; suivi de production (WIP)</value></data>
+  <data name="Customers, opportunities, campaigns &amp; tickets" xml:space="preserve"><value>Clients, opportunités, campagnes &amp; tickets</value></data>
+  <data name="Comprehensive reports &amp; analytics for better decisions" xml:space="preserve"><value>Rapports complets &amp; analyses pour de meilleures décisions</value></data>
+  <data name="Reach our support &amp; assistance team" xml:space="preserve"><value>Contactez notre équipe de support et d'assistance</value></data>
+  <data name="Administrative system" xml:space="preserve"><value>Système administratif</value></data>
+  <data name="Employees portal" xml:space="preserve"><value>Portail des employés</value></data>
+</root>

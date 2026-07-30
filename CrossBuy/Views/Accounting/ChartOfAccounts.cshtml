@@ -1,0 +1,230 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<AccountNode>
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var accountTypes = ViewBag.AccountTypes as List<AccountType> ?? new();
+    var allAccounts = ViewBag.AllAccounts as List<AccountNode> ?? new();
+}
+
+@functions {
+    void RenderRows(List<AccountNode> nodes, bool isAr)
+    {
+        foreach (var n in nodes)
+        {
+            var pad = 2 + n.Level * 22;
+            var hasChildren = n.Children.Count > 0;
+            <tr class="acc-row @(n.IsPostable ? "" : "is-header")"
+                data-id="@n.Id" data-parent="@(n.ParentId?.ToString() ?? "")"
+                data-code="@n.Code" data-name="@n.Name" data-nameen="@n.NameEn"
+                data-postable="@n.IsPostable.ToString().ToLower()" data-cc="@n.RequireCostCenter.ToString().ToLower()" data-cf="@n.CashFlowCategory"
+                data-search="@(n.Code) @(n.Name) @(n.NameEn)">
+                <td>
+                    <div class="tree-cell">
+                        @for (int i = 0; i < n.Level; i++) { <span class="tree-guide"></span> }
+                        @if (hasChildren)
+                        {
+                            <i class="ki-outline ki-down acc-toggle fs-8"></i>
+                        }
+                        else
+                        {
+                            <span class="tree-spacer"></span>
+                        }
+                        <span class="badge fs-8 fw-bold" style="background:@(n.IsPostable ? "#eef1f5" : "#e9f1ee");color:@(n.IsPostable ? "#5e6278" : "#13433a");">@n.Code</span>
+                    </div>
+                </td>
+                <td>
+                    @if (!n.IsPostable)
+                    {
+                        <i class="ki-outline ki-folder fs-5 me-2" style="color:#13433a;"></i><span class="fw-bold text-gray-900">@(isAr ? n.Name : n.NameEn)</span>
+                    }
+                    else
+                    {
+                        <i class="ki-outline ki-abstract-8 fs-7 me-2" style="color:#13433a;"></i><span class="fw-semibold text-gray-800">@(isAr ? n.Name : n.NameEn)</span>
+                    }
+                </td>
+                <td class="text-muted fs-7">@(isAr ? n.TypeNameAr : n.TypeNameEn)</td>
+                <td class="text-center">@if (n.NormalBalance == "D") { <span class="badge fw-bold" style="background:#e9f1ee;color:#13433a;">@SR["Debit"]</span> } else { <span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@SR["Credit"]</span> }</td>
+                <td class="text-center">@if (n.IsPostable) { <span class="badge fw-bold" style="background:#e9f1ee;color:#13433a;">@Localizer["Postable"]</span> } else { <span class="badge fw-bold" style="background:#eef1f5;color:#5e6278;">@Localizer["Header"]</span> }</td>
+                <td class="text-center">@if (n.RequireCostCenter) { <i class="ki-outline ki-check-circle fs-5" style="color:#13433a;"></i> } else { <span class="text-gray-300">—</span> }</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-icon btn-light-primary btn-sm acc-edit" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></button>
+                </td>
+            </tr>
+            if (hasChildren) { RenderRows(n.Children, isAr); }
+        }
+    }
+}
+
+<style>
+    /* Chart-of-accounts — Metronic hierarchy tree */
+    #accTable td { vertical-align: middle; }
+    #accTable .tree-cell { display: flex; align-items: center; min-height: 32px; }
+    #accTable .tree-guide { flex: 0 0 22px; align-self: stretch; position: relative; }
+    #accTable .tree-guide::before { content: ""; position: absolute; inset-inline-start: 11px; top: 0; bottom: 0; border-inline-start: 1px dashed #cfdcd7; }
+    #accTable i.acc-toggle { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 6px; background: #e9f1ee !important; color: #13433a !important; display: inline-flex; align-items: center; justify-content: center; margin-inline-end: 8px; cursor: pointer; }
+    #accTable .tree-spacer { flex: 0 0 22px; margin-inline-end: 8px; }
+    #accTable tr.is-header { background: #f4f8f6 !important; cursor: pointer; }
+    #accTable tr.is-header > td:first-child { border-inline-start: 3px solid #13433a; }
+    #accTable tr.acc-row:hover { background: #eef5f2 !important; }
+    /* inset the tree content from the leading (right in RTL) edge so it doesn't hug the border/accent */
+    #accTable > :not(caption) > * > *:first-child { padding-inline-start: 1.25rem; }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Chart of Accounts"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Chart of Accounts"]</li>
+                </ul>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#mNewAcc"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New account"]</button>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="card">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title">
+                        <div class="d-flex align-items-center position-relative my-1">
+                            <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                            <input type="text" id="accSearch" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search by code or name..."]" autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-light-primary me-2" id="expandAll"><i class="ki-outline ki-plus-square fs-4"></i>@Localizer["Expand all"]</button>
+                        <button type="button" class="btn btn-sm btn-light" id="collapseAll"><i class="ki-outline ki-minus-square fs-4"></i>@Localizer["Collapse all"]</button>
+                    </div>
+                </div>
+                <div class="card-body pt-0 pb-4">
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle gy-3 mb-0" id="accTable">
+                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                <tr>
+                                    <th style="min-width:200px">@SR["Code"]</th>
+                                    <th>@SR["Account"]</th>
+                                    <th>@SR["Type"]</th>
+                                    <th class="text-center" style="width:100px">@Localizer["Nature"]</th>
+                                    <th class="text-center" style="width:120px">@Localizer["Kind"]</th>
+                                    <th class="text-center" style="width:90px">@Localizer["Cost Ctr"]</th>
+                                    <th class="text-center" style="width:70px">@Localizer["Action"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>@{ RenderRows(Model, isAr); }</tbody>
+                        </table>
+                    </div>
+                    <div id="accNoResult" class="text-center py-10 text-muted d-none">@Localizer["No matching results"]</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New account modal -->
+<div class="modal fade" id="mNewAcc" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="CreateAccount" method="post">@Html.AntiForgeryToken()
+        <div class="modal-header"><h2 class="fw-bold">@Localizer["New account"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8">
+            <div class="row">
+                <div class="col-5 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Code"]</label><input name="code" class="form-control form-control-solid" required /></div>
+                <div class="col-7 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Type"]</label><select name="accountTypeId" class="form-select form-select-solid" required>@foreach (var t in accountTypes) { <option value="@t.ID">@(isAr ? t.Name : t.NameEn)</option> }</select></div>
+            </div>
+            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="name" class="form-control form-control-solid" required /></div>
+            <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" /></div>
+            <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Parent"]</label><select name="parentId" class="form-select form-select-solid"><option value="">@Localizer["— (root)"]</option>@foreach (var a in allAccounts.Where(x => !x.IsPostable)) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
+            <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Cash flow"]</label><select name="cashFlowCategory" class="form-select form-select-solid"><option value="">—</option><option value="Operating">@Localizer["Operating"]</option><option value="Investing">@Localizer["Investing"]</option><option value="Financing">@Localizer["Financing"]</option></select></div>
+            <div class="d-flex gap-6">
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isPostable" value="true" /><span class="form-check-label fw-semibold">@Localizer["Postable"]</span></label>
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="requireCostCenter" value="true" /><span class="form-check-label fw-semibold">@Localizer["Requires cost center"]</span></label>
+            </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+<!-- Edit account modal -->
+<div class="modal fade" id="mEditAcc" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="EditAccount" method="post" data-cb-confirm data-cb-action="edit" data-cb-confirm-if="#e_id" data-cb-text="@Localizer["Save changes?"]">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="e_id" />
+        <div class="modal-header"><h2 class="fw-bold">@Localizer["Edit account"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8">
+            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Code"]</label><input name="code" id="e_code" class="form-control form-control-solid" required /></div>
+            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="name" id="e_name" class="form-control form-control-solid" required /></div>
+            <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" id="e_nameen" class="form-control form-control-solid" /></div>
+            <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Cash flow"]</label><select name="cashFlowCategory" id="e_cf" class="form-select form-select-solid"><option value="">—</option><option value="Operating">@Localizer["Operating"]</option><option value="Investing">@Localizer["Investing"]</option><option value="Financing">@Localizer["Financing"]</option></select></div>
+            <div class="d-flex gap-6">
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isPostable" id="e_postable" value="true" /><span class="form-check-label fw-semibold">@Localizer["Postable"]</span></label>
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="requireCostCenter" id="e_cc" value="true" /><span class="form-check-label fw-semibold">@Localizer["Cost center"]</span></label>
+                <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isActive" id="e_active" value="true" /><span class="form-check-label fw-semibold">@SR["Active"]</span></label>
+            </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var rows = Array.prototype.slice.call(document.querySelectorAll('#accTable tbody tr.acc-row'));
+            if (!rows.length) return;
+            var byParent = {}; rows.forEach(function (r) { var p = r.getAttribute('data-parent') || ''; (byParent[p] = byParent[p] || []).push(r); });
+            var collapsed = {};
+            function hasKids(id) { return !!byParent[id]; }
+            function setIcon(r, c) { var ic = r.querySelector('.acc-toggle'); if (ic) { ic.classList.toggle('ki-down', !c); ic.classList.toggle('ki-right', c); } }
+            function refresh() {
+                rows.forEach(function (r) {
+                    var cur = r.getAttribute('data-parent') || '', vis = true;
+                    while (cur) { if (collapsed[cur]) { vis = false; break; } var pr = document.querySelector('#accTable tr[data-id="' + cur + '"]'); cur = pr ? (pr.getAttribute('data-parent') || '') : ''; }
+                    r.style.display = vis ? '' : 'none'; setIcon(r, !!collapsed[r.getAttribute('data-id')]);
+                });
+            }
+            document.querySelector('#accTable tbody').addEventListener('click', function (e) {
+                // edit button → open edit modal (must not toggle the row)
+                var ed = e.target.closest('.acc-edit');
+                if (ed) {
+                    var tr = ed.closest('tr');
+                    document.getElementById('e_id').value = tr.getAttribute('data-id');
+                    document.getElementById('e_code').value = tr.getAttribute('data-code');
+                    document.getElementById('e_name').value = tr.getAttribute('data-name');
+                    document.getElementById('e_nameen').value = tr.getAttribute('data-nameen');
+                    document.getElementById('e_cf').value = tr.getAttribute('data-cf') || '';
+                    document.getElementById('e_postable').checked = tr.getAttribute('data-postable') === 'true';
+                    document.getElementById('e_cc').checked = tr.getAttribute('data-cc') === 'true';
+                    document.getElementById('e_active').checked = true;
+                    new bootstrap.Modal(document.getElementById('mEditAcc')).show();
+                    return;
+                }
+                // click anywhere on a row that has children → expand / collapse it
+                var row = e.target.closest('tr.acc-row');
+                if (!row) return;
+                var id = row.getAttribute('data-id');
+                if (byParent[id]) { collapsed[id] = !collapsed[id]; refresh(); }
+            });
+            document.getElementById('expandAll').addEventListener('click', function () { collapsed = {}; refresh(); });
+            document.getElementById('collapseAll').addEventListener('click', function () { collapsed = {}; rows.forEach(function (r) { if (hasKids(r.getAttribute('data-id'))) collapsed[r.getAttribute('data-id')] = true; }); refresh(); });
+            var noRes = document.getElementById('accNoResult');
+            document.getElementById('accSearch').addEventListener('input', function (e) {
+                var q = (e.target.value || '').trim().toLowerCase();
+                if (!q) { noRes.classList.add('d-none'); refresh(); return; }
+                var show = {}, any = false;
+                rows.forEach(function (r) {
+                    if ((r.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1) {
+                        any = true; show[r.getAttribute('data-id')] = true;
+                        var pid = r.getAttribute('data-parent') || '';
+                        while (pid) { show[pid] = true; var pr = document.querySelector('#accTable tr[data-id="' + pid + '"]'); pid = pr ? (pr.getAttribute('data-parent') || '') : ''; }
+                    }
+                });
+                rows.forEach(function (r) { r.style.display = show[r.getAttribute('data-id')] ? '' : 'none'; });
+                noRes.classList.toggle('d-none', any);
+            });
+            refresh();
+        })();
+    </script>
+}

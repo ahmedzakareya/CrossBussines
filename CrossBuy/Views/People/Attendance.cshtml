@@ -1,0 +1,75 @@
+@using CrossBuy.Models.Context.Admin
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutPeople.cshtml";
+    int y = ViewBag.Year, m = ViewBag.Month;
+    var sum = ViewBag.Summary as CrossBuy.BL.AttendanceMonthRow;
+    var records = ViewBag.Records as List<AttendanceRecord> ?? new();
+    var months = new[] { "", Localizer["January"].Value, Localizer["February"].Value, Localizer["March"].Value, Localizer["April"].Value, Localizer["May"].Value, Localizer["June"].Value, Localizer["July"].Value, Localizer["August"].Value, Localizer["September"].Value, Localizer["October"].Value, Localizer["November"].Value, Localizer["December"].Value };
+    string statusBadge(string s) => s switch {
+        "Present" => "badge-light-primary", "Late" => "badge-light-secondary", "Absent" => "badge-light-danger",
+        "Leave" => "badge-light-primary", "Holiday" => "badge-light-primary", "RestDay" => "badge-light", _ => "badge-light" };
+    string statusText(string s) => s switch {
+        "Present" => Localizer["Present"].Value, "Late" => Localizer["Late"].Value, "Absent" => Localizer["Absent"].Value,
+        "Leave" => Localizer["Leave"].Value, "Holiday" => Localizer["Holiday"].Value, "RestDay" => Localizer["Rest day"].Value, _ => s };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["My attendance"]</h1>
+        <form method="get" class="d-flex gap-2">
+            <select name="month" class="form-select form-select-sm form-select-solid w-auto" onchange="this.form.submit()">@for (int i = 1; i <= 12; i++){<option value="@i" selected="@(i==m)">@months[i]</option>}</select>
+            <input name="year" type="number" class="form-control form-control-sm form-control-solid w-100px" value="@y" onchange="this.form.submit()" />
+        </form>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5 mb-5">
+            @{
+                (string lab, string val, string cls)[] stats = sum == null
+                    ? new[] { (Localizer["Work days"].Value,"0","primary"), (Localizer["Present"].Value,"0","success"), (Localizer["Late"].Value,"0","warning"), (Localizer["Absent"].Value,"0","danger") }
+                    : new[] {
+                        (Localizer["Work days"].Value, sum.WorkDays.ToString(), "primary"),
+                        (Localizer["Present"].Value, sum.PresentDays.ToString(), "success"),
+                        (Localizer["Late (min)"].Value, sum.LateMinutes.ToString(), "warning"),
+                        (Localizer["Absent"].Value, sum.AbsentDays.ToString(), "danger") };
+            }
+            @foreach (var st in stats)
+            {
+                <div class="col-6 col-lg-3"><div class="card card-flush h-100"><div class="card-body text-center py-6">
+                    <div class="fs-2hx fw-bold text-@st.cls">@st.val</div><div class="text-muted fw-semibold">@st.lab</div>
+                </div></div></div>
+            }
+        </div>
+        @if (sum != null && (sum.OvertimeMinutes > 0 || sum.LeaveDays > 0))
+        {
+            <div class="text-muted fs-7 mb-4">@Localizer["Overtime"]: <b>@sum.OvertimeMinutes</b> @Localizer["min"] · @Localizer["Leave days"]: <b>@sum.LeaveDays</b></div>
+        }
+        <div class="card card-flush"><div class="card-body pt-6">
+            @if (!records.Any())
+            {
+                <div class="text-center text-muted py-15">@Localizer["No attendance records for this month."]</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                <table class="table align-middle table-row-dashed fs-6 gy-3">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase"><th>@SR["Date"]</th><th>@Localizer["Check-in"]</th><th>@Localizer["Check-out"]</th><th>@Localizer["Hours"]</th><th>@Localizer["Late"]</th><th>@SR["Status"]</th></tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var r in records.OrderBy(x => x.WorkDate))
+                    {
+                        <tr>
+                            <td class="fw-bold text-gray-800">@r.WorkDate.ToString("yyyy-MM-dd") <span class="text-muted fs-8">@r.WorkDate.ToString("ddd")</span></td>
+                            <td>@(r.CheckIn?.ToString("HH:mm") ?? "—")</td>
+                            <td>@(r.CheckOut?.ToString("HH:mm") ?? "—")</td>
+                            <td>@r.WorkedHours.ToString("0.##")</td>
+                            <td>@(r.LateMinutes > 0 ? $"{r.LateMinutes} {Localizer["m"].Value}" : "—")</td>
+                            <td><span class="badge @statusBadge(r.Status)">@statusText(r.Status)</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                </div>
+            }
+        </div></div>
+    </div></div>
+</div>

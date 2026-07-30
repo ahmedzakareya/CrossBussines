@@ -1,0 +1,75 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model AccountStatement
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Account Ledger"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("TrialBalance","Accounting")" class="text-muted">@Localizer["Trial Balance"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Model.Code</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title fw-bold">@Model.Code — @(isAr ? Model.NameAr : Model.NameEn)</h3>
+                    <div class="card-toolbar">
+                        <span class="badge badge-light-@(Model.NormalBalance == "D" ? "primary" : "info")">@(Model.NormalBalance == "D" ? Localizer["Debit nature"] : Localizer["Credit nature"])</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-row-bordered align-middle gy-3">
+                            <thead>
+                                <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                    <th>@SR["Date"]</th>
+                                    <th>@Localizer["Entry No"]</th>
+                                    <th>@SR["Description"]</th>
+                                    <th class="text-end">@SR["Debit"]</th>
+                                    <th class="text-end">@SR["Credit"]</th>
+                                    <th class="text-end">@SR["Balance"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-light">
+                                    <td colspan="5" class="fw-semibold text-muted">@Localizer["Opening balance"]</td>
+                                    <td class="text-end fw-bold">@Model.Opening.ToString("N2")</td>
+                                </tr>
+                                @foreach (var l in Model.Lines)
+                                {
+                                    <tr>
+                                        <td class="text-muted">@l.Date.ToString("yyyy/MM/dd")</td>
+                                        <td class="fw-bold text-gray-800">@l.EntryNo</td>
+                                        <td class="text-gray-700">@l.Description</td>
+                                        <td class="text-end @(l.Debit > 0 ? "fw-bold" : "text-muted")">@l.Debit.ToString("N2")</td>
+                                        <td class="text-end @(l.Credit > 0 ? "fw-bold" : "text-muted")">@l.Credit.ToString("N2")</td>
+                                        <td class="text-end fw-bold">@l.Running.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold fs-5 border-top border-2">
+                                    <td colspan="5" class="text-end">@Localizer["Closing balance"]</td>
+                                    <td class="text-end">@Model.Closing.ToString("N2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

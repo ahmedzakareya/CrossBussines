@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Cashier terminals" xml:space="preserve">
+    <value>Terminaux caissier</value>
+  </data>
+  <data name="Each terminal = isolated drawer + own receipt sequence + shifts — setup only, no selling or GL." xml:space="preserve">
+    <value>Chaque terminal = tiroir isolé + sa propre séquence de tickets + services — configuration uniquement, aucune vente ni écriture comptable.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>Cette société n'a aucune succursale.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Sélectionner une société</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Sélectionner une succursale</value>
+  </data>
+  <data name="Select a branch to manage cashier terminals." xml:space="preserve">
+    <value>Sélectionnez une succursale pour gérer les terminaux caissier.</value>
+  </data>
+  <data name="Add terminal" xml:space="preserve">
+    <value>Ajouter un terminal</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Cashier 1" xml:space="preserve">
+    <value>Caissier 1</value>
+  </data>
+  <data name="Receipt prefix" xml:space="preserve">
+    <value>Préfixe du ticket</value>
+  </data>
+  <data name="auto: code + -" xml:space="preserve">
+    <value>auto : code + -</value>
+  </data>
+  <data name="Terminal drawer" xml:space="preserve">
+    <value>Tiroir du terminal</value>
+  </data>
+  <data name="Auto-create (dedicated till)" xml:space="preserve">
+    <value>Créer automatiquement (caisse dédiée)</value>
+  </data>
+  <data name="By default a dedicated child cash account is created under the main cash; or pick an existing one." xml:space="preserve">
+    <value>Par défaut, un sous-compte de caisse dédié est créé sous la caisse principale ; ou choisissez-en un existant.</value>
+  </data>
+  <data name="Receipt printing" xml:space="preserve">
+    <value>Impression du ticket</value>
+  </data>
+  <data name="Paper width" xml:space="preserve">
+    <value>Largeur du papier</value>
+  </data>
+  <data name="Copies" xml:space="preserve">
+    <value>Copies</value>
+  </data>
+  <data name="Printer name (optional — for future ESC/POS bridge)" xml:space="preserve">
+    <value>Nom de l'imprimante (facultatif — pour un futur pont ESC/POS)</value>
+  </data>
+  <data name="window.print uses the default printer" xml:space="preserve">
+    <value>window.print utilise l'imprimante par défaut</value>
+  </data>
+  <data name="Branch terminals" xml:space="preserve">
+    <value>Terminaux de la succursale</value>
+  </data>
+  <data name="No terminals yet." xml:space="preserve">
+    <value>Aucun terminal pour le moment.</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Inactif</value>
+  </data>
+  <data name="Delete terminal? (its till account stays in the chart)" xml:space="preserve">
+    <value>Supprimer le terminal ? (son compte de caisse reste dans le plan comptable)</value>
+  </data>
+  <data name="Drawer" xml:space="preserve">
+    <value>Tiroir</value>
+  </data>
+  <data name="— none —" xml:space="preserve">
+    <value>— aucun —</value>
+  </data>
+  <data name="Receipt seq" xml:space="preserve">
+    <value>Séq. ticket</value>
+  </data>
+  <data name="Shift open" xml:space="preserve">
+    <value>Service ouvert</value>
+  </data>
+  <data name="Evening" xml:space="preserve">
+    <value>Soir</value>
+  </data>
+  <data name="Morning" xml:space="preserve">
+    <value>Matin</value>
+  </data>
+  <data name="Close shift?" xml:space="preserve">
+    <value>Clôturer le service ?</value>
+  </data>
+  <data name="Close shift" xml:space="preserve">
+    <value>Clôturer le service</value>
+  </data>
+  <data name="Opening float" xml:space="preserve">
+    <value>Fonds de caisse initial</value>
+  </data>
+  <data name="Open shift" xml:space="preserve">
+    <value>Ouvrir le service</value>
+  </data>
+  <data name="Edit terminal" xml:space="preserve">
+    <value>Modifier le terminal</value>
+  </data>
+</root>

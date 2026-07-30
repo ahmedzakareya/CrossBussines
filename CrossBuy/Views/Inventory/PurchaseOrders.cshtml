@@ -1,0 +1,47 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Purchase orders"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Procurement"]</li></ul></div>
+        <a href="@Url.Action("NewPurchaseOrder","Inventory")" class="btn btn-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New PO"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-7"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (PO no / vendor)"]</label>
+                <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Status"]</label>
+                <select id="f_status" class="form-select form-select-solid cb-filter" data-control="select2" data-hide-search="true"><option value="">@SR["All"]</option><option value="Draft">@SR["Draft"]</option><option value="Approved">@Localizer["Approved"]</option><option value="Received">@Localizer["Received"]</option><option value="Closed">@Localizer["Closed"]</option><option value="Cancelled">@Localizer["Cancelled"]</option></select></div>
+            <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+        </div></div></div>
+
+        <div class="card card-flush">
+            <div class="card-header align-items-center py-4"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-4" id="t">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                        <th class="min-w-120px">@Localizer["PO No."]</th><th>@SR["Date"]</th><th class="min-w-150px">@SR["Vendor"]</th>
+                        <th class="text-end">@SR["Total"]</th><th class="text-center">@SR["Status"]</th><th class="text-end">@SR["Actions"]</th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
+                </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@Localizer["No matching purchase orders"]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+cbServerList({ url:'@Url.Action("PurchaseOrdersData","Inventory")', exportUrl:'@Url.Action("PurchaseOrdersExport","Inventory")', suggestUrl:'@Url.Action("VendorsSuggest","Accounting")', isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); } });
+</script>
+}

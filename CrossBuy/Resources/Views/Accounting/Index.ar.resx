@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="Financial Dashboard" xml:space="preserve">
+    <value>لوحة التحكم المالية</value>
+  </data>
+  <data name="FY" xml:space="preserve">
+    <value>السنة</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>مقفلة</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>مفتوحة</value>
+  </data>
+  <data name="Balance Sheet" xml:space="preserve">
+    <value>المركز المالي</value>
+  </data>
+  <data name="New entry" xml:space="preserve">
+    <value>قيد جديد</value>
+  </data>
+  <data name="Revenue vs Expense" xml:space="preserve">
+    <value>الإيرادات مقابل المصروفات</value>
+  </data>
+  <data name="Last 6 months" xml:space="preserve">
+    <value>آخر 6 أشهر</value>
+  </data>
+  <data name="Income Statement" xml:space="preserve">
+    <value>قائمة الدخل</value>
+  </data>
+  <data name="Revenue" xml:space="preserve">
+    <value>الإيرادات</value>
+  </data>
+  <data name="Expense" xml:space="preserve">
+    <value>المصروفات</value>
+  </data>
+  <data name="Financial Position" xml:space="preserve">
+    <value>المركز المالي</value>
+  </data>
+  <data name="Balanced" xml:space="preserve">
+    <value>متوازن</value>
+  </data>
+  <data name="Unbalanced" xml:space="preserve">
+    <value>غير متوازن</value>
+  </data>
+  <data name="Total Assets" xml:space="preserve">
+    <value>إجمالي الأصول</value>
+  </data>
+  <data name="Liab. + Equity" xml:space="preserve">
+    <value>التزامات + حقوق ملكية</value>
+  </data>
+  <data name="Liabilities" xml:space="preserve">
+    <value>الالتزامات</value>
+  </data>
+  <data name="Equity" xml:space="preserve">
+    <value>حقوق الملكية</value>
+  </data>
+  <data name="Net result" xml:space="preserve">
+    <value>صافي نتيجة العام</value>
+  </data>
+  <data name="Cash &amp; Banks" xml:space="preserve">
+    <value>النقدية والبنوك</value>
+  </data>
+  <data name="Liquid" xml:space="preserve">
+    <value>نقدية</value>
+  </data>
+  <data name="Receivables" xml:space="preserve">
+    <value>العملاء (مدينون)</value>
+  </data>
+  <data name="AR" xml:space="preserve">
+    <value>تحصيل</value>
+  </data>
+  <data name="Payables" xml:space="preserve">
+    <value>الموردون (دائنون)</value>
+  </data>
+  <data name="AP" xml:space="preserve">
+    <value>سداد</value>
+  </data>
+  <data name="Net Income {0}" xml:space="preserve">
+    <value>صافي الدخل {0}</value>
+  </data>
+  <data name="Profit" xml:space="preserve">
+    <value>ربح</value>
+  </data>
+  <data name="Loss" xml:space="preserve">
+    <value>خسارة</value>
+  </data>
+  <data name="Fixed Assets NBV" xml:space="preserve">
+    <value>صافي الأصول الثابتة</value>
+  </data>
+  <data name="VAT Payable" xml:space="preserve">
+    <value>ض.ق.م مستحقة</value>
+  </data>
+  <data name="VAT Credit" xml:space="preserve">
+    <value>رصيد ض.ق.م دائن</value>
+  </data>
+  <data name="Due" xml:space="preserve">
+    <value>مستحقة</value>
+  </data>
+  <data name="Recent Journal Entries" xml:space="preserve">
+    <value>آخر القيود</value>
+  </data>
+  <data name="posted" xml:space="preserve">
+    <value>مُرحَّل</value>
+  </data>
+  <data name="draft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>عرض الكل</value>
+  </data>
+  <data name="Entry" xml:space="preserve">
+    <value>القيد</value>
+  </data>
+  <data name="No entries yet" xml:space="preserve">
+    <value>لا توجد قيود بعد</value>
+  </data>
+  <data name="Expense Distribution" xml:space="preserve">
+    <value>توزيع المصروفات</value>
+  </data>
+  <data name="Top 5 accounts" xml:space="preserve">
+    <value>أعلى 5 حسابات</value>
+  </data>
+  <data name="No expenses yet" xml:space="preserve">
+    <value>لا توجد مصروفات بعد</value>
+  </data>
+  <data name="Fixed Assets" xml:space="preserve">
+    <value>الأصول الثابتة</value>
+  </data>
+  <data name="active assets" xml:space="preserve">
+    <value>أصل نشط</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>التكلفة</value>
+  </data>
+  <data name="Accum. dep." xml:space="preserve">
+    <value>مجمع الإهلاك</value>
+  </data>
+  <data name="Net book value" xml:space="preserve">
+    <value>القيمة الدفترية</value>
+  </data>
+  <data name="Depreciated" xml:space="preserve">
+    <value>نسبة الإهلاك</value>
+  </data>
+  <data name="VAT" xml:space="preserve">
+    <value>ضريبة القيمة المضافة</value>
+  </data>
+  <data name="Returns" xml:space="preserve">
+    <value>الإقرارات</value>
+  </data>
+  <data name="Output VAT" xml:space="preserve">
+    <value>ضريبة المخرجات</value>
+  </data>
+  <data name="Input VAT" xml:space="preserve">
+    <value>ضريبة المدخلات</value>
+  </data>
+  <data name="Net payable" xml:space="preserve">
+    <value>الصافي المستحق</value>
+  </data>
+  <data name="Credit balance" xml:space="preserve">
+    <value>رصيد دائن</value>
+  </data>
+  <data name="Quick Access" xml:space="preserve">
+    <value>وصول سريع</value>
+  </data>
+  <data name="Accounts" xml:space="preserve">
+    <value>شجرة الحسابات</value>
+  </data>
+  <data name="Journals" xml:space="preserve">
+    <value>القيود</value>
+  </data>
+  <data name="Taxes" xml:space="preserve">
+    <value>الضرائب</value>
+  </data>
+  <data name="Cash Flow" xml:space="preserve">
+    <value>التدفقات النقدية</value>
+  </data>
+  <data name="Cost Centers" xml:space="preserve">
+    <value>مراكز التكلفة</value>
+  </data>
+  <data name="Payroll" xml:space="preserve">
+    <value>الرواتب</value>
+  </data>
+  <data name="Year-end Close" xml:space="preserve">
+    <value>إقفال السنة</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>صافي النتيجة</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>ج.م</value>
+  </data>
+</root>

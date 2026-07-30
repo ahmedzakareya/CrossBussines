@@ -1,0 +1,20 @@
+@using CrossBuy.BL
+@model List<WorkOrderRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    string cls(string s) => s switch { "Released" => "info", "Completed" => "success", "Cancelled" => "danger", _ => "secondary" };
+    string nm(string s) => s switch { "Draft" => SR["Draft"].Value, "Released" => Localizer["Released"].Value, "Completed" => Localizer["Completed"].Value, "Cancelled" => Localizer["Cancelled"].Value, _ => s };
+}
+@foreach (var w in Model)
+{
+    <tr>
+        <td class="fw-bold text-gray-800">@(w.WoNo ?? ("#" + w.Id))</td>
+        <td class="text-muted">@(w.ItemName ?? "—") <span class="text-gray-500">× @w.Qty.ToString("N0")</span></td>
+        <td class="text-center">@w.Qty.ToString("N2")</td>
+        <td class="text-center text-muted">@(w.WarehouseName ?? "—")</td>
+        <td class="text-end fw-bold">@(w.UnitCost > 0 ? w.UnitCost.ToString("N2") : "—")</td>
+        <td class="text-center"><span class="badge badge-light-@cls(w.Status)">@nm(w.Status)</span></td>
+        <td class="text-end"><a href="@Url.Action("WorkOrderDetails","Inventory", new { id = w.Id })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-6"></i></a></td>
+    </tr>
+}

@@ -1,0 +1,41 @@
+@using CrossBuy.BL
+@model List<PromotionRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+@foreach (var p in Model)
+{
+    <tr>
+        <td class="fw-bold text-gray-900">@p.Code</td>
+        <td>@(isAr ? p.Name : (string.IsNullOrEmpty(p.NameEn) ? p.Name : p.NameEn))</td>
+        <td class="text-center">
+            @if (p.DiscountType == "Amount")
+            {
+                <span class="badge badge-light-secondary">@p.Value.ToString("0.##") @(string.IsNullOrEmpty(p.CurrencyCode) ? Localizer["func"].Value : p.CurrencyCode)</span>
+            }
+            else
+            {
+                <span class="badge badge-light-primary">@p.Value.ToString("0.##")%</span>
+            }
+        </td>
+        <td>
+            @if (!string.IsNullOrEmpty(p.ItemName)) { <span class="badge badge-light-primary"><i class="ki-outline ki-package fs-7 me-1"></i>@p.ItemName</span> }
+            @if (!string.IsNullOrEmpty(p.CustomerName)) { <span class="badge badge-light-primary ms-1"><i class="ki-outline ki-profile-circle fs-7 me-1"></i>@p.CustomerName</span> }
+            @if (!string.IsNullOrEmpty(p.Segment)) { <span class="badge badge-light-dark ms-1">@p.Segment</span> }
+            @if (string.IsNullOrEmpty(p.ItemName) && string.IsNullOrEmpty(p.CustomerName) && string.IsNullOrEmpty(p.Segment)) { <span class="text-muted">@SR["All"]</span> }
+        </td>
+        <td class="text-center">@p.MinQty.ToString("0.##")</td>
+        <td class="text-center">@p.Priority</td>
+        <td class="text-muted fs-7">@(p.ValidFrom?.ToString("yyyy-MM-dd") ?? "—") → @(p.ValidTo?.ToString("yyyy-MM-dd") ?? "∞")</td>
+        <td class="text-center"><span class="badge badge-light-@(p.IsActive?"success":"secondary")">@(p.IsActive?SR["Active"]:SR["Inactive"])</span></td>
+        <td class="text-end">
+            <a href="@Url.Action("PromotionEditor","Inventory", new { id = p.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></a>
+            <form asp-action="DeletePromotion" asp-controller="Inventory" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete this promotion?"]">
+                @Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" />
+                <button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button>
+            </form>
+        </td>
+    </tr>
+}

@@ -1,0 +1,133 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<BoqItem>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var prj = ViewBag.Project as Project;
+    var sum = ViewBag.Summary as BoqSummary ?? new BoqSummary();
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    var existing = Model.Select(b => new {
+        kind = b.ParentId.HasValue ? "sub" : "main",
+        code = b.Code, desc = b.Description, descEn = b.DescriptionEn, unit = b.Unit, qty = b.Quantity, price = b.UnitPrice,
+        mat = b.MaterialCost, lab = b.LaborCost, sub = b.SubcontractCost, equip = b.EquipmentCost
+    }).ToList<object>();
+}
+<style>
+    .boq-card{background:#fbfdfc;border:1px solid var(--bs-gray-200);border-radius:1rem}
+    .boq-ic .symbol-label{background:#f2f8f5}
+    .boq-ic i{color:#13433a}
+    .boq-ro{background:#eef6f2!important;border-color:#cfe5da!important}
+    #rows .form-control,#rows .form-select{height:44px}
+</style>
+<form asp-action="SaveBoq" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+    <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+    <input type="hidden" name="rowsJson" id="rowsJson" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Bill of Quantities (BOQ)"]</h1>
+            <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn)) @(prj?.ContractValue != null ? "· " + Localizer["Contract value"].Value + ": " + prj!.ContractValue!.Value.ToString("N2") : "")</span></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+            <button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Items"]</h3>
+                <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div>
+            </div>
+            <div class="card-body">
+                <div id="rows"></div>
+                <div class="d-flex flex-wrap gap-6 justify-content-end border-top pt-5 mt-2">
+                    <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Total value"]</div><div class="fs-3 fw-bold" id="totValue">0.00</div></div>
+                    <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Total cost"]</div><div class="fs-3 fw-bold text-muted" id="totCost">0.00</div></div>
+                    <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Margin"]</div><div class="fs-3 fw-bold text-primary" id="totMargin">0.00</div></div>
+                    <div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["vs contract"]</div><div class="fs-3 fw-bold" id="totVar">—</div></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</form>
+@section Scripts {
+<script>
+var CONTRACT=@(prj?.ContractValue?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "null");
+function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+// a field group = label + [input] + [icon symbol]  (icon box = Metronic symbol-label)
+function fld(label,icon,inner,col){return '<div class="'+(col||'col-md-2')+'"><label class="d-block fs-8 fw-semibold text-muted mb-2 text-center">'+label+'</label>'+
+ '<div class="d-flex align-items-center gap-2">'+inner+'<span class="symbol symbol-40px flex-shrink-0 boq-ic"><span class="symbol-label"><i class="ki-outline '+icon+' fs-4"></i></span></span></div></div>';}
+function tin(cls){return '<input type="text" class="form-control form-control-solid text-end '+cls+'">';}
+function nin(cls){return '<input type="number" step="0.01" class="form-control form-control-solid text-end '+cls+'" placeholder="0">';}
+function ro(cls,extra){return '<div class="form-control form-control-solid text-end fw-bold boq-ro '+cls+' '+(extra||'')+'">0.00</div>';}
+function addRow(kind){
+ var c=document.createElement('div');
+ c.className='boq-card p-6 mb-5';
+ c.innerHTML=
+  '<div class="d-flex align-items-center mb-5 pb-3 border-bottom border-gray-200 boq-num">'+
+    '<span class="symbol symbol-35px"><span class="symbol-label fw-bold" style="background:#13433a;color:#fff;"></span></span>'+
+  '</div>'+
+  '<div class="row g-5 mb-2">'+
+    '<div class="col-md-2"><label class="d-block fs-8 fw-semibold text-muted mb-2 text-center">@Localizer["Type"]</label>'+
+      '<select class="form-select form-select-solid kind"><option value="main">@Localizer["Main"]</option><option value="sub">@Localizer["Sub"]</option></select></div>'+
+    fld('@Localizer["Code"]','ki-barcode',tin('code'))+
+    fld('@SR["Description"]','ki-notepad','<input type="text" class="form-control form-control-solid d">','col-md-3')+
+    fld('@SR["Description"] (EN)','ki-notepad','<input type="text" dir="ltr" class="form-control form-control-solid de">','col-md-3')+
+    fld('@Localizer["Unit"]','ki-parcel',tin('unit'))+
+  '</div>'+
+  '<div class="row g-5 mb-2">'+
+    fld('@Localizer["Qty"]','ki-element-11',nin('q'))+
+    fld('@Localizer["Unit price"]','ki-price-tag',nin('p'))+
+    fld('@Localizer["Line value"]','ki-dollar',ro('val'))+
+    fld('@Localizer["Material"]','ki-cube-3',nin('mat'))+
+    fld('@Localizer["Labor"]','ki-user',nin('lab'))+
+    fld('@Localizer["Subcontract"]','ki-people',nin('sub'))+
+  '</div>'+
+  '<div class="row g-5 align-items-end">'+
+    fld('@Localizer["Equipment"]','ki-wrench',nin('equip'))+
+    fld('@Localizer["Est. cost"]','ki-calculator',ro('cost','text-muted'))+
+    fld('@Localizer["Margin"]','ki-chart-line-up',ro('marg','text-primary'))+
+    '<div class="col-md-6 d-flex align-items-end justify-content-end"><button type="button" class="btn btn-light-danger del"><i class="ki-outline ki-trash fs-4"></i>@SR["Delete"]</button></div>'+
+  '</div>';
+ document.getElementById('rows').appendChild(c);
+ if(kind)c.querySelector('.kind').value=kind;
+ if(window.jQuery&&jQuery.fn.select2){jQuery(c.querySelector('.kind')).select2({minimumResultsForSearch:Infinity,width:'100%'});}
+ return c;}
+function renum(){document.querySelectorAll('#rows .boq-card').forEach(function(c,i){c.querySelector('.boq-num .symbol-label').textContent=(i+1<10?'0':'')+(i+1);});}
+function calc(){var sV=0,sC=0;document.querySelectorAll('#rows .boq-card').forEach(function(tr){
+  var v=num(tr.querySelector('.q').value)*num(tr.querySelector('.p').value);
+  var c=num(tr.querySelector('.mat').value)+num(tr.querySelector('.lab').value)+num(tr.querySelector('.sub').value)+num(tr.querySelector('.equip').value);
+  tr.querySelector('.val').textContent=v.toFixed(2);tr.querySelector('.cost').textContent=c.toFixed(2);tr.querySelector('.marg').textContent=(v-c).toFixed(2);
+  sV+=v;sC+=c;});
+ document.getElementById('totValue').textContent=sV.toFixed(2);
+ document.getElementById('totCost').textContent=sC.toFixed(2);
+ document.getElementById('totMargin').textContent=(sV-sC).toFixed(2);
+ document.getElementById('totVar').textContent=(CONTRACT===null)?'—':((sV-CONTRACT>=0?'+':'')+(sV-CONTRACT).toFixed(2));}
+document.getElementById('add').addEventListener('click',function(){
+ var cards=document.querySelectorAll('#rows .boq-card');
+ if(cards.length){var last=cards[cards.length-1];if(!last.querySelector('.d').value.trim()){var e=last.querySelector('.d');e.focus();last.scrollIntoView({behavior:'smooth',block:'center'});return;}}
+ var c=addRow('main');renum();calc();
+ c.scrollIntoView({behavior:'smooth',block:'center'});
+ var d=c.querySelector('.d');if(d)setTimeout(function(){d.focus();},150);});
+document.getElementById('rows').addEventListener('input',calc);
+document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('.boq-card').remove();renum();calc();}});
+document.getElementById('save').addEventListener('click',function(){
+ var rows=[];document.querySelectorAll('#rows .boq-card').forEach(function(tr){var d=tr.querySelector('.d').value.trim();if(!d)return;
+  rows.push({kind:tr.querySelector('.kind').value,code:tr.querySelector('.code').value,description:d,descriptionEn:tr.querySelector('.de').value,unit:tr.querySelector('.unit').value,
+   quantity:num(tr.querySelector('.q').value),unitPrice:num(tr.querySelector('.p').value),
+   materialCost:num(tr.querySelector('.mat').value),laborCost:num(tr.querySelector('.lab').value),
+   subcontractCost:num(tr.querySelector('.sub').value),equipmentCost:num(tr.querySelector('.equip').value)});});
+ document.getElementById('rowsJson').value=JSON.stringify(rows);
+ var f=document.getElementById('f');if(window.CB&&CB.submitForm)CB.submitForm(f,{type:'save'});else f.submit();});
+var EX=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(existing));
+function fill(x){var tr=addRow(x.kind);
+  tr.querySelector('.code').value=x.code||'';tr.querySelector('.d').value=x.desc||'';tr.querySelector('.de').value=x.descEn||'';tr.querySelector('.unit').value=x.unit||'';
+  tr.querySelector('.q').value=x.qty;tr.querySelector('.p').value=x.price;
+  tr.querySelector('.mat').value=x.mat||0;tr.querySelector('.lab').value=x.lab||0;tr.querySelector('.sub').value=x.sub||0;tr.querySelector('.equip').value=x.equip||0;}
+if(EX&&EX.length){EX.forEach(fill);}else{addRow('main');}
+renum();calc();
+</script>
+}

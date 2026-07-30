@@ -1,0 +1,86 @@
+@using CrossBuy.Models.Context.Inventory
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var custs = ViewBag.Customers as List<Customer> ?? new();
+    var items = ViewBag.Items as List<Item> ?? new();
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    var units = ViewBag.Units as List<UnitOfMeasure> ?? new();
+    var currencies = ViewBag.Currencies as List<Currency> ?? new();
+    int funcCur = (int)(ViewBag.FunctionalCurrencyId ?? 0);
+}
+<form asp-action="CreateQuotation" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+    <input type="hidden" name="linesJson" id="linesJson" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["New Quotation"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Quotations","Inventory")" class="text-muted text-hover-primary">@Localizer["Quotations"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["New"]</li></ul></div>
+        <div class="d-flex gap-2"><a href="@Url.Action("Quotations","Inventory")" class="btn btn-light">@SR["Cancel"]</a><button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-body"><div class="row g-5">
+            <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@SR["Customer"]</label><select name="customerId" id="custSel" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var v in custs) { <option value="@v.ID">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select></div>
+            <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var w in whs) { <option value="@w.ID">@w.Code</option> }</select></div>
+            <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="quoteDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Valid until"]</label><input type="text" name="validUntil" class="form-control form-control-solid" data-control="flatpickr" /></div>
+            <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Currency"]</label><select name="currencyId" id="curSel" class="form-select form-select-solid">@foreach (var c in currencies) { <option value="@c.ID" selected="@(c.ID == funcCur)">@c.Code</option> }</select></div>
+            <div class="col-md-2" id="rateWrap" style="display:none"><label class="fw-semibold fs-6 mb-2">@Localizer["FX rate"]</label><input type="number" step="0.0001" min="0" name="exchangeRate" class="form-control form-control-solid" placeholder="@Localizer["Auto"]" /></div>
+        </div><div class="mt-4"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div></div></div>
+        <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
+        <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+            <th style="min-width:220px">@SR["Item"]</th><th style="min-width:140px">@SR["Description"]</th><th style="width:90px">@Localizer["Qty"]</th><th style="min-width:120px">@Localizer["Unit"]</th><th style="width:120px">@SR["Price"]</th><th style="width:100px">@Localizer["Disc"]</th><th style="width:80px">@Localizer["Tax%"]</th><th class="text-end" style="width:120px">@SR["Total"]</th><th style="width:40px"></th>
+        </tr></thead><tbody id="rows"></tbody><tfoot><tr class="fw-bold"><td colspan="7" class="text-end">@Localizer["Sub / Tax / Total"]</td><td class="text-end" id="tot">0.00</td><td></td></tr></tfoot></table></div></div></div>
+    </div></div>
+</form>
+<partial name="_ItemScanModal" />
+<partial name="~/Views/Shared/_QuickAdd.cshtml" />
+@section Scripts {
+<script>
+var ITEMS=[]; var itemPickUrl='@Url.Action("ItemPickData","Inventory")';
+var UNITS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(units.Select(u=>new{iD=u.ID,name=(isAr?u.Name:u.NameEn)})));
+function iopts(){var o='<option value="">—</option>';ITEMS.forEach(function(i){o+='<option value="'+i.iD+'" data-price="'+(i.price||0)+'" data-base="'+(i.baseUom||'')+'" data-name="'+(i.name||'').replace(/"/g,'&quot;')+'">'+i.itemCode+' — '+i.name+'</option>';});return o;}
+function uopts(){var o='<option value="">—</option>';UNITS.forEach(function(u){o+='<option value="'+u.iD+'">'+u.name+'</option>';});return o;}
+function addRow(){var tr=document.createElement('tr');tr.innerHTML=
+ '<td><select class="form-select form-select-solid it">'+iopts()+'</select></td>'+
+ '<td><input class="form-control form-control-solid d"></td>'+
+ '<td><input type="number" step="0.01" class="form-control form-control-solid q text-end" value="1"></td>'+
+ '<td><select class="form-select form-select-solid u">'+uopts()+'</select></td>'+
+ '<td><input type="number" step="0.01" class="form-control form-control-solid p text-end" value="0"><div class="src fs-8 mt-1"></div></td>'+
+ '<td><input type="number" step="0.01" class="form-control form-control-solid disc text-end" value="0"></td>'+
+ '<td><input type="number" step="0.01" class="form-control form-control-solid tax text-end" value="14"></td>'+
+ '<td class="text-end lt fw-bold">0.00</td>'+
+ '<td class="text-center"><button type="button" class="btn btn-icon btn-light-danger btn-sm del"><i class="ki-outline ki-trash fs-5"></i></button></td>';
+ document.getElementById('rows').appendChild(tr);cbItemSelect(tr.querySelector('.it'), itemPickUrl);calc();}
+function calc(){var sub=0,tax=0;document.querySelectorAll('#rows tr').forEach(function(tr){var q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0,d=parseFloat(tr.querySelector('.disc').value)||0,t=parseFloat(tr.querySelector('.tax').value)||0;var lt=q*p-d;tr.querySelector('.lt').textContent=lt.toFixed(2);sub+=lt;tax+=lt*t/100;});document.getElementById('tot').textContent=sub.toFixed(2)+' / '+tax.toFixed(2)+' / '+(sub+tax).toFixed(2);}
+document.getElementById('add').addEventListener('click',addRow);
+document.getElementById('rows').addEventListener('input',calc);
+// pricing engine: price + discount by customer (specific>segment>general), qty break, and document currency
+var priceUrl='@Url.Action("PriceLookup","Inventory")';
+var FUNC=@funcCur;
+function curId(){ var s=document.getElementById('curSel'); return s&&s.value?parseInt(s.value):FUNC; }
+function applyPrice(tr){ var it=tr.querySelector('.it'); var id=parseInt(it&&it.value||'0'); if(!id)return;
+  var q=parseFloat(tr.querySelector('.q').value)||1; var cust=document.getElementById('custSel'); var cid=(cust&&cust.value)?('&customerId='+cust.value):'';
+  fetch(priceUrl+'?itemId='+id+'&qty='+q+'&currencyId='+curId()+cid,{headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();})
+    .then(function(d){ if(!d)return; var sp=tr.querySelector('.src'); if(d.unitPrice!=null){ tr.querySelector('.p').value=d.unitPrice; var disc=Math.round((q*d.unitPrice*(d.discountPercent||0)/100)*100)/100; tr.querySelector('.disc').value=disc; }
+      if(sp){ if(d.source==='converted'){ sp.className='src fs-8 mt-1 text-warning'; sp.textContent=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Converted (temporary) — review"].Value)); }
+        else if(d.source==='none'){ sp.className='src fs-8 mt-1 text-danger'; sp.textContent=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No price — enter manually"].Value)); }
+        else { sp.className='src fs-8 mt-1'; sp.textContent=''; } }
+      calc(); }).catch(function(){}); }
+document.getElementById('rows').addEventListener('change',function(e){if(e.target.classList.contains('it')){var tr=e.target.closest('tr'),o=e.target.options[e.target.selectedIndex];if(e.target.value){if(!tr.querySelector('.d').value)tr.querySelector('.d').value=o.getAttribute('data-name')||'';var b=o.getAttribute('data-base');if(b)tr.querySelector('.u').value=b;applyPrice(tr);}}});
+var priceTimer;
+document.getElementById('rows').addEventListener('input',function(e){ if(e.target.classList.contains('q')){ var tr=e.target.closest('tr'); clearTimeout(priceTimer); priceTimer=setTimeout(function(){applyPrice(tr);},400); }});
+document.getElementById('custSel').addEventListener('change',function(){ document.querySelectorAll('#rows tr').forEach(applyPrice); });
+(function(){ var s=document.getElementById('curSel'), w=document.getElementById('rateWrap');
+  function t(){ if(w) w.style.display=(parseInt(s.value)!==FUNC)?'':'none'; }
+  if(s){ s.addEventListener('change',function(){ t(); document.querySelectorAll('#rows tr').forEach(applyPrice); }); t(); } })();
+document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});
+document.getElementById('save').addEventListener('click',function(){var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var it=tr.querySelector('.it').value,q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0;if((it||tr.querySelector('.d').value)&&q>0)lines.push({itemId:it?parseInt(it):null,itemDescription:tr.querySelector('.d').value,qty:q,uoMId:tr.querySelector('.u').value?parseInt(tr.querySelector('.u').value):null,unitPrice:p,discountAmount:parseFloat(tr.querySelector('.disc').value)||0,taxRate:parseFloat(tr.querySelector('.tax').value)||0});});if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add a line"].Value)));return;}document.getElementById('linesJson').value=JSON.stringify(lines);document.getElementById('f').submit();});
+addRow();
+window.onItemScanned=function(p){ addRow(); var tr=document.querySelector('#rows tr:last-child'); if(!tr)return;
+  cbItemSelectSet(tr.querySelector('.it'), {id:p.id, code:p.code, name:p.name, nameEn:p.nameEn, price:p.salesPrice, baseUom:p.baseUom}); if(p.uomId){tr.querySelector('.u').value=String(p.uomId);}
+  tr.querySelector('.q').value=p.qty; if(p.salesPrice){tr.querySelector('.p').value=p.salesPrice;}
+  if(!tr.querySelector('.d').value)tr.querySelector('.d').value=(@(isAr?"true":"false")?p.name:(p.nameEn||p.name)); calc(); };
+</script>
+}

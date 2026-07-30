@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="EGP" xml:space="preserve">
+    <value>EGP</value>
+  </data>
+  <data name="Cashier screen preview" xml:space="preserve">
+    <value>Cashier screen preview</value>
+  </data>
+  <data name="How the buttons &amp; tabs will look to the cashier — preview only, no selling or payment." xml:space="preserve">
+    <value>How the buttons &amp; tabs will look to the cashier — preview only, no selling or payment.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>This company has no branches.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Select company</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Select branch</value>
+  </data>
+  <data name="Select a branch to preview the cashier screen." xml:space="preserve">
+    <value>Select a branch to preview the cashier screen.</value>
+  </data>
+  <data name="No quick items for this branch yet. Add them in " xml:space="preserve">
+    <value>No quick items for this branch yet. Add them in </value>
+  </data>
+  <data name="Quick items" xml:space="preserve">
+    <value>Quick items</value>
+  </data>
+  <data name=", then come back to preview." xml:space="preserve">
+    <value>, then come back to preview.</value>
+  </data>
+  <data name="Preview only." xml:space="preserve">
+    <value>Preview only.</value>
+  </data>
+  <data name="The order and figures below are a sample for display only — no selling, payment, or stock movement. Cashier operation is a later phase." xml:space="preserve">
+    <value>The order and figures below are a sample for display only — no selling, payment, or stock movement. Cashier operation is a later phase.</value>
+  </data>
+  <data name="options" xml:space="preserve">
+    <value>options</value>
+  </data>
+  <data name="Current Order" xml:space="preserve">
+    <value>Current Order</value>
+  </data>
+  <data name="Clear All" xml:space="preserve">
+    <value>Clear All</value>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Payment Method" xml:space="preserve">
+    <value>Payment Method</value>
+  </data>
+  <data name="Cash" xml:space="preserve">
+    <value>Cash</value>
+  </data>
+  <data name="Card" xml:space="preserve">
+    <value>Card</value>
+  </data>
+  <data name="Wallet" xml:space="preserve">
+    <value>Wallet</value>
+  </data>
+  <data name="Checkout (disabled in preview)" xml:space="preserve">
+    <value>Checkout (disabled in preview)</value>
+  </data>
+</root>

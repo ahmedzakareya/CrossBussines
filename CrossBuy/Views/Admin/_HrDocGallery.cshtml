@@ -1,0 +1,154 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var manage = ViewData["GalleryManage"] as bool? ?? false;
+    var galEmp = ViewData["GalleryEmployeeId"] as int? ?? 0;
+}
+<!--begin::Attachments gallery modal-->
+<div class="modal fade" id="docGallery" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h2 class="fs-4 fw-bold m-0 text-truncate" id="dgTitle">@Localizer["Attachments"]</h2>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <a id="dgOpen" href="#" target="_blank" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-exit-right-corner fs-5"></i>@Localizer["Open in new tab"]</a>
+                    <a id="dgDownload" href="#" download class="btn btn-sm btn-light"><i class="ki-outline ki-file-down fs-5"></i>@Localizer["Download"]</a>
+                    <div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <div class="d-flex" style="height:72vh;">
+                    <!--begin::File list-->
+                    <div class="border-end w-275px flex-shrink-0 overflow-auto p-3" id="dgList" style="background:#fbfcfd;"></div>
+                    <!--end::File list-->
+                    <!--begin::Main viewer-->
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-center overflow-auto" id="dgMain" style="background:#f5f8fa;"></div>
+                    <!--end::Main viewer-->
+                </div>
+            </div>
+            @if (manage)
+            {
+                <div class="modal-footer py-3">
+                    <form id="dgUpload" method="post" action="@Url.Action("AddAttachments","Admin")" enctype="multipart/form-data" class="d-flex align-items-center gap-3 w-100">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="kind" id="dgUpKind" value="" />
+                        <input type="hidden" name="ownerId" id="dgUpOwner" value="" />
+                        <input type="hidden" name="employeeId" value="@galEmp" />
+                        <input type="file" name="files" multiple class="form-control form-control-sm form-control-solid" required />
+                        <button type="submit" class="btn btn-sm btn-primary flex-shrink-0"><i class="ki-outline ki-cloud-add fs-4"></i>@Localizer["Add files"]</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<!--end::Attachments gallery modal-->
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('docGallery');
+    if (!modalEl || !window.bootstrap) return;
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    var listEl = document.getElementById('dgList');
+    var mainEl = document.getElementById('dgMain');
+    var titleEl = document.getElementById('dgTitle');
+    var openEl = document.getElementById('dgOpen');
+    var dlEl = document.getElementById('dgDownload');
+    var manage = @(manage ? "true" : "false");
+    var employeeId = @galEmp;
+    var filesUrl = '@Url.Action("HrDocFiles","Admin")';
+    var deleteUrl = '@Url.Action("DeleteAttachment","Admin")';
+    var token = (document.querySelector('#docGallery input[name="__RequestVerificationToken"]') || {}).value || '';
+    var T = {
+        empty: '@Localizer["No files attached to this record yet."]',
+        cannot: '@Localizer["This file type cannot be previewed here."]',
+        useBtns: '@Localizer["Use “Open in new tab” or “Download”."]',
+        del: '@Localizer["Delete attachment?"]'
+    };
+    function isImage(u) { return /\.(png|jpe?g|gif|bmp|webp|svg)(\?|#|$)/i.test(u); }
+    function isPdf(u) { return /\.pdf(\?|#|$)/i.test(u); }
+
+    function showMain(f) {
+        openEl.href = f.url; dlEl.href = f.url;
+        mainEl.innerHTML = '';
+        if (isImage(f.url)) {
+            var img = document.createElement('img');
+            img.src = f.url; img.style.maxWidth = '100%'; img.style.maxHeight = '100%'; img.style.objectFit = 'contain';
+            mainEl.appendChild(img);
+        } else if (isPdf(f.url)) {
+            var fr = document.createElement('iframe');
+            fr.src = f.url; fr.style.width = '100%'; fr.style.height = '100%'; fr.style.border = '0';
+            mainEl.appendChild(fr);
+        } else {
+            mainEl.innerHTML = '<div class="text-center text-muted p-10">'
+                + '<i class="ki-outline ki-file fs-5x text-primary d-block mb-4"></i>'
+                + '<div class="fs-5 fw-semibold mb-2">' + T.cannot + '</div>'
+                + '<div class="fs-7">' + T.useBtns + '</div></div>';
+        }
+    }
+
+    function delAttachment(id) {
+        function go() {
+            var f = document.createElement('form');
+            f.method = 'post'; f.action = deleteUrl;
+            f.innerHTML = '<input type="hidden" name="__RequestVerificationToken" value="' + token + '">'
+                + '<input type="hidden" name="id" value="' + id + '">'
+                + '<input type="hidden" name="employeeId" value="' + employeeId + '">';
+            document.body.appendChild(f); f.submit();
+        }
+        if (window.Swal) {
+            Swal.fire({ text: T.del, icon: 'warning', showCancelButton: true, buttonsStyling: false,
+                confirmButtonText: '@SR["Yes"]', cancelButtonText: '@SR["Cancel"]',
+                customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } })
+                .then(function (r) { if (r.isConfirmed) go(); });
+        } else if (confirm(T.del)) { go(); }
+    }
+
+    function renderList(files, title, kind, ownerId) {
+        titleEl.textContent = title || '';
+        var up = document.getElementById('dgUpload');
+        if (up) { document.getElementById('dgUpKind').value = kind; document.getElementById('dgUpOwner').value = ownerId; }
+        listEl.innerHTML = '';
+        if (!files.length) {
+            listEl.innerHTML = '<div class="text-muted text-center p-6 fs-7">' + T.empty + '</div>';
+            mainEl.innerHTML = '';
+            openEl.href = '#'; dlEl.href = '#';
+            return;
+        }
+        files.forEach(function (f, idx) {
+            var icon = isImage(f.url) ? 'ki-picture' : (isPdf(f.url) ? 'ki-file-pdf' : 'ki-file');
+            var row = document.createElement('div');
+            row.className = 'dg-item d-flex align-items-center gap-2 p-3 rounded mb-2 cursor-pointer';
+            row.style.cssText = 'background:#fff;border:1px solid #eff2f5;';
+            row.innerHTML = '<i class="ki-outline ' + icon + ' fs-2 text-primary"></i>'
+                + '<span class="flex-grow-1 text-truncate fs-7 fw-semibold" title="' + (f.name || '') + '">' + (f.name || ('#' + f.id)) + '</span>'
+                + (manage ? '<button type="button" class="btn btn-icon btn-sm btn-light-danger dg-del" data-id="' + f.id + '" title="Delete"><i class="ki-outline ki-trash fs-6"></i></button>' : '');
+            row.addEventListener('click', function (e) {
+                if (e.target.closest('.dg-del')) return;
+                listEl.querySelectorAll('.dg-item').forEach(function (r) { r.style.borderColor = '#eff2f5'; r.style.background = '#fff'; });
+                row.style.borderColor = '#13433a'; row.style.background = '#eaf3ef';
+                showMain(f);
+            });
+            var del = row.querySelector('.dg-del');
+            if (del) del.addEventListener('click', function () { delAttachment(f.id); });
+            listEl.appendChild(row);
+            if (idx === 0) { row.style.borderColor = '#13433a'; row.style.background = '#eaf3ef'; showMain(f); }
+        });
+    }
+
+    document.querySelectorAll('.cb-gallery').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var kind = b.getAttribute('data-cb-kind');
+            var id = b.getAttribute('data-cb-id');
+            var title = b.getAttribute('data-cb-title') || '';
+            listEl.innerHTML = '<div class="text-muted text-center p-6 fs-7"><span class="spinner-border spinner-border-sm me-2"></span></div>';
+            mainEl.innerHTML = '';
+            modal.show();
+            fetch(filesUrl + '?kind=' + encodeURIComponent(kind) + '&id=' + encodeURIComponent(id), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.json(); })
+                .then(function (files) { renderList(files || [], title, kind, id); })
+                .catch(function () { listEl.innerHTML = '<div class="text-danger text-center p-6 fs-7">!</div>'; });
+        });
+    });
+});
+</script>

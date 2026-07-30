@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Stock on-hand" xml:space="preserve">
+    <value>أرصدة المخزون</value>
+  </data>
+  <data name="Balances" xml:space="preserve">
+    <value>الأرصدة</value>
+  </data>
+  <data name="Movements" xml:space="preserve">
+    <value>الحركات</value>
+  </data>
+  <data name="Multi-search (code / name / barcode)" xml:space="preserve">
+    <value>بحث متعدد (الكود / الاسم / الباركود)</value>
+  </data>
+  <data name="Add search terms…" xml:space="preserve">
+    <value>أضف كلمات بحث…</value>
+  </data>
+  <data name="All warehouses" xml:space="preserve">
+    <value>كل المخازن</value>
+  </data>
+  <data name="With stock only" xml:space="preserve">
+    <value>ذات رصيد فقط</value>
+  </data>
+  <data name="Total value:" xml:space="preserve">
+    <value>إجمالي القيمة:</value>
+  </data>
+  <data name="Export Excel" xml:space="preserve">
+    <value>تصدير Excel</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>الرصيد</value>
+  </data>
+  <data name="Avg cost" xml:space="preserve">
+    <value>متوسط التكلفة</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>القيمة</value>
+  </data>
+  <data name="Ledger" xml:space="preserve">
+    <value>الدفتر</value>
+  </data>
+  <data name="Loading…" xml:space="preserve">
+    <value>جارٍ التحميل…</value>
+  </data>
+  <data name="No matching balances" xml:space="preserve">
+    <value>لا توجد أرصدة مطابقة</value>
+  </data>
+  <data name="{0} results" xml:space="preserve">
+    <value>النتائج: {0}</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>من</value>
+  </data>
+</root>

@@ -1,0 +1,62 @@
+@using CrossBuy.Models.Context.Crm
+@model CrmPipeline
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isEdit = Model.ID > 0;
+    var initial = Model.Stages.Select(s => new { name = s.Name, nameEn = s.NameEn, probability = s.Probability, isWon = s.IsWon, isLost = s.IsLost }).ToList();
+    var initialJson = System.Text.Json.JsonSerializer.Serialize(initial);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? Model.Name : Localizer["New pipeline"].Value)</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Pipelines","Crm")" class="text-muted text-hover-primary">@Localizer["Pipelines"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isEdit ? ("#" + Model.ID) : Localizer["New"].Value)</li></ul></div>
+        <a href="@Url.Action("Pipelines","Crm")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <form asp-action="SavePipeline" method="post" id="plForm" data-cb-confirm data-cb-action="@(isEdit ? "edit" : "save")" data-cb-text="@Localizer["Save pipeline?"]">@Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.ID" /><input type="hidden" name="stagesJson" id="stagesJson" />
+            <div class="card mb-5"><div class="card-body py-6"><div class="row g-4">
+                <div class="col-md-5"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" value="@Model.Name" required /></div>
+                <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" value="@Model.NameEn" /></div>
+                <div class="col-md-3 d-flex align-items-end gap-5">
+                    <div class="form-check form-switch"><input type="hidden" name="isDefault" value="false" /><input class="form-check-input" type="checkbox" name="isDefault" value="true" @(Model.IsDefault ? "checked" : "")><label class="form-check-label fw-semibold ms-2">@Localizer["Default"]</label></div>
+                    <div class="form-check form-switch"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" value="true" @(Model.IsActive ? "checked" : "")><label class="form-check-label fw-semibold ms-2">@SR["Active"]</label></div>
+                </div>
+            </div></div></div>
+
+            <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Stages"]</div><div class="card-toolbar"><button type="button" id="addStage" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add stage"]</button></div></div>
+                <div class="card-body">
+                    <div class="alert alert-light-primary border border-primary border-dashed p-3 mb-4 fs-8 text-gray-700">@Localizer["Order top-to-bottom. Each stage has a probability%. Flag the Won and Lost stages — reaching the Won stage recognizes the win and links the financial customer automatically."]</div>
+                    <div class="table-responsive"><table class="table table-row-bordered align-middle gy-2">
+                        <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th style="width:40px">#</th><th>@Localizer["Code/Name"]</th><th style="width:140px">@Localizer["Probability%"]</th><th class="text-center" style="width:90px">@Localizer["Won"]</th><th class="text-center" style="width:90px">@Localizer["Lost"]</th><th class="w-50px"></th></tr></thead>
+                        <tbody id="stageRows"></tbody>
+                    </table></div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2"><a href="@Url.Action("Pipelines","Crm")" class="btn btn-light">@SR["Cancel"]</a><button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button></div>
+        </form>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var ST = @Html.Raw(initialJson); if(!ST.length) ST=[{name:'Prospecting',probability:10},{name:'Qualification',probability:25},{name:'Proposal',probability:50},{name:'Negotiation',probability:75},{name:'Won',probability:100,isWon:true},{name:'Lost',probability:0,isLost:true}];
+  var tb=document.getElementById('stageRows');
+  function render(){ tb.innerHTML=''; ST.forEach(function(s,i){ var tr=document.createElement('tr');
+    tr.innerHTML='<td class="text-muted">'+(i+1)+'</td>'+
+      '<td><input class="form-control form-control-solid form-control-sm nm" value="'+(s.name||'').replace(/"/g,'&quot;')+'"></td>'+
+      '<td><input type="number" min="0" max="100" class="form-control form-control-solid form-control-sm pr text-end" value="'+(s.probability||0)+'"></td>'+
+      '<td class="text-center"><input type="checkbox" class="form-check-input won"'+(s.isWon?' checked':'')+'></td>'+
+      '<td class="text-center"><input type="checkbox" class="form-check-input lost"'+(s.isLost?' checked':'')+'></td>'+
+      '<td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger" data-rm="'+i+'"><i class="ki-outline ki-trash fs-6"></i></button></td>';
+    tb.appendChild(tr); }); }
+  tb.addEventListener('click',function(e){ var b=e.target.closest('[data-rm]'); if(!b)return; sync(); ST.splice(parseInt(b.getAttribute('data-rm')),1); render(); });
+  function sync(){ var rows=tb.querySelectorAll('tr'); ST=[]; rows.forEach(function(r){ ST.push({ name:r.querySelector('.nm').value, probability:parseInt(r.querySelector('.pr').value)||0, isWon:r.querySelector('.won').checked, isLost:r.querySelector('.lost').checked }); }); }
+  document.getElementById('addStage').addEventListener('click',function(){ sync(); ST.push({name:'',probability:0}); render(); });
+  document.getElementById('plForm').addEventListener('submit',function(){ sync(); document.getElementById('stagesJson').value=JSON.stringify(ST.filter(function(s){return (s.name||'').trim();}).map(function(s){return {Name:s.name,Probability:s.probability,IsWon:s.isWon,IsLost:s.isLost};})); });
+  render();
+})();
+</script>
+}

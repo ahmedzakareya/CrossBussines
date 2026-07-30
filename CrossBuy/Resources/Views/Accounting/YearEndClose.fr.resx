@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Year-end Close" xml:space="preserve">
+    <value>Clôture de fin d'année</value>
+  </data>
+  <data name="The year-end entry closes all revenue and expense accounts and transfers the net result to Retained Earnings (3201), then locks all of the year's periods." xml:space="preserve">
+    <value>L'écriture de fin d'année clôture tous les comptes de produits et de charges et transfère le résultat net vers les Report à nouveau (3201), puis verrouille toutes les périodes de l'année.</value>
+  </data>
+  <data name="Fiscal Years" xml:space="preserve">
+    <value>Exercices</value>
+  </data>
+  <data name="Year" xml:space="preserve">
+    <value>Année</value>
+  </data>
+  <data name="Period" xml:space="preserve">
+    <value>Période</value>
+  </data>
+  <data name="Revenue" xml:space="preserve">
+    <value>Produits</value>
+  </data>
+  <data name="Expenses" xml:space="preserve">
+    <value>Charges</value>
+  </data>
+  <data name="Net result" xml:space="preserve">
+    <value>Résultat net</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>Clôturé</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouvert</value>
+  </data>
+  <data name="Confirm closing the year?" xml:space="preserve">
+    <value>Confirmer la clôture de l'année ?</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Clôturer</value>
+  </data>
+  <data name="Reopen and reverse closing entry?" xml:space="preserve">
+    <value>Rouvrir et contre-passer l'écriture de clôture ?</value>
+  </data>
+  <data name="Reopen" xml:space="preserve">
+    <value>Rouvrir</value>
+  </data>
+  <data name="No fiscal years" xml:space="preserve">
+    <value>Aucun exercice</value>
+  </data>
+  <data name="Closing History" xml:space="preserve">
+    <value>Historique des clôtures</value>
+  </data>
+  <data name="Close date" xml:space="preserve">
+    <value>Date de clôture</value>
+  </data>
+  <data name="Entry" xml:space="preserve">
+    <value>Écriture</value>
+  </data>
+  <data name="Reopened" xml:space="preserve">
+    <value>Rouvert</value>
+  </data>
+  <data name="No closings yet" xml:space="preserve">
+    <value>Aucune clôture pour l'instant</value>
+  </data>
+</root>

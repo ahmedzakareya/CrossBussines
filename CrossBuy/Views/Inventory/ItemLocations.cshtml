@@ -1,0 +1,70 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    int? fWh = ViewBag.FilterWarehouseId;
+    var sections = ViewBag.Sections as List<BinLocation> ?? new();
+    var racks = ViewBag.Racks as List<BinLocation> ?? new();
+    var rows = ViewBag.Rows as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    string SecOpts(int? sel) => "<option value=\"\">— " + Localizer["select"].Value + " —</option>" + string.Join("", sections.Select(s =>
+        $"<option value=\"{s.ID}\"{(sel == s.ID ? " selected" : "")}>{s.Code}{(string.IsNullOrEmpty(s.Name) ? "" : " — " + s.Name)}</option>"));
+}
+<form asp-action="SaveItemLocations" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+    <input type="hidden" name="rowsJson" id="rowsJson" />
+    <input type="hidden" name="warehouseId" value="@fWh" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Item locations"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Warehouses"]</li></ul></div>
+        @if (fWh != null) { <button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button> }
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
+            <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
+                <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+            <div class="col-md-7"><div class="text-muted fs-7">@Localizer["Per item: default Section (required) and Rack (optional). Purely locational — never affects valuation or GL."]</div>
+                @if (fWh != null && sections.Count == 0) { <div class="text-danger fs-7 mt-2">@Localizer["No sections defined for this warehouse. Add them first from Warehouse sections/racks."] <a href="@Url.Action("WarehouseSections","Inventory", new { warehouseId = fWh })">@SR["Add"]</a></div> }
+            </div>
+        </div></div></div>
+        @if (fWh == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-information-5 fs-3x mb-3 d-block"></i>@Localizer["Select a warehouse to list items."]</div></div>
+        }
+        else
+        {
+            <div class="card"><div class="card-header align-items-center py-5"><div class="card-title"><div class="d-flex align-items-center position-relative my-1"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="s" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
+            <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3" id="t">
+                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th style="width:260px" class="required">@Localizer["Default section"]</th><th style="width:260px">@Localizer["Rack (optional)"]</th></tr></thead>
+                <tbody class="fw-semibold text-gray-700">
+                @foreach (var r in rows)
+                {
+                    int? secId = r.SectionId; int? rackId = r.RackId;
+                    <tr data-s="@r.ItemCode @r.ItemName" data-item="@r.ItemId">
+                        <td class="fw-bold text-gray-800">@r.ItemCode</td><td>@r.ItemName</td>
+                        <td><select class="form-select form-select-solid form-select-sm sec">@Html.Raw(SecOpts(secId))</select></td>
+                        <td>
+                            <select class="form-select form-select-solid form-select-sm rack" data-rack="@rackId">
+                                <option value="">—</option>
+                                @foreach (var rk in racks) { <option value="@rk.ID" data-section="@rk.ParentId" selected="@(rackId==rk.ID)">@rk.Code@(string.IsNullOrEmpty(rk.Name) ? "" : " — " + rk.Name)</option> }
+                            </select>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table></div></div></div>
+        }
+    </div></div>
+</form>
+@section Scripts {
+<script>
+jQuery(function($){var url='@Url.Action("ItemLocations","Inventory")';var go=function(){var v=$('#whSel').val();if(v)location.href=url+'?warehouseId='+v;};$('#whSel').on('change select2:select',go);});
+var s=document.getElementById('s'); if(s)s.addEventListener('input',function(){var q=(s.value||'').trim().toLowerCase();[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(r){r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none';});});
+// keep rack options limited to those under the chosen section
+function syncRack(tr){var sec=tr.querySelector('.sec').value;var rack=tr.querySelector('.rack');var cur=rack.value;var okCur=false;[].slice.call(rack.options).forEach(function(o){if(!o.value){o.hidden=false;return;}var vis=(o.getAttribute('data-section')===sec);o.hidden=!vis;if(vis&&o.value===cur)okCur=true;});if(!okCur)rack.value='';}
+[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(tr){var sel=tr.querySelector('.sec');sel.addEventListener('change',function(){syncRack(tr);});syncRack(tr);});
+var save=document.getElementById('save');
+if(save)save.addEventListener('click',function(){var bad=null;var arr=[];[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(tr){var sec=tr.querySelector('.sec').value;var rack=tr.querySelector('.rack').value;if(rack&&!sec)bad=tr;arr.push({itemId:parseInt(tr.getAttribute('data-item')),sectionId:sec?parseInt(sec):null,rackId:rack?parseInt(rack):null});});function doSave(){document.getElementById('rowsJson').value=JSON.stringify(arr);document.getElementById('f').submit();}if(window.CB&&CB.confirm){CB.confirm({type:'edit',text:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Save item locations?"].Value))}).then(function(ok){if(ok)doSave();});}else{doSave();}});
+</script>
+}

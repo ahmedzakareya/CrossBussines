@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="VAT Returns" xml:space="preserve">
+    <value>Déclarations de TVA</value>
+  </data>
+  <data name="New return" xml:space="preserve">
+    <value>Nouvelle déclaration</value>
+  </data>
+  <data name="Search..." xml:space="preserve">
+    <value>Rechercher...</value>
+  </data>
+  <data name="Period" xml:space="preserve">
+    <value>Période</value>
+  </data>
+  <data name="Output VAT" xml:space="preserve">
+    <value>TVA collectée</value>
+  </data>
+  <data name="Input VAT" xml:space="preserve">
+    <value>TVA déductible</value>
+  </data>
+  <data name="Net due" xml:space="preserve">
+    <value>Net dû</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouverte</value>
+  </data>
+  <data name="Settled" xml:space="preserve">
+    <value>Réglée</value>
+  </data>
+  <data name="Filed" xml:space="preserve">
+    <value>Déposée</value>
+  </data>
+  <data name="No returns" xml:space="preserve">
+    <value>Aucune déclaration</value>
+  </data>
+  <data name="New VAT return" xml:space="preserve">
+    <value>Nouvelle déclaration de TVA</value>
+  </data>
+  <data name="Output and input VAT are computed from movement on the VAT accounts during the period." xml:space="preserve">
+    <value>La TVA collectée et déductible est calculée à partir des mouvements sur les comptes de TVA pendant la période.</value>
+  </data>
+  <data name="Period start" xml:space="preserve">
+    <value>Début de période</value>
+  </data>
+  <data name="Period end" xml:space="preserve">
+    <value>Fin de période</value>
+  </data>
+  <data name="File return" xml:space="preserve">
+    <value>Déposer la déclaration</value>
+  </data>
+</root>

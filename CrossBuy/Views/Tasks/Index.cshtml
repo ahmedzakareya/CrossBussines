@@ -1,0 +1,778 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+    var tasks = ViewBag.Tasks as List<TaskRowDto> ?? new();
+    var employees = ViewBag.Employees as List<(int Id, string Name)> ?? new();
+    var scope = (string)(ViewBag.Scope ?? "mine");
+    var running = ViewBag.Running as CrossBuy.BL.RunningTimerDto;
+    string curStatus = ViewBag.Status as string; string curPriority = ViewBag.Priority as string; string q = ViewBag.Q as string;
+    int? curAssignee = ViewBag.Assignee as int?; string curSort = (ViewBag.Sort as string) ?? "";
+    int total = (int)(ViewBag.Total ?? tasks.Count); int pg = (int)(ViewBag.Page ?? 1); int pageSize = (int)(ViewBag.PageSize ?? 25); int pages = (int)(ViewBag.Pages ?? 1);
+    ViewData["Title"] = T("إدارة المهام", "Tasks");
+    var listAction = scope == "all" ? "All" : "Index";
+    var view = (string)(ViewBag.View ?? "all");
+    var kpis = ViewBag.Kpis as CrossBuy.BL.TaskKpiDto ?? new();
+    var qenc = System.Net.WebUtility.UrlEncode(q ?? "");
+    var asg = curAssignee?.ToString() ?? "";
+    string Filters() => $"status={curStatus}&priority={curPriority}&q={qenc}&assignee={asg}";
+    string PageHref(int p) => $"/Tasks/{listAction}?{Filters()}&view={view}&sort={curSort}&page={p}&pageSize={pageSize}";
+    string ViewHref(string v) => $"/Tasks/{listAction}?{Filters()}&view={v}&sort={curSort}";
+    string SortHref(string col) { var next = curSort == col ? col + "_desc" : (curSort == col + "_desc" ? "" : col); return $"/Tasks/{listAction}?{Filters()}&view={view}&sort={next}"; }
+    string SortMark(string col)
+    {
+        bool asc = curSort == col; bool desc = curSort == col + "_desc";
+        var up = "<i class='ki-solid ki-up" + (asc ? " on" : "") + "'></i>";
+        var dn = "<i class='ki-solid ki-down" + (desc ? " on" : "") + "'></i>";
+        return "<span class='sort-ico'>" + up + dn + "</span>";
+    }
+    var pageNums = new List<int>();   // -1 = ellipsis
+    if (pages > 1)
+    {
+        int win = 2, lo = Math.Max(1, pg - win), hi = Math.Min(pages, pg + win);
+        if (lo > 1) { pageNums.Add(1); if (lo > 2) { pageNums.Add(-1); } }
+        for (int p = lo; p <= hi; p++) { pageNums.Add(p); }
+        if (hi < pages) { if (hi < pages - 1) { pageNums.Add(-1); } pageNums.Add(pages); }
+    }
+
+    Func<string, string> pl = p => p switch { "Low" => T("منخفضة", "Low"), "High" => T("عالية", "High"), "Urgent" => T("عاجلة", "Urgent"), _ => T("متوسطة", "Medium") };
+    Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "info" };
+    Func<string, string> pi = p => p switch { "Low" => "ki-arrow-down", "High" => "ki-arrow-up", "Urgent" => "ki-information-5", _ => "ki-minus" };
+    // priority marker HTML — urgent uses a filled red triangle (▲) like the mockup
+    Func<string, string> priMark = p => p switch
+    {
+        "Urgent" => "<span class='me-1' style='font-size:.6rem;line-height:1;'>&#9650;</span>",
+        "High" => "<i class='ki-outline ki-arrow-up fs-8 me-1'></i>",
+        "Low" => "<i class='ki-outline ki-arrow-down fs-8 me-1'></i>",
+        _ => "<i class='ki-outline ki-minus fs-8 me-1'></i>"
+    };
+    Func<string, string> sl = s => s switch { "InProgress" => T("جارية", "In progress"), "Done" => T("مكتملة", "Done"), _ => T("جديدة", "New") };
+    Func<string, string> sc = s => s switch { "InProgress" => "info", "Done" => "success", _ => "primary" };
+    Func<string, string> si = s => s switch { "InProgress" => "ki-timer", "Done" => "ki-check-circle", _ => "ki-abstract-26" };
+    Func<int, string> progColor = pct => pct >= 100 ? "success" : pct >= 60 ? "primary" : pct >= 30 ? "info" : pct > 0 ? "warning" : "secondary";
+    Func<int, string> progHex = pct => pct >= 100 ? "#17c653" : pct >= 60 ? "#3e97ff" : pct >= 30 ? "#00a3ff" : pct > 0 ? "#f79009" : "#e4e6ef";
+    Func<DateTime, string> tfmt = d => isAr ? d.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("ar")) : d.ToString("hh:mm tt");
+    (string text, string color) Rem(CrossBuy.BL.TaskRowDto x)
+    {
+        // correct Arabic number agreement: 3-10 → "أيام/ساعات"، غير كده → "يوم/ساعة"، والمثنى "ساعتان"
+        string DayTxt(int n) => $"{n} " + ((n >= 3 && n <= 10) ? "أيام" : "يوم");
+        string HourTxt(int n) => n == 1 ? "ساعة" : n == 2 ? "ساعتان" : $"{n} " + ((n >= 3 && n <= 10) ? "ساعات" : "ساعة");
+        if (x.Status == "Done") return (T("منتهي", "Finished"), "danger");
+        if (!x.DueDate.HasValue) return ("—", "muted");
+        var now2 = DateTime.Now; var due = x.DueDate.Value;
+        if (due < now2)
+        {
+            var late = now2 - due;
+            if (late.TotalHours < 24) { int h = Math.Max(1, (int)Math.Ceiling(late.TotalHours)); return (T($"متأخر {HourTxt(h)}", $"{h}h late"), "danger"); }
+            int d = (int)Math.Ceiling(late.TotalDays); return (T($"متأخر -{DayTxt(d)}", $"-{d}d late"), "danger");
+        }
+        var hrs = (due - now2).TotalHours;
+        if (hrs < 24) { int h = (int)Math.Ceiling(hrs); return (T(HourTxt(h), $"{h}h"), "warning"); }
+        int days = (int)Math.Ceiling(hrs / 24);
+        return (T(DayTxt(days), $"{days}d"), days <= 3 ? "warning" : "success");
+    }
+    Func<string, string> initials = n => { n = (n ?? "").Trim(); if (n.Length == 0) return "—"; var parts = n.Split(' ', StringSplitOptions.RemoveEmptyEntries); return parts.Length >= 2 ? $"{parts[0][0]}{parts[1][0]}" : n.Substring(0, Math.Min(2, n.Length)); };
+    Func<string, string> photoSrc = p => string.IsNullOrWhiteSpace(p) ? Url.Content("~/Backend-assets/media/svg/avatars/blank.svg") : Url.Content("~" + p.Replace("\\", "/"));
+
+    // KPI cards, listed end→start (RTL) so «الإجمالي» sits far-left and «مكتملة» sits next to the search — matches the mockup.
+    var kpiCards = new[] {
+        (key: "done",       cls: "kpi-done",    label: T("مكتملة", "Done"),         val: kpis.Done,       icon: "ki-check-circle"),
+        (key: "inprogress", cls: "kpi-prog",    label: T("جارية", "In progress"),   val: kpis.InProgress, icon: "ki-timer"),
+        (key: "overdue",    cls: "kpi-overdue", label: T("متأخرة", "Overdue"),      val: kpis.Overdue,    icon: "ki-time"),
+        (key: "urgent",     cls: "kpi-urgent",  label: T("عاجلة", "Urgent"),        val: kpis.Urgent,     icon: "ki-information-5"),
+        (key: "all",        cls: "kpi-total",   label: T("إجمالي المهام", "Total"), val: kpis.Total,      icon: "ki-calendar"),
+    };
+    Func<CrossBuy.BL.TaskRowDto, string> dotColor = x => (x.IsOverdue && x.Status != "Done") ? "danger" : x.Status == "Done" ? "success" : x.Status == "InProgress" ? "info" : "primary";
+}
+
+<style>
+    /* KPI cards — matched to the approved mockup (colored number+label, subtle tint, rounded) */
+    .kpi-card { border-radius: 16px; border: 1.5px solid transparent; min-width: 165px; transition: box-shadow .15s ease, transform .15s ease; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+    .kpi-card .kpi-num { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .kpi-card .kpi-lbl { font-size: .9rem; font-weight: 600; margin-top: .35rem; }
+    .kpi-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+    .kpi-icon i { font-size: 1.6rem; line-height: 1; }
+    /* Total: white card, blue number+label, bare blue icon (no filled box) */
+    .kpi-total { background: #ffffff; border-color: #e4e6ef; }
+    .kpi-total .kpi-num, .kpi-total .kpi-lbl { color: #2f6fb0; }
+    .kpi-total .kpi-icon { background: transparent; }
+    .kpi-total .kpi-icon i { color: #2f6fb0; }
+    .kpi-total.active { border-color: #a1a5b7; }
+    /* Urgent — red */
+    .kpi-urgent { background: #fff5f8; }
+    .kpi-urgent .kpi-num, .kpi-urgent .kpi-lbl { color: #f1416c; }
+    .kpi-urgent .kpi-icon { background: #f1416c; } .kpi-urgent .kpi-icon i { color: #fff; }
+    .kpi-urgent.active { border-color: #f1416c; }
+    /* Overdue — orange */
+    .kpi-overdue { background: #fff8ec; }
+    .kpi-overdue .kpi-num, .kpi-overdue .kpi-lbl { color: #f79009; }
+    .kpi-overdue .kpi-icon { background: #f79009; } .kpi-overdue .kpi-icon i { color: #fff; }
+    .kpi-overdue.active { border-color: #f79009; }
+    /* In progress — blue */
+    .kpi-prog { background: #eef6ff; }
+    .kpi-prog .kpi-num, .kpi-prog .kpi-lbl { color: #3e97ff; }
+    .kpi-prog .kpi-icon { background: #3e97ff; } .kpi-prog .kpi-icon i { color: #fff; }
+    .kpi-prog.active { border-color: #3e97ff; }
+    /* Done — green */
+    .kpi-done { background: #effaf3; }
+    .kpi-done .kpi-num, .kpi-done .kpi-lbl { color: #17c653; }
+    .kpi-done .kpi-icon { background: #17c653; } .kpi-done .kpi-icon i { color: #fff; }
+    .kpi-done.active { border-color: #17c653; }
+    /* Tabs — active is blue like the mockup (not the brand green) */
+    .task-tabs .nav-link { color: #7e8299; }
+    .task-tabs .nav-link:hover { color: #3e97ff; }
+    .task-tabs .nav-link.active { color: #3e97ff !important; border-bottom-color: #3e97ff !important; }
+    /* Column sort indicator — stacked double chevron (⇕) like the mockup */
+    .sort-ico { display: inline-flex; flex-direction: column; line-height: .48; vertical-align: middle; margin-right: 4px; color: #b5b7c8; }
+    .sort-ico i { display: block; font-size: .58rem; }
+    .sort-ico i.on { color: #3e97ff; }
+    /* premium polish: soft card, comfy rows, subtle hover */
+    .tasks-card { border: 1px solid #eef0f4; border-radius: 16px; box-shadow: 0 6px 24px rgba(24,28,50,.05); }
+    .tasks-card thead th { padding-bottom: 14px; }
+    .tasks-card tbody tr { transition: background .12s ease; }
+    .tasks-card tbody tr:hover { background: #f8fafd; }
+    .tasks-card tbody td { border-bottom-color: #f2f3f7 !important; }
+    .tasks-card td, .tasks-card th { padding-left: 4px !important; padding-right: 4px !important; }
+</style>
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("إدارة المهام", "Tasks")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@SR["Tasks"]</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@(scope == "all" ? T("كل المهام", "All tasks") : T("مهامي", "My tasks"))</li>
+        </ul>
+    </div>
+    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#taskModal" onclick="cbTaskNew()">
+        <i class="ki-outline ki-plus fs-2"></i>@T("مهمة جديدة", "New task")
+    </button>
+</div></div>
+<!--end::Toolbar-->
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    @if (running != null)
+    {
+        <div class="alert alert-primary d-flex flex-stack align-items-center py-3 mb-5">
+            <span class="d-flex align-items-center gap-3">
+                <i class="ki-outline ki-time fs-2 text-primary"></i>
+                <span><span class="fw-bold">@T("مؤقّت شغّال:", "Timer running:")</span> @running.TaskTitle
+                    <span class="text-muted ms-2">@T("منذ", "since") @running.StartedAt.ToLocalTime().ToString("HH:mm")</span></span>
+            </span>
+            <form asp-action="StopTimer" method="post" class="m-0">@Html.AntiForgeryToken()<input type="hidden" name="scope" value="@scope" />
+                <button type="submit" class="btn btn-sm btn-danger"><i class="ki-outline ki-cross-circle fs-5"></i>@T("إيقاف وتسجيل", "Stop & log")</button>
+            </form>
+        </div>
+    }
+
+    <form method="get" asp-action="@listAction" id="taskFilterForm">
+        <input type="hidden" name="view" value="@view" />
+        <input type="hidden" name="sort" value="@curSort" />
+
+        <!--begin::KPI + search row-->
+        <div class="d-flex flex-stack flex-wrap gap-4 mb-5">
+            <!--search + quick-filter (appears on the right in RTL)-->
+            <div class="d-flex align-items-center gap-3 order-1">
+                <div class="position-relative">
+                    <i class="ki-outline ki-magnifier fs-3 text-gray-500 position-absolute top-50 translate-middle-y ms-4"></i>
+                    <input type="text" name="q" value="@q" class="form-control form-control-solid w-250px ps-12 rounded-pill" placeholder="@T("بحث عن مهمة...", "Search tasks...")" />
+                </div>
+                <button type="submit" class="btn btn-icon btn-light border" title="@T("تطبيق الفلاتر", "Apply filters")"><i class="ki-outline ki-filter fs-2"></i></button>
+            </div>
+            <!--KPI stat cards (fill the left)-->
+            <div class="d-flex flex-wrap gap-3 order-2">
+                @foreach (var k in kpiCards)
+                {
+                    <a href="@ViewHref(k.key)" class="kpi-card @k.cls @(view == k.key ? "active" : "") d-flex align-items-center justify-content-between px-4 py-3 text-decoration-none">
+                        <span class="kpi-icon"><i class="ki-outline @k.icon"></i></span>
+                        <span class="d-flex flex-column text-end">
+                            <span class="kpi-num">@k.val</span>
+                            <span class="kpi-lbl">@k.label</span>
+                        </span>
+                    </a>
+                }
+            </div>
+        </div>
+        <!--end::KPI + search row-->
+
+        <!--begin::Filter dropdowns + tabs row-->
+        <div class="d-flex flex-stack flex-wrap gap-3 mb-4">
+            <!--tabs (right in RTL)-->
+            <ul class="task-tabs nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-semibold flex-nowrap order-1">
+                <li class="nav-item"><a class="nav-link @(view == "all" ? "active" : "") text-nowrap px-4" href="@ViewHref("all")">@T("الكل", "All")</a></li>
+                <li class="nav-item"><a class="nav-link @(view == "urgent" ? "active" : "") text-nowrap px-4" href="@ViewHref("urgent")">@T("عاجلة", "Urgent")</a></li>
+                <li class="nav-item"><a class="nav-link @(view == "overdue" ? "active" : "") text-nowrap px-4" href="@ViewHref("overdue")">@T("متأخرة", "Overdue")</a></li>
+                <li class="nav-item"><a class="nav-link @(view == "inprogress" ? "active" : "") text-nowrap px-4" href="@ViewHref("inprogress")">@T("جارية", "In progress")</a></li>
+                <li class="nav-item"><a class="nav-link @(view == "done" ? "active" : "") text-nowrap px-4" href="@ViewHref("done")">@T("مكتملة", "Done")</a></li>
+            </ul>
+            <!--dropdowns + advanced (left in RTL)-->
+            <div class="d-flex flex-wrap align-items-center gap-2 order-2">
+                <select name="assignee" onchange="this.form.submit()" class="form-select form-select-sm w-175px text-gray-700 bg-white">
+                    <option value="">@T("كل المسؤولين", "All assignees")</option>
+                    @foreach (var e in employees)
+                    {
+                        <option value="@e.Id" selected="@(curAssignee == e.Id)">@e.Name</option>
+                    }
+                </select>
+                <select name="status" onchange="this.form.submit()" class="form-select form-select-sm w-150px text-gray-700 bg-white">
+                    <option value="">@T("كل الحالات", "All statuses")</option>
+                    <option value="New" selected="@(curStatus == "New")">@sl("New")</option>
+                    <option value="InProgress" selected="@(curStatus == "InProgress")">@sl("InProgress")</option>
+                    <option value="Done" selected="@(curStatus == "Done")">@sl("Done")</option>
+                </select>
+                <select name="priority" onchange="this.form.submit()" class="form-select form-select-sm w-150px text-gray-700 bg-white">
+                    <option value="">@T("كل الأولويات", "All priorities")</option>
+                    <option value="Urgent" selected="@(curPriority == "Urgent")">@pl("Urgent")</option>
+                    <option value="High" selected="@(curPriority == "High")">@pl("High")</option>
+                    <option value="Normal" selected="@(curPriority == "Normal")">@pl("Normal")</option>
+                    <option value="Low" selected="@(curPriority == "Low")">@pl("Low")</option>
+                </select>
+                <a asp-action="@listAction" class="btn btn-sm bg-white border text-gray-700 d-flex align-items-center text-nowrap"><i class="ki-outline ki-setting-4 fs-4 me-1"></i>@T("تصفية متقدمة", "Advanced")</a>
+            </div>
+        </div>
+        <!--end::Filter dropdowns + tabs row-->
+    </form>
+
+    <!--begin::Results card-->
+    <div class="card tasks-card">
+        <div class="card-body py-4 px-4">
+            <div class="table-responsive">
+                <table class="table align-middle table-row-bordered table-row-gray-100 fs-7 gy-4 gs-0 mb-0">
+                    <thead>
+                        <tr class="text-start text-gray-600 fw-semibold fs-7 gs-0 text-nowrap">
+                            <th class="min-w-100px ps-3">@T("المسؤول", "Assignee")</th>
+                            <th class="min-w-100px">@T("المهمة", "Task")</th>
+                            <th class="min-w-70px"><a href="@SortHref("priority")" class="text-gray-600 text-hover-primary text-nowrap">@T("الأولوية", "Priority") @Html.Raw(SortMark("priority"))</a></th>
+                            <th class="min-w-70px"><a href="@SortHref("status")" class="text-gray-600 text-hover-primary text-nowrap">@T("الحالة", "Status") @Html.Raw(SortMark("status"))</a></th>
+                            <th class="min-w-50px"><a href="@SortHref("progress")" class="text-gray-600 text-hover-primary text-nowrap">@T("التقدم", "Progress") @Html.Raw(SortMark("progress"))</a></th>
+                            <th class="min-w-75px"><a href="@SortHref("due")" class="text-gray-600 text-hover-primary text-nowrap">@T("الموعد النهائي", "Due date") @Html.Raw(SortMark("due"))</a></th>
+                            <th class="min-w-75px"><a href="@SortHref("due")" class="text-gray-600 text-hover-primary text-nowrap">@T("الوقت المتبقي", "Time left") @Html.Raw(SortMark("due"))</a></th>
+                            <th class="text-end min-w-50px pe-3">@T("إجراءات", "Actions")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!tasks.Any())
+                        {
+                            <tr><td colspan="8" class="text-center text-muted py-12"><i class="ki-outline ki-abstract-26 fs-3x mb-3 d-block"></i>@T("لا توجد مهام.", "No tasks yet.")</td></tr>
+                        }
+                        @foreach (var t in tasks)
+                        {
+                            var links = ViewBag.Links as Dictionary<int, CrossBuy.BL.TaskLinkDto>;
+                            CrossBuy.BL.TaskLinkDto link = null; links?.TryGetValue(t.Id, out link);
+                            var stColor = (t.IsOverdue && t.Status != "Done") ? "danger" : sc(t.Status);
+                            var stIcon = (t.IsOverdue && t.Status != "Done") ? "ki-time" : si(t.Status);
+                            var stText = (t.IsOverdue && t.Status != "Done") ? T("متأخرة", "Overdue") : sl(t.Status);
+                            var rem = Rem(t);
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="symbol symbol-35px symbol-circle me-2 position-relative">
+                                            @if (!string.IsNullOrWhiteSpace(t.AssigneePhoto))
+                                            { <img src="@photoSrc(t.AssigneePhoto)" alt="@t.AssigneeName" /> }
+                                            else
+                                            { <span class="symbol-label bg-light-primary text-primary fw-bold">@initials(t.AssigneeName)</span> }
+                                        </div>
+                                        <div class="d-flex flex-column" style="min-width:0;">
+                                            <span class="text-gray-900 fw-bold fs-7 text-truncate d-block" style="max-width:80px;">@t.AssigneeName</span>
+                                            @if (!string.IsNullOrWhiteSpace(t.AssigneeJobTitle)) { <span class="text-muted fw-semibold fs-8 text-truncate d-block" style="max-width:80px;">@t.AssigneeJobTitle</span> }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="bullet bullet-dot h-8px w-8px me-2 flex-shrink-0" style="background:#3e97ff;"></span>
+                                        <a href="javascript:;" class="text-gray-900 fw-bold text-hover-primary fs-7 text-truncate d-inline-block align-middle" style="max-width:105px;">@t.Title</a>
+                                    </div>
+                                    <div class="d-flex align-items-center flex-wrap gap-2 ms-4">
+                                        @if (t.IsScheduled && !t.MatchedAt.HasValue)
+                                        {
+                                            <span class="badge badge-light-primary fw-semibold"><i class="ki-outline ki-calendar fs-8 me-1"></i>@T("مجدولة", "Scheduled"): @(t.ExpectedEntityType == "PurchaseInvoice" ? T("مشتريات", "Purchase") : T("مبيعات", "Sales"))@(string.IsNullOrEmpty(t.ExpectedPartyName) ? "" : " — " + t.ExpectedPartyName)</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(t.Category))
+                                        {
+                                            <span class="badge badge-light text-gray-600 fw-semibold"><i class="ki-outline ki-tag fs-8 me-1"></i>@t.Category</span>
+                                        }
+                                        @if (link != null)
+                                        {
+                                            if (!string.IsNullOrEmpty(link.Url))
+                                            {
+                                                <a href="@link.Url" target="_blank" class="badge badge-light-primary text-hover-primary"><i class="@link.Icon fs-8 me-1"></i>@link.Label <i class="ki-outline ki-exit-right-corner fs-8 ms-1"></i></a>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-light-primary"><i class="@link.Icon fs-8 me-1"></i>@link.Label</span>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-light-@pc(t.Priority) fs-7 fw-bold py-2 d-inline-flex align-items-center">@Html.Raw(priMark(t.Priority))@pl(t.Priority)</span></td>
+                                <td><span class="badge badge-light-@stColor fs-7 fw-bold py-2"><i class="ki-outline @stIcon fs-8 me-1 text-@stColor"></i>@stText</span></td>
+                                <td>
+                                    @{
+                                        var _ci = System.Globalization.CultureInfo.InvariantCulture;
+                                        var _circ = 2 * Math.PI * 19.0;
+                                        var _off = _circ * (1 - t.ProgressPct / 100.0);
+                                        var _circS = _circ.ToString("0.##", _ci);
+                                        var _offS = _off.ToString("0.##", _ci);
+                                    }
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <svg width="44" height="44" viewBox="0 0 44 44">
+                                            <circle cx="22" cy="22" r="19" fill="none" stroke="#eaecf3" stroke-width="5"></circle>
+                                            <circle cx="22" cy="22" r="19" fill="none" stroke="@progHex(t.ProgressPct)" stroke-width="5" stroke-linecap="round" stroke-dasharray="@_circS" stroke-dashoffset="@_offS" transform="rotate(-90 22 22)"></circle>
+                                            <text x="22" y="22" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="800" fill="#181c32">@(t.ProgressPct)%</text>
+                                        </svg>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (t.DueDate.HasValue)
+                                    {
+                                        <div class="d-flex flex-column">
+                                            <span class="text-gray-800 fw-semibold fs-7">@t.DueDate.Value.ToString("yyyy-MM-dd")</span>
+                                            <span class="text-muted fs-8">@tfmt(t.DueDate.Value)</span>
+                                        </div>
+                                    }
+                                    else { <span class="text-muted">—</span> }
+                                </td>
+                                <td>
+                                    @if (rem.color == "muted") { <span class="text-muted">@rem.text</span> }
+                                    else { <span class="badge badge-light-@rem.color fw-bold py-2 d-inline-flex align-items-center"><i class="ki-solid ki-time fs-8 me-1 text-@rem.color"></i>@rem.text</span> }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <!--begin::Actions kebab-->
+                                    <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary border" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                        <i class="ki-outline ki-dots-vertical fs-2"></i>
+                                    </button>
+                                    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-700 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-3" data-kt-menu="true">
+                                        <form asp-action="ChangeStatus" method="post">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.Id" /><input type="hidden" name="scope" value="@scope" />
+                                            @if (t.Status == "New")
+                                            {
+                                                <div class="menu-item px-3"><button name="status" value="InProgress" class="menu-link px-3 w-100 text-start bg-transparent border-0" data-cb-confirm data-cb-action="generic" data-cb-title="@T("بدء المهمة؟", "Start task?")"><i class="ki-outline ki-arrow-right fs-6 me-2"></i>@T("ابدأ", "Start")</button></div>
+                                                <div class="menu-item px-3"><button name="status" value="Done" class="menu-link px-3 w-100 text-start bg-transparent border-0" data-cb-confirm data-cb-action="approve" data-cb-title="@T("إنهاء المهمة؟", "Finish task?")"><i class="ki-outline ki-check fs-6 me-2"></i>@T("إنهاء", "Finish")</button></div>
+                                            }
+                                            else if (t.Status == "InProgress")
+                                            {
+                                                <div class="menu-item px-3"><button name="status" value="Done" class="menu-link px-3 w-100 text-start bg-transparent border-0" data-cb-confirm data-cb-action="approve" data-cb-title="@T("إنهاء المهمة؟", "Finish task?")"><i class="ki-outline ki-check fs-6 me-2"></i>@T("إنهاء", "Finish")</button></div>
+                                            }
+                                            else
+                                            {
+                                                <div class="menu-item px-3"><button name="status" value="InProgress" class="menu-link px-3 w-100 text-start bg-transparent border-0" data-cb-confirm data-cb-action="generic" data-cb-title="@T("إعادة فتح المهمة؟", "Reopen task?")"><i class="ki-outline ki-arrow-circle-left fs-6 me-2"></i>@T("إعادة فتح", "Reopen")</button></div>
+                                            }
+                                        </form>
+                                        @if (running != null && running.TaskId == t.Id)
+                                        {
+                                            <form asp-action="StopTimer" method="post">@Html.AntiForgeryToken()<input type="hidden" name="scope" value="@scope" />
+                                                <div class="menu-item px-3"><button type="submit" class="menu-link px-3 w-100 text-start bg-transparent border-0 text-danger"><i class="ki-outline ki-cross-circle fs-6 me-2"></i>@T("إيقاف المؤقّت", "Stop timer")</button></div>
+                                            </form>
+                                        }
+                                        else if (t.Status != "Done")
+                                        {
+                                            <form asp-action="StartTimer" method="post">@Html.AntiForgeryToken()<input type="hidden" name="taskId" value="@t.Id" /><input type="hidden" name="scope" value="@scope" />
+                                                <div class="menu-item px-3"><button type="submit" class="menu-link px-3 w-100 text-start bg-transparent border-0"><i class="ki-outline ki-time fs-6 me-2"></i>@T("تشغيل المؤقّت", "Start timer")</button></div>
+                                            </form>
+                                        }
+                                        <div class="menu-item px-3"><a class="menu-link px-3" href="javascript:;" onclick='cbOpenTimesheet(@t.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(t.Title)))'><i class="ki-outline ki-timer fs-6 me-2"></i>@T("سجل الوقت", "Timesheet")</a></div>
+                                        <div class="menu-item px-3"><a class="menu-link px-3" href="javascript:;" data-bs-toggle="modal" data-bs-target="#taskModal" onclick='cbTaskEdit(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { id = t.Id, title = t.Title, description = t.Description, assignee = t.AssigneeEmployeeId, priority = t.Priority, due = t.DueDate?.ToString("yyyy-MM-dd"), est = t.EstimatedHours, progress = t.ProgressPct, category = t.Category, entityType = t.EntityType, entityId = t.EntityId, entityLabel = (link?.Label), isBillable = t.IsBillable, billRate = t.BillRate, customerId = t.CustomerId, customerName = t.CustomerName, isScheduled = t.IsScheduled, expType = t.ExpectedEntityType, expPartyId = t.ExpectedPartyId, expPartyName = t.ExpectedPartyName, expFrom = t.ExpectedFrom?.ToString("yyyy-MM-dd"), expTo = t.ExpectedTo?.ToString("yyyy-MM-dd") })))'><i class="ki-outline ki-pencil fs-6 me-2"></i>@T("تعديل", "Edit")</a></div>
+                                        <div class="separator my-2"></div>
+                                        <form asp-action="Delete" method="post" data-cb-confirm data-cb-action="delete">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.Id" /><input type="hidden" name="scope" value="@scope" />
+                                            <div class="menu-item px-3"><button type="submit" class="menu-link px-3 w-100 text-start bg-transparent border-0 text-danger"><i class="ki-outline ki-trash fs-6 me-2"></i>@T("حذف", "Delete")</button></div>
+                                        </form>
+                                    </div>
+                                    <!--end::Actions kebab-->
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex flex-stack flex-wrap pt-5">
+                <div class="fs-7 text-muted">@T("صفحة", "Page") @pg / @pages · @total @T("مهمة", "task(s)")</div>
+                @if (pages > 1)
+                {
+                    <ul class="pagination">
+                        <li class="page-item @(pg == 1 ? "disabled" : "")"><a class="page-link" href="@PageHref(pg - 1)"><i class="ki-outline ki-@(isAr ? "right" : "left")"></i></a></li>
+                        @foreach (var n in pageNums)
+                        {
+                            <li class="page-item @(n == pg ? "active" : "") @(n == -1 ? "disabled" : "")">
+                                <a class="page-link" href="@(n == -1 ? "#" : PageHref(n))">@(n == -1 ? "…" : n.ToString())</a>
+                            </li>
+                        }
+                        <li class="page-item @(pg == pages ? "disabled" : "")"><a class="page-link" href="@PageHref(pg + 1)"><i class="ki-outline ki-@(isAr ? "left" : "right")"></i></a></li>
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+    <!--end::Results card-->
+</div></div>
+<!--end::Content-->
+
+<!--begin::Task modal-->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form asp-action="Save" method="post" data-cb-confirm data-cb-action="save" data-cb-confirm-if="#tId">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="tId" name="Id" value="0" />
+                <input type="hidden" name="scope" value="@scope" />
+                <div class="modal-header">
+                    <h3 class="modal-title" id="taskModalTitle">@T("مهمة جديدة", "New task")</h3>
+                    <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-2"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <label class="form-label required">@T("العنوان", "Title")</label>
+                        <input type="text" id="tTitle" name="Title" class="form-control form-control-solid" required />
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">@T("الوصف", "Description")</label>
+                        <textarea id="tDesc" name="Description" rows="2" class="form-control form-control-solid"></textarea>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label required">@T("المسؤول", "Assignee")</label>
+                            <select id="tAssignee" name="AssigneeEmployeeId" class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#taskModal" required>
+                                <option value="">@T("اختر الموظف", "Select employee")</option>
+                                @foreach (var e in employees)
+                                {
+                                    <option value="@e.Id">@e.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">@T("الأولوية", "Priority")</label>
+                            <select id="tPriority" name="Priority" class="form-select form-select-solid">
+                                <option value="Low">@pl("Low")</option>
+                                <option value="Normal" selected>@pl("Normal")</option>
+                                <option value="High">@pl("High")</option>
+                                <option value="Urgent">@pl("Urgent")</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">@T("ميعاد التسليم", "Due date")</label>
+                            <input type="date" id="tDue" name="DueDate" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">@T("الوقت المقدّر (ساعات)", "Estimated hours")</label>
+                            <input type="number" step="0.5" min="0" id="tEst" name="EstimatedHours" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label d-flex justify-content-between">@T("نسبة الإنجاز", "Progress") <span id="tProgLbl" class="text-muted fw-bold">0%</span></label>
+                            <input type="range" min="0" max="100" step="5" id="tProgress" name="ProgressPct" value="0" class="form-range mt-2" oninput="document.getElementById('tProgLbl').textContent=this.value+'%'" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">@T("الوسم / التصنيف", "Tag / Category")</label>
+                            <input type="text" id="tCategory" name="Category" class="form-control form-control-solid" placeholder="@T("مثال: اختبار الأداء", "e.g. Performance")" />
+                        </div>
+                    </div>
+                    <!--begin::Linked record (TM-2, optional)-->
+                    <div class="separator separator-dashed my-5"></div>
+                    <div class="row g-4">
+                        <div class="col-12"><label class="form-label text-muted fs-7">@T("السجل المرتبط (اختياري)", "Linked record (optional)")</label></div>
+                        <div class="col-md-5">
+                            <select id="tEntityType" name="EntityType" class="form-select form-select-solid">
+                                <option value="">@T("— بلا ربط —", "— No link —")</option>
+                                @foreach (var lt in (ViewBag.LinkTypes as List<CrossBuy.BL.TaskLinkTypeDto> ?? new()))
+                                {
+                                    <option value="@lt.Key">@(isAr ? lt.LabelAr : lt.LabelEn)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <select id="tEntityId" name="EntityId" class="form-select form-select-solid" data-dropdown-parent="#taskModal"></select>
+                        </div>
+                    </div>
+                    <!--end::Linked record-->
+                    <!--begin::Billing (TM-5, optional)-->
+                    <div class="separator separator-dashed my-5"></div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="tBillable" name="IsBillable" value="true" onchange="cbToggleBill()" />
+                        <label class="form-check-label fw-semibold" for="tBillable">@T("قابلة للفوترة لعميل", "Billable to a customer")</label>
+                    </div>
+                    <div id="tBillBox" class="row g-4 d-none">
+                        <div class="col-md-7">
+                            <label class="form-label fs-8 text-muted mb-1">@T("العميل", "Customer")</label>
+                            <select id="tCustomer" name="CustomerId" class="form-select form-select-solid" data-dropdown-parent="#taskModal"></select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fs-8 text-muted mb-1">@T("سعر ساعة الفوترة", "Bill rate / hour")</label>
+                            <input type="number" step="0.01" min="0" id="tBillRate" name="BillRate" class="form-control form-control-solid" />
+                        </div>
+                    </div>
+                    <!--end::Billing-->
+                    <!--begin::Scheduled (TM-9, optional)-->
+                    <div class="separator separator-dashed my-5"></div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="tScheduled" name="IsScheduled" value="true" onchange="cbToggleSched()" />
+                        <label class="form-check-label fw-semibold" for="tScheduled">@T("مهمة مجدولة (تنتظر حركة)", "Scheduled (awaiting a movement)")</label>
+                    </div>
+                    <div id="tSchedBox" class="row g-4 d-none">
+                        <div class="col-12"><span class="text-muted fs-8">@T("عند إنشاء الحركة المطابقة، النظام يربطها بالمهمة تلقائيًّا (المطابقة في مرحلة تالية).", "When a matching movement is created, it will be auto-linked (matching comes later).")</span></div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 text-muted mb-1">@T("نوع الحركة المتوقّع", "Expected movement")</label>
+                            <select id="tExpType" name="ExpectedEntityType" class="form-select form-select-solid" onchange="cbSchedTypeChanged()">
+                                <option value="PurchaseInvoice">@T("فاتورة مشتريات", "Purchase invoice")</option>
+                                <option value="SalesInvoice">@T("فاتورة مبيعات", "Sales invoice")</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 text-muted mb-1"><span id="tExpPartyLbl">@T("المورّد", "Supplier")</span></label>
+                            <select id="tExpParty" name="ExpectedPartyId" class="form-select form-select-solid" data-dropdown-parent="#taskModal"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 text-muted mb-1">@T("النافذة الزمنية من", "Expected window from")</label>
+                            <input type="date" id="tExpFrom" name="ExpectedFrom" class="form-control form-control-solid" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fs-8 text-muted mb-1">@T("إلى", "to")</label>
+                            <input type="date" id="tExpTo" name="ExpectedTo" class="form-control form-control-solid" />
+                        </div>
+                    </div>
+                    <!--end::Scheduled-->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">@T("إلغاء", "Cancel")</button>
+                    <button type="submit" class="btn btn-primary">@T("حفظ", "Save")</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!--end::Task modal-->
+
+<!--begin::Timesheet modal (TM-3)-->
+<div class="modal fade" id="tsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">@T("سجل الوقت", "Timesheet") — <span id="tsTaskTitle" class="text-muted fs-5"></span></h3>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-2"></i></button>
+            </div>
+            <div class="modal-body">
+                <!--begin::Manual add-->
+                <form asp-action="AddTime" method="post" class="row g-3 align-items-end mb-6">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="tsTaskId" name="taskId" value="0" />
+                    <input type="hidden" name="scope" value="@scope" />
+                    <div class="col-md-3"><label class="form-label fs-8 text-muted mb-1">@T("التاريخ", "Date")</label><input type="date" name="workDate" id="tsDate" class="form-control form-control-solid form-control-sm" required /></div>
+                    <div class="col-md-2"><label class="form-label fs-8 text-muted mb-1">@T("ساعات", "Hours")</label><input type="number" step="0.25" min="0.25" max="24" name="hours" class="form-control form-control-solid form-control-sm" required /></div>
+                    <div class="col-md-5"><label class="form-label fs-8 text-muted mb-1">@T("الوصف", "Description")</label><input type="text" name="description" class="form-control form-control-solid form-control-sm" /></div>
+                    <div class="col-md-2"><button type="submit" class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-5"></i>@T("سجّل", "Log")</button></div>
+                </form>
+                <!--end::Manual add-->
+                <div class="separator separator-dashed mb-4"></div>
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle fs-7 mb-0">
+                        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase">
+                            <th>@T("الموظف", "Employee")</th><th class="w-110px">@T("التاريخ", "Date")</th><th class="w-90px">@T("ساعات", "Hours")</th><th>@T("الوصف", "Description")</th><th class="w-90px">@T("المصدر", "Source")</th><th class="w-50px"></th>
+                        </tr></thead>
+                        <tbody id="tsLines"><tr><td colspan="6" class="text-center text-muted py-6">…</td></tr></tbody>
+                    </table>
+                </div>
+                <!--begin::Cost (TM-4, informational) + WO posting-->
+                <div id="tsCostBox" class="d-flex flex-stack bg-light-primary rounded p-4 mt-4 d-none">
+                    <div>
+                        <span class="text-muted fs-8 d-block">@T("التكلفة التقريرية (عرض فقط)", "Estimated cost (display only)")</span>
+                        <span class="fs-4 fw-bold text-gray-900"><span id="tsCostTotal">0</span> <span class="fs-8 text-muted">@T("(ساعات × تكلفة الساعة)", "(hours × hourly cost)")</span></span>
+                    </div>
+                    <div id="tsWoBox"></div>
+                </div>
+                <!--end::Cost-->
+                <!--begin::Billing (TM-5)-->
+                <div id="tsBillBox" class="d-flex flex-stack bg-light-success rounded p-4 mt-3 d-none">
+                    <div>
+                        <span class="text-muted fs-8 d-block">@T("ساعات قابلة للفوترة (غير مفوترة)", "Billable hours (uninvoiced)")</span>
+                        <span class="fs-4 fw-bold text-gray-900"><span id="tsBillHours">0</span> @T("ساعة", "h") · <span id="tsBillAmount">0</span></span>
+                        <span id="tsBillCust" class="text-muted fs-8 d-block"></span>
+                    </div>
+                    <div id="tsBillAction"></div>
+                </div>
+                <!--end::Billing-->
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Timesheet modal-->
+
+@section Scripts {
+<script>
+    // TM-2: record picker (select2 ajax reading the chosen type at query time)
+    function initLinkPicker() {
+        if (!window.jQuery || !jQuery.fn.select2) return;
+        var $rec = jQuery('#tEntityId');
+        if ($rec.data('select2')) return; // once
+        $rec.select2({
+            dropdownParent: jQuery('#taskModal'),
+            placeholder: '@T("اختر السجل", "Choose the record")',
+            allowClear: true, minimumInputLength: 0, language: { inputTooShort: function () { return ''; } },
+            ajax: {
+                url: '/Tasks/LinkSearch', dataType: 'json', delay: 250,
+                data: function (params) { return { entityType: jQuery('#tEntityType').val(), term: params.term || '' }; },
+                processResults: function (d) { return { results: (d && d.results) || [] }; }
+            }
+        });
+        jQuery('#tEntityType').on('change', function () { $rec.val(null).trigger('change'); toggleRec(); });
+        toggleRec();
+    }
+    function toggleRec() {
+        var has = !!jQuery('#tEntityType').val();
+        jQuery('#tEntityId').prop('disabled', !has).closest('.col-md-7').css('opacity', has ? 1 : .5);
+    }
+    function preselectRec(id, label) {
+        var $rec = jQuery('#tEntityId');
+        $rec.find('option').remove();
+        if (id && label) { var o = new Option(label, id, true, true); $rec.append(o); }
+        $rec.trigger('change');
+    }
+
+    // TM-5: customer picker (select2 ajax) + billing toggle
+    function initCustomerPicker() {
+        if (!window.jQuery || !jQuery.fn.select2) return;
+        var $c = jQuery('#tCustomer'); if ($c.data('select2')) return;
+        $c.select2({
+            dropdownParent: jQuery('#taskModal'), placeholder: '@T("اختر العميل", "Choose customer")', allowClear: true, minimumInputLength: 0,
+            ajax: { url: '/Tasks/LinkSearch', dataType: 'json', delay: 250, data: function (p) { return { entityType: 'Customer', term: p.term || '' }; }, processResults: function (d) { return { results: (d && d.results) || [] }; } }
+        });
+    }
+    function preselectCust(id, label) { var $c = jQuery('#tCustomer'); $c.find('option').remove(); if (id && label) $c.append(new Option(label, id, true, true)); $c.trigger('change'); }
+    function cbToggleBill() { document.getElementById('tBillBox').classList.toggle('d-none', !document.getElementById('tBillable').checked); }
+
+    // TM-9: scheduled task — party picker (Supplier for purchase, Customer for sales)
+    function schedPartyType() { return document.getElementById('tExpType').value === 'SalesInvoice' ? 'Customer' : 'Supplier'; }
+    function initSchedParty() {
+        if (!window.jQuery || !jQuery.fn.select2) return;
+        var $p = jQuery('#tExpParty'); if ($p.data('select2')) return;
+        $p.select2({
+            dropdownParent: jQuery('#taskModal'), placeholder: '@T("اختر الطرف", "Choose party")', allowClear: true, minimumInputLength: 0,
+            ajax: { url: '/Tasks/LinkSearch', dataType: 'json', delay: 250, data: function (pr) { return { entityType: schedPartyType(), term: pr.term || '' }; }, processResults: function (d) { return { results: (d && d.results) || [] }; } }
+        });
+    }
+    function preselectSchedParty(id, label) { var $p = jQuery('#tExpParty'); $p.find('option').remove(); if (id && label) $p.append(new Option(label, id, true, true)); $p.trigger('change'); }
+    function cbToggleSched() {
+        var on = document.getElementById('tScheduled').checked;
+        document.getElementById('tSchedBox').classList.toggle('d-none', !on);
+        if (on) { initSchedParty(); }
+    }
+    function cbSchedTypeChanged() {
+        document.getElementById('tExpPartyLbl').textContent = (document.getElementById('tExpType').value === 'SalesInvoice') ? '@T("العميل", "Customer")' : '@T("المورّد", "Supplier")';
+        initSchedParty();
+        preselectSchedParty(null, null);   // party depends on the type → reset when the type flips
+    }
+
+    function cbTaskNew() {
+        document.getElementById('tId').value = '0';
+        document.getElementById('tTitle').value = '';
+        document.getElementById('tDesc').value = '';
+        document.getElementById('tDue').value = '';
+        document.getElementById('tEst').value = '';
+        document.getElementById('tProgress').value = '0'; document.getElementById('tProgLbl').textContent = '0%';
+        document.getElementById('tCategory').value = '';
+        setSel('tAssignee', '');
+        setSel('tPriority', 'Normal');
+        initLinkPicker(); setSel('tEntityType', ''); preselectRec(null, null); toggleRec();
+        initCustomerPicker(); document.getElementById('tBillable').checked = false; document.getElementById('tBillRate').value = ''; preselectCust(null, null); cbToggleBill();
+        document.getElementById('tScheduled').checked = false; setSel('tExpType', 'PurchaseInvoice'); document.getElementById('tExpFrom').value = ''; document.getElementById('tExpTo').value = ''; initSchedParty(); preselectSchedParty(null, null); document.getElementById('tExpPartyLbl').textContent = '@T("المورّد", "Supplier")'; cbToggleSched();
+        document.getElementById('taskModalTitle').textContent = '@T("مهمة جديدة", "New task")';
+    }
+    function cbTaskEdit(t) {
+        document.getElementById('tId').value = t.id;
+        document.getElementById('tTitle').value = t.title || '';
+        document.getElementById('tDesc').value = t.description || '';
+        document.getElementById('tDue').value = t.due || '';
+        document.getElementById('tEst').value = (t.est != null ? t.est : '');
+        var pv = (t.progress != null ? t.progress : 0); document.getElementById('tProgress').value = pv; document.getElementById('tProgLbl').textContent = pv + '%';
+        document.getElementById('tCategory').value = t.category || '';
+        setSel('tAssignee', t.assignee || '');
+        setSel('tPriority', t.priority || 'Normal');
+        initLinkPicker();
+        setSel('tEntityType', t.entityType || '');
+        preselectRec(t.entityId, t.entityLabel);
+        toggleRec();
+        initCustomerPicker();
+        document.getElementById('tBillable').checked = !!t.isBillable;
+        document.getElementById('tBillRate').value = (t.billRate != null ? t.billRate : '');
+        preselectCust(t.customerId, t.customerName);
+        cbToggleBill();
+        document.getElementById('tScheduled').checked = !!t.isScheduled;
+        setSel('tExpType', t.expType || 'PurchaseInvoice');
+        document.getElementById('tExpFrom').value = t.expFrom || '';
+        document.getElementById('tExpTo').value = t.expTo || '';
+        initSchedParty();
+        document.getElementById('tExpPartyLbl').textContent = (t.expType === 'SalesInvoice') ? '@T("العميل", "Customer")' : '@T("المورّد", "Supplier")';
+        preselectSchedParty(t.expPartyId, t.expPartyName);
+        document.getElementById('tSchedBox').classList.toggle('d-none', !t.isScheduled);
+        document.getElementById('taskModalTitle').textContent = '@T("تعديل المهمة", "Edit task")';
+    }
+    function setSel(id, val) {
+        var el = document.getElementById(id); if (!el) return;
+        el.value = (val == null ? '' : val);
+        if (window.jQuery && jQuery(el).hasClass('select2-hidden-accessible')) jQuery(el).val(String(val == null ? '' : val)).trigger('change');
+    }
+
+    // TM-3: timesheet modal — set task + load lines via JSON
+    var CB_SCOPE = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(scope));
+    var CB_AF = document.querySelector('#taskModal input[name="__RequestVerificationToken"]');
+    function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function cbOpenTimesheet(taskId, title) {
+        document.getElementById('tsTaskId').value = taskId;
+        document.getElementById('tsTaskTitle').textContent = title || '';
+        var d = new Date(); document.getElementById('tsDate').value = d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+        var body = document.getElementById('tsLines');
+        body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-6">…</td></tr>';
+        if (window.bootstrap) new bootstrap.Modal(document.getElementById('tsModal')).show();
+        var costBox = document.getElementById('tsCostBox'); costBox.classList.add('d-none');
+        fetch('/Tasks/TimesheetLines?taskId=' + taskId, { headers: { 'X-Requested-With': 'fetch' } })
+            .then(r => r.json()).then(function (data) {
+                var rows = (data && data.lines) || [];
+                var cost = (data && data.cost) || null;
+                renderCost(cost, taskId);
+                renderBilling((data && data.billing) || null, taskId);
+                if (!rows.length) { body.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-6">@T("لا سطور وقت بعد.", "No time entries yet.")</td></tr>'; return; }
+                var tok = CB_AF ? CB_AF.value : '';
+                body.innerHTML = rows.map(function (l) {
+                    var run = l.running ? ' <span class="badge badge-light-primary">@T("شغّال", "running")</span>' : '';
+                    var src = l.source === 'Timer' ? '@T("مؤقّت", "Timer")' : '@T("يدوي", "Manual")';
+                    var del = l.running ? '' : '<form action="/Tasks/DeleteTime" method="post" class="d-inline" data-cb-confirm data-cb-action="delete">'
+                        + '<input type="hidden" name="__RequestVerificationToken" value="' + tok + '">'
+                        + '<input type="hidden" name="id" value="' + l.id + '"><input type="hidden" name="scope" value="' + CB_SCOPE + '">'
+                        + '<button type="submit" class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-7"></i></button></form>';
+                    return '<tr><td>' + esc(l.employeeName) + '</td><td>' + esc(l.workDate) + '</td><td class="fw-bold">' + l.hours + run
+                        + '</td><td class="text-muted">' + esc(l.description) + '</td><td><span class="badge badge-light">' + src + '</span></td><td class="text-end">' + del + '</td></tr>';
+                }).join('');
+            }).catch(function () { body.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-6">@T("تعذّر التحميل", "Failed to load")</td></tr>'; });
+    }
+    function renderCost(cost, taskId) {
+        var box = document.getElementById('tsCostBox'); if (!cost) { box.classList.add('d-none'); return; }
+        box.classList.remove('d-none');
+        document.getElementById('tsCostTotal').textContent = (cost.total != null ? cost.total : 0);
+        var wo = document.getElementById('tsWoBox'); var tok = CB_AF ? CB_AF.value : '';
+        if (cost.linkedToWorkOrder && !cost.laborPosted) {
+            wo.innerHTML = '<form action="/Tasks/PostLaborToWO" method="post" data-cb-confirm data-cb-action="approve" data-cb-confirm-text="@T("ترحيل", "Post")" data-cb-title="@T("ترحيل العمالة إلى أمر التشغيل؟", "Post labor to the work order?")">'
+                + '<input type="hidden" name="__RequestVerificationToken" value="' + tok + '">'
+                + '<input type="hidden" name="taskId" value="' + taskId + '"><input type="hidden" name="scope" value="' + CB_SCOPE + '">'
+                + '<button type="submit" class="btn btn-sm btn-primary"><i class="ki-outline ki-gear fs-5"></i>@T("ترحيل العمالة لأمر التشغيل", "Post labor to WO")</button></form>';
+        } else if (cost.laborPosted) {
+            wo.innerHTML = '<span class="badge badge-light-primary"><i class="ki-outline ki-check fs-7 me-1"></i>@T("رُحّلت العمالة", "Labor posted")</span>';
+        } else { wo.innerHTML = ''; }
+    }
+    function renderBilling(b, taskId) {
+        var box = document.getElementById('tsBillBox'); if (!b || !b.isBillable) { box.classList.add('d-none'); return; }
+        box.classList.remove('d-none');
+        document.getElementById('tsBillHours').textContent = (b.billableHours != null ? b.billableHours : 0);
+        document.getElementById('tsBillAmount').textContent = (b.amount != null ? b.amount : 0);
+        document.getElementById('tsBillCust').textContent = b.customerName ? ('@T("العميل", "Customer"): ' + b.customerName) : '';
+        var act = document.getElementById('tsBillAction'); var tok = CB_AF ? CB_AF.value : '';
+        if (b.canInvoice) {
+            act.innerHTML = '<form action="/Tasks/GenerateInvoice" method="post" data-cb-confirm data-cb-action="approve" data-cb-confirm-text="@T("توليد", "Generate")" data-cb-title="@T("توليد فاتورة خدمة بالساعة؟", "Generate an hourly service invoice?")">'
+                + '<input type="hidden" name="__RequestVerificationToken" value="' + tok + '">'
+                + '<input type="hidden" name="taskId" value="' + taskId + '"><input type="hidden" name="scope" value="' + CB_SCOPE + '">'
+                + '<button type="submit" class="btn btn-sm btn-success"><i class="ki-outline ki-bill fs-5"></i>@T("توليد فاتورة", "Generate invoice")</button></form>';
+        } else { act.innerHTML = '<span class="text-muted fs-8">' + (b.reason || '') + '</span>'; }
+    }
+</script>
+}

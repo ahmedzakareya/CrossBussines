@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="E-Invoice (ETA)" xml:space="preserve">
+    <value>الفاتورة الإلكترونية (ETA)</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>مُفعَّل</value>
+  </data>
+  <data name="Not configured (deferred)" xml:space="preserve">
+    <value>غير مُفعَّل (مؤجَّل)</value>
+  </data>
+  <data name="ETA e-invoice integration is isolated behind a service interface and deferred. Once enabled, sales invoices will be submitted automatically and their UUID/status stored." xml:space="preserve">
+    <value>تكامل منظومة الفاتورة الإلكترونية لمصلحة الضرائب المصرية معزول خلف واجهة برمجية ومؤجَّل التفعيل. عند التفعيل ستُرسَل فواتير البيع تلقائياً وتُحفظ أرقام الـ UUID والحالة.</value>
+  </data>
+  <data name="Environment" xml:space="preserve">
+    <value>البيئة</value>
+  </data>
+  <data name="Taxpayer RIN" xml:space="preserve">
+    <value>الرقم الضريبي للممول</value>
+  </data>
+  <data name="Activity code" xml:space="preserve">
+    <value>كود النشاط</value>
+  </data>
+  <data name="Sales invoices status" xml:space="preserve">
+    <value>حالة فواتير البيع</value>
+  </data>
+  <data name="Invoice" xml:space="preserve">
+    <value>رقم الفاتورة</value>
+  </data>
+  <data name="ETA status" xml:space="preserve">
+    <value>حالة ETA</value>
+  </data>
+  <data name="Not sent" xml:space="preserve">
+    <value>لم تُرسَل</value>
+  </data>
+  <data name="No invoices" xml:space="preserve">
+    <value>لا توجد فواتير</value>
+  </data>
+</root>

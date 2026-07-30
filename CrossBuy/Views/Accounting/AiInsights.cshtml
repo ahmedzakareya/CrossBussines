@@ -1,0 +1,208 @@
+@using CrossBuy.ViewModel.Ai
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model AiInsightsVm
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string Money(decimal v) => v.ToString("N2");
+    string R(CrossBuy.ViewModel.Ai.AiReason r) => isAr ? r.Ar : r.En;
+    string ClassBadge(string? c) => c switch { "stockout" => "danger", "reorder" => "warning", "slow" => "secondary", _ => "light" };
+    string SevBadge(string? s) => s switch { "high" => "danger", "medium" => "warning", "low" => "secondary", _ => "light" };
+    string SevLabel(string? s) => s switch { "high" => "High", "medium" => "Medium", "low" => "Low", _ => "" };
+    string ClassLabel(string? c) => c switch
+    {
+        "stockout" => "Stockout",
+        "reorder" => "Reorder",
+        "slow" => "Slow",
+        _ => c ?? ""
+    };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["AI Insights"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@SR["Accounting"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["AI analytics"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <span class="badge badge-light-primary fs-7 py-2 px-3">
+                    <i class="ki-outline ki-abstract-26 fs-6 me-1"></i>@Localizer["Suggestions for review only"]
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @if (Model.ServiceDown)
+            {
+                <div class="card card-flush">
+                    <div class="card-body text-center py-15">
+                        <i class="ki-outline ki-information-5 fs-3x text-warning mb-4"></i>
+                        <h3 class="text-gray-800">@Localizer["AI service is currently unavailable"]</h3>
+                        <div class="text-gray-500 fs-6 mt-2">@Localizer["Make sure the Python AI service is running on port 8000."]</div>
+                        @if (!string.IsNullOrEmpty(Model.ServiceMessage))
+                        {
+                            <div class="text-gray-400 fs-8 mt-3">@Model.ServiceMessage</div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- KPI cards -->
+                <div class="row g-5 g-xl-8 mb-5 mb-xl-8">
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card card-flush h-100">
+                            <div class="card-body d-flex flex-column justify-content-between">
+                                <i class="ki-outline ki-scan-barcode fs-2x text-primary"></i>
+                                <div class="mt-5">
+                                    <span class="fs-2hx fw-bold text-gray-900">@(Model.Anomaly?.AnomalyCount ?? 0)</span>
+                                    <div class="text-gray-500 fw-semibold fs-7">@Localizer["Flagged of"] @(Model.Anomaly?.Scanned ?? 0)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card card-flush h-100">
+                            <div class="card-body d-flex flex-column justify-content-between">
+                                <i class="ki-outline ki-dollar fs-2x text-@((Model.Cashflow?.NegativeRisk ?? false) ? "danger" : "primary")"></i>
+                                <div class="mt-5">
+                                    <span class="fs-2x fw-bold text-gray-900">@Money(Model.Cashflow?.ProjectedEndBalance ?? 0)</span>
+                                    <div class="text-gray-500 fw-semibold fs-7">@Localizer["Projected balance (90d)"]</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card card-flush h-100">
+                            <div class="card-body d-flex flex-column justify-content-between">
+                                <i class="ki-outline ki-handcart fs-2x text-warning"></i>
+                                <div class="mt-5">
+                                    <span class="fs-2hx fw-bold text-gray-900">@(Model.Inventory?.Summary?.SlowMoving ?? 0)</span>
+                                    <div class="text-gray-500 fw-semibold fs-7">@Localizer["Slow-moving items"]</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="card card-flush h-100">
+                            <div class="card-body d-flex flex-column justify-content-between">
+                                <i class="ki-outline ki-dropbox fs-2x text-danger"></i>
+                                <div class="mt-5">
+                                    <span class="fs-2x fw-bold text-gray-900">@Money(Model.Inventory?.Summary?.DeadStockValue ?? 0)</span>
+                                    <div class="text-gray-500 fw-semibold fs-7">@Localizer["Dead-stock value"]</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anomalies -->
+                <div class="card card-flush mb-5 mb-xl-8">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title text-gray-900 fw-bold">@Localizer["Journal anomalies"]</h3>
+                        <div class="card-toolbar"><span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@Localizer["Duplicates"]: @(Model.Anomaly?.Summary?.Duplicates ?? 0)</span></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Anomaly != null && Model.Anomaly.Anomalies.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle gs-0 gy-3">
+                                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr>
+                                        <th>@Localizer["Severity"]</th><th>@Localizer["Entry"]</th><th>@SR["Date"]</th>
+                                        <th>@Localizer["Source"]</th><th class="text-end">@SR["Amount"]</th>
+                                        <th>@Localizer["Reason"]</th></tr></thead>
+                                    <tbody>
+                                    @foreach (var a in Model.Anomaly.Anomalies.Take(15))
+                                    {
+                                        <tr>
+                                            <td><span class="badge badge-light-@SevBadge(a.Severity)">@Localizer[SevLabel(a.Severity)]</span></td>
+                                            <td class="fw-bold text-gray-800">@a.EntryNo</td>
+                                            <td class="text-gray-600">@a.Date</td>
+                                            <td><span class="badge badge-light">@a.SourceType</span></td>
+                                            <td class="text-end fw-semibold">@Money(a.Amount)</td>
+                                            <td>@foreach (var r in a.Reasons){<span class="badge badge-light-secondary me-1 mb-1">@R(r)</span>}</td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else { <div class="text-gray-500 py-5 text-center">@Localizer["No anomalies found"]</div> }
+                    </div>
+                </div>
+
+                <div class="row g-5 g-xl-8">
+                    <!-- Cash-flow -->
+                    <div class="col-xl-6">
+                        <div class="card card-flush h-100">
+                            <div class="card-header pt-5">
+                                <h3 class="card-title text-gray-900 fw-bold">@Localizer["Cash-flow projection"]</h3>
+                                <div class="card-toolbar">
+                                    @if (Model.Cashflow?.NegativeRisk ?? false)
+                                    { <span class="badge badge-light-danger">@Localizer["Negative-balance risk"]</span> }
+                                </div>
+                            </div>
+                            <div class="card-body pt-2">
+                                @if (Model.Cashflow != null)
+                                {
+                                    <div class="d-flex justify-content-between mb-2"><span class="text-gray-600">@Localizer["Opening cash"]</span><span class="fw-bold">@Money(Model.Cashflow.OpeningCash)</span></div>
+                                    <div class="d-flex justify-content-between mb-2"><span class="text-gray-600">@Localizer["Expected inflow"]</span><span class="fw-bold text-primary">@Money(Model.Cashflow.TotalExpectedInflow)</span></div>
+                                    <div class="d-flex justify-content-between mb-2"><span class="text-gray-600">@Localizer["Expected outflow"]</span><span class="fw-bold text-danger">@Money(Model.Cashflow.TotalExpectedOutflow)</span></div>
+                                    <div class="separator my-3"></div>
+                                    <div class="d-flex justify-content-between mb-2"><span class="text-gray-700 fw-semibold">@Localizer["Min projected balance"]</span><span class="fw-bold text-@(Model.Cashflow.MinProjectedBalance < 0 ? "danger" : "gray-900")">@Money(Model.Cashflow.MinProjectedBalance) <span class="text-gray-400 fs-8">@Model.Cashflow.MinBalanceWeek</span></span></div>
+                                    <div class="d-flex justify-content-between"><span class="text-gray-700 fw-semibold">@Localizer["Projected end balance"]</span><span class="fw-bold">@Money(Model.Cashflow.ProjectedEndBalance)</span></div>
+                                }
+                                else { <div class="text-gray-500 py-5 text-center">—</div> }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory -->
+                    <div class="col-xl-6">
+                        <div class="card card-flush h-100">
+                            <div class="card-header pt-5">
+                                <h3 class="card-title text-gray-900 fw-bold">@Localizer["Inventory alerts"]</h3>
+                                <div class="card-toolbar"><span class="badge badge-light-danger">@Localizer["Stockout"]: @(Model.Inventory?.Summary?.StockoutRisk ?? 0)</span></div>
+                            </div>
+                            <div class="card-body pt-2">
+                                @if (Model.Inventory != null && Model.Inventory.Flagged.Any())
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-row-dashed align-middle gs-0 gy-3">
+                                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr>
+                                                <th>@SR["Item"]</th><th>@SR["Status"]</th>
+                                                <th class="text-end">@Localizer["On hand"]</th><th class="text-end">@Localizer["Value"]</th>
+                                                <th class="text-end">@Localizer["Reorder"]</th></tr></thead>
+                                            <tbody>
+                                            @foreach (var it in Model.Inventory.Flagged.Take(12))
+                                            {
+                                                <tr>
+                                                    <td><span class="fw-bold text-gray-800">@it.Name</span><div class="text-gray-400 fs-8">@it.Code</div></td>
+                                                    <td><span class="badge badge-light-@ClassBadge(it.Class)">@Localizer[ClassLabel(it.Class)]</span> <span class="badge badge-light-@SevBadge(it.Severity)">@Localizer[SevLabel(it.Severity)]</span></td>
+                                                    <td class="text-end">@Money(it.OnHand)</td>
+                                                    <td class="text-end fw-semibold">@Money(it.Value)</td>
+                                                    <td class="text-end">@(it.SuggestedReorderQty.HasValue ? Money(it.SuggestedReorderQty.Value) : "—")</td>
+                                                </tr>
+                                            }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                else { <div class="text-gray-500 py-5 text-center">@Localizer["No alerts"]</div> }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

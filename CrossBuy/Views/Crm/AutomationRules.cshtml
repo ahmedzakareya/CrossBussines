@@ -1,0 +1,69 @@
+@using CrossBuy.Models.Context.Crm
+@model List<CrmAutomationRule>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string trg(string t) => t == "OpportunityStageChanged" ? Localizer["Opportunity stage changed"].Value : Localizer["Lead created"].Value;
+    string act(string a) => a == "Notify" ? Localizer["Notify owner"].Value : Localizer["Create activity"].Value;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Automation rules (CRM)"]</h1>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
+        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-header"><div class="card-title"><h2>@Localizer["New rule"]</h2></div></div>
+            <div class="card-body pt-2"><form asp-action="SaveAutomationRule" method="post" class="row g-3 align-items-end">@Html.AntiForgeryToken()
+                <div class="col-md-3"><label class="required fw-semibold fs-7 mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" required /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" placeholder="@Localizer["Optional English name"]" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 mb-1">@Localizer["Trigger"]</label>
+                    <select name="triggerType" id="a_trg" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="LeadCreated">@Localizer["Lead created"]</option><option value="OpportunityStageChanged">@Localizer["Opportunity stage changed"]</option></select></div>
+                <div class="col-md-2"><label class="fw-semibold fs-7 mb-1">@Localizer["Stage (opt.)"]</label><input name="stageFilter" class="form-control form-control-solid" placeholder="@Localizer["any stage"]" /></div>
+                <div class="col-md-2"><label class="fw-semibold fs-7 mb-1">@Localizer["Action"]</label>
+                    <select name="actionType" id="a_act" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="CreateActivity">@Localizer["Create activity"]</option><option value="Notify">@Localizer["Notify owner"]</option></select></div>
+                <div class="col-md-2"><label class="fw-semibold fs-7 mb-1">@Localizer["Sort"]</label><input name="sortOrder" type="number" value="0" class="form-control form-control-solid" /></div>
+
+                <div class="col-md-3 a-activity"><label class="fw-semibold fs-7 mb-1">@Localizer["Activity type"]</label>
+                    <select name="activityType" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="Task">@Localizer["Task"]</option><option value="Call">@Localizer["Call"]</option><option value="Meeting">@Localizer["Meeting"]</option><option value="Email">@SR["Email"]</option></select></div>
+                <div class="col-md-4 a-activity"><label class="fw-semibold fs-7 mb-1">@Localizer["Activity subject"]</label><input name="subject" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 a-activity"><label class="fw-semibold fs-7 mb-1">@Localizer["Activity subject (EN)"]</label><input name="subjectEn" class="form-control form-control-solid" placeholder="@Localizer["Optional English subject"]" /></div>
+                <div class="col-md-2 a-activity"><label class="fw-semibold fs-7 mb-1">@Localizer["Due in (days)"]</label><input name="dueInDays" type="number" value="1" class="form-control form-control-solid" /></div>
+
+                <div class="col-md-3 a-notify d-none"><label class="fw-semibold fs-7 mb-1">@Localizer["Notify title"]</label><input name="notifyTitle" class="form-control form-control-solid" /></div>
+                <div class="col-md-6 a-notify d-none"><label class="fw-semibold fs-7 mb-1">@Localizer["Notify body"]</label><input name="notifyBody" class="form-control form-control-solid" /></div>
+
+                <div class="col-md-2 d-flex align-items-end"><label class="form-check form-switch mt-2"><input type="hidden" name="isActive" value="false" /><input class="form-check-input" type="checkbox" name="isActive" value="true" checked /><span class="form-check-label fw-semibold ms-2">@SR["Active"]</span></label></div>
+                <div class="col-md-2"><button class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div>
+            </form></div>
+        </div>
+
+        <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Name"]</th><th>@Localizer["Trigger"]</th><th>@Localizer["Action"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
+            <tbody>
+            @if (!Model.Any()) { <tr><td colspan="5" class="text-center text-muted py-8">@Localizer["No rules"]</td></tr> }
+            @foreach (var r in Model)
+            {
+                <tr style="border-bottom:1px dashed #eef1f6;">
+                    <td class="ps-4 fw-bold">@(isAr ? r.Name : (string.IsNullOrWhiteSpace(r.NameEn) ? r.Name : r.NameEn))</td>
+                    <td>@trg(r.TriggerType)@if (!string.IsNullOrEmpty(r.StageFilter)) { <span class="badge fw-bold ms-1" style="background:#eaf3ef;color:#13433a;">@r.StageFilter</span> }</td>
+                    <td>@act(r.ActionType)@if (r.ActionType == "CreateActivity" && !string.IsNullOrEmpty(r.Subject)) { <div class="text-muted fs-8">@r.Subject</div> }</td>
+                    <td class="text-center"><span class="badge fw-bold" style="@(r.IsActive ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@(r.IsActive?SR["Active"].Value:SR["Inactive"].Value)</span></td>
+                    <td class="text-end pe-4"><form asp-action="DeleteAutomationRule" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete rule?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form></td>
+                </tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){ function sync(){ var a=jQuery('#a_act').val();
+  document.querySelectorAll('.a-activity').forEach(function(e){e.classList.toggle('d-none', a!=='CreateActivity');});
+  document.querySelectorAll('.a-notify').forEach(function(e){e.classList.toggle('d-none', a!=='Notify');}); }
+  if(window.jQuery){ jQuery('#a_act').on('change', sync); sync(); } })();
+</script>
+}

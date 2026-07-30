@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CompanyDetails" xml:space="preserve">
+    <value>تفاصيل الشركة</value>
+  </data>
+  <data name="Add Member" xml:space="preserve">
+    <value>إضافة عضو</value>
+  </data>
+  <data name="New Campaign" xml:space="preserve">
+    <value>حملة جديدة</value>
+  </data>
+  <data name="Apps" xml:space="preserve">
+    <value>التطبيقات</value>
+  </data>
+  <data name="Contacts" xml:space="preserve">
+    <value>جهات الاتصال</value>
+  </data>
+  <data name="Groups" xml:space="preserve">
+    <value>المجموعات</value>
+  </data>
+  <data name="All Contacts" xml:space="preserve">
+    <value>جميع جهات الاتصال</value>
+  </data>
+  <data name="Subscribed" xml:space="preserve">
+    <value>المشتركون</value>
+  </data>
+  <data name="Tier 1 Member" xml:space="preserve">
+    <value>عضو المستوى الأول</value>
+  </data>
+  <data name="Pending Approval" xml:space="preserve">
+    <value>بانتظار الموافقة</value>
+  </data>
+  <data name="Blocked" xml:space="preserve">
+    <value>محظور</value>
+  </data>
+  <data name="Add new group" xml:space="preserve">
+    <value>إضافة مجموعة جديدة</value>
+  </data>
+  <data name="Group name" xml:space="preserve">
+    <value>اسم المجموعة</value>
+  </data>
+  <data name="Add new contact" xml:space="preserve">
+    <value>إضافة جهة اتصال جديدة</value>
+  </data>
+  <data name="Allowed file types: png, jpg, jpeg." xml:space="preserve">
+    <value>أنواع الملفات المسموح بها: png, jpg, jpeg.</value>
+  </data>
+  <data name="Change avatar" xml:space="preserve">
+    <value>تغيير الصورة</value>
+  </data>
+  <data name="Cancel avatar" xml:space="preserve">
+    <value>إلغاء الصورة</value>
+  </data>
+  <data name="Remove avatar" xml:space="preserve">
+    <value>إزالة الصورة</value>
+  </data>
+  <data name="Upload All" xml:space="preserve">
+    <value>رفع الكل</value>
+  </data>
+  <data name="2 days ago" xml:space="preserve">
+    <value>منذ يومين</value>
+  </data>
+  <data name="Please choose an image." xml:space="preserve">
+    <value>يرجى اختيار صورة.</value>
+  </data>
+</root>

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Policies" xml:space="preserve">
+    <value>السياسات</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="Apps" xml:space="preserve">
+    <value>التطبيقات</value>
+  </data>
+  <data name="eCommerce" xml:space="preserve">
+    <value>التجارة الإلكترونية</value>
+  </data>
+  <data name="Catalog" xml:space="preserve">
+    <value>الكتالوج</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>رسالة</value>
+  </data>
+  <data name="Attachment" xml:space="preserve">
+    <value>مرفق</value>
+  </data>
+  <data name="No items added" xml:space="preserve">
+    <value>لا توجد بنود مضافة</value>
+  </data>
+  <data name="Search..." xml:space="preserve">
+    <value>بحث...</value>
+  </data>
+  <data name="Permission details" xml:space="preserve">
+    <value>بيانات الاستئذان</value>
+  </data>
+  <data name="Permission status" xml:space="preserve">
+    <value>حالة الاستئذان</value>
+  </data>
+  <data name="Requests / day" xml:space="preserve">
+    <value>طلبات / يوم</value>
+  </data>
+  <data name="Minutes / request" xml:space="preserve">
+    <value>دقائق / طلب</value>
+  </data>
+  <data name="Approval" xml:space="preserve">
+    <value>الموافقة</value>
+  </data>
+  <data name="Permission types" xml:space="preserve">
+    <value>أنواع الاستئذان</value>
+  </data>
+  <data name="Rest of day" xml:space="preserve">
+    <value>باقي اليوم</value>
+  </data>
+  <data name="Do you want to edit this policy data?" xml:space="preserve">
+    <value>هل تريد تعديل بيانات هذه السياسة؟</value>
+  </data>
+  <data name="No data for this type in the table" xml:space="preserve">
+    <value>لا توجد بيانات لهذا النوع داخل الجدول</value>
+  </data>
+  <data name="Showing" xml:space="preserve">
+    <value>يُعرض</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>من</value>
+  </data>
+  <data name="leave type" xml:space="preserve">
+    <value>نوع إجازة</value>
+  </data>
+  <data name="Do you want to edit this salary policy data?" xml:space="preserve">
+    <value>هل تريد تعديل بيانات لائحة الراتب؟</value>
+  </data>
+  <data name="Loading ..." xml:space="preserve">
+    <value>جاري التحميل ...</value>
+  </data>
+  <data name="Failed to load types" xml:space="preserve">
+    <value>فشل تحميل الأنواع</value>
+  </data>
+  <data name="Connection error" xml:space="preserve">
+    <value>خطأ في الاتصال</value>
+  </data>
+  <data name="Do you want to edit this leave policy data?" xml:space="preserve">
+    <value>هل تريد تعديل بيانات لائحة الإجازة؟</value>
+  </data>
+  <data name="Blue: actual working hours after deducting the break" xml:space="preserve">
+    <value>أزرق: ساعات العمل الفعلية بعد خصم الاستراحة</value>
+  </data>
+  <data name="Orange: break duration within the work schedule" xml:space="preserve">
+    <value>برتقالي: مدة الاستراحة داخل جدول العمل</value>
+  </data>
+  <data name="Light blue: total grace period before and after work" xml:space="preserve">
+    <value>أزرق فاتح: إجمالي فترة السماح قبل وبعد الدوام</value>
+  </data>
+  <data name="Gray: time outside the work range during the day" xml:space="preserve">
+    <value>رمادي: الوقت خارج نطاق الدوام خلال اليوم</value>
+  </data>
+  <data name="Select time" xml:space="preserve">
+    <value>اختيار الوقت</value>
+  </data>
+  <data name="24-hour system - no clock dial" xml:space="preserve">
+    <value>نظام 24 ساعة - بدون ساعة دائرية</value>
+  </data>
+  <data name="Hour" xml:space="preserve">
+    <value>الساعة</value>
+  </data>
+  <data name="Minute" xml:space="preserve">
+    <value>الدقيقة</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>الدقائق</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>تطبيق</value>
+  </data>
+  <data name="You must enable permission and fill its required data correctly" xml:space="preserve">
+    <value>يجب تفعيل الاستئذان وتعبئة بياناته المطلوبة بشكل صحيح</value>
+  </data>
+  <data name="Late" xml:space="preserve">
+    <value>تأخير</value>
+  </data>
+  <data name="Early leave" xml:space="preserve">
+    <value>خروج مبكر</value>
+  </data>
+  <data name="During work" xml:space="preserve">
+    <value>أثناء الدوام</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>مفعل</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>غير مفعل</value>
+  </data>
+  <data name="Permission data complete" xml:space="preserve">
+    <value>بيانات الاستئذان مكتملة</value>
+  </data>
+  <data name="Permission data needs completion" xml:space="preserve">
+    <value>بيانات الاستئذان تحتاج استكمال</value>
+  </data>
+  <data name="Not required" xml:space="preserve">
+    <value>غير مطلوبة</value>
+  </data>
+</root>

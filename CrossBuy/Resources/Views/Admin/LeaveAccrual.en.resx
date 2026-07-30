@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Leave encashment &amp; provision" xml:space="preserve">
+    <value>Leave encashment &amp; provision</value>
+  </data>
+  <data name="HR" xml:space="preserve">
+    <value>HR</value>
+  </data>
+  <data name="Leave &amp; attendance" xml:space="preserve">
+    <value>Leave &amp; attendance</value>
+  </data>
+  <data name="Leave encashment" xml:space="preserve">
+    <value>Leave encashment</value>
+  </data>
+  <data name="Select employee…" xml:space="preserve">
+    <value>Select employee…</value>
+  </data>
+  <data name="No encashable balance for this employee." xml:space="preserve">
+    <value>No encashable balance for this employee.</value>
+  </data>
+  <data name="Daily rate" xml:space="preserve">
+    <value>Daily rate</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Encash" xml:space="preserve">
+    <value>Encash</value>
+  </data>
+  <data name="d" xml:space="preserve">
+    <value>d</value>
+  </data>
+  <data name="Pay out this leave balance in cash?" xml:space="preserve">
+    <value>Pay out this leave balance in cash?</value>
+  </data>
+  <data name="Pay" xml:space="preserve">
+    <value>Pay</value>
+  </data>
+  <data name="Daily rate = (base + allowances) ÷ 30. Entry: Dr 520104 / Cr bank. Paid days reduce the balance." xml:space="preserve">
+    <value>Daily rate = (base + allowances) ÷ 30. Entry: Dr 520104 / Cr bank. Paid days reduce the balance.</value>
+  </data>
+  <data name="Pick an employee to view encashable balance." xml:space="preserve">
+    <value>Pick an employee to view encashable balance.</value>
+  </data>
+  <data name="Encashable leave types" xml:space="preserve">
+    <value>Encashable leave types</value>
+  </data>
+  <data name="Mark which types may be paid out and included in the provision (usually annual leave only)." xml:space="preserve">
+    <value>Mark which types may be paid out and included in the provision (usually annual leave only).</value>
+  </data>
+  <data name="No leave types." xml:space="preserve">
+    <value>No leave types.</value>
+  </data>
+  <data name="Leave provision" xml:space="preserve">
+    <value>Leave provision</value>
+  </data>
+  <data name="As of date" xml:space="preserve">
+    <value>As of date</value>
+  </data>
+  <data name="Compute" xml:space="preserve">
+    <value>Compute</value>
+  </data>
+  <data name="Total earned days" xml:space="preserve">
+    <value>Total earned days</value>
+  </data>
+  <data name="Required provision" xml:space="preserve">
+    <value>Required provision</value>
+  </data>
+  <data name="Current balance (210206)" xml:space="preserve">
+    <value>Current balance (210206)</value>
+  </data>
+  <data name="Adjustment to post" xml:space="preserve">
+    <value>Adjustment to post</value>
+  </data>
+  <data name="Post the provision adjustment?" xml:space="preserve">
+    <value>Post the provision adjustment?</value>
+  </data>
+  <data name="Post adjustment" xml:space="preserve">
+    <value>Post adjustment</value>
+  </data>
+  <data name="Increase ← Dr 520106 / Cr 210206; release ← reverse. Only the difference is posted to match the liability." xml:space="preserve">
+    <value>Increase ← Dr 520106 / Cr 210206; release ← reverse. Only the difference is posted to match the liability.</value>
+  </data>
+</root>

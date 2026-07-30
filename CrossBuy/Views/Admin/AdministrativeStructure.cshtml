@@ -1,0 +1,1378 @@
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    ViewData["Title"] = Localizer["Administrative Structure"].Value;
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+}
+
+<style>
+    :root {
+        --as-bg:           #f4f6fb;
+        --as-card:         #ffffff;
+        --as-border:       #e4e9f2;
+        --as-text:         #1a2236;
+        --as-muted:        #7b8494;
+        --as-primary:      #1f6253;
+        --as-primary-soft: #e9f1ee;
+        --as-shadow:       0 12px 34px rgba(20,32,55,.09);
+        --as-radius:       22px;
+        --c1-main:#13433a; --c1-shadow:#081f1a; --c1-platform:#0f342d; --c1-light:#2f6a5c;
+        --c2-main:#1f6253; --c2-shadow:#123a31; --c2-platform:#1a5446; --c2-light:#3a8471;
+        --c3-main:#2f8f78; --c3-shadow:#1f6253; --c3-platform:#277d67; --c3-light:#5aa892;
+    }
+
+    .as-page  { background:var(--as-bg); border-radius:24px; padding:22px; }
+    .as-shell { background:var(--as-card); border:1px solid var(--as-border); border-radius:24px; box-shadow:var(--as-shadow); overflow:hidden; }
+
+    /* ── HEADER ── */
+    .as-official-header { position:relative; padding:22px 26px; background:#ffffff; border-bottom:1px solid var(--as-border); }
+    .as-official-header::before { content:""; position:absolute; inset-inline-start:0; top:0; width:100%; height:4px; background:#1f6253; }
+    .as-official-main  { display:flex; align-items:center; gap:16px; }
+    .as-official-icon  { width:52px; height:52px; border-radius:16px; background:#e9f1ee; border:1px solid #c3ddd3; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 22px rgba(19,67,58,.10); }
+    .as-eyebrow        { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; background:#e9f1ee; color:#1f6253; border:1px solid #c3ddd3; font-size:12px; font-weight:800; margin-bottom:10px; }
+    .as-title          { color:#162033; font-size:23px; font-weight:800; margin:0; }
+    .as-subtitle       { color:#667085; font-size:13px; margin-top:7px; }
+    .as-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex-shrink:0; }
+
+    /* ── COMMAND BAR ── */
+    .as-command-bar    { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 20px; background:#fff; border-bottom:1px solid var(--as-border); }
+    .as-search-wrap    { flex:1; max-width:640px; }
+    .as-search-box     { height:44px; border:1px solid var(--as-border); border-radius:14px; background:#ffffff; display:flex; align-items:center; gap:10px; padding:0 14px; box-shadow:0 4px 12px rgba(20,32,55,.04); }
+    .as-search-box:focus-within { border-color:rgba(31,98,83,.45); box-shadow:0 0 0 4px rgba(31,98,83,.08); }
+    .as-search-box input { border:0; outline:0; background:transparent; width:100%; font-weight:700; font-size:13px; color:var(--as-text); }
+    .as-search-box input::placeholder { color:#9aa4b5; font-weight:600; }
+    .as-search-clear   { width:28px; height:28px; border:0; border-radius:8px; background:#f3f6fb; color:#6b7280; display:none; align-items:center; justify-content:center; cursor:pointer; }
+    .as-search-clear:hover { background:var(--as-primary-soft); color:var(--as-primary); }
+    .as-chip           { display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border-radius:999px; background:#f4f7fb; border:1px solid var(--as-border); color:#5e6a7f; font-size:12px; font-weight:800; }
+    .as-command-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+    /* ── TABS ── */
+    .as-tabs { display:flex; gap:10px; padding:16px 20px 0; border-bottom:1px solid var(--as-border); background:#fff; overflow-x:auto; }
+    .as-tabs .nav-link { border:1px solid transparent; border-bottom:0; color:#647084; font-weight:800; border-radius:16px 16px 0 0; padding:12px 18px; white-space:nowrap; background:transparent; }
+    .as-tabs .nav-link.active { color:var(--as-primary); background:var(--as-bg); border-color:var(--as-border); position:relative; }
+    .as-tabs .nav-link.active::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--as-bg); }
+
+    /* ── CONTENT ── */
+    .as-content  { background:var(--as-bg); padding:22px; min-height:570px; }
+    .as-view-card{ background:var(--as-card); border:1px solid var(--as-border); border-radius:var(--as-radius); min-height:510px; overflow:hidden; }
+    .as-view-head{ display:flex; justify-content:space-between; align-items:center; gap:14px; padding:18px 20px; border-bottom:1px solid var(--as-border); background:#ffffff; }
+    .as-view-title{ font-size:15px; font-weight:900; color:var(--as-text); margin:0; }
+    .as-view-hint { color:var(--as-muted); font-size:12px; margin-top:3px; }
+    .as-tree-area { padding:22px; }
+
+    /* ── ORG CHART ── */
+    .org-outer { display:grid; grid-template-columns:270px minmax(0,1fr); min-height:620px; }
+    .org-side-panel { border-inline-end:1px solid var(--as-border); background:#ffffff; padding:22px 18px; display:flex; flex-direction:column; gap:16px; }
+    .org-legend-card,.org-summary-card { background:#fff; border:1px solid #dfe6f0; border-radius:16px; box-shadow:0 8px 20px rgba(20,32,55,.06); padding:16px; }
+    .org-panel-title { font-size:14px; font-weight:900; color:#111827; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #edf1f7; }
+    .org-legend-item { display:grid; grid-template-columns:44px 1fr 32px; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid #edf1f7; }
+    .org-legend-item:last-child { border-bottom:0; padding-bottom:0; }
+    .org-legend-icon { width:42px; height:42px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
+    .org-legend-title{ font-size:12px; font-weight:900; color:#182235; }
+    .org-legend-code { font-size:10px; color:#6b7280; margin-top:2px; font-weight:700; }
+    .org-legend-num  { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; }
+    .ht1{color:var(--c1-main);background:#e9f1ee;} .ht2{color:var(--c2-main);background:#eaf3ef;} .ht3{color:var(--c3-main);background:#edf5f1;}
+    .num1{color:var(--c1-main);background:#e9f1ee;border:1px solid #b7d3c9;} .num2{color:var(--c2-main);background:#eaf3ef;border:1px solid #b7d3c9;} .num3{color:var(--c3-main);background:#edf5f1;border:1px solid #c3ddd3;}
+    .org-summary-grid  { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center; }
+    .org-summary-num   { font-size:22px; font-weight:950; line-height:1; }
+    .org-summary-label { font-size:10px; color:#667085; margin-top:5px; font-weight:800; }
+    .org-summary-total { margin-top:12px; border-radius:12px; background:#f4f6fb; color:#475467; font-size:11px; font-weight:900; padding:9px 10px; text-align:center; }
+
+    .org-chart-shell  { position:relative; flex:1; min-width:0; min-height:0; overflow:hidden; }
+    .org-chart-scroll {
+        width:100%; height:620px; min-height:0; overflow:auto;
+        direction:ltr;
+        scrollbar-width:thin; scrollbar-color:#cfd8e6 #f8fafc;
+        cursor:grab; user-select:none;
+        background-color:#fbfdfc;
+        background-image:
+            linear-gradient(#edf0f5 1px,transparent 1px),
+            linear-gradient(90deg,#edf0f5 1px,transparent 1px);
+        background-size:28px 28px,28px 28px;
+    }
+    .org-chart-scroll.is-dragging { cursor:grabbing; }
+    .org-chart-scroll.is-dragging * { pointer-events:none; }
+
+    /* oc-board = scroll content; oc-canvas = transform origin */
+    .oc-board  { position:relative; }
+    .oc-canvas { position:absolute; top:0; left:0; transform-origin:top left; }
+    .oc-svg-con{ position:absolute; top:0; left:0; pointer-events:none; overflow:visible; z-index:0; }
+
+    .oc-node-wrap { position:absolute; z-index:1; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+    .oc-card-body { transition:transform .18s; display:flex; flex-direction:column; align-items:center; }
+    .oc-node-wrap:hover .oc-card-body { transform:translateY(-6px); }
+    .oc-info-box  { margin-top:7px; text-align:center; max-width:148px; }
+    .oc-info-name { font-size:11px; font-weight:900; padding:3px 10px; color:#fff; border-radius:3px; display:inline-block; margin-bottom:3px; white-space:nowrap; letter-spacing:.2px; }
+    .oc-info-type { font-size:9px; color:#888; margin-bottom:2px; font-weight:700; }
+
+    /* zoom focus ring animation */
+    .oc-node-wrap.focused .oc-card-body { animation: focusPop .45s ease; }
+    @@keyframes focusPop {
+        0%   { transform:translateY(0) scale(1); }
+        40%  { transform:translateY(-10px) scale(1.08); }
+        70%  { transform:translateY(-5px) scale(1.04); }
+        100% { transform:translateY(-6px) scale(1); }
+    }
+
+    .org-map-toolbar {
+        position:absolute; left:14px; bottom:14px; z-index:20;
+        display:inline-flex; align-items:center; gap:7px; padding:7px;
+        border-radius:14px; background:rgba(255,255,255,.94);
+        border:1px solid #dfe6ef; box-shadow:0 10px 28px rgba(20,32,55,.12);
+        backdrop-filter:blur(8px);
+    }
+    .org-zoom-btn { width:36px; height:36px; border:1px solid #d9e2ee; border-radius:11px; background:#fff; color:#172033; display:inline-flex; align-items:center; justify-content:center; font-weight:900; cursor:pointer; transition:all .16s; }
+    .org-zoom-btn:hover { background:#e9f1ee; border-color:#b7d3c9; color:#1f6253; }
+    .org-zoom-value { min-width:54px; height:36px; padding:0 9px; border-radius:11px; background:#f4f7fb; color:#475467; font-size:12px; font-weight:900; display:inline-flex; align-items:center; justify-content:center; }
+
+
+
+    /* ── ORG FULLSCREEN MODAL ── */
+    .org-fullscreen-modal .modal-content { background:#f4f6fb; }
+    .org-fullscreen-modal .modal-header {
+        min-height:64px; background:#fff; border-bottom:1px solid var(--as-border);
+        padding:14px 18px; display:flex; align-items:center; justify-content:space-between;
+    }
+    .org-fullscreen-title { display:flex; align-items:center; gap:10px; font-weight:900; color:#162033; }
+    .org-fullscreen-title i { color:var(--as-primary); }
+    .org-fullscreen-body { height:calc(100dvh - 64px); padding:0; overflow:hidden; min-height:0; }
+    .org-fullscreen-shell { height:100%; width:100%; position:relative; overflow:hidden; background:#fbfcff; min-height:0; }
+    .org-fullscreen-shell .org-chart-scroll { height:100%; width:100%; min-height:0; overflow:auto; }
+    .org-fullscreen-shell .org-map-toolbar { left:18px; bottom:18px; }
+    .org-open-fullscreen-btn { white-space:nowrap; }
+
+    /* ══════════════════════════════════════════════════════
+       FLOW CHART — direction-aware connector lines
+       Fixes disconnected right-side lines in RTL/LTR layouts
+    ══════════════════════════════════════════════════════ */
+    .org-flow-scroll { width:100%; overflow:auto; padding:22px; background:#fbfcff; }
+    .fc-board { min-width:760px; padding:8px 8px 24px; }
+    .fc-tree  { display:flex; flex-direction:column; gap:0; }
+    .fc-node  { position:relative; }
+    .fc-item  { display:flex; align-items:center; position:relative; }
+
+    .fc-card  {
+        display:inline-flex; align-items:center; gap:12px;
+        background:#fff; border-radius:16px; border:1px solid var(--as-border);
+        padding:9px 12px; cursor:pointer; min-width:260px; max-width:440px;
+        box-shadow:0 5px 14px rgba(20,32,55,.06);
+        transition:transform .15s, border-color .15s, box-shadow .15s;
+        position:relative; z-index:1;
+        min-height:52px;
+    }
+    .fc-card:hover { border-color:rgba(31,98,83,.28); box-shadow:0 10px 22px rgba(20,32,55,.09); transform:translateX(-3px); }
+    .fc-ring  { width:38px; height:38px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+    .fc-info  { flex:1; min-width:0; }
+    .fc-name  { font-size:12px; font-weight:900; color:var(--as-text); line-height:1.45; overflow-wrap:anywhere; }
+    .fc-lbl   { font-size:10px; color:var(--as-muted); margin-top:2px; font-weight:700; }
+    .fc-toggle {
+        width:26px; height:26px; border-radius:9px;
+        border:1px solid var(--as-border); background:#f4f8f6;
+        display:flex; align-items:center; justify-content:center;
+        flex-shrink:0; cursor:pointer; transition:background .15s;
+    }
+    .fc-toggle:hover { background:#e9f1ee; }
+    .fc-toggle svg { width:11px; height:11px; color:var(--as-text); transition:transform .2s; }
+    .fc-node.collapsed > .fc-item > .fc-card .fc-toggle svg { transform:rotate(-90deg); }
+    .fc-node.collapsed > .fc-children { display:none; }
+
+    .fc-children {
+        position:relative;
+        margin-top:6px;
+        margin-bottom:0;
+        padding-top:0;
+        padding-bottom:0;
+    }
+
+    /* LTR connector */
+    .fc-tree[dir="ltr"] .fc-children {
+        margin-left:56px;
+        padding-left:22px;
+        border-left:2px solid #c8d3e6;
+    }
+    .fc-tree[dir="ltr"] .fc-children::before,
+    .fc-tree[dir="ltr"] .fc-children::after {
+        content:"";
+        position:absolute;
+        left:-2px;
+        width:2px;
+        height:26px;
+        background:#fbfcff;
+        z-index:1;
+    }
+    .fc-tree[dir="ltr"] .fc-children::before { top:0; }
+    .fc-tree[dir="ltr"] .fc-children::after  { bottom:0; }
+    .fc-tree[dir="ltr"] .fc-child-wrap::before {
+        content:"";
+        position:absolute;
+        left:-22px;
+        top:50%;
+        width:22px;
+        height:2px;
+        background:#c8d3e6;
+        transform:translateY(-50%);
+        z-index:0;
+    }
+
+    /* RTL connector — line stays on the right and connects to the card */
+    .fc-tree[dir="rtl"] .fc-children {
+        margin-right:56px;
+        padding-right:22px;
+        border-right:2px solid #c8d3e6;
+    }
+    .fc-tree[dir="rtl"] .fc-children::before,
+    .fc-tree[dir="rtl"] .fc-children::after {
+        content:"";
+        position:absolute;
+        right:-2px;
+        width:2px;
+        height:26px;
+        background:#fbfcff;
+        z-index:1;
+    }
+    .fc-tree[dir="rtl"] .fc-children::before { top:0; }
+    .fc-tree[dir="rtl"] .fc-children::after  { bottom:0; }
+    .fc-tree[dir="rtl"] .fc-child-wrap::before {
+        content:"";
+        position:absolute;
+        right:-22px;
+        top:50%;
+        width:22px;
+        height:2px;
+        background:#c8d3e6;
+        transform:translateY(-50%);
+        z-index:0;
+    }
+
+    .fc-child-wrap {
+        position:relative;
+        padding-top:6px;
+        padding-bottom:6px;
+    }
+
+    /* ── MISC ── */
+    .as-match     { outline:3px solid rgba(31,98,83,.16); border-color:rgba(31,98,83,.48)!important; }
+    .as-print-root{ display:none; }
+
+    @@media print {
+        body * { visibility:hidden!important; }
+        .as-print-root,.as-print-root * { visibility:visible!important; }
+        .as-print-root { display:block!important; position:absolute; inset:0; width:100%; background:#fff; }
+        @@page { size:A4 portrait; margin:10mm; }
+    }
+    @@media (max-width:1199.98px) {
+        .org-outer { grid-template-columns:1fr; }
+        .org-side-panel { border-inline-end:0; border-bottom:1px solid var(--as-border); display:grid; grid-template-columns:1fr 1fr; }
+    }
+    @@media (max-width:991.98px) {
+        .as-page { padding:12px; }
+        .as-command-bar { flex-direction:column; align-items:stretch; }
+        .as-search-wrap { max-width:none; }
+        .as-content { padding:14px; }
+        .org-chart-scroll { height:520px; }
+    }
+    @@media (max-width:767.98px) { .org-side-panel { grid-template-columns:1fr; } }
+</style>
+
+
+<div class="d-flex flex-column flex-column-fluid">
+
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex align-items-stretch">
+            <div class="app-toolbar-wrapper d-flex flex-stack flex-wrap gap-4 w-100">
+                <div class="page-title d-flex flex-column justify-content-center gap-1 me-3">
+                    <h1 class="page-heading d-flex flex-column justify-content-center text-gray-900 fw-bold fs-3 m-0">
+                        @CrossBuy.Resources.SharedResources.AdministrativeStructure
+                    </h1>
+                    <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                        <li class="breadcrumb-item text-muted"><a href="/" class="text-muted text-hover-primary">@Localizer["Home"]</a></li>
+                        <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                        <li class="breadcrumb-item text-muted">@Localizer["Administrative Structure"]</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="as-page">
+                <div class="as-shell">
+
+                    <!-- HEADER -->
+                    <div class="as-official-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                        <div class="as-official-main">
+                            <div class="as-official-icon">
+                                <i class="ki-outline ki-abstract-26 fs-2" style="color:#1f6253"></i>
+                            </div>
+                            <div>
+                                <div class="as-eyebrow"><i class="ki-outline ki-shield-tick fs-5"></i>@Localizer["Official administrative unit"]</div>
+                                <h2 class="as-title">@CrossBuy.Resources.SharedResources.AdministrativeStructure</h2>
+                                <div class="as-subtitle">@Localizer["Manage the administrative structure — companies, branches, administrative entities"]</div>
+                            </div>
+                        </div>
+                        <div class="as-header-actions">
+                            <button type="button" class="btn btn-light-primary fw-bold" id="btnExpandFlow">
+                                <i class="ki-outline ki-plus-square fs-4 me-1"></i>@Localizer["Expand"]
+                            </button>
+                            <button type="button" class="btn btn-light fw-bold" id="btnCollapseFlow">
+                                <i class="ki-outline ki-minus-square fs-4 me-1"></i>@Localizer["Collapse"]
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- COMMAND BAR -->
+                    <div class="as-command-bar">
+                        <div class="as-search-wrap">
+                            <div class="as-search-box">
+                                <i class="ki-outline ki-magnifier fs-3" style="color:var(--as-primary)"></i>
+                                <input type="text" id="asGlobalSearch" autocomplete="off" placeholder="@Localizer["Search by name or entity type..."]" />
+                                <button type="button" class="as-search-clear" id="asClearSearch">
+                                    <i class="ki-outline ki-cross fs-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="as-command-actions">
+                            <span class="as-chip" id="asSearchCount">
+                                <i class="ki-outline ki-chart-simple fs-5"></i>@Localizer["All units"]
+                            </span>
+                            <button type="button" class="btn btn-light-primary fw-bold" id="btnPrintStructure">
+                                <i class="ki-outline ki-printer fs-4 me-1"></i>@SR["Print"]
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TABS -->
+                    <ul class="nav nav-tabs as-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#treeViewTab" role="tab">
+                                <i class="ki-outline ki-abstract-26 fs-4 me-2"></i>@Localizer["Tree"]
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#modernOrgTab" role="tab">
+                                <i class="ki-outline ki-people fs-4 me-2"></i>@Localizer["Org chart"]
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#flowOrgTab" role="tab">
+                                <i class="ki-outline ki-data fs-4 me-2"></i>@Localizer["Flow"]
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content as-content">
+
+                        <!-- ① Tree -->
+                        <div class="tab-pane fade show active" id="treeViewTab" role="tabpanel">
+                            <div class="as-view-card">
+                                <div class="as-view-head">
+                                    <div><h3 class="as-view-title">@Localizer["Tree view"]</h3><div class="as-view-hint">@Localizer["Classic jsTree hierarchy"]</div></div>
+                                    <span class="as-chip"><i class="ki-outline ki-abstract-26 fs-5"></i>@Localizer["Default"]</span>
+                                </div>
+                                <div class="as-tree-area"><div id="kt_docs_jstree_customicons"></div></div>
+                            </div>
+                        </div>
+
+                        <!-- ② Org Chart -->
+                        <div class="tab-pane fade" id="modernOrgTab" role="tabpanel">
+                            <div class="as-view-card">
+                                <div class="as-view-head">
+                                    <div>
+                                        <h3 class="as-view-title">@Localizer["3D org chart"]</h3>
+                                        <div class="as-view-hint">@Localizer["Drag to pan · Ctrl+wheel to zoom · double-click to focus an item"]</div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="as-chip"><i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Drag to pan"]</span>
+                                        <button type="button" class="btn btn-light-primary fw-bold org-open-fullscreen-btn" id="btnOpenOrgFullscreen">
+                                            <i class="ki-outline ki-maximize fs-4 me-1"></i>@Localizer["Fullscreen"]
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="org-outer">
+                                    <aside class="org-side-panel">
+                                        <div class="org-legend-card">
+                                            <div class="org-panel-title">@Localizer["Legend"]</div>
+                                            <div class="org-legend-item">
+                                                <span class="org-legend-icon ht1" id="legendIcon1"></span>
+                                                <div><div class="org-legend-title">@SR["Company"]</div></div>
+                                                <span class="org-legend-num num1">1</span>
+                                            </div>
+                                            <div class="org-legend-item">
+                                                <span class="org-legend-icon ht2" id="legendIcon2"></span>
+                                                <div><div class="org-legend-title">@SR["Branch"]</div></div>
+                                                <span class="org-legend-num num2">2</span>
+                                            </div>
+                                            <div class="org-legend-item">
+                                                <span class="org-legend-icon ht3" id="legendIcon3"></span>
+                                                <div><div class="org-legend-title">@Localizer["Administrative entity"]</div></div>
+                                                <span class="org-legend-num num3">3</span>
+                                            </div>
+                                        </div>
+                                        <div class="org-summary-card">
+                                            <div class="org-panel-title text-center">@Localizer["Structure summary"]</div>
+                                            <div class="org-summary-grid">
+                                                <div><div class="org-summary-num" id="orgCompanyCount" style="color:var(--c1-main)">0</div><div class="org-summary-label">@SR["Company"]</div></div>
+                                                <div><div class="org-summary-num" id="orgBranchCount"  style="color:var(--c2-main)">0</div><div class="org-summary-label">@SR["Branch"]</div></div>
+                                                <div><div class="org-summary-num" id="orgAdminCount"   style="color:var(--c3-main)">0</div><div class="org-summary-label">@Localizer["Administrative entity"]</div></div>
+                                            </div>
+                                            <div class="org-summary-total" id="orgTotalCount">@SR["Total"]: 0 @Localizer["entities"]</div>
+                                        </div>
+                                    </aside>
+
+                                    <div class="org-chart-shell">
+                                        <div class="org-map-toolbar">
+                                            <button type="button" class="org-zoom-btn" id="btnOrgZoomOut"><i class="ki-outline ki-minus fs-3"></i></button>
+                                            <span class="org-zoom-value" id="orgZoomValue">100%</span>
+                                            <button type="button" class="org-zoom-btn" id="btnOrgZoomIn"><i class="ki-outline ki-plus fs-3"></i></button>
+                                            <button type="button" class="org-zoom-btn" id="btnOrgFit"   title="@Localizer["Fit"]"><i class="ki-outline ki-abstract-33 fs-3"></i></button>
+                                            <button type="button" class="org-zoom-btn" id="btnOrgReset" title="@SR["Reset"]"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                                        </div>
+                                        <div class="org-chart-scroll" id="orgChartScroll">
+                                            <div class="oc-board" id="ocBoard">
+                                                <div class="oc-canvas" id="ocCanvas">
+                                                    <svg class="oc-svg-con" id="ocSvgCon"></svg>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ③ Flow -->
+                        <div class="tab-pane fade" id="flowOrgTab" role="tabpanel">
+                            <div class="as-view-card">
+                                <div class="as-view-head">
+                                    <div><h3 class="as-view-title">@Localizer["Collapsible flow chart"]</h3><div class="as-view-hint">@Localizer["Click the arrow to collapse / expand branches"]</div></div>
+                                    <span class="as-chip"><i class="ki-outline ki-data fs-5"></i>@Localizer["Collapsible"]</span>
+                                </div>
+                                <div class="org-flow-scroll">
+                                    <div class="fc-board">
+                                        <div class="fc-tree" id="fcTree"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="border-top bg-white p-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light">@CrossBuy.Resources.SharedResources.Cancel</button>
+                        <button type="button" class="btn btn-primary">@CrossBuy.Resources.SharedResources.Save</button>
+                    </div>
+
+                </div>
+            </div>
+            <div id="asPrintRoot" class="as-print-root"></div>
+        </div>
+    </div>
+
+    <!-- Context menu -->
+    <div id="treeActionMenu" style="position:absolute;display:none;z-index:9999;background:#fff;border:1px solid #e4e9f2;border-radius:12px;box-shadow:0 14px 30px rgba(20,32,55,.14);padding:7px;min-width:140px;">
+        <a href="javascript:;" class="dropdown-item rounded-2 px-3 py-2 fw-700" id="addItem"><i class="ki-outline ki-plus text-primary me-2"></i>@SR["Add"]</a>
+        <a href="javascript:;" class="dropdown-item rounded-2 px-3 py-2 fw-700" id="editItem"><i class="ki-outline ki-pencil text-warning me-2"></i>@SR["Edit"]</a>
+    </div>
+
+
+
+    <!-- Org fullscreen modal -->
+    <div class="modal fade org-fullscreen-modal" id="orgFullscreenModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="org-fullscreen-title">
+                        <i class="ki-outline ki-abstract-26 fs-2"></i>
+                        <span>@Localizer["Org chart - fullscreen"]</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-icon btn-light" data-bs-dismiss="modal" aria-label="Close">
+                        <i class="ki-outline ki-cross fs-2"></i>
+                    </button>
+                </div>
+                <div class="modal-body org-fullscreen-body">
+                    <div class="org-fullscreen-shell">
+                        <div class="org-map-toolbar">
+                            <button type="button" class="org-zoom-btn" id="btnModalOrgZoomOut" title="@Localizer["Zoom out"]"><i class="ki-outline ki-minus fs-3"></i></button>
+                            <span class="org-zoom-value" id="modalOrgZoomValue">100%</span>
+                            <button type="button" class="org-zoom-btn" id="btnModalOrgZoomIn" title="@Localizer["Zoom in"]"><i class="ki-outline ki-plus fs-3"></i></button>
+                            <button type="button" class="org-zoom-btn" id="btnModalOrgFit" title="@Localizer["Fit"]"><i class="ki-outline ki-abstract-33 fs-3"></i></button>
+                            <button type="button" class="org-zoom-btn" id="btnModalOrgReset" title="@SR["Reset"]"><i class="ki-outline ki-arrows-circle fs-3"></i></button>
+                        </div>
+                        <div class="org-chart-scroll" id="modalOrgChartScroll">
+                            <div class="oc-board" id="modalOcBoard">
+                                <div class="oc-canvas" id="modalOcCanvas">
+                                    <svg class="oc-svg-con" id="modalOcSvgCon"></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-600px">
+            <div class="modal-content rounded-4">
+                <div class="modal-header border-0 pb-0 justify-content-end">
+                    <button type="button" class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
+                        <i class="ki-outline ki-cross fs-1"></i>
+                    </button>
+                </div>
+                <div class="modal-body px-10 pt-0 pb-12">
+                    <div class="text-center mb-8">
+                        <h2 class="text-primary">@CrossBuy.Resources.SharedResources.AddingAnAdministrativeBodyToTheAdministrativeStructure</h2>
+                    </div>
+                    <div class="row mb-5">
+                        <div class="col-md-6">
+                            <label class="fs-6 fw-semibold mb-2">@CrossBuy.Resources.SharedResources.NameOfThePrimaryAdministrativeBodyArabic</label>
+                            <input type="text" class="form-control form-control-solid" id="parentNameAr" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="fs-6 fw-semibold mb-2">@CrossBuy.Resources.SharedResources.NameOfThePrimaryAdministrativeBodyEnglish</label>
+                            <input type="text" class="form-control form-control-solid" id="parentNameEn" readonly />
+                        </div>
+                    </div>
+                    <div class="row mb-5">
+                        <div class="col-md-6">
+                            <label class="fs-6 fw-semibold mb-2 required">@CrossBuy.Resources.SharedResources.NameOfTheAdministrativeBodyArabic</label>
+                            <input type="text" class="form-control" id="itemNameAr" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="fs-6 fw-semibold mb-2 required">@CrossBuy.Resources.SharedResources.NameOfTheAdministrativeBodyEnglish</label>
+                            <input type="text" class="form-control" id="itemNameEn" />
+                        </div>
+                    </div>
+                    <div class="mb-5">
+                        <label class="fs-6 fw-semibold mb-2 required">@CrossBuy.Resources.SharedResources.Notes</label>
+                        <textarea class="form-control" id="notes" style="height:90px"></textarea>
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@CrossBuy.Resources.SharedResources.Cancel</button>
+                        <button type="button" class="btn btn-primary" id="saveItemBtn">@CrossBuy.Resources.SharedResources.Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   GLOBALS
+══════════════════════════════════════════════════════════ */
+var hierarchicalItemsCache = [];
+var PAGE_DIR = document.documentElement.getAttribute('dir') || 'ltr';
+var NW = 148, NH = 205, H_GAP = 44, V_GAP = 60, PAD = 55;
+var orgZoom = 1;
+var ocPositions = {};
+var modalOrgZoom = 1;
+var modalOcPositions = {};
+
+/* ══════════════════════════════════════════════════════════
+   COLOR MAP
+══════════════════════════════════════════════════════════ */
+var COLORS = {
+    1:{ main:'#13433a', shadow:'#081f1a', platform:'#0f342d', light:'#2f6a5c' },
+    2:{ main:'#1f6253', shadow:'#123a31', platform:'#1a5446', light:'#3a8471' },
+    3:{ main:'#2f8f78', shadow:'#1f6253', platform:'#277d67', light:'#5aa892' },
+    4:{ main:'#5aa892', shadow:'#3a8471', platform:'#4a9583', light:'#86c3b1' },
+    5:{ main:'#7b8494', shadow:'#565f6e', platform:'#6b7688', light:'#a6adba' }
+};
+var TYPE_LABELS = {1:'@SR["Company"]',2:'@SR["Branch"]',3:'@Localizer["Administrative entity"]',4:'@Localizer["Position"]',5:'@SR["Employee"]'};
+
+function getCol(item)      { return COLORS[parseInt(item.h_Type||item.H_TYPE||item.h_type||3)]||COLORS[3]; }
+function getHType(item)    { return parseInt(item.h_Type||item.H_TYPE||item.h_type||3); }
+function getTypeLabel(item){ return TYPE_LABELS[getHType(item)]; }
+function getName(item)     { return PAGE_DIR==='rtl'?(item.h_Name||item.h_NameEn||''):(item.h_NameEn||item.h_Name_en||item.h_Name||''); }
+
+/* ══════════════════════════════════════════════════════════
+   ICON SVGs
+══════════════════════════════════════════════════════════ */
+function iconCompanySVG(c,sz){
+    sz=sz||70; var m=c.main,sh=c.shadow,li=c.light;
+    return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 80 80" style="display:block">'
+        +'<ellipse cx="40" cy="76" rx="22" ry="4" fill="rgba(0,0,0,0.12)"/>'
+        +'<rect x="14" y="22" width="38" height="48" fill="'+m+'"/>'
+        +'<rect x="14" y="22" width="38" height="5" fill="'+li+'"/>'
+        +'<rect x="28" y="10" width="10" height="14" fill="'+m+'"/>'
+        +'<rect x="28" y="10" width="10" height="3"  fill="'+li+'"/>'
+        +'<rect x="19" y="30" width="7" height="6" rx="1" fill="'+li+'" opacity=".9"/>'
+        +'<rect x="30" y="30" width="7" height="6" rx="1" fill="'+li+'" opacity=".9"/>'
+        +'<rect x="41" y="30" width="7" height="6" rx="1" fill="'+li+'" opacity=".9"/>'
+        +'<rect x="19" y="41" width="7" height="6" rx="1" fill="'+li+'" opacity=".7"/>'
+        +'<rect x="30" y="41" width="7" height="6" rx="1" fill="'+li+'" opacity=".7"/>'
+        +'<rect x="41" y="41" width="7" height="6" rx="1" fill="'+li+'" opacity=".7"/>'
+        +'<rect x="19" y="52" width="7" height="6" rx="1" fill="'+li+'" opacity=".5"/>'
+        +'<rect x="30" y="52" width="7" height="6" rx="1" fill="'+li+'" opacity=".5"/>'
+        +'<rect x="41" y="52" width="7" height="6" rx="1" fill="'+li+'" opacity=".5"/>'
+        +'<rect x="32" y="59" width="12" height="11" rx="1" fill="'+sh+'"/>'
+        +'<path d="M52 22 L62 28 L62 70 L52 70 Z" fill="'+sh+'" opacity=".65"/>'
+        +'<path d="M52 22 L62 28 L52 28 Z" fill="'+li+'" opacity=".3"/>'
+        +'</svg>';
+}
+function iconBranchSVG(c,sz){
+    sz=sz||70; var m=c.main,sh=c.shadow,li=c.light;
+    return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 80 80" style="display:block">'
+        +'<ellipse cx="40" cy="76" rx="22" ry="4" fill="rgba(0,0,0,0.12)"/>'
+        +'<rect x="10" y="30" width="50" height="40" fill="'+m+'"/>'
+        +'<polygon points="6,32 40,12 74,32" fill="'+li+'"/>'
+        +'<polygon points="6,32 40,12 74,32" fill="'+sh+'" opacity=".2"/>'
+        +'<rect x="10" y="30" width="50" height="4" fill="'+li+'" opacity=".4"/>'
+        +'<rect x="16" y="38" width="10" height="10" rx="1" fill="'+li+'" opacity=".9"/>'
+        +'<rect x="35" y="38" width="10" height="10" rx="1" fill="'+li+'" opacity=".9"/>'
+        +'<rect x="54" y="38" width="10" height="10" rx="1" fill="'+li+'" opacity=".9"/>'
+        +'<rect x="30" y="53" width="8" height="17" rx="1" fill="'+sh+'"/>'
+        +'<rect x="42" y="53" width="8" height="17" rx="1" fill="'+sh+'"/>'
+        +'<line x1="38" y1="53" x2="38" y2="70" stroke="'+li+'" stroke-width="0.8" opacity=".5"/>'
+        +'<path d="M60 30 L70 36 L70 70 L60 70 Z" fill="'+sh+'" opacity=".55"/>'
+        +'</svg>';
+}
+function iconAdminSVG(c,sz){
+    sz=sz||70; var m=c.main,sh=c.shadow,li=c.light;
+    return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 80 80" style="display:block">'
+        +'<ellipse cx="40" cy="76" rx="22" ry="4" fill="rgba(0,0,0,0.12)"/>'
+        +'<circle cx="60" cy="28" r="8" fill="'+li+'" opacity=".75"/>'
+        +'<path d="M50 52 Q52 40 60 40 Q68 40 70 52 L70 66 L50 66 Z" fill="'+m+'" opacity=".65"/>'
+        +'<circle cx="20" cy="28" r="8" fill="'+li+'" opacity=".75"/>'
+        +'<path d="M10 52 Q12 40 20 40 Q28 40 30 52 L30 66 L10 66 Z" fill="'+m+'" opacity=".65"/>'
+        +'<circle cx="40" cy="24" r="10" fill="'+li+'"/>'
+        +'<path d="M26 54 Q29 38 40 38 Q51 38 54 54 L54 68 L26 68 Z" fill="'+sh+'"/>'
+        +'<circle cx="36" cy="22" r="2" fill="'+sh+'" opacity=".45"/>'
+        +'<circle cx="44" cy="22" r="2" fill="'+sh+'" opacity=".45"/>'
+        +'<path d="M36 29 Q40 32 44 29" stroke="'+sh+'" stroke-width="1.2" fill="none" opacity=".5"/>'
+        +'<path d="M38 38 L40 46 L42 38 L40 40 Z" fill="'+li+'" opacity=".6"/>'
+        +'</svg>';
+}
+function iconPositionSVG(c,sz){
+    sz=sz||70; var m=c.main,sh=c.shadow,li=c.light;
+    return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 80 80" style="display:block">'
+        +'<ellipse cx="40" cy="76" rx="22" ry="4" fill="rgba(0,0,0,0.12)"/>'
+        +'<rect x="16" y="20" width="48" height="50" rx="6" fill="'+m+'"/>'
+        +'<rect x="16" y="20" width="48" height="11" rx="6" fill="'+li+'" opacity=".5"/>'
+        +'<rect x="33" y="13" width="14" height="9" rx="2" fill="'+sh+'"/>'
+        +'<circle cx="40" cy="41" r="9" fill="'+li+'"/>'
+        +'<path d="M27 62 Q27 50 40 50 Q53 50 53 62 Z" fill="'+li+'"/>'
+        +'</svg>';
+}
+function iconEmployeeSVG(c,sz){
+    sz=sz||70; var m=c.main,sh=c.shadow,li=c.light;
+    return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 80 80" style="display:block">'
+        +'<ellipse cx="40" cy="76" rx="22" ry="4" fill="rgba(0,0,0,0.12)"/>'
+        +'<circle cx="40" cy="30" r="14" fill="'+m+'"/>'
+        +'<circle cx="40" cy="30" r="14" fill="'+li+'" opacity=".25"/>'
+        +'<path d="M16 70 Q16 47 40 47 Q64 47 64 70 Z" fill="'+m+'"/>'
+        +'<path d="M16 70 Q16 47 40 47 Q64 47 64 70 Z" fill="'+sh+'" opacity=".2"/>'
+        +'</svg>';
+}
+function getIconSVG(item,sz){
+    var t=getHType(item),c=getCol(item);
+    // a real uploaded photo wins over the generic icon (employee / company / branch)
+    var img=item.image||item.Image||item.imageUrl;
+    if(img){
+        var s=sz||70;
+        return '<img src="'+img+'" alt="" style="width:'+s+'px;height:'+s+'px;border-radius:50%;object-fit:cover;display:block;border:2px solid '+c.light+'" onerror="this.style.display=\'none\'" />';
+    }
+    return t===1?iconCompanySVG(c,sz):t===2?iconBranchSVG(c,sz):t===4?iconPositionSVG(c,sz):t===5?iconEmployeeSVG(c,sz):iconAdminSVG(c,sz);
+}
+function getLegendIconSVG(type){
+    var c=COLORS[type];
+    return type===1?iconCompanySVG(c,30):type===2?iconBranchSVG(c,30):iconAdminSVG(c,30);
+}
+function platformSVG(col,w,h){
+    w=w||92;h=h||20;
+    var c=col.platform,sh=col.shadow,li=col.light,hw=w*.5,sk=h*.55;
+    return '<svg width="'+w+'" height="'+(h+sk)+'" viewBox="0 0 '+w+' '+(h+sk)+'" style="display:block">'
+        +'<path d="M'+hw+' 0 L'+w+' '+(sk*.6)+' L'+hw+' '+(h*.7)+' L0 '+(sk*.6)+' Z" fill="'+li+'"/>'
+        +'<path d="M'+w+' '+(sk*.6)+' L'+hw+' '+(h*.7)+' L'+hw+' '+(h+sk)+' L'+w+' '+h+' Z" fill="'+sh+'"/>'
+        +'<path d="M0 '+(sk*.6)+' L'+hw+' '+(h*.7)+' L'+hw+' '+(h+sk)+' L0 '+h+' Z" fill="'+c+'"/>'
+        +'</svg>';
+}
+
+/* ══════════════════════════════════════════════════════════
+   DATA HELPERS
+══════════════════════════════════════════════════════════ */
+function getChildren(data,parentId){
+    return data.filter(function(x){
+        if(parentId===null) return x.h_Parent==null;
+        return x.h_Parent!=null && x.h_Parent.toString()===parentId.toString();
+    });
+}
+function escapeHtml(v)          { return $('<div/>').text(v||'').html(); }
+function normalizeText(v)        { return (v||'').toString().toLowerCase().trim(); }
+function getSearchableText(item) { return [item.h_Name,item.h_NameEn,item.h_Name_en].filter(Boolean).join(' '); }
+
+function collectRelatedIds(data,query){
+    var q=normalizeText(query); if(!q) return null;
+    var ids=new Set(),byId={};
+    data.forEach(function(x){ byId[x.h_ID]=x; });
+    function addAncestors(item){ var cur=item; while(cur&&cur.h_Parent!=null){ var par=byId[cur.h_Parent]; if(!par)break; ids.add(par.h_ID); cur=par; } }
+    function addChildren(pid) { getChildren(data,pid).forEach(function(c){ ids.add(c.h_ID); addChildren(c.h_ID); }); }
+    data.forEach(function(x){ if(normalizeText(getSearchableText(x)).indexOf(q)>-1){ ids.add(x.h_ID); addAncestors(x); addChildren(x.h_ID); } });
+    return ids;
+}
+function getFilteredData(data,query){
+    var ids=collectRelatedIds(data,query);
+    return ids ? data.filter(function(x){ return ids.has(x.h_ID); }) : data;
+}
+function updateSearchCounter(total,visible,query){
+    var label=query?(visible+' / '+total):'@Localizer["All units"]';
+    $('#asSearchCount').html('<i class="ki-outline ki-chart-simple fs-5"></i>'+label);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ORG CHART — TREE LAYOUT
+══════════════════════════════════════════════════════════ */
+function treeWidth(data,id){
+    var c=getChildren(data,id); if(!c.length) return NW;
+    var tot=c.reduce(function(s,x){ return s+treeWidth(data,x.h_ID); },0)+H_GAP*(c.length-1);
+    return Math.max(NW,tot);
+}
+function layoutNode(data,id,x,y){
+    ocPositions[id]={x:x,y:y};
+    var c=getChildren(data,id); if(!c.length) return;
+    var tot=c.reduce(function(s,x){ return s+treeWidth(data,x.h_ID); },0)+H_GAP*(c.length-1);
+    var cx=x+NW/2-tot/2;
+    c.forEach(function(n){ var w=treeWidth(data,n.h_ID); layoutNode(data,n.h_ID,cx+w/2-NW/2,y+NH+V_GAP); cx+=w+H_GAP; });
+}
+
+function getPositionBounds(positions){
+    var minX=Infinity,minY=Infinity,maxX=0,maxY=0,has=false;
+    Object.keys(positions||{}).forEach(function(k){
+        var p=positions[k]; if(!p) return;
+        has=true;
+        minX=Math.min(minX,p.x);
+        minY=Math.min(minY,p.y);
+        maxX=Math.max(maxX,p.x+NW);
+        maxY=Math.max(maxY,p.y+NH);
+    });
+    return has ? {minX:minX,minY:minY,maxX:maxX,maxY:maxY} : {minX:0,minY:0,maxX:0,maxY:0};
+}
+
+function normalizeChartPositions(positions){
+    var b=getPositionBounds(positions);
+    var shiftX = b.minX < PAD ? (PAD - b.minX) : 0;
+    var shiftY = b.minY < PAD ? (PAD - b.minY) : 0;
+
+    if(shiftX || shiftY){
+        Object.keys(positions||{}).forEach(function(k){
+            positions[k].x += shiftX;
+            positions[k].y += shiftY;
+        });
+        b=getPositionBounds(positions);
+    }
+
+    return b;
+}
+
+function updateOrgSummary(data){
+    var c1=0,c2=0,c3=0;
+    data.forEach(function(x){ var t=getHType(x); if(t===1)c1++;else if(t===2)c2++;else c3++; });
+    $('#orgCompanyCount').text(c1); $('#orgBranchCount').text(c2); $('#orgAdminCount').text(c3);
+    $('#orgTotalCount').text('@SR["Total"]: '+data.length+' @Localizer["entities"]');
+}
+
+function renderOrgChart(data){
+    ocPositions={};
+    var board  = document.getElementById('ocBoard');
+    var canvas = document.getElementById('ocCanvas');
+    var svgCon = document.getElementById('ocSvgCon');
+
+    $(canvas).find('.oc-node-wrap').remove();
+    $(board).find('.org-empty-msg').remove();
+    while(svgCon.firstChild) svgCon.removeChild(svgCon.firstChild);
+
+    updateOrgSummary(data||[]);
+
+    if(!data||!data.length){
+        board.style.width='100%'; board.style.height='560px';
+        canvas.style.width='100%'; canvas.style.height='560px'; canvas.style.transform='scale(1)';
+        $(board).append('<div class="org-empty-msg" style="padding:3rem;text-align:center;color:#9aa4b5">@SR["NoData"]</div>');
+        return;
+    }
+
+    /* layout in base coords */
+    var roots=getChildren(data,null), rx=PAD;
+    roots.forEach(function(r){ layoutNode(data,r.h_ID,rx,PAD); rx+=treeWidth(data,r.h_ID)+H_GAP*3; });
+
+    /* Normalize because a wide subtree can extend to negative X.
+       Without this, the left side gets clipped and no scroll can reach it. */
+    var bounds = normalizeChartPositions(ocPositions);
+    var mx=bounds.maxX, my=bounds.maxY;
+
+    var baseW=mx+PAD, baseH=my+PAD+60;
+
+    /* canvas = base size, scaled via transform */
+    canvas.style.width  = baseW+'px';
+    canvas.style.height = baseH+'px';
+    canvas.style.transform = 'scale('+orgZoom+')';
+
+    /* board = actual scrollable footprint */
+    setScrollableBoardSize(document.getElementById('orgChartScroll'), board, baseW, baseH, orgZoom);
+
+    svgCon.setAttribute('width',  baseW);
+    svgCon.setAttribute('height', baseH);
+    svgCon.style.width  = baseW+'px';
+    svgCon.style.height = baseH+'px';
+
+    /* connections — base coords only */
+    data.forEach(function(d){
+        if(!d.h_Parent) return;
+        var p=ocPositions[d.h_Parent],c=ocPositions[d.h_ID];
+        if(!p||!c) return;
+        var px=p.x+NW/2, py=p.y+NH-28;
+        var cx=c.x+NW/2, cy=c.y+40;
+        var midY=(py+cy)/2;
+        var path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d','M'+px+','+py+' C'+px+','+midY+' '+cx+','+midY+' '+cx+','+cy);
+        path.setAttribute('fill','none'); path.setAttribute('stroke','#b7c0cf');
+        path.setAttribute('stroke-width','1.8'); path.setAttribute('stroke-dasharray','5 4');
+        path.setAttribute('stroke-linecap','round');
+        svgCon.appendChild(path);
+        var dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        dot.setAttribute('cx',(px+cx)/2); dot.setAttribute('cy',(py+cy)/2);
+        dot.setAttribute('r','4.5'); dot.setAttribute('fill','#fff');
+        dot.setAttribute('stroke','#b7c0cf'); dot.setAttribute('stroke-width','1.5');
+        svgCon.appendChild(dot);
+    });
+
+    /* nodes — base coords only */
+    data.forEach(function(d){
+        var p=ocPositions[d.h_ID]; if(!p) return;
+        var col=getCol(d), name=getName(d);
+        var wrap=document.createElement('div');
+        wrap.className='oc-node-wrap'; wrap.dataset.id=d.h_ID;
+        wrap.style.left=p.x+'px'; wrap.style.top=p.y+'px'; wrap.style.width=NW+'px';
+        wrap.innerHTML='<div class="oc-card-body">'
+            +getIconSVG(d,70)
+            +'<div style="margin-top:-5px">'+platformSVG(col,92,20)+'</div>'
+            +'<div class="oc-info-box">'
+            +'<div class="oc-info-name" style="background:'+col.main+'">'+escapeHtml(name)+'</div>'
+            +'<div class="oc-info-type">'+escapeHtml(getTypeLabel(d))+'</div>'
+            +'</div></div>';
+        canvas.appendChild(wrap);
+    });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ZOOM  — pivot-aware (الزووم على نقطة محددة بدون إزاحة)
+══════════════════════════════════════════════════════════ */
+function getCurrentOrgData(){ return getFilteredData(hierarchicalItemsCache,$('#asGlobalSearch').val()); }
+
+/*
+  pivotX, pivotY = الإحداثيات بالـ base coordinates (قبل الزووم)
+  التي يجب أن تبقى ثابتة في مركز الـ viewport بعد الزووم
+  إذا لم تُعطَ نستخدم مركز الـ viewport الحالي
+*/
+function clampScrollValue(value, maxValue){
+    return Math.max(0, Math.min(value, Math.max(0, maxValue || 0)));
+}
+
+function restoreZoomPivot(scroll, zoomValue, pivotX, pivotY){
+    if(!scroll || pivotX===undefined || pivotY===undefined) return;
+
+    requestAnimationFrame(function(){
+        var maxLeft = scroll.scrollWidth  - scroll.clientWidth;
+        var maxTop  = scroll.scrollHeight - scroll.clientHeight;
+
+        scroll.scrollLeft = clampScrollValue((pivotX * zoomValue) - (scroll.clientWidth  / 2), maxLeft);
+        scroll.scrollTop  = clampScrollValue((pivotY * zoomValue) - (scroll.clientHeight / 2), maxTop);
+    });
+}
+
+function setScrollableBoardSize(scroll, board, baseW, baseH, zoomValue){
+    if(!board) return;
+
+    var safeZoom = zoomValue || 1;
+    var w = Math.ceil(baseW * safeZoom);
+    var h = Math.ceil(baseH * safeZoom);
+
+    /* Make the scroll footprint never smaller than the viewport.
+       This keeps native scroll/pan available and prevents the chart from being clipped
+       after fit/reset/fullscreen rendering. */
+    if(scroll){
+        w = Math.max(w, scroll.clientWidth  + 2);
+        h = Math.max(h, scroll.clientHeight + 2);
+    }
+
+    board.style.width = w + 'px';
+    board.style.height = h + 'px';
+    board.style.minWidth = w + 'px';
+    board.style.minHeight = h + 'px';
+}
+
+function applyOrgZoom(val, pivotX, pivotY){
+    var scroll=document.getElementById('orgChartScroll');
+    var oldZoom=orgZoom||1;
+
+    if(!scroll) return;
+
+    /* Keep the same visible point stable. Because the chart scroll area is forced LTR,
+       scrollLeft calculations stay consistent even when the page itself is RTL. */
+    if(pivotX===undefined || pivotY===undefined){
+        pivotX=(scroll.scrollLeft + (scroll.clientWidth  / 2)) / oldZoom;
+        pivotY=(scroll.scrollTop  + (scroll.clientHeight / 2)) / oldZoom;
+    }
+
+    orgZoom=Math.max(0.3,Math.min(1.8,val));
+    $('#orgZoomValue').text(Math.round(orgZoom*100)+'%');
+
+    renderOrgChart(getCurrentOrgData());
+    restoreZoomPivot(scroll, orgZoom, pivotX, pivotY);
+}
+
+/*
+  دبل-كليك: zoom تدريجي على العنصر نفسه
+  كل دبل-كليك يزيد 0.3 حتى يصل 1.6 ثم يرجع لـ 0.7
+*/
+function focusOrgNode(nodeId){
+    var scroll=document.getElementById('orgChartScroll');
+    if(!scroll) return;
+    var p=ocPositions[nodeId]; if(!p) return;
+
+    /* pivot = مركز العنصر بالـ base coords */
+    var pivotX=p.x+NW/2;
+    var pivotY=p.y+NH/2;
+
+    /* zoom تدريجي */
+    var newZoom=orgZoom>=1.5 ? 0.7 : orgZoom+0.3;
+    applyOrgZoom(newZoom, pivotX, pivotY);
+
+    /* animation بعد renderOrgChart */
+    setTimeout(function(){
+        var el=document.querySelector('.oc-node-wrap[data-id="'+nodeId+'"]');
+        if(el){
+            el.classList.remove('focused');
+            void el.offsetWidth;
+            el.classList.add('focused');
+            setTimeout(function(){ el.classList.remove('focused'); },500);
+        }
+    },30);
+}
+
+function fitOrgChart(){
+    var scroll=document.getElementById('orgChartScroll');
+    if(!scroll||!scroll.offsetParent) return;
+    var data=getCurrentOrgData(), mx=0, my=0;
+    data.forEach(function(d){ var p=ocPositions[d.h_ID]; if(p){ mx=Math.max(mx,p.x+NW); my=Math.max(my,p.y+NH); } });
+    if(!mx||!my){ renderOrgChart(data); data.forEach(function(d){ var p=ocPositions[d.h_ID]; if(p){ mx=Math.max(mx,p.x+NW); my=Math.max(my,p.y+NH); } }); }
+    if(!mx||!my) return;
+    var z=Math.min((scroll.clientWidth-70)/(mx+PAD),(scroll.clientHeight-70)/(my+PAD+60),1);
+    orgZoom=Math.max(0.35,Math.min(z,1));
+    $('#orgZoomValue').text(Math.round(orgZoom*100)+'%');
+    renderOrgChart(data);
+    setTimeout(function(){ scroll.scrollLeft=Math.max(0,((mx+PAD)*orgZoom-scroll.clientWidth)/2); scroll.scrollTop=0; },60);
+}
+
+
+
+/* ══════════════════════════════════════════════════════════
+   ORG CHART FULLSCREEN MODAL
+══════════════════════════════════════════════════════════ */
+function layoutNodeInto(data,id,x,y,positions){
+    positions[id]={x:x,y:y};
+    var c=getChildren(data,id); if(!c.length) return;
+    var tot=c.reduce(function(s,x){ return s+treeWidth(data,x.h_ID); },0)+H_GAP*(c.length-1);
+    var cx=x+NW/2-tot/2;
+    c.forEach(function(n){
+        var w=treeWidth(data,n.h_ID);
+        layoutNodeInto(data,n.h_ID,cx+w/2-NW/2,y+NH+V_GAP,positions);
+        cx+=w+H_GAP;
+    });
+}
+
+function renderOrgChartModal(data){
+    modalOcPositions={};
+    var board  = document.getElementById('modalOcBoard');
+    var canvas = document.getElementById('modalOcCanvas');
+    var svgCon = document.getElementById('modalOcSvgCon');
+    if(!board||!canvas||!svgCon) return;
+
+    $(canvas).find('.oc-node-wrap').remove();
+    $(board).find('.org-empty-msg').remove();
+    while(svgCon.firstChild) svgCon.removeChild(svgCon.firstChild);
+
+    if(!data||!data.length){
+        board.style.width='100%'; board.style.height='100%';
+        canvas.style.width='100%'; canvas.style.height='100%'; canvas.style.transform='scale(1)';
+        $(board).append('<div class="org-empty-msg" style="padding:3rem;text-align:center;color:#9aa4b5">@SR["NoData"]</div>');
+        return;
+    }
+
+    var roots=getChildren(data,null), rx=PAD;
+    roots.forEach(function(r){ layoutNodeInto(data,r.h_ID,rx,PAD,modalOcPositions); rx+=treeWidth(data,r.h_ID)+H_GAP*3; });
+
+    /* Normalize because a wide subtree can extend to negative X.
+       Without this, the left side gets clipped and no scroll can reach it. */
+    var bounds = normalizeChartPositions(modalOcPositions);
+    var mx=bounds.maxX, my=bounds.maxY;
+
+    var baseW=mx+PAD, baseH=my+PAD+60;
+
+    canvas.style.width  = baseW+'px';
+    canvas.style.height = baseH+'px';
+    canvas.style.transform = 'scale('+modalOrgZoom+')';
+
+    setScrollableBoardSize(document.getElementById('modalOrgChartScroll'), board, baseW, baseH, modalOrgZoom);
+
+    svgCon.setAttribute('width',baseW);
+    svgCon.setAttribute('height',baseH);
+    svgCon.style.width=baseW+'px';
+    svgCon.style.height=baseH+'px';
+
+    data.forEach(function(d){
+        if(!d.h_Parent) return;
+        var p=modalOcPositions[d.h_Parent], c=modalOcPositions[d.h_ID];
+        if(!p||!c) return;
+        var px=p.x+NW/2, py=p.y+NH-28;
+        var cx=c.x+NW/2, cy=c.y+40;
+        var midY=(py+cy)/2;
+        var path=document.createElementNS('http://www.w3.org/2000/svg','path');
+        path.setAttribute('d','M'+px+','+py+' C'+px+','+midY+' '+cx+','+midY+' '+cx+','+cy);
+        path.setAttribute('fill','none');
+        path.setAttribute('stroke','#b7c0cf');
+        path.setAttribute('stroke-width','1.8');
+        path.setAttribute('stroke-dasharray','5 4');
+        path.setAttribute('stroke-linecap','round');
+        svgCon.appendChild(path);
+
+        var dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        dot.setAttribute('cx',(px+cx)/2); dot.setAttribute('cy',(py+cy)/2);
+        dot.setAttribute('r','4.5'); dot.setAttribute('fill','#fff');
+        dot.setAttribute('stroke','#b7c0cf'); dot.setAttribute('stroke-width','1.5');
+        svgCon.appendChild(dot);
+    });
+
+    data.forEach(function(d){
+        var p=modalOcPositions[d.h_ID]; if(!p) return;
+        var col=getCol(d), name=getName(d);
+        var wrap=document.createElement('div');
+        wrap.className='oc-node-wrap'; wrap.dataset.id=d.h_ID;
+        wrap.style.left=p.x+'px'; wrap.style.top=p.y+'px'; wrap.style.width=NW+'px';
+        wrap.innerHTML='<div class="oc-card-body">'
+            +getIconSVG(d,70)
+            +'<div style="margin-top:-5px">'+platformSVG(col,92,20)+'</div>'
+            +'<div class="oc-info-box">'
+            +'<div class="oc-info-name" style="background:'+col.main+'">'+escapeHtml(name)+'</div>'
+            +'<div class="oc-info-type">'+escapeHtml(getTypeLabel(d))+'</div>'
+            +'</div></div>';
+        canvas.appendChild(wrap);
+    });
+}
+
+function applyModalOrgZoom(val, pivotX, pivotY){
+    var scroll=document.getElementById('modalOrgChartScroll');
+    var oldZoom=modalOrgZoom||1;
+
+    if(!scroll) return;
+
+    if(pivotX===undefined || pivotY===undefined){
+        pivotX=(scroll.scrollLeft + (scroll.clientWidth  / 2)) / oldZoom;
+        pivotY=(scroll.scrollTop  + (scroll.clientHeight / 2)) / oldZoom;
+    }
+
+    modalOrgZoom=Math.max(0.3,Math.min(1.8,val));
+    $('#modalOrgZoomValue').text(Math.round(modalOrgZoom*100)+'%');
+
+    renderOrgChartModal(getCurrentOrgData());
+    restoreZoomPivot(scroll, modalOrgZoom, pivotX, pivotY);
+}
+
+function fitModalOrgChart(){
+    var scroll=document.getElementById('modalOrgChartScroll');
+    if(!scroll||!scroll.offsetParent) return;
+    var data=getCurrentOrgData();
+    renderOrgChartModal(data);
+
+    var mx=0,my=0;
+    data.forEach(function(d){ var p=modalOcPositions[d.h_ID]; if(p){ mx=Math.max(mx,p.x+NW); my=Math.max(my,p.y+NH); } });
+    if(!mx||!my) return;
+
+    var z=Math.min((scroll.clientWidth-90)/(mx+PAD),(scroll.clientHeight-90)/(my+PAD+60),1);
+    modalOrgZoom=Math.max(0.35,Math.min(z,1));
+    $('#modalOrgZoomValue').text(Math.round(modalOrgZoom*100)+'%');
+    renderOrgChartModal(data);
+    setTimeout(function(){
+        scroll.scrollLeft=Math.max(0,((mx+PAD)*modalOrgZoom-scroll.clientWidth)/2);
+        scroll.scrollTop=0;
+    },60);
+}
+
+function focusModalOrgNode(nodeId){
+    var scroll=document.getElementById('modalOrgChartScroll');
+    if(!scroll) return;
+    var p=modalOcPositions[nodeId]; if(!p) return;
+
+    var pivotX=p.x+NW/2;
+    var pivotY=p.y+NH/2;
+    var newZoom=modalOrgZoom>=1.5 ? 0.7 : modalOrgZoom+0.3;
+    applyModalOrgZoom(newZoom,pivotX,pivotY);
+
+    setTimeout(function(){
+        var el=document.querySelector('#modalOcCanvas .oc-node-wrap[data-id="'+nodeId+'"]');
+        if(el){
+            el.classList.remove('focused');
+            void el.offsetWidth;
+            el.classList.add('focused');
+            setTimeout(function(){ el.classList.remove('focused'); },500);
+        }
+    },30);
+}
+
+/* ══════════════════════════════════════════════════════════
+   FLOW CHART  — clean rebuild
+══════════════════════════════════════════════════════════ */
+var chevSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+
+function fcBuildNode(data, item, level){
+    var children=getChildren(data,item.h_ID);
+    var hasChildren=children.length>0;
+    var name=getName(item);
+
+    /* ring colour cycles through type colours */
+    var ringColors=['#e9f1ee','#eaf3ef','#edf5f1'];
+    var ci=(getHType(item)-1)%3;
+
+    var html='<div class="fc-node" data-id="'+item.h_ID+'">';
+    html+='<div class="fc-item">';
+    html+='<div class="fc-card">';
+    html+='<div class="fc-ring" style="background:'+ringColors[ci]+'">'+getIconSVG(item,26)+'</div>';
+    html+='<div class="fc-info">'
+         +'<div class="fc-name">'+escapeHtml(name)+'</div>'
+         +'<div class="fc-lbl">'+escapeHtml(getTypeLabel(item))+'</div>'
+         +'</div>';
+    if(hasChildren) html+='<div class="fc-toggle">'+chevSvg+'</div>';
+    html+='</div></div>';
+
+    if(hasChildren){
+        html+='<div class="fc-children">';
+        children.forEach(function(c){
+            html+='<div class="fc-child-wrap">'+fcBuildNode(data,c,level+1)+'</div>';
+        });
+        html+='</div>';
+    }
+    html+='</div>';
+    return html;
+}
+
+function renderFlowChart(data){
+    var tree=document.getElementById('fcTree');
+    tree.setAttribute('dir',PAGE_DIR);
+    if(!data||!data.length){ tree.innerHTML='<div style="padding:3rem;text-align:center;color:#9aa4b5">@SR["NoData"]</div>'; return; }
+    tree.innerHTML=getChildren(data,null).map(function(r){ return fcBuildNode(data,r,0); }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   JSTREE ICON CLASS
+══════════════════════════════════════════════════════════ */
+function getTreeIconClass(item){
+    var t=getHType(item);
+    return t===1?'ki-outline ki-bank text-warning fs-4'
+        : t===2?'ki-outline ki-shop text-primary fs-4'
+        : t===4?'ki-outline ki-briefcase text-primary fs-4'
+        : t===5?'ki-outline ki-profile-user text-primary fs-4'
+        : 'ki-outline ki-people text-primary fs-4';
+}
+
+/* ══════════════════════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════════════════════ */
+function applyStructureSearch(query){
+    var filtered=getFilteredData(hierarchicalItemsCache,query), q=normalizeText(query);
+    $('#asClearSearch').css('display',q?'inline-flex':'none');
+    updateSearchCounter(hierarchicalItemsCache.length,filtered.length,q);
+    var tree=$('#kt_docs_jstree_customicons').jstree(true);
+    if(tree){ tree.clear_search(); if(q){ tree.search(query); tree.open_all(); } else tree.close_all(); }
+    renderOrgChart(filtered);
+    renderFlowChart(filtered);
+}
+
+/* ══════════════════════════════════════════════════════════
+   PRINT
+══════════════════════════════════════════════════════════ */
+function buildPrintNode(data,item,level){
+    var ch=getChildren(data,item.h_ID),n=getName(item);
+    var html='<div style="border:1px solid #d9e0ea;border-radius:12px;background:#fff;padding:10px 14px;margin-bottom:8px;page-break-inside:avoid">'
+        +'<div style="font-size:14px;font-weight:800">'+escapeHtml(n)+'</div>'
+        +'<div style="font-size:11px;color:#667085;margin-top:3px">@Localizer["Level"] '+(level+1)+' · '+escapeHtml(getTypeLabel(item))+'</div>';
+    if(ch.length){ html+='<div style="margin-top:8px;margin-right:18px;padding-right:14px;border-right:2px solid #d9e0ea">'; ch.forEach(function(c){ html+=buildPrintNode(data,c,level+1); }); html+='</div>'; }
+    return html+'</div>';
+}
+function buildPrintStructure(){
+    var q=$('#asGlobalSearch').val(), data=getFilteredData(hierarchicalItemsCache,q), roots=getChildren(data,null);
+    var html='<div dir="rtl" style="font-family:Arial,sans-serif;padding:16mm"><div style="border-bottom:2px solid #172033;padding-bottom:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><h1 style="font-size:20px;margin:0">الهيكل الإداري</h1><p style="color:#667085;font-size:12px;margin:4px 0 0">Administrative Structure</p></div><div style="border:1px solid #d0d5dd;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700">'+new Date().toLocaleString('ar-KW')+'</div></div><div>';
+    roots.forEach(function(r){ html+=buildPrintNode(data,r,0); });
+    html+='</div></div>';
+    $('#asPrintRoot').html(html);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CONTEXT MENU
+══════════════════════════════════════════════════════════ */
+function openTreeActionMenu(e,nodeId){
+    e.preventDefault(); e.stopPropagation();
+    $('#treeActionMenu').css({top:e.pageY+'px',left:e.pageX+'px'}).show().data('nodeId',nodeId);
+}
+
+/* ══════════════════════════════════════════════════════════
+   DRAG SCROLL
+══════════════════════════════════════════════════════════ */
+function enableDragScroll(el){
+    if(!el) return;
+    var dn=false,sx=0,sy=0,sl=0,st=0;
+    el.addEventListener('mousedown',function(e){ if($(e.target).closest('.oc-node-wrap').length) return; dn=true; el.classList.add('is-dragging'); sx=e.pageX-el.offsetLeft; sy=e.pageY-el.offsetTop; sl=el.scrollLeft; st=el.scrollTop; });
+    el.addEventListener('mouseleave',function(){ dn=false; el.classList.remove('is-dragging'); });
+    window.addEventListener('mouseup',function(){ dn=false; el.classList.remove('is-dragging'); });
+    el.addEventListener('mousemove',function(e){ if(!dn) return; e.preventDefault(); el.scrollLeft=sl-(e.pageX-el.offsetLeft-sx); el.scrollTop=st-(e.pageY-el.offsetTop-sy); });
+}
+
+/* ══════════════════════════════════════════════════════════
+   DOCUMENT READY
+══════════════════════════════════════════════════════════ */
+$(document).ready(function(){
+
+    /* legend icons */
+    document.getElementById('legendIcon1').innerHTML=getLegendIconSVG(1);
+    document.getElementById('legendIcon2').innerHTML=getLegendIconSVG(2);
+    document.getElementById('legendIcon3').innerHTML=getLegendIconSVG(3);
+
+    enableDragScroll(document.getElementById('orgChartScroll'));
+
+    enableDragScroll(document.getElementById('modalOrgChartScroll'));
+
+    $('#btnOpenOrgFullscreen').on('click',function(){
+        $('a[href="#modernOrgTab"]').tab('show');
+        $('#orgFullscreenModal').modal('show');
+    });
+
+    $('#orgFullscreenModal').on('shown.bs.modal',function(){
+        modalOrgZoom=orgZoom || 1;
+        $('#modalOrgZoomValue').text(Math.round(modalOrgZoom*100)+'%');
+        renderOrgChartModal(getCurrentOrgData());
+        setTimeout(fitModalOrgChart,120);
+    });
+
+    $('#btnModalOrgZoomIn' ).on('click',function(){ applyModalOrgZoom(modalOrgZoom+0.15); });
+    $('#btnModalOrgZoomOut').on('click',function(){ applyModalOrgZoom(modalOrgZoom-0.15); });
+    $('#btnModalOrgFit'    ).on('click',fitModalOrgChart);
+    $('#btnModalOrgReset'  ).on('click',function(){ applyModalOrgZoom(1); });
+
+    document.getElementById('modalOrgChartScroll').addEventListener('wheel',function(e){
+        if(!e.ctrlKey) return;
+        e.preventDefault();
+        var scroll=document.getElementById('modalOrgChartScroll');
+        var rect=scroll.getBoundingClientRect();
+        var pivotX=(e.clientX-rect.left+scroll.scrollLeft)/modalOrgZoom;
+        var pivotY=(e.clientY-rect.top +scroll.scrollTop )/modalOrgZoom;
+        applyModalOrgZoom(modalOrgZoom+(e.deltaY<0?0.1:-0.1),pivotX,pivotY);
+    },{passive:false});
+
+    document.getElementById('modalOrgChartScroll').addEventListener('dblclick',function(e){
+        var nodeEl=e.target.closest?e.target.closest('.oc-node-wrap'):$(e.target).closest('.oc-node-wrap')[0];
+        if(!nodeEl) return;
+        e.preventDefault(); e.stopPropagation();
+        var nodeId=nodeEl.dataset.id||($(nodeEl).data('id')+'');
+        if(nodeId) focusModalOrgNode(nodeId);
+    },true);
+
+
+    /* ── zoom buttons (بدون pivot = يحافظ على مركز الـ viewport) ── */
+    $('#btnOrgZoomIn' ).on('click',function(){ applyOrgZoom(orgZoom+0.15); });
+    $('#btnOrgZoomOut').on('click',function(){ applyOrgZoom(orgZoom-0.15); });
+    $('#btnOrgFit'    ).on('click', fitOrgChart);
+    $('#btnOrgReset'  ).on('click',function(){ applyOrgZoom(1); });
+
+    /* ── Ctrl + wheel: zoom على نقطة المؤشر بالضبط ── */
+    document.getElementById('orgChartScroll').addEventListener('wheel',function(e){
+        if(!e.ctrlKey) return;
+        e.preventDefault();
+        var scroll=document.getElementById('orgChartScroll');
+        var rect=scroll.getBoundingClientRect();
+        /* pivot بالـ base coords */
+        var pivotX=(e.clientX-rect.left+scroll.scrollLeft)/orgZoom;
+        var pivotY=(e.clientY-rect.top +scroll.scrollTop )/orgZoom;
+        applyOrgZoom(orgZoom+(e.deltaY<0?0.1:-0.1), pivotX, pivotY);
+    },{passive:false});
+
+    /* ── دبل-كليك: zoom تدريجي مع إبقاء العنصر ثابتاً في الـ viewport ── */
+    document.getElementById('orgChartScroll').addEventListener('dblclick',function(e){
+        var nodeEl=e.target.closest?e.target.closest('.oc-node-wrap'):$(e.target).closest('.oc-node-wrap')[0];
+        if(!nodeEl) return;
+        e.preventDefault(); e.stopPropagation();
+        var nodeId=nodeEl.dataset.id||($(nodeEl).data('id')+'');
+        if(!nodeId) return;
+        focusOrgNode(nodeId);
+    },true);
+
+    /* ── search ── */
+    var searchTimer=null;
+    $('#asGlobalSearch').on('input',function(){ var val=this.value; clearTimeout(searchTimer); searchTimer=setTimeout(function(){ applyStructureSearch(val); },180); });
+    $('#asClearSearch' ).on('click',function(){ $('#asGlobalSearch').val(''); applyStructureSearch(''); $('#asGlobalSearch').trigger('focus'); });
+
+    /* ── print ── */
+    $('#btnPrintStructure').on('click',function(){ buildPrintStructure(); window.print(); });
+
+    /* ── expand / collapse flow ── */
+    $('#btnExpandFlow' ).on('click',function(){ $('#fcTree .fc-node').removeClass('collapsed'); $('a[href="#flowOrgTab"]').tab('show'); });
+    $('#btnCollapseFlow').on('click',function(){ $('#fcTree .fc-node').addClass('collapsed');   $('a[href="#flowOrgTab"]').tab('show'); });
+
+    /* ── flow toggle ── */
+    $(document).on('click','.fc-toggle',function(e){ e.preventDefault(); e.stopPropagation(); $(this).closest('.fc-node').toggleClass('collapsed'); });
+
+    /* ── context menu ── */
+    $(document).on('contextmenu','.oc-node-wrap, .fc-card',function(e){ openTreeActionMenu(e,$(this).closest('[data-id]').data('id')); });
+    $(document).on('click',function(){ $('#treeActionMenu').hide(); });
+
+    /* ── add item ── */
+    $('#addItem').on('click',function(){
+        var parentId=$('#treeActionMenu').data('nodeId');
+        $.ajax({ url:'/Admin/GetParentInfo', method:'GET', data:{parentId:parentId},
+            success:function(r){ if(r.success){ $('#parentNameAr').val(r.nameAr); $('#parentNameEn').val(r.nameEn); $('#itemNameAr,#itemNameEn,#notes').val(''); $('#addItemModal').data('parentId',parentId).modal('show'); } else alert('@Localizer["Failed to load parent data."]'); },
+            error:function(){ alert('@Localizer["An error occurred."]'); }
+        });
+    });
+    $('#editItem').on('click',function(){ console.log('Edit:',  $('#treeActionMenu').data('nodeId')); });
+
+    /* ── save ── */
+    $('#saveItemBtn').on('click',function(){
+        var parentId=$('#addItemModal').data('parentId');
+        var nameAr=$('#itemNameAr').val(), nameEn=$('#itemNameEn').val(), notes=$('#notes').val();
+        if(!nameAr||!nameEn){ alert('@Localizer["Please fill in all required fields."]'); return; }
+        $.ajax({ url:'/Admin/AddHierarchicalItem', method:'POST', data:{parentId:parentId,nameAr:nameAr,nameEn:nameEn,notes:notes},
+            success:function(r){ if(r.success){ $('#addItemModal').modal('hide'); Swal.fire({icon:'success',title:'@Localizer["Saved"]',showConfirmButton:false,timer:1500}).then(function(){ location.reload(); }); } else Swal.fire({icon:'error',title:'@Localizer["Add failed"]',text:r.message}); },
+            error:function(){ Swal.fire({icon:'error',title:'@Localizer["An error occurred"]',text:'@Localizer["Could not save the item."]'}); }
+        });
+    });
+
+    /* ── tab shown ── */
+    $('a[href="#modernOrgTab"]').on('shown.bs.tab',function(){ setTimeout(fitOrgChart,220); });
+
+    /* ── load data ── */
+    $.ajax({ url:'/Admin/GetHierarchicals', method:'GET',
+        success:function(response){
+            hierarchicalItemsCache=response||[];
+
+            var treeData=hierarchicalItemsCache.map(function(item){
+                return { id:item.h_ID.toString(), parent:item.h_Parent==null?'#':item.h_Parent.toString(),
+                    text:'<a href="javascript:;" class="text-dark fw-bold">'+(item.h_Name||'')+'</a>',
+                    icon:getTreeIconClass(item), state:{opened:item.h_Parent==null} };
+            });
+
+            $('#kt_docs_jstree_customicons').jstree({
+                core:{data:treeData,themes:{responsive:true}},
+                types:{default:{icon:'ki-outline ki-folder fs-3 text-muted'},file:{icon:'ki-outline ki-file text-warning'}},
+                plugins:['types','search']
+            });
+            $('#kt_docs_jstree_customicons').on('select_node.jstree',function(e,data){ $('#treeActionMenu').data('nodeId',data.node.id); });
+            $('#kt_docs_jstree_customicons').on('contextmenu','.jstree-anchor',function(e){ openTreeActionMenu(e,$('#kt_docs_jstree_customicons').jstree(true).get_node($(this)).id); });
+
+            renderOrgChart(hierarchicalItemsCache);
+            renderFlowChart(hierarchicalItemsCache);
+        }
+    });
+
+});
+</script>

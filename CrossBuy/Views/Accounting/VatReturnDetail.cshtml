@@ -1,0 +1,57 @@
+@using CrossBuy.Models.Context.Accounting
+@model VatReturn
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var payable = Model.NetDue >= 0;
+    string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["VAT Return"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("VatReturns","Accounting")" class="text-muted">@Localizer["VAT Returns"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Model.PeriodStart.ToString("yyyy/MM/dd") — @Model.PeriodEnd.ToString("yyyy/MM/dd")</li></ul></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("VatReturns","Accounting")" class="btn btn-sm btn-light">@SR["Back"]</a>
+            @if (Model.JournalEntryId.HasValue) { <a href="@Url.Action("JournalEntry","Accounting", new { id = Model.JournalEntryId })" class="btn btn-sm" style="background:#e9f1ee;color:#13433a;"><i class="ki-outline ki-document fs-5" style="color:#13433a;"></i>@Localizer["Settlement JV"]</a> }
+            @if (Model.Status != "Settled") { <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#mSettle"><i class="ki-outline ki-check fs-5"></i>@Localizer["Settle & post"]</button> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <div class="row g-3 g-xl-5 mb-5">
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
+                <div class="d-flex flex-column me-2"><span class="fw-bold fs-2 text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.OutputVat)">@Model.OutputVat.ToString("N2")</span><span class="fs-7 text-muted mt-2">@Localizer["Output VAT (sales)"]</span></div>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-arrow-up-right fs-2x" style="color:#13433a;"></i></span></span>
+            </div></div></div>
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
+                <div class="d-flex flex-column me-2"><span class="fw-bold fs-2 text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.InputVat)">@Model.InputVat.ToString("N2")</span><span class="fs-7 text-muted mt-2">@Localizer["Input VAT (purchases)"]</span></div>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-arrow-down-left fs-2x" style="color:#13433a;"></i></span></span>
+            </div></div></div>
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
+                <div class="d-flex flex-column me-2"><span class="fw-bold fs-2 lh-1" style="color:@(payable?"#d92d20":"#13433a")" data-kt-countup="true" data-kt-countup-value="@Raw(Math.Abs(Model.NetDue))">@Math.Abs(Model.NetDue).ToString("N2")</span><span class="fs-7 text-muted mt-2">@(payable?Localizer["Net payable to authority"]:Localizer["Credit carried forward"])</span></div>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:@(payable?"#fdeaea":"#eaf3ef");"><i class="ki-outline ki-bank fs-2x" style="color:@(payable?"#d92d20":"#13433a");"></i></span></span>
+            </div></div></div>
+        </div>
+
+        <div class="card"><div class="card-body py-5"><div class="row g-5">
+            <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Period"]</div><div class="fw-bold">@Model.PeriodStart.ToString("yyyy/MM/dd") — @Model.PeriodEnd.ToString("yyyy/MM/dd")</div></div>
+            <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Filed at"]</div><div class="fw-bold">@(Model.FiledAt?.ToString("yyyy/MM/dd") ?? "—")</div></div>
+            <div class="col-md-3"><div class="fs-7 text-muted">@SR["Status"]</div><div>@if (Model.Status=="Settled") { <span class="badge badge-light-primary fw-bold">@Localizer["Settled"]</span> } else { <span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@Localizer["Filed"]</span> }</div></div>
+            <div class="col-md-3"><div class="fs-7 text-muted">@SR["Notes"]</div><div class="fw-semibold">@(Model.Notes ?? "—")</div></div>
+        </div></div></div>
+    </div></div>
+</div>
+
+@if (Model.Status != "Settled") {
+<div class="modal fade" id="mSettle" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="SettleVatReturn" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["A journal entry will close the VAT accounts and move the net to the authority payable account. Continue?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" />
+        <div class="modal-header"><h2 class="fw-bold">@Localizer["Settle VAT"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8">
+            <div class="alert fs-7" style="background:#e9f1ee;color:#1f6253;">@Localizer["A journal entry will close the VAT accounts and move the net to the authority payable account."]</div>
+            <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Settlement date"]</label><input name="settleDate" type="date" class="form-control form-control-solid" value="@Model.PeriodEnd.ToString("yyyy-MM-dd")" required /></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@Localizer["Settle & post"]</button></div>
+    </form>
+</div></div></div>
+}

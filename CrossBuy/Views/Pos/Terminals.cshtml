@@ -1,0 +1,140 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var terminals = ViewBag.Terminals as List<PosTerminal> ?? new();
+    var cashAccounts = ViewBag.CashAccounts as List<CashAccountDto> ?? new();
+    var accNames = ViewBag.AccNames as Dictionary<int, string> ?? new();
+    var openShifts = ViewBag.OpenShifts as Dictionary<int, PosShift?> ?? new();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Cashier terminals"]</h1>
+            <span class="text-muted fs-7">@Localizer["Each terminal = isolated drawer + own receipt sequence + shifts — setup only, no selling or GL."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any()) { <div class="alert alert-warning"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["This company has no branches."]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-technology-2 fs-3x mb-3 d-block"></i>@Localizer["Select a branch to manage cashier terminals."]</div></div>
+        }
+        else
+        {
+            <div class="row g-5">
+                <div class="col-lg-4">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3 id="tFormTitle">@Localizer["Add terminal"]</h3></div>
+                        <div class="card-toolbar"><button type="button" id="tNew" class="btn btn-sm btn-light d-none">@Localizer["New"]</button></div></div>
+                        <div class="card-body">
+                            <form asp-action="SaveTerminal" method="post" class="row g-3" id="tForm">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" id="tId" value="0" /><input type="hidden" name="autoCreateCash" value="true" />
+                                <div class="col-6"><label class="required fw-semibold fs-8 mb-1">@SR["Code"]</label><input name="code" id="tCode" class="form-control form-control-solid form-control-sm" placeholder="T1" required /></div>
+                                <div class="col-6"><label class="fw-semibold fs-8 mb-1">@SR["Name"]</label><input name="name" id="tName" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["Cashier 1"]" /></div>
+                                <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Receipt prefix"]</label><input name="receiptPrefix" id="tPrefix" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["auto: code + -"]" /></div>
+                                <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Terminal drawer"]</label>
+                                    <select name="cashAccountId" id="tCash" class="form-select form-select-solid form-select-sm" data-control="select2">
+                                        <option value="">@Localizer["Auto-create (dedicated till)"]</option>
+                                        @foreach (var a in cashAccounts) { <option value="@a.Id">@a.Code — @a.Name</option> }
+                                    </select>
+                                    <div class="form-text fs-8">@Localizer["By default a dedicated child cash account is created under the main cash; or pick an existing one."]</div></div>
+                                <div class="col-12"><div class="separator separator-dashed my-1"></div><div class="fw-semibold fs-8 text-muted">@Localizer["Receipt printing"]</div></div>
+                                <div class="col-6"><label class="fw-semibold fs-8 mb-1">@Localizer["Paper width"]</label>
+                                    <select name="paperWidthMm" id="tPaper" class="form-select form-select-solid form-select-sm"><option value="80">80mm</option><option value="58">58mm</option></select></div>
+                                <div class="col-6"><label class="fw-semibold fs-8 mb-1">@Localizer["Copies"]</label><input type="number" name="copies" id="tCopies" value="1" min="1" max="5" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Printer name (optional — for future ESC/POS bridge)"]</label><input name="printerName" id="tPrinter" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["window.print uses the default printer"]" /></div>
+                                <div class="col-12 d-flex align-items-center justify-content-between">
+                                    <label class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" id="tActive" value="true" checked /><span class="form-check-label fs-8 ms-2">@SR["Active"]</span></label>
+                                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Branch terminals"]</h3></div><div class="card-toolbar"><span class="badge badge-light-primary">@terminals.Count</span></div></div>
+                        <div class="card-body">
+                            @if (!terminals.Any()) { <div class="text-muted fs-7 text-center py-8">@Localizer["No terminals yet."]</div> }
+                            <div class="row g-4">
+                                @foreach (var t in terminals)
+                                {
+                                    openShifts.TryGetValue(t.ID, out var sh);
+                                    <div class="col-md-6"><div class="card border border-gray-300 border-dashed h-100"><div class="card-body p-4">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div><span class="fw-bold text-gray-900 fs-5">@t.Code</span> <span class="text-muted">@t.Name</span>
+                                                @if (!t.IsActive) { <span class="badge badge-light-secondary fs-8 ms-1">@Localizer["Off"]</span> }</div>
+                                            <div class="d-flex gap-1">
+                                                <button type="button" class="btn btn-icon btn-sm btn-light-primary t-edit" data-id="@t.ID" data-code="@t.Code" data-name="@t.Name" data-prefix="@t.ReceiptPrefix" data-cash="@t.CashAccountId" data-active="@t.IsActive.ToString().ToLower()" data-paper="@t.ReceiptPaperWidthMm" data-copies="@t.ReceiptCopies" data-printer="@t.ReceiptPrinterName"><i class="ki-outline ki-pencil fs-6"></i></button>
+                                                <form asp-action="DeleteTerminal" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete terminal? (its till account stays in the chart)"]">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@t.ID" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-6"></i></button></form>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-column gap-1 fs-8 text-muted mb-3">
+                                            <div><i class="ki-outline ki-wallet fs-6 me-1"></i>@Localizer["Drawer"]: <span class="fw-semibold text-gray-700">@(t.CashAccountId != null && accNames.ContainsKey(t.CashAccountId.Value) ? accNames[t.CashAccountId.Value] : Localizer["— none —"].Value)</span></div>
+                                            <div><i class="ki-outline ki-barcode fs-6 me-1"></i>@Localizer["Receipt seq"]: <span class="fw-semibold text-gray-700">@t.ReceiptPrefix@(t.NextReceiptNo.ToString("D6"))</span></div>
+                                        </div>
+                                        <div class="separator separator-dashed mb-3"></div>
+                                        @if (sh != null)
+                                        {
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <span class="badge badge-light-primary"><i class="ki-outline ki-time fs-7 me-1"></i>@Localizer["Shift open"] · @(sh.ShiftType == "Evening" ? Localizer["Evening"].Value : Localizer["Morning"].Value)</span>
+                                                <form asp-action="CloseShift" method="post" data-cb-confirm data-cb-action="approve" data-cb-text="@Localizer["Close shift?"]">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="terminalId" value="@t.ID" /><input type="hidden" name="shiftId" value="@sh.ID" /><button class="btn btn-sm btn-light-danger">@Localizer["Close shift"]</button></form>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="OpenShift" method="post" class="d-flex align-items-end gap-2">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="terminalId" value="@t.ID" />
+                                                <div><label class="fw-semibold fs-8 mb-1 d-block">@SR["Type"]</label><select name="shiftType" class="form-select form-select-solid form-select-sm w-100px"><option value="Morning">@Localizer["Morning"]</option><option value="Evening">@Localizer["Evening"]</option></select></div>
+                                                <div><label class="fw-semibold fs-8 mb-1 d-block">@Localizer["Opening float"]</label><input type="number" step="0.01" name="openingFloat" value="0" class="form-control form-control-solid form-control-sm w-100px" /></div>
+                                                <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-entrance-left fs-6"></i>@Localizer["Open shift"]</button>
+                                            </form>
+                                        }
+                                    </div></div></div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+var base='@Url.Action("Terminals","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+[].slice.call(document.querySelectorAll('.t-edit')).forEach(function(b){ b.addEventListener('click',function(){
+  document.getElementById('tId').value=b.getAttribute('data-id');
+  document.getElementById('tCode').value=b.getAttribute('data-code')||'';
+  document.getElementById('tName').value=b.getAttribute('data-name')||'';
+  document.getElementById('tPrefix').value=b.getAttribute('data-prefix')||'';
+  var cash=b.getAttribute('data-cash')||''; var el=document.getElementById('tCash'); el.value=cash; if(window.jQuery){jQuery(el).trigger('change');}
+  document.getElementById('tPaper').value=b.getAttribute('data-paper')||'80';
+  document.getElementById('tCopies').value=b.getAttribute('data-copies')||'1';
+  document.getElementById('tPrinter').value=b.getAttribute('data-printer')||'';
+  document.getElementById('tActive').checked=(b.getAttribute('data-active')==='true');
+  document.getElementById('tFormTitle').textContent='@Localizer["Edit terminal"]';
+  document.getElementById('tNew').classList.remove('d-none'); window.scrollTo({top:0,behavior:'smooth'});
+}); });
+var tNew=document.getElementById('tNew'); if(tNew){tNew.addEventListener('click',function(){document.getElementById('tForm').reset();document.getElementById('tId').value='0';document.getElementById('tFormTitle').textContent='@Localizer["Add terminal"]';tNew.classList.add('d-none');if(window.jQuery){jQuery('#tCash').val('').trigger('change');}});}
+</script>
+}

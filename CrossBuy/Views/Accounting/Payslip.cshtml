@@ -1,0 +1,51 @@
+@using CrossBuy.Models.Context.Admin
+@model Payslip
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    string M(decimal v) => v.ToString("N2");
+    ViewData["Title"] = Localizer["Payslip"].Value;
+    var earnings = Model.BaseSalary + Model.Allowances + Model.OvertimePay;
+    var deductions = Model.SiEmployee + Model.Tax + Model.LatePenalty + Model.AbsencePenalty;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Payslip"]</h1></div>
+        <div class="d-flex gap-2"><a href="@Url.Action("Payslips","Accounting", new { year=Model.Year, month=Model.Month })" class="btn btn-light btn-sm">@SR["Back"]</a><button type="button" class="btn btn-primary btn-sm" onclick="window.print()"><i class="ki-outline ki-printer fs-3"></i>@SR["Print"]</button></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card" id="slip"><div class="card-body p-10">
+            <div class="d-flex flex-stack border-bottom pb-6 mb-6">
+                <div><h2 class="fw-bold text-gray-900 mb-1">CrossBuy</h2><div class="text-muted fs-6">@Localizer["Salary payslip"]</div></div>
+                <div class="text-end"><div class="fs-3 fw-bold text-gray-800">@Model.Year / @Model.Month.ToString("00")</div><div class="text-muted fs-7">@Localizer["Period"]</div></div>
+            </div>
+            <div class="row mb-8">
+                <div class="col-6"><div class="fs-7 text-muted">@SR["Employee"]</div><div class="fw-bold fs-4 text-gray-900">@Model.EmployeeName</div></div>
+                <div class="col-6 text-end"><div class="fs-7 text-muted">@Localizer["Slip No."]</div><div class="fw-bold fs-5 text-gray-800">PS-@Model.Year-@Model.ID.ToString("D5")</div></div>
+            </div>
+            <div class="row g-8">
+                <div class="col-md-6">
+                    <h3 class="fw-bold text-primary mb-4">@Localizer["Earnings"]</h3>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Basic salary"]</span><span class="fw-bold">@M(Model.BaseSalary)</span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Allowances"]</span><span class="fw-bold">@M(Model.Allowances)</span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Overtime"]</span><span class="fw-bold text-primary">@M(Model.OvertimePay)</span></div>
+                    <div class="d-flex justify-content-between py-3 mt-2 border-top border-2"><span class="fw-bold text-gray-900">@Localizer["Total earnings"]</span><span class="fw-bold fs-5 text-primary">@M(earnings)</span></div>
+                </div>
+                <div class="col-md-6">
+                    <h3 class="fw-bold text-danger mb-4">@Localizer["Deductions"]</h3>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Social insurance (employee)"]</span><span class="fw-bold">@M(Model.SiEmployee)</span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Income tax"]</span><span class="fw-bold">@M(Model.Tax)</span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Late penalty"] <span class="text-muted fs-8">(@Model.LateMinutes @Localizer["min"])</span></span><span class="fw-bold text-warning">@M(Model.LatePenalty)</span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-gray-700">@Localizer["Absence penalty"] <span class="text-muted fs-8">(@Model.AbsentDays @Localizer["d"])</span></span><span class="fw-bold text-danger">@M(Model.AbsencePenalty)</span></div>
+                    <div class="d-flex justify-content-between py-3 mt-2 border-top border-2"><span class="fw-bold text-gray-900">@Localizer["Total deductions"]</span><span class="fw-bold fs-5 text-danger">@M(deductions)</span></div>
+                </div>
+            </div>
+            <div class="d-flex flex-stack bg-light-primary rounded p-6 mt-8">
+                <span class="fw-bold fs-3 text-gray-900">@Localizer["Net pay"]</span>
+                <span class="fw-bolder fs-2 text-primary">@M(Model.Net) <span class="fs-6 text-muted">@Localizer["EGP"]</span></span>
+            </div>
+            <div class="text-muted fs-8 mt-4">@Localizer["Employer social insurance"]: @M(Model.SiCompany) — @Localizer["not deducted from employee"]. @Localizer["Journal entry"]: #@Model.JournalEntryId</div>
+        </div></div>
+    </div></div>
+</div>

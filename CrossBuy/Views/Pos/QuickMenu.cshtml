@@ -1,0 +1,264 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var groups = ViewBag.Groups as List<PosMenuGroup> ?? new();
+    var stations = ViewBag.Stations as List<CrossBuy.Models.Context.Pos.KitchenStation> ?? new();
+    var quick = ViewBag.QuickItems as List<PosQuickItem> ?? new();
+    var itemsById = ViewBag.ItemsById as Dictionary<int, Item> ?? new();
+    var categories = ViewBag.Categories as List<ItemCategory> ?? new();
+    Func<int?, List<PosQuickItem>> inGroup = gid => quick.Where(q => q.GroupId == gid).OrderBy(q => q.Sort).ToList();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Quick items (cashier)"]</h1>
+            <span class="text-muted fs-7">@Localizer["Per-branch touch buttons + tabs + quick (PLU) codes — read by the cashier later."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any()) { <div class="alert alert-warning"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["This company has no branches."]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-questionnaire-tablet fs-3x mb-3 d-block"></i>@Localizer["Select a branch to configure quick items."]</div></div>
+        }
+        else
+        {
+            <div class="row g-5">
+                <!-- add forms -->
+                <div class="col-lg-4">
+                    <div class="card mb-5"><div class="card-header"><div class="card-title"><h3>@Localizer["Add tab"]</h3></div></div>
+                        <div class="card-body">
+                            <form asp-action="SaveMenuGroup" method="post" class="row g-2">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="0" />
+                                <div class="col-6"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (AR)"]</label><input name="name" class="form-control form-control-solid form-control-sm" required /></div>
+                                <div class="col-6"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-4"><label class="fw-semibold fs-8 mb-1">@Localizer["Sort"]</label><input type="number" name="sort" value="0" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-8"><label class="fw-semibold fs-8 mb-1">@Localizer["Kitchen station"]</label>
+                                    <select name="kitchenStationId" class="form-select form-select-solid form-select-sm">
+                                        <option value="">@Localizer["Default (first kitchen)"]</option>
+                                        @foreach (var s in stations) { <option value="@s.ID">@s.Name</option> }
+                                    </select></div>
+                                <div class="col-12 d-flex align-items-end"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Add without tab"]</h3></div></div>
+                        <div class="card-body text-center">
+                            <button type="button" class="btn btn-light-primary w-100" id="openPicker" data-bs-toggle="modal" data-bs-target="#pickModal" data-group="" data-gname="@Localizer["No tab"]"><i class="ki-outline ki-magnifier fs-2"></i>@Localizer["Search & pick from catalog"]</button>
+                            <div class="text-muted fs-8 mt-3">@Localizer["To add an item inside a tab, use the “Add item” button next to the tab name. This button adds without a tab."]</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- groups + buttons -->
+                <div class="col-lg-8">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Cashier buttons"]</h3></div>
+                        <div class="card-toolbar"><span class="badge badge-light-primary">@quick.Count @Localizer["buttons"]</span></div></div>
+                        <div class="card-body">
+                            @{ var buckets = groups.Select(g => ((int?)g.ID, isAr ? g.Name : (string.IsNullOrEmpty(g.NameEn) ? g.Name : g.NameEn))).ToList(); buckets.Add((null, Localizer["No tab"].Value)); }
+                            @foreach (var (gid, gname) in buckets)
+                            {
+                                var rows = inGroup(gid);
+                                if (gid == null && !rows.Any()) { continue; }
+                                var g = gid != null ? groups.FirstOrDefault(x => x.ID == gid) : null;
+                                <div class="mb-6">
+                                    <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                                        <div class="fw-bold text-gray-800 fs-5"><i class="ki-outline ki-abstract-26 fs-3 text-primary me-2"></i>@gname <span class="text-muted fs-8">(@rows.Count)</span></div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (g != null && stations.Any())
+                                            {
+                                                <form asp-action="SaveMenuGroup" method="post" class="d-flex align-items-center gap-1">@Html.AntiForgeryToken()
+                                                    <input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@g.ID" /><input type="hidden" name="name" value="@g.Name" /><input type="hidden" name="nameEn" value="@g.NameEn" /><input type="hidden" name="sort" value="@g.Sort" /><input type="hidden" name="isActive" value="true" />
+                                                    <i class="ki-outline ki-tablet-text fs-5 text-muted" title="@Localizer["Kitchen station"]"></i>
+                                                    <select name="kitchenStationId" class="form-select form-select-solid form-select-sm w-auto" onchange="this.form.submit()">
+                                                        <option value="">@Localizer["Default"]</option>
+                                                        @foreach (var s in stations) { <option value="@s.ID" selected="@(g.KitchenStationId == s.ID)">@s.Name</option> }
+                                                    </select>
+                                                </form>
+                                            }
+                                            <button type="button" class="btn btn-sm btn-light-primary pk-add-here" data-bs-toggle="modal" data-bs-target="#pickModal" data-group="@(gid?.ToString() ?? "")" data-gname="@gname"><i class="ki-outline ki-plus fs-4"></i>@Localizer["Add item"]</button>
+                                            @if (gid != null) { <form asp-action="DeleteMenuGroup" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete tab? Its buttons stay ungrouped."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@gid" /><input type="hidden" name="branchId" value="@fB" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form> }
+                                        </div>
+                                    </div>
+                                    @if (!rows.Any()) { <div class="text-muted fs-8 mb-2">@Localizer["No buttons in this tab."]</div> }
+                                    <div class="row g-3">
+                                        @foreach (var q in rows)
+                                        {
+                                            itemsById.TryGetValue(q.ItemId, out var it);
+                                            <div class="col-md-6"><div class="d-flex align-items-center justify-content-between border border-gray-300 border-dashed rounded p-3">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="symbol symbol-40px"><span class="symbol-label bg-light-primary">@if (!string.IsNullOrEmpty(it?.ImagePath)) { <img src="@it.ImagePath" style="width:100%;height:100%;object-fit:cover;border-radius:6px" /> } else { <i class="ki-outline ki-cup fs-3 text-primary"></i> }</span></div>
+                                                    <div><div class="fw-bold text-gray-800">@(it?.ItemCode) <span class="fw-normal text-muted">@(it == null ? ("#"+q.ItemId) : (isAr ? it.Name : (string.IsNullOrEmpty(it.NameEn) ? it.Name : it.NameEn)))</span></div>
+                                                        <div class="text-muted fs-8">@SR["Price"]: @(it?.SalesPrice?.ToString("0.##") ?? "—")</div></div>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <form asp-action="SetQuickCode" method="post" class="d-flex gap-1">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="itemId" value="@q.ItemId" />
+                                                        <input name="code" value="@(it?.QuickCode)" class="form-control form-control-solid form-control-sm w-70px text-center" placeholder="PLU" title="@Localizer["Quick code"]" />
+                                                        <button class="btn btn-icon btn-sm btn-light-primary" title="@Localizer["Save code"]"><i class="ki-outline ki-check fs-5"></i></button>
+                                                    </form>
+                                                    <form asp-action="RemoveQuickItem" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Remove button?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@q.ID" /><input type="hidden" name="branchId" value="@fB" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-4"></i></button></form>
+                                                </div>
+                                            </div></div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            @if (!quick.Any() && !groups.Any()) { <div class="text-center text-muted py-10">@Localizer["Add a tab, then buttons from the catalog."]</div> }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+<!-- item picker popup (Metronic scrollable modal) -->
+<div class="modal fade" tabindex="-1" id="pickModal">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@Localizer["Search for item"]</h5>
+                <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close"><i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
+            </div>
+            <div class="modal-body">
+                <!-- filters -->
+                <div class="row g-4 mb-5">
+                    <div class="col-md-3"><label class="fw-semibold fs-7 mb-2">@Localizer["Group"]</label>
+                        <select id="pkFGroup" class="form-select form-select-solid"><option value="">@Localizer["Select group"]</option>@foreach (var c in categories.Where(x => x.Kind == "Group")) { <option value="@c.ID" data-parent="@c.ParentId">@(isAr ? c.Name : (string.IsNullOrEmpty(c.NameEn) ? c.Name : c.NameEn))</option> }</select></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-7 mb-2">@Localizer["Category"]</label>
+                        <select id="pkFCat" class="form-select form-select-solid"><option value="">@Localizer["Select category"]</option>@foreach (var c in categories.Where(x => x.Kind != "Group")) { <option value="@c.ID">@(isAr ? c.Name : (string.IsNullOrEmpty(c.NameEn) ? c.Name : c.NameEn))</option> }</select></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-7 mb-2">@Localizer["Barcode"]</label>
+                        <input id="pkBarcode" class="form-control form-control-solid" placeholder="@Localizer["Scan/type + Enter"]" autocomplete="off" /></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-7 mb-2">@Localizer["Item name"]</label>
+                        <input id="pkName" class="form-control form-control-solid" placeholder="@Localizer["Enter item name"]" autocomplete="off" /></div>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-3 mb-5">
+                    <button type="button" id="pkSearchBtn" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-3"></i>@SR["Search"]</button>
+                    <button type="button" id="pkReset" class="btn btn-light"><i class="ki-outline ki-arrows-circle fs-3"></i>@SR["Reset"]</button>
+                    <div class="ms-auto d-flex align-items-center gap-2"><span class="fw-semibold fs-7 text-muted">@Localizer["Adding to tab:"]</span>
+                        <span id="pkTargetName" class="badge badge-lg badge-light-primary fs-7"></span></div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="text-muted fs-7">@SR["Total"]: <span id="pkTotal" class="fw-bold text-primary">0</span></div>
+                    <div id="pkRange" class="text-muted fs-8"></div>
+                </div>
+                <div class="table-responsive"><table class="table table-row-dashed table-row-gray-200 align-middle fs-7 gy-3">
+                    <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th style="width:30px"><input type="checkbox" id="pkAll" class="form-check-input" /></th><th style="width:34px">#</th><th class="min-w-200px">@SR["Item"]</th><th>@Localizer["Barcode"]</th><th>@Localizer["Category"]</th><th>@Localizer["Group"]</th><th>@Localizer["Unit"]</th><th class="text-end">@SR["Price"]</th><th class="text-center">@SR["Status"]</th></tr></thead>
+                    <tbody id="pkBody" class="fw-semibold text-gray-700"></tbody>
+                </table></div>
+                <div id="pkEmpty" class="text-center text-muted py-8 d-none">@Localizer["No results."]</div>
+                <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+                    <button type="button" id="pkPrev" class="btn btn-sm btn-icon btn-light"><i class="ki-outline ki-@(isAr ? "right" : "left") fs-4"></i></button>
+                    <span id="pkPage" class="fw-bold fs-7 text-gray-700"></span>
+                    <button type="button" id="pkNext" class="btn btn-sm btn-icon btn-light"><i class="ki-outline ki-@(isAr ? "left" : "right") fs-4"></i></button>
+                    <select id="pkSize" class="form-select form-select-solid form-select-sm w-70px"><option>10</option><option>25</option><option>50</option></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="text-muted fs-8 me-auto" id="pkAdded"></span>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Close"]</button>
+                <button type="button" id="pkAddSel" class="btn btn-primary"><i class="ki-outline ki-check fs-3"></i>@Localizer["Save & add to tab"] (<span id="pkSelCount">0</span>)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var base='@Url.Action("QuickMenu","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+
+// ---- item picker popup (data table) ----
+(function(){
+  var open=document.getElementById('openPicker'); if(!open) return;
+  var branchId=@(fB ?? 0);
+  var token=document.querySelector('input[name="__RequestVerificationToken"]').value;
+  var searchUrl='@Url.Action("ItemSearch","Pos")', addUrl='@Url.Action("AddQuickItemJson","Pos")';
+  var body=document.getElementById('pkBody'), empty=document.getElementById('pkEmpty'), addedLbl=document.getElementById('pkAdded');
+  var fCat=document.getElementById('pkFCat'), fGroup=document.getElementById('pkFGroup'), fBc=document.getElementById('pkBarcode'), fName=document.getElementById('pkName'), fSize=document.getElementById('pkSize');
+  var pkTargetName=document.getElementById('pkTargetName');
+  var elTotal=document.getElementById('pkTotal'), elRange=document.getElementById('pkRange'), elPage=document.getElementById('pkPage'), elSel=document.getElementById('pkSelCount');
+  var page=1, pages=1, total=0, added=0, autoBc=false, targetGroup='';   // '' = no tab; set from the button that opens the modal
+  var STAT_ON='@SR["Active"]', STAT_OFF='@SR["Inactive"]', CUR='@Localizer["Picker price currency"]';
+  function esc(s){return (s||'').replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c];});}
+  function rowHtml(r,idx){
+    var img = r.image ? ('<img src="'+r.image+'" style="width:38px;height:38px;object-fit:cover;border-radius:6px" onerror="this.outerHTML=\'<span class=&quot;symbol-label bg-light-primary w-38px h-38px d-flex align-items-center justify-content-center rounded&quot;><i class=&quot;ki-outline ki-cup fs-4 text-primary&quot;></i></span>\'">')
+                      : ('<span class="symbol-label bg-light-primary d-flex align-items-center justify-content-center rounded" style="width:38px;height:38px"><i class="ki-outline ki-cup fs-4 text-primary"></i></span>');
+    var sub = r.nameEn ? ('<div class="text-muted fs-8">'+esc(r.nameEn)+'</div>') : '';
+    return '<tr>'+
+      '<td><input type="checkbox" class="form-check-input pk-chk" data-id="'+r.id+'"></td>'+
+      '<td class="text-muted">'+idx+'</td>'+
+      '<td><div class="d-flex align-items-center gap-3">'+img+'<div><div class="fw-bold text-gray-800">'+esc(r.name)+'</div><div class="text-muted fs-8">'+esc(r.code)+'</div>'+sub+'</div></div></td>'+
+      '<td class="text-muted">'+esc(r.barcode)+'</td>'+
+      '<td>'+esc(r.category)+'</td><td>'+esc(r.group)+'</td><td class="text-muted">'+esc(r.uom)+'</td>'+
+      '<td class="text-end fw-bold">'+(r.price!=null?(r.price+' '+CUR):'—')+'</td>'+
+      '<td class="text-center"><span class="badge badge-light-'+(r.active?'success':'danger')+'">'+(r.active?STAT_ON:STAT_OFF)+'</span></td></tr>';
+  }
+  function selCount(){var n=body.querySelectorAll('.pk-chk:checked').length; elSel.textContent=n; return n;}
+  function load(){
+    var p=new URLSearchParams();
+    if(fName.value.trim())p.set('term',fName.value.trim());
+    if(fBc.value.trim())p.set('barcode',fBc.value.trim());
+    if(fGroup.value)p.set('groupId',fGroup.value); else if(fCat.value)p.set('categoryId',fCat.value);
+    p.set('page',page); p.set('pageSize',fSize.value||'10');
+    fetch(searchUrl+'?'+p.toString(),{headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){
+      total=j.total||0; pages=j.pages||1; var ps=parseInt(fSize.value||'10');
+      body.innerHTML=(j.rows||[]).map(function(r,i){return rowHtml(r,(page-1)*ps+i+1);}).join('');
+      elTotal.textContent=total; empty.classList.toggle('d-none', total!==0);
+      elPage.textContent=page+' / '+pages;
+      var from=total?((page-1)*ps+1):0, to=Math.min(page*ps,total);
+      elRange.textContent='@Localizer["Showing"] '+from+' – '+to+' @Localizer["of"] '+total;
+      document.getElementById('pkAll').checked=false; selCount();
+      if(autoBc){ autoBc=false; var c1=body.querySelector('.pk-chk'); if((j.rows||[]).length===1 && c1){ c1.checked=true; selCount(); } fBc.focus(); fBc.select(); }   // barcode Enter = SELECT the match only; adding still requires the save button
+    });
+  }
+  function addItem(id, cb){
+    var fd=new FormData(); fd.append('__RequestVerificationToken',token); fd.append('branchId',branchId); fd.append('itemId',id); if(targetGroup)fd.append('groupId',targetGroup);
+    fetch(addUrl,{method:'POST',body:fd,headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){ if(j.ok)added++; addedLbl.textContent='@Localizer["Added"]: '+added; if(cb)cb(j); });
+  }
+  document.getElementById('pickModal').addEventListener('show.bs.modal',function(e){
+    var btn=e.relatedTarget;   // the button that opened the modal carries the target tab
+    targetGroup = btn ? (btn.getAttribute('data-group')||'') : '';
+    pkTargetName.textContent = btn ? (btn.getAttribute('data-gname')||'@Localizer["No tab"]') : '@Localizer["No tab"]';
+  });
+  document.getElementById('pickModal').addEventListener('shown.bs.modal',function(){ added=0; addedLbl.textContent=''; fName.value='';fBc.value='';fCat.value='';fGroup.value=''; page=1; load(); });
+  document.getElementById('pkSearchBtn').addEventListener('click',function(){page=1;load();});
+  document.getElementById('pkReset').addEventListener('click',function(){fName.value='';fBc.value='';fCat.value='';fGroup.value='';page=1;load();});
+  fName.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();page=1;load();}});
+  fBc.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();autoBc=true;page=1;load();}});   // barcode + Enter → auto-add if a single valid match
+  // category → filter its groups
+  fCat.addEventListener('change',function(){var cid=fCat.value;[].slice.call(fGroup.options).forEach(function(o){if(!o.value)return;o.hidden=cid && o.getAttribute('data-parent')!==cid;});fGroup.value='';page=1;load();});
+  fGroup.addEventListener('change',function(){page=1;load();});
+  fSize.addEventListener('change',function(){page=1;load();});
+  document.getElementById('pkPrev').addEventListener('click',function(){if(page>1){page--;load();}});
+  document.getElementById('pkNext').addEventListener('click',function(){if(page<pages){page++;load();}});
+  document.getElementById('pkAll').addEventListener('change',function(e){[].slice.call(body.querySelectorAll('.pk-chk')).forEach(function(c){c.checked=e.target.checked;});selCount();});
+  body.addEventListener('change',function(e){if(e.target.classList.contains('pk-chk'))selCount();});
+  document.getElementById('pkAddSel').addEventListener('click',function(){
+    var ids=[].slice.call(body.querySelectorAll('.pk-chk:checked')).map(function(c){return c.getAttribute('data-id');});
+    if(!ids.length){addedLbl.textContent='@Localizer["Select at least one item"]';return;}
+    var done=0; ids.forEach(function(id){ addItem(id, function(){ if(++done===ids.length){ location.href=base+'?companyId=@fC&branchId='+branchId; } }); });
+  });
+  document.getElementById('pickModal').addEventListener('hidden.bs.modal',function(){ if(added>0) location.href=base+'?companyId=@fC&branchId='+branchId; });
+})();
+</script>
+}

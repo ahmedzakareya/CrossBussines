@@ -1,0 +1,156 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var prj = ViewBag.Project as Project;
+    var orders = ViewBag.Orders as List<VariationOrder> ?? new();
+    var boq = ViewBag.BoqItems as List<BoqItem> ?? new();
+    var rev = ViewBag.Revised as RevisedContract ?? new RevisedContract();
+    var edit = ViewBag.EditOrder as VariationOrder;
+    bool editable = edit == null || edit.Status == "Draft";
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    string iv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    string Badge(string s) => s == "Approved" ? "primary" : "secondary";
+    var boqJson = System.Text.Json.JsonSerializer.Serialize(boq.Select(b => new { id = b.ID, code = b.Code, name = nm(b.Description, b.DescriptionEn), unit = b.Unit, q = b.Quantity, p = b.UnitPrice }));
+    var editJson = System.Text.Json.JsonSerializer.Serialize((edit?.Lines ?? new()).Select(l => new { kind = l.Kind, boqItemId = l.BoqItemId, code = l.Code, desc = l.Description, unit = l.Unit, q = l.Quantity, p = l.UnitPrice, mat = l.MaterialCost, lab = l.LaborCost, sub = l.SubcontractCost, equip = l.EquipmentCost }));
+}
+<style>
+    .text-brand{color:#13433a!important}
+    .vo-card{background:#fbfdfc;border:1px solid var(--bs-gray-200);border-radius:1rem}
+    #vorows .form-control,#vorows .form-select{height:42px}
+</style>
+<form asp-action="SaveVariationOrder" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+    <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" /><input type="hidden" name="voId" value="@(edit?.ID ?? 0)" /><input type="hidden" name="rowsJson" id="rowsJson" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Variation orders"]</h1>
+            <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn))</span></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+            <a href="@Url.Action("VariationOrders","Project", new { id = prj?.ID })" class="btn btn-light-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New order"]</a>
+            @if (editable) { <button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button> }
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <!--begin::Revised contract counters-->
+        <div class="card mb-5"><div class="card-body py-6"><div class="row text-center">
+            <div class="col-md-4"><div class="text-muted fs-7">@Localizer["Original contract"]</div>
+                <div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="@iv(rev.Original)" data-kt-countup-decimal-places="2" data-kt-countup-separator=",">@rev.Original.ToString("N2")</div></div>
+            <div class="col-md-4"><div class="text-muted fs-7">@Localizer["Approved changes"]</div>
+                <div class="fs-2 fw-bold @(rev.ApprovedChanges >= 0 ? "text-brand" : "text-danger")" data-kt-countup="true" data-kt-countup-value="@iv(rev.ApprovedChanges)" data-kt-countup-decimal-places="2" data-kt-countup-separator="," @Html.Raw(rev.ApprovedChanges >= 0 ? "data-kt-countup-prefix=\"+\"" : "")>@(rev.ApprovedChanges >= 0 ? "+" : "")@rev.ApprovedChanges.ToString("N2")</div></div>
+            <div class="col-md-4"><div class="text-muted fs-7">@Localizer["Revised contract"]</div>
+                <div class="fs-2 fw-bold" style="color:#13433a;" data-kt-countup="true" data-kt-countup-value="@iv(rev.Revised)" data-kt-countup-decimal-places="2" data-kt-countup-separator=",">@rev.Revised.ToString("N2")</div></div>
+        </div></div></div>
+        <!--end::Revised-->
+
+        <div class="card mb-5"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Variation orders"]</h3></div>
+            <div class="card-body pt-2">
+                @if (!orders.Any()) { <div class="text-muted fs-6 py-3">@Localizer["No variation orders yet"]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-bordered align-middle">
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th>#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Value"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var o in orders)
+                        {
+                            <tr class="@(o.ID == edit?.ID ? "bg-light-primary" : "")">
+                                <td class="fw-bold">@o.VoNo</td><td>@nm(o.Description ?? "", o.DescriptionEn)</td>
+                                <td class="text-end fw-bold @(o.Value >= 0 ? "text-brand" : "text-danger")">@(o.Value >= 0 ? "+" : "")@o.Value.ToString("N2")</td>
+                                <td class="text-center"><span class="badge badge-light-@Badge(o.Status)">@Localizer[o.Status]</span></td>
+                                <td class="text-center text-nowrap">
+                                    <a href="@Url.Action("VariationOrders","Project", new { id = prj?.ID, vo = o.ID })" class="btn btn-sm btn-icon btn-light-primary me-1"><i class="ki-outline ki-eye fs-5"></i></a>
+                                    @if (o.Status == "Draft")
+                                    {
+                                        <form asp-action="ApproveVariationOrder" method="post" class="d-inline" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Approve order? (applies to BOQ, no journal entries)"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@o.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Approve"]"><i class="ki-outline ki-verify fs-5"></i></button></form>
+                                        <form asp-action="DeleteVariationOrder" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete order?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@o.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody></table></div>
+                }
+            </div>
+        </div>
+
+        <div class="card"><div class="card-header">
+            <h3 class="card-title fw-bold">@(edit == null ? Localizer["New order"] : Localizer["Order"] + " #" + edit.VoNo)
+                @if (edit != null && edit.Status != "Draft") { <span class="badge ms-2" style="background:#eaf3ef;color:#13433a;">@Localizer["Approved"]</span> }</h3>
+            @if (editable) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div> }
+        </div>
+            <div class="card-body">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4"><label class="fw-semibold fs-6 mb-2">@SR["Description"]</label><input name="description" class="form-control form-control-solid" value="@edit?.Description" @(editable ? "" : "disabled") /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-6 mb-2">@SR["Description"] (EN)</label><input name="descriptionEn" dir="ltr" class="form-control form-control-solid" value="@edit?.DescriptionEn" @(editable ? "" : "disabled") /></div>
+                    <div class="col-md-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Reason"]</label><input name="reason" class="form-control form-control-solid" value="@edit?.Reason" @(editable ? "" : "disabled") /></div>
+                </div>
+                <div id="vorows"></div>
+                <div class="d-flex justify-content-end border-top pt-4 mt-2"><div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Total value change"]</div><div class="fs-3 fw-bold" id="voTotal" style="color:#13433a;">0.00</div></div></div>
+            </div>
+        </div>
+    </div></div>
+</form>
+@section Scripts {
+<script>
+var BOQ=@Html.Raw(boqJson), EDIT=@Html.Raw(editJson), EDITABLE=@(editable ? "true" : "false");
+var boqMap={}; BOQ.forEach(function(b){boqMap[b.id]=b;});
+function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+function boqOpts(sel){var o='<option value="">—</option>';BOQ.forEach(function(b){o+='<option value="'+b.id+'"'+(sel==b.id?' selected':'')+'>'+((b.code?b.code+' · ':'')+(b.name||''))+'</option>';});return o;}
+function line(d){d=d||{};var dis=EDITABLE?'':'disabled';var isAdj=(d.kind==='Adjust');
+ var c=document.createElement('div');c.className='vo-card p-5 mb-4 vo-row';
+ c.innerHTML=
+  '<div class="row g-4 mb-2 align-items-end">'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Kind"]</label><select class="form-select form-select-solid kind" '+dis+'><option value="New"'+(isAdj?'':' selected')+'>@Localizer["New item"]</option><option value="Adjust"'+(isAdj?' selected':'')+'>@Localizer["Adjust item"]</option></select></div>'+
+    '<div class="col-md-4 adjwrap" style="'+(isAdj?'':'display:none')+'"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Existing BOQ item"]</label><select class="form-select form-select-solid boq" '+dis+'>'+boqOpts(d.boqItemId)+'</select></div>'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Code"]</label><input class="form-control form-control-solid code" value="'+(d.code||'')+'" '+dis+'></div>'+
+    '<div class="col-md-4 dwrap"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@SR["Description"]</label><input class="form-control form-control-solid d" value="'+(d.desc||'').replace(/"/g,'&quot;')+'" '+dis+'></div>'+
+  '</div>'+
+  '<div class="row g-4 align-items-end">'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Unit"]</label><input class="form-control form-control-solid unit text-end" value="'+(d.unit||'')+'" '+dis+'></div>'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Qty"]</label><input type="number" step="0.01" class="form-control form-control-solid q text-end" value="'+(d.q!=null?d.q:0)+'" '+dis+'></div>'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Unit price"]</label><input type="number" step="0.01" class="form-control form-control-solid p text-end" value="'+(d.p!=null?d.p:0)+'" '+dis+'></div>'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Line value"]</label><div class="form-control form-control-solid text-end fw-bold val">0.00</div></div>'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Value change"]</label><div class="form-control form-control-solid text-end fw-bold chg" style="color:#13433a;">0.00</div></div>'+
+    '<div class="col-md-2 d-flex justify-content-end">'+(EDITABLE?'<button type="button" class="btn btn-light-danger del"><i class="ki-outline ki-trash fs-5"></i>@SR["Delete"]</button>':'')+'</div>'+
+  '</div>'+
+  '<div class="row g-4 mt-1">'+
+    '<div class="col-md-3"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Material"]</label><input type="number" step="0.01" class="form-control form-control-solid mat text-end" value="'+(d.mat!=null?d.mat:0)+'" '+dis+'></div>'+
+    '<div class="col-md-3"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Labor"]</label><input type="number" step="0.01" class="form-control form-control-solid lab text-end" value="'+(d.lab!=null?d.lab:0)+'" '+dis+'></div>'+
+    '<div class="col-md-3"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Subcontract"]</label><input type="number" step="0.01" class="form-control form-control-solid sub text-end" value="'+(d.sub!=null?d.sub:0)+'" '+dis+'></div>'+
+    '<div class="col-md-3"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Equipment"]</label><input type="number" step="0.01" class="form-control form-control-solid equip text-end" value="'+(d.equip!=null?d.equip:0)+'" '+dis+'></div>'+
+  '</div>';
+ document.getElementById('vorows').appendChild(c);
+ if(window.jQuery&&jQuery.fn.select2){jQuery(c.querySelector('.kind')).select2({minimumResultsForSearch:Infinity,width:'100%'});jQuery(c.querySelector('.boq')).select2({width:'100%'});}
+ return c;}
+function oldVal(card){if(card.querySelector('.kind').value!=='Adjust')return 0;var b=boqMap[parseInt(card.querySelector('.boq').value||'0')];return b?num(b.q)*num(b.p):0;}
+function calc(){var tot=0;document.querySelectorAll('#vorows .vo-row').forEach(function(card){
+  var v=num(card.querySelector('.q').value)*num(card.querySelector('.p').value);
+  var chg=(card.querySelector('.kind').value==='Adjust')?(v-oldVal(card)):v;
+  card.querySelector('.val').textContent=v.toFixed(2);card.querySelector('.chg').textContent=(chg>=0?'+':'')+chg.toFixed(2);
+  tot+=chg;});
+ document.getElementById('voTotal').textContent=(tot>=0?'+':'')+tot.toFixed(2);}
+var rows=document.getElementById('vorows');
+if(EDITABLE){
+ document.getElementById('add').addEventListener('click',function(){line({kind:'New'});calc();});
+ rows.addEventListener('input',calc);
+ rows.addEventListener('change',function(e){
+   if(e.target.classList.contains('kind')){var card=e.target.closest('.vo-row');card.querySelector('.adjwrap').style.display=(e.target.value==='Adjust')?'':'none';calc();}
+   if(e.target.classList.contains('boq')){var card=e.target.closest('.vo-row');var b=boqMap[parseInt(e.target.value||'0')];if(b){card.querySelector('.code').value=b.code||'';card.querySelector('.d').value=b.name||'';card.querySelector('.unit').value=b.unit||'';card.querySelector('.q').value=b.q;card.querySelector('.p').value=b.p;}calc();}
+ });
+ rows.addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('.vo-row').remove();calc();}});
+ document.getElementById('save').addEventListener('click',function(){
+  var out=[];document.querySelectorAll('#vorows .vo-row').forEach(function(card){
+    var kind=card.querySelector('.kind').value;var d=card.querySelector('.d').value.trim();var boqId=parseInt(card.querySelector('.boq').value||'0');
+    if(kind==='Adjust'&&!boqId)return; if(kind==='New'&&!d)return;
+    out.push({kind:kind,boqItemId:kind==='Adjust'?boqId:null,code:card.querySelector('.code').value,description:d,unit:card.querySelector('.unit').value,quantity:num(card.querySelector('.q').value),unitPrice:num(card.querySelector('.p').value),materialCost:num(card.querySelector('.mat').value),laborCost:num(card.querySelector('.lab').value),subcontractCost:num(card.querySelector('.sub').value),equipmentCost:num(card.querySelector('.equip').value)});});
+  document.getElementById('rowsJson').value=JSON.stringify(out);
+  var f=document.getElementById('f');if(window.CB&&CB.submitForm)CB.submitForm(f,{type:'save'});else f.submit();});
+}
+if(EDIT&&EDIT.length){EDIT.forEach(function(d){line(d);});}else if(EDITABLE){line({kind:'New'});}
+calc();
+</script>
+}

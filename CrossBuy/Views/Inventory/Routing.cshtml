@@ -1,0 +1,91 @@
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutManufacturing.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var item = ViewBag.Item as Item;
+    var ops = ViewBag.Ops as List<ManufRoutingOp> ?? new();
+    var wcs = ViewBag.WorkCenters as List<(int id, string name)> ?? new();
+    var wcMap = wcs.ToDictionary(x => x.id, x => x.name);
+    decimal unitLabor = ViewBag.UnitLabor ?? 0m;
+    decimal unitOverhead = ViewBag.UnitOverhead ?? 0m;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Routing"] — @item?.ItemCode @(isAr ? item?.Name : item?.NameEn)</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("WorkOrders","Inventory")" class="text-muted text-hover-primary">@SR["Manufacturing"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Routing"]</li></ul></div>
+        <button class="btn btn-primary" onclick="opEdit(0)"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New operation"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["InvMsg"] != null) { <div class="alert alert-success">@TempData["InvMsg"]</div> }
+        @if (TempData["InvErr"] != null) { <div class="alert alert-danger">@TempData["InvErr"]</div> }
+        @if (!wcs.Any()) { <div class="alert alert-warning">@Localizer["No work centers yet. Add one first from the Work centers page."]</div> }
+        <div class="row g-5">
+            <div class="col-lg-8"><div class="card"><div class="card-body py-3">
+                <div class="text-muted fs-8 mb-3">@Localizer["Operations run in sequence. Operation time = (setup + run-per-unit × qty). Cost is computed automatically when a work order is created."]</div>
+                <div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                    <thead><tr class="fw-bold fs-7 text-muted text-uppercase"><th>#</th><th>@Localizer["Operation"]</th><th>@Localizer["Work center"]</th><th class="text-end">@Localizer["Setup (m)"]</th><th class="text-end">@Localizer["Run/unit (m)"]</th><th></th></tr></thead>
+                    <tbody>
+                    @if (!ops.Any()) { <tr><td colspan="6" class="text-center text-muted py-6">@Localizer["No operations yet."]</td></tr> }
+                    @foreach (var o in ops)
+                    {
+                        <tr>
+                            <td class="fw-bold">@o.Seq</td>
+                            <td>@o.OperationName</td>
+                            <td>@(wcMap.TryGetValue(o.WorkCenterId, out var n) ? n : ("#" + o.WorkCenterId))</td>
+                            <td class="text-end">@o.SetupMins.ToString("N2")</td>
+                            <td class="text-end">@o.RunMinsPerUnit.ToString("N2")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-light" onclick='opEdit(@o.ID, @o.Seq, @o.WorkCenterId, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(o.OperationName)), @o.SetupMins, @o.RunMinsPerUnit)'>@SR["Edit"]</button>
+                                <form asp-action="DeleteRoutingOp" method="post" class="d-inline" onsubmit="return confirm('@Localizer["Delete this operation?"]')">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@o.ID" /><input type="hidden" name="itemId" value="@item?.ID" /><button class="btn btn-sm btn-light-danger">@SR["Delete"]</button></form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+            </div></div></div>
+            <div class="col-lg-4"><div class="card bg-light-primary"><div class="card-body">
+                <h3 class="fs-5 fw-bold mb-4">@Localizer["Cost per unit"]</h3>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">@Localizer["Labor/unit"]</span><span class="fw-bold">@unitLabor.ToString("N4")</span></div>
+                <div class="d-flex justify-content-between mb-2"><span class="text-muted">@Localizer["Overhead/unit"]</span><span class="fw-bold">@unitOverhead.ToString("N4")</span></div>
+                <div class="separator my-3"></div>
+                <div class="d-flex justify-content-between"><span class="fw-bold">@Localizer["Total/unit"]</span><span class="fw-bolder fs-4 text-primary">@((unitLabor + unitOverhead).ToString("N4"))</span></div>
+                <div class="text-muted fs-8 mt-3">@Localizer["These are prefilled into a new work order for this item (labor & overhead) and remain editable while Draft."]</div>
+            </div></div></div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="opModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <form asp-action="SaveRoutingOp" method="post">@Html.AntiForgeryToken()
+        <div class="modal-header"><h3 class="modal-title" id="opTitle">@Localizer["Operation"]</h3><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body row g-4">
+            <input type="hidden" name="id" id="op_id" value="0" />
+            <input type="hidden" name="itemId" value="@item?.ID" />
+            <div class="col-md-4"><label class="required fw-semibold fs-7 text-muted mb-1">@Localizer["Sequence"]</label><input type="number" min="1" name="seq" id="op_seq" class="form-control form-control-solid" value="@(ops.Count + 1)" required /></div>
+            <div class="col-md-8"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Operation name"]</label><input name="operationName" id="op_name" class="form-control form-control-solid" /></div>
+            <div class="col-12"><label class="required fw-semibold fs-7 text-muted mb-1">@Localizer["Work center"]</label>
+                <select name="workCenterId" id="op_wc" class="form-select form-select-solid" required>
+                    @foreach (var w in wcs) { <option value="@w.id">@w.name</option> }
+                </select></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Setup (minutes, per order)"]</label><input type="number" step="0.01" min="0" name="setupMins" id="op_setup" class="form-control form-control-solid" value="0" /></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Run per unit (minutes)"]</label><input type="number" step="0.01" min="0" name="runMinsPerUnit" id="op_run" class="form-control form-control-solid" value="0" /></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+function opEdit(id, seq, wcId, name, setup, run){
+  document.getElementById('op_id').value = id;
+  if(id>0){ document.getElementById('op_seq').value = seq; document.getElementById('op_wc').value = wcId; }
+  document.getElementById('op_name').value = name || '';
+  document.getElementById('op_setup').value = setup || 0;
+  document.getElementById('op_run').value = run || 0;
+  document.getElementById('opTitle').textContent = id===0 ? '@Localizer["New operation"]' : '@Localizer["Edit operation"]';
+  new bootstrap.Modal(document.getElementById('opModal')).show();
+}
+</script>
+}

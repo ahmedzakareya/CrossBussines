@@ -1,0 +1,75 @@
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<ProjectActivityType>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Activity types"]</h1>
+            <span class="text-muted fs-7">@Localizer["Define your own project activity types (the system does not assume a fixed type)."]</span></div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+            <button type="button" class="btn btn-primary" onclick="atNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New activity type"]</button>
+        </div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+            <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@SR["Code"]</th><th>@SR["Name"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@SR["Actions"]</th></tr></thead>
+            <tbody>
+            @if (!Model.Any()) { <tr><td colspan="4" class="text-center text-muted py-10">@Localizer["No activity types yet — add your own above."]</td></tr> }
+            @foreach (var a in Model)
+            {
+                <tr data-id="@a.ID" data-code="@a.Code" data-name="@a.Name" data-nameen="@a.NameEn" data-active="@(a.IsActive ? "1" : "0")">
+                    <td class="fw-bold">@a.Code</td>
+                    <td>@(isAr ? a.Name : (string.IsNullOrEmpty(a.NameEn) ? a.Name : a.NameEn))</td>
+                    <td class="text-center"><span class="badge badge-light-@(a.IsActive?"success":"secondary")">@(a.IsActive ? SR["Active"].Value : SR["Inactive"].Value)</span></td>
+                    <td class="text-center text-nowrap">
+                        <button type="button" class="btn btn-sm btn-icon btn-light-primary me-1" onclick="atEdit(this)" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></button>
+                        <form asp-action="DeleteActivityType" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete activity type?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@a.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>
+
+<!--begin::Activity-type modal-->
+<div class="modal fade" id="mAt" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="SaveActivityType" method="post" data-cb-confirm data-cb-action="edit" data-cb-confirm-if="#at_id" data-cb-text="@Localizer["Save changes?"]">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="at_id" value="0" />
+        <div class="modal-header"><h2 class="fw-bold" id="atTitle">@Localizer["New activity type"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8"><div class="row">
+            <div class="col-md-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Code"]</label><input name="code" id="at_code" class="form-control form-control-solid" required /></div>
+            <div class="col-md-6 mb-4 d-flex align-items-end"><input type="hidden" name="isActive" value="false" /><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="at_active" checked /><label class="form-check-label fw-semibold ms-2" for="at_active">@SR["Active"]</label></div></div>
+            <div class="col-md-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Name"]</label><input name="name" id="at_name" class="form-control form-control-solid" required /></div>
+            <div class="col-md-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" id="at_nameEn" class="form-control form-control-solid" required /></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+<!--end::Activity-type modal-->
+
+@section Scripts {
+<script>
+var atModal;
+function av(id, v) { document.getElementById(id).value = v || ''; }
+function atShow() { atModal = atModal || new bootstrap.Modal(document.getElementById('mAt')); atModal.show(); }
+function atNew() {
+    document.getElementById('atTitle').textContent = '@Localizer["New activity type"]';
+    av('at_id', '0'); av('at_code', ''); av('at_name', ''); av('at_nameEn', ''); document.getElementById('at_active').checked = true; atShow();
+}
+function atEdit(btn) {
+    var r = btn.closest('tr'); var g = function (k) { return r.getAttribute('data-' + k) || ''; };
+    document.getElementById('atTitle').textContent = '@Localizer["Edit activity type"]';
+    av('at_id', g('id')); av('at_code', g('code')); av('at_name', g('name')); av('at_nameEn', g('nameen'));
+    document.getElementById('at_active').checked = g('active') === '1'; atShow();
+}
+</script>
+}

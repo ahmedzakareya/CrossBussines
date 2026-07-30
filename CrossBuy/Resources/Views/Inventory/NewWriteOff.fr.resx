@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Damaged" xml:space="preserve">
+    <value>Endommagé</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>Expiré</value>
+  </data>
+  <data name="Lost" xml:space="preserve">
+    <value>Perdu</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>Autre</value>
+  </data>
+  <data name="New write-off / damage" xml:space="preserve">
+    <value>Nouvelle radiation / dommage</value>
+  </data>
+  <data name="Write-offs" xml:space="preserve">
+    <value>Radiations</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Post write-off" xml:space="preserve">
+    <value>Comptabiliser la radiation</value>
+  </data>
+  <data name="Select a warehouse first" xml:space="preserve">
+    <value>Sélectionnez d'abord un entrepôt</value>
+  </data>
+  <data name="No items" xml:space="preserve">
+    <value>Aucun article</value>
+  </data>
+  <data name="Current mode: 'Reason within adjustment' — this write-off is recorded as a stock adjustment." xml:space="preserve">
+    <value>Mode actuel : « Motif au sein de l'ajustement » — cette radiation est enregistrée comme un ajustement de stock.</value>
+  </data>
+  <data name="Current mode: 'Separate document' — a WOF- numbered document is created." xml:space="preserve">
+    <value>Mode actuel : « Document séparé » — un document numéroté WOF- est créé.</value>
+  </data>
+  <data name="Entry: Dr write-off expense (510103) / Cr inventory (1103). Expired batches may be written off." xml:space="preserve">
+    <value>Écriture : Dr charge de radiation (510103) / Cr stock (1103). Les lots expirés peuvent être radiés.</value>
+  </data>
+  <data name="Select to load items" xml:space="preserve">
+    <value>Sélectionnez pour charger les articles</value>
+  </data>
+  <data name="Default reason" xml:space="preserve">
+    <value>Motif par défaut</value>
+  </data>
+  <data name="Select a warehouse to load its items and balances." xml:space="preserve">
+    <value>Sélectionnez un entrepôt pour charger ses articles et soldes.</value>
+  </data>
+  <data name="Items to write off" xml:space="preserve">
+    <value>Articles à radier</value>
+  </data>
+  <data name="Scan to add item" xml:space="preserve">
+    <value>Scanner pour ajouter un article</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="Write-off qty" xml:space="preserve">
+    <value>Qté à radier</value>
+  </data>
+  <data name="Picked from (section/rack)" xml:space="preserve">
+    <value>Prélevé depuis (section/étagère)</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Motif</value>
+  </data>
+  <data name="Batch" xml:space="preserve">
+    <value>Lot</value>
+  </data>
+  <data name="Serial" xml:space="preserve">
+    <value>Numéro de série</value>
+  </data>
+  <data name="No balances in this warehouse." xml:space="preserve">
+    <value>Aucun solde dans cet entrepôt.</value>
+  </data>
+  <data name="Post this stock write-off? The quantities will be permanently removed." xml:space="preserve">
+    <value>Comptabiliser cette radiation de stock ? Les quantités seront supprimées définitivement.</value>
+  </data>
+</root>

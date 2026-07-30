@@ -1,0 +1,332 @@
+@using CrossBuy.BL
+@model ExecutiveDashboardDto
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+    var monthsEn = new[] { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    string Money(decimal v) => v.ToString("N2");
+    string Ratio(decimal v) => v.ToString("0.00");
+    string Pct(decimal v) => v.ToString("0.0") + "%";
+    var stageMap = new Dictionary<string, string> {
+        ["Prospecting"] = Localizer["Prospecting"].Value, ["Qualification"] = Localizer["Qualification"].Value,
+        ["Proposal"] = Localizer["Proposal"].Value, ["Negotiation"] = Localizer["Negotiation"].Value,
+        ["Won"] = Localizer["Won"].Value, ["Lost"] = Localizer["Lost"].Value };
+    var momUp = Model.RevenueMoMPct >= 0;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Executive Dashboard"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Cross-module overview"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <span class="badge badge-light-primary fs-7 py-2 px-3"><i class="ki-outline ki-calendar fs-6 me-1"></i>@Model.Year</span>
+                <a href="@Url.Action("Index","Accounting")" class="btn btn-sm btn-flex btn-light fw-bold">@SR["Accounting"]</a>
+                <a href="@Url.Action("CustomerAnalytics","Accounting")" class="btn btn-sm btn-flex btn-primary fw-bold"><i class="ki-outline ki-chart-pie-4 fs-3"></i>@Localizer["Customer analytics"]</a>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            <!--begin::Row 1 — revenue trend + key ratios panel-->
+            <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Revenue vs Expense"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@Localizer["Last 6 months"]</span>
+                            </h3>
+                            <div class="card-toolbar">
+                                <span class="badge badge-light-@(momUp ? "success" : "danger") fs-7 fw-bold">
+                                    <i class="ki-outline ki-arrow-@(momUp ? "up" : "down") fs-7 me-1 text-@(momUp ? "success" : "danger")"></i>@Pct(Model.RevenueMoMPct) @Localizer["MoM"]
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between pb-5 px-0">
+                            <!--begin::Nav tabs (Freight Tonnage style)-->
+                            <ul class="nav nav-pills nav-pills-custom mb-3 mx-9">
+                                <li class="nav-item mb-3 me-3 me-lg-6">
+                                    <a class="nav-link btn btn-outline btn-flex btn-active-color-primary flex-column overflow-hidden w-90px h-85px pt-5 pb-2 active" data-bs-toggle="pill" id="exec_tab_rev" href="#exec_tab_content_rev">
+                                        <div class="nav-icon mb-3"><i class="ki-outline ki-dollar fs-1 p-0"></i></div>
+                                        <span class="nav-text text-gray-800 fw-bold fs-6 lh-1">@Localizer["Revenue"]</span>
+                                        <span class="bullet-custom position-absolute bottom-0 w-100 h-4px" style="background:#13433a"></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item mb-3 me-3 me-lg-6">
+                                    <a class="nav-link btn btn-outline btn-flex btn-active-color-primary flex-column overflow-hidden w-90px h-85px pt-5 pb-2" data-bs-toggle="pill" id="exec_tab_exp" href="#exec_tab_content_exp">
+                                        <div class="nav-icon mb-3"><i class="ki-outline ki-wallet fs-1 p-0"></i></div>
+                                        <span class="nav-text text-gray-800 fw-bold fs-6 lh-1">@Localizer["Expense"]</span>
+                                        <span class="bullet-custom position-absolute bottom-0 w-100 h-4px bg-danger"></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item mb-3 me-3 me-lg-6">
+                                    <a class="nav-link btn btn-outline btn-flex btn-active-color-primary flex-column overflow-hidden w-90px h-85px pt-5 pb-2" data-bs-toggle="pill" id="exec_tab_net" href="#exec_tab_content_net">
+                                        <div class="nav-icon mb-3"><i class="ki-outline ki-chart-line-up fs-1 p-0"></i></div>
+                                        <span class="nav-text text-gray-800 fw-bold fs-6 lh-1">@Localizer["Net"]</span>
+                                        <span class="bullet-custom position-absolute bottom-0 w-100 h-4px bg-primary"></span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <!--end::Nav tabs-->
+                            <!--begin::Tab content-->
+                            <div class="tab-content ps-4 pe-6">
+                                <div class="tab-pane fade active show" id="exec_tab_content_rev"><div id="exec_rev_chart" class="min-h-auto" style="height:300px"></div></div>
+                                <div class="tab-pane fade" id="exec_tab_content_exp"><div id="exec_exp_chart" class="min-h-auto" style="height:300px"></div></div>
+                                <div class="tab-pane fade" id="exec_tab_content_net"><div id="exec_net_chart" class="min-h-auto" style="height:300px"></div></div>
+                            </div>
+                            <!--end::Tab content-->
+                        </div>
+                    </div>
+                </div>
+                <!--begin::Key ratios panel (dark teal)-->
+                <div class="col-xl-4">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#1f6253">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title"><span class="text-white fs-3 fw-bold">@Localizer["Key Ratios"]</span></h3>
+                        </div>
+                        <div class="card-body pt-2 pb-5">
+                            <div class="d-flex flex-wrap mb-3">
+                                <div class="rounded min-w-100px py-3 px-4 my-1 me-4" style="border:1px dashed rgba(255,255,255,0.3)">
+                                    <div class="text-white fs-2 fw-bold">@Pct(Model.GrossMarginPct)</div>
+                                    <div class="fw-semibold fs-8 text-white opacity-75">@Localizer["Gross margin"]</div>
+                                </div>
+                                <div class="rounded min-w-100px py-3 px-4 my-1" style="border:1px dashed rgba(255,255,255,0.3)">
+                                    <div class="text-white fs-2 fw-bold">@Pct(Model.NetMarginPct)</div>
+                                    <div class="fw-semibold fs-8 text-white opacity-75">@Localizer["Net margin"]</div>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-stack text-white opacity-75 py-2"><span class="fw-semibold fs-7">@Localizer["Working capital"]</span><span class="fw-bold fs-7">@Money(Model.WorkingCapital)</span></div>
+                            <div class="separator separator-dashed border-white opacity-10 my-1"></div>
+                            <div class="d-flex flex-stack text-white opacity-75 py-2"><span class="fw-semibold fs-7">@Localizer["Current ratio"]</span><span class="fw-bold fs-7">@Ratio(Model.CurrentRatio)</span></div>
+                            <div class="separator separator-dashed border-white opacity-10 my-1"></div>
+                            <div class="d-flex flex-stack text-white opacity-75 py-2"><span class="fw-semibold fs-7">@Localizer["Quick ratio"]</span><span class="fw-bold fs-7">@Ratio(Model.QuickRatio)</span></div>
+                            <div class="separator separator-dashed border-white opacity-10 my-1"></div>
+                            <div class="d-flex flex-stack text-white opacity-75 py-2"><span class="fw-semibold fs-7">@Localizer["DSO (days)"]</span><span class="fw-bold fs-7">@Model.Dso.ToString("0")</span></div>
+                            <div class="separator separator-dashed border-white opacity-10 my-1"></div>
+                            <div class="d-flex flex-stack text-white py-2"><span class="fw-bold fs-7">@Localizer["DPO (days)"]</span><span class="fw-bold fs-7">@Model.Dpo.ToString("0")</span></div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::ratios-->
+            </div>
+            <!--end::Row 1-->
+
+            <!--begin::Row 2 — KPI stat cards-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                @{
+                    var stats = new (string label, string value, string icon, string color, string href, string badge)[] {
+                        (Localizer["Revenue {0}", Model.Year].Value, Money(Model.Revenue), "ki-chart-line-up", "success", Url.Action("IncomeStatement","Accounting"), Localizer["Rev"].Value),
+                        (Localizer["Net Income {0}", Model.Year].Value, Money(Model.NetIncome), "ki-dollar", Model.NetIncome >= 0 ? "primary" : "warning", Url.Action("IncomeStatement","Accounting"), Model.NetIncome >= 0 ? Localizer["Profit"].Value : Localizer["Loss"].Value),
+                        (Localizer["Cash & Banks"].Value, Money(Model.Cash), "ki-wallet", "info", Url.Action("BankAccounts","Accounting"), Localizer["Liquid"].Value),
+                        (Localizer["Receivables"].Value, Money(Model.Receivables), "ki-people", "success", Url.Action("ArAging","Accounting"), Localizer["AR"].Value),
+                        (Localizer["Payables"].Value, Money(Model.Payables), "ki-handcart", "danger", Url.Action("ApAging","Accounting"), Localizer["AP"].Value),
+                        (Localizer["Inventory Value"].Value, Money(Model.InventoryValue), "ki-handcart", "warning", Url.Action("ValuationReport","Inventory"), Localizer["Stock"].Value),
+                    };
+                }
+                @foreach (var s in stats)
+                {
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <a href="@s.href" class="card h-100 text-decoration-none">
+                            <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                                <div class="d-flex flex-stack w-100 mb-4">
+                                    <div class="symbol symbol-40px"><span class="symbol-label bg-light-@s.color"><i class="ki-outline @s.icon fs-2x text-@s.color"></i></span></div>
+                                    <span class="badge badge-light-@s.color fs-8 fw-bold">@s.badge</span>
+                                </div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2">@s.value</span>
+                                <div class="m-0 mt-2"><span class="fw-semibold fs-7 text-gray-500">@s.label</span></div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+            <!--end::Row 2-->
+
+            <!--begin::Row 3 — AR/AP aging + sales pipeline-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-6">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Aging — AR vs AP"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-7">@Localizer["Receivable"] @Money(Model.ArAging.Total) · @Localizer["Payable"] @Money(Model.ApAging.Total)</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("ArAging","Accounting")" class="btn btn-sm btn-light">@SR["Details"]</a></div>
+                        </div>
+                        <div class="card-body pt-0"><div id="exec_aging_chart" style="height:300px"></div></div>
+                    </div>
+                </div>
+                <div class="col-xl-6">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Sales Pipeline"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-7">@Localizer["Open"] @Money(Model.OpenPipeline) · @Localizer["Won"] @Money(Model.WonValue)</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Pipeline","Crm")" class="btn btn-sm btn-light">Kanban</a></div>
+                        </div>
+                        <div class="card-body pt-0"><div id="exec_pipeline_chart" style="height:300px"></div></div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 3-->
+
+            <!--begin::Row 4 — top customers + operational KPIs-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Top Customers"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["By revenue"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("CustomerAnalytics","Accounting")" class="btn btn-sm btn-light">@Localizer["View all"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                <thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+                                    <th>@SR["Customer"]</th><th class="text-end">@Localizer["Revenue"]</th>
+                                    <th class="text-end">@Localizer["Margin"]</th><th class="text-center">@Localizer["Margin %"]</th><th class="text-end">@Localizer["Outstanding"]</th>
+                                </tr></thead>
+                                <tbody>
+                                    @if (Model.TopCustomers.Count == 0)
+                                    {
+                                        <tr><td colspan="5" class="text-center text-muted py-10">@Localizer["No customer data yet"]</td></tr>
+                                    }
+                                    @foreach (var c in Model.TopCustomers)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-gray-900">@c.Name</td>
+                                            <td class="text-end fw-bold text-gray-800">@Money(c.Revenue)</td>
+                                            <td class="text-end fw-semibold text-primary">@Money(c.Margin)</td>
+                                            <td class="text-center"><span class="badge badge-light-@(c.MarginPct >= 0 ? "success" : "danger")">@Pct(c.MarginPct)</span></td>
+                                            <td class="text-end fw-semibold @(c.Outstanding > 0 ? "text-danger" : "text-muted")">@Money(c.Outstanding)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+                <!--begin::Operational KPIs-->
+                <div class="col-xl-4">
+                    <div class="row g-5 g-xl-10">
+                        @{
+                            var ops = new (string label, string value, string icon, string color, string href)[] {
+                                (Localizer["Headcount"].Value, Model.Headcount.ToString("N0"), "ki-people", "primary", Url.Action("EmployeesList","Admin")),
+                                (Localizer["Open Leads"].Value, Model.OpenLeads.ToString("N0"), "ki-abstract-26", "info", Url.Action("Leads","Crm")),
+                                (Localizer["Won Value"].Value, Money(Model.WonValue), "ki-medal-star", "success", Url.Action("Opportunities","Crm")),
+                                (Localizer["Fixed Assets NBV"].Value, Money(Model.AssetNbv), "ki-delivery-3", "dark", Url.Action("FixedAssets","Accounting")),
+                            };
+                        }
+                        @foreach (var o in ops)
+                        {
+                            <div class="col-6">
+                                <a href="@o.href" class="card h-100 text-decoration-none">
+                                    <div class="card-body d-flex flex-column p-5">
+                                        <div class="symbol symbol-40px mb-3"><span class="symbol-label bg-light-@o.color"><i class="ki-outline @o.icon fs-2x text-@o.color"></i></span></div>
+                                        <span class="fw-bold fs-2 text-gray-900 lh-1">@o.value</span>
+                                        <span class="fw-semibold fs-8 text-gray-500 mt-2">@o.label</span>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <!--end::operational-->
+            </div>
+            <!--end::Row 4-->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var isAr = @(isAr ? "true" : "false");
+            if (!window.ApexCharts) return;
+            var egp = function (v) { return v.toLocaleString() + ' ' + '@Localizer["EGP"]'; };
+
+            var months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => (isAr ? monthsAr : monthsEn)[m.Month] + " " + m.Year)));
+            var revenue = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => m.Revenue)));
+            var expense = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => m.Expense)));
+
+            var netTrend = revenue.map(function (v, i) { return v - (expense[i] || 0); });
+            function buildArea(el, name, cats, data, color, fmt) {
+                return new ApexCharts(document.querySelector(el), {
+                    chart: { type: 'area', height: 300, fontFamily: 'inherit', toolbar: { show: false } },
+                    series: [{ name: name, data: data }],
+                    colors: [color],
+                    xaxis: { categories: cats, labels: { style: { colors: '#99A1B7' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+                    yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return v.toLocaleString(); } } },
+                    stroke: { curve: 'smooth', width: 3, colors: [color] },
+                    markers: { size: 4, colors: ['#fff'], strokeColors: color, strokeWidth: 2 },
+                    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 90, 100] } },
+                    dataLabels: { enabled: false }, legend: { show: false },
+                    grid: { borderColor: '#E4E6EF', strokeDashArray: 4 },
+                    tooltip: { y: { formatter: fmt || egp } }
+                });
+            }
+            function relayout(ids) { ids.forEach(function (id) { var t = document.getElementById(id); if (t) t.addEventListener('shown.bs.tab', function () { window.dispatchEvent(new Event('resize')); }); }); }
+
+            // Row 1 — Revenue / Expense / Net
+            buildArea('#exec_rev_chart', '@Localizer["Revenue"]', months, revenue, '#13433a').render();
+            buildArea('#exec_exp_chart', '@Localizer["Expense"]', months, expense, '#f1416c').render();
+            buildArea('#exec_net_chart', '@Localizer["Net"]', months, netTrend, '#0d9edc').render();
+            relayout(['exec_tab_exp', 'exec_tab_net', 'exec_tab_rev']);
+
+            // Sales-Statistics style combo: gradient columns + cumulative % line (dual axis)
+            function buildPareto(el, valueName, cats, data, valFmt) {
+                var total = data.reduce(function (a, b) { return a + (b || 0); }, 0) || 1;
+                var run = 0;
+                var cum = data.map(function (v) { run += (v || 0); return Math.round(run / total * 1000) / 10; });
+                return new ApexCharts(document.querySelector(el), {
+                    chart: { height: 300, type: 'line', fontFamily: 'inherit', toolbar: { show: false }, animations: { enabled: false } },
+                    series: [
+                        { name: valueName, type: 'column', data: data },
+                        { name: '@Localizer["Cumulative pct"]', type: 'line', data: cum }
+                    ],
+                    colors: ['#13433a', '#1f6253'],
+                    fill: { type: 'solid', opacity: 1 },
+                    plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+                    stroke: { width: [0, 3], curve: 'smooth' },
+                    markers: { size: [0, 5], colors: ['#fff'], strokeColors: '#1f6253', strokeWidth: 2 },
+                    dataLabels: { enabled: false },
+                    xaxis: { categories: cats, labels: { style: { colors: '#99A1B7' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+                    yaxis: [
+                        { labels: { style: { colors: '#99A1B7' }, formatter: valFmt } },
+                        { opposite: true, min: 0, max: 100, tickAmount: 5, labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return Math.round(v) + '%'; } } }
+                    ],
+                    legend: { show: false },
+                    grid: { borderColor: '#E4E6EF', strokeDashArray: 4 },
+                    tooltip: { shared: true, intersect: false }
+                });
+            }
+
+            // Aging — total debt (AR+AP) per bucket
+            var agingCats = isAr ? ['0-30', '31-60', '61-90', '+90'] : ['0-30', '31-60', '61-90', '90+'];
+            var arData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new[] { Model.ArAging.Current, Model.ArAging.D30, Model.ArAging.D60, Model.ArAging.D90 }));
+            var apData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new[] { Model.ApAging.Current, Model.ApAging.D30, Model.ApAging.D60, Model.ApAging.D90 }));
+            var agingTotal = arData.map(function (v, i) { return (v || 0) + (apData[i] || 0); });
+            buildPareto('#exec_aging_chart', '@Localizer["Aging — AR vs AP"]', agingCats, agingTotal, function (v) { return v.toLocaleString(); }).render();
+
+            // Pipeline by stage — value + cumulative %
+            var pipeLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pipeline.Select(p => stageMap.ContainsKey(p.Stage) ? stageMap[p.Stage] : p.Stage)));
+            var pipeVal = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pipeline.Select(p => p.Amount)));
+            buildPareto('#exec_pipeline_chart', '@Localizer["Value"]', pipeLabels, pipeVal, function (v) { return v.toLocaleString(); }).render();
+        })();
+    </script>
+}

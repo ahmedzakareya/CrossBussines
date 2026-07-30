@@ -1,0 +1,659 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Pos
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutPos.cshtml";
+    // derive from the SAME culture the localizer uses for text, so direction and text never diverge
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    // language switch cycles en -> ar -> fr -> en; show the NEXT language
+    var _curLang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var _nextLang = _curLang == "en" ? "ar" : _curLang == "ar" ? "fr" : "en";
+    var _nextLangCode = _curLang == "en" ? "ع" : _curLang == "ar" ? "FR" : "EN";
+    var _nextLangName = _curLang == "en" ? "العربية" : _curLang == "ar" ? "Français" : "English";
+    var ctx = ViewBag.Ctx as PosAppController.PosCtx;
+    var menu = ViewBag.Menu as List<PosQuickMenuGroupDto> ?? new();
+    var images = ViewBag.Images as Dictionary<int, string?> ?? new();
+    var setting = ViewBag.PosSetting as BranchPosSetting;
+    var openOrder = ViewBag.OpenOrder as PosOrderDto;
+    bool canSell = ViewBag.CanSell == true;
+    var svcPct = setting?.ServiceChargePct ?? 0m;
+    string CUR = Localizer["EGP"].Value;
+    ViewData["Title"] = Localizer["Cashier"].Value;
+    // pick the localized value: Arabic uses Name; English uses NameEn but falls back to Name when empty
+    Func<string, string?, string> L = (ar, en) => isAr ? ar : (string.IsNullOrWhiteSpace(en) ? ar : en!);
+    var empName = L(ctx?.EmployeeName ?? "", ctx?.EmployeeNameEn);
+    var initials = string.Join("", empName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => w[0])).ToUpper();
+    if (string.IsNullOrEmpty(initials)) initials = "?";
+    var empPhoto = ctx?.EmployeePhoto;
+    string empPhotoUrl = string.IsNullOrWhiteSpace(empPhoto) ? "" : (empPhoto.StartsWith("http") ? empPhoto : Url.Content("~" + empPhoto.Replace("\\", "/")));
+    // flatten quick-menu items (single grid + category filter); DisplayName follows the language, Search carries both
+    var allItems = menu.SelectMany(g => g.Items.Select(i => new { i.ItemId, DisplayName = L(i.Name, i.NameEn), Search = (i.Name + " " + (i.NameEn ?? "")).Trim(), i.Code, i.QuickCode, i.Price, Gid = g.GroupId?.ToString() ?? "none" })).ToList();
+    var catIcons = new[] { "ki-burger-menu-2", "ki-cup", "ki-scooter", "ki-basket", "ki-coffee", "ki-gift", "ki-tag", "ki-dish" };
+    var ci = 0;
+}
+
+@section Styles {
+    <link href="~/Backend-assets/css/pos-cashier.css" rel="stylesheet" asp-append-version="true" />
+}
+
+<div class="posx" dir="@(isAr ? "rtl" : "ltr")">
+
+    <!-- ============ TOP HEADER ============ -->
+    <div class="posx-header">
+        <div class="posx-brand"><span class="logo"><i class="ki-outline ki-shop fs-2 text-white"></i></span>@ctx?.BranchName</div>
+        <div class="posx-search"><i class="ki-outline ki-magnifier fs-4"></i><input type="text" placeholder="@Localizer["Search item..."]" id="hdrSearch" /></div>
+        <div class="posx-hbtn" title="@Localizer["Takeaway"]"><i class="ki-outline ki-handcart fs-4"></i>@Localizer["Takeaway"]</div>
+        <div style="flex:1"></div>
+        <div class="posx-clock"><b id="posClock" dir="ltr">--:--:--</b><span id="posDate">—</span></div>
+        <button class="posx-icon-btn" id="hdrNotif" title="@Localizer["Notifications"]"><i class="ki-outline ki-notification-status fs-2"></i></button>
+        <button class="posx-icon-btn" id="hdrPrint" title="@Localizer["Print"]"><i class="ki-outline ki-printer fs-2"></i></button>
+        <a class="posx-icon-btn" href="/Account/SetLanguage?culture=@_nextLang&returnUrl=/pos/terminal" title="@Localizer["Language"]" style="font-weight:800;font-size:15px">@_nextLangCode</a>
+        <a href="/pos/start" class="posx-icon-btn" title="@Localizer["Switch terminal"]"><i class="ki-outline ki-arrows-circle fs-2"></i></a>
+        <a href="#" class="posx-conn is-online" id="cbOffRefresh" data-busy="@(isAr ? "تحديث..." : "Updating...")" title="@(isAr ? "حالة الاتصال — تحديث القائمة للعمل بلا نت" : "Connection — refresh menu for offline")">
+            <span id="cbOffDot" class="dot"></span>
+            <span id="cbOffTxt" class="txt" data-on="@(isAr ? "متصل" : "Online")" data-off="@(isAr ? "بلا نت" : "Offline")">@(isAr ? "متصل" : "Online")</span>
+        </a>
+        <div class="posx-user" id="posxUser">
+            @if (!string.IsNullOrEmpty(empPhotoUrl))
+            {
+                <img class="av" src="@empPhotoUrl" alt="@empName" />
+            }
+            else
+            {
+                <span class="av">@initials</span>
+            }
+            <div class="nm"><b>@empName</b><span>@ctx?.TerminalCode · @Localizer["Shift"] #@ctx?.ShiftId</span></div>
+            <i class="ki-outline ki-down fs-4"></i>
+            <div class="posx-usermenu" id="posxUserMenu">
+                @if ((bool?)ViewBag.IsManager == true)
+                {
+                    <a href="#" id="btnRecent"><i class="ki-outline ki-time fs-4"></i>@Localizer["Recent sales"]</a>
+                }
+                @if ((bool?)ViewBag.CanSell == true)
+                {
+                    <a href="#" id="btnCloseShift"><i class="ki-outline ki-lock-2 fs-4"></i>@Localizer["Close shift (Z)"]</a>
+                }
+                <a href="/pos/start"><i class="ki-outline ki-arrows-circle fs-4"></i>@Localizer["Switch terminal"]</a>
+                <a href="/Account/SetLanguage?culture=@_nextLang&returnUrl=/pos/terminal"><i class="ki-outline ki-flag fs-4"></i>@_nextLangName</a>
+                <a href="/pos/logout" class="danger"><i class="ki-outline ki-exit-right fs-4"></i>@Localizer["Sign Out"]</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ BODY: rails + 3 columns ============ -->
+    <div class="posx-body">
+
+        <!-- left icon rail -->
+        <div class="posx-rail">
+            <button class="ri active"><i class="ki-outline ki-basket"></i>@Localizer["Orders"]</button>
+            <button class="ri" id="railTables"><i class="ki-outline ki-geolocation"></i>@Localizer["Tables"]</button>
+            <button class="ri" id="railCustomers"><i class="ki-outline ki-profile-user"></i>@Localizer["Customers"]</button>
+            <a class="ri grow" href="/pos/logout"><i class="ki-outline ki-exit-right"></i>@Localizer["Exit"]</a>
+        </div>
+
+        <!-- COLUMN 1 — current invoices -->
+        <div class="posx-col posx-inv-col">
+            <div class="posx-col-head">
+                <div class="posx-col-title">@Localizer["Current invoices"]</div>
+                <div class="posx-tabs" id="invTabs">
+                    <button class="posx-tab active" data-f="all">@Localizer["All"] <span class="cnt" id="cntAll">0</span></button>
+                    <button class="posx-tab" data-f="dinein">@Localizer["Dine-in"] <span class="cnt" id="cntDine">0</span></button>
+                    <button class="posx-tab" data-f="held">@Localizer["Held"] <span class="cnt" id="cntHeld2">0</span></button>
+                    <button class="posx-tab" data-f="takeaway">@Localizer["Takeaway"] <span class="cnt" id="cntTake">0</span></button>
+                </div>
+            </div>
+            <div class="posx-col-scroll">
+                <div id="invList"></div>
+                <div class="posx-empty d-none" id="invEmpty"><i class="ki-outline ki-file-deleted"></i>@Localizer["No open invoices"]</div>
+            </div>
+        </div>
+
+        <!-- COLUMN 2 — active order -->
+        <div class="posx-col posx-order-col m-active">
+            <div class="posx-order-head">
+                <span class="posx-col-title" id="ordTitle">@Localizer["Current Order"]</span>
+                <span class="posx-chip green d-none" id="tableBadge"></span>
+                <div style="flex:1"></div>
+                <div class="posx-seg" role="group">
+                    <button type="button" class="otype active" data-type="Takeaway"><i class="ki-outline ki-handcart"></i><span>@Localizer["Takeaway"]</span></button>
+                    <button type="button" class="otype" data-type="Dine-in"><i class="ki-outline ki-home-2"></i><span>@Localizer["Dine-in"]</span></button>
+                </div>
+            </div>
+
+            <div class="posx-stats">
+                <div class="posx-stat"><span>@Localizer["Total"]</span><b id="statTotal">0.00</b></div>
+                <div class="posx-stat"><span>@Localizer["Items"]</span><b id="statCount">0</b></div>
+                <div class="posx-stat posx-guests"><span>@(isAr ? "عدد الأشخاص" : "Guests")</span><div class="gwrap"><button type="button" id="guestMinus">−</button><b id="statGuests">1</b><button type="button" id="guestPlus">+</button></div></div>
+                <div class="posx-stat"><span>@Localizer["Customer"]</span><b id="custName" style="font-size:13px">@Localizer["Walk-in"]</b></div>
+            </div>
+
+            <div class="posx-order-acts">
+                <button type="button" class="posx-abtn d-none" id="btnPickTable"><i class="ki-outline ki-geolocation fs-5"></i>@Localizer["Table"]</button>
+                <button type="button" class="posx-abtn" id="btnCustomer"><i class="ki-outline ki-user-edit fs-5"></i>@Localizer["Customer"]</button>
+                <button type="button" class="posx-abtn d-none" id="btnMoveTable"><i class="ki-outline ki-arrow-two-diagonals fs-5"></i>@Localizer["Move"]</button>
+                <button type="button" class="posx-abtn d-none" id="btnMergeTable"><i class="ki-outline ki-arrows-loop fs-5"></i>@Localizer["Merge"]</button>
+                <button type="button" class="posx-abtn d-none" id="btnKitchen"><i class="ki-outline ki-tablet-text fs-5"></i>@Localizer["Kitchen"]</button>
+            </div>
+
+            <div class="posx-lines" id="ordLines"></div>
+            <div class="posx-empty" id="ordEmpty"><i class="ki-outline ki-basket"></i>@Localizer["Tap an item to add it"]</div>
+
+            <div class="posx-totals">
+                <div class="row"><span>@Localizer["Subtotal"]</span><span id="ordSub">0.00</span></div>
+                <div class="row"><span>@Localizer["Service"]</span><span id="ordSvc">0.00</span></div>
+                <div class="row"><span>@Localizer["Tax"]</span><span id="ordTax">0.00</span></div>
+                <div class="grand"><span>@Localizer["Total"]</span><span class="v"><span id="ordGrand">0.00</span> <small>@CUR</small></span></div>
+            </div>
+            <div class="posx-pay">
+                @if (canSell)
+                {
+                    <button type="button" class="pay-main" id="btnPay" disabled><i class="ki-outline ki-check-circle fs-3"></i>@Localizer["Pay now"]</button>
+                }
+                <button type="button" class="pay-2" id="btnHold"><i class="ki-outline ki-time fs-4"></i>@Localizer["Hold"]</button>
+                <button type="button" class="pay-3" id="btnNew"><i class="ki-outline ki-plus fs-4"></i>@Localizer["New"]</button>
+            </div>
+        </div>
+
+        <!-- COLUMN 3 — menu -->
+        <div class="posx-col posx-menu-col">
+            <div class="posx-menu-head">
+                <span class="posx-col-title">@Localizer["Menu"]</span>
+                <div style="flex:1"></div>
+                <div class="posx-search" style="max-width:200px"><i class="ki-outline ki-magnifier fs-5"></i><input type="text" id="itemSearch" placeholder="@Localizer["Search..."]" /></div>
+            </div>
+            @if (!allItems.Any())
+            {
+                <div class="posx-empty"><i class="ki-outline ki-basket"></i>@Localizer["No quick items for this branch."]</div>
+            }
+            else
+            {
+                <div class="posx-cattop">
+                    <div class="posx-cats" id="posCats">
+                        <button class="posx-cat allbtn active" data-cat="all"><i class="ki-outline ki-element-11"></i>@(isAr ? "كل الأصناف" : "All items")</button>
+                        @foreach (var g in menu)
+                        {
+                            <button class="posx-cat" data-cat="@(g.GroupId?.ToString() ?? "none")"><i class="ki-outline @catIcons[ci++ % catIcons.Length]"></i>@L(g.GroupName, g.GroupNameEn)</button>
+                        }
+                    </div>
+                    <div class="posx-cat-tools">
+                        <button type="button" class="pctool" id="pcTop"><span class="fire">🔥</span>@(isAr ? "الأكثر طلباً" : "Most ordered")</button>
+                        <button type="button" class="pctool" id="pcFav"><i class="ki-outline ki-star"></i>@(isAr ? "المفضلة" : "Favorites")</button>
+                        <button type="button" class="pctool ic" id="pcFilter" title="@Localizer["Search item..."]"><i class="ki-outline ki-filter"></i></button>
+                    </div>
+                </div>
+                <div class="posx-items" id="posItems">
+                    @foreach (var it in allItems)
+                    {
+                        images.TryGetValue(it.ItemId, out var img);
+                        <div class="posx-item pos-item" data-id="@it.ItemId" data-cat="@it.Gid" data-name="@it.Search">
+                            <div class="pi-img">
+                                @if (!string.IsNullOrEmpty(img))
+                                {
+                                    <img src="@img" alt="" />
+                                }
+                                else
+                                {
+                                    <span class="ph"><i class="ki-outline ki-cup"></i></span>
+                                }
+                            </div>
+                            <div class="pi-body">
+                                <div class="nm">@it.DisplayName</div>
+                                <div class="pi-row">
+                                    <span class="pr">@(it.Price?.ToString("0.##") ?? "—")<small> @CUR</small></span>
+                                    <span class="pi-add"><i class="ki-outline ki-plus"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- right quick-action rail -->
+        <div class="posx-rail posx-rail-right">
+            <button class="ri new" id="railNew"><i class="ki-outline ki-plus-square"></i>@Localizer["New"]</button>
+            <button class="ri" id="railHeld"><i class="ki-outline ki-notepad"></i>@Localizer["Invoices"]</button>
+            <button class="ri" id="railCust2"><i class="ki-outline ki-profile-user"></i>@Localizer["Customers"]</button>
+            <button class="ri" id="railNote"><i class="ki-outline ki-notepad-edit"></i>@Localizer["Notes"]</button>
+        </div>
+    </div>
+
+    <!-- ============ MOBILE TAB BAR (shown only on small screens) ============ -->
+    <div class="posx-mtabs" id="posxMtabs">
+        <button class="mtab" data-col="posx-menu-col"><i class="ki-outline ki-element-11"></i>@Localizer["Menu"]</button>
+        <button class="mtab active" data-col="posx-order-col"><i class="ki-outline ki-basket"></i>@Localizer["Current Order"]</button>
+        <button class="mtab" data-col="posx-inv-col"><i class="ki-outline ki-notepad"></i>@Localizer["Current invoices"]</button>
+    </div>
+
+    <!-- ============ BOTTOM BAR (cashier-allowed only) ============ -->
+    <div class="posx-foot">
+        @if (canSell)
+        {
+            <button class="posx-fbtn" id="footDrawer"><i class="ki-outline ki-cheque fs-4"></i>@Localizer["Open drawer"]</button>
+        }
+        <div class="spacer"></div>
+        <button class="posx-fbtn red" id="footCancel"><i class="ki-outline ki-trash fs-4"></i>@Localizer["Cancel"]</button>
+        @if (canSell)
+        {
+            <button class="posx-fbtn green" id="footPay"><i class="ki-outline ki-check-circle fs-3"></i>@Localizer["Pay now"]</button>
+        }
+    </div>
+</div>
+
+<!--begin::Floor board — two-panel (order list + map) matching the reference-->
+<div class="modal fade" id="tablesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:98vw;width:98vw;margin:.5rem auto">
+        <div class="modal-content rounded-4 overflow-hidden border-0" style="height:95vh;background:#f6f7f9">
+            <div class="tbv d-flex" style="height:100%">
+
+                <!-- LEFT: order list -->
+                <div class="tbv-list d-flex flex-column">
+                    <div class="tbv-tabs d-flex">
+                        <button type="button" class="tbv-tab active" data-otab="open">@(isAr ? "الطلبات المفتوحة" : "Open orders") <span class="tbv-badge" id="tbvOpenCnt">0</span></button>
+                        <button type="button" class="tbv-tab" data-otab="held"><i class="ki-outline ki-time fs-6"></i> @(isAr ? "الطلبات المعلّقة" : "Held orders")</button>
+                    </div>
+                    <div id="tbvOrders" class="tbv-orders"></div>
+                    <div class="p-3" style="border-top:1px solid #eef1f5">
+                        <button type="button" id="tbvNew" class="tbv-newbtn"><i class="ki-outline ki-plus fs-4"></i> @(isAr ? "طلب جديد" : "New order")</button>
+                    </div>
+                </div>
+
+                <!-- RIGHT: map -->
+                <div class="tbv-map d-flex flex-column">
+                    <div class="tbv-maphead d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="hallSel" class="form-select form-select-sm fw-bold w-auto" style="min-width:150px"></select>
+                            <div class="tbv-viewtog">
+                                <button type="button" id="tbvViewList" class="tvbtn"><i class="ki-outline ki-row-horizontal fs-6"></i> @(isAr ? "قائمة" : "List")</button>
+                                <button type="button" id="tbvViewMap" class="tvbtn active"><i class="ki-outline ki-element-11 fs-6"></i> @(isAr ? "خريطة" : "Map")</button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="fw-bolder fs-4 text-gray-800" id="tbvHallName">@(isAr ? "الصالة الرئيسية" : "Main Hall")</div>
+                            <button type="button" class="btn btn-sm btn-icon btn-light-danger" data-bs-dismiss="modal" title="@Localizer["Close"]"><i class="ki-outline ki-cross fs-2"></i></button>
+                        </div>
+                    </div>
+                    <div id="boardWrap" class="tbv-board">
+                        <span class="tbv-plant" style="inset-inline-start:14px;top:12px">🪴</span>
+                        <span class="tbv-plant" style="inset-inline-end:16px;top:14px">🌿</span>
+                        <span class="tbv-plant" style="inset-inline-start:18px;bottom:16px">🌿</span>
+                        <span class="tbv-plant" style="inset-inline-end:14px;bottom:14px">🪴</span>
+                        <div id="floorZoom"><div id="floorPlan" class="position-relative mx-auto"></div></div>
+                        <div id="tablesEmpty" class="text-center text-gray-500 py-20 d-none"><i class="ki-outline ki-information-5 fs-3x d-block mb-2"></i>@Localizer["No tables in this hall"]</div>
+                        <div class="tbv-zoom">
+                            <button type="button" id="tbvZin" title="@(isAr ? "تكبير" : "Zoom in")"><i class="ki-outline ki-plus fs-4"></i></button>
+                            <button type="button" id="tbvZout" title="@(isAr ? "تصغير" : "Zoom out")"><i class="ki-outline ki-minus fs-4"></i></button>
+                            <button type="button" id="tbvZfit" title="@(isAr ? "ملاءمة" : "Fit")"><i class="ki-outline ki-maximize fs-5"></i></button>
+                        </div>
+                    </div>
+                    <div class="tbv-legend d-flex flex-wrap align-items-center justify-content-center gap-2">
+                        <span class="d-inline-flex align-items-center rounded-pill px-3 py-1 fs-8 fw-semibold text-gray-700" style="background:#f4f6f8"><span class="bullet bullet-dot me-2" style="background:#16a34a"></span>@Localizer["Available"]</span>
+                        <span class="d-inline-flex align-items-center rounded-pill px-3 py-1 fs-8 fw-semibold text-gray-700" style="background:#f4f6f8"><span class="bullet bullet-dot me-2" style="background:#2f6fed"></span>@Localizer["Occupied"]</span>
+                        <span class="d-inline-flex align-items-center rounded-pill px-3 py-1 fs-8 fw-semibold text-gray-700" style="background:#f4f6f8"><span class="bullet bullet-dot me-2" style="background:#f59e0b"></span>@(isAr ? "معلّقة" : "On hold")</span>
+                        <span class="d-inline-flex align-items-center rounded-pill px-3 py-1 fs-8 fw-semibold text-gray-700" style="background:#f4f6f8"><span class="bullet bullet-dot me-2" style="background:#8b5cf6"></span>@(isAr ? "بانتظار دفع" : "Awaiting payment")</span>
+                        <span class="d-inline-flex align-items-center rounded-pill px-3 py-1 fs-8 fw-semibold text-gray-700" style="background:#f4f6f8"><span class="bullet bullet-dot me-2" style="background:#e5484d"></span>@Localizer["Reserved"]</span>
+                        <span class="d-inline-flex align-items-center rounded-pill px-3 py-1 fs-8 fw-semibold text-gray-700" style="background:#f4f6f8"><span class="bullet bullet-dot me-2" style="background:#9aa4b2"></span>@Localizer["Cleaning"]</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Floor board-->
+
+<!--begin::Table status menu-->
+<div class="modal fade" id="tblStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-450px">
+        <div class="modal-content">
+            <div class="modal-header bg-primary py-3"><h3 class="text-white mb-0" id="tblStatusTitle">@Localizer["Table"]</h3>
+                <div class="btn btn-icon btn-sm btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1 text-white"></i></div></div>
+            <div class="modal-body">
+                <button type="button" class="btn btn-light-primary w-100 mb-3 fs-4 py-3" id="tblSelectBtn"><i class="ki-outline ki-check-circle fs-2"></i>@Localizer["Use this table for the order"]</button>
+                <div class="separator my-4"></div>
+                <div class="fw-semibold text-muted mb-2">@Localizer["Set table status"]</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-light-primary setstat" data-s="Available">@Localizer["Available"]</button>
+                    <button type="button" class="btn btn-sm btn-light-warning setstat" data-s="Reserved">@Localizer["Reserved"]</button>
+                    <button type="button" class="btn btn-sm setstat" style="background:#a16207;color:#fff" data-s="Cleaning">@Localizer["Cleaning"]</button>
+                    <button type="button" class="btn btn-sm btn-light-dark setstat" data-s="Closed">@Localizer["Closed"]</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Table status menu-->
+
+<!--begin::Open invoices modal-->
+<div class="modal fade" id="heldModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-550px">
+        <div class="modal-content">
+            <div class="modal-header bg-primary py-3"><h3 class="text-white mb-0"><i class="ki-outline ki-notepad fs-2 text-white me-2"></i>@Localizer["Open invoices"]</h3>
+                <div class="btn btn-icon btn-sm btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1 text-white"></i></div></div>
+            <div class="modal-body">
+                <div id="heldList" class="d-flex flex-column gap-3"></div>
+                <div id="heldEmpty" class="text-center text-gray-500 py-10 d-none"><i class="ki-outline ki-information-5 fs-3x d-block mb-2"></i>@Localizer["No open invoices"]</div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Open invoices modal-->
+
+<!--begin::Customer modal-->
+<div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-550px">
+        <div class="modal-content">
+            <div class="modal-header bg-primary py-3"><h3 class="text-white mb-0"><i class="ki-outline ki-profile-user fs-2 text-white me-2"></i>@Localizer["Customer"]</h3>
+                <div class="btn btn-icon btn-sm btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1 text-white"></i></div></div>
+            <div class="modal-body">
+                <div class="position-relative mb-3">
+                    <i class="ki-outline ki-magnifier fs-3 text-gray-500 position-absolute top-50 translate-middle-y ms-4"></i>
+                    <input id="custSearch" type="text" class="form-control form-control-solid ps-12" placeholder="@Localizer["Search by name or phone"]" autocomplete="off" />
+                </div>
+                <div id="custResults" class="d-flex flex-column gap-2 mb-2" style="max-height:240px;overflow:auto"></div>
+                <div class="separator my-4"></div>
+                <div class="fw-semibold text-muted mb-3">@Localizer["Add new customer"]</div>
+                <div class="row g-2">
+                    <div class="col-7"><input id="ncName" class="form-control form-control-solid" placeholder="@Localizer["Customer name"]" /></div>
+                    <div class="col-5"><input id="ncPhone" class="form-control form-control-solid" placeholder="@Localizer["Phone (optional)"]" /></div>
+                </div>
+                <button type="button" id="ncSave" class="btn btn-light-primary w-100 mt-3"><i class="ki-outline ki-plus fs-5"></i>@Localizer["Add & select"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Customer modal-->
+
+<!-- Per-table floating action menu -->
+<div id="tblMenu" style="display:none;position:fixed;z-index:3000;width:250px;max-height:82vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 14px 44px rgba(0,0,0,.30);border:1px solid #e4e6ef"></div>
+
+<!--begin::Payment modal (cash keypad + change)-->
+<div class="modal fade" id="payModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-600px">
+        <div class="modal-content">
+            <div class="modal-header bg-primary py-4">
+                <h2 class="text-white mb-0"><i class="ki-outline ki-dollar fs-2 text-white me-2"></i>@Localizer["Payment"]</h2>
+                <div class="btn btn-icon btn-sm btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1 text-white"></i></div>
+            </div>
+            <div class="modal-body pt-6">
+                <div class="d-flex flex-wrap gap-3 mb-4" id="payMethods"></div>
+                <button type="button" class="btn btn-sm btn-light-primary w-100 mb-4 fw-bold" id="btnTenders"><i class="ki-outline ki-arrows-loop fs-4 me-1"></i>@(isAr ? "دفع بوسائل متعددة (تقسيم المبلغ)" : "Split across payment methods")</button>
+                <div id="tendersPanel" class="d-none border border-dashed border-gray-300 rounded-3 p-4 mb-4">
+                    <div id="tenderRows" class="d-flex flex-column gap-2 mb-3"></div>
+                    <button type="button" class="btn btn-sm btn-light w-100 mb-3" id="btnAddTender"><i class="ki-outline ki-plus fs-4 me-1"></i>@(isAr ? "أضف وسيلة" : "Add tender")</button>
+                    <div class="d-flex justify-content-between fw-bold"><span>@(isAr ? "المتبقّي" : "Remaining")</span><span id="tenderRemain" class="text-danger">0.00</span></div>
+                </div>
+                <div class="row g-4 mb-5">
+                    <div class="col-4"><div class="bg-light-primary rounded-3 text-center py-4 h-100"><div class="text-muted fw-semibold fs-8">@Localizer["Total"]</div><div class="fw-bold text-primary fs-2x" id="payTotal">0.00</div></div></div>
+                    <div class="col-4"><div class="bg-light rounded-3 text-center py-4 h-100"><div class="text-muted fw-semibold fs-8">@Localizer["Paid"]</div><div class="fw-bold text-gray-900 fs-2x" id="payPaid">0.00</div></div></div>
+                    <div class="col-4"><div class="bg-light-success rounded-3 text-center py-4 h-100"><div class="text-muted fw-semibold fs-8">@Localizer["Change"]</div><div class="fw-bold text-primary fs-2x" id="payChange">0.00</div></div></div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between bg-light-warning rounded-3 px-4 py-2 mb-3" id="tipRow">
+                    <span class="fw-semibold text-gray-800 fs-7"><i class="ki-outline ki-heart fs-5 me-1"></i>@(isAr ? "إكرامية (اختياري)" : "Tip (optional)")</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="number" step="0.01" min="0" id="tipAmount" class="form-control form-control-sm form-control-solid text-end" style="max-width:110px" placeholder="0.00">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <input type="radio" class="btn-check" name="tipMethod" id="tipCash" value="Cash" checked><label class="btn btn-sm btn-light" for="tipCash">@Localizer["Cash"]</label>
+                            <input type="radio" class="btn-check" name="tipMethod" id="tipCard" value="Card"><label class="btn btn-sm btn-light" for="tipCard">@(isAr ? "بطاقة" : "Card")</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between bg-light rounded-3 px-4 py-2 mb-3" id="splitRow">
+                    <span class="fw-semibold text-gray-700 fs-7"><i class="ki-outline ki-people fs-5 me-1"></i>@Localizer["Split equally"]</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-icon btn-sm btn-light" id="splitMinus"><i class="ki-outline ki-minus fs-3"></i></button>
+                        <span class="fw-bold fs-4 text-gray-900" id="splitParts" style="min-width:26px;text-align:center">1</span>
+                        <button type="button" class="btn btn-icon btn-sm btn-light" id="splitPlus"><i class="ki-outline ki-plus fs-3"></i></button>
+                        <span class="fs-8 fw-semibold text-primary ms-2" id="splitPer"></span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-light-primary w-100 mb-4 fw-bold" id="btnSplitItems"><i class="ki-outline ki-questionnaire-tablet fs-4 me-1"></i>@(isAr ? "تقسيم بالأصناف (فاتورة لكل شخص)" : "Split by item (a bill per person)")</button>
+                <div id="cashPanel">
+                    <div class="d-flex flex-wrap gap-2 mb-4" id="payQuick"></div>
+                    <div class="row g-2" id="payPad">
+                        @foreach (var k in new[] { "7", "8", "9", "4", "5", "6", "1", "2", "3", "00", "0", "back" })
+                        {
+                            if (k == "back")
+                            {
+                                <div class="col-4"><button type="button" class="btn btn-light-danger w-100 fs-2 py-4 padkey" data-k="back"><i class="ki-outline ki-arrow-left fs-1"></i></button></div>
+                            }
+                            else
+                            {
+                                <div class="col-4"><button type="button" class="btn btn-light w-100 fs-2 py-4 padkey" data-k="@k">@k</button></div>
+                            }
+                        }
+                        <div class="col-12"><button type="button" class="btn btn-light-warning w-100 fw-bold py-3 padkey" data-k="clear">@Localizer["Clear"]</button></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="payConfirm" class="btn btn-primary fs-2 w-100 py-4" disabled><i class="ki-outline ki-check-circle fs-1"></i>@Localizer["Confirm & Print"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Payment modal-->
+
+<!--begin::Split-by-item modal (POS-4d-3b UI) — assign each line's units to N bills, then pay N invoices-->
+<div class="modal fade" id="splitItemsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary py-4">
+                <h2 class="text-white mb-0"><i class="ki-outline ki-questionnaire-tablet fs-2 text-white me-2"></i>@(isAr ? "تقسيم الفاتورة بالأصناف" : "Split by item")</h2>
+                <div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1 text-white"></i></div>
+            </div>
+            <div class="modal-body pt-5">
+                <div class="d-flex align-items-center justify-content-between bg-light rounded-3 px-4 py-2 mb-4">
+                    <span class="fw-semibold text-gray-700 fs-7"><i class="ki-outline ki-people fs-5 me-1"></i>@(isAr ? "عدد الفواتير" : "Number of bills")</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-icon btn-sm btn-light" id="siMinus"><i class="ki-outline ki-minus fs-3"></i></button>
+                        <span class="fw-bold fs-3 text-gray-900" id="siBills" style="min-width:26px;text-align:center">2</span>
+                        <button type="button" class="btn btn-icon btn-sm btn-light" id="siPlus"><i class="ki-outline ki-plus fs-3"></i></button>
+                    </div>
+                </div>
+                <div class="text-muted fs-8 mb-2">@(isAr ? "وزّع كمية كل صنف على الفواتير (لازم كل صنف يتوزّع بالكامل، وكل فاتورة فيها صنف على الأقل)." : "Distribute each item's units across the bills (every item fully allocated, every bill non-empty).")</div>
+                <div class="table-responsive">
+                    <table class="table table-row-bordered table-row-gray-200 align-middle mb-0" id="siTable">
+                        <thead id="siHead"></thead>
+                        <tbody id="siBody"></tbody>
+                        <tfoot id="siFoot" class="fw-bold"></tfoot>
+                    </table>
+                </div>
+                <div id="siWarn" class="alert alert-warning d-none mt-3 mb-0 py-2 px-3 fs-8"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="siConfirm" class="btn btn-primary fs-4 w-100 py-4" disabled><i class="ki-outline ki-check-circle fs-1"></i>@(isAr ? "دفع وإنشاء الفواتير (نقدي)" : "Pay & create bills (cash)")</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Split-by-item modal-->
+
+<!--begin::Modifier chooser modal (RC-4b)-->
+<div class="modal fade" id="modModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h3 class="modal-title fs-3" id="modItemName"></h3>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" aria-label="Close"><i class="ki-outline ki-cross fs-1"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="modGroups"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="modConfirm" class="btn btn-primary fs-4 w-100 py-4" disabled></button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Modifier chooser modal-->
+
+<!--begin::Z report / shift close modal (RC-6b)-->
+<div class="modal fade" id="zModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h3 class="modal-title fs-3">@Localizer["Close shift (Z)"]</h3>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" aria-label="Close"><i class="ki-outline ki-cross fs-1"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="zBody"></div>
+                <div class="separator my-4"></div>
+                <div class="d-flex align-items-center justify-content-between">
+                    <label class="fw-bold fs-5">@Localizer["Counted cash"]</label>
+                    <input type="number" step="0.01" min="0" id="zCounted" class="form-control form-control-solid text-end" style="max-width:160px" placeholder="0.00">
+                </div>
+                <div id="zVariancePreview" class="text-end mt-2 fs-6"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="zPrintOnly" class="btn btn-light fs-5"><i class="ki-outline ki-printer fs-2"></i>@Localizer["Print"]</button>
+                <button type="button" id="zConfirmClose" class="btn btn-danger fs-5"><i class="ki-outline ki-lock-2 fs-2"></i>@Localizer["Close shift (Z)"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Z report modal-->
+
+<!--begin::Recent sales / void / partial-return modal (RC-6c, manager)-->
+<div class="modal fade" id="recentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h3 class="modal-title fs-3" id="recentTitle">@Localizer["Recent sales"]</h3>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" aria-label="Close"><i class="ki-outline ki-cross fs-1"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="recentList"></div>
+                <div id="returnPicker" class="d-none">
+                    <div class="separator my-3"></div>
+                    <div class="fw-bold fs-5 mb-3" id="returnPickerTitle">@Localizer["Partial return"]</div>
+                    <div id="returnLines"></div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" id="returnBack" class="btn btn-light">@Localizer["Back"]</button>
+                        <button type="button" id="returnConfirm" class="btn btn-danger" disabled><i class="ki-outline ki-arrow-circle-left fs-2"></i>@Localizer["Confirm return"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Recent sales modal-->
+
+<form id="af">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+<script>
+window.POS = {
+  order: @Html.Raw(openOrder != null ? System.Text.Json.JsonSerializer.Serialize(openOrder, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }) : "null"),
+  receipt: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Receipt, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })),
+  halls: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Halls, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })),
+  term: {
+    code: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ctx?.TerminalCode ?? "")),
+    shift: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((ctx?.ShiftId)?.ToString() ?? "")),
+    cashier: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ctx?.EmployeeName ?? "")),
+    branch: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ctx?.BranchName ?? ""))
+  },
+  rtl: @(isAr ? "true" : "false"),
+  serverNowMs: @(DateTimeOffset.Now.ToUnixTimeMilliseconds()),
+  cur: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(CUR)),
+  urls: { create: '/pos/order/create', add: '/pos/order/add', setq: '/pos/order/setqty', del: '/pos/order/remove', pay: '/pos/order/pay', board: '/pos/tables', tstatus: '/pos/tables/status', tadd: '/pos/tables/add', openTable: '/pos/order/open-table', sendKitchen: '/pos/order/send-kitchen', hold: '/pos/order/hold', held: '/pos/orders/held', recall: '/pos/order/recall', move: '/pos/order/move', merge: '/pos/order/merge', discard: '/pos/order/discard', custSearch: '/pos/customers/search', custAdd: '/pos/customers/add', setCust: '/pos/order/customer', tableOrders: '/pos/table/orders', newOnTable: '/pos/order/new-on-table', seat: '/pos/order/seat', openInv: '/pos/orders/open', guests: '/pos/order/guests', paySplitItems: '/pos/order/pay-split-items', payTenders: '/pos/order/pay-tenders', load: '/pos/order/load', reservationArrive: '/pos/reservation/arrive', reservationNoShow: '/pos/reservation/noshow', itemMods: '/pos/item/modifiers', shiftZ: '/pos/shift/z', shiftClose: '/pos/shift/close', recent: '/pos/orders/recent', voidPaid: '/pos/order/void-paid', returnLines: '/pos/order/return-lines', orderDetail: '/pos/order/detail' },
+  modItemIds: @Html.Raw(System.Text.Json.JsonSerializer.Serialize((ViewBag.ModItemIds as List<int>) ?? new List<int>())),
+  payMethods: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+      new[]{ new { method = "Cash", name = isAr ? "نقدي" : "Cash" } }
+      .Concat(((ViewBag.PayMethods as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>())
+        .Where(m => (bool)m.IsActive && (string)m.PaymentMethod != "Cash")
+        .Select(m => new { method = (string)m.PaymentMethod, name = (string)(m.DisplayName ?? m.PaymentMethod) })))),
+  L: {
+    receipt: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Receipt"].Value)),
+    terminal: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Terminal"].Value)),
+    shift: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Shift"].Value)),
+    cashier: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Cashier"].Value)),
+    date: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Date"].Value)),
+    subtotal: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Subtotal"].Value)),
+    service: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Service"].Value)),
+    vat: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["VAT"].Value)),
+    total: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Total"].Value)),
+    table: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Table"].Value)),
+    cash: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Cash"].Value)),
+    taxNo: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Tax No"].Value)),
+    thankYou: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Thank you"].Value)),
+    paid: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Paid"].Value)),
+    change: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Change"].Value)),
+    onlyCash: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Only cash is active now"].Value)),
+    needPaid: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Amount paid is less than total"].Value)),
+    pickTable: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Select a table first"].Value)),
+    payFailed: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Payment failed"].Value)),
+    seat: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["seats"].Value)),
+    available: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Available"].Value)),
+    occupied: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Occupied"].Value)),
+    reserved: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Reserved"].Value)),
+    cleaning: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Cleaning"].Value)),
+    closed: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Closed"].Value)),
+    awaiting: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("بانتظار دفع", "Awaiting payment"))),
+    heldTable: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L("معلّقة", "On hold"))),
+    person: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["persons"].Value)),
+    soon: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Soon"].Value)),
+    added: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Added"].Value)),
+    occupiedMsg: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Table is busy with an open order"].Value)),
+    recalled: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Recalled the table's order"].Value)),
+    opened: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Table opened"].Value)),
+    kitchen: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Send to kitchen"].Value)),
+    sentKitchen: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Sent to kitchen"].Value)),
+    kitchenBadge: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Kitchen"].Value)),
+    noNewKitchen: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No new items to send"].Value)),
+    held: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Open invoices"].Value)),
+    heldEmpty: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No open invoices"].Value)),
+    holdOk: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Order held"].Value)),
+    recallOk: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Order recalled"].Value)),
+    items: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["ItemUnit"].Value)),
+    moveHint: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Pick the new table"].Value)),
+    moved: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Order moved"].Value)),
+    mergeHint: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Tap a busy table to merge it here"].Value)),
+    merged: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Tables merged"].Value)),
+    mergeNeedsBusy: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Pick a busy table"].Value)),
+    mergeConfirm: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Merge both tables' orders into one?"].Value)),
+    newTitle: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["New order"].Value)),
+    newConfirm: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["The current unpaid order will be discarded. Start new?"].Value)),
+    yes: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Yes, new"].Value)),
+    cancel: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Back"].Value)),
+    walkIn: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Walk-in"].Value)),
+    custSet: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Customer set"].Value)),
+    custAdded: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Customer added"].Value)),
+    noCust: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No matches"].Value)),
+    perPerson: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Each"].Value)),
+    splitDone: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Split payment done"].Value)),
+    offlineQueued: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(isAr ? "تم الدفع بلا نت — سيُزامن عند العودة" : "Paid offline — will sync on reconnect")),
+    offlineSingleOnly: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(isAr ? "متاح بلا نت: دفعة واحدة (نقدي/بطاقة) فقط" : "Offline: single payment (cash/card) only")),
+    modTitle: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Choose options"].Value)),
+    modAdd: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add to order"].Value)),
+    modRequired: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Required"].Value)),
+    modPickOne: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Please complete the required choices"].Value)),
+    zTitle: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Close shift (Z)"].Value)),
+    zSales: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Total sales"].Value)),
+    zOrders: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Orders"].Value)),
+    zExpected: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Expected cash"].Value)),
+    zCounted: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Counted cash"].Value)),
+    zVariance: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Variance"].Value)),
+    zOver: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Over"].Value)),
+    zShort: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Short"].Value)),
+    zClosed: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Shift closed"].Value)),
+    zTips: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(isAr ? "الإكراميات" : "Tips")),
+    zConfirmClose: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Close the shift? This cannot be undone."].Value)),
+    recentTitle: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Recent sales"].Value)),
+    voidFull: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Void invoice"].Value)),
+    partialReturn: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Partial return"].Value)),
+    confirmReturn: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Confirm return"].Value)),
+    voidConfirm: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Void this whole invoice (refund + return stock)?"].Value)),
+    returnConfirmMsg: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Return the selected items and refund cash?"].Value)),
+    voided: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Invoice voided"].Value)),
+    returned: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Items returned"].Value)),
+    noRecent: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No recent sales"].Value)),
+    voidedBadge: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Voided"].Value))
+  }
+};
+</script>
+<script src="~/Backend-assets/js/pos-terminal.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/pos-offline.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/pos-offline-order.js" asp-append-version="true"></script>
+}

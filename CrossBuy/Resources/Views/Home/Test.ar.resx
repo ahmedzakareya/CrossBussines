@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Don’t miss amazing" xml:space="preserve">
+    <value>لا تفوّت العروض المذهلة</value>
+  </data>
+  <data name="grocery deals" xml:space="preserve">
+    <value>عروض البقالة</value>
+  </data>
+  <data name="Sign up for the daily newsletter" xml:space="preserve">
+    <value>اشترك في النشرة اليومية</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>اشتراك</value>
+  </data>
+  <data name="خضروات صازجه" xml:space="preserve">
+    <value>خضروات صازجه</value>
+  </data>
+  <data name="خصم كبير" xml:space="preserve">
+    <value>خصم كبير</value>
+  </data>
+  <data name="خصم 50% على اول طلب .." xml:space="preserve">
+    <value>خصم 50% على اول طلب ..</value>
+  </data>
+  <data name="Your emaill address" xml:space="preserve">
+    <value>بريدك الإلكتروني</value>
+  </data>
+  <data name="Featured Categories" xml:space="preserve">
+    <value>الفئات المميزة</value>
+  </data>
+  <data name="Everyday Fresh &amp;" xml:space="preserve">
+    <value>طازج ونظيف كل يوم مع</value>
+  </data>
+  <data name="Clean with Our" xml:space="preserve">
+    <value>منتجاتنا</value>
+  </data>
+  <data name="Products" xml:space="preserve">
+    <value>المنتجات</value>
+  </data>
+  <data name="Make your Breakfast" xml:space="preserve">
+    <value>اجعل فطورك</value>
+  </data>
+  <data name="Healthy and Easy" xml:space="preserve">
+    <value>صحياً وسهلاً</value>
+  </data>
+  <data name="The best Organic" xml:space="preserve">
+    <value>أفضل المنتجات العضوية</value>
+  </data>
+  <data name="Products Online" xml:space="preserve">
+    <value>أونلاين</value>
+  </data>
+  <data name="Popular Products" xml:space="preserve">
+    <value>المنتجات الشائعة</value>
+  </data>
+  <data name="Milks &amp; Dairies" xml:space="preserve">
+    <value>الحليب ومنتجات الألبان</value>
+  </data>
+  <data name="Coffes &amp; Teas" xml:space="preserve">
+    <value>القهوة والشاي</value>
+  </data>
+  <data name="Pet Foods" xml:space="preserve">
+    <value>أطعمة الحيوانات الأليفة</value>
+  </data>
+  <data name="Meats" xml:space="preserve">
+    <value>اللحوم</value>
+  </data>
+  <data name="Vegetables" xml:space="preserve">
+    <value>الخضروات</value>
+  </data>
+  <data name="Fruits" xml:space="preserve">
+    <value>الفواكه</value>
+  </data>
+  <data name="Featured" xml:space="preserve">
+    <value>مميّز</value>
+  </data>
+  <data name="Popular" xml:space="preserve">
+    <value>شائع</value>
+  </data>
+  <data name="New added" xml:space="preserve">
+    <value>المضاف حديثاً</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>رائج</value>
+  </data>
+  <data name="Sale" xml:space="preserve">
+    <value>تخفيض</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Save 15%" xml:space="preserve">
+    <value>وفّر 15%</value>
+  </data>
+  <data name="Save 35%" xml:space="preserve">
+    <value>وفّر 35%</value>
+  </data>
+  <data name="Best sale" xml:space="preserve">
+    <value>أفضل عرض</value>
+  </data>
+  <data name="By" xml:space="preserve">
+    <value>بواسطة</value>
+  </data>
+  <data name="Add To Cart" xml:space="preserve">
+    <value>أضف إلى السلة</value>
+  </data>
+  <data name="Sold: 90/120" xml:space="preserve">
+    <value>مُباع: 90/120</value>
+  </data>
+  <data name="Add To Wishlist" xml:space="preserve">
+    <value>أضف إلى المفضلة</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>قارن</value>
+  </data>
+  <data name="Quick view" xml:space="preserve">
+    <value>عرض سريع</value>
+  </data>
+  <data name="Shop Now" xml:space="preserve">
+    <value>تسوّق الآن</value>
+  </data>
+  <data name="Bring nature into your home" xml:space="preserve">
+    <value>أدخل الطبيعة إلى منزلك</value>
+  </data>
+  <data name="Daily Best Sells" xml:space="preserve">
+    <value>الأكثر مبيعاً يومياً</value>
+  </data>
+  <data name="Deals Of The Day" xml:space="preserve">
+    <value>عروض اليوم</value>
+  </data>
+  <data name="All Deals" xml:space="preserve">
+    <value>كل العروض</value>
+  </data>
+  <data name="Top Selling" xml:space="preserve">
+    <value>الأكثر مبيعاً</value>
+  </data>
+  <data name="Trending Products" xml:space="preserve">
+    <value>المنتجات الرائجة</value>
+  </data>
+  <data name="Recently added" xml:space="preserve">
+    <value>أُضيف مؤخراً</value>
+  </data>
+  <data name="Top Rated" xml:space="preserve">
+    <value>الأعلى تقييماً</value>
+  </data>
+</root>

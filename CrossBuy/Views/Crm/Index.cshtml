@@ -1,0 +1,262 @@
+@using CrossBuy.BL
+@using CrossBuy.Controllers
+@model CrmDashboardDto
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+    var monthsEn = new[] { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    string Money(decimal v) => v.ToString("N0");
+    string Raw(decimal v) => v.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
+    string nm(string s) => SR[s].Value;   // localized stage / status name (keys added to SharedResources)
+    string statusColor(string s) => s switch { "New" => "primary", "Contacted" => "info", "Qualified" => "success", "Converted" => "dark", "Lost" => "danger", _ => "secondary" };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@SR["CRM"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@SR["Home"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@SR["CRM"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a href="@Url.Action("Pipeline","Crm")" class="btn btn-sm btn-flex btn-light fw-bold">@SR["Pipeline"]</a>
+                <a href="@Url.Action("Leads","Crm")" class="btn btn-sm btn-flex btn-light-primary fw-bold"><i class="ki-outline ki-plus fs-3"></i>@SR["New lead"]</a>
+                <a href="@Url.Action("Opportunities","Crm")" class="btn btn-sm btn-flex btn-primary fw-bold"><i class="ki-outline ki-plus fs-3"></i>@SR["New opportunity"]</a>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            <!--begin::Row 1 — pipeline trend + hero card-->
+            <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@SR["Opportunity pipeline"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@SR["Last 6 months — by value"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Opportunities","Crm")" class="btn btn-sm btn-light">@SR["Opportunities"]</a></div>
+                        </div>
+                        <div class="card-body pt-0 px-3 pb-3">
+                            <div id="crm_trend_chart" style="height:330px"></div>
+                            <div class="d-flex align-items-center justify-content-center gap-8 pb-2">
+                                <div class="d-flex align-items-center"><span class="rounded-1 bg-primary me-2 h-10px w-10px"></span><span class="fw-semibold fs-7 text-gray-600">@SR["Created opportunities"]</span></div>
+                                <div class="d-flex align-items-center"><span class="rounded-1 bg-success me-2 h-10px w-10px"></span><span class="fw-semibold fs-7 text-gray-600">@SR["Won"]</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background:linear-gradient(135deg,#1f6253 0%,#13433a 100%)">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@SR["Open pipeline value"]</span></h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Pipeline","Crm")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a></div>
+                        </div>
+                        <div class="card-body d-flex justify-content-between flex-column pt-1 px-0 pb-0">
+                            <div class="d-flex flex-wrap px-9 mb-4">
+                                <div class="rounded min-w-125px py-3 px-4 my-1 me-6" style="border:1px dashed rgba(255,255,255,0.4)">
+                                    <div class="text-white fs-2 fw-bold">@Money(Model.OpenValue)</div>
+                                    <div class="fw-semibold fs-7 text-white opacity-75">@SR["Open pipeline value"]</div>
+                                </div>
+                                <div class="rounded min-w-125px py-3 px-4 my-1" style="border:1px dashed rgba(255,255,255,0.4)">
+                                    <div class="text-white fs-2 fw-bold">@Money(Model.WeightedValue)</div>
+                                    <div class="fw-semibold fs-7 text-white opacity-75">@SR["Weighted pipeline"]</div>
+                                </div>
+                            </div>
+                            <div class="px-9">
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@SR["Won value"]</span><span class="fw-bold fs-7">@Money(Model.WonValue)</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@SR["Win rate"]</span><span class="fw-bold fs-7">@Model.WinRate.ToString("0")%</span></div>
+                                <div class="d-flex flex-stack text-white"><span class="fw-bold fs-7">@SR["Open opportunities"]</span><span class="fw-bold fs-7">@Model.OpenOppCount</span></div>
+                            </div>
+                            <div class="pb-9"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 1-->
+
+            <!--begin::Row 2 — stat cards (pipeline "Statistics Widget 3" style + countUp, brand palette)-->
+            <div class="row g-3 g-xl-5 mb-5 mb-xl-10">
+                @{
+                    // (label, value, raw, icon, bg-tint, fg-color, href, sub)
+                    var alert = Model.OpenTickets > 0;
+                    var od = Model.OverdueActivities > 0;
+                    var stats = new (string label, string value, string raw, string icon, string bg, string fg, string href, string sub)[] {
+                        (SR["Active leads"].Value, Model.LeadCount.ToString(), Raw(Model.LeadCount), "ki-user-square", "#eaf3ef", "#13433a", Url.Action("Leads","Crm"), SR["Leads"].Value),
+                        (SR["Open opportunities"].Value, Model.OpenOppCount.ToString(), Raw(Model.OpenOppCount), "ki-chart-line-up", "#eaf3ef", "#13433a", Url.Action("Opportunities","Crm"), Money(Model.OpenValue)),
+                        (SR["Won value"].Value, Money(Model.WonValue), Raw(Model.WonValue), "ki-medal-star", "#eaf3ef", "#13433a", Url.Action("Opportunities","Crm"), Model.WonCount + " " + SR["Won"].Value),
+                        (SR["Open activities"].Value, Model.OpenActivities.ToString(), Raw(Model.OpenActivities), "ki-check-square", od?"#fdeaea":"#fef3e2", od?"#d92d20":"#b96a00", Url.Action("Activities","Crm"), od?SR["Overdue"].Value:SR["Activities"].Value),
+                        (SR["Open tickets"].Value, Model.OpenTickets.ToString(), Raw(Model.OpenTickets), "ki-questionnaire-tablet", alert?"#fdeaea":"#eaf3ef", alert?"#d92d20":"#13433a", Url.Action("Tickets","Crm"), SR["Tickets"].Value),
+                        (SR["Accounts"].Value, Model.AccountCount.ToString(), Raw(Model.AccountCount), "ki-briefcase", "#f2f4f7", "#475467", Url.Action("Accounts","Crm"), SR["Contacts"].Value+" "+Model.ContactCount),
+                    };
+                }
+                @foreach (var s in stats)
+                {
+                    <div class="col-6 col-md-4 col-xl">
+                        <div class="card card-flush h-100">
+                            <a href="@s.href" class="card-body d-flex flex-stack p-5 text-decoration-none">
+                                <div class="d-flex flex-column me-2">
+                                    <span class="text-gray-900 fw-bold fs-3 lh-1" data-kt-countup="true" data-kt-countup-value="@s.raw">@s.value</span>
+                                    <span class="text-muted fw-semibold fs-7 mt-2">@s.label</span>
+                                    <span class="fw-semibold fs-8 mt-1" style="color:@s.fg">@s.sub</span>
+                                </div>
+                                <span class="symbol symbol-45px"><span class="symbol-label" style="background:@s.bg;"><i class="ki-outline @s.icon fs-2x" style="color:@s.fg;"></i></span></span>
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+            <!--end::Row 2-->
+
+            <!--begin::Row 3 — pipeline by stage + recent leads-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@SR["Pipeline by stage"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-6">@SR["Opportunities"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Pipeline","Crm")" class="btn btn-sm btn-light">@SR["View all"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (Model.Pipeline.Count == 0) { <div class="text-center text-muted py-15">@SR["No opportunities yet"]</div> }
+                            else
+                            {
+                                var barColors = new[] { "primary", "info", "warning", "success", "dark", "danger" };
+                                decimal maxAmt = Model.Pipeline.Max(p => p.Amount);
+                                var i = 0;
+                                foreach (var p in Model.Pipeline)
+                                {
+                                    var bc = p.Stage == "Won" ? "success" : (p.Stage == "Lost" ? "danger" : barColors[i % barColors.Length]); i++;
+                                    var pct = maxAmt > 0 ? (int)Math.Round(100m * p.Amount / maxAmt) : 0;
+                                    <div class="d-flex flex-stack mb-2">
+                                        <span class="text-gray-800 fw-semibold flex-grow-1"><span class="badge badge-circle badge-light-@bc me-2">@p.Count</span>@nm(p.Stage)</span>
+                                        <span class="text-gray-900 fw-bold">@p.Amount.ToString("N0")</span>
+                                    </div>
+                                    <div class="progress h-6px mb-4 bg-light-@bc"><div class="progress-bar bg-@bc" style="width:@(pct)%"></div></div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@SR["Recent leads"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@SR["Leads"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Leads","Crm")" class="btn btn-icon btn-sm btn-light"><i class="ki-outline ki-black-right fs-5"></i></a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (Model.RecentLeads.Count == 0) { <div class="text-center text-muted py-15">@SR["No leads yet"]</div> }
+                            @foreach (var l in Model.RecentLeads)
+                            {
+                                <div class="d-flex align-items-center mb-5">
+                                    <div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-@statusColor(l.Status)"><i class="ki-outline ki-user fs-5 text-@statusColor(l.Status)"></i></span></div>
+                                    <div class="d-flex flex-column flex-grow-1 me-2">
+                                        <span class="text-gray-900 fw-bold fs-7 text-truncate mw-150px">@l.Name</span>
+                                        <span class="badge badge-light-@statusColor(l.Status) fs-8 fw-semibold w-fit-content mt-1">@nm(l.Status)</span>
+                                    </div>
+                                    <span class="badge badge-light-secondary fw-bold" title="@SR["Score"]">@l.Score</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 3-->
+
+            <!--begin::Row 4 — top accounts + quick access-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@SR["Top accounts"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@SR["By open opportunity value"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (Model.TopAccounts.Count == 0) { <div class="text-center text-muted py-10">—</div> }
+                            @{ var ai = 0; var ac = new[] { "success", "primary", "warning", "info", "dark" }; }
+                            @foreach (var a in Model.TopAccounts)
+                            {
+                                var c = ac[ai % ac.Length]; ai++;
+                                <div class="d-flex flex-stack mb-2"><span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@a.Name</span><span class="text-gray-900 fw-bold">@a.Value.ToString("N0")</span></div>
+                                <div class="progress h-6px mb-4 bg-light-@c"><div class="progress-bar bg-@c" style="width:@(a.Pct)%"></div></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-8">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7"><h3 class="card-title fw-bold text-gray-900">@SR["Quick Access"]</h3></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3">
+                                @{
+                                    var links = new (string action, string label, string icon, string color)[] {
+                                        ("Leads", SR["Leads"].Value, "ki-user-square", "primary"),
+                                        ("Opportunities", SR["Opportunities"].Value, "ki-chart-line-up", "success"),
+                                        ("Pipeline", SR["Pipeline"].Value, "ki-abstract-14", "info"),
+                                        ("Accounts", SR["Accounts"].Value, "ki-briefcase", "dark"),
+                                        ("Activities", SR["Activities"].Value, "ki-check-square", "warning"),
+                                        ("Tickets", SR["Tickets"].Value, "ki-questionnaire-tablet", "danger"),
+                                        ("Campaigns", SR["Campaigns"].Value, "ki-rocket", "primary"),
+                                        ("Forecast", SR["Forecast"].Value, "ki-chart-pie-simple", "success"),
+                                    };
+                                }
+                                @foreach (var l in links)
+                                {
+                                    <div class="col-6 col-md-3">
+                                        <a href="@Url.Action(l.action,"Crm")" class="d-flex flex-column flex-center bg-hover-light rounded h-100 py-5 border border-gray-200 text-decoration-none">
+                                            <i class="ki-outline @l.icon fs-2x text-@l.color mb-2"></i>
+                                            <span class="fs-8 fw-semibold text-gray-800 text-center px-1">@l.label</span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 4-->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+    var isAr = @(isAr ? "true" : "false");
+    var months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => (isAr ? monthsAr : monthsEn)[m.Month] + " " + m.Year)));
+    var created = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => m.CreatedValue)));
+    var won = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => m.WonValue)));
+    if (!window.ApexCharts) return;
+    new ApexCharts(document.querySelector('#crm_trend_chart'), {
+        chart: { type: 'area', height: 330, fontFamily: 'inherit', toolbar: { show: false } },
+        series: [ { name: '@SR["Created opportunities"]', data: created }, { name: '@SR["Won"]', data: won } ],
+        colors: ['#009EF7', '#2f9e6e'],
+        xaxis: { categories: months, labels: { style: { colors: '#99A1B7' } } },
+        yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return v.toLocaleString(); } } },
+        stroke: { curve: 'smooth', width: 3 },
+        fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.05 } },
+        dataLabels: { enabled: false }, legend: { show: false },
+        grid: { borderColor: '#E4E6EF', strokeDashArray: 4 },
+        tooltip: { y: { formatter: function (v) { return v.toLocaleString() + (isAr ? ' ج.م' : ' EGP'); } } }
+    }).render();
+})();
+</script>
+}

@@ -1,0 +1,579 @@
+@using CrossBuy.Models.Context.Inventory
+@using CrossBuy.Models.Context.Accounting
+@using System.Globalization
+@model Item
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    bool embed = ViewBag.Embed ?? false;   // shown inside a modal iframe → chrome-less layout, no toolbar
+    Layout = embed ? "~/Views/Shared/_LayoutEmbed.cshtml" : "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    bool isEdit = ViewBag.IsEdit ?? false;
+    var cats = ViewBag.Categories as List<ItemCategory> ?? new();
+    var units = ViewBag.Units as List<UnitOfMeasure> ?? new();
+    var taxes = ViewBag.TaxCodes as List<TaxCode> ?? new();
+    var itemTypes = new (string v, string ar, string en)[] {
+        ("Stockable","صنف مخزون","Stockable"),("NonStockable","مستهلك","Non-stockable"),
+        ("Service","خدمة","Service"),("Asset","أصل","Asset") };
+    string num(decimal? d) => d?.ToString(CultureInfo.InvariantCulture) ?? "";
+    var blank = Url.Content("~/Backend-assets/media/svg/files/blank-image.svg");
+    var hasImg = !string.IsNullOrWhiteSpace(Model.ImagePath);
+    var imgUrl = hasImg ? Url.Content("~" + Model.ImagePath!.Replace("\\","/")) : blank;
+    var hasHover = !string.IsNullOrWhiteSpace(Model.StoreHoverImage);
+    var hoverUrl = hasHover ? Url.Content("~" + Model.StoreHoverImage!.Replace("\\","/")) : blank;
+    string typeOf() => string.IsNullOrEmpty(Model.ItemType) ? "Stockable" : Model.ItemType;
+    var allItems = ViewBag.ComponentItems as List<Item> ?? new();
+    var itemUnits = ViewBag.ItemUnits as List<CrossBuy.BL.UoMRowInput> ?? new();
+    var itemComps = ViewBag.ItemComponents as List<ItemComponent> ?? new();
+    var gallery = ViewBag.ItemImages as List<ItemImage> ?? new();   // storefront extra images
+    var compDisplay = Model.IsComposite ? "" : "display:none";
+    var formAction = isEdit ? "EditItem" : "CreateItem";
+    // confirm ONLY on edit (an existing id). A brand-new item saves directly with no prompt.
+    // data-cb-confirm-if="#f_item_id" makes the bridge skip the dialog when the id field is 0/empty (add).
+    var cbText = Localizer["Save these changes?"].Value;
+}
+<form id="kt_item_form" class="d-flex flex-column flex-column-fluid" method="post" enctype="multipart/form-data" asp-action="@formAction" data-cb-confirm data-cb-action="edit" data-cb-text="@cbText" data-cb-confirm-if="#f_item_id">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="f_item_id" value="@(isEdit ? Model.ID : 0)" />
+    @if (isEdit) { <input type="hidden" name="ImagePath" value="@Model.ImagePath" /> }
+    @if (embed) { <input type="hidden" name="embed" value="true" /> }
+
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2 @(embed ? "d-none" : "")"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? Localizer["Edit item"] : Localizer["Add item"])</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Items","Inventory")" class="text-muted text-hover-primary">@SR["Items"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@(isEdit ? Model.ItemCode : Localizer["New"].Value)</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("Items","Inventory")" class="btn btn-light">@SR["Cancel"]</a>
+            <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
+        </div>
+    </div></div>
+    <!--end::Toolbar-->
+
+    <!--begin::Content-->
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <div class="d-flex flex-column flex-lg-row">
+            <!--begin::Aside column-->
+            <div class="d-flex flex-column gap-7 gap-lg-10 w-100 w-lg-300px mb-7 me-lg-10">
+                <!--begin::Thumbnail-->
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Thumbnail"]</h2></div></div>
+                    <div class="card-body text-center pt-0">
+                        <div class="image-input image-input-outline @(hasImg ? "" : "image-input-placeholder")" data-kt-image-input="true" id="imgbox">
+                            <div class="image-input-wrapper w-150px h-150px" id="imgwrap" style="background-image:url('@imgUrl');background-size:contain;background-repeat:no-repeat;background-position:center;"></div>
+                            <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="change" data-bs-toggle="tooltip" title="@Localizer["Change image"]">
+                                <i class="ki-outline ki-pencil fs-7"></i>
+                                <input type="file" name="imageFile" accept=".png, .jpg, .jpeg, .webp, .avif" />
+                                <input type="hidden" name="avatar_remove" />
+                            </label>
+                            <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="@SR["Cancel"]"><i class="ki-outline ki-cross fs-2"></i></span>
+                            <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="@Localizer["Remove image"]"><i class="ki-outline ki-cross fs-2"></i></span>
+                        </div>
+                        <div class="text-muted fs-7 mt-3">@Localizer["Set the item image. Formats: png, jpg, jpeg, webp, avif."]</div>
+                    </div>
+                </div>
+                <!--end::Thumbnail-->
+                <!--begin::Status-->
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@SR["Status"]</h2></div></div>
+                    <div class="card-body pt-0">
+                        <select name="IsActive" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                            <option value="true" selected="@Model.IsActive">@SR["Active"]</option>
+                            <option value="false" selected="@(!Model.IsActive)">@SR["Inactive"]</option>
+                        </select>
+                        <div class="text-muted fs-7 mt-3">@Localizer["Inactive items are hidden from purchase and sales operations."]</div>
+                    </div>
+                </div>
+                <!--end::Status-->
+                <!--begin::Tracking-->
+                <div class="card card-flush py-4">
+                    <div class="card-header"><div class="card-title"><h2>@Localizer["Tracking"]</h2></div></div>
+                    <div class="card-body pt-0 d-flex flex-column gap-4">
+                        <label class="form-check form-check-custom form-check-solid"><input type="checkbox" name="TrackBatch" value="true" class="form-check-input" @(Model.TrackBatch ? "checked" : "") /><span class="form-check-label fw-semibold ms-3">@Localizer["Track batch"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid"><input type="checkbox" name="TrackExpiry" value="true" class="form-check-input" @(Model.TrackExpiry ? "checked" : "") /><span class="form-check-label fw-semibold ms-3">@Localizer["Track expiry"]</span></label>
+                        <label class="form-check form-check-custom form-check-solid"><input type="checkbox" name="TrackSerial" value="true" class="form-check-input" @(Model.TrackSerial ? "checked" : "") /><span class="form-check-label fw-semibold ms-3">@Localizer["Track serial"]</span></label>
+                    </div>
+                </div>
+                <!--end::Tracking-->
+            </div>
+            <!--end::Aside column-->
+
+            <!--begin::Main column-->
+            <div class="d-flex flex-column flex-row-fluid gap-7 gap-lg-10">
+                @if (isEdit)
+                {
+                    var moves = ViewBag.Movements as List<StockMovement> ?? new();
+                    decimal cardBalQty = ViewBag.BalQty ?? 0m, cardBalAvg = ViewBag.BalAvg ?? 0m;
+                    var purchaseSrcs = new[] { "Receipt", "PurchaseInvoice" };
+                    var purchases = moves.Where(m => m.Direction == 1 && purchaseSrcs.Contains(m.SourceType)).ToList();
+                    var lastOp = moves.FirstOrDefault();
+                    var lastPurchase = purchases.FirstOrDefault();
+                    var lastEntry = moves.FirstOrDefault(m => m.Direction == 1);
+                    var lastExit = moves.FirstOrDefault(m => m.Direction == -1);
+                    var pQty = purchases.Sum(p => p.QtyBase);
+                    var avgPurchase = pQty > 0 ? purchases.Sum(p => p.QtyBase * p.UnitCost) / pQty : 0m;
+                    string srcName(string? s) => s switch { "Opening" => Localizer["Opening"].Value, "Receipt" => Localizer["Receipt"].Value, "Issue" => Localizer["Issue"].Value, "Adjustment" => Localizer["Adjustment"].Value, "PurchaseInvoice" => Localizer["Purchase"].Value, "SalesInvoice" => Localizer["Sale"].Value, "TransferIn" => Localizer["Transfer in"].Value, "TransferOut" => Localizer["Transfer out"].Value, _ => s ?? "—" };
+                    string dOrDash(DateTime? d) => d.HasValue ? d.Value.ToString("yyyy-MM-dd") : "—";
+                    var chrono = moves.AsEnumerable().Reverse().ToList();
+                    decimal run = 0m; var trendCats = new List<string>(); var trendBal = new List<decimal>();
+                    foreach (var m in chrono) { run += m.Direction * m.QtyBase; trendCats.Add(m.MovementDate.ToString("yyyy-MM-dd")); trendBal.Add(run); }
+                    <!--begin::Analytics card (blended into the page, full width)-->
+                    <div class="card card-flush py-4 mb-7">
+                        <div class="card-header pt-4"><div class="card-title"><h2 class="fw-bold"><i class="ki-outline ki-chart-line-up-2 fs-2 text-primary me-2"></i>@Localizer["Item analytics"]</h2></div>
+                            <div class="card-toolbar"><a href="@Url.Action("ItemLedger","Inventory", new { itemId = Model.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-book-open fs-4"></i>@Localizer["Ledger"]</a></div></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-4 mb-5">
+                                <div class="col-6 col-md-3"><div class="bg-light-success rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["On hand"]</div><div class="fs-2 fw-bold text-gray-900">@cardBalQty.ToString("0.##")</div></div></div>
+                                <div class="col-6 col-md-3"><div class="bg-light-primary rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["Avg cost"]</div><div class="fs-2 fw-bold text-gray-900">@cardBalAvg.ToString("0.00")</div></div></div>
+                                <div class="col-6 col-md-3"><div class="bg-light-warning rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["Avg purchase"]</div><div class="fs-2 fw-bold text-gray-900">@avgPurchase.ToString("0.00")</div></div></div>
+                                <div class="col-6 col-md-3"><div class="bg-light rounded p-4 h-100"><div class="text-muted fs-8">@Localizer["Last op"]</div><div class="fs-5 fw-bold text-gray-900">@(lastOp == null ? "—" : srcName(lastOp.SourceType))</div><span class="text-muted fs-8">@(lastOp?.MovementDate.ToString("yyyy-MM-dd") ?? "")</span></div></div>
+                            </div>
+                            @{ var whBals = ViewBag.WarehouseBalances as List<(string code, string nameAr, string? nameEn, decimal qty, decimal value)> ?? new(); var whTotal = whBals.Sum(x => x.qty); }
+                            @if (whBals.Count > 0)
+                            {
+                                <div class="mb-5">
+                                    <div class="d-flex align-items-center gap-2 mb-3"><i class="ki-outline ki-delivery-3 fs-4 text-primary"></i><span class="fw-bold text-gray-800">@Localizer["On hand per warehouse"]</span></div>
+                                    <div class="table-responsive">
+                                        <table class="table table-row-bordered align-middle gy-3 mb-0">
+                                            <thead><tr class="fw-bold text-muted text-uppercase fs-8">
+                                                <th>@SR["Warehouse"]</th>
+                                                <th class="text-end" style="width:110px">@SR["Quantity"]</th>
+                                                <th class="text-end" style="width:130px">@Localizer["Value"]</th>
+                                                <th style="width:170px">@Localizer["% of total"]</th>
+                                            </tr></thead>
+                                            <tbody>
+                                            @foreach (var w in whBals)
+                                            {
+                                                var pct = whTotal != 0 ? (int)Math.Round(w.qty / whTotal * 100m) : 0;
+                                                <tr>
+                                                    <td><div class="d-flex flex-column"><span class="fw-bold text-gray-900">@(isAr ? w.nameAr : (string.IsNullOrEmpty(w.nameEn) ? w.nameAr : w.nameEn))</span><span class="text-muted fs-8">@w.code</span></div></td>
+                                                    <td class="text-end fw-bold fs-5 text-gray-900">@w.qty.ToString("0.##")</td>
+                                                    <td class="text-end text-muted">@w.value.ToString("N2")</td>
+                                                    <td><div class="d-flex align-items-center gap-2"><div class="progress h-8px flex-grow-1 bg-light-success"><div class="progress-bar bg-success" role="progressbar" style="width:@pct%"></div></div><span class="text-muted fs-8 fw-semibold" style="width:34px">@pct%</span></div></td>
+                                                </tr>
+                                            }
+                                            </tbody>
+                                            <tfoot><tr class="fw-bold border-top"><td>@SR["Total"]</td><td class="text-end fs-5 text-primary">@whTotal.ToString("0.##")</td><td class="text-end text-muted">@whBals.Sum(x => x.value).ToString("N2")</td><td></td></tr></tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            }
+                            <div class="row g-4">
+                                <div class="col-md-4"><div class="d-flex flex-column gap-2 fs-7">
+                                    <div class="d-flex justify-content-between border-bottom pb-2"><span class="text-muted">@Localizer["Last purchase"]</span><span class="fw-bold">@(lastPurchase == null ? "—" : $"{lastPurchase.MovementDate:yyyy-MM-dd} · {lastPurchase.UnitCost:0.00}")</span></div>
+                                    <div class="d-flex justify-content-between border-bottom pb-2"><span class="text-muted">@Localizer["Last entry"]</span><span class="fw-bold text-primary">@dOrDash(lastEntry?.MovementDate)</span></div>
+                                    <div class="d-flex justify-content-between"><span class="text-muted">@Localizer["Last exit"]</span><span class="fw-bold text-danger">@dOrDash(lastExit?.MovementDate)</span></div>
+                                </div></div>
+                                <div class="col-md-8">
+                                    @if (trendCats.Count > 0)
+                                    {
+                                        <div class="text-muted fs-8 mb-1">@Localizer["Balance over time"]</div>
+                                        <div id="item_card_chart" data-cats="@Html.Raw(System.Net.WebUtility.HtmlEncode(System.Text.Json.JsonSerializer.Serialize(trendCats)))" data-bal="@Html.Raw(System.Net.WebUtility.HtmlEncode(System.Text.Json.JsonSerializer.Serialize(trendBal)))"></div>
+                                    }
+                                    else { <div class="text-center text-muted py-8 fs-7">@Localizer["No movements yet"]</div> }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Analytics card-->
+                }
+                <!--begin::Data card (all sections, no tabs)-->
+                <div class="card card-flush py-4">
+                    <div class="card-body pt-2">
+                        <div>
+                            <h4 class="text-primary fw-bold mb-5"><i class="ki-outline ki-information-2 fs-3 me-2"></i>@Localizer["General"]</h4>
+                            <div id="tabGeneral">
+                                <div class="row">
+                                    <div class="col-md-4 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Item code"]</label><input name="ItemCode" id="f_code" class="form-control form-control-solid" value="@Model.ItemCode" required /></div>
+                                    <div class="col-md-4 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Barcode"]</label>
+                                        <div class="input-group"><input name="Barcode" id="f_barcode" class="form-control form-control-solid" value="@Model.Barcode" required /><button type="button" class="btn btn-light-primary" id="genBarcode" title="@Localizer["Generate"]"><i class="ki-outline ki-barcode fs-4"></i></button></div></div>
+                                    <div class="col-md-4 mb-5"><label class="required fw-semibold fs-6 mb-2">@SR["Type"]</label><select name="ItemType" class="form-select form-select-solid" data-control="select2" data-hide-search="true">@foreach (var t in itemTypes) { <option value="@t.v" selected="@(typeOf()==t.v)">@(isAr ? t.ar : t.en)</option> }</select></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="Name" class="form-control form-control-solid" value="@Model.Name" required /></div>
+                                    <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="NameEn" class="form-control form-control-solid" value="@Model.NameEn" /></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Category"]</label><select name="ItemCategoryId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var c in cats) { <option value="@c.ID" selected="@(Model.ItemCategoryId==c.ID)">@c.Code — @(isAr ? c.Name : c.NameEn)</option> }</select></div>
+                                    <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Base UoM"]</label><select name="BaseUoMId" id="f_baseuom" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.BaseUoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></div>
+                                </div>
+                                <div class="separator separator-dashed my-5"></div>
+                                <div class="row align-items-center">
+                                    <div class="col-md-4 mb-5">
+                                        <label class="form-check form-check-custom form-check-solid mt-2">
+                                            <input type="checkbox" name="IsComposite" value="true" id="f_iscomposite" class="form-check-input" @(Model.IsComposite ? "checked" : "") />
+                                            <span class="form-check-label fw-semibold ms-3">@Localizer["Composite item (Kit)"]</span>
+                                        </label>
+                                    </div>
+                                    <div class="col-md-4 mb-5" id="compTypeWrap" style="@compDisplay">
+                                        <label class="fw-semibold fs-6 mb-2">@Localizer["Composite type"]</label>
+                                        <select name="CompositeType" id="f_comptype" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                                            <option value="Bundle" selected="@(Model.CompositeType=="Bundle")">@Localizer["Bundle — explodes on sale"]</option>
+                                            <option value="Assembly" selected="@(Model.CompositeType=="Assembly")">@Localizer["Assembly — own stock"]</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-5" id="prodMethodWrap" style="@(Model.IsComposite && Model.CompositeType == "Assembly" ? "" : "display:none")">
+                                        <label class="fw-semibold fs-6 mb-2">@Localizer["Production method"]</label>
+                                        <select name="ProductionMethod" id="f_prodmethod" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                                            <option value="OrderBased" selected="@(Model.ProductionMethod != "Immediate")">@Localizer["Order-based (staged)"]</option>
+                                            <option value="Immediate" selected="@(Model.ProductionMethod == "Immediate")">@Localizer["Immediate"]</option>
+                                        </select>
+                                        <div class="text-muted fs-8 mt-1">@Localizer["Staged: plan → issue materials to WIP → receive. Immediate: consume materials and produce in one click, no stages."]</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!--end::General-->
+                            <div class="separator separator-dashed my-7"></div>
+                            <h4 class="text-primary fw-bold mb-5"><i class="ki-outline ki-dollar fs-3 me-2"></i>@Localizer["Pricing & costing"]</h4>
+                            <!--begin::Pricing-->
+                            <div id="tabAdvanced">
+                                <div class="row">
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Purchase UoM"]</label><select name="PurchaseUoMId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.PurchaseUoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></div>
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Sales UoM"]</label><select name="SalesUoMId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.SalesUoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></div>
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Costing"]</label><select name="CostingMethod" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="" selected="@string.IsNullOrEmpty(Model.CostingMethod)">@Localizer["From category"]</option><option value="Moving" selected="@(Model.CostingMethod=="Moving")">@Localizer["Moving Average"]</option><option value="FIFO" selected="@(Model.CostingMethod=="FIFO")">FIFO</option></select></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Sales price"]</label><input name="SalesPrice" type="number" step="0.01" class="form-control form-control-solid" value="@num(Model.SalesPrice)" /></div>
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Opening cost"]</label><input name="OpeningCost" type="number" step="0.01" class="form-control form-control-solid" value="@num(Model.OpeningCost)" /></div>
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Tax code"]</label><select name="DefaultTaxCodeId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var tx in taxes) { <option value="@tx.ID" selected="@(Model.DefaultTaxCodeId==tx.ID)">@(isAr ? tx.Name : (tx.NameEn ?? tx.Name)) (@tx.Rate.ToString("0.##")%)</option> }</select></div>
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Min margin % (override)"]</label><input name="MinMarginPct" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@num(Model.MinMarginPct)" placeholder="@Localizer["settings default"]" /><div class="text-muted fs-8 mt-1">@Localizer["Leave empty to use the global floor from inventory settings."]</div></div>
+                                </div>
+                            </div>
+                            <!--end::Pricing-->
+                            <!--begin::Storefront (public catalog — display only)-->
+                            <div class="separator separator-dashed my-7"></div>
+                            <h4 class="text-primary fw-bold mb-5"><i class="ki-outline ki-handcart fs-3 me-2"></i>@Localizer["Storefront (public catalog)"]</h4>
+                            <div class="row">
+                                <div class="col-md-3 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Old price"]</label><input name="StoreOldPrice" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@num(Model.StoreOldPrice)" /></div>
+                                <div class="col-md-3 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Badge"]</label>
+                                    <select name="StoreBadge" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                                        <option value="" selected="@string.IsNullOrEmpty(Model.StoreBadge)">—</option>
+                                        <option value="Hot" selected="@(Model.StoreBadge=="Hot")">Hot</option>
+                                        <option value="Sale" selected="@(Model.StoreBadge=="Sale")">Sale</option>
+                                        <option value="New" selected="@(Model.StoreBadge=="New")">New</option>
+                                        <option value="Best" selected="@(Model.StoreBadge=="Best")">Best</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Rating (0-5)"]</label><input name="StoreRating" type="number" step="0.1" min="0" max="5" class="form-control form-control-solid" value="@num(Model.StoreRating)" /></div>
+                                <div class="col-md-3 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Vendor"]</label><input name="StoreVendor" class="form-control form-control-solid" value="@Model.StoreVendor" /></div>
+                            </div>
+                            <div class="alert alert-light-primary d-flex align-items-center p-4"><i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@Localizer["These fields are for the public storefront display only — they do not affect stock or accounting."]</div></div>
+                            <!--end::Storefront-->
+                            <!--begin::Product gallery (multiple images — display only)-->
+                            <div class="separator separator-dashed my-7"></div>
+                            <h4 class="text-primary fw-bold mb-2"><i class="ki-outline ki-picture fs-3 me-2"></i>@Localizer["Product gallery (extra images)"]</h4>
+                            <div class="text-muted fs-7 mb-5">@Localizer["Extra images shown in the storefront product gallery. The first one is also used as the catalog hover image. Display only."]</div>
+                            <input type="hidden" name="removeImageIds" id="removeImageIds" value="" />
+                            <input type="file" id="galleryInput" name="galleryFiles" multiple accept="image/*" class="d-none" />
+                            <!--begin::Dropzone (Metronic component — previews render INSIDE the box)-->
+                            <div class="dropzone" id="galleryDropzone">
+                                <div class="dz-message needsclick">
+                                    <i class="ki-duotone ki-file-up fs-3x text-primary"><span class="path1"></span><span class="path2"></span></i>
+                                    <div class="ms-4">
+                                        <h3 class="fs-5 fw-bold text-gray-900 mb-1">@Localizer["Drop images here or click to upload"]</h3>
+                                        <span class="fs-7 fw-semibold text-gray-500">@Localizer["You can add several images at once"]</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!--end::Dropzone-->
+                            <style>
+                                /* No AJAX upload here (images post WITH the form) → the upload progress bar is useless: hide it. */
+                                #galleryDropzone .dz-progress { display: none !important; }
+                                /* keep previews clean: no success/error stamps for our display-only gallery */
+                                #galleryDropzone .dz-success-mark, #galleryDropzone .dz-error-mark { display: none !important; }
+                            </style>
+                            @{
+                                var galleryJson = System.Text.Json.JsonSerializer.Serialize(
+                                    gallery.Select(g => new { id = g.ID, url = Url.Content("~" + g.Path.Replace("\\", "/")), name = System.IO.Path.GetFileName(g.Path.Replace("\\", "/")) }));
+                            }
+                            <script type="application/json" id="galleryExistingData">@Html.Raw(galleryJson)</script>
+                            <!--end::Product gallery-->
+                            <div class="separator separator-dashed my-7"></div>
+                            <h4 class="text-primary fw-bold mb-5"><i class="ki-outline ki-barcode fs-3 me-2"></i>@Localizer["Units & barcodes"]</h4>
+                            <!--begin::Units-->
+                            <div id="tabUnits">
+                                <div class="alert alert-light-primary d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@Localizer["Stock is kept in the base unit. Define larger units (carton, dozen…) and how many base units each equals, with an optional barcode per unit."]</div></div>
+                                <div class="table-responsive">
+                                    <table class="table align-middle table-row-dashed gy-3" id="unitsTable">
+                                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th class="min-w-150px">@Localizer["Unit"]</th><th class="min-w-150px">@Localizer["= base units"]</th><th class="min-w-150px">@Localizer["Barcode"]</th><th class="w-50px"></th></tr></thead>
+                                        <tbody id="unitsBody">
+                                            @for (int i = 0; i < itemUnits.Count; i++)
+                                            {
+                                                <tr class="grid-row">
+                                                    <td><select name="Units[@i].UoMId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID" selected="@(itemUnits[i].UoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                                    <td><input name="Units[@i].Factor" type="number" step="0.0001" min="0" class="form-control form-control-solid" value="@itemUnits[i].Factor.ToString(CultureInfo.InvariantCulture)" /></td>
+                                                    <td><input name="Units[@i].Barcode" class="form-control form-control-solid" value="@itemUnits[i].Barcode" /></td>
+                                                    <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="btn btn-light-primary btn-sm" id="addUnitRow"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add unit"]</button>
+                                <template id="unitRowTpl">
+                                    <tr class="grid-row">
+                                        <td><select name="Units[__I__].UoMId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                        <td><input name="Units[__I__].Factor" type="number" step="0.0001" min="0" class="form-control form-control-solid" /></td>
+                                        <td><input name="Units[__I__].Barcode" class="form-control form-control-solid" /></td>
+                                        <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
+                                    </tr>
+                                </template>
+                            </div>
+                            <!--end::Units-->
+                            <div id="compSection" style="@compDisplay">
+                            <div class="separator separator-dashed my-7"></div>
+                            <h4 class="text-primary fw-bold mb-5"><i class="ki-outline ki-some-files fs-3 me-2"></i>@Localizer["Components (BOM)"]</h4>
+                            @if (ViewBag.IsManufactured == true)
+                            {
+                                var bomLines = ViewBag.BomLines as List<(string name, decimal qty, decimal scrapPct, decimal unitCost, decimal lineCost)> ?? new();
+                                var routingOps = ViewBag.RoutingOps as List<CrossBuy.Models.Context.Inventory.ManufRoutingOp> ?? new();
+                                decimal stdMat = ViewBag.StdMaterial ?? 0m, stdLab = ViewBag.StdLabor ?? 0m, stdOh = ViewBag.StdOverhead ?? 0m;
+                                var stdTotal = stdMat + stdLab + stdOh;
+                                <!--begin::Manufacturing summary card-->
+                                <div class="card bg-light-primary mb-7">
+                                    <div class="card-body py-5">
+                                        <div class="d-flex align-items-center mb-4">
+                                            <span class="badge badge-primary fs-7 me-3"><i class="ki-outline ki-gear fs-6 text-white me-1"></i>@Localizer["Manufactured item"]</span>
+                                            <span class="text-muted fs-7">@Localizer["Produced via a work order from the components below"]</span>
+                                        </div>
+                                        <div class="row g-5">
+                                            <div class="col-md-7">
+                                                <div class="fw-bold text-gray-700 fs-7 mb-2">@Localizer["Manufactured from"]</div>
+                                                <div class="table-responsive"><table class="table table-row-dashed align-middle gy-1 mb-0">
+                                                    <thead><tr class="fs-8 text-muted text-uppercase"><th>@Localizer["Component"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Scrap %"]</th><th class="text-end">@Localizer["Unit cost"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
+                                                    <tbody>
+                                                    @if (!bomLines.Any()) { <tr><td colspan="5" class="text-muted text-center py-3">@Localizer["No components yet — add them below."]</td></tr> }
+                                                    @foreach (var bl in bomLines)
+                                                    {
+                                                        <tr><td class="fw-semibold text-gray-800">@bl.name</td><td class="text-end">@bl.qty.ToString("N4")</td><td class="text-end text-muted">@(bl.scrapPct > 0 ? bl.scrapPct.ToString("N2") + "%" : "—")</td><td class="text-end text-muted">@(bl.unitCost > 0 ? bl.unitCost.ToString("N4") : "—")</td><td class="text-end fw-bold">@bl.lineCost.ToString("N4")</td></tr>
+                                                    }
+                                                    </tbody>
+                                                </table></div>
+                                                @if (routingOps.Any())
+                                                {
+                                                    <div class="fw-bold text-gray-700 fs-7 mt-4 mb-1">@Localizer["Routing operations"]</div>
+                                                    <div class="text-gray-700 fs-7">@string.Join("  ←  ", routingOps.OrderBy(o => o.Seq).Select(o => $"{o.Seq}. {(string.IsNullOrWhiteSpace(o.OperationName) ? Localizer["Op"].Value : o.OperationName)}"))</div>
+                                                }
+                                            </div>
+                                            <div class="col-md-5">
+                                                <div class="fw-bold text-gray-700 fs-7 mb-2">@Localizer["Standard cost per unit"]</div>
+                                                <div class="d-flex justify-content-between mb-2"><span class="text-muted fs-7">@Localizer["Materials (BOM)"]</span><span class="fw-bold">@stdMat.ToString("N4")</span></div>
+                                                <div class="d-flex justify-content-between mb-2"><span class="text-muted fs-7">@Localizer["Labor (routing)"]</span><span class="fw-bold">@stdLab.ToString("N4")</span></div>
+                                                <div class="d-flex justify-content-between mb-2"><span class="text-muted fs-7">@Localizer["Overhead (routing)"]</span><span class="fw-bold">@stdOh.ToString("N4")</span></div>
+                                                <div class="separator my-2"></div>
+                                                <div class="d-flex justify-content-between"><span class="fw-bold">@Localizer["Standard total"]</span><span class="fw-bolder fs-4 text-primary">@stdTotal.ToString("N4")</span></div>
+                                                <a href="@Url.Action("Routing","Inventory", new { itemId = Model.ID })" class="btn btn-sm btn-light-primary w-100 mt-4"><i class="ki-outline ki-route fs-4"></i>@Localizer["Edit routing"]</a>
+                                                <div class="text-muted fs-8 mt-2">@Localizer["Standard cost is indicative (current avg component cost + routing time). Actual cost is computed when the work order is completed."]</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--end::Manufacturing summary card-->
+                            }
+                            <!--begin::Components-->
+                            <div id="tabComponents">
+                                <div class="alert alert-light-warning d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@Localizer["Components of the composite item. On sale (bundle) or assembly, these are deducted from stock."]</div></div>
+                                <div class="table-responsive">
+                                    <table class="table align-middle table-row-dashed gy-3" id="compTable">
+                                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th class="min-w-250px">@Localizer["Component"]</th><th class="min-w-120px">@Localizer["Qty"]</th><th class="min-w-100px">@Localizer["Scrap %"]</th><th class="min-w-150px">@Localizer["Unit"]</th><th class="w-50px"></th></tr></thead>
+                                        <tbody id="compBody">
+                                            @for (int i = 0; i < itemComps.Count; i++)
+                                            {
+                                                <tr class="grid-row">
+                                                    <td><select name="Components[@i].ComponentItemId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var it in allItems) { <option value="@it.ID" selected="@(itemComps[i].ComponentItemId==it.ID)">@it.ItemCode — @(isAr ? it.Name : (string.IsNullOrEmpty(it.NameEn) ? it.Name : it.NameEn))</option> }</select></td>
+                                                    <td><input name="Components[@i].Quantity" type="number" step="0.0001" min="0" class="form-control form-control-solid" value="@itemComps[i].Quantity.ToString(CultureInfo.InvariantCulture)" /></td>
+                                                    <td><input name="Components[@i].ScrapPct" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@itemComps[i].ScrapPct.ToString(CultureInfo.InvariantCulture)" /></td>
+                                                    <td><select name="Components[@i].UoMId" class="form-select form-select-solid grid-select"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(itemComps[i].UoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                                    <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="btn btn-light-primary btn-sm" id="addCompRow"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add component"]</button>
+                                <template id="compRowTpl">
+                                    <tr class="grid-row">
+                                        <td><select name="Components[__I__].ComponentItemId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var it in allItems) { <option value="@it.ID">@it.ItemCode — @(isAr ? it.Name : (string.IsNullOrEmpty(it.NameEn) ? it.Name : it.NameEn))</option> }</select></td>
+                                        <td><input name="Components[__I__].Quantity" type="number" step="0.0001" min="0" class="form-control form-control-solid" value="1" /></td>
+                                        <td><input name="Components[__I__].ScrapPct" type="number" step="0.01" min="0" class="form-control form-control-solid" value="0" /></td>
+                                        <td><select name="Components[__I__].UoMId" class="form-select form-select-solid grid-select"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                        <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
+                                    </tr>
+                                </template>
+                            </div>
+                            <!--end::Components-->
+                            </div>
+                            <!--end::compSection-->
+                        </div>
+                    </div>
+                </div>
+                <!--end::Data card-->
+            </div>
+            <!--end::Main column-->
+        </div>
+    </div></div>
+    <!--end::Content-->
+    @if (embed)
+    {
+        <div class="d-flex justify-content-end gap-2 border-top pt-4 mt-2 position-sticky bottom-0 bg-white">
+            <button type="button" class="btn btn-light" onclick="parent.postMessage({cbQuickAddCancel:true},'*')">@SR["Cancel"]</button>
+            <button type="submit" class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@SR["Save"]</button>
+        </div>
+    }
+</form>
+
+@section Scripts {
+<script>
+(function(){
+  // ---- barcode generator ----
+  var b = document.getElementById('genBarcode');
+  if (b) b.addEventListener('click', function(){
+    var t = document.getElementById('f_barcode');
+    var n = '200'; for (var i=0;i<10;i++) n += Math.floor(Math.random()*10);
+    t.value = n;
+  });
+
+  // ---- composite toggle ----
+  var chk = document.getElementById('f_iscomposite');
+  var typeWrap = document.getElementById('compTypeWrap');
+  var compSection = document.getElementById('compSection');
+  var compType = document.getElementById('f_comptype');
+  var prodWrap = document.getElementById('prodMethodWrap');
+  function toggleComposite(){
+    var on = chk && chk.checked;
+    if (typeWrap) typeWrap.style.display = on ? '' : 'none';
+    if (compSection) compSection.style.display = on ? '' : 'none';
+    // production method applies only to Assembly composites
+    if (prodWrap) prodWrap.style.display = (on && compType && compType.value === 'Assembly') ? '' : 'none';
+  }
+  if (chk) chk.addEventListener('change', toggleComposite);
+  if (compType) { compType.addEventListener('change', toggleComposite); if (window.jQuery) jQuery(compType).on('select2:select', toggleComposite); }
+
+  // ---- init select2 on a freshly added row (keeps the Metronic look) ----
+  function initSelects(scope){
+    if (!window.jQuery || !jQuery.fn.select2) return;
+    jQuery(scope).find('select.grid-select').each(function(){
+      if (!jQuery(this).data('select2')) jQuery(this).select2({ width: '100%' });
+    });
+  }
+  // existing rendered grid selects -> select2
+  initSelects(document.getElementById('unitsBody'));
+  initSelects(document.getElementById('compBody'));
+
+  function addRow(tplId, bodyId){
+    var tpl = document.getElementById(tplId), body = document.getElementById(bodyId);
+    if (!tpl || !body) return;
+    var html = tpl.innerHTML.replace(/__I__/g, String(Date.now()) + String(Math.floor(Math.random()*1000)));
+    var tmp = document.createElement('tbody'); tmp.innerHTML = html.trim();
+    var row = tmp.firstElementChild;
+    body.appendChild(row);
+    initSelects(row);
+  }
+  var au = document.getElementById('addUnitRow'); if (au) au.addEventListener('click', function(){ addRow('unitRowTpl','unitsBody'); });
+  var ac = document.getElementById('addCompRow'); if (ac) ac.addEventListener('click', function(){ addRow('compRowTpl','compBody'); });
+
+  // ---- delete row (delegated) ----
+  document.addEventListener('click', function(ev){
+    var del = ev.target.closest && ev.target.closest('.row-del');
+    if (!del) return;
+    var tr = del.closest('tr'); if (tr) tr.remove();
+  });
+
+  // ---- reindex collection inputs to sequential indices before submit ----
+  var form = document.getElementById('kt_item_form');
+  if (form) form.addEventListener('submit', function(){
+    ['#unitsBody', '#compBody'].forEach(function(sel){
+      var body = document.querySelector(sel); if (!body) return;
+      var i = 0;
+      Array.prototype.forEach.call(body.querySelectorAll('tr.grid-row'), function(tr){
+        tr.querySelectorAll('[name]').forEach(function(el){
+          el.name = el.name.replace(/\[[^\]]*\]/, '[' + i + ']');   // first [..] -> [i]
+        });
+        i++;
+      });
+    });
+  });
+})();
+
+// item analytics balance chart (data passed via data-* attributes — safe from Razor script encoding)
+(function(){
+  var el = document.getElementById('item_card_chart');
+  if (!el || !window.ApexCharts) return;
+  var cats, bal;
+  try { cats = JSON.parse(el.getAttribute('data-cats') || '[]'); bal = JSON.parse(el.getAttribute('data-bal') || '[]'); } catch(e){ return; }
+  if (!cats.length) return;
+  new ApexCharts(el, {
+    chart: { type: 'area', height: 200, fontFamily: 'inherit', toolbar: { show: false }, sparkline: { enabled: false } },
+    series: [ { name: '@SR["Balance"]', data: bal } ],
+    colors: ['#1f6253'],
+    xaxis: { categories: cats, labels: { show: false }, axisTicks: { show: false }, axisBorder: { show: false } },
+    yaxis: { labels: { style: { colors: '#99A1B7', fontSize: '10px' } } },
+    stroke: { curve: 'stepline', width: 2 },
+    fill: { type: 'gradient', gradient: { opacityFrom: 0.35, opacityTo: 0.05 } },
+    dataLabels: { enabled: false }, legend: { show: false },
+    grid: { borderColor: '#E4E6EF', strokeDashArray: 4 },
+    tooltip: { x: { formatter: function(_,o){ return cats[o.dataPointIndex] || ''; } } }
+  }).render();
+})();
+
+// ---- storefront product gallery: Metronic Dropzone (init here, at the page bottom, AFTER the Dropzone library loads) ----
+(function () {
+  if (typeof Dropzone === 'undefined') return;
+  Dropzone.autoDiscover = false;   // init manually; block auto-discovery so it doesn't attach a default (broken) instance
+  var el = document.getElementById('galleryDropzone');
+  if (!el || el.dropzone) return;
+  var input = document.getElementById('galleryInput');   // the file field actually posted with the form
+  var rm = document.getElementById('removeImageIds');
+  var existing = [];
+  try { existing = JSON.parse((document.getElementById('galleryExistingData') || {}).textContent || '[]'); } catch (e) { }
+
+  var dz = new Dropzone(el, {
+    url: '@Url.Action("EditItem", "Inventory")',   // dummy — autoProcessQueue is false, so nothing is ever uploaded here
+    autoProcessQueue: false,
+    uploadMultiple: false,
+    parallelUploads: 20,
+    maxFiles: 20,
+    maxFilesize: 10,
+    acceptedFiles: 'image/*',
+    addRemoveLinks: true,
+    previewsContainer: '#galleryDropzone',   // thumbnails render INSIDE the box
+    clickable: '#galleryDropzone',
+    dictRemoveFile: '@Localizer["Remove"]',
+    dictInvalidFileType: '@Localizer["Only image files are allowed (PNG, JPG, WEBP)."]',
+    dictMaxFilesExceeded: '@Localizer["Too many images."]'
+  });
+
+  // keep the posted <input name=galleryFiles> in sync with the NEW image files queued in the dropzone
+  function syncInput() {
+    var dt = new DataTransfer();
+    dz.files.forEach(function (f) { if (f instanceof File && !f.__existing && f.accepted !== false) dt.items.add(f); });
+    input.files = dt.files;
+  }
+  dz.on('addedfile', function () { syncInput(); });
+  dz.on('error', function () { syncInput(); });
+  dz.on('removedfile', function (file) {
+    if (file && file.__existing) {
+      var v = rm.value ? rm.value.split(',') : [];
+      if (v.indexOf(String(file.__existing)) === -1) v.push(String(file.__existing));
+      rm.value = v.join(',');
+    }
+    syncInput();
+  });
+
+  // preload already-saved images as removable thumbnails INSIDE the dropzone
+  existing.forEach(function (img) {
+    var mock = { name: img.name, size: 0, accepted: true, __existing: img.id };
+    dz.displayExistingFile(mock, img.url);
+    dz.files.push(mock);
+  });
+})();
+</script>
+}

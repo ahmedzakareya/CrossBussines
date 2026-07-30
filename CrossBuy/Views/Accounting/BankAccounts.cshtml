@@ -1,0 +1,44 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<BankAccount>
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var cash = ViewBag.CashAccounts as List<AccountNode> ?? new();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Bank Accounts"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Banks"]</li></ul></div>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#mNew"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New bank"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title"><div class="d-flex align-items-center position-relative my-1"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-300px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
+            <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Bank"]</th><th>@Localizer["Account No"]</th><th>IBAN</th><th class="text-end">@Localizer["Opening"]</th><th class="text-center pe-4">@SR["Status"]</th></tr></thead>
+                <tbody>
+                @foreach (var b in Model) { <tr class="r" data-s="@b.BankName @b.BankNameEn @b.AccountNumber @b.IBAN" style="border-bottom:1px dashed #eef1f6;"><td class="ps-4 fw-semibold text-gray-800">@(isAr ? b.BankName : (b.BankNameEn ?? b.BankName))</td><td class="text-muted">@(b.AccountNumber ?? "—")</td><td class="text-muted">@(b.IBAN ?? "—")</td><td class="text-end">@b.OpeningBalance.ToString("N2")</td><td class="text-center pe-4"><span class="badge fw-bold" style="@(b.IsActive?"background:#eaf3ef;color:#13433a;":"background:#f2f4f7;color:#475467;")">@(b.IsActive?SR["Active"]:SR["Inactive"])</span></td></tr> }
+                @if (Model.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@Localizer["No bank accounts"]</td></tr> }
+                </tbody>
+            </table></div></div>
+        </div>
+    </div></div>
+</div>
+<div class="modal fade" id="mNew" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="CreateBankAccount" method="post">@Html.AntiForgeryToken()
+        <div class="modal-header"><h2 class="fw-bold">@Localizer["New bank account"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8">
+            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Bank name"]</label><input name="bankName" class="form-control form-control-solid" required /></div>
+            <div class="row"><div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Account No"]</label><input name="accountNumber" class="form-control form-control-solid" /></div>
+            <div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2">IBAN</label><input name="iban" class="form-control form-control-solid" /></div></div>
+            <div class="row"><div class="col-7 mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["GL account"]</label><select name="glAccountId" class="form-select form-select-solid" required><option value="0">@Localizer["Select"]</option>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
+            <div class="col-5 mb-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Opening"]</label><input name="openingBalance" type="number" step="0.01" value="0" class="form-control form-control-solid" /></div></div>
+            <div class="row"><div class="col-6 mb-2"><label class="fw-semibold fs-6 mb-2">@SR["Currency"]</label><select name="currencyId" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="">@Localizer["Branch (functional)"]</option>@foreach (var c in (ViewBag.Currencies as List<CrossBuy.Models.Context.Accounting.Currency> ?? new List<CrossBuy.Models.Context.Accounting.Currency>())) { <option value="@c.ID">@c.Code</option> }</select></div>
+            <div class="col-6 mb-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Foreign balance"]</label><input name="foreignBalance" type="number" step="0.0001" class="form-control form-control-solid" placeholder="@Localizer["for revaluation — optional"]" /></div></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>

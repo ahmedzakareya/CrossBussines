@@ -1,0 +1,35 @@
+@using CrossBuy.BL
+@model List<PriceListRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+@foreach (var p in Model)
+{
+    <tr>
+        <td class="fw-bold text-gray-900">@p.Code @if (p.IsDefault) { <span class="badge badge-light-primary ms-1">@Localizer["Default"]</span> }</td>
+        <td>@(isAr ? p.Name : (string.IsNullOrEmpty(p.NameEn) ? p.Name : p.NameEn))</td>
+        <td>
+            @if (!string.IsNullOrEmpty(p.CustomerName)) { <span class="badge badge-light-primary"><i class="ki-outline ki-profile-circle fs-7 me-1"></i>@p.CustomerName</span> }
+            else if (!string.IsNullOrEmpty(p.Segment)) { <span class="badge badge-light-primary">@p.Segment</span> }
+            else { <span class="text-muted">@SR["All"]</span> }
+        </td>
+        <td class="text-center">@if (string.IsNullOrEmpty(p.CurrencyCode)) { <span class="text-muted fs-8">@SR["Branch"]</span> } else { <span class="badge badge-light-primary">@p.CurrencyCode</span> }</td>
+        <td class="text-center">@p.Priority</td>
+        <td class="text-center"><span class="badge badge-light-dark">@p.LineCount</span></td>
+        <td class="text-muted fs-7">@(p.ValidFrom?.ToString("yyyy-MM-dd") ?? "—") → @(p.ValidTo?.ToString("yyyy-MM-dd") ?? "∞")</td>
+        <td class="text-center"><span class="badge badge-light-@(p.IsActive?"success":"secondary")">@(p.IsActive?SR["Active"]:SR["Inactive"])</span></td>
+        <td class="text-end">
+            <a href="@Url.Action("PriceListEditor","Inventory", new { id = p.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></a>
+            <form asp-action="CopyPriceList" asp-controller="Inventory" method="post" class="d-inline me-1" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Copy this list as a new draft?"]">
+                @Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" />
+                <button class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Copy"]"><i class="ki-outline ki-copy fs-5"></i></button>
+            </form>
+            <form asp-action="DeletePriceList" asp-controller="Inventory" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete this price list?"]">
+                @Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" />
+                <button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button>
+            </form>
+        </td>
+    </tr>
+}

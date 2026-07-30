@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Fixed Assets" xml:space="preserve">
+    <value>الأصول الثابتة</value>
+  </data>
+  <data name="New asset" xml:space="preserve">
+    <value>أصل جديد</value>
+  </data>
+  <data name="Search..." xml:space="preserve">
+    <value>بحث بالاسم أو الرقم...</value>
+  </data>
+  <data name="Asset" xml:space="preserve">
+    <value>الأصل</value>
+  </data>
+  <data name="Acquired" xml:space="preserve">
+    <value>تاريخ الاقتناء</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>التكلفة</value>
+  </data>
+  <data name="Accum. dep." xml:space="preserve">
+    <value>مجمع الإهلاك</value>
+  </data>
+  <data name="Net book value" xml:space="preserve">
+    <value>القيمة الدفترية</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>فتح</value>
+  </data>
+  <data name="No assets" xml:space="preserve">
+    <value>لا توجد أصول</value>
+  </data>
+  <data name="New fixed asset" xml:space="preserve">
+    <value>أصل ثابت جديد</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>الاسم (عربي)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>الاسم (إنجليزي)</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="Acquisition date" xml:space="preserve">
+    <value>تاريخ الاقتناء</value>
+  </data>
+  <data name="Salvage value" xml:space="preserve">
+    <value>قيمة الخردة</value>
+  </data>
+  <data name="Useful life (months)" xml:space="preserve">
+    <value>العمر الإنتاجي (شهور)</value>
+  </data>
+  <data name="Cost center" xml:space="preserve">
+    <value>مركز التكلفة</value>
+  </data>
+  <data name="Funded from" xml:space="preserve">
+    <value>حساب التمويل (نقدية/مورد)</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>اختر</value>
+  </data>
+  <data name="Save &amp; post" xml:space="preserve">
+    <value>حفظ وترحيل</value>
+  </data>
+  <data name="Fully dep." xml:space="preserve">
+    <value>مهلك بالكامل</value>
+  </data>
+  <data name="Disposed" xml:space="preserve">
+    <value>مستبعد</value>
+  </data>
+</root>

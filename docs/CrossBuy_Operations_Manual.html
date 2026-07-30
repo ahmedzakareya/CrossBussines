@@ -1,0 +1,1142 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CrossBuy — دليل المستخدم الموحّد</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ground:#f6f8f7; --panel:#ffffff; --ink:#16241f; --muted:#5d6f68;
+    --accent:#13433a; --accent2:#1f6253; --line:#e3eae7;
+    --gold:#c79a3a; --danger:#b3403a; --ok:#2f7d5b; --info:#2a6f97;
+    --shadow:0 1px 2px rgba(16,40,34,.05),0 8px 24px rgba(16,40,34,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--ground);color:var(--ink);
+    font-family:'Cairo','Segoe UI',Tahoma,sans-serif;line-height:1.85;font-size:16px}
+  a{color:var(--accent2);text-decoration:none}
+  .wrap{display:grid;grid-template-columns:288px 1fr;max-width:1280px;margin:0 auto;gap:0}
+  /* sidebar */
+  aside{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;
+    background:linear-gradient(180deg,#0c2e28,#13433a);color:#dfeae6;padding:26px 20px}
+  aside .brand{font-weight:800;font-size:1.5rem;color:#fff;letter-spacing:.5px}
+  aside .brand small{display:block;font-weight:600;font-size:.78rem;color:#9ec4b9;margin-top:4px}
+  aside nav{margin-top:26px}
+  aside nav a{display:block;color:#c4d8d1;padding:8px 12px;border-radius:8px;font-size:.92rem;margin-bottom:2px}
+  aside nav a:hover{background:rgba(255,255,255,.08);color:#fff}
+  aside nav a.grp{margin-top:16px;font-size:.74rem;font-weight:700;color:#7fae9f;letter-spacing:1px;text-transform:uppercase;padding-bottom:4px}
+  main{padding:48px 56px;min-width:0}
+  /* hero */
+  .hero{border-bottom:3px solid var(--accent);padding-bottom:24px;margin-bottom:34px}
+  .hero h1{font-size:2.4rem;margin:0 0 6px;font-weight:800;color:var(--accent)}
+  .hero p{margin:.3rem 0;color:var(--muted);font-size:1.02rem}
+  .hero .tag{display:inline-block;background:#e7f0ec;color:var(--accent);font-size:.78rem;
+    font-weight:700;padding:4px 12px;border-radius:30px;margin-top:8px}
+  h2{font-size:1.55rem;color:var(--accent);margin:54px 0 6px;font-weight:800;
+    padding-top:14px;border-top:1px solid var(--line)}
+  h2 .num{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;
+    background:var(--accent);color:#fff;border-radius:10px;font-size:1rem;margin-left:10px;vertical-align:middle}
+  h3{font-size:1.12rem;color:var(--accent2);margin:26px 0 8px;font-weight:700}
+  p{margin:.5rem 0}
+  /* breadcrumb path chip */
+  .path{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;background:#eef4f1;
+    border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:.86rem;font-weight:600;margin:10px 0}
+  .path b{color:var(--accent)}
+  .path .sep{color:#9bb4ab}
+  .btnlabel{display:inline-block;background:var(--accent);color:#fff;border-radius:7px;
+    padding:1px 9px;font-size:.85rem;font-weight:600;white-space:nowrap}
+  .field{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:6px;
+    padding:0 7px;font-size:.85rem;font-weight:600;color:var(--accent2)}
+  code{font-family:'IBM Plex Mono',monospace;background:#eef4f1;border-radius:5px;padding:1px 6px;font-size:.85em;direction:ltr;display:inline-block}
+  /* step list */
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:10px 48px 10px 14px;margin-bottom:8px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  ol.steps>li::before{content:counter(s);position:absolute;right:12px;top:10px;width:26px;height:26px;
+    background:var(--accent2);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.85rem}
+  /* meta blocks */
+  .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:16px 0}
+  .meta .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .meta .box h4{margin:0 0 6px;font-size:.82rem;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  /* callouts */
+  .call{border-radius:12px;padding:14px 16px 14px 16px;margin:16px 0;border-right:5px solid;font-size:.97rem}
+  .call.result{background:#eaf5ef;border-color:var(--ok)}
+  .call.note{background:#eef5f9;border-color:var(--info)}
+  .call.warn{background:#fbeeed;border-color:var(--danger)}
+  .call b{display:block;margin-bottom:3px}
+  /* GL entry */
+  .gl{margin:14px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+  .gl .ttl{background:#16241f;color:#fff;padding:8px 14px;font-weight:700;font-size:.92rem}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  .gl table td,.gl table th{padding:8px 14px;border-top:1px solid var(--line);text-align:right}
+  .gl table th{background:#f1f6f4;color:var(--muted);font-weight:700;font-size:.8rem}
+  .dr{color:var(--accent);font-weight:700}
+  .cr{color:var(--gold);font-weight:700}
+  /* generic table */
+  table.tbl{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);margin:14px 0}
+  table.tbl th,table.tbl td{padding:9px 14px;border-top:1px solid var(--line);text-align:right;vertical-align:top}
+  table.tbl th{background:#f1f6f4;color:var(--muted);font-weight:700;font-size:.82rem;border-top:none}
+  table.tbl tr:nth-child(even) td{background:#fafcfb}
+  .pill{font-size:.74rem;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .pill.s{background:#e7f0ec;color:var(--accent)}
+  ul.clean{margin:.4rem 0;padding-right:22px}
+  ul.clean li{margin:3px 0}
+  .modbanner{background:linear-gradient(135deg,#0c2e28,#1f6253);color:#fff;border-radius:16px;
+    padding:22px 26px;margin:46px 0 8px;box-shadow:var(--shadow)}
+  .modbanner .k{font-size:.78rem;font-weight:700;letter-spacing:1px;color:#9ec4b9;text-transform:uppercase}
+  .modbanner h2{border:none;color:#fff;margin:4px 0 0;padding:0;font-size:1.9rem}
+  .modbanner.done{border-right:6px solid #7fd6a8}
+  .soon{background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:22px 24px;margin:14px 0;color:var(--muted)}
+  .soon b{color:var(--accent)}
+  footer{margin-top:60px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}aside{position:static;height:auto}main{padding:28px 18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<aside>
+  <div class="brand">CrossBuy<small>دليل المستخدم الموحّد — كل الموديولات</small></div>
+  <nav>
+    <a class="grp">الموديولات</a>
+    <a href="#mod-inv">① المخازن <span style="color:#7fd6a8">✓</span></a>
+    <a href="#mod-acc">② المحاسبة <span style="color:#7fd6a8">✓</span></a>
+    <a href="#mod-mfg">③ التصنيع <span style="color:#7fd6a8">✓</span></a>
+    <a href="#mod-sd">④ المشتريات والمبيعات <span style="color:#7fd6a8">✓</span></a>
+    <a href="#mod-crm">⑤ إدارة العلاقات (CRM) <span style="color:#7fd6a8">✓</span></a>
+    <a href="#mod-hr">⑥ الموارد البشرية <span style="color:#7fd6a8">✓</span></a>
+    <a class="grp">المخازن — تمهيد</a>
+    <a href="#intro">مقدمة وكيفية القراءة</a>
+    <a href="#accounts">دليل الحسابات المختصر</a>
+    <a class="grp">البيانات الأساسية</a>
+    <a href="#c1">1 · تعريف صنف جديد</a>
+    <a href="#c2">2 · الرصيد الافتتاحي</a>
+    <a class="grp">دورات التشغيل</a>
+    <a href="#c3">3 · دورة الشراء الكاملة</a>
+    <a href="#c4">4 · دورة البيع الكاملة</a>
+    <a href="#c5">5 · الدفعات والصلاحية والسيريال</a>
+    <a href="#c6">6 · التحويل بين المخازن</a>
+    <a href="#c7">7 · الجرد والتسويات</a>
+    <a href="#c8">8 · الإعدام والتلف</a>
+    <a href="#c9">9 · رسملة أصل والإهلاك</a>
+    <a class="grp">المتابعة</a>
+    <a href="#c10">10 · التقارير وتسوية السلامة</a>
+    <a class="grp">المحاسبة — الدورات</a>
+    <a href="#a1">1 · الحسابات ومراكز التكلفة</a>
+    <a href="#a2">2 · القيود اليومية</a>
+    <a href="#a3">3 · الفترات المالية</a>
+    <a href="#a4">4 · سندات القبض</a>
+    <a href="#a5">5 · سندات الدفع</a>
+    <a href="#a6">6 · البنوك والخزائن</a>
+    <a href="#a7">7 · العملات وإعادة التقييم</a>
+    <a href="#a8">8 · الضرائب</a>
+    <a href="#a9">9 · الأصول الثابتة والإهلاك</a>
+    <a href="#a10">10 · التقارير المالية والإقفال</a>
+    <a class="grp">التصنيع — الدورات</a>
+    <a href="#m1">1 · طريقة التصنيع</a>
+    <a href="#m2">2 · أمر التشغيل ودورته</a>
+    <a href="#m3">3 · مراكز العمل والمسارات</a>
+    <a href="#m4">4 · العمالة بنوعيها</a>
+    <a href="#m5">5 · تخطيط الإنتاج MRP</a>
+    <a href="#m6">6 · الهالك والتجميع الفوري</a>
+    <a href="#m7">7 · تقارير التصنيع</a>
+    <a class="grp">المشتريات/المبيعات المتقدمة</a>
+    <a href="#s1">1 · قوائم الأسعار</a>
+    <a href="#s2">2 · تخطيط النواقص</a>
+    <a href="#s3">3 · التكاليف الإضافية</a>
+    <a href="#s4">4 · مرتجعات البيع</a>
+    <a href="#s5">5 · مرتجعات الشراء</a>
+    <a href="#s6">6 · حدّ الائتمان والأعمار</a>
+    <a class="grp">CRM — الدورات</a>
+    <a href="#r1">1 · الحسابات وجهات الاتصال</a>
+    <a href="#r2">2 · العملاء المحتملون</a>
+    <a href="#r3">3 · الفرص والكانبان</a>
+    <a href="#r4">4 · الأنشطة والتذكيرات</a>
+    <a href="#r5">5 · الحملات والقوائم</a>
+    <a href="#r6">6 · التذاكر و SLA</a>
+    <a href="#r7">7 · التنبؤ والتقارير</a>
+    <a class="grp">الموارد البشرية — الدورات</a>
+    <a href="#h1">1 · الموظفون والهيكل</a>
+    <a href="#h2">2 · الإجازات</a>
+    <a href="#h3">3 · الحضور والانصراف</a>
+    <a href="#h4">4 · الرواتب والقسائم</a>
+    <a href="#h5">5 · الصرف والتوريد</a>
+    <a href="#h6">6 · الضريبة والتأمينات</a>
+    <a href="#h7">7 · نهاية الخدمة</a>
+    <a href="#h8">8 · الخدمة الذاتية ESS</a>
+  </nav>
+</aside>
+
+<main>
+  <div class="modbanner done" id="mod-inv">
+    <div class="k">الموديول ① — مكتمل</div>
+    <h2>نظام المخازن (Inventory)</h2>
+  </div>
+  <div class="hero">
+    <h1>موديول المخازن — دليل التشغيل العملي</h1>
+    <p>كيف تنفّذ كل عملية بنفسك: من أي شاشة تبدأ، أي زر تضغط، أي حقل تملأ، ماذا يحدث محاسبيًا، وكيف تتحقق.</p>
+    <p style="color:var(--muted);font-size:.9rem">الأسماء والمسارات والأزرار في هذا الدليل مطابقة للنظام الفعلي. كل القيود تُرحَّل تلقائيًا — لا إدخال يدوي للقيود.</p>
+    <span class="tag">CrossBuy ERP · نظام المخازن (Inventory)</span>
+  </div>
+
+  <!-- INTRO -->
+  <section id="intro">
+    <h2><span class="num">i</span>مقدمة وكيفية القراءة</h2>
+    <p>يغطّي هذا الدليل دورات العمل الكاملة لنظام المخازن. كل دورة مكتوبة بالشكل نفسه:</p>
+    <ul class="clean">
+      <li><b>الهدف</b> — ماذا تنجز.</li>
+      <li><b>المتطلبات المسبقة</b> — ما يجب أن يكون جاهزًا قبل البدء.</li>
+      <li><b>الخطوات بالترتيب</b> — مع اسم الشاشة في القائمة، الأزرار، والحقول الفعلية.</li>
+      <li><b>النتيجة والتحقق</b> — حركة المخزون والقيد المحاسبي الناتج بلغة مبسّطة، وأين تراجعه.</li>
+      <li><b>ملاحظات وأخطاء شائعة</b>.</li>
+    </ul>
+    <div class="call note"><b>كيف تتنقّل</b>
+      المسار يُكتب هكذا: <span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>البيانات الأساسية</b><span class="sep">›</span><b>الأصناف</b></span> — أي افتح القائمة الجانبية اليمنى ثم المجموعة ثم الشاشة. أسماء المجموعات الفعلية: «عام»، «البيانات الأساسية»، «الحركات والأرصدة»، «العمليات»، «المشتريات والمبيعات»، «الحوكمة والإعداد»، «التقارير».
+    </div>
+    <div class="call note"><b>ملاحظة أساسية في التقييم</b>
+      النظام يستخدم <b>الجرد المستمر (Perpetual)</b>: تكلفة البضاعة المبيعة (COGS) وقيمة المخزون تُحسبان تلقائيًا من التكلفة الفعلية لحظة الحركة (متوسط مرجّح أو FIFO حسب إعداد الصنف). أنت تُدخل الكميات والأسعار فقط — النظام يكتب القيد.
+    </div>
+  </section>
+
+  <!-- ACCOUNTS -->
+  <section id="accounts">
+    <h2><span class="num">★</span>دليل الحسابات المختصر</h2>
+    <p>حسابات المخزون/التكلفة/الـ GRNI تُؤخذ من <b>ربط الحسابات على تصنيف الصنف</b> (شاشة «التصنيفات»)، فهي قابلة للضبط. القيم الشائعة:</p>
+    <table class="tbl">
+      <tr><th>الكود</th><th>الحساب</th><th>الاستخدام</th></tr>
+      <tr><td><code>1103</code></td><td>المخزون</td><td>قيمة المخزون — يتأثر بكل حركة دخول/خروج</td></tr>
+      <tr><td><code>1105</code></td><td>إنتاج تحت التشغيل (WIP)</td><td>أوامر التشغيل في التصنيع</td></tr>
+      <tr><td><code>210203</code></td><td>بضاعة وردت بلا فاتورة (GRNI)</td><td>تُدان عند الاستلام وتُصفّى عند فاتورة المورد</td></tr>
+      <tr><td><code>1102</code></td><td>حساب العملاء (مدينون)</td><td>يُدان بفاتورة البيع</td></tr>
+      <tr><td><code>2101</code></td><td>حساب الموردين (دائنون)</td><td>يُدان عند سداد المورد، يُجعل دائنًا بفاتورة الشراء</td></tr>
+      <tr><td><code>4101</code></td><td>إيراد المبيعات</td><td>يُجعل دائنًا بفاتورة البيع</td></tr>
+      <tr><td>حسب الفئة</td><td>تكلفة البضاعة المبيعة (COGS)</td><td>تُدان عند الصرف/التسليم</td></tr>
+      <tr><td><code>110401</code> / <code>210201</code></td><td>ض.ق.م مدخلات / مخرجات</td><td>ضريبة الشراء / ضريبة البيع</td></tr>
+      <tr><td><code>510103</code></td><td>مصروف الإعدام والتلف</td><td>يُدان عند الإعدام</td></tr>
+      <tr><td><code>1201</code> / <code>1202</code> / <code>520103</code></td><td>تكلفة الأصل / مجمع الإهلاك / مصروف الإهلاك</td><td>رسملة الأصول والإهلاك</td></tr>
+      <tr><td><code>110302</code></td><td>بضاعة في الطريق</td><td>التحويل بين فروع مختلفة (يصافي صفرًا عند الاكتمال)</td></tr>
+    </table>
+  </section>
+
+  <!-- 1 ITEM -->
+  <section id="c1">
+    <h2><span class="num">1</span>تعريف صنف جديد</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>إنشاء صنف في الكتالوج بنوعه الصحيح وربط حساباته ووحداته.</div>
+      <div class="box"><h4>المتطلبات المسبقة</h4>وجود تصنيف (Category) مربوط بحساباته من شاشة «التصنيفات»، ووحدة قياس من «وحدات القياس».</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>البيانات الأساسية</b><span class="sep">›</span><b>الأصناف</b></span></div>
+    </div>
+
+    <h3>الخطوات</h3>
+    <ol class="steps">
+      <li>افتح شاشة <b>«الأصناف»</b>، واضغط <span class="btnlabel">إضافة صنف</span> أعلى يمين القائمة.</li>
+      <li>في قسم <b>«البيانات العامة»</b> املأ: <span class="field">كود الصنف</span> و<span class="field">الباركود</span> (أو اضغط زر التوليد بجواره)، <span class="field">الاسم</span> (عربي) و<span class="field">الاسم (إنجليزي)</span>، ثم اختر <span class="field">الفئة</span> و<span class="field">وحدة القياس الأساسية</span>.</li>
+      <li>اختر <span class="field">النوع</span> حسب طبيعة الصنف (انظر الجدول أدناه).</li>
+      <li>في قسم <b>«التسعير والتقييم»</b>: حدّد <span class="field">طريقة التقييم</span> (اتركها «حسب الفئة» أو اختر «المتوسط المرجح» / «FIFO»)، و<span class="field">سعر البيع</span>، و<span class="field">كود الضريبة</span> الافتراضي عند اللزوم. (<span class="field">التكلفة الافتتاحية</span> اختيارية — الأفضل إدخال الرصيد الافتتاحي من شاشته المخصّصة، دورة 2).</li>
+      <li>إن كان للصنف وحدات بديلة (كرتونة = 12 قطعة مثلًا): في قسم <b>«الوحدات والباركود»</b> اضغط <span class="btnlabel">إضافة وحدة</span> وأدخل الوحدة ومعامل التحويل للوحدة الأساسية وباركودها.</li>
+      <li>فعّل خيارات <b>«التتبّع»</b> في الجانب حسب الحاجة: <span class="field">تتبّع الدفعة</span>، <span class="field">تتبّع الصلاحية</span>، <span class="field">تتبّع السيريال</span> (انظر دورة 5).</li>
+      <li>اضبط <span class="field">الحالة</span> = «نشط»، وارفع صورة للصنف عند الرغبة، ثم اضغط <span class="btnlabel">حفظ</span>.</li>
+    </ol>
+
+    <h3>أنواع الأصناف (حقل «النوع»)</h3>
+    <table class="tbl">
+      <tr><th>النوع</th><th>القيمة</th><th>متى تستخدمه</th></tr>
+      <tr><td>صنف مخزون</td><td><code>Stockable</code></td><td>بضاعة لها رصيد كمي وقيمة (الافتراضي). هو النوع الذي يقبل رصيدًا افتتاحيًا وحركات مخزون.</td></tr>
+      <tr><td>مستهلك</td><td><code>NonStockable</code></td><td>صنف يُشترى ويُصرف دون تتبّع رصيد دائم.</td></tr>
+      <tr><td>خدمة</td><td><code>Service</code></td><td>بند خدمي (لا مخزون) — يظهر في الفواتير دون حركة كمية.</td></tr>
+      <tr><td>أصل</td><td><code>Asset</code></td><td>أصل ثابت يُشترى ويُخزَّن مؤقتًا ثم يُرسمل (دورة 9). لا يظهر في شاشة الرصيد الافتتاحي للمخزون.</td></tr>
+    </table>
+
+    <h3>الصنف المُصنَّع والحزمة (اختياري)</h3>
+    <p>فعّل <span class="field">صنف مركّب (Kit)</span> ليظهر اختيار <span class="field">نوع التركيب</span>:</p>
+    <ul class="clean">
+      <li><b>حزمة بيع (Bundle)</b> — تتفكّك إلى مكوّناتها عند البيع.</li>
+      <li><b>تجميع (Assembly)</b> — له رصيد مستقل ويُنتَج من مكوّناته؛ يظهر معه <span class="field">طريقة التصنيع</span> («أمر تشغيل بمراحل» أو «إنتاج فوري» — تفاصيلها في دليل التصنيع).</li>
+    </ul>
+    <p>عند تفعيل التركيب يظهر قسم <b>«المكوّنات (BOM)»</b>: اضغط <span class="btnlabel">إضافة مكوّن</span> وأدخل لكل مكوّن: الصنف، الكمية، <span class="field">هالك %</span> (نسبة فاقد مخطّط)، والوحدة.</p>
+
+    <div class="call result"><b>النتيجة والتحقق</b>
+      يظهر الصنف في قائمة «الأصناف» بشارة نوعه (وشارة «مُصنَّع» أو «حزمة» للمركّبات). افتح <span class="btnlabel">بطاقة الصنف</span> (أيقونة العين) لمراجعته، أو <span class="btnlabel">دفتر حركة الصنف</span> (أيقونة الكتاب) لرؤية حركاته لاحقًا. لا يُرحَّل أي قيد بمجرد التعريف.
+    </div>
+    <div class="call warn"><b>أخطاء شائعة</b>
+      الكود أو الباركود مكرّر → رسالة «مستخدم من قبل». لا تربط الفئة بحسابات؟ ستفشل الحركات لاحقًا برسالة «حساب المخزون غير مربوط لفئة الصنف» — اربطها من «التصنيفات» أولًا.
+    </div>
+  </section>
+
+  <!-- 2 OPENING -->
+  <section id="c2">
+    <h2><span class="num">2</span>إدخال الرصيد الافتتاحي للصنف</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تحميل أرصدة بداية التشغيل (Go-Live) كميةً وقيمةً دون إدخال قيد يدوي.</div>
+      <div class="box"><h4>المتطلبات المسبقة</h4>صنف من نوع «صنف مخزون»، مخزن مُعرَّف، وتاريخ فاصل (cutoff) لبداية التشغيل.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>الحوكمة والإعداد</b><span class="sep">›</span><b>الأرصدة الافتتاحية</b></span></div>
+    </div>
+    <h3>الخطوات</h3>
+    <ol class="steps">
+      <li>افتح <b>«الأرصدة الافتتاحية (Go-Live)»</b> وحدّد التاريخ الفاصل في أعلى الشاشة.</li>
+      <li>في تبويب <b>«مخزون»</b> اختر <span class="field">الصنف</span> و<span class="field">المخزن</span>، وأدخل <span class="field">الكمية</span> و<span class="field">تكلفة الوحدة</span>، و<span class="field">الدفعة</span> (اختياري للأصناف المتتبَّعة).</li>
+      <li>اضغط <span class="btnlabel">إضافة مخزون افتتاحي</span>. كرّر لكل صنف/مخزن.</li>
+      <li>راجع لوحة الثوابت أسفل الشاشة (قيمة المخزون = حساب المخزون، توازن الميزان…). عندما تتطابق كلها اضغط <span class="btnlabel">تثبيت التحميل</span> لإقفال الأرصدة الافتتاحية ومنع التعديل.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — رصيد افتتاحي</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>المخزون <code>1103</code></td><td>الكمية × تكلفة الوحدة</td></tr>
+        <tr><td class="cr">دائن</td><td>حساب الرصيد الافتتاحي (حقوق الملكية)</td><td>المبلغ نفسه</td></tr>
+      </table>
+    </div>
+    <div class="call result"><b>التحقق</b>
+      افتح <span class="path"><b>الحركات والأرصدة</b><span class="sep">›</span><b>أرصدة المخزون</b></span> لرؤية الرصيد، أو لوحة الثوابت في الشاشة نفسها التي تؤكّد «قيمة المخزون == حساب المخزون 1103».
+    </div>
+    <div class="call warn"><b>أخطاء شائعة</b>
+      الأصناف من نوع «أصل» لا تظهر هنا (تُرسمل من دورة 9). بعد «تثبيت التحميل» لا يمكن التعديل — تأكّد من تطابق كل الثوابت أولًا.
+    </div>
+  </section>
+
+  <!-- 3 PURCHASE -->
+  <section id="c3">
+    <h2><span class="num">3</span>دورة الشراء الكاملة</h2>
+    <p>ثلاث خطوات: <b>أمر شراء</b> ← <b>إذن استلام</b> ← <b>فاتورة مورد (مع المطابقة الثلاثية)</b>. أول خطوتين في نظام المخازن، والفاتورة في النظام المحاسبي.</p>
+
+    <h3>3-أ · أمر الشراء (PO)</h3>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>توثيق طلب شراء من مورد بكميات وأسعار.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>المشتريات والمبيعات</b><span class="sep">›</span><b>أوامر الشراء</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح <b>«أوامر الشراء»</b> واضغط <span class="btnlabel">أمر شراء جديد</span>.</li>
+      <li>اختر <span class="field">المورد</span> و<span class="field">مخزن الاستلام</span> و<span class="field">التاريخ</span>، وأضف البنود بـ <span class="btnlabel">إضافة بند</span>: <span class="field">الصنف</span>، <span class="field">كمية</span>، <span class="field">الوحدة</span>، <span class="field">سعر</span>، <span class="field">خصم</span>، <span class="field">ضريبة%</span>.</li>
+      <li>اضغط <span class="btnlabel">حفظ</span>. تُحسب «الصافي / الضريبة / الإجمالي» تلقائيًا.</li>
+    </ol>
+    <div class="call note"><b>الحالات والاعتماد</b>
+      الأمر يبدأ «معتمد» (أو «مسودة» بانتظار اعتماد إذا تجاوز حدّ الاعتماد المضبوط). الحالات: مسودة ← معتمد ← مستلم ← مغلق (بعد الفوترة) / ملغي. <b>لا قيد محاسبي عند أمر الشراء</b> — هو التزام تعاقدي فقط.
+    </div>
+
+    <h3>3-ب · إذن الاستلام (Goods Receipt)</h3>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>إدخال البضاعة فعليًا إلى المخزن.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>المشتريات والمبيعات</b><span class="sep">›</span><b>أذون الاستلام</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>من صف أمر الشراء اضغط <span class="btnlabel">استلام البضاعة</span> (يملأ البنود غير المستلمة تلقائيًا)، أو افتح «أذون الاستلام» واضغط <span class="btnlabel">إذن استلام جديد</span>.</li>
+      <li>أكّد <span class="field">المخزن</span> و<span class="field">المورد</span> و<span class="field">التاريخ</span>، وراجع البنود: <span class="field">الصنف</span>، <span class="field">كمية</span>، <span class="field">تكلفة الوحدة</span>. للأصناف المتتبَّعة أدخل <span class="field">الدفعة</span> و<span class="field">الصلاحية</span> و<span class="field">السيريال</span>.</li>
+      <li>اضغط <span class="btnlabel">ترحيل الاستلام</span>.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — استلام بضاعة</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>المخزون <code>1103</code> (يزيد الرصيد)</td><td>الكمية × التكلفة</td></tr>
+        <tr><td class="cr">دائن</td><td>بضاعة وردت بلا فاتورة GRNI <code>210203</code></td><td>المبلغ نفسه</td></tr>
+      </table>
+    </div>
+    <p style="font-size:.92rem;color:var(--muted)">يزيد رصيد المخزون فورًا، ويبقى التزام «بانتظار الفاتورة» في حساب GRNI حتى ترد فاتورة المورد.</p>
+
+    <h3>3-ج · فاتورة المورد + المطابقة الثلاثية (3-way match)</h3>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تسجيل التزام السداد للمورد وإقفال الـ GRNI، بعد التأكد من تطابق الأمر/الاستلام/الفاتورة.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>فواتير الشراء</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح <b>«فواتير الشراء»</b> واضغط <span class="btnlabel">فاتورة جديدة</span> (أو حوّل أمر الشراء المستلَم إلى فاتورة).</li>
+      <li>اختر <span class="field">المورد</span> و<span class="field">التاريخ</span>، وراجع البنود (الكمية والسعر والضريبة).</li>
+      <li>اضغط <span class="btnlabel">تسجيل وترحيل</span>.</li>
+    </ol>
+    <div class="call note"><b>المطابقة الثلاثية</b>
+      قبل تحويل أمر شراء مستلَم إلى فاتورة، يقارن النظام تلقائيًا كل بند: كمية الأمر مقابل المستلَم (سماحية <b>5%</b>) وسعر الأمر مقابل تكلفة الاستلام (سماحية <b>2%</b>). عند تجاوز السماحية يُمنع التحويل برسالة «فشل المطابقة الثلاثية (الكمية/السعر خارج السماحية)».
+    </div>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — فاتورة مورد (بعد استلام سابق)</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>GRNI <code>210203</code> (يُقفِل التزام الاستلام)</td><td>صافي البنود</td></tr>
+        <tr><td class="dr">مدين</td><td>ض.ق.م مدخلات <code>110401</code></td><td>الضريبة</td></tr>
+        <tr><td class="cr">دائن</td><td>الموردون <code>2101</code> (حساب المورد)</td><td>إجمالي الفاتورة</td></tr>
+      </table>
+    </div>
+    <p style="font-size:.92rem;color:var(--muted)">إن لم يسبق استلام (فاتورة مباشرة بصنف مخزون)، يُدان المخزون <code>1103</code> بدل GRNI، وتدخل البضاعة بالفاتورة مباشرة.</p>
+    <div class="call result"><b>التحقق</b>
+      راجع رصيد المورد في النظام المحاسبي، وتأكّد أن GRNI عاد لصفره لهذه العملية. حركة المخزون تظهر في <span class="path"><b>الحركات والأرصدة</b><span class="sep">›</span><b>حركات المخزون</b></span>.
+    </div>
+  </section>
+
+  <!-- 4 SALES -->
+  <section id="c4">
+    <h2><span class="num">4</span>دورة البيع الكاملة</h2>
+    <p>المسار النموذجي: <b>عرض سعر (اختياري)</b> ← <b>أمر بيع</b> ← <b>إذن صرف/تسليم</b> ← <b>فاتورة بيع</b>. التكلفة (COGS) تُحسب وتُرحَّل لحظة <b>الصرف</b>.</p>
+
+    <h3>4-أ · عرض السعر (Quotation) — اختياري</h3>
+    <div class="path"><b>نظام المخازن</b><span class="sep">›</span><b>المشتريات والمبيعات</b><span class="sep">›</span><b>عروض الأسعار</b></div>
+    <ol class="steps">
+      <li>افتح «عروض الأسعار» ← <span class="btnlabel">عرض سعر جديد</span>، أدخل العميل والبنود وتاريخ الصلاحية، ثم <span class="btnlabel">حفظ</span>.</li>
+      <li>عند قبول العميل اضغط <span class="btnlabel">تحويل لأمر بيع</span> (تتحوّل الحالة إلى «محوّل لأمر بيع»).</li>
+    </ol>
+
+    <h3>4-ب · أمر البيع (Sales Order)</h3>
+    <div class="path"><b>نظام المخازن</b><span class="sep">›</span><b>المشتريات والمبيعات</b><span class="sep">›</span><b>أوامر البيع</b></div>
+    <ol class="steps">
+      <li>افتح «أوامر البيع» ← <span class="btnlabel">أمر بيع جديد</span>.</li>
+      <li>اختر <span class="field">العميل</span> و<span class="field">مخزن الصرف</span> و<span class="field">التاريخ</span>، وأضف البنود (<span class="field">الصنف</span>، <span class="field">كمية</span>، <span class="field">سعر</span>، <span class="field">خصم</span>، <span class="field">ضريبة%</span>) بـ <span class="btnlabel">إضافة بند</span>، ثم <span class="btnlabel">حفظ</span>.</li>
+    </ol>
+    <div class="call note"><b>لا قيد عند أمر البيع</b> — هو وعد بيع. القيد والتكلفة يأتيان عند الصرف/الفاتورة.</div>
+
+    <h3>4-ج · إذن الصرف / التسليم (Delivery)</h3>
+    <div class="path"><b>نظام المخازن</b><span class="sep">›</span><b>المشتريات والمبيعات</b><span class="sep">›</span><b>أذون الصرف</b></div>
+    <ol class="steps">
+      <li>من أمر البيع اضغط <span class="btnlabel">تسليم البضاعة</span> (يملأ الأصناف بالكميات المتبقية)، أو افتح «أذون الصرف» ← <span class="btnlabel">إذن صرف جديد</span>.</li>
+      <li>أكّد <span class="field">المخزن</span> والبنود؛ للأصناف المتتبَّعة حدّد <span class="field">الدفعة</span>/<span class="field">السيريال</span> (وإلا يختار النظام تلقائيًا الأقرب انتهاءً — FEFO).</li>
+      <li>اضغط <span class="btnlabel">ترحيل الصرف</span>.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — صرف بضاعة (التكلفة)</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>تكلفة البضاعة المبيعة (COGS)</td><td>التكلفة الفعلية للمصروف</td></tr>
+        <tr><td class="cr">دائن</td><td>المخزون <code>1103</code> (ينقص الرصيد)</td><td>المبلغ نفسه</td></tr>
+      </table>
+    </div>
+
+    <h3>4-د · فاتورة البيع (Sales Invoice)</h3>
+    <div class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>فواتير البيع</b></div>
+    <ol class="steps">
+      <li>افتح «فواتير البيع» ← <span class="btnlabel">فاتورة جديدة</span>، أو من أمر البيع اضغط <span class="btnlabel">تحويل لفاتورة بيع</span>.</li>
+      <li>اختر <span class="field">العميل</span>، وراجع البنود مع <span class="field">حساب الإيراد</span> لكل بند، ثم اضغط <span class="btnlabel">إصدار وترحيل</span>.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — فاتورة بيع (الإيراد)</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>العملاء <code>1102</code> (حساب العميل)</td><td>إجمالي الفاتورة</td></tr>
+        <tr><td class="cr">دائن</td><td>إيراد المبيعات <code>4101</code></td><td>الصافي</td></tr>
+        <tr><td class="cr">دائن</td><td>ض.ق.م مخرجات <code>210201</code></td><td>الضريبة</td></tr>
+      </table>
+    </div>
+    <div class="call note"><b>متى تُحتسب التكلفة؟</b>
+      إن سبق التسليم بإذن صرف → الفاتورة تُرحّل الإيراد فقط (التكلفة رُحِّلت عند الصرف). إن أصدرت الفاتورة مباشرة بصنف مخزون دون تسليم → تُرحَّل التكلفة (COGS) لحظة الفاتورة أيضًا. هكذا لا تُحتسب التكلفة مرتين.
+    </div>
+    <div class="call warn"><b>أخطاء شائعة</b>
+      تجاوز حدّ ائتمان العميل يمنع الفاتورة برسالة تتضمّن المستحق الحالي + الفاتورة مقابل الحدّ. رصيد الصنف غير كافٍ في المخزن يمنع الصرف.
+    </div>
+  </section>
+
+  <!-- 5 TRACKING -->
+  <section id="c5">
+    <h2><span class="num">5</span>التتبّع: الدفعات والصلاحية والسيريال</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تتبّع البضاعة بدفعة/صلاحية أو برقم تسلسلي فريد.</div>
+      <div class="box"><h4>المتطلبات المسبقة</h4>تفعيل خيار التتبّع على الصنف (دورة 1): «تتبّع الدفعة»/«تتبّع الصلاحية»/«تتبّع السيريال».</div>
+    </div>
+    <h3>كيف تُدخل البيانات</h3>
+    <ul class="clean">
+      <li>تُدخَل أرقام الدفعة وتواريخ الصلاحية والسيريال في شاشة <b>«إذن استلام جديد»</b> (دورة 3-ب): يظهر حقل <span class="field">الدفعة</span> إذا فُعّل تتبّع الدفعة، و<span class="field">الصلاحية</span> إذا فُعّل تتبّع الصلاحية، و<span class="field">السيريال</span> إذا فُعّل تتبّع السيريال (سطر لكل قطعة).</li>
+    </ul>
+    <h3>المتابعة</h3>
+    <ul class="clean">
+      <li><span class="path"><b>الحركات والأرصدة</b><span class="sep">›</span><b>الدفعات والصلاحية</b></span> — جدول: الصنف، رقم الدفعة، الصلاحية، الرصيد، «متبقٍ يوم»، والحالة (سارية / قرب الانتهاء / منتهية / بدون صلاحية)، مرتّبًا بالأقرب انتهاءً.</li>
+      <li><span class="path"><b>الحركات والأرصدة</b><span class="sep">›</span><b>الأرقام التسلسلية</b></span> — جدول السيريالات وحالتها (في المخزون / مصروف) مع المخزن، وفلتر بالحالة.</li>
+    </ul>
+    <div class="call note"><b>FEFO (الأقرب انتهاءً أولًا)</b>
+      عند صرف صنف متتبَّع الصلاحية دون تحديد دفعة، يختار النظام تلقائيًا الدفعات الأقرب انتهاءً أولًا، ويتجاوز الدفعات المنتهية (إلا في الإعدام). إن لم يكفِ المخزون غير المنتهي يُرفض الصرف.
+    </div>
+  </section>
+
+  <!-- 6 TRANSFER -->
+  <section id="c6">
+    <h2><span class="num">6</span>التحويل بين المخازن</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>نقل كمية من مخزن إلى آخر.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>العمليات</b><span class="sep">›</span><b>التحويلات بين المخازن</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح «التحويلات بين المخازن» ← <span class="btnlabel">تحويل جديد</span>.</li>
+      <li>حدّد <span class="field">من مخزن</span> و<span class="field">إلى مخزن</span> و<span class="field">التاريخ</span>، وأضف الأصناف (<span class="field">الصنف</span>، <span class="field">كمية</span>، الدفعة/السيريال عند اللزوم).</li>
+      <li>اضغط <span class="btnlabel">ترحيل التحويل</span>.</li>
+    </ol>
+    <div class="call result"><b>النتيجة المحاسبية</b>
+      <b>داخل نفس الفرع:</b> نقل بالتكلفة الفعلية — يقلّ المخزن المصدر ويزيد الوجهة <b>بلا أي أثر محاسبي</b> (رصيد حساب المخزون 1103 لا يتغيّر). <b>بين فرعين مختلفين:</b> يُستخدم حساب «بضاعة في الطريق» <code>110302</code> (مدين عند الخروج / دائن عند الوصول) فيصافي صفرًا عند اكتمال التحويل.
+    </div>
+  </section>
+
+  <!-- 7 COUNT -->
+  <section id="c7">
+    <h2><span class="num">7</span>الجرد والتسويات</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>مطابقة الرصيد الدفتري مع الجرد الفعلي وتسوية الفروقات.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>العمليات</b><span class="sep">›</span><b>الجرد والتسويات</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح «الجرد والتسويات» ← <span class="btnlabel">جرد جديد</span>.</li>
+      <li>اختر <span class="field">المخزن</span> (تُحمَّل الأرصدة الدفترية)، وأدخل لكل صنف <span class="field">المعدود</span> فعليًا — يظهر <span class="field">الفرق</span> تلقائيًا (أحمر للنقص، أخضر للزيادة).</li>
+      <li>اضغط <span class="btnlabel">ترحيل الجرد</span>.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — تسوية جرد</div>
+      <table>
+        <tr><th>الحالة</th><th>مدين</th><th>دائن</th></tr>
+        <tr><td>زيادة (المعدود &gt; الدفتري)</td><td class="dr">المخزون <code>1103</code></td><td class="cr">حساب تسوية الجرد (للفئة)</td></tr>
+        <tr><td>نقص (المعدود &lt; الدفتري)</td><td class="dr">حساب تسوية الجرد (للفئة)</td><td class="cr">المخزون <code>1103</code></td></tr>
+      </table>
+    </div>
+    <div class="call result"><b>التحقق</b>يُنشأ مستند بصيغة <code>SC-YYYY-#####</code>، ويظهر «صافي التسوية» في القائمة. الأرصدة تتحدّث في «أرصدة المخزون».</div>
+  </section>
+
+  <!-- 8 WRITEOFF -->
+  <section id="c8">
+    <h2><span class="num">8</span>الإعدام والتلف</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>خصم بضاعة تالفة/منتهية/مفقودة نهائيًا وتحميلها مصروفًا.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>العمليات</b><span class="sep">›</span><b>الإعدام والتلف</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح «الإعدام والتلف» ← <span class="btnlabel">إعدام جديد</span>.</li>
+      <li>اختر <span class="field">المخزن</span> و<span class="field">السبب الافتراضي</span> (تالف / منتهي الصلاحية / فاقد / أخرى)، وأدخل لكل صنف <span class="field">كمية الإعدام</span> و<span class="field">السبب</span>.</li>
+      <li>اضغط <span class="btnlabel">ترحيل الإعدام</span> وأكّد التنبيه (الخصم نهائي).</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — إعدام</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>مصروف الإعدام والتلف <code>510103</code></td><td>تكلفة المُعدَم</td></tr>
+        <tr><td class="cr">دائن</td><td>المخزون <code>1103</code></td><td>المبلغ نفسه</td></tr>
+      </table>
+    </div>
+    <div class="call note"><b>وضعان للإعدام</b>
+      حسب إعداد المخزون: «مستند مستقل» (يظهر هنا بصيغة <code>WOF-YYYY-####</code>)، أو «سبب ضمن تسوية الجرد» (تظهر مستندات الإعدام الجديدة ضمن «الجرد والتسويات»). الدفعات المنتهية مسموح بإعدامها.
+    </div>
+  </section>
+
+  <!-- 9 ASSET -->
+  <section id="c9">
+    <h2><span class="num">9</span>رسملة أصل من المخزون والإهلاك</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تحويل صنف من نوع «أصل» موجود في المخزون إلى سجل أصل ثابت يدخل جدول الإهلاك.</div>
+      <div class="box"><h4>المتطلبات المسبقة</h4>صنف نوعه «أصل» وله رصيد في المخزن (يُستلَم كأي صنف عبر إذن الاستلام).</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>العمليات</b><span class="sep">›</span><b>رسملة أصل من المخزون</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح «رسملة أصل من المخزون»، اختر <span class="field">الصنف (أصل)</span> و<span class="field">المخزن</span> و<span class="field">الكمية</span> و<span class="field">التاريخ</span>.</li>
+      <li>اضغط <span class="btnlabel">رسملة</span>.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد المُرحَّل تلقائيًا — رسملة أصل</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>تكلفة الأصل الثابت <code>1201</code></td><td>التكلفة الفعلية من المخزون</td></tr>
+        <tr><td class="cr">دائن</td><td>المخزون <code>1103</code></td><td>المبلغ نفسه</td></tr>
+      </table>
+    </div>
+    <div class="call result"><b>النتيجة</b>
+      يُنشأ سجل أصل بصيغة <code>FA-YYYY-####</code> بطريقة إهلاك «القسط الثابت» وعمر افتراضي قابل للضبط. عند تشغيل الإهلاك الشهري يُرحَّل: <span class="dr">مدين</span> مصروف الإهلاك <code>520103</code> / <span class="cr">دائن</span> مجمع الإهلاك <code>1202</code>. (إدارة الأصول والإهلاك تفصيلًا في موديول المحاسبة.)
+    </div>
+  </section>
+
+  <!-- 10 REPORTS -->
+  <section id="c10">
+    <h2><span class="num">10</span>التقارير والتحقق من الأرصدة</h2>
+    <div class="meta">
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>التقارير</b><span class="sep">›</span><b>تقارير المخزون</b></span></div>
+      <div class="box"><h4>التحقق من السلامة</h4><span class="path"><b>الحوكمة والإعداد</b><span class="sep">›</span><b>تسوية السلامة</b></span></div>
+    </div>
+    <h3>التقارير المتاحة</h3>
+    <table class="tbl">
+      <tr><th>التقرير</th><th>ماذا يعرض</th></tr>
+      <tr><td>تقييم المخزون</td><td>الكميات والقيم ومتوسط التكلفة لكل صنف ومخزن (مرتّب بالقيمة).</td></tr>
+      <tr><td>الأصناف الراكدة</td><td>أصناف لم تتحرّك منذ مدة (حدّ افتراضي 60 يومًا).</td></tr>
+      <tr><td>النواقص وإعادة الطلب</td><td>أصناف تحت حدّ إعادة الطلب أو نفد رصيدها.</td></tr>
+      <tr><td>تنبيهات الصلاحية</td><td>دفعات منتهية أو قرب انتهائها (حدّ افتراضي 30 يومًا).</td></tr>
+    </table>
+    <h3>أرصدة وحركات</h3>
+    <ul class="clean">
+      <li><b>أرصدة المخزون</b> (الحركات والأرصدة) — الرصيد الكمي والقيمي الحالي لكل صنف/مخزن.</li>
+      <li><b>حركات المخزون</b> — سجل كل الحركات (استلام/صرف/تحويل/تسوية/إعدام).</li>
+      <li><b>دفتر حركة الصنف</b> — من بطاقة الصنف أو أيقونة الكتاب في قائمة الأصناف.</li>
+    </ul>
+    <h3>تسوية السلامة (Integrity)</h3>
+    <p>شاشة «تسوية السلامة» تعرض ثوابت النظام (المتوقّع مقابل الفعلي مع الفرق والحالة): أبرزها «قيمة المخزون == حساب المخزون 1103»، وتوازن ميزان المراجعة. اضغط <span class="btnlabel">تشغيل الفحص الآن</span> للفحص الفوري، أو راجع «سجل الفحوص». يعمل فحص مجدول يوميًا ويُخطر المسؤولين عند أي انحراف. أيقونة درع خضراء = «سليم»، حمراء = «توجد انحرافات».</p>
+    <div class="call result"><b>قاعدة التحقق الذهبية</b>
+      بعد أي عملية: راجع «أرصدة المخزون» للكمية، و«حركات المخزون» للأثر، و«تسوية السلامة» للتأكد أن المخزون == GL والميزان متوازن.
+    </div>
+  </section>
+
+  <!-- ===== MODULE 2: ACCOUNTING ===== -->
+  <div class="modbanner done" id="mod-acc">
+    <div class="k">الموديول ② — مكتمل</div>
+    <h2>النظام المحاسبي (Accounting)</h2>
+  </div>
+  <div class="call note"><b>قبل أن تبدأ</b>
+    كل القيود في النظام تمرّ عبر مُحرّك واحد (JournalEntryService) يفرض: <b>التوازن</b> (Σ مدين = Σ دائن)، الترحيل على <b>حسابات قابلة للترحيل فقط</b> (لا على الحسابات التجميعية/التحكّم)، و<b>فترة مفتوحة</b>. دورات الفواتير (شراء/بيع) مشروحة في موديول المخازن أعلاه؛ هنا نكمل بقية المحاسبة.
+  </div>
+
+  <!-- A1 COA -->
+  <section id="a1">
+    <h2><span class="num">1</span>شجرة الحسابات ومراكز التكلفة</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>بناء الدليل المحاسبي وتحديد الحسابات القابلة للترحيل ومراكز التكلفة.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>عام</b><span class="sep">›</span><b>شجرة الحسابات</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح <b>«شجرة الحسابات»</b> — تظهر الحسابات شجريًا (وسّعها بـ <span class="btnlabel">توسيع الكل</span> / اطوِها بـ <span class="btnlabel">طي الكل</span>). الحساب القابل للترحيل عليه شارة «قابل للترحيل»، والتجميعي شارة «تجميعي».</li>
+      <li>لإضافة حساب اضغط <span class="btnlabel">حساب جديد</span> واملأ: <span class="field">الكود</span>، <span class="field">الاسم (عربي)</span>، <span class="field">الاسم (إنجليزي)</span>، <span class="field">النوع</span> (أصل/خصم/حقوق ملكية/إيراد/مصروف)، <span class="field">الحساب الأب</span>، <span class="field">تصنيف التدفق النقدي</span> (تشغيلي/استثماري/تمويلي)، وحدّد <span class="field">قابل للترحيل</span> و<span class="field">يتطلب مركز تكلفة</span> عند اللزوم.</li>
+      <li>احفظ — تظهر رسالة «تم إضافة الحساب». لتعديل حساب افتحه واضبط حالته/بياناته.</li>
+    </ol>
+    <div class="call note"><b>قاعدة جوهرية</b>
+      الترحيل يتم على <b>الحسابات الطرفية (Leaf) القابلة للترحيل فقط</b>. محاولة الترحيل على حساب تجميعي تُرفض برسالة «الحساب … تجميعي/تحكّم — لا يُرحَّل عليه مباشرة».
+    </div>
+    <h3>مراكز التكلفة</h3>
+    <p><span class="path"><b>عام</b><span class="sep">›</span><b>مراكز التكلفة</b></span> — تُشتق <b>تلقائيًا</b> من الفروع والإدارات في الهيكل التنظيمي (شارة «من الهيكل»). تُستخدم لتوزيع المصروفات؛ وبعض الحسابات تتطلّب مركز تكلفة عند الترحيل.</p>
+    <div class="call result"><b>التحقق</b>يظهر الحساب في الشجرة بنوعه ورصيده الطبيعي (مدين/دائن). لا قيد عند التعريف.</div>
+  </section>
+
+  <!-- A2 JOURNALS -->
+  <section id="a2">
+    <h2><span class="num">2</span>القيود اليومية (قيد يدوي)</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>إدخال قيد محاسبي يدوي متوازن (تسويات، مصروفات نثرية…).</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>عام</b><span class="sep">›</span><b>القيود اليومية</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح <b>«القيود اليومية»</b> ← <span class="btnlabel">قيد جديد</span>.</li>
+      <li>أدخل <span class="field">التاريخ</span> و<span class="field">البيان</span>، ثم أضف الأسطر: لكل سطر <span class="field">الحساب</span> (قابل للترحيل) و<span class="field">مدين</span> أو <span class="field">دائن</span> (أحدهما فقط) و<span class="field">مركز التكلفة</span> و<span class="field">بيان السطر</span> عند اللزوم.</li>
+      <li>راقب شارة التوازن: «متوازن ✓» تعني Σ مدين = Σ دائن (زر الترحيل يبقى معطّلًا حتى يتوازن).</li>
+      <li>اضغط <span class="btnlabel">ترحيل</span> للترحيل الفوري، أو <span class="btnlabel">حفظ كمسودة</span> لإكماله لاحقًا.</li>
+    </ol>
+    <div class="call note"><b>فصل المهام (Segregation of Duties)</b>
+      إذا تجاوز إجمالي القيد حدّ الاعتماد ولم يكن منشئه «رئيس حسابات»، يُحفظ <b>كمسودة بانتظار الاعتماد</b>. ولا يمكن لمنشئ القيد اعتماد قيده عالي القيمة بنفسه — يلزم رئيس حسابات آخر. لعكس قيد مُرحَّل افتحه واضغط <span class="btnlabel">عكس القيد</span>.
+    </div>
+    <div class="call warn"><b>أخطاء شائعة</b>
+      «الفترة المالية مقفولة — لا يمكن الترحيل فيها» (افتح فترة أخرى أو راجع الفترات). «الحساب … تجميعي» (اختر حسابًا طرفيًا). سطر بلا مدين ولا دائن، أو الاثنين معًا → مرفوض.
+    </div>
+  </section>
+
+  <!-- A3 PERIODS -->
+  <section id="a3">
+    <h2><span class="num">3</span>الفترات المالية</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>التحكّم في فتح/إغلاق الفترات لمنع الترحيل في فترات مُقفلة.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>عام</b><span class="sep">›</span><b>الفترات المالية</b></span></div>
+    </div>
+    <p>الجدول يعرض لكل فترة: السنة، الفترة (شهرية 1–12 أو «تسويات 13»)، من/إلى، والحالة. غيّر الحالة بالأزرار:</p>
+    <table class="tbl">
+      <tr><th>الزر</th><th>الحالة الناتجة</th><th>الأثر</th></tr>
+      <tr><td><span class="btnlabel">فتح</span></td><td>مفتوحة</td><td>يُسمح بالترحيل في الفترة.</td></tr>
+      <tr><td><span class="btnlabel">غلق مبدئي</span></td><td>مغلقة مبدئيًا</td><td>إغلاق احترازي قابل لإعادة الفتح.</td></tr>
+      <tr><td><span class="btnlabel">قفل</span></td><td>مقفولة</td><td>يمنع الترحيل نهائيًا (يتطلب تأكيد «قفل الفترة نهائيًا؟ لن يُسمح بالترحيل فيها.»).</td></tr>
+    </table>
+    <div class="call result"><b>التحقق</b>بعد القفل، أي محاولة ترحيل بتاريخ داخل الفترة تُرفض برسالة «الفترة المالية مقفولة — لا يمكن الترحيل فيها».</div>
+  </section>
+
+  <!-- A4 RECEIPTS -->
+  <section id="a4">
+    <h2><span class="num">4</span>سندات القبض (تحصيل من عميل)</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تسجيل تحصيل نقدي/بنكي من عميل وتخصيصه على فواتيره المفتوحة.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>العملاء</b><span class="sep">›</span><b>سندات القبض</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح <b>«سندات القبض»</b> ← <span class="btnlabel">سند قبض</span>.</li>
+      <li>اختر <span class="field">العميل</span>، أدخل <span class="field">المبلغ</span> و<span class="field">التاريخ</span>، حدّد <span class="field">الطريقة</span> (نقدي/بنك) و<span class="field">الحساب النقدي</span>، و<span class="field">العملة</span> (يظهر <span class="field">سعر الصرف</span> إن كانت غير الوظيفية).</li>
+      <li>اضغط <span class="btnlabel">حفظ وترحيل</span>. يُخصَّص المبلغ تلقائيًا على أقدم الفواتير المفتوحة (FIFO).</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد — سند قبض</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>النقدية/البنك <code>1101</code></td><td>المبلغ المُحصَّل</td></tr>
+        <tr><td class="cr">دائن</td><td>العملاء <code>1102</code></td><td>المبلغ نفسه</td></tr>
+      </table>
+    </div>
+    <div class="call note"><b>فروق العملة المحقّقة</b>إن اختلف سعر صرف التحصيل عن سعر الفاتورة، يُرحَّل الفرق تلقائيًا: ربح <code>4902</code> أو خسارة <code>5902</code>. رقم السند بصيغة <code>RC-YYYY-#####</code>.</div>
+  </section>
+
+  <!-- A5 PAYMENTS -->
+  <section id="a5">
+    <h2><span class="num">5</span>سندات الدفع (سداد مورد)</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>سداد مورد مع خصم ضريبة الخصم والتحصيل (WHT) اختياريًا.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>الموردون</b><span class="sep">›</span><b>سندات الدفع</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>افتح <b>«سندات الدفع»</b> ← <span class="btnlabel">سند دفع</span>.</li>
+      <li>اختر <span class="field">المورد</span> و<span class="field">المبلغ</span> و<span class="field">التاريخ</span> و<span class="field">الطريقة</span> و<span class="field">الحساب النقدي</span> و<span class="field">العملة</span>، واختر <span class="field">خصم وتحصيل (اختياري)</span> عند تطبيق WHT — يُخصَم من المبلغ ويُدفع الصافي.</li>
+      <li>اضغط <span class="btnlabel">حفظ وترحيل</span> (تخصيص FIFO على أقدم فواتير الشراء المفتوحة).</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد — سند دفع (مع WHT)</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th><th>المبلغ</th></tr>
+        <tr><td class="dr">مدين</td><td>الموردون <code>2101</code></td><td>إجمالي المسدَّد</td></tr>
+        <tr><td class="cr">دائن</td><td>النقدية/البنك <code>1101</code></td><td>الصافي المدفوع</td></tr>
+        <tr><td class="cr">دائن</td><td>ضريبة خصم وتحصيل مستحقة <code>210202</code></td><td>المبلغ المخصوم</td></tr>
+      </table>
+    </div>
+    <div class="call note"><b>فروق العملة</b>كما في القبض: ربح <code>4902</code> / خسارة <code>5902</code>. رقم السند بصيغة <code>PY-YYYY-#####</code>.</div>
+  </section>
+
+  <!-- A6 BANKS -->
+  <section id="a6">
+    <h2><span class="num">6</span>البنوك والخزائن والتسوية البنكية</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تعريف حسابات البنوك والخزائن، والتحويل النقدي، والتسوية مع كشف البنك.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>البنوك والنقدية</b></span></div>
+    </div>
+    <h3>تعريف بنك / خزينة</h3>
+    <ul class="clean">
+      <li><b>البنوك</b> ← <span class="btnlabel">حساب بنكي</span>: <span class="field">اسم البنك</span>، <span class="field">رقم الحساب</span>، <span class="field">IBAN</span>، <span class="field">الحساب الدفتري</span> (ربط GL)، <span class="field">الرصيد الافتتاحي</span> ← <span class="btnlabel">حفظ</span>.</li>
+      <li><b>الخزائن</b> ← <span class="btnlabel">خزينة جديدة</span>: <span class="field">الاسم</span> و<span class="field">الحساب الدفتري</span> ← <span class="btnlabel">حفظ</span>.</li>
+    </ul>
+    <h3>تحويل نقدي</h3>
+    <p><span class="path"><b>تحويل نقدي</b></span> ← اختر <span class="field">من حساب</span> و<span class="field">إلى حساب</span> و<span class="field">المبلغ</span> ← <span class="btnlabel">تنفيذ التحويل</span>. القيد: <span class="dr">مدين</span> الحساب الوجهة / <span class="cr">دائن</span> الحساب المصدر.</p>
+    <h3>تسوية بنكية</h3>
+    <p><span class="path"><b>تسوية بنكية</b></span> ← اختر <span class="field">الحساب البنكي</span> و<span class="field">تاريخ الكشف</span> ← <span class="btnlabel">عرض الحركات</span>، أشِّر الحركات «محصّلة» وأدخل <span class="field">رصيد كشف البنك</span> — يظهر «الفرق»؛ عند تصفيره اضغط <span class="btnlabel">حفظ التسوية</span> (الحالة «Reconciled»).</p>
+  </section>
+
+  <!-- A7 FX -->
+  <section id="a7">
+    <h2><span class="num">7</span>العملات وأسعار الصرف وإعادة التقييم</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>إدارة العملات وأسعارها، وإعادة تقييم الأرصدة الأجنبية في نهاية الفترة.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>العملات وأسعار الصرف</b></span></div>
+    </div>
+    <ul class="clean">
+      <li><b>العملات</b> ← <span class="btnlabel">عملة جديدة</span>: الكود، الرمز، الاسم، عدد الخانات العشرية.</li>
+      <li><b>أسعار الصرف</b> ← <span class="btnlabel">سعر جديد</span>: العملة، النوع (Central/شراء/بيع)، التاريخ، السعر. يُستخدم أحدث سعر سارٍ ≤ تاريخ المعاملة.</li>
+      <li><b>إعداد العملة الوظيفية</b>: عملة الدفاتر — تُقفل تلقائيًا بعد أول معاملة.</li>
+    </ul>
+    <h3>إعادة تقييم العملات</h3>
+    <ol class="steps">
+      <li>افتح <b>«إعادة تقييم العملات»</b>، حدّد <span class="field">حتى تاريخ (إقفال الفترة)</span> و<span class="field">نوع السعر</span> — تظهر معاينة بفروق العملاء/الموردين.</li>
+      <li>اضغط <span class="btnlabel">ترحيل</span>.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد — إعادة تقييم (فرق غير محقّق) + عكس تلقائي في اليوم التالي</div>
+      <table>
+        <tr><th>الحالة</th><th>القيد</th></tr>
+        <tr><td>ربح غير محقّق</td><td><span class="cr">دائن</span> ربح فرق عملة غير محقق <code>4903</code></td></tr>
+        <tr><td>خسارة غير محقّقة</td><td><span class="dr">مدين</span> خسارة فرق عملة غير محققة <code>5903</code></td></tr>
+      </table>
+    </div>
+    <div class="call note">يُرحَّل قيد عكسي تلقائيًا في اليوم التالي، فلا يتأثّر رصيد حساب التحكّم بشكل دائم (فرق «غير محقّق» مقابل المحقّق 4902/5902 في القبض/الدفع).</div>
+  </section>
+
+  <!-- A8 TAX -->
+  <section id="a8">
+    <h2><span class="num">8</span>الضرائب (VAT / WHT)</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تعريف أكواد الضريبة وإعداد إقرارات القيمة المضافة.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>الضرائب</b></span></div>
+    </div>
+    <ol class="steps">
+      <li><b>أكواد الضريبة</b> ← <span class="btnlabel">كود جديد</span>: <span class="field">الكود</span>، <span class="field">الاسم</span>، <span class="field">النوع</span> (VAT / WHT)، <span class="field">النسبة</span>، و<span class="field">افتراضي</span>. هذه الأكواد تُستخدم في الفواتير وسندات الدفع.</li>
+      <li><b>إقرارات القيمة المضافة</b> ← <span class="btnlabel">إقرار جديد</span> بمدى تاريخي — يحتسب النظام ضريبة المخرجات <code>210201</code> والمدخلات <code>110401</code> من حركة الحسابات الضريبية، والصافي = المخرجات − المدخلات.</li>
+    </ol>
+    <div class="call result"><b>التحقق</b>يظهر الإقرار بحالته (مُقدَّم/مُسوّى) وصافي المستحق أو الاسترداد. «حالة الفاتورة الإلكترونية (ETA)» شاشة منفصلة (تكامل مؤجَّل التفعيل).</div>
+  </section>
+
+  <!-- A9 FIXED ASSETS -->
+  <section id="a9">
+    <h2><span class="num">9</span>الأصول الثابتة والإهلاك</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تسجيل الأصول وتشغيل الإهلاك الشهري.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>الأصول الثابتة</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>(اختياري) عرّف <b>فئات الأصول</b> ← <span class="btnlabel">فئة جديدة</span> بحساباتها (تكلفة <code>1201</code> / مجمع إهلاك <code>1202</code> / مصروف إهلاك <code>520103</code>) والعمر الافتراضي.</li>
+      <li>في <b>«الأصول الثابتة»</b> سجّل أصلًا: <span class="field">الاسم</span>، <span class="field">الفئة</span>، <span class="field">تاريخ الاقتناء</span>، <span class="field">التكلفة</span>، <span class="field">قيمة الخردة</span>، <span class="field">العمر الإنتاجي (شهور)</span>، و<span class="field">حساب التمويل</span> (نقدية/بنك/مستحق) ← <span class="btnlabel">حفظ وترحيل</span>.</li>
+      <li>شهريًا: افتح <b>«تشغيل الإهلاك»</b>، حدّد <span class="field">شهر الإهلاك</span> ← <span class="btnlabel">احتساب إهلاك</span> (قيد واحد لكل الأصول النشطة).</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيود</div>
+      <table>
+        <tr><th>العملية</th><th>القيد</th></tr>
+        <tr><td>اقتناء أصل</td><td><span class="dr">مدين</span> تكلفة الأصل <code>1201</code> / <span class="cr">دائن</span> حساب التمويل</td></tr>
+        <tr><td>إهلاك شهري</td><td><span class="dr">مدين</span> مصروف الإهلاك <code>520103</code> / <span class="cr">دائن</span> مجمع الإهلاك <code>1202</code></td></tr>
+      </table>
+    </div>
+    <p style="font-size:.92rem;color:var(--muted)">القسط الشهري = (التكلفة − قيمة الخردة) ÷ العمر الإنتاجي بالشهور. رقم الأصل <code>FA-YYYY-####</code>. (الأصناف من نوع «أصل» في المخزون تُرسمل من شاشة «رسملة أصل من المخزون» — دورة المخازن 9.)</p>
+  </section>
+
+  <!-- A10 REPORTS + CLOSE -->
+  <section id="a10">
+    <h2><span class="num">10</span>التقارير المالية وإقفال السنة</h2>
+    <div class="meta">
+      <div class="box"><h4>المسار</h4><span class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>التقارير المالية</b></span></div>
+      <div class="box"><h4>الإقفال</h4><span class="path"><b>الإقفال</b><span class="sep">›</span><b>إقفال السنة المالية</b></span></div>
+    </div>
+    <table class="tbl">
+      <tr><th>التقرير</th><th>ماذا يعرض</th></tr>
+      <tr><td>ميزان المراجعة</td><td>كل الحسابات بإجمالي المدين/الدائن لفترة، مع شارة «متوازن».</td></tr>
+      <tr><td>قائمة المركز المالي</td><td>الأصول = الخصوم + حقوق الملكية كما في تاريخ.</td></tr>
+      <tr><td>قائمة الدخل</td><td>الإيراد − المصروف = صافي الربح/الخسارة لفترة.</td></tr>
+      <tr><td>قائمة التدفقات النقدية</td><td>الحركة النقدية مصنّفة (تشغيلي/استثماري/تمويلي).</td></tr>
+    </table>
+    <h3>إقفال السنة المالية</h3>
+    <ol class="steps">
+      <li>افتح <b>«إقفال السنة المالية»</b> — يعرض كل سنة بإيراداتها ومصروفاتها وصافي النتيجة.</li>
+      <li>اضغط <span class="btnlabel">إقفال</span> أمام السنة وأكّد. (لإلغاء: <span class="btnlabel">إعادة فتح</span> يعكس قيد الإقفال.)</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">قيد إقفال السنة</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th></tr>
+        <tr><td>إقفال</td><td>تُقفل حسابات الإيراد والمصروف (تصفّر)</td></tr>
+        <tr><td>الناتج</td><td>صافي النتيجة يُرحَّل إلى <span class="dr">الأرباح المحتجزة</span> <code>3201</code></td></tr>
+      </table>
+    </div>
+    <div class="call result"><b>التحقق والقفل</b>بعد الإقفال تُقفل كل فترات السنة ويُمنع الترحيل فيها (إلا بإعادة الفتح). راجع «ميزان المراجعة» للتأكد أنه متوازن، و«قائمة المركز المالي» متوازنة.</div>
+  </section>
+
+  <!-- ===== MODULE 3: MANUFACTURING ===== -->
+  <div class="modbanner done" id="mod-mfg">
+    <div class="k">الموديول ③ — مكتمل</div>
+    <h2>التصنيع (Manufacturing)</h2>
+  </div>
+  <div class="call note"><b>نظام مستقل بقائمته</b>
+    التصنيع نظام له قائمته الخاصة (مجموعات: <b>الإنتاج</b>، <b>البيانات الأساسية</b>، <b>التقارير</b>). التكلفة فعلية، والقيود عبر حساب <b>الإنتاج تحت التشغيل 1105</b> وحساب <b>التكاليف المطبّقة 520108</b>.
+  </div>
+
+  <section id="m1">
+    <h2><span class="num">1</span>طريقة التصنيع لكل صنف</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تحديد كيف يُنتَج الصنف: فوري بسيط أم بأمر تشغيل بمراحل.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>التصنيع</b><span class="sep">›</span><b>البيانات الأساسية</b><span class="sep">›</span><b>الأصناف وقوائم المواد</b></span></div>
+    </div>
+    <p>في بطاقة الصنف، فعّل <span class="field">صنف مركّب</span> ونوع <span class="field">تجميع</span>، يظهر حقل <span class="field">طريقة التصنيع</span>:</p>
+    <table class="tbl">
+      <tr><th>القيمة</th><th>السلوك</th></tr>
+      <tr><td>أمر تشغيل بمراحل (الافتراضي)</td><td>دورة حياة كاملة مع صرف مواد إلى WIP ثم استلام (دورة 2).</td></tr>
+      <tr><td>إنتاج فوري</td><td>تُخصم المواد ويُنتَج الصنف بضغطة واحدة دون مراحل (دورة 6 — التجميع الفوري).</td></tr>
+    </table>
+  </section>
+
+  <section id="m2">
+    <h2><span class="num">2</span>أمر التشغيل ودورة حياته (WIP الحقيقي)</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>إنتاج صنف مُصنَّع عبر دورة مُدارة مع تتبّع الإنتاج تحت التشغيل.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>التصنيع</b><span class="sep">›</span><b>الإنتاج</b><span class="sep">›</span><b>أوامر التشغيل / أمر تشغيل جديد</b></span></div>
+    </div>
+    <ol class="steps">
+      <li><span class="btnlabel">أمر تشغيل جديد</span>: اختر <span class="field">الصنف المُصنَّع</span> (له BOM)، <span class="field">الكمية</span>، <span class="field">المخزن</span>، وتواريخ مخطّطة، ثم <span class="btnlabel">إنشاء أمر التشغيل</span> (تُسحب المكوّنات تلقائيًا؛ الحالة «مخطّط»).</li>
+      <li>في تفاصيل الأمر: <span class="btnlabel">إصدار (صرف للـ WIP)</span> — يصرف المواد إلى الإنتاج تحت التشغيل.</li>
+      <li>حمّل العمالة إن لزم (دورة 4)، ثم <span class="btnlabel">تنفيذ الإنتاج</span> — يستلم التام ويصفّي WIP.</li>
+      <li>أو من «مخطّط» مباشرةً: <span class="btnlabel">إكمال مباشر</span> (صرف + إنتاج في خطوة واحدة). و<span class="btnlabel">إلغاء الأمر</span> يعكس أي صرف بأمان.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيود عبر دورة الحياة</div>
+      <table>
+        <tr><th>الخطوة</th><th>القيد</th></tr>
+        <tr><td>الإصدار (صرف المواد)</td><td><span class="dr">مدين</span> WIP <code>1105</code> / <span class="cr">دائن</span> مخزون المواد</td></tr>
+        <tr><td>التنفيذ (استلام التام)</td><td><span class="dr">مدين</span> مخزون التام / <span class="cr">دائن</span> WIP <code>1105</code> (+ العمالة/الأوفرهيد عبر <code>520108</code>)</td></tr>
+        <tr><td>الإلغاء</td><td>عكس المواد: <span class="dr">مدين</span> مخزون المواد / <span class="cr">دائن</span> WIP</td></tr>
+      </table>
+    </div>
+    <div class="call result"><b>التحقق</b>ملخّص التكلفة يعرض «محتجز بالـ WIP» أثناء التشغيل ويصفّى إلى 0 عند الاكتمال؛ وفحص التكامل «الإنتاج تحت التشغيل == WIP الأوامر الجارية» يضمن التطابق.</div>
+  </section>
+
+  <section id="m3">
+    <h2><span class="num">3</span>مراكز العمل ومسارات التصنيع</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>احتساب العمالة والأوفرهيد من الزمن تلقائيًا.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>التصنيع</b><span class="sep">›</span><b>البيانات الأساسية</b><span class="sep">›</span><b>مراكز العمل</b></span></div>
+    </div>
+    <ol class="steps">
+      <li><span class="btnlabel">مركز عمل جديد</span>: الكود، الاسم، <span class="field">تكلفة العمالة/ساعة</span>، <span class="field">أوفرهيد/ساعة</span>.</li>
+      <li>من تفاصيل أمر التشغيل افتح <span class="btnlabel">مسار التصنيع</span> للصنف، وأضف <span class="btnlabel">عملية جديدة</span>: الترتيب، مركز العمل، <span class="field">وقت التجهيز (د)</span>، <span class="field">وقت التشغيل/وحدة (د)</span>.</li>
+    </ol>
+    <div class="call note">وقت العملية = (تجهيز + تشغيل/وحدة × الكمية) ÷ 60 × معدل المركز. تُملأ تكلفة العمالة/الأوفرهيد تلقائيًا في أمر التشغيل الجديد لهذا الصنف. لوحة «التكلفة لكل وحدة» تعرض المعياري.</div>
+  </section>
+
+  <section id="m4">
+    <h2><span class="num">4</span>العمالة بنوعيها على أمر التشغيل</h2>
+    <p>أثناء «مُصدَر/قيد التشغيل»، في قسم <b>العمالة</b> اضغط <span class="btnlabel">تحميل</span> واختر المصدر:</p>
+    <div class="gl">
+      <div class="ttl">القيد حسب مصدر العمالة (يُرحَّل فور الإضافة، ويرفع WIP)</div>
+      <table>
+        <tr><th>المصدر</th><th>القيد</th></tr>
+        <tr><td>موظف دائم</td><td><span class="dr">مدين</span> WIP <code>1105</code> / <span class="cr">دائن</span> مصروف الأجور <code>520101</code> (إعادة تصنيف)</td></tr>
+        <tr><td>عامل خارجي</td><td><span class="dr">مدين</span> WIP / <span class="cr">دائن</span> نقدية أو مستحق (+ ض.خصم <code>210202</code>)</td></tr>
+        <tr><td>مطبّقة (بلا مصدر)</td><td><span class="dr">مدين</span> WIP / <span class="cr">دائن</span> <code>520108</code></td></tr>
+      </table>
+    </div>
+    <div class="call note">سعر ساعة الموظف: من حقل «سعر ساعة التصنيع» في بطاقة الموظف، أو اشتقاق (الراتب ÷ الساعات المعيارية)، أو يُدخَل يدويًا على السطر. العمالة بمصدر <b>تحلّ محلّ</b> 520108 (لا تُضاف فوقه) — فلا احتساب مزدوج.</div>
+  </section>
+
+  <section id="m5">
+    <h2><span class="num">5</span>تخطيط الإنتاج (MRP)</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تحويل طلب إنتاج إلى احتياجات صافية وأوامر تشغيل.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>التصنيع</b><span class="sep">›</span><b>الإنتاج</b><span class="sep">›</span><b>تخطيط الإنتاج (MRP)</b></span></div>
+    </div>
+    <ol class="steps">
+      <li><span class="btnlabel">خطة جديدة</span> (اسم + تاريخ)، ثم في التفاصيل أضف بنود الطلب (صنف مُصنَّع + كمية + استحقاق).</li>
+      <li>يظهر جدول <b>الاحتياجات الصافية</b>: كل سطر «مُصنَّع» أو «شراء»، بالإجمالي والمتاح والصافي (تفجير BOM متعدد المستويات وخصم المخزون).</li>
+      <li>اختر المخزن واضغط <span class="btnlabel">توليد أوامر التشغيل</span> — يُنشئ أمر تشغيل (مسودة) لكل نقص مُصنَّع.</li>
+    </ol>
+  </section>
+
+  <section id="m6">
+    <h2><span class="num">6</span>الهالك المخطّط والإنتاج الفوري</h2>
+    <ul class="clean">
+      <li><b>الهالك (ScrapPct)</b>: عمود في قائمة مواد الصنف — الكمية المصروفة = الأساس × الكمية × (1 + هالك%). يُطبَّق في أمر التشغيل والـ MRP والتجميع الفوري والتكلفة المعيارية.</li>
+      <li><b>التجميع الفوري</b> (<span class="path"><b>الإنتاج</b><span class="sep">›</span><b>التجميع الفوري</b></span>): «أنتج N» → يصرف الوصفة×N (شامل الهالك) وينتج التام بتكلفته في قيد واحد، بلا WIP محتجز.</li>
+    </ul>
+  </section>
+
+  <section id="m7">
+    <h2><span class="num">7</span>تقارير التصنيع</h2>
+    <div class="path"><b>التصنيع</b><span class="sep">›</span><b>التقارير</b><span class="sep">›</span><b>تقارير التصنيع</b></div>
+    <table class="tbl">
+      <tr><th>القسم</th><th>ماذا يعرض</th></tr>
+      <tr><td>بطاقات ملخّص</td><td>عدد الأوامر المنفّذة، قيمة الإنتاج، المواد، العمالة+الأوفرهيد (بفلتر تاريخ).</td></tr>
+      <tr><td>تكلفة الإنتاج والتباين</td><td>لكل أمر: مواد/عمالة/أوفرهيد، تكلفة الوحدة الفعلية مقابل المعيارية، والتباين (أحمر=تجاوز/أخضر=توفير).</td></tr>
+      <tr><td>حِمل مراكز العمل</td><td>الدقائق/الساعات وتكلفة كل مركز من مسارات الأصناف المنتَجة.</td></tr>
+    </table>
+  </section>
+
+  <!-- ===== MODULE 4: PURCHASING & SALES (advanced) ===== -->
+  <div class="modbanner done" id="mod-sd">
+    <div class="k">الموديول ④ — مكتمل</div>
+    <h2>المشتريات والمبيعات المتقدمة</h2>
+  </div>
+  <div class="call note"><b>ملاحظة</b> الدورات الأساسية (أمر شراء→استلام→فاتورة، وعرض سعر→أمر بيع→صرف→فاتورة) في موديول المخازن أعلاه. هنا الميزات المتقدّمة.</div>
+
+  <section id="s1">
+    <h2><span class="num">1</span>قوائم الأسعار ومحرّك التسعير</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>تسعير تلقائي حسب العميل/الشريحة/الكمية/العملة.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>المشتريات والمبيعات</b><span class="sep">›</span><b>قوائم الأسعار</b></span></div>
+    </div>
+    <ol class="steps">
+      <li><span class="btnlabel">قائمة أسعار جديدة</span>: الكود، الاسم، <span class="field">الأولوية</span>، <span class="field">العملة</span>، <span class="field">عميل بعينه</span> أو <span class="field">الشريحة</span>، <span class="field">صالحة من/حتى</span>.</li>
+      <li>أضف قواعد التسعير: <span class="field">الصنف</span>، <span class="field">حد الكمية ≥</span>، <span class="field">سعر بديل</span>، <span class="field">خصم %</span>، ثم <span class="btnlabel">حفظ</span>.</li>
+    </ol>
+    <div class="call note">عند إضافة سطر بيع، يُختار السعر تلقائيًا: الأخصّ (عميل بعينه) ثم الشريحة ثم العام، حسب الأولوية وحد الكمية والعملة. بلا أثر محاسبي — بيانات أساسية.</div>
+
+    <h3>1-أ · التسعير الموسّع — المنطق التقني</h3>
+    <p>يُحلّ السعر النهائي في <span class="field">PricingService.GetPriceAsync</span> عبر أربع طبقات، وكلها تعمل بمنطق «الحساب بالعملة الوظيفية ثم التحويل لعملة المستند» حفاظًا على صحّة العملات.</p>
+    <ol class="steps">
+      <li><b>مصدر السعر (سطر القائمة):</b> ترشيح المرشّحين بمطابقة العملة (عملة القائمة = عملة المستند)، الاستهداف، حد الكمية، والصلاحية. الترتيب: عميل بعينه ← شريحة ← عام، ثم الأولوية، ثم أكبر حد كمية. للسطر وضعان: <span class="field">Fixed</span> (سعر مثبّت) أو <span class="field">CostPlus</span> (محسوب).</li>
+      <li><b>تكلفة + هامش (CostPlus):</b> السطر <b>محايد للعملة</b> (يُرشَّح أيًّا كانت عملة القائمة). السعر = <span class="field">ResolveItemCostAsync</span> × (1 + الهامش%) بالوظيفية، ثم <span class="field">FromFunctionalAsync</span> لعملة المستند (سعر Sell، محور EGP)، ثم التقريب لعدد خانات العملة (<span class="field">Currency.DecimalPlaces</span>). مصدر التكلفة: مصنَّع (له BOM) → <span class="field">ManufService.ComputeStandardUnitCostAsync</span> (مواد+عمالة+أوفرهيد)؛ وإلا متوسط المخزون (Σقيمة/Σكمية)؛ وإلا التكلفة الافتتاحية. <b>سعر متحرّك</b> يتغيّر بتغيّر التكلفة.</li>
+      <li><b>العروض (Promotions):</b> بعد حلّ سعر القائمة يُطبَّق <b>عرض واحد</b> (الأكبر خصمًا، تعادل ← الأولوية) — لا تراكم. الدمج <b>تسلسلي</b>: <code>net = سعر × (1−خصم القائمة) × (1−العرض)</code>، ويُطوى الكل في <span class="field">DiscountPercent</span> فعّال واحد. خصم <b>Percent</b> محايد للعملة؛ خصم <b>Amount</b> يُخزَّن بعملته (<span class="field">CurrencyId</span>، الافتراضي الوظيفية) ويُحوَّل لعملة المستند عبر <span class="field">ConvertToDocAsync</span> (وظيفية ← ثم → المستند، Sell) قبل الطرح — فيعمل صحيحًا على الفواتير الأجنبية.</li>
+      <li><b>الحدّ الأدنى للربح (Margin floor):</b> بعد كل ما سبق، عند حفظ أمر/فاتورة البيع يفحص <span class="field">CheckMarginAsync</span> صافي السعر (محوَّلًا للوظيفية) ضدّ (التكلفة × (1+الهامش الأدنى%)). الوضع: Off/Warn/Block. النسبة = تجاوز الصنف ?? الإعداد العام. التكلفة=0 → يُستثنى. عروض الأسعار تُنبّه فقط.</li>
+    </ol>
+    <div class="call note"><b>الأولوية والدمج باختصار:</b> قائمة/تكلفة+هامش (المصدر) ← عرض واحد تسلسلي ← ثم يُفحص الحدّ الأدنى على الصافي. الثوابت المحاسبية غير متأثّرة (تسعير = بيانات أساسية، بلا قيود). الاختبارات: <span class="field">pricing-test-margin</span> · <span class="field">promotion-test</span> · <span class="field">pricing-test-costplus</span>. مخطط: <span class="field">pricing_margin_2a / pricing_promotions_2b / pricing_costplus_2c .sql</span>.</div>
+  </section>
+
+  <section id="s2">
+    <h2><span class="num">2</span>تخطيط النواقص وإعادة الطلب</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>اقتراح مشتريات للأصناف التي بلغت حد إعادة الطلب.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>المشتريات والمبيعات</b><span class="sep">›</span><b>تخطيط النواقص</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>اضبط أولًا حدود إعادة الطلب لكل صنف/مخزن (<span class="field">حد إعادة الطلب</span>، <span class="field">الحد الأقصى</span>) واحفظ.</li>
+      <li>في «تخطيط النواقص» تظهر الأصناف عند/تحت الحد مع <span class="field">الكمية المقترحة</span> (= الأقصى − المتاح). اختر المورد و<span class="btnlabel">توليد أمر شراء</span>.</li>
+    </ol>
+  </section>
+
+  <section id="s3">
+    <h2><span class="num">3</span>التكاليف الإضافية (Landed costs)</h2>
+    <div class="meta">
+      <div class="box"><h4>الهدف</h4>توزيع الشحن/الجمارك على أصناف الاستلام لرفع تكلفتها.</div>
+      <div class="box"><h4>المسار</h4><span class="path"><b>نظام المخازن</b><span class="sep">›</span><b>العمليات</b><span class="sep">›</span><b>التكاليف الإضافية</b></span></div>
+    </div>
+    <ol class="steps">
+      <li>اختر <span class="field">إذن الاستلام</span> و<span class="field">طريقة التوزيع</span> (بالقيمة/بالكمية).</li>
+      <li>أضف المصاريف (البيان، المبلغ، <span class="field">الحساب الدائن</span>) ثم <span class="btnlabel">ترحيل</span>.</li>
+    </ol>
+    <div class="gl">
+      <div class="ttl">القيد — تكاليف إضافية</div>
+      <table>
+        <tr><th>طرف</th><th>الحساب</th></tr>
+        <tr><td class="dr">مدين</td><td>المخزون <code>1103</code> (ترتفع قيمته، الكمية ثابتة)</td></tr>
+        <tr><td class="cr">دائن</td><td>حسابات المصاريف (شحن/جمارك)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section id="s4">
+    <h2><span class="num">4</span>مرتجعات البيع (إشعار دائن)</h2>
+    <div class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>العملاء</b><span class="sep">›</span><b>مرتجعات البيع (إشعار دائن)</b></div>
+    <p>يعكس فاتورة بيع: يُرجع البضاعة للمخزون ويعكس الإيراد والضريبة.</p>
+    <div class="gl"><div class="ttl">القيد — مرتجع بيع</div><table>
+      <tr><th>طرف</th><th>الحساب</th></tr>
+      <tr><td class="dr">مدين</td><td>إيراد المبيعات <code>4101</code> + ض.ق.م مخرجات <code>210201</code></td></tr>
+      <tr><td class="cr">دائن</td><td>العملاء <code>1102</code></td></tr>
+      <tr><td colspan="2">+ إرجاع المخزون: <span class="dr">مدين</span> المخزون / <span class="cr">دائن</span> COGS (بمتوسط التكلفة)</td></tr>
+    </table></div>
+  </section>
+
+  <section id="s5">
+    <h2><span class="num">5</span>مرتجعات الشراء (إشعار مدين)</h2>
+    <div class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>الموردون</b><span class="sep">›</span><b>مرتجعات الشراء (إشعار مدين)</b></div>
+    <p>يعكس فاتورة شراء: يُخرج البضاعة من المخزون (بالتكلفة) ويعكس التزام المورد.</p>
+    <div class="gl"><div class="ttl">القيد — مرتجع شراء</div><table>
+      <tr><th>طرف</th><th>الحساب</th></tr>
+      <tr><td class="dr">مدين</td><td>الموردون <code>2101</code></td></tr>
+      <tr><td class="cr">دائن</td><td>المخزون <code>1103</code> (بمتوسط التكلفة) + عكس ض.ق.م مدخلات</td></tr>
+    </table></div>
+  </section>
+
+  <section id="s6">
+    <h2><span class="num">6</span>حدّ الائتمان وأعمار الديون</h2>
+    <ul class="clean">
+      <li><b>حدّ الائتمان</b>: يُضبط على بطاقة العميل (<span class="path"><b>العملاء</b><span class="sep">›</span><b>العملاء</b></span>) بحقل «حد الائتمان». عند ترحيل فاتورة بيع تتجاوز (المستحق الحالي + الفاتورة) الحدَّ، تُمنع الفاتورة برسالة تُبيّن المبالغ، ويُخطَر المحاسب.</li>
+      <li><b>أعمار الديون</b> (<span class="path"><b>العملاء</b><span class="sep">›</span><b>أعمار ديون العملاء</b></span> و<span class="path"><b>الموردون</b><span class="sep">›</span><b>أعمار ديون الموردين</b></span>): تصنيف الأرصدة المستحقة حسب فترات التقادم (شرائح أعمار).</li>
+    </ul>
+  </section>
+
+  <!-- ===== MODULE 5: CRM ===== -->
+  <div class="modbanner done" id="mod-crm">
+    <div class="k">الموديول ⑤ — مكتمل</div>
+    <h2>إدارة علاقات العملاء (CRM)</h2>
+  </div>
+  <div class="call note"><b>نظام تشغيلي بلا قيود محاسبية</b> — لا يمسّ الـ GL. يرتبط بالمالية فقط عند فوز فرصة أو تحويلها لعرض سعر (فيُربط الحساب بعميل مالي).</div>
+
+  <section id="r1">
+    <h2><span class="num">1</span>الحسابات وجهات الاتصال</h2>
+    <div class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>إدارة العلاقات (CRM)</b><span class="sep">›</span><b>الحسابات</b></div>
+    <ol class="steps">
+      <li><span class="btnlabel">حساب جديد</span>: اسم الحساب، الصناعة، الهاتف، البريد، <span class="field">الشريحة</span>، المصدر، ثم <span class="btnlabel">حفظ</span>.</li>
+      <li>داخل الحساب أضف <b>جهات الاتصال</b> (الاسم، المنصب، الهاتف، رئيسي) — ويظهر الخطّ الزمني للأنشطة.</li>
+    </ol>
+  </section>
+
+  <section id="r2">
+    <h2><span class="num">2</span>العملاء المحتملون والتقييم والتحويل</h2>
+    <div class="path"><b>CRM</b><span class="sep">›</span><b>العملاء المحتملون</b></div>
+    <ol class="steps">
+      <li><span class="btnlabel">عميل محتمل جديد</span>: الاسم، الشركة، المصدر، <span class="field">الشريحة</span>، <span class="field">القيمة المتوقعة</span>، الحالة (جديد/تم التواصل/مؤهَّل/خاسر).</li>
+      <li>يظهر <span class="field">النقاط</span> تلقائيًا من قواعد التقييم؛ عند التأهّل اضغط <b>تحويل</b> → يُنشئ حسابًا. (مع التوجيه الآلي يُوزَّع على المندوبين round-robin.)</li>
+    </ol>
+    <div class="call note">قواعد التقييم والأتمتة في «تقييم العملاء والأتمتة»: حقل + شرط + قيمة + نقاط، وحدود «ساخن/دافئ». زر «إعادة احتساب النقاط» يحدّث الكل.</div>
+  </section>
+
+  <section id="r3">
+    <h2><span class="num">3</span>الفرص، الكانبان، والتحويل لعرض سعر</h2>
+    <div class="path"><b>CRM</b><span class="sep">›</span><b>الفرص البيعية</b> / <b>خط الأنابيب (Kanban)</b></div>
+    <ol class="steps">
+      <li><span class="btnlabel">فرصة جديدة</span>: العنوان، <span class="field">الحساب</span>، <span class="field">المرحلة</span> (استكشاف/تأهيل/عرض/تفاوض/ربح/خسارة)، القيمة، الإغلاق المتوقع.</li>
+      <li>في <b>خط الأنابيب (Kanban)</b> اسحب الفرصة بين الأعمدة لتغيير مرحلتها.</li>
+      <li>من بنود الفرصة: <span class="btnlabel">تحويل لعرض سعر</span> — يربط الحساب بعميل مالي وينشئ عرض سعر في المخازن.</li>
+    </ol>
+  </section>
+
+  <section id="r4">
+    <h2><span class="num">4</span>الأنشطة والتذكيرات والخطّ الزمني</h2>
+    <div class="path"><b>CRM</b><span class="sep">›</span><b>الأنشطة والمهام</b></div>
+    <p><span class="btnlabel">نشاط جديد</span>: النوع (مهمة/اتصال/اجتماع/بريد)، الموضوع، <span class="field">الاستحقاق</span>، وتذكير اختياري (يُشعرك عند حلوله). الأنشطة تُربط بأي كيان (عميل محتمل/فرصة/حساب/تذكرة) وتظهر في خطّه الزمني.</p>
+  </section>
+
+  <section id="r5">
+    <h2><span class="num">5</span>الحملات والقوائم التسويقية</h2>
+    <div class="path"><b>CRM</b><span class="sep">›</span><b>الحملات التسويقية</b> / <b>القوائم التسويقية</b></div>
+    <ol class="steps">
+      <li><span class="btnlabel">حملة جديدة</span>: الاسم، <span class="field">القناة</span> (بريد/تواصل/فعالية/إعلانات)، الميزانية، الفترة. تعرض القائمة العائد (ROI) تلقائيًا.</li>
+      <li>في تفاصيل الحملة أضف أعضاء (محتمل/حساب/جهة اتصال) أو أضف <b>قائمة تسويقية</b> كاملة؛ وتتبّع حالة العضو (مُستهدف→مُرسَل→فُتِح→استجاب→تحوّل).</li>
+    </ol>
+  </section>
+
+  <section id="r6">
+    <h2><span class="num">6</span>التذاكر واتفاقيات الخدمة (SLA)</h2>
+    <div class="path"><b>CRM</b><span class="sep">›</span><b>التذاكر</b> / <b>سياسات SLA</b></div>
+    <ol class="steps">
+      <li>عرّف <b>سياسات SLA</b> لكل أولوية: <span class="field">أول استجابة (دقيقة)</span>، <span class="field">الحل (دقيقة)</span>.</li>
+      <li><span class="btnlabel">تذكرة جديدة</span>: العنوان، <span class="field">الأولوية</span>، الحساب، الوصف. يختم النظام مواعيد أول استجابة والحل، ويُظهر «تجاوز SLA» عند التأخّر.</li>
+    </ol>
+    <div class="call note">لوحة التذاكر تعرض: مفتوحة، متجاوزة زمن أول استجابة، متجاوزة زمن الحل. تسجيل نشاط على التذكرة يختم «تمّت أول استجابة».</div>
+  </section>
+
+  <section id="r7">
+    <h2><span class="num">7</span>التنبؤ والتقارير والصلاحيات</h2>
+    <ul class="clean">
+      <li><b>التنبؤ بالمبيعات</b> (<span class="path"><b>CRM</b><span class="sep">›</span><b>التنبؤ بالمبيعات</b></span>): القيمة المرجّحة = Σ(قيمة الفرصة × احتمال المرحلة)، مجمّعة بشهر الإغلاق المتوقّع.</li>
+      <li><b>تقارير 360°</b>: قُمع العملاء المحتملين، خط الأنابيب حسب المرحلة، الأنشطة والحملات، وأداء المندوبين.</li>
+      <li><b>صلاحيات CRM</b>: مدير مبيعات (فريقه)، مندوب (سجلاته فقط)، تسويق (العملاء والحملات)، قارئ (عرض فقط).</li>
+    </ul>
+  </section>
+
+  <!-- ===== MODULE 6: HR ===== -->
+  <div class="modbanner done" id="mod-hr">
+    <div class="k">الموديول ⑥ — مكتمل</div>
+    <h2>الموارد البشرية (HR)</h2>
+  </div>
+  <div class="call note"><b>جزءان</b>: إدارة خلفية (النظام الإداري) لملفات الموظفين والإجازات والحضور، والرواتب في النظام المحاسبي، وبوابة ذاتية للموظف (ESS).</div>
+
+  <section id="h1">
+    <h2><span class="num">1</span>الموظفون والهيكل الإداري</h2>
+    <ol class="steps">
+      <li>من قائمة الموظفين اضغط لإضافة/تعديل موظف (<span class="btnlabel">حفظ</span>): الاسم، البريد، الهاتف، <span class="field">المسمى الوظيفي</span>، <span class="field">الإدارة</span>، <span class="field">الفرع</span>، تاريخ الانضمام، <span class="field">لائحة الراتب</span>، و<span class="field">سعر ساعة التصنيع</span> (للتصنيع).</li>
+      <li><b>الهيكل الإداري</b>: شجرة تنظيمية (شركة/فرع/إدارة/وظيفة/موظف) تُضاف عقدها وتُعاد ترتيبها؛ منها تُشتق مراكز التكلفة تلقائيًا.</li>
+    </ol>
+  </section>
+
+  <section id="h2">
+    <h2><span class="num">2</span>الإجازات</h2>
+    <ol class="steps">
+      <li>الموظف يقدّم طلبًا (<span class="btnlabel">طلب جديد</span>): نوع الإجازة، المدة (من/إلى)، السبب.</li>
+      <li>يمرّ الطلب بسلسلة اعتماد متعددة المستويات؛ المدير يعتمد/يرفض في تبويب «للاعتماد». الرصيد يُخصم عند الاعتماد.</li>
+    </ol>
+    <div class="gl"><div class="ttl">قيود متعلقة بالإجازات</div><table>
+      <tr><th>العملية</th><th>القيد</th></tr>
+      <tr><td>بدل إجازات (صرف نقدي)</td><td><span class="dr">مدين</span> بدل الإجازات <code>520104</code> / <span class="cr">دائن</span> نقدية/بنك</td></tr>
+      <tr><td>مخصّص الإجازات</td><td><span class="dr">مدين</span> مصروف مخصص الإجازات <code>520106</code> / <span class="cr">دائن</span> التزام الإجازات</td></tr>
+    </table></div>
+  </section>
+
+  <section id="h3">
+    <h2><span class="num">3</span>الحضور والانصراف</h2>
+    <p>تُسجَّل حركات الحضور (تاريخ + دخول + خروج) شهريًا، وتُحتسب ساعات العمل والتأخير والغياب حسب سياسات الدوام (ساعات/يوم، خصم التأخير/الغياب). تظهر ملخصات للموظف في بوابته وللإدارة في الملخص الشهري، وتُغذّي حساب الراتب.</p>
+  </section>
+
+  <section id="h4">
+    <h2><span class="num">4</span>الرواتب والقسائم</h2>
+    <div class="path"><b>النظام المحاسبي</b><span class="sep">›</span><b>الرواتب</b><span class="sep">›</span><b>قيد الرواتب / قسائم الرواتب</b></div>
+    <ol class="steps">
+      <li>افتح <b>قيد الرواتب</b> (سنة/شهر) لمعاينة الاحتساب، ثم <span class="btnlabel">ترحيل القيد</span> — يُنشئ القسائم ويرحّل القيد.</li>
+      <li><b>قسائم الرواتب</b>: تعرض الأساسي + البدلات + الإضافي = الإجمالي، ناقص التأمينات والضريبة وخصومات التأخير/الغياب = الصافي.</li>
+    </ol>
+    <div class="gl"><div class="ttl">قيد الرواتب</div><table>
+      <tr><th>طرف</th><th>الحساب</th></tr>
+      <tr><td class="dr">مدين</td><td>مصروف الأجور <code>520101</code> + التأمينات (حصة الشركة) <code>520102</code></td></tr>
+      <tr><td class="cr">دائن</td><td>رواتب مستحقة (صافي) + ضريبة مستحقة + تأمينات مستحقة</td></tr>
+    </table></div>
+  </section>
+
+  <section id="h5">
+    <h2><span class="num">5</span>الصرف والتوريد</h2>
+    <div class="path"><b>الرواتب</b><span class="sep">›</span><b>صرف الرواتب والتوريد</b></div>
+    <ul class="clean">
+      <li><span class="btnlabel">صرف الرواتب</span>: <span class="dr">مدين</span> الرواتب المستحقة / <span class="cr">دائن</span> البنك.</li>
+      <li><span class="btnlabel">توريد للمصلحة</span> (الضريبة) و<span class="btnlabel">توريد للتأمينات</span>: <span class="dr">مدين</span> الالتزام المستحق / <span class="cr">دائن</span> البنك.</li>
+    </ul>
+  </section>
+
+  <section id="h6">
+    <h2><span class="num">6</span>إعدادات الضريبة والتأمينات</h2>
+    <div class="path"><b>الرواتب</b><span class="sep">›</span><b>ضريبة الرواتب والتأمينات</b></div>
+    <p>اضبط: <span class="field">الإعفاء الشخصي السنوي</span>، حدّي الأجر التأميني (أدنى/أقصى)، خيار خصم حصة التأمين قبل الضريبة، و<span class="field">الساعات المعيارية الشهرية</span>. وأضف <b>شرائح ضريبة الدخل</b> التصاعدية (من/إلى/النسبة).</p>
+  </section>
+
+  <section id="h7">
+    <h2><span class="num">7</span>مكافأة نهاية الخدمة</h2>
+    <p>من شاشة نهاية الخدمة: اختر الموظف وتاريخ الإنهاء ثم <span class="btnlabel">معاينة</span> — يحسب سنوات الخدمة ورصيد الإجازات والمكافأة والصافي، ثم يُرحّل: <span class="dr">مدين</span> مكافأة نهاية الخدمة <code>520107</code> / <span class="cr">دائن</span> مستحق التسوية.</p>
+  </section>
+
+  <section id="h8">
+    <h2><span class="num">8</span>الخدمة الذاتية للموظف (ESS)</h2>
+    <div class="path"><b>بوابة الموظفين</b></div>
+    <p>يدخل الموظف بوابته ليرى: <b>الرئيسية</b> (تقويم الإجازات والأرصدة)، <b>ملفي الشخصي</b>، <b>الهيكل الإداري</b> (مديره ومرؤوسوه)، <b>الإجازات</b> (تقديم واعتماد المرؤوسين)، <b>قسائم راتبي</b>، <b>حضوري</b> — مع إشعارات فورية عند اعتماد/رفض الإجازات.</p>
+  </section>
+
+  <footer>
+    CrossBuy ERP — دليل المستخدم الموحّد (كل الموديولات في ملف واحد). كل المسارات والأزرار والحقول في الأقسام المكتملة مطابقة للنظام الفعلي.<br>
+    الحالة: كل الموديولات مكتملة ① المخازن · ② المحاسبة · ③ التصنيع · ④ المشتريات/المبيعات · ⑤ CRM · ⑥ الموارد البشرية.
+  </footer>
+</main>
+</div>
+</body>
+</html>

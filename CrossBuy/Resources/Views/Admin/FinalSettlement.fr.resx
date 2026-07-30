@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Termination &amp; final settlement" xml:space="preserve">
+    <value>Cessation &amp; solde de tout compte</value>
+  </data>
+  <data name="Select employee…" xml:space="preserve">
+    <value>Sélectionner un employé…</value>
+  </data>
+  <data name="Termination date" xml:space="preserve">
+    <value>Date de cessation</value>
+  </data>
+  <data name="Compute" xml:space="preserve">
+    <value>Calculer</value>
+  </data>
+  <data name="This employee is already terminated (inactive)." xml:space="preserve">
+    <value>Cet employé est déjà en cessation (inactif).</value>
+  </data>
+  <data name="Service summary" xml:space="preserve">
+    <value>Résumé d'ancienneté</value>
+  </data>
+  <data name="Join date" xml:space="preserve">
+    <value>Date d'embauche</value>
+  </data>
+  <data name="Service years" xml:space="preserve">
+    <value>Années d'ancienneté</value>
+  </data>
+  <data name="Daily rate" xml:space="preserve">
+    <value>Taux journalier</value>
+  </data>
+  <data name="Encashable leave" xml:space="preserve">
+    <value>Congé encaissable</value>
+  </data>
+  <data name="d" xml:space="preserve">
+    <value>j</value>
+  </data>
+  <data name="Leave value" xml:space="preserve">
+    <value>Valeur du congé</value>
+  </data>
+  <data name="Suggested gratuity" xml:space="preserve">
+    <value>Indemnité suggérée</value>
+  </data>
+  <data name="({0} days/yr)" xml:space="preserve">
+    <value>({0} jours/an)</value>
+  </data>
+  <data name="Post settlement" xml:space="preserve">
+    <value>Comptabiliser le solde</value>
+  </data>
+  <data name="This terminates the employee and posts the settlement. Continue?" xml:space="preserve">
+    <value>Ceci met fin au contrat de l'employé et comptabilise le solde. Continuer ?</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Motif</value>
+  </data>
+  <data name="Gratuity" xml:space="preserve">
+    <value>Indemnité</value>
+  </data>
+  <data name="Other earnings" xml:space="preserve">
+    <value>Autres gains</value>
+  </data>
+  <data name="Deductions" xml:space="preserve">
+    <value>Retenues</value>
+  </data>
+  <data name="Pay from" xml:space="preserve">
+    <value>Payer depuis</value>
+  </data>
+  <data name="Net = (leave + gratuity + other) − deductions. Dr settlement expenses / Cr bank. The employee is deactivated and their contract closed." xml:space="preserve">
+    <value>Net = (congé + indemnité + autres) − retenues. Dr charges de solde / Cr banque. L'employé est désactivé et son contrat clôturé.</value>
+  </data>
+  <data name="Terminate &amp; post settlement" xml:space="preserve">
+    <value>Mettre fin &amp; comptabiliser le solde</value>
+  </data>
+  <data name="Pick an employee to compute their settlement." xml:space="preserve">
+    <value>Choisissez un employé pour calculer son solde.</value>
+  </data>
+  <data name="Recent settlements" xml:space="preserve">
+    <value>Soldes récents</value>
+  </data>
+  <data name="Years" xml:space="preserve">
+    <value>Années</value>
+  </data>
+  <data name="Leave" xml:space="preserve">
+    <value>Congé</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>Net</value>
+  </data>
+  <data name="No settlements yet." xml:space="preserve">
+    <value>Aucun solde pour l'instant.</value>
+  </data>
+</root>

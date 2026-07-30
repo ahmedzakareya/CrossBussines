@@ -1,0 +1,43 @@
+@using CrossBuy.Models.Context.Crm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<CrmCustomField>
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string L(CrmCustomField f) => isAr ? f.Label : (string.IsNullOrEmpty(f.LabelEn) ? f.Label : f.LabelEn!);
+}
+@if (Model != null && Model.Any())
+{
+    <div class="col-12"><div class="separator separator-dashed my-3"></div><div class="fw-semibold text-muted fs-7 mb-2"><i class="ki-outline ki-abstract-26 fs-6 me-1"></i>@Localizer["Custom fields"]</div></div>
+    foreach (var f in Model)
+    {
+        <div class="col-md-6 mb-4">
+            <label class="fw-semibold fs-6 mb-2 @(f.Required ? "required" : "")">@L(f)</label>
+            @if (f.FieldType == "Number")
+            {
+                <input type="number" step="any" class="form-control form-control-solid cf-input" data-cf="@f.ID" />
+            }
+            else if (f.FieldType == "Date")
+            {
+                <input type="date" class="form-control form-control-solid cf-input" data-cf="@f.ID" />
+            }
+            else if (f.FieldType == "Checkbox")
+            {
+                <div class="form-check form-switch"><input type="checkbox" value="true" class="form-check-input cf-input" data-cf="@f.ID" /></div>
+            }
+            else if (f.FieldType == "Select")
+            {
+                <select class="form-select form-select-solid cf-input" data-cf="@f.ID">
+                    <option value=""></option>
+                    @{ var cfOpts = isAr ? f.Options : (string.IsNullOrEmpty(f.OptionsEn) ? f.Options : f.OptionsEn); }
+                    @foreach (var opt in (cfOpts ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    { <option value="@opt">@opt</option> }
+                </select>
+            }
+            else
+            {
+                <input class="form-control form-control-solid cf-input" data-cf="@f.ID" />
+            }
+        </div>
+    }
+}

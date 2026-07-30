@@ -1,0 +1,155 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.Models.Context.Inventory
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var customers = ViewBag.Customers as List<Customer> ?? new();
+    var revAccts = ViewBag.RevenueAccounts as List<AccountNode> ?? new();
+    var invItems = ViewBag.InvItems as List<Item> ?? new();
+    var invWh = ViewBag.InvWarehouses as List<Warehouse> ?? new();
+    var currencies = ViewBag.Currencies as List<Currency> ?? new();
+    int funcCur = (int)(ViewBag.FunctionalCurrencyId ?? 0);
+    var edit = ViewBag.EditInvoice as SalesInvoice;   // P3: edit mode reuses this screen
+    bool isEdit = edit != null;
+    var itemBc = ViewBag.ItemBarcodes as Dictionary<int, string> ?? new();
+    var editLines = isEdit ? edit!.Lines.OrderBy(l => l.LineNo).Select(l => new {
+        itemId = l.ItemId, name = l.ItemDescription, wh = l.WarehouseId, d = l.ItemDescription,
+        q = l.Qty, p = l.UnitPrice, disc = l.DiscountAmount, tax = l.TaxRate, acc = l.RevenueAccountId,
+        barcode = (l.ItemId != null && itemBc.ContainsKey(l.ItemId.Value)) ? itemBc[l.ItemId.Value] : ""
+    }).ToList<object>() : new List<object>();
+}
+<style>
+    /* line items laid out over TWO rows (labels above each field) — no cramped single-row horizontal scroll */
+    .cb-2row thead{display:none}
+    /* 6 equal columns × 2 rows — fields keep their natural order; total is second-to-last, delete last; every control the same height */
+    .cb-2row #rows tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.55rem .75rem;padding:.9rem .5rem;border-bottom:1px solid var(--bs-gray-200)}
+    .cb-2row #rows tr:last-child{border-bottom:0}
+    .cb-2row #rows td{display:flex;flex-direction:column;justify-content:flex-end;border:0!important;padding:0!important}
+    .cb-2row #rows td::before{content:attr(data-l);font-size:.72rem;line-height:1;color:var(--bs-gray-500);font-weight:600;margin-bottom:.35rem;min-height:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cb-2row #rows td.cb-bc-cell::before{content:"@SR["Barcode"]"}
+    .cb-2row #rows td.cb-desc{grid-column:span 2}   /* sales has one fewer field → widen description so both rows fill 6 columns */
+    .cb-2row #rows td .form-control,.cb-2row #rows td .form-select,.cb-2row #rows td .select2-container{min-width:0!important;width:100%!important}
+    .cb-2row #rows td .form-control{height:42px}
+    .cb-2row #rows td .select2-container .select2-selection{height:42px!important;display:flex;align-items:center}
+    .cb-2row #rows td.lt-cell .lt{display:flex;align-items:center;justify-content:center;height:42px;background:var(--bs-gray-100);border-radius:.475rem;font-weight:700}
+    .cb-2row #rows td.cb-del-cell{align-items:stretch}
+    .cb-2row #rows td.cb-del-cell .del{height:42px;width:100%}
+</style>
+<form asp-action="@(isEdit ? "UpdateSalesInvoice" : "CreateSalesInvoice")" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+    @if (isEdit) { <input type="hidden" name="id" value="@edit!.ID" /> }
+    <input type="hidden" name="linesJson" id="linesJson" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isEdit ? SR["Edit invoice"].Value + " " + edit!.InvoiceNo : Localizer["New Sales Invoice"].Value)</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("SalesInvoices","Accounting")" class="text-muted">@Localizer["Sales"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isEdit ? SR["Edit"].Value : Localizer["New"].Value)</li></ul></div>
+        <div class="d-flex gap-2"><a href="@Url.Action("SalesInvoices","Accounting")" class="btn btn-light">@SR["Cancel"]</a><button type="button" class="btn btn-primary" id="save"><i class="ki-outline ki-check fs-2"></i>@(isEdit ? SR["Save changes"].Value : Localizer["Issue & post"].Value)</button></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+            <div class="card mb-5"><div class="card-body"><div class="row g-5">
+                <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@SR["Customer"]</label>
+                    <select name="customerId" id="custSel" class="form-select form-select-solid" required>
+                        <option value="">@Localizer["Select customer"]</option>
+                        @foreach (var c in customers) { <option value="@c.ID" selected="@(isEdit && edit!.CustomerId == c.ID)">@(isAr ? c.Name : (c.NameEn ?? c.Name))</option> }
+                    </select></div>
+                <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="date" name="invoiceDate" class="form-control form-control-solid" value="@(isEdit ? edit!.InvoiceDate.ToString("yyyy-MM-dd") : "2026-05-01")" required /></div>
+                <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Currency"]</label>
+                    <select name="currencyId" id="curSel" class="form-select form-select-solid">@foreach (var c in currencies) { <option value="@c.ID" selected="@(isEdit ? edit!.CurrencyId == c.ID : c.ID == funcCur)">@c.Code</option> }</select></div>
+                <div class="col-md-2" id="rateWrap" style="display:none"><label class="fw-semibold fs-6 mb-2">@Localizer["FX rate"]</label>
+                    <input type="number" step="0.0001" min="0" name="exchangeRate" class="form-control form-control-solid" placeholder="@Localizer["Auto"]" /></div>
+                <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Project"]</label><select name="projectId" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["None"]"><option value="">@Localizer["None"]</option>@foreach (var p in (ViewBag.Projects as List<(int id, string text)> ?? new())) { <option value="@p.id" selected="@(isEdit && edit!.ProjectId == p.id)">@p.text</option> }</select></div>
+                <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" value="@(isEdit ? edit!.Notes : "")" /></div>
+            </div></div></div>
+            <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
+            <div class="card-body"><div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+                <th style="min-width:200px">@Localizer["Item (stock)"]</th><th style="min-width:130px">@SR["Warehouse"]</th><th style="min-width:170px">@SR["Description"]</th><th style="width:90px">@Localizer["Qty"]</th><th style="width:120px">@SR["Price"]</th><th style="width:110px">@Localizer["Disc"]</th><th style="width:90px">@Localizer["Tax%"]</th><th style="min-width:180px">@Localizer["Revenue acct"]</th><th class="text-end" style="width:120px">@SR["Total"]</th><th style="width:40px"></th>
+            </tr></thead><tbody id="rows"></tbody><tfoot>
+                <tr class="fw-bold"><td colspan="8" class="text-end">@Localizer["Sub / Tax / Total"]</td><td class="text-end" id="tot">0.00</td><td></td></tr>
+            </tfoot></table></div>
+            </div></div>
+    </div></div>
+</form>
+<partial name="~/Views/Inventory/_ItemScanModal.cshtml" />
+<partial name="~/Views/Shared/_QuickAdd.cshtml" />
+@section Scripts {
+<script>
+var REV=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(revAccts.Select(a=>new{id=a.Id,code=a.Code,name=(isAr?a.Name:a.NameEn)})));
+var ITEMS=[]; var itemPickUrl='@Url.Action("ItemPickData","Inventory")';
+var WH=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(invWh.Select(w=>new{iD=w.ID,code=w.Code,name=(isAr?w.Name:w.NameEn)})));
+function opts(){var o='';REV.forEach(function(a){o+='<option value="'+a.id+'">'+a.code+' — '+a.name+'</option>';});return o;}
+function iopts(){return '<option value="">@Localizer["— None —"]</option>';}
+function wopts(){var o='<option value="">—</option>';WH.forEach(function(w){o+='<option value="'+w.iD+'">'+w.code+'</option>';});return o;}
+function addRow(){var tr=document.createElement('tr');tr.innerHTML=
+ '<td data-l="@Localizer["Item (stock)"]"><select class="form-select form-select-solid it">'+iopts()+'</select></td>'+
+ '<td data-l="@SR["Warehouse"]"><select class="form-select form-select-solid wh">'+wopts()+'</select></td>'+
+ '<td data-l="@SR["Description"]" class="cb-desc"><input class="form-control form-control-solid d"></td>'+
+ '<td data-l="@Localizer["Qty"]"><input type="number" step="0.01" class="form-control form-control-solid q text-end" value="1"></td>'+
+ '<td data-l="@SR["Price"]"><input type="number" step="0.01" class="form-control form-control-solid p text-end" value="0"></td>'+
+ '<td data-l="@Localizer["Disc"]"><input type="number" step="0.01" class="form-control form-control-solid disc text-end" value="0"></td>'+
+ '<td data-l="@Localizer["Tax%"]"><input type="number" step="0.01" class="form-control form-control-solid tax text-end" value="14"></td>'+
+ '<td data-l="@Localizer["Revenue acct"]"><select class="form-select form-select-solid acc">'+opts()+'</select></td>'+
+ '<td data-l="@SR["Total"]" class="lt-cell"><span class="lt">0.00</span></td>'+
+ '<td class="cb-del-cell"><button type="button" class="btn btn-light-danger del"><i class="ki-outline ki-trash fs-5"></i></button></td>';
+ document.getElementById('rows').appendChild(tr);cbItemSelect(tr.querySelector('.it'), itemPickUrl);calc();}
+function calc(){var sub=0,tax=0;document.querySelectorAll('#rows tr').forEach(function(tr){
+ var q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0,d=parseFloat(tr.querySelector('.disc').value)||0,t=parseFloat(tr.querySelector('.tax').value)||0;
+ var lt=q*p-d;var lx=lt*t/100;tr.querySelector('.lt').textContent=lt.toFixed(2);sub+=lt;tax+=lx;});
+ document.getElementById('tot').textContent=sub.toFixed(2)+' / '+tax.toFixed(2)+' / '+(sub+tax).toFixed(2);}
+document.getElementById('add').addEventListener('click',addRow);
+document.getElementById('rows').addEventListener('input',calc);
+// P3-5d pricing engine: resolve price + discount by customer segment / qty break (overrides the static item price)
+var priceUrl='@Url.Action("PriceLookup","Inventory")';
+function applyPrice(tr){
+  if(window.__editFill)return;   // during edit prefill: keep the invoice's stored prices, don't re-run the pricing engine
+  var it=tr.querySelector('.it'); var id=parseInt(it&&it.value||'0'); if(!id)return;
+  var q=parseFloat(tr.querySelector('.q').value)||1;
+  var cust=document.getElementById('custSel'); var cid=(cust&&cust.value)?('&customerId='+cust.value):'';
+  fetch(priceUrl+'?itemId='+id+'&qty='+q+cid,{headers:{'X-Requested-With':'fetch'}})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d&&d.unitPrice!=null){ tr.querySelector('.p').value=d.unitPrice;
+      var disc=Math.round((q*d.unitPrice*(d.discountPercent||0)/100)*100)/100;
+      tr.querySelector('.disc').value=disc; calc(); } }).catch(function(){});
+}
+// when an inventory item is chosen: fill description + engine price, and default the warehouse (COGS is auto on post)
+document.getElementById('rows').addEventListener('change',function(e){
+  if(e.target.classList.contains('it')){var tr=e.target.closest('tr');var opt=e.target.options[e.target.selectedIndex];
+    if(e.target.value){var nm=opt.getAttribute('data-name')||'';
+      if(!tr.querySelector('.d').value)tr.querySelector('.d').value=nm;
+      var wh=tr.querySelector('.wh');if(wh&&!wh.value&&WH.length)wh.value=WH[0].iD;
+      applyPrice(tr);}}
+});
+// re-price on qty change (quantity breaks) — debounced
+var priceTimer;
+document.getElementById('rows').addEventListener('input',function(e){ if(e.target.classList.contains('q')){ var tr=e.target.closest('tr'); clearTimeout(priceTimer); priceTimer=setTimeout(function(){applyPrice(tr);},400); }});
+// re-price all rows when the customer changes (segment-based pricing)
+document.getElementById('custSel').addEventListener('change',function(){ document.querySelectorAll('#rows tr').forEach(applyPrice); });
+document.getElementById('rows').addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});
+document.getElementById('save').addEventListener('click',function(){
+ var lines=[];document.querySelectorAll('#rows tr').forEach(function(tr){var acc=tr.querySelector('.acc').value;var it=tr.querySelector('.it').value;var wh=tr.querySelector('.wh').value;var q=parseFloat(tr.querySelector('.q').value)||0,p=parseFloat(tr.querySelector('.p').value)||0;
+  if(acc&&q*p>0)lines.push({itemDescription:tr.querySelector('.d').value,qty:q,unitPrice:p,discountAmount:parseFloat(tr.querySelector('.disc').value)||0,taxRate:parseFloat(tr.querySelector('.tax').value)||0,revenueAccountId:parseInt(acc),itemId:it?parseInt(it):null,warehouseId:wh?parseInt(wh):null});});
+ if(!lines.length){alert('@Localizer["Add at least one line"]');return;}
+ document.getElementById('linesJson').value=JSON.stringify(lines);var _f=document.getElementById('f');
+ if(window.CB&&CB.submitForm){CB.submitForm(_f,{type:'@(isEdit ? "edit" : "save")'@Html.Raw(isEdit ? ",text:(window.CB?CB.L('سيتم عكس القيد الأصلي للفاتورة وإعادة ترحيلها بالقيم الجديدة — هل تريد المتابعة؟','The original entry will be reversed and the invoice re-posted with the new values — continue?'):null)" : "")});}else{_f.submit();}});
+var FUNC=@funcCur; var curSel=document.getElementById('curSel'); var rateWrap=document.getElementById('rateWrap');
+function toggleRate(){ if(rateWrap) rateWrap.style.display=(parseInt(curSel.value)!==FUNC)?'':'none'; }
+if(curSel){ curSel.addEventListener('change',toggleRate); toggleRate(); }
+// P3 edit mode: prefill the existing lines (keep stored prices; skip the pricing engine while filling)
+var EDIT_LINES=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(editLines));
+function fillRow(l){ addRow(); var tr=document.querySelector('#rows tr:last-child'); if(!tr)return;
+  if(l.barcode) tr.setAttribute('data-cb-bcval', l.barcode);   // recall the item's barcode into the (async-added) barcode cell
+  if(l.itemId){ cbItemSelectSet(tr.querySelector('.it'), {id:l.itemId, code:'', name:l.name||''}); }
+  var wh=tr.querySelector('.wh'); if(wh && l.wh) wh.value=String(l.wh);
+  tr.querySelector('.d').value=l.d||''; tr.querySelector('.q').value=l.q; tr.querySelector('.p').value=l.p;
+  tr.querySelector('.disc').value=l.disc; tr.querySelector('.tax').value=l.tax;
+  var acc=tr.querySelector('.acc'); if(acc && l.acc) acc.value=String(l.acc);
+  calc(); }
+if(EDIT_LINES && EDIT_LINES.length){ window.__editFill=true; EDIT_LINES.forEach(fillRow); setTimeout(function(){ window.__editFill=false; },600); }
+else { addRow(); }
+window.onItemScanned=function(p){ addRow(); var tr=document.querySelector('#rows tr:last-child'); if(!tr)return;
+  cbItemSelectSet(tr.querySelector('.it'), {id:p.id, code:p.code, name:p.name, nameEn:p.nameEn, price:p.salesPrice, baseUom:p.baseUom});
+  tr.querySelector('.q').value=(p.qty*(p.factor||1));
+  var wh=tr.querySelector('.wh'); if(wh&&!wh.value&&WH.length)wh.value=String(WH[0].iD);
+  calc(); };
+</script>
+}

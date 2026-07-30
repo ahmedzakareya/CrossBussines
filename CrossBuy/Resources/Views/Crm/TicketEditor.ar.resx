@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Urgent" xml:space="preserve">
+    <value>عاجل</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>مرتفع</value>
+  </data>
+  <data name="Normal" xml:space="preserve">
+    <value>عادي</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>منخفض</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديدة</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>مفتوحة</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>معلّقة</value>
+  </data>
+  <data name="Resolved" xml:space="preserve">
+    <value>محلولة</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>مغلقة</value>
+  </data>
+  <data name="New ticket" xml:space="preserve">
+    <value>تذكرة جديدة</value>
+  </data>
+  <data name="Tickets" xml:space="preserve">
+    <value>التذاكر</value>
+  </data>
+  <data name="Ticket details" xml:space="preserve">
+    <value>بيانات التذكرة</value>
+  </data>
+  <data name="Save ticket?" xml:space="preserve">
+    <value>حفظ التذكرة؟</value>
+  </data>
+  <data name="Subject" xml:space="preserve">
+    <value>العنوان</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>الأولوية</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>التصنيف</value>
+  </data>
+  <data name="Inquiry / complaint / support" xml:space="preserve">
+    <value>استفسار / شكوى / دعم فني</value>
+  </data>
+  <data name="Change status to" xml:space="preserve">
+    <value>تغيير الحالة إلى</value>
+  </data>
+  <data name="?" xml:space="preserve">
+    <value>؟</value>
+  </data>
+  <data name="SLA" xml:space="preserve">
+    <value>اتفاقية مستوى الخدمة (SLA)</value>
+  </data>
+  <data name="First response due" xml:space="preserve">
+    <value>أول استجابة — الموعد</value>
+  </data>
+  <data name="First responded" xml:space="preserve">
+    <value>تمّت أول استجابة</value>
+  </data>
+  <data name="overdue" xml:space="preserve">
+    <value>متأخرة</value>
+  </data>
+  <data name="Resolution due" xml:space="preserve">
+    <value>الحل — الموعد</value>
+  </data>
+  <data name="SLA target breached" xml:space="preserve">
+    <value>تم تجاوز مستوى الخدمة المتفق عليه</value>
+  </data>
+  <data name="Within SLA" xml:space="preserve">
+    <value>ضمن مستوى الخدمة</value>
+  </data>
+  <data name="No SLA policy matches this priority" xml:space="preserve">
+    <value>لا توجد سياسة SLA مطابقة لهذه الأولوية</value>
+  </data>
+  <data name="Save the ticket first to see status, SLA and the conversation." xml:space="preserve">
+    <value>احفظ التذكرة أولًا لعرض الحالة وبيانات SLA والمحادثة.</value>
+  </data>
+  <data name="Search account…" xml:space="preserve">
+    <value>ابحث عن حساب…</value>
+  </data>
+</root>

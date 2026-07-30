@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Record attendance" xml:space="preserve">
+    <value>تسجيل الحضور والانصراف</value>
+  </data>
+  <data name="Attendance" xml:space="preserve">
+    <value>الحضور</value>
+  </data>
+  <data name="Entry" xml:space="preserve">
+    <value>تسجيل</value>
+  </data>
+  <data name="Monthly summary" xml:space="preserve">
+    <value>الملخص الشهري</value>
+  </data>
+  <data name="Record a day" xml:space="preserve">
+    <value>تسجيل يوم</value>
+  </data>
+  <data name="Check-in" xml:space="preserve">
+    <value>الحضور</value>
+  </data>
+  <data name="Check-out" xml:space="preserve">
+    <value>الانصراف</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>المصدر</value>
+  </data>
+  <data name="Manual" xml:space="preserve">
+    <value>يدوي</value>
+  </data>
+  <data name="Web" xml:space="preserve">
+    <value>ويب</value>
+  </data>
+  <data name="Device" xml:space="preserve">
+    <value>جهاز بصمة</value>
+  </data>
+  <data name="Mobile" xml:space="preserve">
+    <value>موبايل</value>
+  </data>
+  <data name="Late = check-in − (start + grace); overtime = check-out − end; computed from the attendance policy, with holidays/rest/leave excluded." xml:space="preserve">
+    <value>التأخير = الحضور − (بداية الدوام + السماحية)، والإضافي = الانصراف − نهاية الدوام، تُحسب من سياسة الحضور وتُستبعَد العطلات/الراحة/الإجازات.</value>
+  </data>
+  <data name="Month records" xml:space="preserve">
+    <value>سجلات الشهر</value>
+  </data>
+  <data name="In" xml:space="preserve">
+    <value>دخول</value>
+  </data>
+  <data name="Out" xml:space="preserve">
+    <value>خروج</value>
+  </data>
+  <data name="Late" xml:space="preserve">
+    <value>متأخر</value>
+  </data>
+  <data name="OT" xml:space="preserve">
+    <value>إضافي</value>
+  </data>
+  <data name="Hrs" xml:space="preserve">
+    <value>ساعات</value>
+  </data>
+  <data name="No records this month" xml:space="preserve">
+    <value>لا سجلات هذا الشهر</value>
+  </data>
+  <data name="Present" xml:space="preserve">
+    <value>حاضر</value>
+  </data>
+  <data name="Absent" xml:space="preserve">
+    <value>غائب</value>
+  </data>
+  <data name="Holiday" xml:space="preserve">
+    <value>عطلة</value>
+  </data>
+  <data name="Rest" xml:space="preserve">
+    <value>راحة</value>
+  </data>
+  <data name="Leave" xml:space="preserve">
+    <value>إجازة</value>
+  </data>
+</root>

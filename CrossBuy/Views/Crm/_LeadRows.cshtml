@@ -1,0 +1,38 @@
+@using CrossBuy.Models.Context.Crm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Lead>
+@{
+    string cls(string s) => s switch { "Contacted" => "info", "Qualified" => "primary", "Converted" => "success", "Lost" => "danger", _ => "secondary" };
+    string nm(string s) => s switch { "New" => Localizer["New"].Value, "Contacted" => Localizer["Contacted"].Value, "Qualified" => Localizer["Qualified"].Value, "Converted" => Localizer["Converted"].Value, "Lost" => Localizer["Lost"].Value, _ => s };
+    int hot = (int)(ViewBag.Hot ?? 50); int warm = (int)(ViewBag.Warm ?? 20);
+    string scoreCls(int s) => s >= hot ? "danger" : (s >= warm ? "warning" : "secondary");
+    string scoreLbl(int s) => s >= hot ? Localizer["Hot"].Value : (s >= warm ? Localizer["Warm"].Value : Localizer["Cold"].Value);
+    var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+    string leadName(Lead l) => (isEn && !string.IsNullOrWhiteSpace(l.NameEn)) ? l.NameEn! : l.Name;
+}
+@foreach (var l in Model)
+{
+    <tr data-id="@l.ID" data-name="@l.Name" data-nameen="@l.NameEn" data-company="@l.Company" data-phone="@l.Phone" data-email="@l.Email" data-source="@l.Source" data-segment="@l.Segment" data-value="@l.EstimatedValue" data-status="@l.Status" data-notes="@l.Notes" data-campaign="@l.CampaignId">
+        <td class="fw-bold text-gray-800">@leadName(l)<div class="text-muted fs-8">@l.Company</div></td>
+        <td class="text-muted">@(l.Phone ?? "—")</td>
+        <td>@if (string.IsNullOrEmpty(l.Source)) { <span class="text-muted">—</span> } else { <span class="badge badge-light-dark">@l.Source</span> }</td>
+        <td class="text-end fw-bold">@l.EstimatedValue.ToString("N0")</td>
+        <td class="text-center"><span class="badge badge-light-@cls(l.Status)">@nm(l.Status)</span></td>
+        <td class="text-center"><span class="badge badge-light-@scoreCls(l.Score)" title="@scoreLbl(l.Score)">@l.Score · @scoreLbl(l.Score)</span></td>
+        <td class="text-center">
+            <button class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]" onclick="leadEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
+            @if (l.CustomerId == null && l.Status != "Lost")
+            {
+                <form asp-action="ConvertLead" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Convert this lead to a customer?"]">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@l.ID" />
+                    <button class="btn btn-sm btn-light-primary" title="@Localizer["Convert to customer"]"><i class="ki-outline ki-user-tick fs-6"></i></button>
+                </form>
+            }
+            else if (l.CustomerId != null)
+            {
+                <a href="@Url.Action("CustomerStatement","Accounting", new { id = l.CustomerId })" class="btn btn-sm btn-icon btn-light" title="@SR["Customer"]"><i class="ki-outline ki-eye fs-6"></i></a>
+            }
+        </td>
+    </tr>
+}

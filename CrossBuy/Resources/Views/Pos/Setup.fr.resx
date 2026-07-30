@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Operations platform setup" xml:space="preserve">
+    <value>Configuration de la plateforme d'exploitation</value>
+  </data>
+  <data name="Activity type enables branch capabilities. Configuration only — no GL/stock impact." xml:space="preserve">
+    <value>Le type d'activité active les capacités de la succursale. Configuration uniquement — aucun impact comptable/stock.</value>
+  </data>
+  <data name="Areas &amp; stations" xml:space="preserve">
+    <value>Salles &amp; postes</value>
+  </data>
+  <data name="Floor plan" xml:space="preserve">
+    <value>Plan de salle</value>
+  </data>
+  <data name="This company has no branches — add one first from the Branches screen." xml:space="preserve">
+    <value>Cette société n'a aucune succursale — ajoutez-en une d'abord depuis l'écran Succursales.</value>
+  </data>
+  <data name="Manage branches" xml:space="preserve">
+    <value>Gérer les succursales</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Sélectionner une société</value>
+  </data>
+  <data name="Branch (Location)" xml:space="preserve">
+    <value>Succursale (Emplacement)</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Sélectionner une succursale</value>
+  </data>
+  <data name="Current activity" xml:space="preserve">
+    <value>Activité actuelle</value>
+  </data>
+  <data name="— none —" xml:space="preserve">
+    <value>— aucun —</value>
+  </data>
+  <data name="Select a branch to set up the operations platform." xml:space="preserve">
+    <value>Sélectionnez une succursale pour configurer la plateforme d'exploitation.</value>
+  </data>
+  <data name="Activity type" xml:space="preserve">
+    <value>Type d'activité</value>
+  </data>
+  <data name="Choosing a type turns on its default capabilities (editable afterward)." xml:space="preserve">
+    <value>Choisir un type active ses capacités par défaut (modifiables ensuite).</value>
+  </data>
+  <data name="Apply this activity type and reset its default capabilities?" xml:space="preserve">
+    <value>Appliquer ce type d'activité et réinitialiser ses capacités par défaut ?</value>
+  </data>
+  <data name="Enabled capabilities" xml:space="preserve">
+    <value>Capacités activées</value>
+  </data>
+  <data name="Capabilities drive what the cashier surface shows later." xml:space="preserve">
+    <value>Les capacités déterminent ce que l'interface caissier affichera ultérieurement.</value>
+  </data>
+  <data name="POS sales settings" xml:space="preserve">
+    <value>Paramètres de vente du point de vente</value>
+  </data>
+  <data name="Default sales warehouse" xml:space="preserve">
+    <value>Entrepôt de vente par défaut</value>
+  </data>
+  <data name="— select —" xml:space="preserve">
+    <value>— sélectionner —</value>
+  </data>
+  <data name="The cashier deducts stock from here later." xml:space="preserve">
+    <value>Le caissier y déduira le stock ultérieurement.</value>
+  </data>
+  <data name="Price list" xml:space="preserve">
+    <value>Liste de prix</value>
+  </data>
+  <data name="— engine default —" xml:space="preserve">
+    <value>— valeur par défaut du moteur —</value>
+  </data>
+  <data name="Applied via the existing PricingService." xml:space="preserve">
+    <value>Appliqué via le PricingService existant.</value>
+  </data>
+  <data name="Service %" xml:space="preserve">
+    <value>Service %</value>
+  </data>
+  <data name="— branch —" xml:space="preserve">
+    <value>— succursale —</value>
+  </data>
+  <data name="Save settings" xml:space="preserve">
+    <value>Enregistrer les paramètres</value>
+  </data>
+</root>

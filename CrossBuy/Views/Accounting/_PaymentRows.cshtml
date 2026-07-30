@@ -1,0 +1,14 @@
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Payment>
+@foreach (var p in Model)
+{
+    <tr class="r" style="border-bottom:1px dashed #eef1f6;">
+        <td class="ps-4 fw-bold text-gray-800">@p.PaymentNo</td>
+        <td class="text-muted">@p.PaymentDate.ToString("yyyy/MM/dd")</td>
+        <td class="text-end fw-bold">@p.Amount.ToString("N2")</td>
+        <td><span class="badge fw-bold" style="background:#f2f4f7;color:#475467;">@Localizer[p.Method]</span></td>
+        <td class="text-center pe-4">@if (p.JournalEntryId.HasValue) { <a href="@Url.Action("JournalEntry","Accounting", new { id = p.JournalEntryId })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Entry"]"><i class="ki-outline ki-eye fs-6"></i></a> }</td>
+    </tr>
+}

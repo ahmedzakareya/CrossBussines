@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="New Purchase Return / Debit Note" xml:space="preserve">
+    <value>Nouveau retour d'achat / Note de débit</value>
+  </data>
+  <data name="Purchase returns" xml:space="preserve">
+    <value>Retours d'achat</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Issues goods out, reverses the vendor payable &amp; input VAT. Value is computed at the item's cost." xml:space="preserve">
+    <value>Sort les marchandises, extourne la dette fournisseur &amp; la TVA déductible. La valeur est calculée au coût de l'article.</value>
+  </data>
+  <data name="Select vendor" xml:space="preserve">
+    <value>Sélectionner un fournisseur</value>
+  </data>
+  <data name="Original inv." xml:space="preserve">
+    <value>Facture d'origine</value>
+  </data>
+  <data name="Lines (items)" xml:space="preserve">
+    <value>Lignes (articles)</value>
+  </data>
+  <data name="Add line" xml:space="preserve">
+    <value>Ajouter une ligne</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>Qté</value>
+  </data>
+  <data name="Tax%" xml:space="preserve">
+    <value>Taxe%</value>
+  </data>
+  <data name="Est. cost" xml:space="preserve">
+    <value>Coût est.</value>
+  </data>
+  <data name="Final value is computed at the item's average cost on posting." xml:space="preserve">
+    <value>La valeur finale est calculée au coût moyen de l'article lors de la comptabilisation.</value>
+  </data>
+  <data name="Post return" xml:space="preserve">
+    <value>Comptabiliser le retour</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>Sélectionner</value>
+  </data>
+  <data name="Add at least one item line" xml:space="preserve">
+    <value>Ajoutez au moins une ligne d'article</value>
+  </data>
+</root>

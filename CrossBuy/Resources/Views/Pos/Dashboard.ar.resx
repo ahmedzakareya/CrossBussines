@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>  <data name="qty" xml:space="preserve">
+    <value>كمية</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="Quick Access" xml:space="preserve">
+    <value>وصول سريع</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>الإجمالي</value>
+  </data>
+  <data name="terminals" xml:space="preserve">
+    <value>أجهزة</value>
+  </data>
+  <data name="Per order" xml:space="preserve">
+    <value>لكل طلب</value>
+  </data>
+  <data name="Restaurant" xml:space="preserve">
+    <value>المطعم</value>
+  </data>
+  <data name="Reservations" xml:space="preserve">
+    <value>الحجوزات</value>
+  </data>
+  <data name="Delivery board" xml:space="preserve">
+    <value>لوحة التوصيل</value>
+  </data>
+  <data name="Paid" xml:space="preserve">
+    <value>مدفوع</value>
+  </data>
+  <data name="Dashboard" xml:space="preserve">
+    <value>لوحة التحكم</value>
+  </data>
+  <data name="Sales this month" xml:space="preserve">
+    <value>مبيعات الشهر</value>
+  </data>
+  <data name="Floor plan" xml:space="preserve">
+    <value>مخطط الطاولات</value>
+  </data>
+  <data name="Takeaway" xml:space="preserve">
+    <value>تيك أواي</value>
+  </data>
+  <data name="Top items" xml:space="preserve">
+    <value>أعلى الأصناف</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>اليوم</value>
+  </data>
+  <data name="Open shifts" xml:space="preserve">
+    <value>ورديات مفتوحة</value>
+  </data>
+  <data name="tables" xml:space="preserve">
+    <value>طاولات</value>
+  </data>
+  <data name="Dine-in" xml:space="preserve">
+    <value>صالة</value>
+  </data>
+  <data name="Receipt" xml:space="preserve">
+    <value>إيصال</value>
+  </data>
+  <data name="Sales" xml:space="preserve">
+    <value>المبيعات</value>
+  </data>
+  <data name="Delivery" xml:space="preserve">
+    <value>توصيل</value>
+  </data>
+  <data name="Orders" xml:space="preserve">
+    <value>الطلبات</value>
+  </data>
+  <data name="Sales today" xml:space="preserve">
+    <value>مبيعات اليوم</value>
+  </data>
+  <data name="Cashier terminal" xml:space="preserve">
+    <value>شاشة الكاشير</value>
+  </data>
+  <data name="Average ticket" xml:space="preserve">
+    <value>متوسط الفاتورة</value>
+  </data>
+  <data name="Kitchen display" xml:space="preserve">
+    <value>شاشة المطبخ</value>
+  </data>
+  <data name="This month" xml:space="preserve">
+    <value>هذا الشهر</value>
+  </data>
+  <data name="Last 7 days" xml:space="preserve">
+    <value>آخر 7 أيام</value>
+  </data>
+  <data name="Operations setup" xml:space="preserve">
+    <value>تأسيس العمليات</value>
+  </data>
+  <data name="Orders by type" xml:space="preserve">
+    <value>الطلبات حسب النوع</value>
+  </data>
+  <data name="Recent orders" xml:space="preserve">
+    <value>أحدث الطلبات</value>
+  </data>
+  <data name="Open orders" xml:space="preserve">
+    <value>طلبات مفتوحة</value>
+  </data>
+</root>

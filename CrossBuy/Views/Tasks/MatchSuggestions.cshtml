@@ -1,0 +1,97 @@
+@using CrossBuy.BL
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+    var groups = ViewBag.Groups as List<SuggestionGroupDto> ?? new();
+    ViewData["Title"] = T("مطابقات مقترحة", "Match suggestions");
+    Func<string, string> typeLabel = k => k == "PurchaseInvoice" ? T("فاتورة مشتريات", "Purchase invoice") : k == "SalesInvoice" ? T("فاتورة مبيعات", "Sales invoice") : k;
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("مطابقات مقترحة", "Match suggestions")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@T("المهام", "Tasks")</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@T("المهام المجدولة", "Scheduled tasks")</li>
+        </ul>
+    </div>
+    <a asp-action="All" class="btn btn-sm btn-light">@T("كل المهام", "All tasks")</a>
+</div></div>
+<!--end::Toolbar-->
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    <div class="alert alert-primary d-flex align-items-center py-3 mb-5">
+        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+        <span class="fw-semibold">@T("مهام مجدولة لها أكثر من حركة مطابقة — أكّد الحركة الصحيحة لربط المهمة بها، أو ارفض المرشّح.", "Scheduled tasks with more than one matching movement — confirm the right one to link the task, or dismiss a candidate.")</span>
+    </div>
+
+    @if (!groups.Any())
+    {
+        <div class="card"><div class="card-body text-center text-muted py-15">
+            <i class="ki-outline ki-check-circle fs-3x text-primary mb-3 d-block"></i>
+            @T("لا مطابقات مقترحة حاليًا.", "No pending match suggestions.")
+        </div></div>
+    }
+    else
+    {
+        foreach (var g in groups)
+        {
+            <div class="card mb-5">
+                <div class="card-header border-0 pt-6 align-items-center">
+                    <div class="card-title d-flex flex-column">
+                        <span class="fs-4 fw-bold text-gray-900">@g.TaskTitle</span>
+                        <span class="fs-7 text-muted mt-1">
+                            <span class="badge badge-light-primary me-2"><i class="ki-outline ki-calendar fs-8 me-1"></i>@T("مجدولة", "Scheduled")</span>
+                            @typeLabel(g.ExpectedType)@(string.IsNullOrEmpty(g.PartyName) ? "" : " — " + g.PartyName)
+                            @if (g.DueDate.HasValue) { <span class="text-muted ms-2">· @g.DueDate.Value.ToString("yyyy-MM-dd")</span> }
+                        </span>
+                    </div>
+                    <div class="card-toolbar"><span class="badge badge-light-secondary fs-7">@g.Candidates.Count @T("حركة مرشّحة", "candidate(s)")</span></div>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                            <thead><tr class="text-start text-gray-400 fw-semibold fs-7 text-uppercase">
+                                <th class="min-w-150px">@T("الحركة المرشّحة", "Candidate movement")</th>
+                                <th class="text-end min-w-200px pe-4">@T("إجراء", "Action")</th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var c in g.Candidates)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="d-flex align-items-center">
+                                                <i class="ki-outline ki-bill fs-2 text-primary me-3"></i>
+                                                <span class="d-flex flex-column">
+                                                    <span class="fw-bold text-gray-900">@c.Label</span>
+                                                    <span class="text-muted fs-8">@typeLabel(c.EntityType)</span>
+                                                </span>
+                                            </span>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <form asp-action="ConfirmMatch" method="post" class="d-inline" data-cb-confirm data-cb-action="approve" data-cb-title="@T("ربط المهمة بهذه الحركة؟", "Link the task to this movement?")">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="taskId" value="@g.TaskId" />
+                                                <input type="hidden" name="entityId" value="@c.EntityId" />
+                                                <button type="submit" class="btn btn-sm btn-success"><i class="ki-outline ki-check fs-5"></i>@T("تأكيد وربط", "Confirm & link")</button>
+                                            </form>
+                                            <form asp-action="DismissMatch" method="post" class="d-inline ms-2" data-cb-confirm data-cb-action="delete" data-cb-title="@T("رفض هذا المرشّح؟", "Dismiss this candidate?")">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="suggestionId" value="@c.SuggestionId" />
+                                                <button type="submit" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-5"></i>@T("رفض", "Dismiss")</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div></div>

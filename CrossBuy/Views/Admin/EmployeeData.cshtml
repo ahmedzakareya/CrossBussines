@@ -1,0 +1,2666 @@
+@model CrossBuy.ViewModel.EmployeeViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+
+@{
+    ViewData["Title"] = "EmployeeData";
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+
+    var saveEmployeeUrl      = Url.Action("SaveEmployee",   "Admin");
+    var getCompaniesUrl      = Url.Action("GetCompanies",   "Admin");
+    var getBranchesUrl       = Url.Action("GetBranches",    "Admin");
+    var getJobTitlesUrl      = Url.Action("GetJobTitles",   "Admin");
+    var getHierarchicalsUrl  = Url.Action("GetHierarchicals","Admin");
+    var getPolicyUrl         = Url.Action("GetPolicy",      "Admin");
+    var getPoliciesUrl       = Url.Action("GetPolicies",    "Admin");
+
+    var genderValue         = Model?.Gender ?? "";
+    var maritalStatusValue  = Model?.MaritalStatus ?? "";
+    var dobValue            = Model?.DateOfBirth.HasValue == true ? Model.DateOfBirth.Value.ToString("yyyy-MM-dd") : "";
+    var dojValue            = Model?.DateOfJoining.HasValue == true ? Model.DateOfJoining.Value.ToString("yyyy-MM-dd") : "";
+}
+
+@* ═══════════════════════════════════════════════════════════════
+   Scoped styles — injected once, complement the host theme
+   ═══════════════════════════════════════════════════════════════ *@
+<style>
+/* ── tokens ──────────────────────────────────────────────────── */
+:root {
+    --er-primary:     #13433a;
+    --er-primary-lt:  #e9f1ee;
+    --er-primary-bd:  #b7d3c9;
+    --er-success:     #0F6E56;
+    --er-success-lt:  #E1F5EE;
+    --er-success-bd:  #9FE1CB;
+    --er-warn-lt:     #FAEEDA;
+    --er-warn:        #BA7517;
+    --er-danger-lt:   #FCEBEB;
+    --er-radius:      10px;
+    --er-radius-sm:   6px;
+    --er-border:      0.5px solid rgba(0,0,0,.10);
+    --er-shadow:      0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+}
+
+/* ── page wrapper ─────────────────────────────────────────────── */
+.er-page { padding: 0 0 4rem; }
+
+/* ── stepper nav ─────────────────────────────────────────────── */
+.er-stepper-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 2rem 2.5rem 1.75rem;
+    border-bottom: var(--er-border);
+    flex-wrap: wrap;
+    row-gap: .75rem;
+}
+.er-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.er-step-circle {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+    flex-shrink: 0;
+    transition: background .25s, border-color .25s;
+    border: 1.5px solid transparent;
+}
+.er-step-circle.idle   { background: #F5F5F5; color: #999; border-color: #E0E0E0; }
+.er-step-circle.active { background: var(--er-primary); color: #fff; border-color: var(--er-primary); box-shadow: 0 0 0 4px var(--er-primary-lt); }
+.er-step-circle.done   { background: var(--er-success-lt); color: var(--er-success); border-color: var(--er-success-bd); }
+.er-step-circle.idle i,
+.er-step-circle.idle i::before { color: #999 !important; }
+.er-step-circle.active i,
+.er-step-circle.active i::before { color: #fff !important; }
+.er-step-circle.done i,
+.er-step-circle.done i::before { color: var(--er-success) !important; }
+.er-step-circle .ki-check::before { font-size: 16px; }
+
+.er-step-meta { line-height: 1.25; }
+.er-step-meta .ttl { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.er-step-meta .sub { font-size: 11px; color: #999; }
+.er-step-meta.active .ttl { color: var(--er-primary); }
+.er-step-meta.done   .ttl { color: var(--er-success); }
+.er-step-meta.idle   .ttl { color: #aaa; }
+
+.er-step-line {
+    width: 60px; height: 1.5px;
+    background: #E0E0E0;
+    margin: 0 6px;
+    flex-shrink: 0;
+    border-radius: 2px;
+    transition: background .35s;
+}
+.er-step-line.done { background: var(--er-success-bd); }
+
+/* ── card shell ──────────────────────────────────────────────── */
+.er-card {
+    background: #fff;
+    border: var(--er-border);
+    border-radius: var(--er-radius);
+    box-shadow: var(--er-shadow);
+    overflow: hidden;
+}
+
+/* ── step body ───────────────────────────────────────────────── */
+.er-body { padding: 2rem 2.5rem; }
+
+.er-step-content { display: none; }
+.er-step-content.er-active { display: block; }
+
+/* ── section heading ─────────────────────────────────────────── */
+.er-section-head { margin-bottom: 1.75rem; }
+.er-section-head h2 { font-size: 17px; font-weight: 700; color: #111; margin-bottom: 3px; }
+.er-section-head p  { font-size: 13px; color: #888; margin: 0; }
+
+/* ── avatar upload ───────────────────────────────────────────── */
+.image-input-placeholder {
+    background-image: url('/Backend-assets/media/svg/files/blank-image.svg');
+}
+[data-bs-theme="dark"] .image-input-placeholder {
+    background-image: url('/Backend-assets/media/svg/files/blank-image-dark.svg');
+}
+
+/* ── form fields ─────────────────────────────────────────────── */
+.er-label {
+    font-size: 12px; font-weight: 600; color: #555;
+    margin-bottom: 5px; display: block;
+}
+.er-label .req { color: #D85A30; }
+.er-label .badge-auto {
+    display: inline-flex; align-items: center;
+    font-size: 10px; font-weight: 500;
+    background: var(--er-primary-lt); color: var(--er-primary);
+    padding: 1px 6px; border-radius: 20px;
+    margin-left: 5px; vertical-align: middle;
+}
+
+.form-control-er, .form-select-er {
+    width: 100%; height: 42px;
+    border: 1px solid #dde0e5;
+    border-radius: var(--er-radius-sm);
+    background: #FAFAFA;
+    padding: 0 12px;
+    font-size: 14px; color: #222;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    -webkit-appearance: none; appearance: none;
+}
+.form-control-er:focus, .form-select-er:focus {
+    outline: none;
+    border-color: var(--er-primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--er-primary-lt);
+}
+/* ── validation icons — shared ────────────────────────────────── */
+.form-control-er.is-invalid, .form-select-er.is-invalid {
+    border-color: #D85A30 !important;
+    box-shadow: 0 0 0 3px var(--er-danger-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' stroke='%23D85A30' stroke-width='1.5' fill='none'/%3E%3Cline x1='5' y1='5' x2='11' y2='11' stroke='%23D85A30' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='11' y1='5' x2='5' y2='11' stroke='%23D85A30' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-size: 16px 16px !important;
+    /* LTR default */
+    background-position: right 11px center !important;
+    padding-right: 36px !important;
+}
+.form-control-er.is-valid, .form-select-er.is-valid {
+    border-color: var(--er-success) !important;
+    box-shadow: 0 0 0 3px var(--er-success-lt) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' stroke='%230F6E56' stroke-width='1.5' fill='none'/%3E%3Cpath d='M5 8.5l2 2 4-4' stroke='%230F6E56' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-size: 16px 16px !important;
+    /* LTR default */
+    background-position: right 11px center !important;
+    padding-right: 36px !important;
+}
+/* RTL — flip icon to left side */
+[dir="rtl"] .form-control-er.is-invalid,
+[dir="rtl"] .form-select-er.is-invalid {
+    background-position: left 11px center !important;
+    padding-right: 12px !important;
+    padding-left: 36px !important;
+}
+[dir="rtl"] .form-control-er.is-valid,
+[dir="rtl"] .form-select-er.is-valid {
+    background-position: left 11px center !important;
+    padding-right: 12px !important;
+    padding-left: 36px !important;
+}
+textarea.form-control-er.is-invalid,
+textarea.form-control-er.is-valid {
+    background-image: none !important;
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+}
+.form-control-er.readonly-field { background: #F3F3F3; color: #888; cursor: not-allowed; }
+textarea.form-control-er { height: auto; padding: 10px 12px; resize: vertical; }
+
+/* select2 override */
+.select2-container { width: 100% !important; display: block !important; }
+.select2-container--default .select2-selection--single {
+    height: 42px !important;
+    box-sizing: border-box !important;
+    border: 1px solid #dde0e5 !important;
+    border-radius: var(--er-radius-sm) !important;
+    background: #FAFAFA !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 14px !important;
+    color: #222 !important;
+    padding: 0 30px 0 12px !important;
+    line-height: 1 !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #aaa !important;
+}
+.select2-container--default .select2-selection--single {
+    box-sizing: border-box !important;
+    padding: 0 12px 0 12px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    padding: 0 !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    right: 8px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__clear {
+    right: 34px !important;
+}
+select.form-control-er + .select2 .select2-selection--single,
+select.form-select-er + .select2 .select2-selection--single,
+.form-control-er.select2-hidden-accessible + .select2 .select2-selection--single {
+    height: 42px !important;
+    min-height: 42px !important;
+    box-sizing: border-box !important;
+    padding: 0 12px !important;
+}
+select.form-control-er + .select2 .select2-selection--single .select2-selection__rendered,
+select.form-select-er + .select2 .select2-selection--single .select2-selection__rendered,
+.form-control-er.select2-hidden-accessible + .select2 .select2-selection--single .select2-selection__rendered {
+    display: flex !important;
+    align-items: center !important;
+    height: 42px !important;
+    line-height: 1 !important;
+    padding: 0 12px 0 12px !important;
+}
+select.form-control-er + .select2 .select2-selection__placeholder {
+    line-height: 42px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    position: absolute !important;
+    top: 50% !important;
+    right: 8px !important;
+    transform: translateY(-50%) !important;
+    height: auto !important;
+    width: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: #888 transparent transparent transparent !important;
+    border-width: 5px 4px 0 4px !important;
+    border-style: solid !important;
+    width: 0 !important; height: 0 !important;
+    margin: 0 !important;
+    top: auto !important; left: auto !important;
+    position: static !important;
+}
+.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    border-color: transparent transparent #888 transparent !important;
+    border-width: 0 4px 5px 4px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__clear {
+    position: absolute !important;
+    right: 26px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    line-height: 1 !important;
+    font-size: 16px !important;
+    color: #aaa !important;
+}
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--er-primary) !important;
+    box-shadow: 0 0 0 3px var(--er-primary-lt) !important;
+    background: #fff !important;
+}
+.select2-container--default .select2-selection--single.is-invalid,
+.select2-container--default .select2-selection.is-invalid {
+    border-color: #D85A30 !important;
+    box-shadow: 0 0 0 3px var(--er-danger-lt) !important;
+}
+.select2-container--default .select2-selection--single.is-valid,
+.select2-container--default .select2-selection.is-valid {
+    border-color: var(--er-success) !important;
+    box-shadow: 0 0 0 3px var(--er-success-lt) !important;
+}
+[dir="rtl"] .select2-container--default .select2-selection--single .select2-selection__rendered {
+    padding: 0 12px 0 30px !important;
+}
+[dir="rtl"] .select2-container--default .select2-selection--single .select2-selection__arrow {
+    right: auto !important;
+    left: 8px !important;
+}
+[dir="rtl"] .select2-container--default .select2-selection--single .select2-selection__clear {
+    right: auto !important;
+    left: 26px !important;
+}
+[dir="rtl"] .select2-results__option--selected::after,
+[dir="rtl"] .select2-results__option[aria-selected="true"]::after {
+    right: auto !important;
+    left: 12px !important;
+}
+[dir="rtl"] .select2-results__option--selected,
+[dir="rtl"] .select2-results__option[aria-selected="true"] {
+    padding-right: 10px !important;
+    padding-left: 2.5rem !important;
+}
+[dir="ltr"] .select2-results__option--selected,
+[dir="ltr"] .select2-results__option[aria-selected="true"] {
+    padding-left: 10px !important;
+    padding-right: 2.5rem !important;
+}
+.invalid-feedback { font-size: 11px; color: #D85A30; margin-top: 4px; display: none; }
+.invalid-feedback.show { display: block; }
+
+/* ── step 1 layout ───────────────────────────────────────────── */
+.er-s1-layout {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+@@media (max-width: 768px) {
+    .er-s1-layout { grid-template-columns: 1fr; }
+}
+
+/* ── breadcrumb preview (step 2) ──────────────────────────────── */
+.er-breadcrumb-wrap {
+    padding: 14px 16px;
+    background: var(--er-primary-lt);
+    border: 1px solid var(--er-primary-bd);
+    border-radius: var(--er-radius-sm);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    min-height: 48px;
+}
+.er-bc-node {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 13px; font-weight: 500; color: #0C447C;
+}
+.er-bc-node.dim { color: #aac5e0; }
+.er-bc-sep { color: #b7d3c9; font-size: 14px; font-weight: 300; }
+.er-bc-pill {
+    background: var(--er-primary);
+    color: #fff; font-size: 12px; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px;
+}
+.er-notice {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 16px;
+    background: #FFFBF0;
+    border: 1px solid #F5D57A;
+    border-radius: var(--er-radius-sm);
+    font-size: 13px; color: #7A5900;
+}
+.er-notice .ki { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── policy preview (step 3) ─────────────────────────────────── */
+.er-policy-card {
+    border: 1px solid #E0E0E0;
+    border-radius: var(--er-radius);
+    padding: 1.25rem;
+    background: #fff;
+}
+.er-policy-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+.er-policy-icon {
+    width: 42px; height: 42px; border-radius: var(--er-radius-sm);
+    background: var(--er-success-lt);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--er-success); flex-shrink: 0;
+}
+.er-policy-name { font-size: 15px; font-weight: 600; color: #111; }
+.er-policy-desc { font-size: 12px; color: #999; margin-top: 2px; }
+.er-policy-empty { display: flex; align-items: center; gap: 10px; color: #bbb; font-size: 14px; padding: .5rem 0; }
+
+/* ── policy picker grid ──────────────────────────────────────── */
+.er-pgrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+@@media (max-width: 900px) { .er-pgrid { grid-template-columns: repeat(2,1fr); } }
+@@media (max-width: 576px)  { .er-pgrid { grid-template-columns: 1fr; } }
+.er-pgrid-msg {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: #aaa; font-size: 13px; padding: 2.5rem 0;
+}
+
+/* ── selectable policy card ─────────────────────────────────── */
+.er-pcard {
+    border: 1.5px solid #E8ECF2;
+    border-radius: 12px;
+    padding: .9rem 1rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .18s, box-shadow .18s, background .18s, transform .12s;
+    display: flex; align-items: flex-start; gap: 10px;
+    user-select: none;
+}
+.er-pcard:hover {
+    border-color: var(--er-primary-bd);
+    box-shadow: 0 4px 16px rgba(24,95,165,.1);
+    transform: translateY(-1px);
+}
+.er-pcard:active { transform: translateY(0); }
+.er-pcard.selected {
+    border-color: var(--er-primary);
+    background: var(--er-primary-lt);
+    box-shadow: 0 0 0 3px rgba(24,95,165,.14);
+}
+/* radio indicator — always visible so user knows they can pick */
+.er-pcard-radio {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;
+    border: 2px solid #CDD3DB;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .18s, background .18s;
+    order: 0; /* LTR: first = left */
+}
+.er-pcard-radio::after {
+    content: ''; width: 8px; height: 8px; border-radius: 50%;
+    background: #fff; opacity: 0; transform: scale(.3);
+    transition: opacity .18s, transform .18s;
+}
+.er-pcard.selected .er-pcard-radio {
+    border-color: var(--er-primary); background: var(--er-primary);
+}
+.er-pcard.selected .er-pcard-radio::after { opacity: 1; transform: scale(1); }
+/* RTL: radio slides to right automatically via flex direction */
+[dir="rtl"] .er-pcard { flex-direction: row-reverse; }
+[dir="rtl"] .er-pcard-radio { order: 0; }
+
+.er-pcard-icon {
+    width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, #3B82C4 0%, #13433a 100%);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .18s;
+}
+.er-pcard-icon i, .er-pcard-icon i::before { color: #fff !important; font-size: 20px; }
+.er-pcard.selected .er-pcard-icon { background: linear-gradient(135deg, #13433a 0%, #0C447C 100%); }
+.er-pcard-body { flex: 1; min-width: 0; }
+.er-pcard-name { font-size: 13px; font-weight: 700; color: #1e293b; line-height: 1.35; }
+.er-pcard.selected .er-pcard-name { color: #0C447C; }
+.er-pcard-notes {
+    font-size: 11px; color: #94a3b8; margin-top: 3px; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ── policy details wrapper ─────────────────────────────────── */
+.er-pol-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; flex-wrap: wrap;
+    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #EAF2FC 0%, #D9ECFF 100%);
+    border: 1px solid var(--er-primary-bd);
+    border-radius: var(--er-radius);
+    margin-bottom: 1.25rem;
+}
+.er-pol-head-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.er-pol-icon {
+    width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, #13433a 0%, #3B99DE 100%);
+    display: flex; align-items: center; justify-content: center;
+}
+.er-pol-icon i, .er-pol-icon i::before { color: #fff !important; font-size: 26px; }
+.er-pol-title { font-size: 16px; font-weight: 800; color: #0C447C; line-height: 1.2; }
+.er-pol-subtitle { font-size: 12px; color: #6B93B8; margin-top: 4px; }
+.er-pol-counts { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+.er-pol-count {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 14px; border-radius: 8px; min-width: 60px; gap: 2px;
+}
+.er-pol-count .cn { font-size: 22px; font-weight: 800; line-height: 1; }
+.er-pol-count .cl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; opacity: .85; }
+.er-pol-count.lv { background: var(--er-warn-lt); }
+.er-pol-count.lv .cn, .er-pol-count.lv .cl { color: var(--er-warn); }
+.er-pol-count.sl { background: var(--er-success-lt); }
+.er-pol-count.sl .cn, .er-pol-count.sl .cl { color: var(--er-success); }
+.er-pol-count.at { background: var(--er-primary-lt); }
+.er-pol-count.at .cn, .er-pol-count.at .cl { color: var(--er-primary); }
+
+/* ── policy tabs (redesigned) ───────────────────────────────── */
+.er-ptabs {
+    display: flex; gap: 2px;
+    border-bottom: 2px solid #EEF1F6;
+    margin-bottom: 1.1rem;
+}
+.er-ptab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px 8px 0 0;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    border: none; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; background: transparent; color: #94a3b8;
+    transition: color .15s, border-color .15s, background .15s;
+}
+.er-ptab:hover { color: #475569; background: #F8FAFC; }
+.er-ptab.active { color: var(--er-primary); border-bottom-color: var(--er-primary); background: transparent; }
+.er-ptab i, .er-ptab i::before { font-size: 14px !important; }
+.er-ptab.active i, .er-ptab.active i::before { color: var(--er-primary) !important; }
+.er-ptab-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px;
+    background: #EEF1F6; color: #94a3b8; font-size: 10px; font-weight: 700;
+    transition: background .15s, color .15s;
+}
+.er-ptab.active .er-ptab-badge { background: var(--er-primary-lt); color: var(--er-primary); }
+.er-ptab-panel { display: none; }
+.er-ptab-panel.active { display: block; }
+
+/* ── detail item card ────────────────────────────────────────── */
+.er-di {
+    border-radius: 10px; border: 1px solid #EEF1F6;
+    overflow: hidden; margin-bottom: .75rem;
+    background: #fff;
+}
+.er-di:last-child { margin-bottom: 0; }
+.er-di-inner { padding: 1rem 1.25rem; border-left: 4px solid #E0E0E0; }
+.er-di.lv .er-di-inner { border-left-color: var(--er-warn); }
+.er-di.sl .er-di-inner { border-left-color: var(--er-success); }
+.er-di.at .er-di-inner { border-left-color: var(--er-primary); }
+[dir="rtl"] .er-di-inner { border-left: none; border-right: 4px solid #E0E0E0; }
+[dir="rtl"] .er-di.lv .er-di-inner { border-right-color: var(--er-warn); }
+[dir="rtl"] .er-di.sl .er-di-inner { border-right-color: var(--er-success); }
+[dir="rtl"] .er-di.at .er-di-inner { border-right-color: var(--er-primary); }
+
+/* item title */
+.er-di-hd {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;
+}
+.er-di-hd-icon {
+    width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+.er-di-hd-icon i, .er-di-hd-icon i::before { font-size: 17px !important; }
+.lv .er-di-hd-icon { background: var(--er-warn-lt); }
+.lv .er-di-hd-icon i::before { color: var(--er-warn) !important; }
+.sl .er-di-hd-icon { background: var(--er-success-lt); }
+.sl .er-di-hd-icon i::before { color: var(--er-success) !important; }
+.at .er-di-hd-icon { background: var(--er-primary-lt); }
+.at .er-di-hd-icon i::before { color: var(--er-primary) !important; }
+.er-di-hd-name { font-size: 14px; font-weight: 700; color: #1e293b; }
+
+/* stat boxes */
+.er-di-stats { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+.er-di-stat {
+    flex: 1; min-width: 72px; background: #F8FAFC;
+    border: 1px solid #EEF1F6; border-radius: 8px;
+    padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;
+}
+.er-di-sv { font-size: 20px; font-weight: 800; color: #1e293b; line-height: 1; }
+.er-di-sl { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+/* section label */
+.er-di-sep {
+    font-size: 10px; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: .08em;
+    margin: .75rem 0 .4rem; padding-bottom: .4rem;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+/* field rows */
+.er-di-fields { display: flex; flex-direction: column; }
+.er-di-field {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0; border-bottom: 1px solid #F8FAFC; gap: 8px;
+}
+.er-di-field:last-child { border-bottom: none; }
+.er-di-fl { font-size: 12px; color: #64748b; }
+.er-di-fv { font-size: 13px; font-weight: 600; color: #1e293b; text-align: right; }
+
+/* boolean badge */
+.er-di-yes { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:var(--er-success-lt);color:var(--er-success); }
+.er-di-no  { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;background:#F1F5F9;color:#94a3b8; }
+
+/* working day squares */
+.er-days { display: flex; gap: 5px; flex-wrap: wrap; margin-top: .25rem; }
+.er-day {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+}
+.er-day.on  { background: var(--er-primary); color: #fff; }
+.er-day.off { background: #F1F5F9; color: #cbd5e1; }
+
+/* keep old chip classes as aliases so nothing breaks */
+.er-day-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.er-day-chip { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.er-day-chip.on  { background: var(--er-primary-lt); color: var(--er-primary); }
+.er-day-chip.off { background: #F5F5F5; color: #ccc; text-decoration: line-through; }
+
+/* ── salary card ─────────────────────────────────────────────── */
+/* hero — base salary */
+.er-sal2-base-box {
+    background: linear-gradient(120deg, var(--er-success-lt) 0%, #c8edd9 100%);
+    border: 1px solid var(--er-success-bd);
+    border-radius: 10px; padding: 14px 18px;
+    margin-bottom: 1rem; text-align: center;
+}
+.er-sal2-base-lbl {
+    font-size: 10px; font-weight: 700; color: var(--er-success);
+    text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px;
+}
+.er-sal2-base-num { font-size: 28px; font-weight: 900; color: #0a4f3a; line-height: 1; }
+
+/* allowances list */
+.er-sal2-allow-wrap { border: 1px solid #EEF1F6; border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
+.er-sal2-arow {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; border-bottom: 1px solid #F8FAFC; font-size: 13px;
+}
+.er-sal2-arow:last-child { border-bottom: none; }
+.er-sal2-ak { display: flex; align-items: center; gap: 7px; color: #64748b; }
+.er-sal2-ak i, .er-sal2-ak i::before { font-size: 13px !important; color: #94a3b8 !important; }
+.er-sal2-av { font-weight: 700; color: #1e293b; }
+.er-sal2-gross { background: var(--er-success); border-bottom: none !important; }
+.er-sal2-gross .er-sal2-ak { color: rgba(255,255,255,.85); font-weight: 700; font-size: 13px; }
+.er-sal2-gross .er-sal2-av { color: #fff; font-size: 15px; font-weight: 900; }
+
+/* deduction rates — 2×2 grid */
+.er-sal2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: .75rem; }
+@@media (max-width: 480px) { .er-sal2-grid { grid-template-columns: 1fr; } }
+.er-sal2-cell {
+    background: #F8FAFC; border: 1px solid #EEF1F6; border-radius: 8px; padding: 9px 12px;
+}
+.er-sal2-cell.na { opacity: .42; }
+.er-sal2-cell-l { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.er-sal2-cell-v { font-size: 17px; font-weight: 800; color: #1e293b; }
+
+/* insurance — 2 columns */
+.er-sal2-ins { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 1rem; }
+.er-sal2-ins-item {
+    background: var(--er-primary-lt); border: 1px solid var(--er-primary-bd); border-radius: 8px; padding: 9px 12px;
+}
+.er-sal2-ins-l { font-size: 10px; font-weight: 700; color: var(--er-primary); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.er-sal2-ins-v { font-size: 17px; font-weight: 800; color: #0C447C; }
+
+/* payment footer */
+.er-sal2-payment { display: flex; align-items: center; border: 1px solid #EEF1F6; border-radius: 8px; overflow: hidden; }
+.er-sal2-pay-seg {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 14px; flex: 1; font-size: 13px; color: #475569; background: #F8FAFC;
+}
+.er-sal2-pay-seg i, .er-sal2-pay-seg i::before { font-size: 15px !important; color: #94a3b8 !important; }
+.er-sal2-pay-seg strong { color: #1e293b; font-weight: 700; }
+.er-sal2-pay-divider { width: 1px; background: #EEF1F6; align-self: stretch; flex-shrink: 0; }
+
+/* ── attendance schedule ─────────────────────────────────────── */
+.er-sched {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-radius: 8px;
+    background: var(--er-primary-lt); border: 1px solid var(--er-primary-bd);
+    margin-bottom: .5rem;
+}
+.er-sched-t { font-size: 16px; font-weight: 800; color: var(--er-primary); white-space: nowrap; }
+.er-sched-mid {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.er-sched-track {
+    width: 100%; height: 3px; background: var(--er-primary-bd);
+    border-radius: 2px; position: relative;
+}
+.er-sched-track::before, .er-sched-track::after {
+    content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+    width: 7px; height: 7px; border-radius: 50%; background: var(--er-primary);
+}
+.er-sched-track::before { left: 0; }
+.er-sched-track::after  { right: 0; }
+.er-sched-lbl { font-size: 11px; font-weight: 700; color: var(--er-primary); }
+.er-sched-break { font-size: 11px; color: #94a3b8; padding: 4px 0 2px; }
+.er-thresh {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: .25rem;
+}
+@@media (max-width: 576px) { .er-thresh { grid-template-columns: repeat(2,1fr); } }
+.er-thresh-item {
+    padding: 9px 8px; background: #F8FAFC;
+    border: 1px solid #EEF1F6; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+}
+.er-thresh-v { font-size: 18px; font-weight: 800; color: #1e293b; line-height: 1; }
+.er-thresh-l { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+
+/* ── review (step 4) — redesigned profile + confirmation ───────────── */
+/* ── review (step 4) ─────────────────────────────────────────── */
+.er-step-content[data-step-index="4"] {
+    background: #F7F9FC;
+}
+.er-step-content[data-step-index="4"] .er-section-head {
+    text-align: center;
+    margin-bottom: 1.25rem;
+}
+.er-step-content[data-step-index="4"] .er-section-head h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #181C32;
+}
+.er-step-content[data-step-index="4"] .er-section-head p { color: #7E8299; }
+
+.er-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 22px 24px;
+    margin: 0 auto 1.25rem;
+    max-width: 920px;
+    min-height: 142px;
+    position: relative;
+    border: 1px solid #E4E6EF;
+    border-radius: 18px;
+    background: #FFFFFF;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .045);
+    overflow: hidden;
+    direction: ltr;
+    text-align: left;
+}
+.er-profile-card::before { display: none; }
+
+/* RTL/LTR fix: do not use row-reverse. Direction alone moves the first item.
+   LTR: avatar starts on the left. RTL: avatar starts on the right. */
+[dir="rtl"] .er-profile-card,
+html[dir="rtl"] .er-profile-card,
+body[dir="rtl"] .er-profile-card,
+.rtl .er-profile-card {
+    direction: rtl;
+    text-align: right;
+}
+[dir="ltr"] .er-profile-card,
+html[dir="ltr"] .er-profile-card,
+body[dir="ltr"] .er-profile-card,
+.ltr .er-profile-card {
+    direction: ltr;
+    text-align: left;
+}
+
+/* avatar wrapper for the verified badge */
+.er-avatar-wrap { position: relative; flex: 0 0 108px; display: inline-flex; }
+.er-identity-avatar {
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    background: #F1F6FB;
+    border: 1px solid #E4E6EF;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--er-primary);
+}
+.er-identity-avatar img { width: 100%; height: 100%; object-fit: cover; display:block; }
+/* verified badge */
+.er-avatar-verified {
+    position: absolute; bottom: 5px; right: 5px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #2f9e6e; border: 3px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(80,205,137,.35);
+}
+.er-avatar-verified i, .er-avatar-verified i::before { font-size: 12px !important; color: #fff !important; }
+[dir="rtl"] .er-avatar-verified { right: auto; left: 5px; }
+.er-profile-info { flex: 1; min-width: 0; padding-inline-end: 0; }
+.er-identity-role {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--er-primary); background: var(--er-primary-lt);
+    padding: 3px 10px; border-radius: 20px;
+    margin-bottom: 7px;
+}
+.er-identity-name {
+    margin: 0 0 14px;
+    padding: 0 !important;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--er-primary);
+    line-height: 1.3;
+    letter-spacing: -.2px;
+}
+.er-pf-rows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 18px;
+}
+.er-pf-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    border: 0;
+}
+.er-pf-row-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    flex: 0 0 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #EEF2FF;
+}
+.er-pf-row-icon i, .er-pf-row-icon i::before { font-size: 14px !important; color: #6366F1 !important; }
+/* per-icon accent colors */
+.er-pf-row-icon.ic-job     { background: #EEF2FF; }
+.er-pf-row-icon.ic-job     i::before { color: #6366F1 !important; }
+.er-pf-row-icon.ic-company { background: #FFF4E5; }
+.er-pf-row-icon.ic-company i::before { color: #E07B00 !important; }
+.er-pf-row-icon.ic-email   { background: var(--er-success-lt); }
+.er-pf-row-icon.ic-email   i::before { color: var(--er-success) !important; }
+.er-pf-row-icon.ic-phone   { background: #F5F0FF; }
+.er-pf-row-icon.ic-phone   i::before { color: #7C3AED !important; }
+.er-pf-row-icon.ic-date    { background: var(--er-primary-lt); }
+.er-pf-row-icon.ic-date    i::before { color: var(--er-primary) !important; }
+.er-pf-row-lbl {
+    color: #7E8299;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.er-pf-row-lbl::after { content: ':'; }
+.er-pf-row-val {
+    color: #3F4254;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.er-badge-ready {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid #BFE6D5;
+    background: #E8FFF3;
+    color: #2f9e6e;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.er-badge-ready i, .er-badge-ready i::before { color: #2f9e6e !important; }
+[dir="rtl"] .er-badge-ready,
+html[dir="rtl"] .er-badge-ready,
+body[dir="rtl"] .er-badge-ready,
+.rtl .er-badge-ready { right: auto; left: 20px; }
+
+.er-review-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+.er-review-card {
+    border: 1px solid #E4E6EF;
+    border-radius: 14px;
+    background: #FFFFFF;
+    overflow: hidden;
+    box-shadow: none;
+    transition: border-color .18s, box-shadow .18s;
+}
+.er-review-card:hover {
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .045);
+    border-color: #D6DBE6;
+}
+.er-review-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #EFF2F5;
+    text-align: start;
+}
+.er-review-card-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+}
+.er-review-card-icon i, .er-review-card-icon i::before { font-size: 19px !important; color: #fff !important; }
+.er-review-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #181C32;
+}
+.er-review-card-body { padding: 8px 16px 12px; }
+.er-review-row {
+    display: grid;
+    grid-template-columns: 38% 1fr;
+    align-items: start;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid #F1F3F7;
+}
+.er-review-row:last-child { border-bottom: none; }
+[dir="rtl"] .er-review-row,
+html[dir="rtl"] .er-review-row,
+body[dir="rtl"] .er-review-row,
+.rtl .er-review-row { direction: rtl; }
+.ri-lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: #7E8299;
+    letter-spacing: 0;
+}
+.ri-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: #3F4254;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.ri-val.empty { color: #B5B5C3; font-weight: 500; font-style: normal; }
+@@media (max-width: 992px) {
+    .er-review-cards { grid-template-columns: 1fr; }
+    .er-profile-info { padding-inline-end: 0; }
+    [dir="rtl"] .er-profile-info,
+    html[dir="rtl"] .er-profile-info,
+    body[dir="rtl"] .er-profile-info,
+    .rtl .er-profile-info { padding-inline-start: 0; }
+    .er-badge-ready { position: static; width: fit-content; margin-top: 12px; }
+}
+@@media (max-width: 576px) {
+    .er-profile-card { flex-direction: column; align-items: center; text-align: center; }
+    [dir="rtl"] .er-profile-card,
+    html[dir="rtl"] .er-profile-card,
+    body[dir="rtl"] .er-profile-card,
+    .rtl .er-profile-card { text-align: center; }
+    .er-identity-avatar { width: 88px; height: 88px; flex-basis: 88px; }
+    .er-pf-rows { grid-template-columns: 1fr; width: 100%; }
+    .er-pf-row { justify-content: center; }
+    .er-review-row { grid-template-columns: 1fr; gap: 3px; }
+}
+
+/* ── sticky footer ───────────────────────────────────────────── */
+.er-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 2.5rem;
+    border-top: var(--er-border);
+    background: #FAFAFA;
+    position: sticky; bottom: 0;
+    z-index: 10;
+}
+.er-footer-progress {
+    font-size: 12px; color: #aaa; font-weight: 500;
+}
+.er-footer-actions { display: flex; gap: 8px; }
+
+.er-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: var(--er-radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid transparent; transition: all .18s;
+    white-space: nowrap;
+}
+.er-btn-back {
+    background: #fff; color: #555;
+    border-color: #DDE0E5;
+}
+.er-btn-back:hover { background: #F5F5F5; color: #222; }
+.er-btn-next {
+    background: var(--er-primary); color: #fff;
+    border-color: var(--er-primary);
+}
+.er-btn-next:hover { background: #0f2e28; filter: brightness(1.08); }
+.er-btn-save {
+    background: var(--er-success); color: #fff;
+    border-color: var(--er-success);
+}
+.er-btn-save:hover { filter: brightness(1.08); }
+.er-btn[disabled] { opacity: .55; cursor: not-allowed; pointer-events: none; }
+[dir="rtl"] .er-btn i.ki-arrow-right,
+[dir="rtl"] .er-btn i.ki-arrow-left {
+    display: inline-block;
+    transform: scaleX(-1);
+}
+.er-btn-next i, .er-btn-next i::before,
+.er-btn-save i, .er-btn-save i::before { color: #fff !important; }
+.er-btn-back i, .er-btn-back i::before { color: #555 !important; }
+
+/* ── divider ─────────────────────────────────────────────────── */
+.er-divider { height: 1px; background: #F0F0F0; margin: 1.5rem 0; }
+
+/* ── datepicker wrapper ───────────────────────────────────────── */
+.er-datepicker-wrap { position: relative; }
+.er-datepicker-wrap .form-control-er { padding-right: 38px; cursor: pointer; }
+[dir="rtl"] .er-datepicker-wrap .form-control-er { padding-right: 12px; padding-left: 38px; }
+.er-datepicker-icon {
+    position: absolute; top: 50%; right: 11px; transform: translateY(-50%);
+    pointer-events: none; color: var(--er-primary); opacity: .65;
+}
+[dir="rtl"] .er-datepicker-icon { right: auto; left: 11px; }
+.flatpickr-calendar {
+    font-family: inherit !important;
+    border: 1px solid #dde0e5 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 28px rgba(15,23,42,.10) !important;
+}
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year { color: #1e293b !important; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover {
+    background: var(--er-primary) !important;
+    border-color: var(--er-primary) !important;
+}
+.flatpickr-day:hover { background: var(--er-primary-lt) !important; color: var(--er-primary) !important; }
+.flatpickr-day.today { border-color: var(--er-primary) !important; }
+
+/* ── tree dropdown ───────────────────────────────────────────── */
+.er-tree-dropdown { position: relative; }
+.er-tree-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; height: 42px; padding: 0 12px; cursor: pointer;
+    border: 1px solid #E4E6EF; border-radius: var(--er-radius-sm);
+    background: #fff !important; font-size: 13px; color: #3F4254;
+    transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none !important; appearance: none !important; font-family: inherit;
+}
+.er-tree-btn:hover { border-color: #B5B5C3; }
+.er-tree-btn:focus, .er-tree-btn.open {
+    outline: none; border-color: var(--er-primary);
+    background: #fff !important; box-shadow: 0 0 0 3px var(--er-primary-lt);
+}
+.er-tree-btn.is-invalid { border-color: #D85A30 !important; box-shadow: 0 0 0 3px var(--er-danger-lt) !important; }
+.er-tree-btn.is-valid   { border-color: var(--er-success) !important; box-shadow: 0 0 0 3px var(--er-success-lt) !important; }
+.er-tree-btn-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; }
+.er-tree-btn-label.placeholder { color: white; }
+.er-tree-btn-arrow { flex-shrink: 0; margin-left: 8px; display: flex; align-items: center; color: #A1A5B7; transition: transform .2s; }
+[dir="rtl"] .er-tree-btn-arrow { margin-left: 0; margin-right: 8px; }
+.er-tree-btn.open .er-tree-btn-arrow { color: var(--er-primary); transform: rotate(180deg); }
+
+/* panel — position:fixed so it escapes overflow:hidden parents */
+.er-tree-panel {
+    position: fixed;
+    background: #fff;
+    border: 1px solid #E4E6EF;
+    border-radius: 8px;
+    box-shadow: 0 10px 32px rgba(15,23,42,.14);
+    z-index: 9999;
+    overflow: hidden;
+}
+.er-tree-search-wrap { padding: 10px 10px 8px; border-bottom: 1px solid #f0f0f0; }
+.er-tree-search {
+    width: 100%; height: 34px; border: 1px solid #dde0e5;
+    border-radius: var(--er-radius-sm); padding: 0 32px 0 10px;
+    font-size: 13px; color: #222; background: #FAFAFA; outline: none; box-sizing: border-box;
+}
+.er-tree-search:focus { border-color: var(--er-primary); background: #fff; box-shadow: 0 0 0 2px var(--er-primary-lt); }
+.er-tree-search-wrap { position: relative; }
+.er-tree-search-icon {
+    position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
+    pointer-events: none; color: #b5b5c3; font-size: 14px;
+}
+[dir="rtl"] .er-tree-search-icon { right: auto; left: 20px; }
+[dir="rtl"] .er-tree-search { padding: 0 10px 0 32px; }
+#erStructureTree { max-height: 260px; overflow-y: auto; padding: 6px 6px 8px; }
+
+/* ── jsTree Metronic skin ──────────────────────────────────── */
+#erStructureTree .jstree-default .jstree-icon { background-image: none !important; }
+#erStructureTree .jstree-default .jstree-themeicon:not(.jstree-themeicon-custom) { display: none !important; }
+#erStructureTree .jstree-default .jstree-themeicon.jstree-themeicon-custom {
+    display: inline-flex !important; align-items: center !important;
+    width: auto !important; height: auto !important;
+    font-size: 15px !important; line-height: 1 !important;
+    background: none !important; background-image: none !important;
+    margin: 0 5px 0 0 !important;
+}
+[dir="rtl"] #erStructureTree .jstree-default .jstree-themeicon.jstree-themeicon-custom { margin: 0 0 0 5px !important; }
+#erStructureTree .jstree-node { margin-left: 14px !important; min-height: 32px !important; }
+#erStructureTree ul.jstree-container-ul > li.jstree-node { margin-left: 0 !important; }
+#erStructureTree .jstree-default .jstree-anchor {
+    height: 32px !important; line-height: 32px !important;
+    font-size: 13px !important; font-weight: 500 !important;
+    color: #3F4254 !important; padding: 0 8px 0 4px !important;
+    border-radius: 6px !important; border: none !important;
+    background: transparent !important; text-decoration: none !important;
+    transition: background .12s, color .12s !important;
+    display: inline-flex !important; align-items: center !important;
+    max-width: calc(100% - 22px) !important;
+    overflow: hidden !important; text-overflow: ellipsis !important;
+    white-space: nowrap !important; vertical-align: top !important;
+}
+#erStructureTree .jstree-default .jstree-anchor:focus { outline: none !important; box-shadow: none !important; }
+#erStructureTree .jstree-default a.jstree-anchor.jstree-hovered,
+#erStructureTree .jstree-default .jstree-hovered {
+    background: var(--er-primary-lt) !important; color: var(--er-primary) !important;
+    border: none !important; box-shadow: none !important; border-radius: 6px !important;
+}
+#erStructureTree .jstree-default a.jstree-anchor.jstree-clicked,
+#erStructureTree .jstree-default .jstree-clicked {
+    background: var(--er-primary) !important; color: #fff !important;
+    border: none !important; box-shadow: none !important; border-radius: 6px !important;
+}
+/* ── Metronic Tree Collapse / Expand (+ / -) ───────────────── */
+#erStructureTree .jstree-default .jstree-ocl {
+    background-image: none !important;
+    background: transparent !important;
+    width: 24px !important;
+    height: 32px !important;
+    min-width: 24px !important;
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer;
+    vertical-align: top !important;
+}
+
+/* Closed node => + */
+#erStructureTree .jstree-default .jstree-closed > .jstree-ocl::before {
+    content: '+' !important;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: #F5F8FA;
+    border: 1px solid #DCE3EA;
+    color: #7E8299;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .18s ease;
+    box-shadow: 0 1px 2px rgba(15,23,42,.04);
+}
+
+/* Open node => - */
+#erStructureTree .jstree-default .jstree-open > .jstree-ocl::before {
+    content: '−' !important;
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    background: var(--er-primary-lt);
+    border: 1px solid var(--er-primary-bd);
+    color: var(--er-primary);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .18s ease;
+    box-shadow: 0 1px 2px rgba(24,95,165,.08);
+}
+
+/* Leaf nodes should not show a collapse icon */
+#erStructureTree .jstree-default .jstree-leaf > .jstree-ocl::before { display: none !important; }
+#erStructureTree .jstree-default .jstree-ocl:hover::before {
+    transform: scale(1.08);
+    box-shadow: 0 4px 10px rgba(15,23,42,.10);
+}
+
+/* Hide old jsTree dotted connector lines to keep the dropdown Metronic-clean */
+#erStructureTree .jstree-default .jstree-node,
+#erStructureTree .jstree-default .jstree-children,
+#erStructureTree .jstree-default .jstree-container-ul {
+    background-image: none !important;
+}
+.er-tree-loading { display: flex; align-items: center; justify-content: center; padding: 22px 0; }
+#erStructureTree .jstree-search {
+    font-style: normal !important; font-weight: 700 !important;
+    color: var(--er-primary) !important; background: var(--er-primary-lt) !important;
+    border-radius: 3px !important;
+}
+#erStructureTree::-webkit-scrollbar { width: 5px; }
+#erStructureTree::-webkit-scrollbar-track { background: transparent; }
+#erStructureTree::-webkit-scrollbar-thumb { background: #E4E6EF; border-radius: 3px; }
+
+/* ── spinner ─────────────────────────────────────────────────── */
+.er-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: er-spin .6s linear infinite;
+    display: none;
+}
+.er-btn-save.loading .er-spinner { display: inline-block; }
+.er-btn-save.loading .er-btn-label { display: none; }
+@@keyframes er-spin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="d-flex flex-column flex-column-fluid er-page">
+
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div id="kt_app_toolbar_container" class="app-container container-fluid d-flex align-items-stretch">
+            <div class="app-toolbar-wrapper d-flex flex-stack flex-wrap gap-4 w-100">
+                <div class="page-title d-flex flex-column justify-content-center gap-1 me-3">
+                    <h1 class="page-heading d-flex flex-column justify-content-center text-gray-900 fw-bold fs-3 m-0">
+                        @Localizer["Employee Registration"]
+                    </h1>
+                    <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                        <li class="breadcrumb-item text-muted">
+                            <a href="/" class="text-muted text-hover-primary">@Localizer["Home"]</a>
+                        </li>
+                        <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                        <li class="breadcrumb-item text-muted">@SR["Employees"]</li>
+                        <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                        <li class="breadcrumb-item text-muted">@Localizer["New Employee"]</li>
+                    </ul>
+                </div>
+                <div class="d-flex align-items-center gap-2 gap-lg-3">
+                    <a href="javascript:history.back();" class="btn btn-sm btn-light fw-bold">
+                        <i class="ki-outline ki-arrow-left fs-3 me-1"></i>@SR["Back"]
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--begin::Content-->
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div id="kt_app_content_container" class="app-container container-fluid">
+
+            <div class="er-card">
+
+                <!--begin::Stepper nav-->
+                <div class="er-stepper-nav" id="erStepperNav">
+                    <!--Step 1-->
+                    <div class="er-step" data-step-nav="1">
+                        <div class="er-step-circle active" id="erCircle1">
+                            <i class="ki-outline ki-user fs-5"></i>
+                        </div>
+                        <div class="er-step-meta active" id="erMeta1">
+                            <div class="ttl">@Localizer["Basic data"]</div>
+                            <div class="sub">@Localizer["Personal info"]</div>
+                        </div>
+                    </div>
+                    <div class="er-step-line" id="erLine1"></div>
+                    <!--Step 2-->
+                    <div class="er-step" data-step-nav="2">
+                        <div class="er-step-circle idle" id="erCircle2">
+                            <i class="ki-outline ki-bank fs-5"></i>
+                        </div>
+                        <div class="er-step-meta idle" id="erMeta2">
+                            <div class="ttl">@Localizer["Assignment"]</div>
+                            <div class="sub">@Localizer["Company & role"]</div>
+                        </div>
+                    </div>
+                    <div class="er-step-line" id="erLine2"></div>
+                    <!--Step 3-->
+                    <div class="er-step" data-step-nav="3">
+                        <div class="er-step-circle idle" id="erCircle3">
+                            <i class="ki-outline ki-shield-tick fs-5"></i>
+                        </div>
+                        <div class="er-step-meta idle" id="erMeta3">
+                            <div class="ttl">@Localizer["Policy"]</div>
+                            <div class="sub">@Localizer["Leave & salary"]</div>
+                        </div>
+                    </div>
+                    <div class="er-step-line" id="erLine3"></div>
+                    <!--Step 4-->
+                    <div class="er-step" data-step-nav="4">
+                        <div class="er-step-circle idle" id="erCircle4">
+                            <i class="ki-outline ki-data fs-5"></i>
+                        </div>
+                        <div class="er-step-meta idle" id="erMeta4">
+                            <div class="ttl">@Localizer["Review"]</div>
+                            <div class="sub">@Localizer["Confirm & save"]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--begin::Form-->
+                <form id="employeeRegistrationForm"
+                      action="@saveEmployeeUrl"
+                      method="post"
+                      enctype="multipart/form-data"
+                      novalidate
+                      autocomplete="off">
+
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="ID"     name="ID"     value="@(Model?.ID ?? 0)" />
+                    <input type="hidden" id="UserId" name="UserId" value="@Model?.UserId" />
+                    <input type="hidden" id="applicationId" name="applicationId" value="@(ViewBag.ApplicationId ?? 0)" />@* R3: set when hiring from a job application → carries docs + marks Hired *@
+
+                    <!--begin::Step 1 - Basic Data-->
+                    <div class="er-step-content er-active" data-step-index="1">
+                        <div class="er-body">
+
+                            <div class="er-section-head">
+                                <h2>@Localizer["Basic employee data"]</h2>
+                                <p>@Localizer["Enter personal and contact information for the new employee."]</p>
+                            </div>
+
+                            <div class="er-s1-layout">
+
+                                <!--begin::Avatar-->
+                                <div>
+                                    <label class="er-label mb-3">@Localizer["Photo"]</label>
+                                    <div class="image-input image-input-outline @(!string.IsNullOrWhiteSpace(Model?.ProfileImage) ? "" : "image-input-placeholder")"
+                                         data-kt-image-input="true">
+                                        <div class="image-input-wrapper w-125px h-125px"
+                                             style="background-image: url('@(!string.IsNullOrWhiteSpace(Model?.ProfileImage) ? Url.Content("~" + Model.ProfileImage.Replace("\\", "/")) : Url.Content("~/Backend-assets/media/svg/files/blank-image.svg"))')">
+                                        </div>
+                                        <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                               data-kt-image-input-action="change" data-bs-toggle="tooltip" title="@Localizer["Change photo"]">
+                                            <i class="ki-outline ki-pencil fs-7"></i>
+                                            <input type="file" id="ProfileImage" name="ProfileImage" accept=".png, .jpg, .jpeg" />
+                                            <input type="hidden" name="avatar_remove" />
+                                        </label>
+                                        <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                              data-kt-image-input-action="cancel" data-bs-toggle="tooltip" title="@SR["Cancel"]">
+                                            <i class="ki-outline ki-cross fs-2"></i>
+                                        </span>
+                                        <span class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow"
+                                              data-kt-image-input-action="remove" data-bs-toggle="tooltip" title="@Localizer["Remove photo"]">
+                                            <i class="ki-outline ki-cross fs-2"></i>
+                                        </span>
+                                    </div>
+                                    <div class="invalid-feedback" id="errProfileImage"></div>
+                                </div>
+
+                                <!--begin::Fields-->
+                                <div>
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="FirstName">@Localizer["First name"] <span class="req">*</span></label>
+                                            <input type="text" id="FirstName" name="FirstName"
+                                                   class="form-control-er"
+                                                   value="@Model?.FirstName"
+                                                   placeholder="@Localizer["e.g. Ahmed"]" />
+                                            <div class="invalid-feedback" id="errFirstName"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="LastName">@Localizer["Last name"] <span class="req">*</span></label>
+                                            <input type="text" id="LastName" name="LastName"
+                                                   class="form-control-er"
+                                                   value="@Model?.LastName"
+                                                   placeholder="@Localizer["e.g. Al-Rashidi"]" />
+                                            <div class="invalid-feedback" id="errLastName"></div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <label class="er-label" for="FullName">
+                                                @Localizer["Full name"]
+                                                <span class="badge-auto">@Localizer["auto-filled"]</span>
+                                            </label>
+                                            <input type="text" id="FullName" name="FullName"
+                                                   class="form-control-er readonly-field"
+                                                   value="@Model?.FullName"
+                                                   placeholder="@Localizer["Generated from first + last name"]"
+                                                   readonly />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="Email">@SR["Email"] <span class="req">*</span></label>
+                                            <input type="email" id="Email" name="Email"
+                                                   class="form-control-er"
+                                                   value="@Model?.Email"
+                                                   placeholder="@Localizer["name@company.com"]" />
+                                            <div class="invalid-feedback" id="errEmail"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="PhoneNumber">@Localizer["Phone number"]</label>
+                                            <input type="text" id="PhoneNumber" name="PhoneNumber"
+                                                   class="form-control-er"
+                                                   value="@Model?.PhoneNumber"
+                                                   placeholder="@Localizer["+966 5x xxx xxxx"]" />
+                                            <div class="invalid-feedback" id="errPhoneNumber"></div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="Gender">@Localizer["Gender"]</label>
+                                            <select id="Gender" name="Gender"
+                                                    class="form-control-er"
+                                                    data-control="select2"
+                                                    data-hide-search="true"
+                                                    data-placeholder="@Localizer["Select gender"]">
+                                                <option value="">@Localizer["Select gender"]</option>
+                                                <option value="Male" selected="@(genderValue == "Male")">@Localizer["Male"]</option>
+                                                <option value="Female" selected="@(genderValue == "Female")">@Localizer["Female"]</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="MaritalStatus">@Localizer["Marital status"]</label>
+                                            <select id="MaritalStatus" name="MaritalStatus"
+                                                    class="form-control-er"
+                                                    data-control="select2"
+                                                    data-hide-search="true"
+                                                    data-placeholder="@Localizer["Select marital status"]">
+                                                <option value="">@Localizer["Select marital status"]</option>
+                                                <option value="Single" selected="@(maritalStatusValue == "Single")">@Localizer["Single"]</option>
+                                                <option value="Married" selected="@(maritalStatusValue == "Married")">@Localizer["Married"]</option>
+                                                <option value="Divorced" selected="@(maritalStatusValue == "Divorced")">@Localizer["Divorced"]</option>
+                                                <option value="Widowed" selected="@(maritalStatusValue == "Widowed")">@Localizer["Widowed"]</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="DateOfBirth">@Localizer["Date of birth"]</label>
+                                            <div class="er-datepicker-wrap">
+                                                <input type="text" id="DateOfBirth" name="DateOfBirth"
+                                                       class="form-control-er er-datepicker"
+                                                       value="@dobValue"
+                                                       placeholder="YYYY-MM-DD"
+                                                       autocomplete="off" />
+                                                <span class="er-datepicker-icon"><i class="ki-outline ki-calendar fs-5"></i></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="er-label" for="DateOfJoining">@Localizer["Date of joining"]</label>
+                                            <div class="er-datepicker-wrap">
+                                                <input type="text" id="DateOfJoining" name="DateOfJoining"
+                                                       class="form-control-er er-datepicker"
+                                                       value="@dojValue"
+                                                       placeholder="YYYY-MM-DD"
+                                                       autocomplete="off" />
+                                                <span class="er-datepicker-icon"><i class="ki-outline ki-calendar fs-5"></i></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="er-label" for="Address">@SR["Address"]</label>
+                                            <textarea id="Address" name="Address"
+                                                      class="form-control-er"
+                                                      rows="3"
+                                                      placeholder="@Localizer["Employee home address"]">@Model?.Address</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="er-footer">
+                            <div class="er-footer-progress">@Localizer["Step 1 of 4"]</div>
+                            <div class="er-footer-actions">
+                                <button type="button" class="er-btn er-btn-next" id="erNext1">
+                                    @Localizer["Continue"] <i class="ki-outline ki-arrow-right fs-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--begin::Step 2 - Assignment-->
+                    <div class="er-step-content" data-step-index="2">
+                        <div class="er-body">
+
+                            <div class="er-section-head">
+                                <h2>@Localizer["Organization assignment"]</h2>
+                                <p>@Localizer["Select the company, branch, department and position in the administrative structure."]</p>
+                            </div>
+
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="er-label" for="EmpCompanyID">@SR["Company"] <span class="req">*</span></label>
+                                    <select id="EmpCompanyID" name="EmpCompanyID"
+                                            class="form-control-er"
+                                            data-control="select2"
+                                            data-placeholder="@Localizer["Select company"]">
+                                        <option value="">@Localizer["Select company"]</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="errEmpCompanyID"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="er-label" for="BranchID">@SR["Branch"]</label>
+                                    <select id="BranchID" name="BranchID"
+                                            class="form-control-er"
+                                            data-control="select2"
+                                            data-placeholder="@Localizer["Select branch"]">
+                                        <option value="">@Localizer["Select branch"]</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="er-label" for="JobTitleID">@SR["JobTitle"] <span class="req">*</span></label>
+                                    <select id="JobTitleID" name="JobTitleID"
+                                            class="form-control-er"
+                                            data-control="select2"
+                                            data-placeholder="@Localizer["Select job title"]">
+                                        <option value="">@Localizer["Select job title"]</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="errJobTitleID"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="er-label" for="DepartmentID">@SR["Department"] <span class="req">*</span></label>
+                                    <select id="DepartmentID" name="DepartmentID"
+                                            class="form-control-er"
+                                            data-control="select2"
+                                            data-placeholder="@Localizer["Select department"]">
+                                        <option value="">@Localizer["Select department"]</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="errDepartmentID"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="er-label" for="ManufHourlyRate">@Localizer["Manufacturing hour rate"]</label>
+                                    <input type="number" step="0.0001" min="0" id="ManufHourlyRate" name="ManufHourlyRate"
+                                           class="form-control-er" placeholder="@Localizer["optional — used to cost labor on work orders"]"
+                                           value="@(Model?.ManufHourlyRate.HasValue == true ? Model.ManufHourlyRate.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "")" />
+                                    <div class="er-hint">@Localizer["Used to cost the employee's labor on work orders. If left blank, it is derived from the base salary ÷ standard hours."]</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="er-label" for="erStructureBtn">
+                                        @Localizer["Administrative structure"] <span class="req">*</span>
+                                    </label>
+                                    <div class="er-tree-dropdown" id="erStructureDd">
+                                        <input type="hidden" id="AdministrativeStructureID" name="AdministrativeStructureID" />
+                                        <button type="button" class="er-tree-btn" id="erStructureBtn"
+                                                aria-haspopup="true" aria-expanded="false">
+                                            <span class="er-tree-btn-label placeholder">@Localizer["Select structure node"]</span>
+                                            <span class="er-tree-btn-arrow"><i class="ki-outline ki-down fs-6"></i></span>
+                                        </button>
+                                        <div class="er-tree-panel" id="erStructurePanel" style="display:none">
+                                            <div class="er-tree-search-wrap">
+                                                <input type="text" class="er-tree-search" id="erStructureSearch"
+                                                       placeholder="@Localizer["Search node…"]" autocomplete="off" />
+                                                <span class="er-tree-search-icon"><i class="ki-outline ki-magnifier"></i></span>
+                                            </div>
+                                            <div id="erStructureTree"></div>
+                                        </div>
+                                    </div>
+                                    <div class="invalid-feedback" id="errAdministrativeStructureID"></div>
+                                </div>
+
+                                <!--begin::Breadcrumb preview-->
+                                <div class="col-12">
+                                    <label class="er-label" style="margin-bottom:8px">
+                                        <i class="ki-outline ki-abstract-26 me-1" style="color:#13433a"></i>
+                                        @Localizer["Placement preview"]
+                                    </label>
+                                    <div class="er-breadcrumb-wrap" id="erBreadcrumb">
+                                        <span class="er-bc-node dim">
+                                            <i class="ki-outline ki-buildings" style="font-size:14px"></i>
+                                            @SR["Company"]
+                                        </span>
+                                        <span class="er-bc-sep">›</span>
+                                        <span class="er-bc-node dim">
+                                            <i class="ki-outline ki-home-2" style="font-size:14px"></i>
+                                            @SR["Branch"]
+                                        </span>
+                                        <span class="er-bc-sep">›</span>
+                                        <span class="er-bc-node dim">
+                                            <i class="ki-outline ki-element-11" style="font-size:14px"></i>
+                                            @SR["Department"]
+                                        </span>
+                                        <span class="er-bc-sep">›</span>
+                                        <span class="er-bc-node dim">
+                                            <i class="ki-outline ki-briefcase" style="font-size:14px"></i>
+                                            @SR["JobTitle"]
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="er-footer">
+                            <div class="er-footer-progress">@Localizer["Step 2 of 4"]</div>
+                            <div class="er-footer-actions">
+                                <button type="button" class="er-btn er-btn-back" id="erBack2">
+                                    <i class="ki-outline ki-arrow-left fs-5"></i> @SR["Back"]
+                                </button>
+                                <button type="button" class="er-btn er-btn-next" id="erNext2">
+                                    @Localizer["Continue"] <i class="ki-outline ki-arrow-right fs-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--begin::Step 3 - Policy-->
+                    <div class="er-step-content" data-step-index="3">
+                        <div class="er-body">
+
+                            <div class="er-section-head">
+                                <h2>@Localizer["Policy selection"]</h2>
+                                <p>@Localizer["Click on a policy to select it and view its full details."]</p>
+                            </div>
+
+                            <input type="hidden" id="PolicyID" name="PolicyID" value="" />
+                            <div class="invalid-feedback" id="errPolicyID" style="margin-bottom:.75rem"></div>
+
+                            <div class="er-pgrid" id="erPolicyGrid">
+                                <div class="er-pgrid-msg">
+                                    <span class="spinner-border spinner-border-sm text-primary"></span>
+                                    <span>@Localizer["Loading policies…"]</span>
+                                </div>
+                            </div>
+
+                            <div id="erPolicyDetails" style="display:none;margin-top:1.5rem">
+                                <div class="er-divider"></div>
+                                <div class="er-policy-card" style="margin-top:1.25rem">
+                                    <div id="erPolicyPreview"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="er-footer">
+                            <div class="er-footer-progress">@Localizer["Step 3 of 4"]</div>
+                            <div class="er-footer-actions">
+                                <button type="button" class="er-btn er-btn-back" id="erBack3">
+                                    <i class="ki-outline ki-arrow-left fs-5"></i> @SR["Back"]
+                                </button>
+                                <button type="button" class="er-btn er-btn-next" id="erNext3">
+                                    @Localizer["Continue"] <i class="ki-outline ki-arrow-right fs-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--begin::Step 4 - Review-->
+                    <div class="er-step-content" data-step-index="4">
+                        <div class="er-body">
+
+                            <div class="er-section-head" style="text-align:center">
+                                <h2>@Localizer["Review & confirmation"]</h2>
+                                <p>@Localizer["Review all employee data carefully before saving."]</p>
+                            </div>
+
+                            <!--begin::Profile card-->
+                            <div class="er-profile-card" id="erIdentityBar">
+                                <div class="er-avatar-wrap">
+                                    <div class="er-identity-avatar" id="erReviewAvatar">??</div>
+                                    <span class="er-avatar-verified">
+                                        <i class="ki-solid ki-check"></i>
+                                    </span>
+                                </div>
+                                <div class="er-profile-info">
+                                    <div class="er-identity-role"><i class="ki-outline ki-user fs-8"></i> @SR["Employee"]</div>
+                                    <div class="er-identity-name" id="erReviewName">—</div>
+                                    <div class="er-pf-rows">
+                                        <div class="er-pf-row">
+                                            <span class="er-pf-row-icon ic-job"><i class="ki-outline ki-briefcase"></i></span>
+                                            <span class="er-pf-row-lbl">@SR["JobTitle"]</span>
+                                            <span class="er-pf-row-val" id="erRvJob">—</span>
+                                        </div>
+                                        <div class="er-pf-row">
+                                            <span class="er-pf-row-icon ic-company"><i class="ki-outline ki-bank"></i></span>
+                                            <span class="er-pf-row-lbl">@SR["Company"]</span>
+                                            <span class="er-pf-row-val" id="erRvCompany">—</span>
+                                        </div>
+                                        <div class="er-pf-row">
+                                            <span class="er-pf-row-icon ic-email"><i class="ki-outline ki-sms"></i></span>
+                                            <span class="er-pf-row-lbl">@SR["Email"]</span>
+                                            <span class="er-pf-row-val" id="erRvEmail">—</span>
+                                        </div>
+                                        <div class="er-pf-row">
+                                            <span class="er-pf-row-icon ic-phone"><i class="ki-outline ki-phone"></i></span>
+                                            <span class="er-pf-row-lbl">@SR["Phone"]</span>
+                                            <span class="er-pf-row-val" id="erRvPhone">—</span>
+                                        </div>
+                                        <div class="er-pf-row">
+                                            <span class="er-pf-row-icon ic-date"><i class="ki-outline ki-calendar-tick"></i></span>
+                                            <span class="er-pf-row-lbl">@Localizer["Joining date"]</span>
+                                            <span class="er-pf-row-val" id="erRvJoining">—</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!--begin::Summary groups-->
+                            <div id="erReviewBody"></div>
+                        </div>
+
+                        <div class="er-footer">
+                            <div class="er-footer-progress">@Localizer["Step 4 of 4"]</div>
+                            <div class="er-footer-actions">
+                                <button type="button" class="er-btn er-btn-back" id="erBack4">
+                                    <i class="ki-outline ki-arrow-left fs-5"></i> @SR["Back"]
+                                </button>
+                                <button type="button" class="er-btn er-btn-save" id="erSaveBtn">
+                                    <span class="er-btn-label">
+                                        <i class="ki-outline ki-check fs-5"></i> @Localizer["Save employee"]
+                                    </span>
+                                    <span class="er-spinner"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div><!--end::er-card-->
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jstree@3.3.16/dist/themes/default/style.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jstree@3.3.16/dist/jstree.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+(function ($) {
+    'use strict';
+
+    /* ── URL constants ───────────────────────────────────────── */
+    var URL_SAVE         = '@saveEmployeeUrl';
+    var URL_COMPANIES    = '@getCompaniesUrl';
+    var URL_BRANCHES     = '@getBranchesUrl';
+    var URL_JOBTITLES    = '@getJobTitlesUrl';
+    var URL_HIERARCHICALS= '@getHierarchicalsUrl';
+    var URL_POLICY       = '@getPolicyUrl';
+    var URL_POLICIES     = '@getPoliciesUrl';
+
+    var INIT_COMPANY     = '@((Model?.EmpCompanyID?.ToString() ?? ""))';
+    var INIT_BRANCH      = '@((Model?.BranchID?.ToString() ?? ""))';
+    var INIT_JOBTITLE    = '@((Model?.JobTitleID?.ToString() ?? ""))';
+    var INIT_DEPARTMENT  = '@((Model?.DepartmentID?.ToString() ?? ""))';
+    var INIT_STRUCTURE   = '@((Model?.AdministrativeStructureID?.ToString() ?? ""))';
+    var INIT_POLICY      = '@((Model?.PolicyID?.ToString() ?? ""))';
+
+    /* ── state ───────────────────────────────────────────────── */
+    var currentStep = 1;
+    var TOTAL_STEPS  = 4;
+    var IS_AR = (document.documentElement.dir === 'rtl' ||
+                 document.documentElement.lang === 'ar' ||
+                 '@System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName' === 'ar');
+
+    /* ── helpers ─────────────────────────────────────────────── */
+    function normalizeList(res) {
+        if (!res) return [];
+        if ($.isArray(res)) return res;
+        if (res.data) {
+            if ($.isArray(res.data)) return res.data;
+            if (res.data.item && $.isArray(res.data.item)) return res.data.item;
+        }
+        return [];
+    }
+    function firstValue(item, keys) {
+        for (var i = 0; i < keys.length; i++) {
+            var val = item[keys[i]];
+            if (val !== undefined && val !== null && val !== '') return val;
+        }
+        return '';
+    }
+    function pickId(item) {
+        return firstValue(item, ['id','ID','h_ID','H_ID','hId','HId','a_ID','A_ID','value','Value']);
+    }
+    function pickText(item) {
+        if (IS_AR) {
+            return item.text ||
+                   item.name    || item.Name    ||
+                   item.nameAr  || item.NameAr  ||
+                   item.h_Name  || item.H_Name  ||
+                   item.a_Name  || item.A_Name  ||
+                   item.nameEn  || item.NameEn  ||
+                   item.h_NameEn|| item.H_NameEn||
+                   item.title   || item.Title   || pickId(item);
+        }
+        return item.text ||
+               item.nameEn  || item.NameEn  ||
+               item.h_NameEn|| item.H_NameEn||
+               item.name    || item.Name    ||
+               item.nameAr  || item.NameAr  ||
+               item.h_Name  || item.H_Name  ||
+               item.a_Name  || item.A_Name  ||
+               item.title   || item.Title   || pickId(item);
+    }
+    function selectedText(id) {
+        var $el = $(id);
+        if ($el.prop('tagName') === 'SELECT') {
+            var t = $el.find('option:selected').text();
+            return (!t || t.toLowerCase().indexOf('select') === 0) ? '' : t;
+        }
+        return $.trim($el.val());
+    }
+
+    /* ── flatpickr date pickers ──────────────────────────────── */
+    var fpOpts = {
+        dateFormat: 'Y-m-d',
+        allowInput: false,
+        disableMobile: true,
+        position: 'auto'
+    };
+    flatpickr('#DateOfBirth',  Object.assign({}, fpOpts, { maxDate: 'today' }));
+    flatpickr('#DateOfJoining', fpOpts);
+
+    /* ── select2 init ────────────────────────────────────────── */
+    $('[data-control="select2"]').each(function () {
+        var $sel = $(this);
+        $sel.select2({
+            placeholder: $sel.data('placeholder') || '@Localizer["Select…"]',
+            allowClear:  true,
+            width:       '100%'
+        });
+    });
+
+    /* ── fill / load selects ─────────────────────────────────── */
+    function fillSelect($sel, list, placeholder, selected) {
+        $sel.empty().append($('<option>', { value: '', text: placeholder }));
+        $.each(list, function (_, item) {
+            var id   = pickId(item);
+            var text = pickText(item);
+            if (id !== '') {
+                $sel.append($('<option>', {
+                    value: id, text: text,
+                    selected: selected !== undefined && selected !== null && String(selected) === String(id)
+                }));
+            }
+        });
+        $sel.trigger('change.select2');
+    }
+    function loadSelect(url, $sel, placeholder, selected) {
+        return $.getJSON(url)
+            .done(function (res) { fillSelect($sel, normalizeList(res), placeholder, selected); })
+            .fail(function ()    { fillSelect($sel, [], placeholder, null); });
+    }
+
+    function loadCompanies()  { loadSelect(URL_COMPANIES, $('#EmpCompanyID'), '@Localizer["Select company"]', INIT_COMPANY); }
+    function loadBranches(cid, sel) {
+        var url = URL_BRANCHES + (cid ? '?companyId=' + encodeURIComponent(cid) : '');
+        /* sel=undefined → use saved INIT_BRANCH (page load); sel='' → clear (cascade) */
+        loadSelect(url, $('#BranchID'), '@Localizer["Select branch"]', sel !== undefined ? sel : INIT_BRANCH);
+    }
+    function loadJobTitles()  { loadSelect(URL_JOBTITLES, $('#JobTitleID'), '@Localizer["Select job title"]', INIT_JOBTITLE); }
+    function loadPolicies() {
+        var deferred = $.Deferred();
+        $('#erPolicyGrid').html(
+            '<div class="er-pgrid-msg"><span class="spinner-border spinner-border-sm text-primary"></span><span>@Localizer["Loading policies…"]</span></div>'
+        );
+        $.getJSON(URL_POLICIES)
+            .done(function (res) {
+                var list = (res && res.ok && res.data) ? ($.isArray(res.data) ? res.data : []) : ($.isArray(res) ? res : []);
+                if (!list.length) {
+                    $('#erPolicyGrid').html('<div class="er-pgrid-msg"><i class="ki-outline ki-shield-tick fs-2"></i><span>@Localizer["No policies available."]</span></div>');
+                    deferred.resolve(); return;
+                }
+                var html = list.map(function (p) {
+                    var pid    = p.id   || p.ID;
+                    var pname  = $('<div>').text(p.name || p.nameEn || p.NameEn || '').html();
+                    var pnotes = p.notes || p.Notes || '';
+                    return '<div class="er-pcard" data-pid="' + pid + '" data-name="' + pname + '">' +
+                        '<div class="er-pcard-radio"></div>' +
+                        '<div class="er-pcard-icon"><i class="ki-outline ki-shield-tick"></i></div>' +
+                        '<div class="er-pcard-body">' +
+                            '<div class="er-pcard-name">' + pname + '</div>' +
+                            (pnotes ? '<div class="er-pcard-notes">' + $('<div>').text(pnotes).html() + '</div>' : '') +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+                $('#erPolicyGrid').html(html);
+                if (INIT_POLICY) {
+                    var $c = $('#erPolicyGrid .er-pcard[data-pid="' + INIT_POLICY + '"]');
+                    if ($c.length) { $c.addClass('selected'); $('#PolicyID').val(INIT_POLICY); }
+                    loadPolicyPreview(INIT_POLICY);
+                }
+                deferred.resolve();
+            })
+            .fail(function () {
+                $('#erPolicyGrid').html('<div class="er-pgrid-msg"><i class="ki-outline ki-warning-2 fs-2"></i><span>@Localizer["Failed to load policies."]</span></div>');
+                deferred.resolve();
+            });
+        return deferred.promise();
+    }
+
+    function loadHierarchicals(cid) {
+        var $arrow = $('#erStructureBtn .er-tree-btn-arrow');
+        $arrow.html('<span class="spinner-border" style="width:13px;height:13px;border-width:2px;color:var(--er-primary)"></span>');
+        var url = URL_HIERARCHICALS + (cid ? '?companyId=' + encodeURIComponent(cid) : '');
+        $.getJSON(url)
+            .done(function (res) {
+                var list = normalizeList(res);
+                initStructureTree(list, INIT_STRUCTURE || null);
+                var depts = $.grep(list, function (item) {
+                    var type = item.h_TYPE || item.H_TYPE || item.h_Type || item.H_Type || item.type || item.Type || '';
+                    var name = (pickText(item) || '').toLowerCase();
+                    return String(type) === '3' || name.indexOf('department') >= 0 ||
+                           name.indexOf('ادارة') >= 0 || name.indexOf('إدارة') >= 0;
+                });
+                if (!depts.length) depts = list;
+                fillSelect($('#DepartmentID'), depts, '@Localizer["Select department"]', INIT_DEPARTMENT);
+            })
+            .fail(function () {
+                initStructureTree([], null);
+                fillSelect($('#DepartmentID'), [], '@Localizer["Select department"]', null);
+            })
+            .always(function () {
+                $arrow.html('<i class="ki-outline ki-down fs-6"></i>');
+            });
+    }
+
+    /* ── tree dropdown ───────────────────────────────────────── */
+    function buildTreeData(list) {
+        var idSet = {};
+        list.forEach(function (item) {
+            idSet[String(item.h_ID || item.H_ID || item.id || item.ID || '')] = true;
+        });
+        return list.map(function (item) {
+            var id  = String(item.h_ID || item.H_ID || item.id || item.ID || '');
+            var par = item.h_Parent != null ? item.h_Parent
+                    : (item.H_Parent != null ? item.H_Parent : null);
+            var parStr = (par == null || String(par) === '0' || !idSet[String(par)])
+                         ? '#' : String(par);
+            var text = IS_AR
+                ? (item.h_Name  || item.H_Name  || item.h_NameEn || item.H_NameEn || id)
+                : (item.h_NameEn|| item.H_NameEn|| item.h_Name   || item.H_Name   || id);
+            return { id: id, parent: parStr, text: text || id };
+        });
+    }
+
+    function initStructureTree(list, selectedId) {
+        var $tree = $('#erStructureTree');
+        $tree.off('select_node.jstree ready.jstree');
+        if ($tree.data('jstree')) { $tree.jstree('destroy').empty(); }
+        if (!list.length) {
+            $tree.html('<div style="padding:14px 12px;font-size:13px;color:#aaa">@Localizer["No structure available."]</div>');
+            return;
+        }
+        $tree.jstree({
+            core: { data: buildTreeData(list), themes: { dots: false, icons: true, responsive: false } },
+            types: { 'default': { icon: 'ki-solid ki-folder text-warning fs-5' } },
+            search: { show_only_matches: true, show_only_matches_children: true },
+            plugins: ['search', 'types']
+        });
+        $tree.on('select_node.jstree', function (e, data) {
+            var nodeId   = data.node.id;
+            var nodeText = data.node.text;
+            $('#AdministrativeStructureID').val(nodeId);
+            $('#erStructureBtn .er-tree-btn-label').text(nodeText).removeClass('placeholder');
+            closeStructureTree();
+            $('#errAdministrativeStructureID').removeClass('show').text('');
+            $('#erStructureBtn').removeClass('is-invalid').addClass('is-valid');
+            buildBreadcrumb();
+        });
+        $tree.on('ready.jstree', function () {
+            $tree.jstree('open_all');
+            if (selectedId) { $tree.jstree('select_node', String(selectedId)); }
+        });
+    }
+
+    function positionStructurePanel() {
+        var rect  = $('#erStructureBtn')[0].getBoundingClientRect();
+        var vpH   = window.innerHeight;
+        var spaceBelow = vpH - rect.bottom - 8;
+        var spaceAbove = rect.top - 8;
+        var maxH  = Math.max(spaceBelow, spaceAbove, 140);
+        var top   = spaceBelow >= 140 ? rect.bottom + 4 : rect.top - Math.min(maxH, 380) - 4;
+        $('#erStructureTree').css('max-height', Math.min(maxH - 56, 260));
+        $('#erStructurePanel').css({ top: top, left: rect.left, width: rect.width });
+    }
+
+    function openStructureTree() {
+        positionStructurePanel();
+        $('#erStructurePanel').show();
+        $('#erStructureBtn').addClass('open').attr('aria-expanded', 'true');
+        var $tree = $('#erStructureTree');
+        $('#erStructureSearch').val('').focus();
+        if ($tree.data('jstree')) {
+            $tree.jstree('search', '');
+        } else if ($tree.is(':empty')) {
+            $tree.html('<div class="er-tree-loading"><span class="spinner-border" style="width:20px;height:20px;border-width:2px;color:var(--er-primary)"></span></div>');
+        }
+    }
+
+    function closeStructureTree() {
+        $('#erStructurePanel').hide();
+        $('#erStructureBtn').removeClass('open').attr('aria-expanded', 'false');
+    }
+
+    $('#erStructureBtn').on('click', function (e) {
+        e.stopPropagation();
+        $('#erStructurePanel').is(':visible') ? closeStructureTree() : openStructureTree();
+    });
+
+    $(document).on('click.erTree', function (e) {
+        if (!$(e.target).closest('#erStructureDd').length &&
+            !$(e.target).closest('#erStructurePanel').length) {
+            closeStructureTree();
+        }
+    });
+
+    $(document).on('keydown.erTree', function (e) {
+        if (e.key === 'Escape' && $('#erStructurePanel').is(':visible')) {
+            closeStructureTree();
+            $('#erStructureBtn').focus();
+        }
+    });
+
+    $(window).on('scroll.erTree resize.erTree', function () {
+        if ($('#erStructurePanel').is(':visible')) { closeStructureTree(); }
+    });
+
+    $('#erStructureSearch').on('input', function () {
+        var $tree = $('#erStructureTree');
+        if ($tree.data('jstree')) { $tree.jstree('search', $(this).val()); }
+    });
+
+    /* ── auto full name ──────────────────────────────────────── */
+    function syncFullName() {
+        var fn = $.trim($('#FirstName').val());
+        var ln = $.trim($('#LastName').val());
+        $('#FullName').val($.trim(fn + ' ' + ln));
+    }
+    $('#FirstName, #LastName').on('input', syncFullName);
+
+    /* ── avatar preview ──────────────────────────────────────── */
+
+    /* ── breadcrumb preview ──────────────────────────────────── */
+    function buildBreadcrumb() {
+        var parts = [
+            { icon: 'ki-buildings',   val: selectedText('#EmpCompanyID') },
+            { icon: 'ki-home-2',      val: selectedText('#BranchID') },
+            { icon: 'ki-element-11',  val: selectedText('#DepartmentID') },
+            { icon: 'ki-briefcase',   val: selectedText('#JobTitleID') }
+        ];
+        var html = '';
+        parts.forEach(function (p, i) {
+            var dim = !p.val;
+            var label = p.val || ['@SR["Company"]','@SR["Branch"]','@SR["Department"]','@SR["JobTitle"]'][i];
+            html += '<span class="er-bc-node' + (dim ? ' dim' : '') + '">' +
+                    '<i class="ki-outline ' + p.icon + '" style="font-size:14px"></i>' +
+                    label +
+                    '</span>';
+            if (i < parts.length - 1)
+                html += '<span class="er-bc-sep">›</span>';
+        });
+        $('#erBreadcrumb').html(html);
+    }
+
+    /* ── policy preview ──────────────────────────────────────── */
+    function renderPolicy(policy) {
+        if (!policy) {
+            $('#erPolicyPreview').html(
+                '<div class="er-policy-empty">' +
+                '<i class="ki-outline ki-shield-tick fs-2"></i>' +
+                '<span>@Localizer["Select a policy to preview its details."]</span>' +
+                '</div>'
+            );
+            return;
+        }
+
+        var name   = policy.nameAr || policy.NameAr || policy.nameEn || policy.NameEn || '@Localizer["Policy"]';
+        var notes  = policy.notes  || policy.Notes  || '';
+        var leaves = policy.leavePolicies      || policy.LeavePolicies      || [];
+        var sals   = policy.salaryPolicies     || policy.SalaryPolicies     || [];
+        var atts   = policy.attendancePolicies || policy.AttendancePolicies || [];
+
+        function fNum(v) { return (v !== undefined && v !== null) ? Number(v).toLocaleString() : '—'; }
+        function fPct(v) { return (v !== undefined && v !== null) ? Number(v) + '%' : '—'; }
+        function fTime(v) { if (!v) return '—'; return String(v).substring(0, 5); }
+        function fBool(v) {
+            return v ? '<span style="color:#0F6E56;font-weight:700">@SR["Yes"]</span>'
+                     : '<span style="color:#aaa">@SR["No"]</span>';
+        }
+        function fVal(v) { return (v !== undefined && v !== null && v !== '') ? v : '—'; }
+
+        function badge(v) {
+            return v ? '<span class="er-di-yes"><i class="ki-solid ki-check" style="font-size:10px"></i>@SR["Yes"]</span>'
+                     : '<span class="er-di-no">@SR["No"]</span>';
+        }
+        function diField(lbl, val) {
+            return '<div class="er-di-field"><span class="er-di-fl">' + lbl + '</span><span class="er-di-fv">' + val + '</span></div>';
+        }
+        function salLine(lbl, val, cls) {
+            return '<div class="er-sal-line' + (cls ? ' ' + cls : '') + '"><span class="lk">' + lbl + '</span><span class="lv">' + val + '</span></div>';
+        }
+        function salKv(lbl, val) {
+            return '<div class="er-sal-kv"><span>' + lbl + '</span><span>' + val + '</span></div>';
+        }
+        function threshItem(val, lbl) {
+            return '<div class="er-thresh-item"><span class="er-thresh-v">' + val + '</span><span class="er-thresh-l">' + lbl + '</span></div>';
+        }
+
+        function renderLeaveItems() {
+            if (!leaves.length)
+                return '<div class="er-policy-empty"><i class="ki-outline ki-calendar-remove fs-2"></i><span>@Localizer["No leave policies defined."]</span></div>';
+            return leaves.map(function (lp) {
+                var lt     = lp.leaveTypes || lp.LeaveTypes;
+                var ltName = (lt && (lt.nameAr || lt.NameAr || lt.nameEn || lt.NameEn)) || '@Localizer["Leave rule"]';
+                var days   = lp.entitlementDaysPerYear   != null ? lp.entitlementDaysPerYear   : lp.EntitlementDaysPerYear;
+                var carry  = lp.carryOverLimit           != null ? lp.carryOverLimit           : lp.CarryOverLimit;
+                var notice = lp.noticePeriodDays         != null ? lp.noticePeriodDays         : lp.NoticePeriodDays;
+                var medic  = lp.requiresMedicalCertificate != null ? lp.requiresMedicalCertificate : lp.RequiresMedicalCertificate;
+                return '<div class="er-di lv"><div class="er-di-inner">' +
+                    '<div class="er-di-hd">' +
+                        '<div class="er-di-hd-icon"><i class="ki-outline ki-calendar-tick"></i></div>' +
+                        '<span class="er-di-hd-name">' + ltName + '</span>' +
+                    '</div>' +
+                    '<div class="er-di-stats">' +
+                        '<div class="er-di-stat"><span class="er-di-sv" style="color:var(--er-warn)">' + fNum(days) + '</span><span class="er-di-sl">@Localizer["Days / year"]</span></div>' +
+                        '<div class="er-di-stat"><span class="er-di-sv">' + fNum(carry) + '</span><span class="er-di-sl">@Localizer["Carry-over max"]</span></div>' +
+                        '<div class="er-di-stat"><span class="er-di-sv">' + fNum(notice) + '</span><span class="er-di-sl">@Localizer["Notice days"]</span></div>' +
+                    '</div>' +
+                    '<div class="er-di-field" style="border-top:1px solid #F1F5F9;padding-top:8px;margin-top:4px">' +
+                        '<span class="er-di-fl">@Localizer["Medical certificate required"]</span>' +
+                        badge(medic) +
+                    '</div>' +
+                '</div></div>';
+            }).join('');
+        }
+
+        function renderSalaryItems() {
+            if (!sals.length)
+                return '<div class="er-policy-empty"><i class="ki-outline ki-dollar fs-2"></i><span>@Localizer["No salary policies defined."]</span></div>';
+            return sals.map(function (sp, i) {
+                var spName  = sp.description || sp.Description || ('@Localizer["Salary rule #"]' + (i + 1));
+                var taxOk   = sp.isTaxApplicable || sp.IsTaxApplicable;
+                var base    = Number(sp.baseSalary              != null ? sp.baseSalary              : (sp.BaseSalary    || 0));
+                var housing = Number(sp.housingAllowance        != null ? sp.housingAllowance        : (sp.HousingAllowance || 0));
+                var trans   = Number(sp.transportationAllowance != null ? sp.transportationAllowance : (sp.TransportationAllowance || 0));
+                var other   = Number(sp.otherAllowances         != null ? sp.otherAllowances         : (sp.OtherAllowances || 0));
+                var gross   = base + housing + trans + other;
+                var hasAllow = (housing > 0 || trans > 0 || other > 0);
+                var ot      = sp.overtimeRate            != null ? sp.overtimeRate            : sp.OvertimeRate;
+                var late    = sp.latePenaltyPerMinute    != null ? sp.latePenaltyPerMinute    : sp.LatePenaltyPerMinute;
+                var absent  = sp.absencePenaltyPerDay    != null ? sp.absencePenaltyPerDay    : sp.AbsencePenaltyPerDay;
+                var tax     = sp.taxRate                 != null ? sp.taxRate                 : sp.TaxRate;
+                var empIns  = sp.socialInsuranceEmployeeShare != null ? sp.socialInsuranceEmployeeShare : sp.SocialInsuranceEmployeeShare;
+                var coIns   = sp.socialInsuranceCompanyShare  != null ? sp.socialInsuranceCompanyShare  : sp.SocialInsuranceCompanyShare;
+                var payDay  = sp.paymentDay   != null ? sp.paymentDay   : sp.PaymentDay;
+                var payMeth = sp.paymentMethod || sp.PaymentMethod || '—';
+
+                var allowRows = '';
+                if (housing > 0) allowRows += '<div class="er-sal2-arow"><span class="er-sal2-ak"><i class="ki-outline ki-home-2"></i>@Localizer["Housing"]</span><span class="er-sal2-av">+ ' + fNum(housing) + '</span></div>';
+                if (trans   > 0) allowRows += '<div class="er-sal2-arow"><span class="er-sal2-ak"><i class="ki-outline ki-car"></i>@Localizer["Transport"]</span><span class="er-sal2-av">+ ' + fNum(trans) + '</span></div>';
+                if (other   > 0) allowRows += '<div class="er-sal2-arow"><span class="er-sal2-ak"><i class="ki-outline ki-plus-circle"></i>@Localizer["Other"]</span><span class="er-sal2-av">+ ' + fNum(other) + '</span></div>';
+
+                return '<div class="er-di sl"><div class="er-di-inner">' +
+                    '<div class="er-di-hd"><div class="er-di-hd-icon"><i class="ki-outline ki-dollar"></i></div><span class="er-di-hd-name">' + spName + '</span></div>' +
+
+                    '<div class="er-sal2-base-box">' +
+                        '<div class="er-sal2-base-lbl">@Localizer["Base Salary"]</div>' +
+                        '<div class="er-sal2-base-num">' + fNum(base) + '</div>' +
+                    '</div>' +
+
+                    (hasAllow ?
+                        '<div class="er-sal2-allow-wrap">' +
+                            allowRows +
+                            '<div class="er-sal2-arow er-sal2-gross"><span class="er-sal2-ak">@Localizer["Gross Total"]</span><span class="er-sal2-av">' + fNum(gross) + '</span></div>' +
+                        '</div>'
+                    : '') +
+
+                    '<div class="er-di-sep">@Localizer["Deduction rates"]</div>' +
+                    '<div class="er-sal2-grid">' +
+                        '<div class="er-sal2-cell"><div class="er-sal2-cell-l">@Localizer["Overtime"]</div><div class="er-sal2-cell-v">× ' + fVal(ot) + '</div></div>' +
+                        '<div class="er-sal2-cell"><div class="er-sal2-cell-l">@Localizer["Late / min"]</div><div class="er-sal2-cell-v">' + fNum(late) + '</div></div>' +
+                        '<div class="er-sal2-cell"><div class="er-sal2-cell-l">@Localizer["Absence / day"]</div><div class="er-sal2-cell-v">' + fNum(absent) + '</div></div>' +
+                        '<div class="er-sal2-cell' + (!taxOk ? ' na' : '') + '"><div class="er-sal2-cell-l">@Localizer["Tax rate"]</div><div class="er-sal2-cell-v">' + fPct(tax) + '</div></div>' +
+                    '</div>' +
+
+                    '<div class="er-di-sep">@Localizer["Social insurance"]</div>' +
+                    '<div class="er-sal2-ins">' +
+                        '<div class="er-sal2-ins-item"><div class="er-sal2-ins-l">@Localizer["Employee share"]</div><div class="er-sal2-ins-v">' + fPct(empIns) + '</div></div>' +
+                        '<div class="er-sal2-ins-item"><div class="er-sal2-ins-l">@Localizer["Company share"]</div><div class="er-sal2-ins-v">' + fPct(coIns) + '</div></div>' +
+                    '</div>' +
+
+                    '<div class="er-sal2-payment">' +
+                        '<div class="er-sal2-pay-seg"><i class="ki-outline ki-calendar"></i><span>@Localizer["Paid on day"] <strong>' + fVal(payDay) + '</strong></span></div>' +
+                        '<div class="er-sal2-pay-divider"></div>' +
+                        '<div class="er-sal2-pay-seg"><i class="ki-outline ki-bank"></i><span><strong>' + fVal(payMeth) + '</strong></span></div>' +
+                    '</div>' +
+
+                '</div></div>';
+            }).join('');
+        }
+
+        function renderAttendItems() {
+            if (!atts.length)
+                return '<div class="er-policy-empty"><i class="ki-outline ki-time fs-2"></i><span>@Localizer["No attendance policies defined."]</span></div>';
+            return atts.map(function (ap, i) {
+                var dayDefs = [
+                    { lbl: '@Localizer["Sun"]', v: ap.workOnSunday    != null ? ap.workOnSunday    : ap.WorkOnSunday    },
+                    { lbl: '@Localizer["Mon"]', v: ap.workOnMonday    != null ? ap.workOnMonday    : ap.WorkOnMonday    },
+                    { lbl: '@Localizer["Tue"]', v: ap.workOnTuesday   != null ? ap.workOnTuesday   : ap.WorkOnTuesday   },
+                    { lbl: '@Localizer["Wed"]', v: ap.workOnWednesday != null ? ap.workOnWednesday : ap.WorkOnWednesday },
+                    { lbl: '@Localizer["Thu"]', v: ap.workOnThursday  != null ? ap.workOnThursday  : ap.WorkOnThursday  },
+                    { lbl: '@Localizer["Fri"]', v: ap.workOnFriday    != null ? ap.workOnFriday    : ap.WorkOnFriday    },
+                    { lbl: '@Localizer["Sat"]', v: ap.workOnSaturday  != null ? ap.workOnSaturday  : ap.WorkOnSaturday  }
+                ];
+                var dayBoxes = dayDefs.map(function (d) {
+                    return '<div class="er-day ' + (d.v ? 'on' : 'off') + '">' + d.lbl + '</div>';
+                }).join('');
+                var hrs     = fVal(ap.workHoursPerDay != null ? ap.workHoursPerDay : ap.WorkHoursPerDay);
+                var tStart  = fTime(ap.workStartTime || ap.WorkStartTime);
+                var tEnd    = fTime(ap.workEndTime   || ap.WorkEndTime);
+                var bStart  = ap.breakStartTime || ap.BreakStartTime;
+                var breakTxt = bStart
+                    ? '@Localizer["Break"] ' + fTime(bStart) + ' – ' + fTime(ap.breakEndTime || ap.BreakEndTime) +
+                      ' (' + fVal(ap.breakDurationMinutes != null ? ap.breakDurationMinutes : ap.BreakDurationMinutes) + ' @Localizer["min"])'
+                    : '@Localizer["No break configured"]';
+                var grace   = fNum(ap.allowedGraceMinutes       != null ? ap.allowedGraceMinutes       : ap.AllowedGraceMinutes);
+                var warn    = fNum(ap.warningThresholdCount      != null ? ap.warningThresholdCount      : ap.WarningThresholdCount);
+                var absThrs = fNum(ap.unexcusedAbsenceThreshold != null ? ap.unexcusedAbsenceThreshold  : ap.UnexcusedAbsenceThreshold);
+                var deduct  = fPct(ap.deductionRatePerOccurrence!= null ? ap.deductionRatePerOccurrence : ap.DeductionRatePerOccurrence);
+                var allowPerm = ap.allowPermissions || ap.AllowPermissions;
+                var permHtml = '';
+                if (allowPerm) {
+                    var maxDay  = fVal(ap.maxPermissionRequestsPerDay    != null ? ap.maxPermissionRequestsPerDay    : ap.MaxPermissionRequestsPerDay);
+                    var maxMo   = fVal(ap.maxPermissionRequestsPerMonth  != null ? ap.maxPermissionRequestsPerMonth  : ap.MaxPermissionRequestsPerMonth);
+                    var maxMin  = fVal(ap.maxPermissionMinutesPerRequest != null ? ap.maxPermissionMinutesPerRequest : ap.MaxPermissionMinutesPerRequest);
+                    var needAppr = ap.requirePermissionApproval  != null ? ap.requirePermissionApproval  : ap.RequirePermissionApproval;
+                    var deductPerm = ap.deductPermissionIfExceeded != null ? ap.deductPermissionIfExceeded : ap.DeductPermissionIfExceeded;
+                    permHtml =
+                        '<div class="er-di-sep">@Localizer["Permissions"]</div>' +
+                        '<div class="er-thresh" style="grid-template-columns:repeat(3,1fr)">' +
+                            threshItem(maxDay, '@Localizer["Max/day"]') +
+                            threshItem(maxMo,  '@Localizer["Max/month"]') +
+                            threshItem(maxMin + ' m', '@Localizer["Per request"]') +
+                        '</div>' +
+                        '<div style="margin-top:8px">' +
+                            diField('@Localizer["Requires approval"]',  badge(needAppr)) +
+                            diField('@Localizer["Deduct if exceeded"]', badge(deductPerm)) +
+                        '</div>';
+                }
+                return '<div class="er-di at"><div class="er-di-inner">' +
+                    '<div class="er-di-hd">' +
+                        '<div class="er-di-hd-icon"><i class="ki-outline ki-time"></i></div>' +
+                        '<span class="er-di-hd-name">@Localizer["Attendance rule #"]' + (i + 1) + '</span>' +
+                    '</div>' +
+                    '<div class="er-sched">' +
+                        '<span class="er-sched-t">' + tStart + '</span>' +
+                        '<div class="er-sched-mid">' +
+                            '<div class="er-sched-track"></div>' +
+                            '<span class="er-sched-lbl">' + hrs + ' @Localizer["hrs / day"]</span>' +
+                        '</div>' +
+                        '<span class="er-sched-t">' + tEnd + '</span>' +
+                    '</div>' +
+                    '<div class="er-sched-break">' +
+                        '<i class="ki-outline ki-coffee" style="font-size:12px;color:#94a3b8;margin-right:4px"></i>' + breakTxt +
+                    '</div>' +
+                    '<div class="er-di-sep" style="margin-top:.75rem">@Localizer["Working days"]</div>' +
+                    '<div class="er-days">' + dayBoxes + '</div>' +
+                    '<div class="er-di-sep">@Localizer["Thresholds & penalties"]</div>' +
+                    '<div class="er-thresh">' +
+                        threshItem(grace,   '@Localizer["Grace min"]') +
+                        threshItem(warn,    '@Localizer["Warnings"]') +
+                        threshItem(absThrs, '@Localizer["Absent days"]') +
+                        threshItem(deduct,  '@Localizer["Deduct"]') +
+                    '</div>' +
+                    permHtml +
+                '</div></div>';
+            }).join('');
+        }
+
+        var html =
+            '<div class="er-pol-head">' +
+                '<div class="er-pol-head-left">' +
+                    '<div class="er-pol-icon"><i class="ki-outline ki-shield-tick fs-2"></i></div>' +
+                    '<div>' +
+                        '<div class="er-pol-title">' + name + '</div>' +
+                        (notes ? '<div class="er-pol-subtitle">' + notes + '</div>' : '') +
+                    '</div>' +
+                '</div>' +
+                '<div class="er-pol-counts">' +
+                    '<div class="er-pol-count lv"><span class="cn">' + leaves.length + '</span><span class="cl">@Localizer["Leaves"]</span></div>' +
+                    '<div class="er-pol-count sl"><span class="cn">' + sals.length   + '</span><span class="cl">@Localizer["Salary"]</span></div>' +
+                    '<div class="er-pol-count at"><span class="cn">' + atts.length   + '</span><span class="cl">@Localizer["Attendance"]</span></div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="er-ptabs">' +
+                '<button type="button" class="er-ptab active" data-ptab="leave">' +
+                    '<i class="ki-outline ki-calendar-tick"></i>@Localizer["Leaves"]<span class="er-ptab-badge">' + leaves.length + '</span>' +
+                '</button>' +
+                '<button type="button" class="er-ptab" data-ptab="salary">' +
+                    '<i class="ki-outline ki-dollar"></i>@Localizer["Salary"]<span class="er-ptab-badge">' + sals.length + '</span>' +
+                '</button>' +
+                '<button type="button" class="er-ptab" data-ptab="attend">' +
+                    '<i class="ki-outline ki-time"></i>@Localizer["Attendance"]<span class="er-ptab-badge">' + atts.length + '</span>' +
+                '</button>' +
+            '</div>' +
+            '<div class="er-ptab-panel active" data-ppanel="leave">'  + renderLeaveItems()  + '</div>' +
+            '<div class="er-ptab-panel"        data-ppanel="salary">' + renderSalaryItems() + '</div>' +
+            '<div class="er-ptab-panel"        data-ppanel="attend">' + renderAttendItems() + '</div>';
+
+        $('#erPolicyPreview').html(html);
+
+        $('#erPolicyPreview').off('click.ptab').on('click.ptab', '.er-ptab', function () {
+            var tab = $(this).data('ptab');
+            $('#erPolicyPreview .er-ptab').removeClass('active');
+            $(this).addClass('active');
+            $('#erPolicyPreview .er-ptab-panel').removeClass('active');
+            $('#erPolicyPreview [data-ppanel="' + tab + '"]').addClass('active');
+        });
+    }
+    function loadPolicyPreview(id) {
+        if (!id) { $('#erPolicyDetails').hide(); return; }
+        $('#erPolicyDetails').show();
+        $('#erPolicyPreview').html(
+            '<div style="display:flex;align-items:center;gap:10px;padding:1.5rem 0;justify-content:center;color:#94a3b8;font-size:13px">' +
+            '<span class="spinner-border spinner-border-sm text-primary"></span>' +
+            '<span>@Localizer["Loading policy details…"]</span></div>'
+        );
+        setTimeout(function () {
+            var el = document.getElementById('erPolicyDetails');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 80);
+        $.getJSON(URL_POLICY, { id: id })
+            .done(function (res) {
+                if (res && res.ok && res.data && res.data.item) renderPolicy(res.data.item);
+                else $('#erPolicyPreview').html('<div class="er-policy-empty"><i class="ki-outline ki-shield-tick fs-2"></i><span>@Localizer["No details available."]</span></div>');
+            })
+            .fail(function () {
+                $('#erPolicyPreview').html(
+                    '<div style="color:#D85A30;font-size:13px;display:flex;align-items:center;gap:6px">' +
+                    '<i class="ki-outline ki-warning-2"></i>@Localizer["Failed to load policy details."]</div>'
+                );
+            });
+    }
+
+    /* ── policy card click ───────────────────────────────────────── */
+    $(document).on('click', '.er-pcard', function () {
+        var $card = $(this);
+        var pid   = $card.data('pid');
+        $('.er-pcard').removeClass('selected');
+        $card.addClass('selected');
+        $('#PolicyID').val(pid);
+        $('#errPolicyID').removeClass('show').text('');
+        loadPolicyPreview(pid);
+    });
+
+    /* ── review summary ──────────────────────────────────────── */
+    function htmlEncode(value) {
+        return $('<div>').text(value || '').html();
+    }
+    function reviewItem(label, value) {
+        var cleanValue = value && $.trim(value) ? $.trim(value) : '';
+        var valHtml = cleanValue
+            ? '<span class="ri-val">' + htmlEncode(cleanValue) + '</span>'
+            : '<span class="ri-val empty">—</span>';
+        return '<div class="er-review-row">' +
+               '<span class="ri-lbl">' + label + '</span>' + valHtml + '</div>';
+    }
+    function reviewGroup(icon, iconBg, title, items) {
+        return '<div class="er-review-card">' +
+               '<div class="er-review-card-head">' +
+               '<div class="er-review-card-icon" style="background:' + iconBg + '">' +
+               '<i class="ki-solid ' + icon + '"></i>' +
+               '</div>' +
+               '<span class="er-review-card-title">' + title + '</span>' +
+               '</div>' +
+               '<div class="er-review-card-body">' + items + '</div>' +
+               '</div>';
+    }
+    function buildReview() {
+        var fullName = $.trim($('#FullName').val());
+        var initials = fullName.split(' ').filter(Boolean).map(function (w) { return w[0]; }).join('').toUpperCase().slice(0, 2) || '??';
+        var company  = selectedText('#EmpCompanyID');
+        var branch   = selectedText('#BranchID');
+        var job      = selectedText('#JobTitleID');
+
+        var $revAv  = $('#erReviewAvatar');
+        var $imgWrap = $('[data-kt-image-input="true"] .image-input-wrapper');
+        var bgStyle  = $imgWrap.length ? $imgWrap[0].style.backgroundImage : '';
+        var imgSrc   = bgStyle.replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+        if (imgSrc && imgSrc.indexOf('blank-image') === -1) {
+            $revAv.html('<img src="' + htmlEncode(imgSrc) + '" alt="@Localizer["Employee photo"]" style="width:100%;height:100%;object-fit:cover;border-radius:50%">');
+        } else {
+            $revAv.text(initials);
+        }
+
+        $('#erReviewName').text(fullName || '—');
+        $('#erRvJob').text(job || '—');
+        $('#erRvCompany').text(company || '—');
+        $('#erRvEmail').text($.trim($('#Email').val()) || '—');
+        $('#erRvPhone').text($.trim($('#PhoneNumber').val()) || '—');
+        $('#erRvJoining').text($.trim($('#DateOfJoining').val()) || '—');
+
+        var g1 = reviewGroup('ki-user', 'linear-gradient(135deg,#13433a,#6EA8DC)', '@Localizer["Personal information"]',
+            reviewItem('@Localizer["Full name"]',      $('#FullName').val()) +
+            reviewItem('@SR["Email"]',          $('#Email').val()) +
+            reviewItem('@Localizer["Phone number"]',   $('#PhoneNumber').val()) +
+            reviewItem('@Localizer["Gender"]',         selectedText('#Gender')) +
+            reviewItem('@Localizer["Marital status"]', selectedText('#MaritalStatus')) +
+            reviewItem('@Localizer["Date of birth"]',  $('#DateOfBirth').val())
+        );
+        var g2 = reviewGroup('ki-bank', 'linear-gradient(135deg,#BA7517,#E4A441)', '@Localizer["Organization assignment"]',
+            reviewItem('@SR["Company"]',        company) +
+            reviewItem('@SR["Branch"]',         branch) +
+            reviewItem('@SR["Department"]',     selectedText('#DepartmentID')) +
+            reviewItem('@SR["JobTitle"]',      job) +
+            reviewItem('@Localizer["Structure node"]', (function () {
+                var lbl = $.trim($('#erStructureBtn .er-tree-btn-label').text());
+                return (lbl === '@Localizer["Select structure node"]' || lbl === '') ? '' : lbl;
+            }()))
+        );
+        var g3 = reviewGroup('ki-shield-tick', 'linear-gradient(135deg,#0F6E56,#45B08C)', '@Localizer["Policy & dates"]',
+            reviewItem('@Localizer["Policy"]',         ($('.er-pcard.selected').data('name') || '')) +
+            reviewItem('@Localizer["Date of joining"]',$('#DateOfJoining').val()) +
+            reviewItem('@SR["Address"]',        $('#Address').val())
+        );
+        $('#erReviewBody').html('<div class="er-review-cards">' + g1 + g2 + g3 + '</div>');
+    }
+
+    /* ── stepper nav sync ────────────────────────────────────── */
+    var STEP_ICONS = ['ki-user','ki-bank','ki-shield-tick','ki-data'];
+
+    function updateNav(step) {
+        for (var i = 1; i <= TOTAL_STEPS; i++) {
+            var $circle = $('#erCircle' + i);
+            var $meta   = $('#erMeta'   + i);
+            var $line   = i < TOTAL_STEPS ? $('#erLine' + i) : null;
+
+            $circle.removeClass('idle active done');
+            $meta.removeClass('idle active done');
+
+            if (i < step) {
+                $circle.addClass('done').html('<i class="ki-outline ki-check"></i>');
+                $meta.addClass('done');
+                if ($line) $line.addClass('done');
+            } else if (i === step) {
+                $circle.addClass('active').html('<i class="ki-outline ' + STEP_ICONS[i-1] + ' fs-5"></i>');
+                $meta.addClass('active');
+                if ($line) $line.removeClass('done');
+            } else {
+                $circle.addClass('idle').html('<i class="ki-outline ' + STEP_ICONS[i-1] + ' fs-5"></i>');
+                $meta.addClass('idle');
+                if ($line) $line.removeClass('done');
+            }
+        }
+    }
+
+    function goToStep(n) {
+        $('[data-step-index]').removeClass('er-active');
+        var $step = $('[data-step-index="' + n + '"]');
+        $step.addClass('er-active');
+        currentStep = n;
+        updateNav(n);
+        /* re-trigger select2 width — it was 0 while the step was hidden */
+        $step.find('[data-control="select2"]').each(function () {
+            if ($(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2({ width: '100%' });
+            }
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ── validation ──────────────────────────────────────────── */
+    function showErr(id, msg) {
+        var $el = $('#' + id);
+        $el.addClass('show').text(msg);
+    }
+    function clearAllErr() {
+        $('.invalid-feedback').removeClass('show').text('');
+        $('.form-control-er, .form-select-er').removeClass('is-invalid is-valid');
+        /* select2 */
+        $('[data-control="select2"]').each(function () {
+            $(this).next('.select2').find('.select2-selection, .select2-selection--single').removeClass('is-invalid is-valid');
+        });
+        /* tree dropdown */
+        $('#erStructureBtn').removeClass('is-invalid is-valid');
+    }
+
+    function validateStep(idx) {
+        clearAllErr();
+        var ok = true;
+
+        function req(fieldId, errId, msg) {
+            var val = $.trim($('#' + fieldId).val());
+            if (!val) {
+                showErr(errId, msg);
+                $('#' + fieldId).removeClass('is-valid').addClass('is-invalid');
+                ok = false;
+            } else {
+                $('#' + fieldId).removeClass('is-invalid').addClass('is-valid');
+            }
+        }
+        function reqSelect(fieldId, errId, msg) {
+            var val = $('#' + fieldId).val();
+            if (!val) {
+                showErr(errId, msg);
+                $('#' + fieldId).next('.select2').find('.select2-selection, .select2-selection--single').removeClass('is-valid').addClass('is-invalid');
+                ok = false;
+            }
+            else {
+                $('#' + fieldId).next('.select2').find('.select2-selection, .select2-selection--single').removeClass('is-invalid').addClass('is-valid');
+            }
+        }
+        function reqTreeDropdown(fieldId, btnId, errId, msg) {
+            var val = $('#' + fieldId).val();
+            if (!val) {
+                showErr(errId, msg);
+                $('#' + btnId).removeClass('is-valid').addClass('is-invalid');
+                ok = false;
+            } else {
+                $('#' + btnId).removeClass('is-invalid').addClass('is-valid');
+            }
+        }
+
+        if (idx === 1) {
+            req('FirstName', 'errFirstName', '@Localizer["First name is required."]');
+            req('LastName',  'errLastName',  '@Localizer["Last name is required."]');
+            var email = $.trim($('#Email').val());
+            if (!email) {
+                showErr('errEmail', '@Localizer["Email is required."]');
+                $('#Email').addClass('is-invalid');
+                ok = false;
+            } else {
+                try {
+                    var emailRe = new RegExp('^[^\\s' + String.fromCharCode(64) + ']+' + String.fromCharCode(64) + '[^\\s' + String.fromCharCode(64) + ']+\\.[^\\s' + String.fromCharCode(64) + ']+$');
+                    if (!emailRe.test(email)) {
+                        showErr('errEmail', '@Localizer["Please enter a valid email address."]');
+                        $('#Email').removeClass('is-valid').addClass('is-invalid');
+                        ok = false;
+                    } else {
+                        $('#Email').removeClass('is-invalid').addClass('is-valid');
+                    }
+                } catch (e) {
+                    showErr('errEmail', '@Localizer["Please enter a valid email address."]');
+                    $('#Email').removeClass('is-valid').addClass('is-invalid');
+                    ok = false;
+                }
+            }
+            var fileInput = document.getElementById('ProfileImage');
+            var imgVal = $('#ProfileImage').val();
+            if (imgVal && !/\.(jpg|jpeg|png)$/i.test(imgVal)) {
+                showErr('errProfileImage', '@Localizer["Only JPG, JPEG, PNG files allowed."]');
+                ok = false;
+            }
+            if (fileInput && fileInput.files && fileInput.files[0] && fileInput.files[0].size > 2 * 1024 * 1024) {
+                showErr('errProfileImage', '@Localizer["Maximum allowed image size is 2 MB."]');
+                ok = false;
+            }
+        }
+        if (idx === 2) {
+            reqSelect('EmpCompanyID',             'errEmpCompanyID',             '@Localizer["Please select a company."]');
+            reqSelect('JobTitleID',               'errJobTitleID',               '@Localizer["Please select a job title."]');
+            reqSelect('DepartmentID',             'errDepartmentID',             '@Localizer["Please select a department."]');
+            reqTreeDropdown('AdministrativeStructureID','erStructureBtn','errAdministrativeStructureID','@Localizer["Please select administrative structure."]');
+        }
+        if (idx === 3) {
+            if (!$.trim($('#PolicyID').val())) {
+                showErr('errPolicyID', '@Localizer["Please select a policy."]');
+                ok = false;
+            }
+        }
+        return ok;
+    }
+
+    /* ── nav buttons ─────────────────────────────────────────── */
+    $('#erNext1').on('click', function () {
+        if (!validateStep(1)) return;
+        goToStep(2);
+    });
+    $('#erBack2').on('click', function () { goToStep(1); });
+    $('#erNext2').on('click', function () {
+        if (!validateStep(2)) return;
+        goToStep(3);
+    });
+    $('#erBack3').on('click', function () { goToStep(2); });
+    $('#erNext3').on('click', function () {
+        if (!validateStep(3)) return;
+        buildReview();
+        goToStep(4);
+    });
+    $('#erBack4').on('click', function () { goToStep(3); });
+
+    /* ── submit ──────────────────────────────────────────────── */
+    $('#erSaveBtn').on('click', function () {
+        if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+            alert('@Localizer["Please review and complete all required fields before saving."]');
+            return;
+        }
+        var $btn = $(this);
+        $btn.addClass('loading').prop('disabled', true);
+
+        var formData = new FormData(document.getElementById('employeeRegistrationForm'));
+        var token    = $('input[name="__RequestVerificationToken"]').val();
+
+        $.ajax({
+            url: URL_SAVE, type: 'POST',
+            data: formData, processData: false, contentType: false,
+            headers: { 'RequestVerificationToken': token },
+            success: function (res) {
+                $btn.removeClass('loading').prop('disabled', false);
+                if (res && res.success === true) {
+                    var go = function () {
+                        if (res.redirectUrl) window.location.href = res.redirectUrl;
+                    };
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success', title: '@Localizer["Saved successfully"]',
+                            html: '@Localizer["Employee has been saved successfully."]',
+                            confirmButtonText: '@Localizer["OK"]',
+                            customClass: { confirmButton: 'btn btn-primary' },
+                            buttonsStyling: false
+                        }).then(go);
+                    } else {
+                        alert('@Localizer["Employee saved successfully."]');
+                        go();
+                    }
+                    return;
+                }
+                var msg = (res && res.message) ? res.message : '@Localizer["Save failed. Please try again."]';
+                if (res && res.errors && res.errors.length) {
+                    msg += '<br><ul class="text-start mb-0">';
+                    $.each(res.errors, function (_, e) { msg += '<li>' + e + '</li>'; });
+                    msg += '</ul>';
+                }
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error', title: '@Localizer["Save failed"]', html: msg,
+                        confirmButtonText: '@Localizer["OK"]',
+                        customClass: { confirmButton: 'btn btn-light-danger' },
+                        buttonsStyling: false
+                    });
+                } else {
+                    alert(msg);
+                }
+            },
+            error: function (xhr) {
+                $btn.removeClass('loading').prop('disabled', false);
+                var msg = '@Localizer["An unexpected error occurred while saving."]';
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: '@SR["Error"]', html: msg,
+                        confirmButtonText: '@Localizer["OK"]',
+                        customClass: { confirmButton: 'btn btn-light-danger' },
+                        buttonsStyling: false });
+                } else {
+                    alert(msg);
+                }
+            }
+        });
+    });
+
+    /* ── company / branch cascade ────────────────────────────── */
+    $('#EmpCompanyID').on('change', function () {
+        var cid = $(this).val();
+        $('#BranchID, #DepartmentID').val('').trigger('change.select2');
+        $('#AdministrativeStructureID').val('');
+        $('#erStructureBtn .er-tree-btn-label').text('@Localizer["Select structure node"]').addClass('placeholder');
+        $('#erStructureBtn').removeClass('is-invalid is-valid');
+        closeStructureTree();
+        loadBranches(cid, '');
+        loadHierarchicals(cid || null);
+        buildBreadcrumb();
+    });
+    $('#BranchID, #DepartmentID, #JobTitleID')
+        .on('change', function () { buildBreadcrumb(); });
+
+    /* ── init ────────────────────────────────────────────────── */
+    syncFullName();
+    loadCompanies();
+    loadBranches(INIT_COMPANY || null);
+    loadJobTitles();
+    loadHierarchicals(INIT_COMPANY || null);
+    loadPolicies();
+    goToStep(1);
+    buildBreadcrumb();
+
+})(jQuery);
+</script>
+}

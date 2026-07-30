@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Save these changes?" xml:space="preserve">
+    <value>Save these changes?</value>
+  </data>
+  <data name="Edit item" xml:space="preserve">
+    <value>Edit item</value>
+  </data>
+  <data name="Add item" xml:space="preserve">
+    <value>Add item</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Thumbnail" xml:space="preserve">
+    <value>Thumbnail</value>
+  </data>
+  <data name="Change image" xml:space="preserve">
+    <value>Change image</value>
+  </data>
+  <data name="Remove image" xml:space="preserve">
+    <value>Remove image</value>
+  </data>
+  <data name="Set the item image. Formats: png, jpg, jpeg, webp, avif." xml:space="preserve">
+    <value>Set the item image. Formats: png, jpg, jpeg, webp, avif.</value>
+  </data>
+  <data name="Inactive items are hidden from purchase and sales operations." xml:space="preserve">
+    <value>Inactive items are hidden from purchase and sales operations.</value>
+  </data>
+  <data name="Tracking" xml:space="preserve">
+    <value>Tracking</value>
+  </data>
+  <data name="Track batch" xml:space="preserve">
+    <value>Track batch</value>
+  </data>
+  <data name="Track expiry" xml:space="preserve">
+    <value>Track expiry</value>
+  </data>
+  <data name="Track serial" xml:space="preserve">
+    <value>Track serial</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>Opening</value>
+  </data>
+  <data name="Receipt" xml:space="preserve">
+    <value>Receipt</value>
+  </data>
+  <data name="Issue" xml:space="preserve">
+    <value>Issue</value>
+  </data>
+  <data name="Adjustment" xml:space="preserve">
+    <value>Adjustment</value>
+  </data>
+  <data name="Purchase" xml:space="preserve">
+    <value>Purchase</value>
+  </data>
+  <data name="Sale" xml:space="preserve">
+    <value>Sale</value>
+  </data>
+  <data name="Transfer in" xml:space="preserve">
+    <value>Transfer in</value>
+  </data>
+  <data name="Transfer out" xml:space="preserve">
+    <value>Transfer out</value>
+  </data>
+  <data name="Item analytics" xml:space="preserve">
+    <value>Item analytics</value>
+  </data>
+  <data name="Ledger" xml:space="preserve">
+    <value>Ledger</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>On hand</value>
+  </data>
+  <data name="Avg cost" xml:space="preserve">
+    <value>Avg cost</value>
+  </data>
+  <data name="Avg purchase" xml:space="preserve">
+    <value>Avg purchase</value>
+  </data>
+  <data name="Last op" xml:space="preserve">
+    <value>Last op</value>
+  </data>
+  <data name="On hand per warehouse" xml:space="preserve">
+    <value>On hand per warehouse</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="% of total" xml:space="preserve">
+    <value>% of total</value>
+  </data>
+  <data name="Last purchase" xml:space="preserve">
+    <value>Last purchase</value>
+  </data>
+  <data name="Last entry" xml:space="preserve">
+    <value>Last entry</value>
+  </data>
+  <data name="Last exit" xml:space="preserve">
+    <value>Last exit</value>
+  </data>
+  <data name="Balance over time" xml:space="preserve">
+    <value>Balance over time</value>
+  </data>
+  <data name="No movements yet" xml:space="preserve">
+    <value>No movements yet</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Item code" xml:space="preserve">
+    <value>Item code</value>
+  </data>
+  <data name="Barcode" xml:space="preserve">
+    <value>Barcode</value>
+  </data>
+  <data name="Generate" xml:space="preserve">
+    <value>Generate</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>Name (AR)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>Name (EN)</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>Select</value>
+  </data>
+  <data name="Base UoM" xml:space="preserve">
+    <value>Base UoM</value>
+  </data>
+  <data name="Composite item (Kit)" xml:space="preserve">
+    <value>Composite item (Kit)</value>
+  </data>
+  <data name="Composite type" xml:space="preserve">
+    <value>Composite type</value>
+  </data>
+  <data name="Bundle — explodes on sale" xml:space="preserve">
+    <value>Bundle — explodes on sale</value>
+  </data>
+  <data name="Assembly — own stock" xml:space="preserve">
+    <value>Assembly — own stock</value>
+  </data>
+  <data name="Production method" xml:space="preserve">
+    <value>Production method</value>
+  </data>
+  <data name="Order-based (staged)" xml:space="preserve">
+    <value>Order-based (staged)</value>
+  </data>
+  <data name="Immediate" xml:space="preserve">
+    <value>Immediate</value>
+  </data>
+  <data name="Staged: plan → issue materials to WIP → receive. Immediate: consume materials and produce in one click, no stages." xml:space="preserve">
+    <value>Staged: plan → issue materials to WIP → receive. Immediate: consume materials and produce in one click, no stages.</value>
+  </data>
+  <data name="Pricing &amp; costing" xml:space="preserve">
+    <value>Pricing &amp; costing</value>
+  </data>
+  <data name="Purchase UoM" xml:space="preserve">
+    <value>Purchase UoM</value>
+  </data>
+  <data name="Sales UoM" xml:space="preserve">
+    <value>Sales UoM</value>
+  </data>
+  <data name="Costing" xml:space="preserve">
+    <value>Costing</value>
+  </data>
+  <data name="From category" xml:space="preserve">
+    <value>From category</value>
+  </data>
+  <data name="Moving Average" xml:space="preserve">
+    <value>Moving Average</value>
+  </data>
+  <data name="Sales price" xml:space="preserve">
+    <value>Sales price</value>
+  </data>
+  <data name="Opening cost" xml:space="preserve">
+    <value>Opening cost</value>
+  </data>
+  <data name="Tax code" xml:space="preserve">
+    <value>Tax code</value>
+  </data>
+  <data name="Min margin % (override)" xml:space="preserve">
+    <value>Min margin % (override)</value>
+  </data>
+  <data name="settings default" xml:space="preserve">
+    <value>settings default</value>
+  </data>
+  <data name="Leave empty to use the global floor from inventory settings." xml:space="preserve">
+    <value>Leave empty to use the global floor from inventory settings.</value>
+  </data>
+  <data name="Units &amp; barcodes" xml:space="preserve">
+    <value>Units &amp; barcodes</value>
+  </data>
+  <data name="Stock is kept in the base unit. Define larger units (carton, dozen…) and how many base units each equals, with an optional barcode per unit." xml:space="preserve">
+    <value>Stock is kept in the base unit. Define larger units (carton, dozen…) and how many base units each equals, with an optional barcode per unit.</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="= base units" xml:space="preserve">
+    <value>= base units</value>
+  </data>
+  <data name="Add unit" xml:space="preserve">
+    <value>Add unit</value>
+  </data>
+  <data name="Components (BOM)" xml:space="preserve">
+    <value>Components (BOM)</value>
+  </data>
+  <data name="Manufactured item" xml:space="preserve">
+    <value>Manufactured item</value>
+  </data>
+  <data name="Produced via a work order from the components below" xml:space="preserve">
+    <value>Produced via a work order from the components below</value>
+  </data>
+  <data name="Manufactured from" xml:space="preserve">
+    <value>Manufactured from</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>Component</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>Qty</value>
+  </data>
+  <data name="Scrap %" xml:space="preserve">
+    <value>Scrap %</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>Unit cost</value>
+  </data>
+  <data name="No components yet — add them below." xml:space="preserve">
+    <value>No components yet — add them below.</value>
+  </data>
+  <data name="Routing operations" xml:space="preserve">
+    <value>Routing operations</value>
+  </data>
+  <data name="Op" xml:space="preserve">
+    <value>Op</value>
+  </data>
+  <data name="Standard cost per unit" xml:space="preserve">
+    <value>Standard cost per unit</value>
+  </data>
+  <data name="Materials (BOM)" xml:space="preserve">
+    <value>Materials (BOM)</value>
+  </data>
+  <data name="Labor (routing)" xml:space="preserve">
+    <value>Labor (routing)</value>
+  </data>
+  <data name="Overhead (routing)" xml:space="preserve">
+    <value>Overhead (routing)</value>
+  </data>
+  <data name="Standard total" xml:space="preserve">
+    <value>Standard total</value>
+  </data>
+  <data name="Edit routing" xml:space="preserve">
+    <value>Edit routing</value>
+  </data>
+  <data name="Standard cost is indicative (current avg component cost + routing time). Actual cost is computed when the work order is completed." xml:space="preserve">
+    <value>Standard cost is indicative (current avg component cost + routing time). Actual cost is computed when the work order is completed.</value>
+  </data>
+  <data name="Components of the composite item. On sale (bundle) or assembly, these are deducted from stock." xml:space="preserve">
+    <value>Components of the composite item. On sale (bundle) or assembly, these are deducted from stock.</value>
+  </data>
+  <data name="Add component" xml:space="preserve">
+    <value>Add component</value>
+  </data>
+</root>

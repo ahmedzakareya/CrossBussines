@@ -1,0 +1,74 @@
+@using CrossBuy.Controllers
+@using CrossBuy.Models.Context.Inventory
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<InvReportRow>
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
+    var vendors = ViewBag.Vendors as List<Vendor> ?? new();
+    int? fWh = ViewBag.FilterWarehouseId;
+}
+<form asp-action="GeneratePO" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
+    <input type="hidden" name="linesJson" id="linesJson" />
+    <input type="hidden" name="warehouseId" value="@fWh" />
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Reorder planning"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Planning"]</li></ul></div>
+        <a href="@Url.Action("ReorderSettings","Inventory")" class="btn btn-light"><i class="ki-outline ki-setting-2 fs-2"></i>@Localizer["Reorder settings"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush">
+            <div class="card-header align-items-center py-5 gap-3">
+                <div class="card-title"><h3 class="fw-bold">@Localizer["Items at/below reorder point"]</h3></div>
+                <div class="card-toolbar d-flex align-items-center gap-3 flex-wrap">
+                    <select id="whFilter" class="form-select form-select-solid w-175px" data-control="select2"><option value="">@Localizer["All WH"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code</option> }</select>
+                    <select name="vendorId" class="form-select form-select-solid w-200px" data-control="select2" data-placeholder="@SR["Vendor"]"><option value="">@Localizer["Select vendor"]</option>@foreach (var v in vendors) { <option value="@v.ID">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select>
+                    <button type="button" class="btn btn-primary" id="genPo"><i class="ki-outline ki-handcart fs-2"></i>@Localizer["Generate PO"]</button>
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3" id="t">
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                        <th class="w-40px"><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" id="chkAll" checked /></div></th>
+                        <th>@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th>@Localizer["WH"]</th>
+                        <th class="text-end">@Localizer["On hand"]</th><th class="text-end">@Localizer["Reorder"]</th><th class="text-end">@Localizer["Suggested"]</th><th class="text-end">@Localizer["Cost"]</th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var r in Model)
+                    {
+                        <tr data-item="@r.ItemId" data-name="@r.ItemName" data-cost="@r.Cost.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                            <td><div class="form-check form-check-sm form-check-custom form-check-solid"><input class="form-check-input rowchk" type="checkbox" checked /></div></td>
+                            <td class="fw-bold text-gray-800">@r.ItemCode</td><td>@r.ItemName</td><td class="text-muted">@r.Warehouse</td>
+                            <td class="text-end fw-bold @(r.Qty<=0?"text-danger":"")">@r.Qty.ToString("0.##")</td>
+                            <td class="text-end text-muted">@r.ReorderPoint.ToString("0.##")</td>
+                            <td class="text-end"><input type="number" step="0.01" min="0" class="form-control form-control-solid form-control-sm sug text-end w-100px ms-auto" value="@r.Suggested.ToString(System.Globalization.CultureInfo.InvariantCulture)"></td>
+                            <td class="text-end text-muted">@r.Cost.ToString("0.00")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+                @if (Model.Count == 0) { <div class="text-center text-muted py-10"><i class="ki-outline ki-check-circle fs-3x text-primary mb-2 d-block"></i>@Localizer["Nothing below reorder 👍 — set thresholds from Reorder settings."]</div> }
+            </div>
+        </div>
+    </div></div>
+</form>
+@section Scripts {
+<script>
+(function(){
+  var wf=document.getElementById('whFilter');
+  if(wf){var go=function(){location.href='?warehouseId='+(wf.value||'');};if(window.jQuery&&jQuery(wf).data('select2'))jQuery(wf).on('change',go);else wf.addEventListener('change',go);}
+  var all=document.getElementById('chkAll');
+  if(all)all.addEventListener('change',function(){[].slice.call(document.querySelectorAll('.rowchk')).forEach(function(c){c.checked=all.checked;});});
+  document.getElementById('genPo').addEventListener('click',function(){
+    var form=document.getElementById('f'); var vendor=form.querySelector('[name=vendorId]').value;
+    if(!vendor){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Select a vendor"].Value)));return;}
+    var lines=[];[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(tr){var chk=tr.querySelector('.rowchk');var q=parseFloat(tr.querySelector('.sug').value)||0;if(chk&&chk.checked&&q>0)lines.push({itemId:parseInt(tr.getAttribute('data-item')),itemName:tr.getAttribute('data-name'),suggested:q,cost:parseFloat(tr.getAttribute('data-cost'))||0});});
+    if(!lines.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Select an item"].Value)));return;}
+    document.getElementById('linesJson').value=JSON.stringify(lines);form.submit();
+  });
+})();
+</script>
+}

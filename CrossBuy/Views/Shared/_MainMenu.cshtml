@@ -1,0 +1,139 @@
+@using CrossBuy.Models.Menu
+@using CrossBuy.BL
+@model List<MenuCategory>
+@inject IInventoryAccessService InvAccess
+@inject IAccountingAccessService AccAccess
+@inject ICrmAccessService CrmAccess
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var path = (Context.Request.Path.Value ?? "").TrimEnd('/').ToLowerInvariant();
+    // permission hook: items hide for users lacking the role (RBAC is bootstrap-open until the first role is set)
+    bool canManage = true, canAccManage = true, canCrmManage = true;
+    try { canManage = await InvAccess.CanAsync("manage"); } catch { canManage = true; }
+    try { canAccManage = await AccAccess.CanAsync("manage"); } catch { canAccManage = true; }
+    try { canCrmManage = await CrmAccess.CanAsync("manage"); } catch { canCrmManage = true; }
+    bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, _ => true };
+    bool IsActive(MenuItem i)
+    {
+        if (i.Soon) { return false; }   // coming-soon placeholders share the dashboard URL — never let them steal the active state
+        var href = (Url.Action(i.Action, i.Controller) ?? "").TrimEnd('/').ToLowerInvariant();
+        if (href.Length > 0 && path == href) { return true; }
+        // a hub link also lights up on its drill-down screens (same controller, aliased actions)
+        foreach (var a in i.Aliases)
+        {
+            var ah = (Url.Action(a, i.Controller) ?? "").TrimEnd('/').ToLowerInvariant();
+            if (ah.Length > 0 && path == ah) { return true; }
+        }
+        return false;
+    }
+    var menu = Model ?? new List<MenuCategory>();
+}
+<!--begin::Menu search-->
+<div class="menu-item px-3 mb-2">
+    <div class="position-relative"><i class="ki-outline ki-magnifier fs-4 position-absolute ms-3 mt-3 text-muted"></i>
+        <input type="text" id="mainMenuSearch" class="form-control form-control-solid form-control-sm ps-10" placeholder="@Localizer["Search menu"]" autocomplete="off" />
+    </div>
+</div>
+<!--end::Menu search-->
+@foreach (var cat in menu)
+{
+    var items = cat.Items.Where(ItemVisible).ToList();
+    if (items.Count == 0) { continue; }
+    var here = items.Any(IsActive);
+    <div class="menu-item menu-accordion cb-cat @(here ? "here show" : "")" data-kt-menu-trigger="click">
+        <span class="menu-link">
+            <span class="menu-icon"><i class="@cat.Icon fs-2"></i></span>
+            <span class="menu-title">@SR[cat.LabelEn]</span>
+            <span class="menu-arrow"></span>
+        </span>
+        <div class="menu-sub menu-sub-accordion">
+            @foreach (var it in items)
+            {
+                <div class="menu-item">
+                    <a class="menu-link @(IsActive(it) ? "active" : "")" href="@Url.Action(it.Action, it.Controller)">
+                        <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                        <span class="menu-title @(it.Soon ? "text-muted" : "")">@SR[it.LabelEn]</span>
+                        @if (it.Soon)
+                        {
+                            <span class="badge badge-light-secondary fs-9 fw-semibold">@(isAr ? "قريبًا" : "Soon")</span>
+                        }
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!--begin::Systems quick-switch (cross-module navigation, like the LABELS section)-->
+@{
+    // manufacturing screens live under /Inventory but are their own system — match all of their actions
+    string[] manufSegs = { "/workorder", "/manufdashboard", "/workcenter", "/routing", "/productionplanning", "/plandetails", "/manufreports", "/newworkorder" };
+    bool isManufPath = manufSegs.Any(seg => path.Contains(seg));
+    var sysItems = new (string ar, string en, string url, string color, string key)[] {
+        ("المخازن", "Inventory", Url.Action("Index","Inventory") ?? "#", "#e7b53c", "inv"),
+        ("التصنيع", "Manufacturing", Url.Action("ManufDashboard","Inventory") ?? "#", "#d4793a", "manuf"),
+        ("المحاسبة", "Accounting", Url.Action("Index","Accounting") ?? "#", "#3aa76a", "acc"),
+        ("الإدارة", "Back-office", Url.Action("Index","Admin") ?? "#", "#27a99a", "svc"),
+        ("الموظفين", "People", Url.Action("Dashboard","People") ?? "#", "#7fd6a6", "ppl"),
+        ("CRM", "CRM", Url.Action("Index","Crm") ?? "#", "#8e7bef", "crm"),
+        ("المطعم", "Restaurant", Url.Action("Dashboard","Pos") ?? "#", "#e8532f", "rest"),
+        ("هايبر ماركت", "Hypermarket", Url.Action("Dashboard","Hyper") ?? "#", "#e0873a", "hyper"),
+        ("المهام", "Tasks", Url.Action("Index","Tasks") ?? "#", "#4b9fd6", "tasks"),
+        ("المشاريع والمقاولات", "Projects & Contracting", Url.Action("Dashboard","Project") ?? "#", "#e0a13a", "proj"),
+    };
+    string SysActive(string url, string key)
+    {
+        if (key == "manuf") return isManufPath ? "active" : "";
+        if (key == "rest") return path.StartsWith("/pos") ? "active" : "";   // Restaurant = all /pos setup + operational screens
+        if (key == "hyper") return path.StartsWith("/hyper") ? "active" : "";   // Hypermarket = back-office /hyper + lane /hyper/pos
+        if (key == "svc") return (path.StartsWith("/admin") || path.StartsWith("/service")) ? "active" : "";   // Back-office = HR dashboard (/admin) + setup (/service)
+        if (key == "tasks") return path.StartsWith("/tasks") ? "active" : "";
+        if (key == "proj") return path.StartsWith("/project") ? "active" : "";   // Projects & Contracting system
+        var u = url.TrimEnd('/').ToLowerInvariant(); var seg = u.Replace("/index","").Replace("/dashboard","");
+        if (key == "inv") return (!isManufPath && (path == u || path.StartsWith("/inventory"))) ? "active" : "";   // inventory ≠ manufacturing
+        return (path == u || (seg.Length > 1 && path.StartsWith(seg))) ? "active" : "";
+    }
+}
+<div class="menu-item pt-5 px-3">
+    <div class="menu-content"><span class="menu-heading fw-bold text-uppercase fs-7 text-muted">@Localizer["Systems"]</span></div>
+</div>
+@foreach (var s in sysItems)
+{
+    var act = SysActive(s.url, s.key);
+    <div class="menu-item px-3">
+        <a class="menu-link cb-sys @act" href="@s.url">
+            <span class="menu-icon"><span class="cb-dot" style="background:@s.color"></span></span>
+            <span class="menu-title fw-semibold">@SR[s.en]</span>
+        </a>
+    </div>
+}
+<div class="menu-item px-3 mb-4">
+    <a class="menu-link cb-sys" href="@(Url.Action("Choose","Portal") ?? "#")">
+        <span class="menu-icon"><i class="ki-outline ki-element-11 fs-5 text-muted"></i></span>
+        <span class="menu-title fw-semibold text-muted">@Localizer["All systems"]</span>
+    </a>
+</div>
+<!--end::Systems quick-switch-->
+<script>
+(function () {
+    var box = document.getElementById('mainMenuSearch');
+    if (!box) return;
+    box.addEventListener('input', function () {
+        var q = (box.value || '').trim().toLowerCase();
+        var cats = document.querySelectorAll('.cb-cat');
+        cats.forEach(function (cat) {
+            var any = false;
+            cat.querySelectorAll('.menu-sub .menu-item').forEach(function (li) {
+                var t = (li.textContent || '').trim().toLowerCase();
+                var show = !q || t.indexOf(q) !== -1;
+                li.style.display = show ? '' : 'none';
+                if (show) any = true;
+            });
+            cat.style.display = any ? '' : 'none';
+            if (q && any) cat.classList.add('show'); else if (q) cat.classList.remove('show');
+        });
+    });
+})();
+</script>

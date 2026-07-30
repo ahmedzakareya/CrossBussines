@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="— none —" xml:space="preserve">
+    <value>— غير محدد —</value>
+  </data>
+  <data name="Cash" xml:space="preserve">
+    <value>نقدي</value>
+  </data>
+  <data name="Card" xml:space="preserve">
+    <value>بطاقة</value>
+  </data>
+  <data name="Mada" xml:space="preserve">
+    <value>مدى</value>
+  </data>
+  <data name="Meeza" xml:space="preserve">
+    <value>ميزة</value>
+  </data>
+  <data name="On account" xml:space="preserve">
+    <value>آجل (على الحساب)</value>
+  </data>
+  <data name="Voucher" xml:space="preserve">
+    <value>قسيمة</value>
+  </data>
+  <data name="Payment methods" xml:space="preserve">
+    <value>طرق الدفع</value>
+  </data>
+  <data name="Define per-branch payment methods and map each to its account — setup only, no payment or GL now." xml:space="preserve">
+    <value>تعريف طرق الدفع لكل فرع وربط كل طريقة بحسابها — إعداد فقط، لا دفع ولا قيد الآن.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>لا توجد فروع لهذه الشركة.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>اختر الشركة</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>اختر الفرع</value>
+  </data>
+  <data name="Select a branch to manage payment methods." xml:space="preserve">
+    <value>اختر الفرع لإدارة طرق الدفع.</value>
+  </data>
+  <data name="Add payment method" xml:space="preserve">
+    <value>إضافة طريقة دفع</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Method" xml:space="preserve">
+    <value>الطريقة</value>
+  </data>
+  <data name="Cash / Card / KNet …" xml:space="preserve">
+    <value>Cash / Card / KNet …</value>
+  </data>
+  <data name="Display name (optional)" xml:space="preserve">
+    <value>اسم العرض (اختياري)</value>
+  </data>
+  <data name="e.g. KNet" xml:space="preserve">
+    <value>مثلاً: كي-نت</value>
+  </data>
+  <data name="Target account" xml:space="preserve">
+    <value>الحساب الوجهة</value>
+  </data>
+  <data name="— pick account —" xml:space="preserve">
+    <value>— اختر حسابًا —</value>
+  </data>
+  <data name="Cash→cash box · Card→card clearing · KNet→KNet clearing · On account→AR." xml:space="preserve">
+    <value>نقدي→الصندوق · بطاقة→وسيط البطاقة · كي-نت→وسيط كي-نت · آجل→الذمم.</value>
+  </data>
+  <data name="Sort" xml:space="preserve">
+    <value>الترتيب</value>
+  </data>
+  <data name="Branch payment methods" xml:space="preserve">
+    <value>طرق الدفع للفرع</value>
+  </data>
+  <data name="No payment methods yet." xml:space="preserve">
+    <value>لا طرق دفع بعد.</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>موقوف</value>
+  </data>
+  <data name="Delete payment method?" xml:space="preserve">
+    <value>حذف طريقة الدفع؟</value>
+  </data>
+  <data name="Edit payment method" xml:space="preserve">
+    <value>تعديل طريقة الدفع</value>
+  </data>
+</root>

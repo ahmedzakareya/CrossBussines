@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Work orders" xml:space="preserve">
+    <value>Ordres de fabrication</value>
+  </data>
+  <data name="Routing" xml:space="preserve">
+    <value>Gamme</value>
+  </data>
+  <data name="Release? Materials will be issued to WIP." xml:space="preserve">
+    <value>Lancer ? Les matières seront sorties vers le WIP.</value>
+  </data>
+  <data name="Release (issue to WIP)" xml:space="preserve">
+    <value>Lancer (sortie vers WIP)</value>
+  </data>
+  <data name="Complete directly? Issue materials, produce the item and post the JE in one step." xml:space="preserve">
+    <value>Terminer directement ? Sortir les matières, produire l'article et comptabiliser l'écriture en une seule étape.</value>
+  </data>
+  <data name="Complete directly" xml:space="preserve">
+    <value>Terminer directement</value>
+  </data>
+  <data name="Cancel this work order?" xml:space="preserve">
+    <value>Annuler cet ordre de fabrication ?</value>
+  </data>
+  <data name="Cancel WO" xml:space="preserve">
+    <value>Annuler l'OF</value>
+  </data>
+  <data name="Complete? Materials will be consumed, the item produced and the JE posted." xml:space="preserve">
+    <value>Terminer ? Les matières seront consommées, l'article produit et l'écriture comptabilisée.</value>
+  </data>
+  <data name="Complete production" xml:space="preserve">
+    <value>Terminer la production</value>
+  </data>
+  <data name="Produce at standard cost? (on finalize the variance posts to 520109)" xml:space="preserve">
+    <value>Produire au coût standard ? (à la finalisation, l'écart est comptabilisé sur 520109)</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>Partiel</value>
+  </data>
+  <data name="qty" xml:space="preserve">
+    <value>qté</value>
+  </data>
+  <data name="finalize" xml:space="preserve">
+    <value>finaliser</value>
+  </data>
+  <data name="Produce" xml:space="preserve">
+    <value>Produire</value>
+  </data>
+  <data name="Journal entry" xml:space="preserve">
+    <value>Écriture comptable</value>
+  </data>
+  <data name="Work order" xml:space="preserve">
+    <value>Ordre de fabrication</value>
+  </data>
+  <data name="Save changes?" xml:space="preserve">
+    <value>Enregistrer les modifications ?</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>Qté</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Début</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>Fin</value>
+  </data>
+  <data name="Labor" xml:space="preserve">
+    <value>Main-d'œuvre</value>
+  </data>
+  <data name="Overhead" xml:space="preserve">
+    <value>Frais généraux</value>
+  </data>
+  <data name="Components (BOM)" xml:space="preserve">
+    <value>Composants (BOM)</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>Composant</value>
+  </data>
+  <data name="Planned qty" xml:space="preserve">
+    <value>Qté planifiée</value>
+  </data>
+  <data name="Issued" xml:space="preserve">
+    <value>Sorti</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>Coût unitaire</value>
+  </data>
+  <data name="No components" xml:space="preserve">
+    <value>Aucun composant</value>
+  </data>
+  <data name="Loaded" xml:space="preserve">
+    <value>Chargé</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Hrs" xml:space="preserve">
+    <value>H</value>
+  </data>
+  <data name="Rate" xml:space="preserve">
+    <value>Taux</value>
+  </data>
+  <data name="WHT" xml:space="preserve">
+    <value>WHT</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>Externe</value>
+  </data>
+  <data name="Applied" xml:space="preserve">
+    <value>Appliqué</value>
+  </data>
+  <data name="Remove this labor line and reverse its entry?" xml:space="preserve">
+    <value>Supprimer cette ligne de main-d'œuvre et contrepasser son écriture ?</value>
+  </data>
+  <data name="No labor loaded yet." xml:space="preserve">
+    <value>Aucune main-d'œuvre chargée pour l'instant.</value>
+  </data>
+  <data name="External worker" xml:space="preserve">
+    <value>Travailleur externe</value>
+  </data>
+  <data name="Applied (no source)" xml:space="preserve">
+    <value>Appliqué (sans source)</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>Sélectionner</value>
+  </data>
+  <data name="Worker name" xml:space="preserve">
+    <value>Nom du travailleur</value>
+  </data>
+  <data name="Hours" xml:space="preserve">
+    <value>Heures</value>
+  </data>
+  <data name="Rate/hr" xml:space="preserve">
+    <value>Taux/h</value>
+  </data>
+  <data name="auto for employee" xml:space="preserve">
+    <value>auto pour l'employé</value>
+  </data>
+  <data name="WHT (optional)" xml:space="preserve">
+    <value>WHT (facultatif)</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Aucun</value>
+  </data>
+  <data name="Pay account" xml:space="preserve">
+    <value>Compte de paiement</value>
+  </data>
+  <data name="FX rate" xml:space="preserve">
+    <value>Taux de change</value>
+  </data>
+  <data name="auto" xml:space="preserve">
+    <value>auto</value>
+  </data>
+  <data name="Load" xml:space="preserve">
+    <value>Charger</value>
+  </data>
+  <data name="Employee: Dr WIP / Cr wage expense (reclass). External: Dr WIP / Cr cash or payable (+WHT). Foreign: rate in foreign, converted to functional at entry (Buy rate) — WIP stays functional." xml:space="preserve">
+    <value>Employé : Dr WIP / Cr charge de salaires (reclassement). Externe : Dr WIP / Cr trésorerie ou dette (+WHT). Devise étrangère : taux en devise, converti en devise fonctionnelle à la saisie (taux d'achat) — le WIP reste en devise fonctionnelle.</value>
+  </data>
+  <data name="Cost summary" xml:space="preserve">
+    <value>Récapitulatif des coûts</value>
+  </data>
+  <data name="Materials" xml:space="preserve">
+    <value>Matières</value>
+  </data>
+  <data name="Sourced labor" xml:space="preserve">
+    <value>Main-d'œuvre sourcée</value>
+  </data>
+  <data name="Applied labor" xml:space="preserve">
+    <value>Main-d'œuvre appliquée</value>
+  </data>
+  <data name="Total cost" xml:space="preserve">
+    <value>Coût total</value>
+  </data>
+  <data name="Produced unit cost" xml:space="preserve">
+    <value>Coût unitaire produit</value>
+  </data>
+  <data name="Held in WIP" xml:space="preserve">
+    <value>Détenu en WIP</value>
+  </data>
+  <data name="Method" xml:space="preserve">
+    <value>Méthode</value>
+  </data>
+  <data name="Immediate" xml:space="preserve">
+    <value>Immédiate</value>
+  </data>
+  <data name="OrderBased" xml:space="preserve">
+    <value>OrderBased</value>
+  </data>
+  <data name="Produced &amp; posted" xml:space="preserve">
+    <value>Produit &amp; comptabilisé</value>
+  </data>
+  <data name="Materials issued to WIP. Click &quot;Complete production&quot; to receive finished goods and clear WIP." xml:space="preserve">
+    <value>Matières sorties vers le WIP. Cliquez sur « Terminer la production » pour réceptionner les produits finis et solder le WIP.</value>
+  </data>
+  <data name="Released" xml:space="preserve">
+    <value>Lancé</value>
+  </data>
+  <data name="InProgress" xml:space="preserve">
+    <value>InProgress</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>Clôturé</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Annulé</value>
+  </data>
+</root>

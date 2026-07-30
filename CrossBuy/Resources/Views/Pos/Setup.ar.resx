@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Operations platform setup" xml:space="preserve">
+    <value>تأسيس منصة العمليات</value>
+  </data>
+  <data name="Activity type enables branch capabilities. Configuration only — no GL/stock impact." xml:space="preserve">
+    <value>نوع النشاط يفعّل قدرات الفرع (طاولات/مطبخ/تصنيع/…). إعداد فقط — لا يمسّ الحسابات أو المخزون.</value>
+  </data>
+  <data name="Areas &amp; stations" xml:space="preserve">
+    <value>الصالات والمطابخ</value>
+  </data>
+  <data name="Floor plan" xml:space="preserve">
+    <value>رسم الطاولات</value>
+  </data>
+  <data name="This company has no branches — add one first from the Branches screen." xml:space="preserve">
+    <value>لا توجد فروع لهذه الشركة — أضِف فرعًا أولًا من شاشة «الفروع».</value>
+  </data>
+  <data name="Manage branches" xml:space="preserve">
+    <value>إدارة الفروع</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>اختر الشركة</value>
+  </data>
+  <data name="Branch (Location)" xml:space="preserve">
+    <value>الفرع (Location)</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>اختر الفرع</value>
+  </data>
+  <data name="Current activity" xml:space="preserve">
+    <value>نوع النشاط الحالي</value>
+  </data>
+  <data name="— none —" xml:space="preserve">
+    <value>— غير محدَّد —</value>
+  </data>
+  <data name="Select a branch to set up the operations platform." xml:space="preserve">
+    <value>اختر فرعًا لتأسيس منصة العمليات عليه.</value>
+  </data>
+  <data name="Activity type" xml:space="preserve">
+    <value>نوع النشاط</value>
+  </data>
+  <data name="Choosing a type turns on its default capabilities (editable afterward)." xml:space="preserve">
+    <value>اختيار النوع يفعّل حزمة القدرات الافتراضية (يمكن تعديلها بعدها).</value>
+  </data>
+  <data name="Apply this activity type and reset its default capabilities?" xml:space="preserve">
+    <value>تفعيل نوع النشاط وإعادة ضبط القدرات لهذا الفرع؟</value>
+  </data>
+  <data name="Enabled capabilities" xml:space="preserve">
+    <value>القدرات المفعّلة</value>
+  </data>
+  <data name="Capabilities drive what the cashier surface shows later." xml:space="preserve">
+    <value>القدرات تتحكّم فيما يظهر لاحقًا للكاشير (طاولات/مطبخ/…).</value>
+  </data>
+  <data name="POS sales settings" xml:space="preserve">
+    <value>إعدادات البيع (POS)</value>
+  </data>
+  <data name="Default sales warehouse" xml:space="preserve">
+    <value>مخزن البيع الافتراضي</value>
+  </data>
+  <data name="— select —" xml:space="preserve">
+    <value>— اختر —</value>
+  </data>
+  <data name="The cashier deducts stock from here later." xml:space="preserve">
+    <value>الكاشير يخصم المخزون منه لاحقًا.</value>
+  </data>
+  <data name="Price list" xml:space="preserve">
+    <value>قائمة الأسعار</value>
+  </data>
+  <data name="— engine default —" xml:space="preserve">
+    <value>— افتراضي المحرّك —</value>
+  </data>
+  <data name="Applied via the existing PricingService." xml:space="preserve">
+    <value>تُطبَّق عبر محرّك التسعير القائم (نفس منطق العملات/العروض).</value>
+  </data>
+  <data name="Service %" xml:space="preserve">
+    <value>رسم الخدمة %</value>
+  </data>
+  <data name="— branch —" xml:space="preserve">
+    <value>— الفرع —</value>
+  </data>
+  <data name="Save settings" xml:space="preserve">
+    <value>حفظ إعدادات البيع</value>
+  </data>
+</root>

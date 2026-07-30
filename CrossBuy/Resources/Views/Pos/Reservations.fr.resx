@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Booked" xml:space="preserve">
+    <value>Réservé</value>
+  </data>
+  <data name="Arrived" xml:space="preserve">
+    <value>Arrivé</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Annulé</value>
+  </data>
+  <data name="No-show" xml:space="preserve">
+    <value>Absence</value>
+  </data>
+  <data name="Reservations" xml:space="preserve">
+    <value>Réservations</value>
+  </data>
+  <data name="Click any table on the floor to book it for a time — operational, no accounting effect." xml:space="preserve">
+    <value>Cliquez sur n'importe quelle table du plan pour la réserver à un horaire — opérationnel, sans effet comptable.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>Cette société n'a aucune succursale.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Sélectionner une société</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Sélectionner une succursale</value>
+  </data>
+  <data name="Select a branch to view the floor and manage reservations." xml:space="preserve">
+    <value>Sélectionnez une succursale pour afficher le plan et gérer les réservations.</value>
+  </data>
+  <data name="Floor plan" xml:space="preserve">
+    <value>Plan de salle</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Disponible</value>
+  </data>
+  <data name="Reserved" xml:space="preserve">
+    <value>Réservé</value>
+  </data>
+  <data name="Occupied" xml:space="preserve">
+    <value>Occupé</value>
+  </data>
+  <data name="Click any table to book it for a time — an occupied table can be booked for later (time-overlap is prevented)." xml:space="preserve">
+    <value>Cliquez sur n'importe quelle table pour la réserver à un horaire — une table occupée peut être réservée pour plus tard (le chevauchement horaire est empêché).</value>
+  </data>
+  <data name="Today &amp; upcoming" xml:space="preserve">
+    <value>Aujourd'hui &amp; à venir</value>
+  </data>
+  <data name="Table" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Guest" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>Couverts</value>
+  </data>
+  <data name="m" xml:space="preserve">
+    <value>m</value>
+  </data>
+  <data name="Mark as no-show?" xml:space="preserve">
+    <value>Marquer comme absence ?</value>
+  </data>
+  <data name="Cancel reservation?" xml:space="preserve">
+    <value>Annuler la réservation ?</value>
+  </data>
+  <data name="No today/upcoming reservations." xml:space="preserve">
+    <value>Aucune réservation aujourd'hui/à venir.</value>
+  </data>
+  <data name="Reserve table" xml:space="preserve">
+    <value>Réserver la table</value>
+  </data>
+  <data name="Search by name or phone…" xml:space="preserve">
+    <value>Rechercher par nom ou téléphone…</value>
+  </data>
+  <data name="Not found?" xml:space="preserve">
+    <value>Introuvable ?</value>
+  </data>
+  <data name="New name" xml:space="preserve">
+    <value>Nouveau nom</value>
+  </data>
+  <data name="Pick date &amp; time" xml:space="preserve">
+    <value>Choisir la date &amp; l'heure</value>
+  </data>
+  <data name="Dur (m)" xml:space="preserve">
+    <value>Durée (m)</value>
+  </data>
+  <data name="Book" xml:space="preserve">
+    <value>Réserver</value>
+  </data>
+  <data name="Walk-in" xml:space="preserve">
+    <value>Client de passage</value>
+  </data>
+  <data name="No tables for this branch — add them in «Floor plan»." xml:space="preserve">
+    <value>Aucune table pour cette succursale — ajoutez-les dans « Plan de salle ».</value>
+  </data>
+  <data name="No tables in this area." xml:space="preserve">
+    <value>Aucune table dans cette salle.</value>
+  </data>
+  <data name="Type to search…" xml:space="preserve">
+    <value>Saisir pour rechercher…</value>
+  </data>
+  <data name="Searching…" xml:space="preserve">
+    <value>Recherche…</value>
+  </data>
+  <data name="No results" xml:space="preserve">
+    <value>Aucun résultat</value>
+  </data>
+  <data name="Occupied now — booking for a later time" xml:space="preserve">
+    <value>Occupée maintenant — réservation pour plus tard</value>
+  </data>
+  <data name="Has another reservation — avoid a time clash" xml:space="preserve">
+    <value>A déjà une autre réservation — évitez un conflit d'horaire</value>
+  </data>
+</root>

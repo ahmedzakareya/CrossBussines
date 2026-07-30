@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Opportunities" xml:space="preserve">
+    <value>Opportunités</value>
+  </data>
+  <data name="New opportunity" xml:space="preserve">
+    <value>Nouvelle opportunité</value>
+  </data>
+  <data name="deals" xml:space="preserve">
+    <value>affaires</value>
+  </data>
+  <data name="Multi-search (title / customer)" xml:space="preserve">
+    <value>Recherche multiple (titre / client)</value>
+  </data>
+  <data name="Add search terms…" xml:space="preserve">
+    <value>Ajouter des termes de recherche…</value>
+  </data>
+  <data name="Stage" xml:space="preserve">
+    <value>Étape</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Titre</value>
+  </data>
+  <data name="Prob." xml:space="preserve">
+    <value>Prob.</value>
+  </data>
+  <data name="Expected close" xml:space="preserve">
+    <value>Clôture prévue</value>
+  </data>
+  <data name="No opportunities" xml:space="preserve">
+    <value>Aucune opportunité</value>
+  </data>
+  <data name="Save opportunity details?" xml:space="preserve">
+    <value>Enregistrer les détails de l'opportunité ?</value>
+  </data>
+  <data name="Probability %" xml:space="preserve">
+    <value>Probabilité %</value>
+  </data>
+  <data name="Derived from the stage" xml:space="preserve">
+    <value>Dérivée de l'étape</value>
+  </data>
+  <data name="Campaign" xml:space="preserve">
+    <value>Campagne</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Aucune</value>
+  </data>
+  <data name="Win/Loss reason" xml:space="preserve">
+    <value>Motif de gain/perte</value>
+  </data>
+  <data name="Fill when won or lost" xml:space="preserve">
+    <value>À renseigner en cas de gain ou de perte</value>
+  </data>
+  <data name="Search account…" xml:space="preserve">
+    <value>Rechercher un compte…</value>
+  </data>
+  <data name="Edit opportunity" xml:space="preserve">
+    <value>Modifier l'opportunité</value>
+  </data>
+  <data name="Prospecting" xml:space="preserve">
+    <value>Prospection</value>
+  </data>
+  <data name="Qualification" xml:space="preserve">
+    <value>Qualification</value>
+  </data>
+  <data name="Proposal" xml:space="preserve">
+    <value>Proposition</value>
+  </data>
+  <data name="Negotiation" xml:space="preserve">
+    <value>Négociation</value>
+  </data>
+  <data name="Won" xml:space="preserve">
+    <value>Gagné</value>
+  </data>
+  <data name="Lost" xml:space="preserve">
+    <value>Perdu</value>
+  </data>
+</root>

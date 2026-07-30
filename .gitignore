@@ -1,0 +1,58 @@
+# ===== .NET build output =====
+[Bb]in/
+[Oo]bj/
+[Pp]ublish/
+[Pp]ublish[Oo]utput/
+*.dll
+*.pdb
+*.exe
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+# ===== Secrets / config with connection strings or signing keys =====
+# appsettings.json holds a real (dev) connection string + JWT Key + Secret -> never commit.
+appsettings.json
+appsettings.Development.json
+appsettings.*.Local.json
+appsettings.local.json
+secrets.json
+# NOTE: appsettings.Production.json is intentionally KEPT — it is placeholders-only (__SET_ON_SERVER__), the safe template.
+
+# ===== Python service (crossbuy_ai) =====
+.env
+**/.env
+!**/.env.example
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# ===== Node / mobile =====
+node_modules/
+**/node_modules/
+.dart_tool/
+build/
+
+# ===== Editor / OS =====
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ===== Logs / temp =====
+*.log
+[Ll]ogs/
+*.tmp
+
+# ===== Claude Code local tooling (contains a local connection string) =====
+.claude/
+**/.claude/

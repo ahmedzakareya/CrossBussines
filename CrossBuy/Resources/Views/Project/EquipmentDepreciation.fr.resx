@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Equipment depreciation" xml:space="preserve"><value>Amortissement des équipements</value></data>
+  <data name="Projects" xml:space="preserve"><value>Projets</value></data>
+  <data name="New allocation" xml:space="preserve"><value>Nouvelle affectation</value></data>
+  <data name="Depreciation allocations" xml:space="preserve"><value>Affectations d'amortissement</value></data>
+  <data name="No allocations yet" xml:space="preserve"><value>Aucune affectation</value></data>
+  <data name="Equipment" xml:space="preserve"><value>Équipement</value></data>
+  <data name="Period" xml:space="preserve"><value>Période</value></data>
+  <data name="Share" xml:space="preserve"><value>Quote-part</value></data>
+  <data name="Draft" xml:space="preserve"><value>Brouillon</value></data>
+  <data name="Posted" xml:space="preserve"><value>Comptabilisé</value></data>
+  <data name="Post allocation" xml:space="preserve"><value>Comptabiliser</value></data>
+  <data name="Delete allocation?" xml:space="preserve"><value>Supprimer l'affectation ?</value></data>
+  <data name="Unposted" xml:space="preserve"><value>Non comptabilisé</value></data>
+  <data name="Post this allocation? Dr project cost / Cr depreciation expense (does not touch the depreciation schedule)." xml:space="preserve"><value>Comptabiliser cette affectation ? Dr coût du projet / Cr charge d'amortissement (ne touche pas le plan d'amortissement).</value></data>
+  <data name="On post: Dr project execution cost (510104) / Cr depreciation expense (520103) — the equipment's depreciation share is reclassified into project cost, tagged to the project. Accumulated depreciation and the depreciation schedule are not affected." xml:space="preserve"><value>À la comptabilisation : Dr coût d'exécution du projet (510104) / Cr charge d'amortissement (520103) — la quote-part d'amortissement de l'équipement est reclassée en coût du projet, rattachée au projet. L'amortissement cumulé et le plan d'amortissement ne sont pas affectés.</value></data>
+  <data name="Edit allocation" xml:space="preserve"><value>Modifier l'affectation</value></data>
+  <data name="Select equipment" xml:space="preserve"><value>Sélectionner l'équipement</value></data>
+  <data name="Share amount" xml:space="preserve"><value>Montant de la quote-part</value></data>
+  <data name="Optional helper — hours × rate fills the share amount" xml:space="preserve"><value>Aide facultative — heures × taux remplit le montant</value></data>
+  <data name="Hours" xml:space="preserve"><value>Heures</value></data>
+  <data name="Rate per hour" xml:space="preserve"><value>Taux horaire</value></data>
+  <data name="Monthly depreciation" xml:space="preserve"><value>Amortissement mensuel</value></data>
+  <data name="Net book value" xml:space="preserve"><value>Valeur nette comptable</value></data>
+</root>

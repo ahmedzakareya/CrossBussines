@@ -1,0 +1,77 @@
+@using CrossBuy.Models.Context.Crm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Activity>
+@{
+    var entityType = ViewBag.EntityType as string ?? "";
+    var entityId = (int)(ViewBag.EntityId ?? 0);
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    string tIcon(string t) => t switch { "Call" => "ki-phone", "Meeting" => "ki-people", "Email" => "ki-sms", _ => "ki-check-square" };
+    string tName(string t) => t switch { "Call" => Localizer["Call"].Value, "Meeting" => Localizer["Meeting"].Value, "Email" => SR["Email"].Value, _ => Localizer["Task"].Value };
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    string subj(Activity a) => !isAr && !string.IsNullOrWhiteSpace(a.SubjectEn) ? a.SubjectEn! : a.Subject;
+    var sid = $"tl_{entityType}_{entityId}";
+}
+<div class="card" id="@sid">
+    <div class="card-header"><div class="card-title fw-bold"><i class="ki-outline ki-time fs-3 me-2"></i>@Localizer["Activity timeline"]</div>
+        <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="collapse" data-bs-target="#@(sid)_add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["New activity"]</button></div></div>
+    <div class="card-body">
+        <div class="collapse" id="@(sid)_add">
+            <form asp-action="SaveActivity" method="post" class="row g-3 align-items-end mb-6 bg-light-primary rounded p-4" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save activity?"]">@Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="0" />
+                <input type="hidden" name="entityType" value="@entityType" /><input type="hidden" name="entityId" value="@entityId" /><input type="hidden" name="returnUrl" value="@returnUrl" />
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Type"]</label>
+                    <select name="type" class="form-select form-select-solid form-select-sm">
+                        <option value="Task">@Localizer["Task"]</option><option value="Call">@Localizer["Call"]</option><option value="Meeting">@Localizer["Meeting"]</option><option value="Email">@SR["Email"]</option>
+                    </select></div>
+                <div class="col-md-9"><label class="required fw-semibold fs-7 text-muted mb-1">@Localizer["Subject"]</label><input name="subject" class="form-control form-control-solid form-control-sm" required /></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Due"]</label><input type="datetime-local" name="dueDate" class="form-control form-control-solid form-control-sm" /></div>
+                <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Reminder"]</label><input type="datetime-local" name="reminderAt" class="form-control form-control-solid form-control-sm" /></div>
+                <div class="col-md-9"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid form-control-sm" placeholder="@SR["Notes"]" /></div>
+                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-primary btn-sm w-100"><i class="ki-outline ki-check fs-4"></i>@SR["Save"]</button></div>
+            </form>
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="text-center text-muted py-8"><i class="ki-outline ki-time fs-2x text-muted mb-2 d-block"></i>@Localizer["No activities yet"]</div>
+        }
+        else
+        {
+            <div class="timeline">
+                @foreach (var a in Model)
+                {
+                    var overdue = !a.Done && a.DueDate.HasValue && a.DueDate.Value.Date < DateTime.Today;
+                    var stBg = a.Done ? "#eaf3ef" : (overdue ? "#fdeaea" : "#fef3e2");
+                    var stFg = a.Done ? "#13433a" : (overdue ? "#d92d20" : "#b96a00");
+                    var stTxt = a.Done ? Localizer["Done"].Value : (overdue ? Localizer["overdue"].Value : Localizer["Open"].Value);
+                    <div class="timeline-item">
+                        <div class="timeline-line w-40px"></div>
+                        <div class="timeline-icon symbol symbol-40px">
+                            <div class="symbol-label" style="background:#13433a;"><i class="ki-outline @tIcon(a.Type) fs-3 text-white"></i></div>
+                        </div>
+                        <div class="timeline-content mb-8 ms-4">
+                            <div class="d-flex flex-stack">
+                                <div class="me-3">
+                                    <div class="fs-7 text-muted">@tName(a.Type)</div>
+                                    <div class="fs-5 fw-bold @(a.Done?"text-muted text-decoration-line-through":"text-gray-900")">@subj(a)</div>
+                                </div>
+                                <span class="badge fw-bold" style="background:@stBg;color:@stFg;">@stTxt</span>
+                            </div>
+                            <div class="d-flex align-items-center mt-2 fs-7 text-muted gap-4 flex-wrap">
+                                @if (a.DueDate.HasValue) { <span class="@(overdue?"text-danger fw-bold":"")"><i class="ki-outline ki-calendar fs-7 me-1"></i>@a.DueDate.Value.ToString(a.DueDate.Value.TimeOfDay == TimeSpan.Zero ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm")</span> }
+                                @if (a.ReminderAt.HasValue) { <span class="@(a.Reminded?"text-muted":"")" style="@(a.Reminded?"":"color:#b96a00;")"><i class="ki-outline ki-notification-bing fs-7 me-1"></i>@a.ReminderAt.Value.ToString("yyyy-MM-dd HH:mm")</span> }
+                                @if (a.CreatedAt.HasValue) { <span class="text-gray-500"><i class="ki-outline ki-time fs-7 me-1"></i>@a.CreatedAt.Value.ToString("yyyy-MM-dd")</span> }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(a.Notes)) { <div class="text-gray-600 fs-7 mt-2">@a.Notes</div> }
+                            <div class="mt-3">
+                                <form asp-action="ToggleActivity" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@(a.Done?Localizer["Reopen this activity?"]:Localizer["Mark this activity as done?"])">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@a.ID" />
+                                    <button class="btn btn-sm btn-light-primary py-1"><i class="ki-outline @(a.Done?"ki-arrows-circle":"ki-check") fs-7 me-1"></i>@(a.Done?Localizer["Reopen"]:Localizer["Done"])</button></form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

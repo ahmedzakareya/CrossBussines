@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Executive Dashboard" xml:space="preserve">
+    <value>اللوحة التنفيذية</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="Cross-module overview" xml:space="preserve">
+    <value>نظرة شاملة عبر الوحدات</value>
+  </data>
+  <data name="Customer analytics" xml:space="preserve">
+    <value>تحليلات العملاء</value>
+  </data>
+  <data name="Revenue vs Expense" xml:space="preserve">
+    <value>الإيرادات مقابل المصروفات</value>
+  </data>
+  <data name="Last 6 months" xml:space="preserve">
+    <value>آخر 6 أشهر</value>
+  </data>
+  <data name="MoM" xml:space="preserve">
+    <value>شهريًا</value>
+  </data>
+  <data name="Revenue" xml:space="preserve">
+    <value>الإيرادات</value>
+  </data>
+  <data name="Expense" xml:space="preserve">
+    <value>المصروفات</value>
+  </data>
+  <data name="Key Ratios" xml:space="preserve">
+    <value>المؤشرات المالية</value>
+  </data>
+  <data name="Gross margin" xml:space="preserve">
+    <value>هامش مجمل</value>
+  </data>
+  <data name="Net margin" xml:space="preserve">
+    <value>هامش صافي</value>
+  </data>
+  <data name="Working capital" xml:space="preserve">
+    <value>رأس المال العامل</value>
+  </data>
+  <data name="Current ratio" xml:space="preserve">
+    <value>نسبة التداول</value>
+  </data>
+  <data name="Quick ratio" xml:space="preserve">
+    <value>النسبة السريعة</value>
+  </data>
+  <data name="DSO (days)" xml:space="preserve">
+    <value>متوسط تحصيل (يوم)</value>
+  </data>
+  <data name="DPO (days)" xml:space="preserve">
+    <value>متوسط سداد (يوم)</value>
+  </data>
+  <data name="Prospecting" xml:space="preserve">
+    <value>استكشاف</value>
+  </data>
+  <data name="Qualification" xml:space="preserve">
+    <value>تأهيل</value>
+  </data>
+  <data name="Proposal" xml:space="preserve">
+    <value>عرض</value>
+  </data>
+  <data name="Negotiation" xml:space="preserve">
+    <value>تفاوض</value>
+  </data>
+  <data name="Won" xml:space="preserve">
+    <value>رابح</value>
+  </data>
+  <data name="Lost" xml:space="preserve">
+    <value>خسارة</value>
+  </data>
+  <data name="Revenue {0}" xml:space="preserve">
+    <value>الإيرادات {0}</value>
+  </data>
+  <data name="Rev" xml:space="preserve">
+    <value>إيراد</value>
+  </data>
+  <data name="Net Income {0}" xml:space="preserve">
+    <value>صافي الدخل {0}</value>
+  </data>
+  <data name="Profit" xml:space="preserve">
+    <value>ربح</value>
+  </data>
+  <data name="Loss" xml:space="preserve">
+    <value>خسارة</value>
+  </data>
+  <data name="Cash &amp; Banks" xml:space="preserve">
+    <value>النقدية والبنوك</value>
+  </data>
+  <data name="Liquid" xml:space="preserve">
+    <value>سيولة</value>
+  </data>
+  <data name="Receivables" xml:space="preserve">
+    <value>العملاء (مدينون)</value>
+  </data>
+  <data name="AR" xml:space="preserve">
+    <value>تحصيل</value>
+  </data>
+  <data name="Payables" xml:space="preserve">
+    <value>الموردون (دائنون)</value>
+  </data>
+  <data name="AP" xml:space="preserve">
+    <value>سداد</value>
+  </data>
+  <data name="Inventory Value" xml:space="preserve">
+    <value>قيمة المخزون</value>
+  </data>
+  <data name="Stock" xml:space="preserve">
+    <value>مخزون</value>
+  </data>
+  <data name="Aging — AR vs AP" xml:space="preserve">
+    <value>أعمار الديون (عملاء/موردون)</value>
+  </data>
+  <data name="Receivable" xml:space="preserve">
+    <value>مدين</value>
+  </data>
+  <data name="Payable" xml:space="preserve">
+    <value>دائن</value>
+  </data>
+  <data name="Sales Pipeline" xml:space="preserve">
+    <value>مسار المبيعات</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>مفتوح</value>
+  </data>
+  <data name="Top Customers" xml:space="preserve">
+    <value>أعلى العملاء</value>
+  </data>
+  <data name="By revenue" xml:space="preserve">
+    <value>حسب الإيراد</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>عرض الكل</value>
+  </data>
+  <data name="Margin" xml:space="preserve">
+    <value>الربح</value>
+  </data>
+  <data name="Margin %" xml:space="preserve">
+    <value>الهامش</value>
+  </data>
+  <data name="Outstanding" xml:space="preserve">
+    <value>مستحق</value>
+  </data>
+  <data name="No customer data yet" xml:space="preserve">
+    <value>لا توجد بيانات عملاء بعد</value>
+  </data>
+  <data name="Headcount" xml:space="preserve">
+    <value>عدد الموظفين</value>
+  </data>
+  <data name="Open Leads" xml:space="preserve">
+    <value>عملاء محتملون</value>
+  </data>
+  <data name="Won Value" xml:space="preserve">
+    <value>صفقات رابحة</value>
+  </data>
+  <data name="Fixed Assets NBV" xml:space="preserve">
+    <value>صافي الأصول الثابتة</value>
+  </data>
+  <data name="EGP" xml:space="preserve">
+    <value>ج.م</value>
+  </data>
+  <data name="Receivable (customers)" xml:space="preserve">
+    <value>مدين (عملاء)</value>
+  </data>
+  <data name="Payable (vendors)" xml:space="preserve">
+    <value>دائن (موردون)</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>القيمة</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>صافي</value>
+  </data>
+  <data name="Count" xml:space="preserve">
+    <value>العدد</value>
+  </data>
+  <data name="Cumulative pct" xml:space="preserve">
+    <value>النسبة التراكمية %</value>
+  </data>
+</root>

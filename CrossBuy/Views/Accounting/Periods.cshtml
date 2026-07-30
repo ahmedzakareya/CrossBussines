@@ -1,0 +1,102 @@
+@using CrossBuy.BL
+@model List<FiscalPeriodRow>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    string BadgeStyle(string s) => s switch { "Open" => "background:#e9f1ee;color:#13433a;", "SoftClosed" => "background:#f1f3f7;color:#7e8299;", "Closed" => "background:#e4e6ef;color:#3f4254;", _ => "background:#f1f3f7;color:#7e8299;" };
+    string Txt(string s) => s switch { "Open" => Localizer["Open"].Value, "SoftClosed" => Localizer["Soft-closed"].Value, "Closed" => Localizer["Closed"].Value, _ => s };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Fiscal Periods"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Fiscal Periods"]</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="card">
+                <div class="card-header border-0 pt-6">
+                    <div class="card-title">
+                        <div class="d-flex align-items-center position-relative my-1">
+                            <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                            <input type="text" id="pSearch" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search by year or period..."]" autocomplete="off" />
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-0 pb-4">
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle gy-4 mb-0" id="pTable" style="font-variant-numeric:tabular-nums;">
+                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                <tr>
+                                    <th>@Localizer["Year"]</th>
+                                    <th>@Localizer["Period"]</th>
+                                    <th>@SR["From"]</th>
+                                    <th>@SR["To"]</th>
+                                    <th class="text-center">@SR["Status"]</th>
+                                    <th class="text-center" style="min-width:240px">@Localizer["Action"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in Model)
+                                {
+                                    <tr class="p-row" data-search="@p.YearName @p.PeriodNo @(Txt(p.Status))">
+                                        <td class="fw-bold text-gray-900">@p.YearName</td>
+                                        <td>@(p.PeriodNo <= 12 ? Localizer["Period {0}", p.PeriodNo] : Localizer["Adjustment (13)"])</td>
+                                        <td class="text-muted">@p.StartDate.ToString("yyyy/MM/dd")</td>
+                                        <td class="text-muted">@p.EndDate.ToString("yyyy/MM/dd")</td>
+                                        <td class="text-center"><span class="badge fw-bold" style="@BadgeStyle(p.Status)">@Txt(p.Status)</span></td>
+                                        <td class="text-center">
+                                            <div class="d-flex gap-2 justify-content-center">
+                                                @if (p.Status != "Open")
+                                                {
+                                                    <form asp-action="SetPeriodStatus" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="status" value="Open" /><button class="btn btn-sm py-1 px-3" style="background:#e9f1ee;color:#13433a;">@Localizer["Reopen"]</button></form>
+                                                }
+                                                @if (p.Status != "SoftClosed")
+                                                {
+                                                    <form asp-action="SetPeriodStatus" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="status" value="SoftClosed" /><button class="btn btn-sm py-1 px-3" style="background:#f1f3f7;color:#7e8299;">@Localizer["Soft-close"]</button></form>
+                                                }
+                                                @if (p.Status != "Closed")
+                                                {
+                                                    <form asp-action="SetPeriodStatus" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Close permanently? Posting will be blocked."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="status" value="Closed" /><button class="btn btn-sm py-1 px-3" style="background:#e4e6ef;color:#3f4254;">@Localizer["Close"]</button></form>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="pNoResult" class="text-center py-10 text-muted d-none">@Localizer["No matching results"]</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var input = document.getElementById('pSearch'); if (!input) return;
+            var rows = Array.prototype.slice.call(document.querySelectorAll('#pTable tbody tr.p-row'));
+            var noRes = document.getElementById('pNoResult');
+            input.addEventListener('input', function (e) {
+                var q = (e.target.value || '').trim().toLowerCase(); var any = false;
+                rows.forEach(function (r) {
+                    var hit = !q || (r.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1;
+                    r.style.display = hit ? '' : 'none'; if (hit) any = true;
+                });
+                noRes.classList.toggle('d-none', any);
+            });
+        })();
+    </script>
+}

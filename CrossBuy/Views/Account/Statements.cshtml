@@ -1,0 +1,45 @@
+@using CrossBuy.Models.Context.Admin
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<Payslip>
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = isAr ? "كشوف حسابي" : "My Statements";
+    var months = new[] { "", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12" };
+    decimal totNet = Model.Sum(p => p.Net);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isAr ? "كشوف حسابي" : "My Statements")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Profile","Account")" class="text-muted">@(isAr ? "حسابي" : "My Account")</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isAr ? "قسائم الرواتب" : "Payslips")</li></ul></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card">
+            <div class="card-header border-0 pt-6">
+                <div class="card-title"><h3 class="fw-bold">@(isAr ? "قسائم رواتبي" : "My payslips")</h3></div>
+                <div class="card-toolbar"><span class="badge fw-bold fs-7 py-2 px-3" style="background:#e9f1ee;color:#13433a;">@(isAr ? "إجمالي الصافي" : "Total net"): @totNet.ToString("N2")</span></div>
+            </div>
+            <div class="card-body pt-0 pb-4"><div class="table-responsive">
+                <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr>
+                        <th>@(isAr ? "الفترة" : "Period")</th><th class="text-end">@(isAr ? "الإجمالي" : "Gross")</th><th class="text-end">@(isAr ? "الخصومات" : "Deductions")</th><th class="text-end">@(isAr ? "الصافي" : "Net")</th><th class="text-center">@(isAr ? "القسيمة" : "Slip")</th>
+                    </tr></thead>
+                    <tbody>
+                    @foreach (var p in Model)
+                    {
+                        var ded = p.SiEmployee + p.Tax + p.LatePenalty + p.AbsencePenalty;
+                        <tr>
+                            <td class="fw-bold text-gray-900">@p.Year / @months[p.Month]</td>
+                            <td class="text-end fw-semibold text-gray-800">@p.GrossEarnings.ToString("N2")</td>
+                            <td class="text-end @(ded>0?"fw-bold text-danger":"text-gray-300")">@(ded>0 ? ded.ToString("N2") : "—")</td>
+                            <td class="text-end fw-bold text-primary">@p.Net.ToString("N2")</td>
+                            <td class="text-center"><a href="@Url.Action("Payslip","Accounting", new { id = p.ID })" class="btn btn-icon btn-sm bg-light-primary" title="@(isAr ? "عرض" : "View")"><i class="ki-outline ki-eye fs-6 text-primary"></i></a></td>
+                        </tr>
+                    }
+                    @if (Model.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@(isAr ? "لا توجد قسائم رواتب بعد" : "No payslips yet")</td></tr> }
+                    </tbody>
+                </table>
+            </div></div>
+        </div>
+    </div></div>
+</div>

@@ -1,0 +1,64 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var customers = ViewBag.Customers as List<Customer> ?? new();
+    var cash = ViewBag.CashAccounts as List<AccountNode> ?? new();
+    var currencies = ViewBag.Currencies as List<Currency> ?? new();
+    int funcCur = (int)(ViewBag.FunctionalCurrencyId ?? 0);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Receipts"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Receipts"]</li></ul></div>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#mNew"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New receipt"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-10"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (receipt no / method)"]</label>
+                <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
+            <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+        </div></div></div>
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+            </div>
+            <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" id="t" style="font-variant-numeric:tabular-nums;">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["No"]</th><th>@SR["Date"]</th><th class="text-end">@SR["Amount"]</th><th>@Localizer["Method"]</th><th class="text-center pe-4">@Localizer["Open"]</th></tr></thead>
+                <tbody id="rows"></tbody>
+            </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@Localizer["No matching receipts"]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+<div class="modal fade" id="mNew" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="CreateReceipt" method="post">@Html.AntiForgeryToken()
+        <div class="modal-header"><h2 class="fw-bold">@Localizer["New receipt"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8">
+            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Customer"]</label><select name="customerId" class="form-select form-select-solid" required><option value="">@Localizer["Select"]</option>@foreach (var c in customers) { <option value="@c.ID">@(isAr ? c.Name : (c.NameEn ?? c.Name))</option> }</select></div>
+            <div class="row"><div class="col-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Amount"]</label><input name="amount" type="number" step="0.01" class="form-control form-control-solid" required /></div>
+            <div class="col-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input name="receiptDate" type="date" class="form-control form-control-solid" value="2026-05-01" required /></div></div>
+            <div class="row"><div class="col-6 mb-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Method"]</label><select name="method" class="form-select form-select-solid"><option value="Cash">@Localizer["Cash"]</option><option value="Bank">@Localizer["Bank"]</option></select></div>
+            <div class="col-6 mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Cash/Bank acct"]</label><select name="cashAccountId" class="form-select form-select-solid" required>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div></div>
+            <div class="row"><div class="col-6 mb-2"><label class="fw-semibold fs-6 mb-2">@SR["Currency"]</label><select name="currencyId" id="rcCur" class="form-select form-select-solid">@foreach (var c in currencies) { <option value="@c.ID" selected="@(c.ID == funcCur)">@c.Code</option> }</select></div>
+            <div class="col-6 mb-2" id="rcRateWrap" style="display:none"><label class="fw-semibold fs-6 mb-2">@Localizer["FX rate"]</label><input name="exchangeRate" type="number" step="0.0001" min="0" class="form-control form-control-solid" placeholder="@Localizer["Auto"]" /></div></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@Localizer["Save & post"]</button></div>
+    </form>
+</div></div></div>
+@section Scripts {
+<script>
+cbServerList({ url:'@Url.Action("ReceiptsData","Accounting")', exportUrl:'@Url.Action("ReceiptsExport","Accounting")', isAr:@(isAr ? "true" : "false") });
+(function(){ var F=@funcCur, s=document.getElementById('rcCur'), w=document.getElementById('rcRateWrap');
+  function t(){ if(w) w.style.display=(parseInt(s.value)!==F)?'':'none'; }
+  if(s){ s.addEventListener('change',t); t(); } })();
+</script>
+}

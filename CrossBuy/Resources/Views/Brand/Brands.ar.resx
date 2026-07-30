@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Brands" xml:space="preserve">
+    <value>العلامات التجارية</value>
+  </data>
+  <data name="Trade name under the company — single ledger + analytic dimension (not a separate legal entity)." xml:space="preserve">
+    <value>اسم تجاري تحت الشركة — دفتر واحد وبُعد تحليلي (ليست كيانًا قانونيًا منفصلًا).</value>
+  </data>
+  <data name="Create a default brand and link unbranded branches to it?" xml:space="preserve">
+    <value>إنشاء علامة افتراضية وربط الفروع غير المرتبطة بها؟</value>
+  </data>
+  <data name="Activate default brand" xml:space="preserve">
+    <value>تفعيل علامة افتراضية</value>
+  </data>
+  <data name="New brand" xml:space="preserve">
+    <value>علامة جديدة</value>
+  </data>
+  <data name="Search (code / name / trade name)" xml:space="preserve">
+    <value>بحث (الكود / الاسم / الاسم التجاري)</value>
+  </data>
+  <data name="Type to search…" xml:space="preserve">
+    <value>اكتب للبحث…</value>
+  </data>
+  <data name="Trade name" xml:space="preserve">
+    <value>الاسم التجاري</value>
+  </data>
+  <data name="Identity" xml:space="preserve">
+    <value>الهوية</value>
+  </data>
+  <data name="No brands — create one or activate the default brand" xml:space="preserve">
+    <value>لا توجد علامات — أنشئ واحدة أو فعّل العلامة الافتراضية</value>
+  </data>
+  <data name="Delete brand?" xml:space="preserve">
+    <value>حذف العلامة؟</value>
+  </data>
+</root>

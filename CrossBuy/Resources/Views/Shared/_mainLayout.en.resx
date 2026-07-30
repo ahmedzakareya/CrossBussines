@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nest - Multipurpose eCommerce HTML Template" xml:space="preserve">
+    <value>Nest - Multipurpose eCommerce HTML Template</value>
+  </data>
+  <data name="About Us" xml:space="preserve">
+    <value>About Us</value>
+  </data>
+  <data name="My Account" xml:space="preserve">
+    <value>My Account</value>
+  </data>
+  <data name="Wishlist" xml:space="preserve">
+    <value>Wishlist</value>
+  </data>
+  <data name="Order Tracking" xml:space="preserve">
+    <value>Order Tracking</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Arabic" xml:space="preserve">
+    <value>Arabic</value>
+  </data>
+  <data name="Russian" xml:space="preserve">
+    <value>Russian</value>
+  </data>
+  <data name="All Categories" xml:space="preserve">
+    <value>All Categories</value>
+  </data>
+  <data name="Search for items..." xml:space="preserve">
+    <value>Search for items...</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="Cart" xml:space="preserve">
+    <value>Cart</value>
+  </data>
+  <data name="View cart" xml:space="preserve">
+    <value>View cart</value>
+  </data>
+  <data name="Checkout" xml:space="preserve">
+    <value>Checkout</value>
+  </data>
+  <data name="My Voucher" xml:space="preserve">
+    <value>My Voucher</value>
+  </data>
+  <data name="My Wishlist" xml:space="preserve">
+    <value>My Wishlist</value>
+  </data>
+  <data name="Setting" xml:space="preserve">
+    <value>Setting</value>
+  </data>
+  <data name="Sign out" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="Show more..." xml:space="preserve">
+    <value>Show more...</value>
+  </data>
+  <data name="Deals" xml:space="preserve">
+    <value>Deals</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Shop" xml:space="preserve">
+    <value>Shop</value>
+  </data>
+  <data name="Vendors" xml:space="preserve">
+    <value>Vendors</value>
+  </data>
+  <data name="Mega menu" xml:space="preserve">
+    <value>Mega menu</value>
+  </data>
+  <data name="Blog" xml:space="preserve">
+    <value>Blog</value>
+  </data>
+  <data name="Pages" xml:space="preserve">
+    <value>Pages</value>
+  </data>
+  <data name="Contact" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="Forgot password" xml:space="preserve">
+    <value>Forgot password</value>
+  </data>
+  <data name="Reset password" xml:space="preserve">
+    <value>Reset password</value>
+  </data>
+  <data name="Purchase Guide" xml:space="preserve">
+    <value>Purchase Guide</value>
+  </data>
+  <data name="Privacy Policy" xml:space="preserve">
+    <value>Privacy Policy</value>
+  </data>
+  <data name="Terms of Service" xml:space="preserve">
+    <value>Terms of Service</value>
+  </data>
+  <data name="404 Page" xml:space="preserve">
+    <value>404 Page</value>
+  </data>
+  <data name="shop" xml:space="preserve">
+    <value>shop</value>
+  </data>
+  <data name="French" xml:space="preserve">
+    <value>French</value>
+  </data>
+  <data name="German" xml:space="preserve">
+    <value>German</value>
+  </data>
+  <data name="Spanish" xml:space="preserve">
+    <value>Spanish</value>
+  </data>
+  <data name="Search for items…" xml:space="preserve">
+    <value>Search for items…</value>
+  </data>
+  <data name="Our location" xml:space="preserve">
+    <value>Our location</value>
+  </data>
+  <data name="Log In / Sign Up" xml:space="preserve">
+    <value>Log In / Sign Up</value>
+  </data>
+  <data name="Follow Us" xml:space="preserve">
+    <value>Follow Us</value>
+  </data>
+  <data name="Your emaill address" xml:space="preserve">
+    <value>Your emaill address</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>Subscribe</value>
+  </data>
+  <data name="Corporate" xml:space="preserve">
+    <value>Corporate</value>
+  </data>
+  <data name="Popular" xml:space="preserve">
+    <value>Popular</value>
+  </data>
+  <data name="Install App" xml:space="preserve">
+    <value>Install App</value>
+  </data>
+  <data name="Delivery Information" xml:space="preserve">
+    <value>Delivery Information</value>
+  </data>
+  <data name="Terms &amp; Conditions" xml:space="preserve">
+    <value>Terms &amp; Conditions</value>
+  </data>
+  <data name="Contact Us" xml:space="preserve">
+    <value>Contact Us</value>
+  </data>
+  <data name="Support Center" xml:space="preserve">
+    <value>Support Center</value>
+  </data>
+  <data name="Careers" xml:space="preserve">
+    <value>Careers</value>
+  </data>
+  <data name="Sign In" xml:space="preserve">
+    <value>Sign In</value>
+  </data>
+  <data name="View Cart" xml:space="preserve">
+    <value>View Cart</value>
+  </data>
+  <data name="Track My Order" xml:space="preserve">
+    <value>Track My Order</value>
+  </data>
+  <data name="Help Ticket" xml:space="preserve">
+    <value>Help Ticket</value>
+  </data>
+  <data name="Shipping Details" xml:space="preserve">
+    <value>Shipping Details</value>
+  </data>
+  <data name="Compare products" xml:space="preserve">
+    <value>Compare products</value>
+  </data>
+  <data name="Become a Vendor" xml:space="preserve">
+    <value>Become a Vendor</value>
+  </data>
+  <data name="Affiliate Program" xml:space="preserve">
+    <value>Affiliate Program</value>
+  </data>
+  <data name="Farm Business" xml:space="preserve">
+    <value>Farm Business</value>
+  </data>
+  <data name="Farm Careers" xml:space="preserve">
+    <value>Farm Careers</value>
+  </data>
+  <data name="Our Suppliers" xml:space="preserve">
+    <value>Our Suppliers</value>
+  </data>
+  <data name="Accessibility" xml:space="preserve">
+    <value>Accessibility</value>
+  </data>
+  <data name="Promotions" xml:space="preserve">
+    <value>Promotions</value>
+  </data>
+  <data name="From App Store or Google Play" xml:space="preserve">
+    <value>From App Store or Google Play</value>
+  </data>
+  <data name="Secured Payment Gateways" xml:space="preserve">
+    <value>Secured Payment Gateways</value>
+  </data>
+</root>

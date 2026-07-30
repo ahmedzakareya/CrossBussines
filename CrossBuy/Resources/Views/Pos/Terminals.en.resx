@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Cashier terminals" xml:space="preserve">
+    <value>Cashier terminals</value>
+  </data>
+  <data name="Each terminal = isolated drawer + own receipt sequence + shifts — setup only, no selling or GL." xml:space="preserve">
+    <value>Each terminal = isolated drawer + own receipt sequence + shifts — setup only, no selling or GL.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>This company has no branches.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Select company</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Select branch</value>
+  </data>
+  <data name="Select a branch to manage cashier terminals." xml:space="preserve">
+    <value>Select a branch to manage cashier terminals.</value>
+  </data>
+  <data name="Add terminal" xml:space="preserve">
+    <value>Add terminal</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Cashier 1" xml:space="preserve">
+    <value>Cashier 1</value>
+  </data>
+  <data name="Receipt prefix" xml:space="preserve">
+    <value>Receipt prefix</value>
+  </data>
+  <data name="auto: code + -" xml:space="preserve">
+    <value>auto: code + -</value>
+  </data>
+  <data name="Terminal drawer" xml:space="preserve">
+    <value>Terminal drawer</value>
+  </data>
+  <data name="Auto-create (dedicated till)" xml:space="preserve">
+    <value>Auto-create (dedicated till)</value>
+  </data>
+  <data name="By default a dedicated child cash account is created under the main cash; or pick an existing one." xml:space="preserve">
+    <value>By default a dedicated child cash account is created under the main cash; or pick an existing one.</value>
+  </data>
+  <data name="Receipt printing" xml:space="preserve">
+    <value>Receipt printing</value>
+  </data>
+  <data name="Paper width" xml:space="preserve">
+    <value>Paper width</value>
+  </data>
+  <data name="Copies" xml:space="preserve">
+    <value>Copies</value>
+  </data>
+  <data name="Printer name (optional — for future ESC/POS bridge)" xml:space="preserve">
+    <value>Printer name (optional — for future ESC/POS bridge)</value>
+  </data>
+  <data name="window.print uses the default printer" xml:space="preserve">
+    <value>window.print uses the default printer</value>
+  </data>
+  <data name="Branch terminals" xml:space="preserve">
+    <value>Branch terminals</value>
+  </data>
+  <data name="No terminals yet." xml:space="preserve">
+    <value>No terminals yet.</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Delete terminal? (its till account stays in the chart)" xml:space="preserve">
+    <value>Delete terminal? (its till account stays in the chart)</value>
+  </data>
+  <data name="Drawer" xml:space="preserve">
+    <value>Drawer</value>
+  </data>
+  <data name="— none —" xml:space="preserve">
+    <value>— none —</value>
+  </data>
+  <data name="Receipt seq" xml:space="preserve">
+    <value>Receipt seq</value>
+  </data>
+  <data name="Shift open" xml:space="preserve">
+    <value>Shift open</value>
+  </data>
+  <data name="Evening" xml:space="preserve">
+    <value>Evening</value>
+  </data>
+  <data name="Morning" xml:space="preserve">
+    <value>Morning</value>
+  </data>
+  <data name="Close shift?" xml:space="preserve">
+    <value>Close shift?</value>
+  </data>
+  <data name="Close shift" xml:space="preserve">
+    <value>Close shift</value>
+  </data>
+  <data name="Opening float" xml:space="preserve">
+    <value>Opening float</value>
+  </data>
+  <data name="Open shift" xml:space="preserve">
+    <value>Open shift</value>
+  </data>
+  <data name="Edit terminal" xml:space="preserve">
+    <value>Edit terminal</value>
+  </data>
+</root>

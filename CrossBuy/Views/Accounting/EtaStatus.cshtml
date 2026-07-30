@@ -1,0 +1,52 @@
+@using CrossBuy.Models.Context.Accounting
+@model EtaSettings
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var enabled = (bool)(ViewBag.Enabled ?? false);
+    var invoices = ViewBag.Invoices as List<SalesInvoice> ?? new();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["E-Invoice (ETA)"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">ETA</li></ul></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card mb-5"><div class="card-body py-6">
+            <div class="d-flex align-items-center mb-4">
+                @if (enabled) { <span class="badge badge-light-primary fs-6 px-4 py-2 fw-bold">@Localizer["Enabled"]</span> } else { <span class="badge fs-6 px-4 py-2 fw-bold" style="background:#f1f3f7;color:#7e8299;">@Localizer["Not configured (deferred)"]</span> }
+            </div>
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-6">
+                <i class="ki-outline ki-information-5 fs-2x text-primary me-4"></i>
+                <div class="fw-semibold">
+                    <div class="fs-6 text-gray-900 fw-bold mb-1">@Localizer["E-Invoice (ETA)"]</div>
+                    <div class="fs-7 text-gray-700">@Localizer["ETA e-invoice integration is isolated behind a service interface and deferred. Once enabled, sales invoices will be submitted automatically and their UUID/status stored."]</div>
+                </div>
+            </div>
+            <div class="row g-5">
+                <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Environment"]</div><div class="fw-bold">@Model.Environment</div></div>
+                <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Taxpayer RIN"]</div><div class="fw-bold">@(Model.TaxpayerRin ?? "—")</div></div>
+                <div class="col-md-3"><div class="fs-7 text-muted">Client ID</div><div class="fw-bold">@(Model.ClientId ?? "—")</div></div>
+                <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Activity code"]</div><div class="fw-bold">@(Model.ActivityCode ?? "—")</div></div>
+            </div>
+        </div></div>
+
+        <div class="card"><div class="card-header border-0 pt-6">
+            <div class="card-title"><h3 class="fw-bold">@Localizer["Sales invoices status"]</h3></div>
+            <div class="card-toolbar"><div class="d-flex align-items-center position-relative my-1">
+                <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                <input type="text" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" autocomplete="off" />
+            </div></div>
+        </div>
+        <div class="card-body pt-0 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Invoice"]</th><th>@SR["Date"]</th><th class="text-end">@SR["Total"]</th><th>UUID</th><th class="text-center">@Localizer["ETA status"]</th></tr></thead>
+            <tbody>
+            @foreach (var i in invoices) {
+                <tr class="r" data-s="@i.InvoiceNo @i.EtaUuid"><td class="fw-bold text-gray-900">@i.InvoiceNo</td><td class="text-muted">@i.InvoiceDate.ToString("yyyy/MM/dd")</td><td class="text-end fw-bold text-gray-900">@i.GrandTotal.ToString("N2")</td><td class="text-muted">@(i.EtaUuid ?? "—")</td><td class="text-center"><span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@(i.EtaStatus ?? Localizer["Not sent"].Value)</span></td></tr>
+            }
+            @if (invoices.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@Localizer["No invoices"]</td></tr> }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>

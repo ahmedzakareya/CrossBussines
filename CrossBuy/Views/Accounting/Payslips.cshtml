@@ -1,0 +1,58 @@
+@using CrossBuy.Models.Context.Admin
+@model List<Payslip>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    int y = ViewBag.Year; int m = ViewBag.Month;
+    ViewData["Title"] = Localizer["Payslips"].Value;
+}
+<style>
+    /* restore first/last cell padding so الموظف / القسيمة columns aren't glued to the table edge */
+    #psTable > :not(caption) > * > *:first-child { padding-inline-start: 1.25rem; }
+    #psTable > :not(caption) > * > *:last-child { padding-inline-end: 1.25rem; }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Payslips"] <span class="text-muted fs-5">@y/@m.ToString("00")</span></h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Payroll","Accounting", new { year=y, month=m })" class="text-muted text-hover-primary">@Localizer["Payroll"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Payslips"]</li></ul>
+        </div>
+        <a href="@Url.Action("Payroll","Accounting", new { year=y, month=m })" class="btn btn-light">@Localizer["Payroll run"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush mb-5"><div class="card-body py-4"><form method="get" class="d-flex align-items-end gap-3">
+            <div><label class="fs-7 fw-semibold text-muted">@Localizer["Year"]</label><input name="year" type="number" value="@y" class="form-control form-control-solid w-120px" /></div>
+            <div><label class="fs-7 fw-semibold text-muted">@Localizer["Month"]</label><input name="month" type="number" min="1" max="12" value="@m" class="form-control form-control-solid w-100px" /></div>
+            <button class="btn btn-light-primary">@SR["Show"]</button>
+        </form></div></div>
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title"><div class="d-flex align-items-center position-relative my-1">
+                <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                <input type="text" class="form-control form-control-solid w-300px ps-12" placeholder="@SR["Search"]" autocomplete="off" />
+            </div></div></div>
+            <div class="card-body pt-0 pb-5 px-10"><div class="table-responsive">
+            <table class="table table-row-dashed align-middle gy-4 mb-0" id="psTable" style="font-variant-numeric:tabular-nums;">
+                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr>
+                    <th>@SR["Employee"]</th><th class="text-end">@Localizer["Earnings"]</th><th class="text-end">@Localizer["Overtime"]</th><th class="text-end">@Localizer["Late"]</th><th class="text-end">@Localizer["Absence"]</th><th class="text-end">@Localizer["SI+Tax"]</th><th class="text-end">@Localizer["Net"]</th><th class="text-center">@Localizer["Slip"]</th>
+                </tr></thead>
+                <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr class="r" data-s="@s.EmployeeName">
+                        <td class="fw-bold text-gray-900">@s.EmployeeName</td>
+                        <td class="text-end fw-semibold text-gray-800">@s.GrossEarnings.ToString("N2")</td>
+                        <td class="text-end @(s.OvertimePay>0?"fw-bold text-primary":"text-gray-300")">@(s.OvertimePay>0 ? s.OvertimePay.ToString("N2") : "—")</td>
+                        <td class="text-end @(s.LatePenalty>0?"fw-bold text-warning":"text-gray-300")">@(s.LatePenalty>0 ? s.LatePenalty.ToString("N2") : "—")</td>
+                        <td class="text-end @(s.AbsencePenalty>0?"fw-bold text-danger":"text-gray-300")">@(s.AbsencePenalty>0 ? s.AbsencePenalty.ToString("N2") : "—")</td>
+                        <td class="text-end text-muted">@((s.SiEmployee+s.Tax).ToString("N2"))</td>
+                        <td class="text-end fw-bold text-primary">@s.Net.ToString("N2")</td>
+                        <td class="text-center"><a href="@Url.Action("Payslip","Accounting", new { id = s.ID })" class="btn btn-icon btn-sm bg-light-primary" title="@SR["View"]"><i class="ki-outline ki-eye fs-6 text-primary"></i></a></td>
+                    </tr>
+                }
+                @if (Model.Count == 0) { <tr><td colspan="8" class="text-center text-muted py-10">@Localizer["No payslips for this period — run payroll first"]</td></tr> }
+                </tbody>
+            </table>
+        </div></div></div>
+    </div></div>
+</div>

@@ -1,0 +1,179 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.Models.Context.Inventory
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var prj = ViewBag.Project as Project;
+    var subs = ViewBag.Subcontracts as List<Subcontract> ?? new();
+    var vendors = ViewBag.Vendors as List<Vendor> ?? new();
+    var vName = vendors.ToDictionary(v => v.ID, v => v.Name);
+    var billings = ViewBag.Billings as List<SubcontractBilling> ?? new();
+    var pv = ViewBag.Preview as SubBillingPreview;
+    int? selSc = ViewBag.SelectedSubcontractId as int?;
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    string iv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    string Badge(string s) => s == "Posted" ? "success" : s == "Approved" ? "info" : "warning";
+    var brand = "#13433a";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Subcontractors"]</h1>
+            <span class="text-muted fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn))</span></div>
+        <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger">@TempData["PrjErr"]</div> }
+
+        <!--begin::Subcontracts list + add-->
+        <div class="card mb-5">
+            <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Subcontracts"]</h3></div>
+            <div class="card-body pt-2">
+                <form asp-action="SaveSubcontract" method="post" class="row g-3 align-items-end mb-5">@Html.AntiForgeryToken()
+                    <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" /><input type="hidden" name="subcontractId" value="0" />
+                    <div class="col-md-4"><label class="required fw-semibold fs-7 text-muted mb-1">@Localizer["Subcontractor (vendor)"]</label>
+                        <select name="vendorId" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["Select subcontractor"]" required>
+                            <option value=""></option>@foreach (var v in vendors) { <option value="@v.ID">@nm(v.Name, v.NameEn)</option> }</select></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Description"]</label><input name="description" class="form-control form-control-solid" /></div>
+                    <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Contract value"]</label><input name="contractValue" type="number" step="0.01" class="form-control form-control-solid" /></div>
+                    <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Retention %"]</label><input name="retentionPercent" type="number" step="0.01" min="0" max="100" class="form-control form-control-solid" /></div>
+                    <div class="col-md-1"><button class="btn btn-light-primary w-100"><i class="ki-outline ki-plus fs-3"></i></button></div>
+                </form>
+
+                @if (!subs.Any()) { <div class="text-muted fs-6 py-3">@Localizer["No subcontracts yet"]</div> }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-bordered align-middle">
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th>@Localizer["Subcontractor (vendor)"]</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Contract value"]</th><th class="text-center">@Localizer["Retention %"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var s in subs)
+                        {
+                            <tr class="@(s.ID == selSc ? "bg-light-primary" : "")">
+                                <td class="fw-bold">@(vName.TryGetValue(s.VendorId, out var vn) ? vn : "#" + s.VendorId)</td>
+                                <td class="text-muted">@s.Description</td>
+                                <td class="text-end">@(s.ContractValue?.ToString("N2") ?? "—")</td>
+                                <td class="text-center">@(s.RetentionPercent?.ToString("0.#") ?? "0")%</td>
+                                <td class="text-end"><a href="@Url.Action("Subcontracts","Project", new { id = prj?.ID, sc = s.ID })" class="btn btn-sm btn-light-primary">@Localizer["Open"]<i class="ki-outline ki-arrow-@(isAr ? "left" : "right") fs-5 ms-1"></i></a></td>
+                            </tr>
+                        }
+                        </tbody></table></div>
+                }
+            </div>
+        </div>
+        <!--end::Subcontracts list-->
+
+        @if (pv != null)
+        {
+            <div class="alert alert-light-primary d-flex align-items-center">
+                <i class="ki-outline ki-information-5 fs-2 me-3"></i>
+                <span>@Localizer["On post: Dr project execution cost (510104) [project] + VAT input / Cr vendor (AP) — via a purchase invoice; retention → Dr AP / Cr 2105 (settlement payment). ap_sub stays reconciled."]</span>
+            </div>
+            <div class="row g-5">
+                <!--begin::Billing editor + billings list-->
+                <div class="col-lg-7">
+                    <div class="card mb-5"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Subcontractor billing"] — @pv.VendorName #@pv.BillingNo
+                        @if (pv.Status != "Draft") { <span class="badge badge-light-@Badge(pv.Status) ms-2">@Localizer[pv.Status]</span> }</h3></div>
+                        <div class="card-body">
+                            <form asp-action="SaveSubBilling" method="post" id="fSub">@Html.AntiForgeryToken()
+                                <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" /><input type="hidden" name="subcontractId" value="@selSc" /><input type="hidden" name="billingId" value="@pv.BillingId" />
+                                <div class="row mb-3">
+                                    <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Cumulative work value"]</label>
+                                        <input name="cumulativeWork" id="sb_cum" type="number" step="0.01" min="0" class="form-control form-control-solid text-end" value="@iv(pv.CumulativeWork)" @(pv.Status == "Draft" ? "" : "disabled") /></div>
+                                    <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Billing date"]</label>
+                                        <input name="billingDate" id="sb_date" class="form-control form-control-solid js-sb-date" autocomplete="off" value="@pv.BillingDate.ToString("yyyy-MM-dd")" @(pv.Status == "Draft" ? "" : "disabled") /></div>
+                                    <div class="col-md-4"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="note" class="form-control form-control-solid" value="@pv.Note" @(pv.Status == "Draft" ? "" : "disabled") /></div>
+                                </div>
+                                <div class="text-muted fs-8">@Localizer["Previously billed"]: <span class="fw-bold">@pv.PreviouslyBilled.ToString("N2")</span> · @Localizer["Period value"] = @Localizer["Cumulative"] − @Localizer["Previously billed"]</div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Billings"]</h3></div>
+                        <div class="card-body pt-2">
+                            @if (!billings.Any()) { <div class="text-muted fs-6 py-3">@Localizer["No billings yet"]</div> }
+                            else
+                            {
+                                <div class="table-responsive"><table class="table table-row-bordered align-middle">
+                                    <thead><tr class="fw-bold text-muted fs-8 text-uppercase"><th>#</th><th>@SR["Date"]</th><th class="text-end">@Localizer["Gross work"]</th><th class="text-end">@Localizer["Net payable"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                                    <tbody>
+                                    @foreach (var r in billings)
+                                    {
+                                        <tr class="@(r.ID == pv.BillingId ? "bg-light-primary" : "")">
+                                            <td class="fw-bold">@r.BillingNo</td><td>@r.BillingDate.ToString("yyyy-MM-dd")</td>
+                                            <td class="text-end">@r.GrossWork.ToString("N2")</td><td class="text-end fw-bold">@r.NetPayable.ToString("N2")</td>
+                                            <td class="text-center"><span class="badge badge-light-@Badge(r.Status)">@Localizer[r.Status]</span></td>
+                                            <td class="text-center text-nowrap">
+                                                <a href="@Url.Action("Subcontracts","Project", new { id = prj?.ID, sc = selSc, b = r.ID })" class="btn btn-sm btn-icon btn-light-primary me-1"><i class="ki-outline ki-eye fs-5"></i></a>
+                                                @if (r.Status == "Draft")
+                                                {
+                                                    <form asp-action="DeleteSubBilling" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete billing?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><input type="hidden" name="subcontractId" value="@selSc" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                    </tbody></table></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <!--end::Editor+list-->
+
+                <!--begin::Statement card-->
+                <div class="col-lg-5">
+                    <div class="card"><div class="card-header" style="border-bottom:2px solid @brand;"><h3 class="card-title fw-bold" style="color:@brand;">@Localizer["Billing statement"]</h3></div>
+                        <div class="card-body">
+                            <div class="mb-4" style="max-width:220px;"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Tax rate %"]</label>
+                                <input id="sb_taxrate" form="fSub" name="taxRate" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@iv(pv.TaxRate)" @(pv.Status == "Draft" ? "" : "disabled") /></div>
+                            <table class="table table-row-dashed align-middle mb-0" style="font-variant-numeric:tabular-nums;">
+                                <tbody>
+                                    <tr><td class="fw-semibold">@Localizer["Gross work"] (W)</td><td class="text-end fw-bold" id="st_gross">@pv.GrossWork.ToString("N2")</td></tr>
+                                    <tr><td class="ps-4 text-muted">+ @Localizer["Tax"] (T)</td><td class="text-end" id="st_tax">@pv.TaxAmount.ToString("N2")</td></tr>
+                                    <tr><td class="ps-4 text-danger">− @Localizer["Retention"] (@pv.RetentionPercent.ToString("0.#")%)</td><td class="text-end text-danger" id="st_ret">@pv.RetentionAmount.ToString("N2")</td></tr>
+                                    <tr style="border-top:2px solid @brand;"><td class="fw-bold fs-5" style="color:@brand;">= @Localizer["Net payable"]</td><td class="text-end fw-bold fs-4" style="color:@brand;" id="st_net">@pv.NetPayable.ToString("N2")</td></tr>
+                                </tbody>
+                            </table>
+                            <div class="d-flex gap-2 mt-5">
+                                @if (pv.Status == "Draft")
+                                {
+                                    <button type="submit" form="fSub" class="btn btn-light-primary flex-fill"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button>
+                                    @if (pv.BillingId > 0)
+                                    { <form asp-action="ApproveSubBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Approve billing?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@pv.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><input type="hidden" name="subcontractId" value="@selSc" /><button class="btn btn-primary w-100"><i class="ki-outline ki-verify fs-3"></i>@Localizer["Approve"]</button></form> }
+                                }
+                                else if (pv.Status == "Approved")
+                                { <form asp-action="PostSubBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Post billing? (creates the vendor invoice + retention)"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@pv.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><input type="hidden" name="subcontractId" value="@selSc" /><button class="btn btn-primary w-100"><i class="ki-outline ki-cloud-add fs-3"></i>@Localizer["Post"]</button></form> }
+                                else { <span class="badge badge-light-primary fs-6 py-3 px-4"><i class="ki-outline ki-check-circle fs-3 me-1"></i>@Localizer["Posted to the GL"]</span> }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Statement-->
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    if (typeof flatpickr !== 'undefined') { var d = document.getElementById('sb_date'); if (d) flatpickr(d, { dateFormat: "Y-m-d", locale: { firstDayOfWeek: 6 }, allowInput: true }); }
+    var PREV = @(pv != null ? iv(pv.PreviouslyBilled) : "0"), RETP = @(pv != null ? iv(pv.RetentionPercent) : "0");
+    var cum = document.getElementById('sb_cum'), tr = document.getElementById('sb_taxrate');
+    function money(n) { return (Math.round(n * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function calc() {
+        if (!cum) return;
+        var W = Math.max(0, (parseFloat(cum.value) || 0) - PREV);
+        var T = Math.round(W * (parseFloat(tr.value) || 0)) / 100;
+        var Rr = Math.round(W * RETP) / 100;
+        document.getElementById('st_gross').textContent = money(W);
+        document.getElementById('st_tax').textContent = money(T);
+        document.getElementById('st_ret').textContent = money(Rr);
+        document.getElementById('st_net').textContent = money(W + T - Rr);
+    }
+    if (cum) cum.addEventListener('input', calc);
+    if (tr) tr.addEventListener('input', calc);
+})();
+</script>
+}

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Automation rules (CRM)" xml:space="preserve">
+    <value>قواعد الأتمتة (CRM)</value>
+  </data>
+  <data name="New rule" xml:space="preserve">
+    <value>قاعدة جديدة</value>
+  </data>
+  <data name="Trigger" xml:space="preserve">
+    <value>المشغِّل</value>
+  </data>
+  <data name="Lead created" xml:space="preserve">
+    <value>إنشاء عميل محتمل</value>
+  </data>
+  <data name="Opportunity stage changed" xml:space="preserve">
+    <value>تغيّر مرحلة الفرصة</value>
+  </data>
+  <data name="Stage (opt.)" xml:space="preserve">
+    <value>مرحلة (اختياري)</value>
+  </data>
+  <data name="any stage" xml:space="preserve">
+    <value>لأي مرحلة اتركه فارغًا</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>الإجراء</value>
+  </data>
+  <data name="Create activity" xml:space="preserve">
+    <value>إنشاء نشاط</value>
+  </data>
+  <data name="Notify owner" xml:space="preserve">
+    <value>إشعار المالك</value>
+  </data>
+  <data name="Sort" xml:space="preserve">
+    <value>ترتيب</value>
+  </data>
+  <data name="Activity type" xml:space="preserve">
+    <value>نوع النشاط</value>
+  </data>
+  <data name="Task" xml:space="preserve">
+    <value>مهمة</value>
+  </data>
+  <data name="Call" xml:space="preserve">
+    <value>اتصال</value>
+  </data>
+  <data name="Meeting" xml:space="preserve">
+    <value>اجتماع</value>
+  </data>
+  <data name="Activity subject" xml:space="preserve">
+    <value>موضوع النشاط</value>
+  </data>
+  <data name="Due in (days)" xml:space="preserve">
+    <value>الاستحقاق بعد (أيام)</value>
+  </data>
+  <data name="Notify title" xml:space="preserve">
+    <value>عنوان الإشعار</value>
+  </data>
+  <data name="Notify body" xml:space="preserve">
+    <value>نص الإشعار</value>
+  </data>
+  <data name="No rules" xml:space="preserve">
+    <value>لا توجد قواعد</value>
+  </data>
+  <data name="Delete rule?" xml:space="preserve">
+    <value>حذف القاعدة؟</value>
+  </data>
+</root>

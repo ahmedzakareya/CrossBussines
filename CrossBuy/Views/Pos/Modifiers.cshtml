@@ -1,0 +1,232 @@
+@using CrossBuy.Models.Context.Pos
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var groups = ViewBag.Groups as List<ModifierGroup> ?? new();
+    var group = ViewBag.Group as ModifierGroup;
+    var options = ViewBag.Options as List<ModifierOptionDto> ?? new();
+    var groupItems = ViewBag.GroupItems as List<ModifierAttachDto> ?? new();
+    string TypeName(string t) => t == "Choice" ? Localizer["Choice"].Value : Localizer["AddOn"].Value;
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Modifiers"]</h1>
+            <span class="text-muted fs-7">@Localizer["Reusable option groups attached to items — setup only, no stock deduction now."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+
+        <div class="row g-5">
+            <!--begin::Groups column-->
+            <div class="col-lg-4">
+                <div class="card mb-5"><div class="card-header"><div class="card-title"><h3>@(group != null ? Localizer["Edit group"].Value : Localizer["Add group"].Value)</h3></div>
+                    @if (group != null) { <div class="card-toolbar"><a asp-action="Modifiers" class="btn btn-sm btn-light">@Localizer["New"]</a></div> }
+                </div>
+                    <div class="card-body">
+                        <form asp-action="SaveModifierGroup" method="post" class="row g-3">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@(group?.ID ?? 0)" />
+                            <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (AR)"]</label><input name="name" value="@group?.Name" class="form-control form-control-solid form-control-sm" required /></div>
+                            <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (EN)"]</label><input name="nameEn" value="@group?.NameEn" class="form-control form-control-solid form-control-sm" /></div>
+                            <div class="col-12"><label class="fw-semibold fs-8 mb-1">@SR["Type"]</label>
+                                <select name="type" id="grpType" class="form-select form-select-solid form-select-sm">
+                                    <option value="AddOn" selected="@(group == null || group.Type == "AddOn")">@Localizer["AddOn (optional, priced)"]</option>
+                                    <option value="Choice" selected="@(group?.Type == "Choice")">@Localizer["Choice (mandatory, no price)"]</option>
+                                </select></div>
+                            <div class="col-6"><label class="fw-semibold fs-8 mb-1">@Localizer["Min"]</label><input type="number" name="minSelect" value="@(group?.MinSelect ?? 0)" min="0" class="form-control form-control-solid form-control-sm" /></div>
+                            <div class="col-6"><label class="fw-semibold fs-8 mb-1">@Localizer["Max (0=∞)"]</label><input type="number" name="maxSelect" value="@(group?.MaxSelect ?? 0)" min="0" class="form-control form-control-solid form-control-sm" /></div>
+                            <div class="col-8"><label class="fw-semibold fs-8 mb-1">@Localizer["Sort"]</label><input type="number" name="sort" value="@(group?.Sort ?? 0)" class="form-control form-control-solid form-control-sm" /></div>
+                            <div class="col-4 d-flex align-items-end"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button></div>
+                            <div class="col-12 fs-8 text-muted">@Localizer["Choice = one mandatory free alternative. AddOn = optional priced extras."]</div>
+                        </form>
+                    </div>
+                </div>
+                <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Groups"]</h3></div><div class="card-toolbar"><span class="badge badge-light-primary">@groups.Count</span></div></div>
+                    <div class="card-body py-3">
+                        @if (!groups.Any()) { <div class="text-muted fs-7 text-center py-5">@Localizer["No groups yet."]</div> }
+                        @foreach (var g in groups)
+                        {
+                            <div class="d-flex align-items-center justify-content-between border-bottom border-gray-200 py-3 @(group?.ID == g.ID ? "bg-light-primary rounded px-2" : "")">
+                                <a asp-action="Modifiers" asp-route-groupId="@g.ID" class="d-flex flex-column text-hover-primary">
+                                    <span class="fw-bold text-gray-800">@g.Name</span>
+                                    <span class="badge badge-light-@(g.Type == "Choice" ? "warning" : "success") fs-8 w-fit-content">@TypeName(g.Type)</span>
+                                </a>
+                                <form asp-action="DeleteModifierGroup" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete the group with its options and links?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@g.ID" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!--end::Groups column-->
+            <!--begin::Detail column-->
+            <div class="col-lg-8">
+                @if (group == null)
+                {
+                    <div class="card h-100"><div class="card-body text-center text-muted py-20"><i class="ki-outline ki-abstract-26 fs-3x mb-3 d-block"></i>@Localizer["Select a group to manage its options and attach it to items."]</div></div>
+                }
+                else
+                {
+                    var isChoice = group.Type == "Choice";
+                    <!--begin::Options-->
+                    <div class="card mb-5"><div class="card-header"><div class="card-title flex-column"><h3>@Localizer["Options"]: @group.Name</h3><span class="text-muted fs-8">@TypeName(group.Type)</span></div></div>
+                        <div class="card-body">
+                            <div class="table-responsive mb-4"><table class="table table-row-dashed align-middle fs-7">
+                                <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@Localizer["Option"]</th><th>@Localizer["Linked item"]</th><th class="text-center">@Localizer["Qty deducted"]</th><th class="text-end">@Localizer["Extra price"]</th><th class="text-center">@Localizer["Default"]</th><th></th></tr></thead>
+                                <tbody>
+                                    @if (!options.Any()) { <tr><td colspan="6" class="text-muted text-center py-4">@Localizer["No options yet."]</td></tr> }
+                                    @foreach (var o in options)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-gray-800">@o.Name</td>
+                                            <td class="text-muted">@o.LinkedItemName <span class="fs-8">(@o.LinkedItemCode)</span></td>
+                                            <td class="text-center">@o.QtyDeducted.ToString("0.##")</td>
+                                            <td class="text-end fw-bold">@(o.ExtraPrice > 0 ? o.ExtraPrice.ToString("0.##") : "—")</td>
+                                            <td class="text-center">@if (o.IsDefault) { <span class="badge badge-light-primary">@Localizer["Default"]</span> }</td>
+                                            <td class="text-end"><form asp-action="DeleteModifierOption" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete option?"]">@Html.AntiForgeryToken()<input type="hidden" name="groupId" value="@group.ID" /><input type="hidden" name="id" value="@o.Id" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-4"></i></button></form></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                            <!--begin::Add option-->
+                            <form asp-action="SaveModifierOption" method="post" class="row g-3 border-top border-gray-200 pt-4" id="optForm">@Html.AntiForgeryToken()<input type="hidden" name="groupId" value="@group.ID" /><input type="hidden" name="id" value="0" /><input type="hidden" name="linkedItemId" id="optItemId" />
+                                <div class="col-md-3"><label class="fw-semibold fs-8 mb-1">@Localizer["Option name"]</label><input name="name" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["optional — item name"]" /></div>
+                                <div class="col-md-3"><label class="fw-semibold fs-8 mb-1">@Localizer["Linked item"]</label>
+                                    <button type="button" class="btn btn-light-primary btn-sm w-100 text-start" id="optPickBtn" data-bs-toggle="modal" data-bs-target="#itemModal"><i class="ki-outline ki-magnifier fs-5"></i><span id="optItemLabel">@Localizer["Pick item"]</span></button></div>
+                                <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Qty deducted"]</label><input type="number" step="0.01" name="qtyDeducted" value="1" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Extra price"]</label><input type="number" step="0.01" name="extraPrice" value="0" class="form-control form-control-solid form-control-sm" @(isChoice ? ("readonly title=\"" + Localizer["Choice has no price"].Value + "\"") : "") /></div>
+                                <div class="col-md-2 d-flex flex-column">
+                                    <label class="form-check form-switch mb-2 mt-4"><input class="form-check-input" type="checkbox" name="isDefault" value="true" /><span class="form-check-label fs-8 ms-2">@Localizer["Default"]</span></label>
+                                    <button class="btn btn-sm btn-primary w-100" id="optSave" disabled><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button>
+                                </div>
+                                @if (isChoice) { <div class="col-12 fs-8 text-muted">@Localizer["Choice group: extra price is always zero."]</div> }
+                            </form>
+                            <!--end::Add option-->
+                        </div>
+                    </div>
+                    <!--end::Options-->
+                    <!--begin::Attached items-->
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Items using this group"]</h3></div>
+                        <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" id="attachBtn" data-bs-toggle="modal" data-bs-target="#itemModal"><i class="ki-outline ki-plus fs-4"></i>@Localizer["Attach items"]</button></div></div>
+                        <div class="card-body">
+                            @if (!groupItems.Any()) { <div class="text-muted fs-7 text-center py-5">@Localizer["This group is not attached to any item yet."]</div> }
+                            <div class="row g-3">
+                                @foreach (var it in groupItems)
+                                {
+                                    <div class="col-md-6"><div class="d-flex align-items-center justify-content-between border border-gray-300 border-dashed rounded p-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="symbol symbol-40px"><span class="symbol-label bg-light-primary">@if (!string.IsNullOrEmpty(it.Image)) { <img src="@it.Image" style="width:100%;height:100%;object-fit:cover;border-radius:6px" /> } else { <i class="ki-outline ki-cup fs-3 text-primary"></i> }</span></div>
+                                            <div><div class="fw-bold text-gray-800">@it.ItemName</div><div class="text-muted fs-8">@it.ItemCode</div></div>
+                                        </div>
+                                        <form asp-action="DetachModifierItem" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Detach?"]">@Html.AntiForgeryToken()<input type="hidden" name="groupId" value="@group.ID" /><input type="hidden" name="linkId" value="@it.LinkId" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-4"></i></button></form>
+                                    </div></div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Attached items-->
+                }
+            </div>
+            <!--end::Detail column-->
+        </div>
+    </div></div>
+</div>
+
+@* item search popup (reused for: pick linked item [single] / attach items [multi]) *@
+<div class="modal fade" tabindex="-1" id="itemModal">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="imTitle">@Localizer["Search for item"]</h5>
+                <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal"><i class="ki-duotone ki-cross fs-2x"><span class="path1"></span><span class="path2"></span></i></div></div>
+            <div class="modal-body">
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <input id="imBarcode" class="form-control form-control-solid w-150px" placeholder="@Localizer["Barcode + Enter"]" autocomplete="off" />
+                    <input id="imName" class="form-control form-control-solid flex-grow-1" placeholder="@Localizer["Item name/code"]" autocomplete="off" />
+                    <button type="button" id="imSearch" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-3"></i>@SR["Search"]</button>
+                </div>
+                <div class="table-responsive"><table class="table table-row-dashed align-middle fs-7">
+                    <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th id="imChkCol" style="width:30px"><input type="checkbox" id="imAll" class="form-check-input" /></th><th>@SR["Item"]</th><th>@Localizer["Barcode"]</th><th class="text-end">@SR["Price"]</th><th></th></tr></thead>
+                    <tbody id="imBody" class="fw-semibold text-gray-700"></tbody>
+                </table></div>
+                <div id="imEmpty" class="text-center text-muted py-6 d-none">@Localizer["No results."]</div>
+                <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
+                    <button type="button" id="imPrev" class="btn btn-sm btn-icon btn-light"><i class="ki-outline ki-@(isAr ? "right" : "left") fs-4"></i></button>
+                    <span id="imPage" class="fw-bold fs-7"></span>
+                    <button type="button" id="imNext" class="btn btn-sm btn-icon btn-light"><i class="ki-outline ki-@(isAr ? "left" : "right") fs-4"></i></button>
+                </div>
+            </div>
+            <div class="modal-footer"><span class="text-muted fs-8 me-auto" id="imInfo"></span>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Close"]</button>
+                <button type="button" id="imAddSel" class="btn btn-primary d-none"><i class="ki-outline ki-check fs-3"></i>@Localizer["Attach selected"] (<span id="imSel">0</span>)</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+  var token=document.querySelector('input[name="__RequestVerificationToken"]').value;
+  var searchUrl='@Url.Action("ItemSearch","Pos")', attachUrl='@Url.Action("AttachModifierItemJson","Pos")';
+  var groupId=@(group?.ID ?? 0);
+  var reloadUrl='@Url.Action("Modifiers","Pos")'+'?groupId='+groupId;
+  var body=document.getElementById('imBody'), empty=document.getElementById('imEmpty');
+  var fBc=document.getElementById('imBarcode'), fName=document.getElementById('imName'), elPage=document.getElementById('imPage'), elSel=document.getElementById('imSel'), info=document.getElementById('imInfo');
+  var addSel=document.getElementById('imAddSel'), chkCol=document.getElementById('imChkCol'), imAll=document.getElementById('imAll');
+  var page=1, pages=1, mode='option', autoBc=false, attached=0;
+  var CUR='@Localizer["EGP"]';
+  function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function rowHtml(r){
+    var pick = mode==='option'
+      ? '<button type="button" class="btn btn-sm btn-light-primary im-pick" data-id="'+r.id+'" data-name="'+esc(r.name)+'">@Localizer["Select"]</button>'
+      : '<input type="checkbox" class="form-check-input im-chk" data-id="'+r.id+'">';
+    var lead = mode==='option' ? '' : '<td><input type="checkbox" class="form-check-input im-chk" data-id="'+r.id+'"></td>';
+    return '<tr>'+lead+
+      '<td><div class="fw-bold text-gray-800">'+esc(r.name)+'</div><div class="text-muted fs-8">'+esc(r.code)+'</div></td>'+
+      '<td class="text-muted">'+esc(r.barcode)+'</td>'+
+      '<td class="text-end fw-bold">'+(r.price!=null?(r.price+' '+CUR):'—')+'</td>'+
+      '<td class="text-end">'+(mode==='option'?pick:'')+'</td></tr>';
+  }
+  function selCount(){var n=body.querySelectorAll('.im-chk:checked').length; elSel.textContent=n; return n;}
+  function load(){
+    var p=new URLSearchParams();
+    if(fName.value.trim())p.set('term',fName.value.trim());
+    if(fBc.value.trim())p.set('barcode',fBc.value.trim());
+    p.set('page',page); p.set('pageSize','8');
+    fetch(searchUrl+'?'+p.toString(),{headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){
+      pages=j.pages||1; body.innerHTML=(j.rows||[]).map(rowHtml).join('');
+      empty.classList.toggle('d-none',(j.total||0)!==0); elPage.textContent=page+' / '+pages;
+      info.textContent='@SR["Total"]: '+(j.total||0); imAll.checked=false; selCount();
+      if(autoBc){autoBc=false; var rows=j.rows||[]; if(rows.length===1){ if(mode==='option'){pickItem(rows[0].id, rows[0].name);} else { var c=body.querySelector('.im-chk'); if(c){c.checked=true;selCount();} } } fBc.focus(); fBc.select();}
+    });
+  }
+  function pickItem(id,name){ document.getElementById('optItemId').value=id; document.getElementById('optItemLabel').textContent=name; document.getElementById('optSave').disabled=false; if(window.bootstrap){bootstrap.Modal.getInstance(document.getElementById('itemModal')).hide();} }
+  function attach(id){ var fd=new FormData(); fd.append('__RequestVerificationToken',token); fd.append('groupId',groupId); fd.append('itemId',id); return fetch(attachUrl,{method:'POST',body:fd,headers:{'X-Requested-With':'fetch'}}).then(function(r){return r.json();}).then(function(j){if(j.ok)attached++;}); }
+
+  document.getElementById('itemModal').addEventListener('show.bs.modal',function(e){
+    var b=e.relatedTarget; mode = (b && b.id==='attachBtn') ? 'attach' : 'option';
+    document.getElementById('imTitle').textContent = mode==='attach' ? '@Localizer["Attach items to group"]' : '@Localizer["Pick linked item"]';
+    addSel.classList.toggle('d-none', mode!=='attach'); chkCol.classList.toggle('d-none', mode!=='attach');
+    attached=0;
+  });
+  document.getElementById('itemModal').addEventListener('shown.bs.modal',function(){ fName.value='';fBc.value=''; page=1; load(); });
+  document.getElementById('itemModal').addEventListener('hidden.bs.modal',function(){ if(mode==='attach'&&attached>0) location.href=reloadUrl; });
+
+  document.getElementById('imSearch').addEventListener('click',function(){page=1;load();});
+  fName.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();page=1;load();}});
+  fBc.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();autoBc=true;page=1;load();}});
+  document.getElementById('imPrev').addEventListener('click',function(){if(page>1){page--;load();}});
+  document.getElementById('imNext').addEventListener('click',function(){if(page<pages){page++;load();}});
+  body.addEventListener('click',function(e){var p=e.target.closest('.im-pick'); if(p){pickItem(parseInt(p.getAttribute('data-id')), p.getAttribute('data-name'));}});
+  body.addEventListener('change',function(e){if(e.target.classList.contains('im-chk'))selCount();});
+  imAll.addEventListener('change',function(e){[].slice.call(body.querySelectorAll('.im-chk')).forEach(function(c){c.checked=e.target.checked;});selCount();});
+  addSel.addEventListener('click',function(){
+    var ids=[].slice.call(body.querySelectorAll('.im-chk:checked')).map(function(c){return c.getAttribute('data-id');});
+    if(!ids.length){info.textContent='@Localizer["Select an item"]';return;}
+    Promise.all(ids.map(attach)).then(function(){ location.href=reloadUrl; });
+  });
+})();
+</script>
+}

@@ -1,0 +1,65 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Activities & tasks"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted">CRM</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Activities"]</li></ul></div>
+        <button class="btn btn-sm btn-primary" onclick="actNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New activity"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["CrmMsg"] != null) { <div class="alert alert-success">@TempData["CrmMsg"]</div> }
+        @if (TempData["CrmErr"] != null) { <div class="alert alert-danger">@TempData["CrmErr"]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-7"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (subject / type)"]</label>
+                <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Status"]</label>
+                <select id="f_done" class="form-select form-select-solid cb-filter" data-control="select2" data-hide-search="true"><option value="">@SR["All"]</option><option value="false">@Localizer["Open"]</option><option value="true">@Localizer["Done"]</option></select></div>
+            <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+        </div></div></div>
+
+        <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+            <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
+            <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Type"]</th><th>@Localizer["Subject"]</th><th>@Localizer["Due"]</th><th class="text-center">@SR["Status"]</th><th class="text-center pe-4">@SR["Actions"]</th></tr></thead>
+                <tbody id="rows"></tbody>
+            </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@Localizer["No activities"]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="mNew" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <form asp-action="SaveActivity" method="post" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Save activity details?"]">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="f_id" value="0" />
+        <div class="modal-header"><h2 class="fw-bold" id="mTitle">@Localizer["New activity"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8"><div class="row">
+            <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Type"]</label><select name="type" id="f_type" class="form-select form-select-solid"><option value="Task">@Localizer["Task"]</option><option value="Call">@Localizer["Call"]</option><option value="Meeting">@Localizer["Meeting"]</option><option value="Email">@SR["Email"]</option></select></div>
+            <div class="col-md-8 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Subject"]</label><input name="subject" id="f_subject" class="form-control form-control-solid" required /></div>
+            <div class="col-md-12 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Subject (EN)"]</label><input name="subjectEn" id="f_subjectEn" class="form-control form-control-solid" placeholder="@Localizer["Optional English subject"]" /></div>
+            <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Due date"]</label><input name="dueDate" id="f_due" type="date" class="form-control form-control-solid" /></div>
+            <div class="col-md-12 mb-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><textarea name="notes" id="f_notes" class="form-control form-control-solid" rows="2"></textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+cbServerList({ url:'@Url.Action("ActivitiesData","Crm")', exportUrl:'@Url.Action("ActivitiesExport","Crm")', isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ var s=document.getElementById('f_done'); if(s&&s.value)p.set('done',s.value); } });
+var modal; function v(id,val){document.getElementById(id).value=val||'';}
+function actNew(){ document.getElementById('mTitle').textContent='@Localizer["New activity"]'; v('f_id','0');document.getElementById('f_type').value='Task';v('f_subject','');v('f_subjectEn','');v('f_due','');v('f_notes','');
+  modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show(); }
+function actEdit(btn){ var r=btn.closest('tr'); document.getElementById('mTitle').textContent='@Localizer["Edit activity"]';
+  v('f_id',r.getAttribute('data-id'));document.getElementById('f_type').value=r.getAttribute('data-type')||'Task';v('f_subject',r.getAttribute('data-subject'));v('f_subjectEn',r.getAttribute('data-subjecten')||'');v('f_due',r.getAttribute('data-due'));v('f_notes',r.getAttribute('data-notes'));
+  modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show(); }
+</script>
+}

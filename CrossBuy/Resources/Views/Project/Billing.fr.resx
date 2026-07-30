@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Progress billing" xml:space="preserve"><value>Décomptes</value></data>
+  <data name="Contract value" xml:space="preserve"><value>Valeur du contrat</value></data>
+  <data name="Projects" xml:space="preserve"><value>Projets</value></data>
+  <data name="New billing" xml:space="preserve"><value>Nouveau décompte</value></data>
+  <data name="Ready to bill" xml:space="preserve"><value>Prêt à facturer</value></data>
+  <data name="{0} confirmed measurement(s) ready. Start a new billing to invoice this period." xml:space="preserve"><value>{0} mesure(s) confirmée(s) prête(s). Créez un nouveau décompte pour facturer cette période.</value></data>
+  <data name="Progress billings" xml:space="preserve"><value>Décomptes</value></data>
+  <data name="No billings yet" xml:space="preserve"><value>Aucun décompte pour l'instant</value></data>
+  <data name="Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Gross work" xml:space="preserve"><value>Travaux bruts</value></data>
+  <data name="Tax" xml:space="preserve"><value>Taxe</value></data>
+  <data name="Retention" xml:space="preserve"><value>Retenue</value></data>
+  <data name="Advance recovery" xml:space="preserve"><value>Récupération d'avance</value></data>
+  <data name="Net due" xml:space="preserve"><value>Net à payer</value></data>
+  <data name="Draft" xml:space="preserve"><value>Brouillon</value></data>
+  <data name="Approved" xml:space="preserve"><value>Approuvé</value></data>
+  <data name="Posted" xml:space="preserve"><value>Comptabilisé</value></data>
+  <data name="Delete billing?" xml:space="preserve"><value>Supprimer le décompte ?</value></data>
+  <data name="Billing" xml:space="preserve"><value>Décompte</value></data>
+  <data name="Measurement (Confirmed)" xml:space="preserve"><value>Relevé (confirmé)</value></data>
+  <data name="Measurement" xml:space="preserve"><value>Relevé</value></data>
+  <data name="Billing date" xml:space="preserve"><value>Date du décompte</value></data>
+  <data name="Note" xml:space="preserve"><value>Note</value></data>
+  <data name="Item" xml:space="preserve"><value>Poste</value></data>
+  <data name="Cumulative" xml:space="preserve"><value>Cumulé</value></data>
+  <data name="Previously billed" xml:space="preserve"><value>Déjà facturé</value></data>
+  <data name="Period value" xml:space="preserve"><value>Valeur de la période</value></data>
+  <data name="No new work in this period" xml:space="preserve"><value>Aucun nouveau travail dans cette période</value></data>
+  <data name="Billing statement" xml:space="preserve"><value>État du décompte</value></data>
+  <data name="Tax rate %" xml:space="preserve"><value>Taux de taxe %</value></data>
+  <data name="Remaining advance" xml:space="preserve"><value>Solde restant</value></data>
+  <data name="Posts" xml:space="preserve"><value>Avance restante</value></data>
+  <data name="Approve billing?" xml:space="preserve"><value>Écritures</value></data>
+  <data name="Approve" xml:space="preserve"><value>Approuver le décompte ?</value></data>
+  <data name="Post billing? (creates invoice + settlements)" xml:space="preserve"><value>Approuver</value></data>
+  <data name="Post" xml:space="preserve"><value>Comptabiliser le décompte ? (crée la facture + règlements)</value></data>
+  <data name="Posted to the GL" xml:space="preserve"><value>Comptabiliser</value></data>
+  <data name="No confirmed measurement to bill. Confirm a progress measurement first." xml:space="preserve"><value>Comptabilisé au grand livre</value></data>
+</root>

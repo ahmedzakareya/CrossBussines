@@ -1,0 +1,9 @@
+﻿
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    ViewData["Title"] = Localizer["Index"].Value;
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+}
+
+

@@ -1,0 +1,79 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");   // localizer's culture (RTL-divergence-safe)
+    var ctx = ViewBag.Ctx as PosAppController.PosCtx;
+    var stations = ViewBag.Stations as List<CrossBuy.Models.Context.Pos.KitchenStation> ?? new();
+    var isManager = ViewBag.IsManager == true;
+    ViewData["Title"] = Localizer["Kitchen Display"].Value;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Kitchen Display"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@SR["POS"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@ctx?.BranchName</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge badge-light-secondary fs-7 py-2"><i class="ki-outline ki-time fs-6 me-1"></i><span id="kdsClock">--:--:--</span></span>
+            <span class="badge badge-light-primary fs-7 py-2">@Localizer["Tickets"]: <span id="kdsCount">0</span></span>
+            <button type="button" id="kdsRefresh" class="btn btn-sm btn-light"><i class="ki-outline ki-arrows-circle fs-3"></i>@Localizer["Refresh"]</button>
+            <a href="/pos/start" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-exit-left fs-3"></i>@SR["Back"]</a>
+        </div>
+    </div></div>
+    <!--end::Toolbar-->
+    <!--begin::Content-->
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <!--begin::Station tabs-->
+        <ul class="nav nav-line-tabs nav-line-tabs-2x fs-5 fw-bold mb-7" id="kdsTabs"></ul>
+        <!--end::Station tabs-->
+
+        <!--begin::Tickets grid-->
+        <div class="row g-5" id="kdsGrid"></div>
+        <!--end::Tickets grid-->
+
+        <!--begin::Empty-->
+        <div class="card d-none" id="kdsEmpty"><div class="card-body text-center py-15">
+            <i class="ki-outline ki-check-circle fs-3x text-primary mb-4 d-block"></i>
+            <span class="text-muted fs-5">@Localizer["No orders in the kitchen"]</span>
+        </div></div>
+        <!--end::Empty-->
+
+    </div></div>
+    <!--end::Content-->
+</div>
+
+<form id="af">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script src="~/Backend-assets/plugins/signalr.min.js"></script>
+    <script>
+        window.KDS = {
+            rtl: @(isAr ? "true" : "false"),
+            isManager: @(isManager ? "true" : "false"),
+            stations: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(stations.Select(s => new { id = s.ID, name = isAr ? s.Name : (!string.IsNullOrWhiteSpace(s.NameEn) ? s.NameEn! : s.Name) }), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })),
+            urls: { tickets: '/pos/kds/tickets', lineStatus: '/pos/kds/line-status' },
+            L: {
+                "new": @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["New"].Value)),
+                preparing: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Preparing"].Value)),
+                ready: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Ready"].Value)),
+                startPrep: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Start"].Value)),
+                markReady: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Ready"].Value)),
+                allReady: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["All ready"].Value)),
+                table: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Table"].Value)),
+                takeaway: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Takeaway"].Value)),
+                order: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Order"].Value)),
+                all: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["All"].Value))
+            }
+        };
+    </script>
+    <script src="~/Backend-assets/js/pos-kds.js" asp-append-version="true"></script>
+}

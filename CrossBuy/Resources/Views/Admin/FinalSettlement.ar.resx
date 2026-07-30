@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Termination &amp; final settlement" xml:space="preserve">
+    <value>إنهاء الخدمة والتسوية النهائية</value>
+  </data>
+  <data name="Select employee…" xml:space="preserve">
+    <value>اختر موظفًا…</value>
+  </data>
+  <data name="Termination date" xml:space="preserve">
+    <value>تاريخ إنهاء الخدمة</value>
+  </data>
+  <data name="Compute" xml:space="preserve">
+    <value>احتساب</value>
+  </data>
+  <data name="This employee is already terminated (inactive)." xml:space="preserve">
+    <value>هذا الموظف منهٍ خدمته بالفعل (غير نشط).</value>
+  </data>
+  <data name="Service summary" xml:space="preserve">
+    <value>بيانات الخدمة</value>
+  </data>
+  <data name="Join date" xml:space="preserve">
+    <value>تاريخ التعيين</value>
+  </data>
+  <data name="Service years" xml:space="preserve">
+    <value>سنوات الخدمة</value>
+  </data>
+  <data name="Daily rate" xml:space="preserve">
+    <value>الأجر اليومي</value>
+  </data>
+  <data name="Encashable leave" xml:space="preserve">
+    <value>رصيد الإجازات القابل للصرف</value>
+  </data>
+  <data name="d" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="Leave value" xml:space="preserve">
+    <value>قيمة بدل الإجازة</value>
+  </data>
+  <data name="Suggested gratuity" xml:space="preserve">
+    <value>مكافأة مقترحة</value>
+  </data>
+  <data name="({0} days/yr)" xml:space="preserve">
+    <value>({0} يوم/سنة)</value>
+  </data>
+  <data name="Post settlement" xml:space="preserve">
+    <value>ترحيل التسوية</value>
+  </data>
+  <data name="This terminates the employee and posts the settlement. Continue?" xml:space="preserve">
+    <value>سيتم إنهاء خدمة الموظف وترحيل قيد التسوية. متابعة؟</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>سبب الإنهاء</value>
+  </data>
+  <data name="Gratuity" xml:space="preserve">
+    <value>مكافأة</value>
+  </data>
+  <data name="Other earnings" xml:space="preserve">
+    <value>مستحقات أخرى</value>
+  </data>
+  <data name="Deductions" xml:space="preserve">
+    <value>استقطاعات</value>
+  </data>
+  <data name="Pay from" xml:space="preserve">
+    <value>الدفع من</value>
+  </data>
+  <data name="Net = (leave + gratuity + other) − deductions. Dr settlement expenses / Cr bank. The employee is deactivated and their contract closed." xml:space="preserve">
+    <value>الصافي = (بدل الإجازة + المكافأة + مستحقات أخرى) − الاستقطاعات. مدين مصروفات التسوية / دائن البنك. يُعطَّل الموظف ويُنهى عقده.</value>
+  </data>
+  <data name="Terminate &amp; post settlement" xml:space="preserve">
+    <value>إنهاء الخدمة وترحيل التسوية</value>
+  </data>
+  <data name="Pick an employee to compute their settlement." xml:space="preserve">
+    <value>اختر موظفًا لاحتساب تسويته.</value>
+  </data>
+  <data name="Recent settlements" xml:space="preserve">
+    <value>التسويات السابقة</value>
+  </data>
+  <data name="Years" xml:space="preserve">
+    <value>سنوات</value>
+  </data>
+  <data name="Leave" xml:space="preserve">
+    <value>إجازة</value>
+  </data>
+  <data name="Net" xml:space="preserve">
+    <value>الصافي</value>
+  </data>
+  <data name="No settlements yet." xml:space="preserve">
+    <value>لا توجد تسويات بعد.</value>
+  </data>
+</root>

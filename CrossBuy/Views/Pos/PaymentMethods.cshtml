@@ -1,0 +1,114 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.Models.Context.Pos
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var companies = ViewBag.Companies as List<Companies> ?? new();
+    int? fC = ViewBag.FilterCompanyId;
+    var branches = ViewBag.Branches as List<Branch> ?? new();
+    int? fB = ViewBag.FilterBranchId;
+    var methods = ViewBag.Methods as List<BranchPaymentMethod> ?? new();
+    var accounts = ViewBag.Accounts as List<Account> ?? new();
+    var accById = ViewBag.AccountsById as Dictionary<int, Account> ?? new();
+    string AccLabel(int? id) { if (id != null && accById.TryGetValue(id.Value, out var a)) return a.Code + " — " + (isAr ? a.Name : (string.IsNullOrEmpty(a.NameEn) ? a.Name : a.NameEn)); return Localizer["— none —"].Value; }
+    var types = new[] { ("Cash", Localizer["Cash"].Value), ("Card", Localizer["Card"].Value), ("KNet", "KNet"), ("Mada", Localizer["Mada"].Value), ("Meeza", Localizer["Meeza"].Value), ("OnAccount", Localizer["On account"].Value), ("Voucher", Localizer["Voucher"].Value) };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Payment methods"]</h1>
+            <span class="text-muted fs-7">@Localizer["Define per-branch payment methods and map each to its account — setup only, no payment or GL now."]</span></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+        @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+        @if (fC != null && !branches.Any()) { <div class="alert alert-warning"><i class="ki-outline ki-information-5 fs-3 me-2"></i>@Localizer["This company has no branches."]</div> }
+
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Company"]</label>
+                <select id="coSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select company"]</option>@foreach (var c in companies) { <option value="@c.CompanyID" selected="@(fC==c.CompanyID)">@(isAr ? (c.ComoanyNameAr ?? c.CompanyName) : c.CompanyName)</option> }</select></div>
+            <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Branch"]</label>
+                <select id="brSel" class="form-select form-select-solid" data-control="select2" @(fC == null ? "disabled" : "")><option value="">@Localizer["Select branch"]</option>@foreach (var b in branches) { <option value="@b.ID" selected="@(fB==b.ID)">@(isAr ? (b.NameAr ?? b.Name) : b.Name)</option> }</select></div>
+        </div></div></div>
+
+        @if (fB == null)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-two-credit-cart fs-3x mb-3 d-block"></i>@Localizer["Select a branch to manage payment methods."]</div></div>
+        }
+        else
+        {
+            <div class="row g-5">
+                <div class="col-lg-5">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3 id="pmFormTitle">@Localizer["Add payment method"]</h3></div>
+                        <div class="card-toolbar"><button type="button" id="pmNew" class="btn btn-sm btn-light d-none">@Localizer["New"]</button></div></div>
+                        <div class="card-body">
+                            <form asp-action="SavePaymentMethod" method="post" class="row g-3" id="pmForm">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" id="pmId" value="0" />
+                                <div class="col-12"><label class="required fw-semibold fs-8 mb-1">@Localizer["Method"]</label>
+                                    <input name="paymentMethod" id="pmType" list="pmTypes" class="form-control form-control-solid form-control-sm" required placeholder="@Localizer["Cash / Card / KNet …"]" />
+                                    <datalist id="pmTypes">@foreach (var t in types) { <option value="@t.Item1">@t.Item2</option> }</datalist></div>
+                                <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Display name (optional)"]</label><input name="displayName" id="pmName" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["e.g. KNet"]" /></div>
+                                <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Target account"]</label>
+                                    <select name="targetAccountId" id="pmAcc" class="form-select form-select-solid form-select-sm" data-control="select2"><option value="">@Localizer["— pick account —"]</option>@foreach (var a in accounts) { <option value="@a.ID">@a.Code — @(isAr ? a.Name : (string.IsNullOrEmpty(a.NameEn) ? a.Name : a.NameEn))</option> }</select>
+                                    <div class="form-text fs-8">@Localizer["Cash→cash box · Card→card clearing · KNet→KNet clearing · On account→AR."]</div></div>
+                                <div class="col-8"><label class="fw-semibold fs-8 mb-1">@Localizer["Sort"]</label><input type="number" name="sort" id="pmSort" value="0" class="form-control form-control-solid form-control-sm" /></div>
+                                <div class="col-4 d-flex align-items-end"><label class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" id="pmActive" value="true" checked /><span class="form-check-label fs-8 ms-2">@SR["Active"]</span></label></div>
+                                <div class="col-12"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Branch payment methods"]</h3></div><div class="card-toolbar"><span class="badge badge-light-primary">@methods.Count</span></div></div>
+                        <div class="card-body">
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle fs-7">
+                                <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@Localizer["Method"]</th><th>@Localizer["Target account"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                                <tbody>
+                                    @if (!methods.Any()) { <tr><td colspan="4" class="text-muted text-center py-5">@Localizer["No payment methods yet."]</td></tr> }
+                                    @foreach (var m in methods)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold text-gray-800">@(string.IsNullOrEmpty(m.DisplayName) ? m.PaymentMethod : m.DisplayName) <span class="text-muted fs-8">(@m.PaymentMethod)</span></td>
+                                            <td class="text-muted">@AccLabel(m.TargetAccountId)</td>
+                                            <td class="text-center"><span class="badge badge-light-@(m.IsActive ? "success" : "secondary")">@(m.IsActive ? SR["Active"].Value : Localizer["Off"].Value)</span></td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-icon btn-sm btn-light-primary pm-edit"
+                                                    data-id="@m.ID" data-type="@m.PaymentMethod" data-name="@m.DisplayName" data-acc="@m.TargetAccountId" data-sort="@m.Sort" data-active="@m.IsActive.ToString().ToLower()"><i class="ki-outline ki-pencil fs-5"></i></button>
+                                                <form asp-action="DeletePaymentMethod" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete payment method?"]">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@m.ID" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+var base='@Url.Action("PaymentMethods","Pos")';
+var coSel=document.getElementById('coSel');
+if(coSel){var goc=function(){var v=coSel.value||'';location.href=base+(v?('?companyId='+v):'');};if(window.jQuery){jQuery(coSel).on('change select2:select',goc);}else{coSel.addEventListener('change',goc);}}
+var brSel=document.getElementById('brSel');
+if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?companyId=@fC&branchId='+v;};if(window.jQuery){jQuery(brSel).on('change select2:select',go);}else{brSel.addEventListener('change',go);}}
+// edit → prefill form
+[].slice.call(document.querySelectorAll('.pm-edit')).forEach(function(b){ b.addEventListener('click',function(){
+  document.getElementById('pmId').value=b.getAttribute('data-id');
+  document.getElementById('pmType').value=b.getAttribute('data-type')||'';
+  document.getElementById('pmName').value=b.getAttribute('data-name')||'';
+  var acc=b.getAttribute('data-acc')||''; var accEl=document.getElementById('pmAcc'); accEl.value=acc; if(window.jQuery){jQuery(accEl).trigger('change');}
+  document.getElementById('pmSort').value=b.getAttribute('data-sort')||'0';
+  document.getElementById('pmActive').checked=(b.getAttribute('data-active')==='true');
+  document.getElementById('pmFormTitle').textContent='@Localizer["Edit payment method"]';
+  document.getElementById('pmNew').classList.remove('d-none');
+  window.scrollTo({top:0,behavior:'smooth'});
+}); });
+var pmNew=document.getElementById('pmNew'); if(pmNew){pmNew.addEventListener('click',function(){document.getElementById('pmForm').reset();document.getElementById('pmId').value='0';document.getElementById('pmFormTitle').textContent='@Localizer["Add payment method"]';pmNew.classList.add('d-none');if(window.jQuery){jQuery('#pmAcc').val('').trigger('change');}});}
+</script>
+}

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Edit price list" xml:space="preserve">
+    <value>Edit price list</value>
+  </data>
+  <data name="New price list" xml:space="preserve">
+    <value>New price list</value>
+  </data>
+  <data name="Price lists" xml:space="preserve">
+    <value>Price lists</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>Name (EN)</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Specific customer (blank = segment/all)" xml:space="preserve">
+    <value>Specific customer (blank = segment/all)</value>
+  </data>
+  <data name="Segment (blank = all)" xml:space="preserve">
+    <value>Segment (blank = all)</value>
+  </data>
+  <data name="Wholesale" xml:space="preserve">
+    <value>Wholesale</value>
+  </data>
+  <data name="Retail" xml:space="preserve">
+    <value>Retail</value>
+  </data>
+  <data name="Valid from" xml:space="preserve">
+    <value>Valid from</value>
+  </data>
+  <data name="Valid to" xml:space="preserve">
+    <value>Valid to</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Pricing rules" xml:space="preserve">
+    <value>Pricing rules</value>
+  </data>
+  <data name="Pricing mode" xml:space="preserve">
+    <value>Pricing mode</value>
+  </data>
+  <data name="Fixed price" xml:space="preserve">
+    <value>Fixed price</value>
+  </data>
+  <data name="Cost + markup" xml:space="preserve">
+    <value>Cost + markup</value>
+  </data>
+  <data name="Min qty ≥" xml:space="preserve">
+    <value>Min qty ≥</value>
+  </data>
+  <data name="Override price" xml:space="preserve">
+    <value>Override price</value>
+  </data>
+  <data name="Item price" xml:space="preserve">
+    <value>Item price</value>
+  </data>
+  <data name="Markup %" xml:space="preserve">
+    <value>Markup %</value>
+  </data>
+  <data name="Discount %" xml:space="preserve">
+    <value>Discount %</value>
+  </data>
+  <data name="Price is computed from the current cost (manufactured / average stock) × (1 + markup%) and converted to the document currency — a dynamic price that moves with the cost, not a fixed one." xml:space="preserve">
+    <value>Price is computed from the current cost (manufactured / average stock) × (1 + markup%) and converted to the document currency — a dynamic price that moves with the cost, not a fixed one.</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Min qty" xml:space="preserve">
+    <value>Min qty</value>
+  </data>
+  <data name="Price/Markup" xml:space="preserve">
+    <value>Price/Markup</value>
+  </data>
+  <data name="Disc %" xml:space="preserve">
+    <value>Disc %</value>
+  </data>
+  <data name="No rules yet — add an item above" xml:space="preserve">
+    <value>No rules yet — add an item above</value>
+  </data>
+  <data name="Save changes?" xml:space="preserve">
+    <value>Save changes?</value>
+  </data>
+  <data name="Cost+markup" xml:space="preserve">
+    <value>Cost+markup</value>
+  </data>
+  <data name="Fixed" xml:space="preserve">
+    <value>Fixed</value>
+  </data>
+  <data name="Search item…" xml:space="preserve">
+    <value>Search item…</value>
+  </data>
+  <data name="All customers / by segment" xml:space="preserve">
+    <value>All customers / by segment</value>
+  </data>
+</root>

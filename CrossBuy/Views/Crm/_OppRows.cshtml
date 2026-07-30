@@ -1,0 +1,26 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<OppRow>
+@{
+    var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+    // stage palette — matches the pipeline stat cards on the Opportunities page
+    var stgHex = new Dictionary<string, string> { ["Prospecting"] = "#7239ea", ["Qualification"] = "#0d9edc", ["Proposal"] = "#f6c000", ["Negotiation"] = "#f1416c", ["Won"] = "#13433a", ["Lost"] = "#d92d20" };
+    string hex(string s) => stgHex.TryGetValue(s, out var h) ? h : "#7239ea";
+    string nm(string s) => s switch { "Prospecting" => Localizer["Prospecting"].Value, "Qualification" => Localizer["Qualification"].Value, "Proposal" => Localizer["Proposal"].Value, "Negotiation" => Localizer["Negotiation"].Value, "Won" => Localizer["Won"].Value, "Lost" => Localizer["Lost"].Value, _ => s };
+}
+@foreach (var o in Model)
+{
+    <tr data-id="@o.Id" data-title="@o.Title" data-titleen="@o.TitleEn" data-accountid="@o.AccountId" data-accountname="@o.CustomerName" data-stage="@o.Stage" data-amount="@o.Amount" data-prob="@o.Probability" data-close="@(o.ExpectedCloseDate?.ToString("yyyy-MM-dd"))" data-campaign="@o.CampaignId" style="border-bottom:1px dashed #eef1f6;">
+        <td class="ps-4 fw-bold text-gray-800">@(isEn ? (string.IsNullOrWhiteSpace(o.TitleEn) ? o.Title : o.TitleEn) : o.Title)</td>
+        <td class="text-muted">@(o.CustomerName ?? "—")</td>
+        <td class="text-end fw-bold">@o.Amount.ToString("N2")</td>
+        <td class="text-center">@o.Probability%</td>
+        <td class="text-muted">@(o.ExpectedCloseDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+        <td class="text-center">@{ var oh = hex(o.Stage); }<span class="badge fw-bold" style="background:@(oh)22;color:@oh;">@nm(o.Stage)</span></td>
+        <td class="text-center pe-4">
+            <a href="@Url.Action("OpportunityProducts","Crm", new { id = o.Id })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Products / convert"]"><i class="ki-outline ki-handcart fs-6"></i></a>
+            <button class="btn btn-sm btn-icon btn-light-primary" title="@SR["Edit"]" onclick="oppEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
+        </td>
+    </tr>
+}

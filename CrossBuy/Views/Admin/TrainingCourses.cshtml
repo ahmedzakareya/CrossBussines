@@ -1,0 +1,93 @@
+@using CrossBuy.Models.Context.Admin
+@model List<TrainingCourse>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Training courses"]</h1>
+        <a href="@Url.Action("TrainingCourseEditor","Admin")" class="btn btn-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New course"]</a>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrMsg"] != null) { <div class="alert alert-success">@TempData["HrMsg"]</div> }
+        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
+        <div class="card card-flush">
+            <div class="card-header pt-6">
+                <div class="card-title"></div>
+                <div class="card-toolbar">
+                    <div class="d-flex align-items-center position-relative">
+                        <i class="ki-outline ki-magnifier fs-4 position-absolute ms-3"></i>
+                        <input type="text" id="coursesSearch" class="form-control form-control-solid w-250px ps-11" placeholder="@Localizer["Search code/title/provider…"]" value="@ViewBag.Q" />
+                    </div>
+                </div>
+            </div>
+            <div class="card-body pt-2"><div class="table-responsive"><table id="coursesTable" class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Code"]</th><th>@Localizer["Title"]</th><th>@Localizer["Provider"]</th><th class="text-center">@Localizer["Hours"]</th><th class="text-end">@Localizer["Cost"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4">@SR["Actions"]</th></tr></thead>
+            <tbody class="fw-semibold text-gray-700">
+            @foreach (var c in Model)
+            {
+                <tr style="border-bottom:1px dashed #eef1f6;">
+                    <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:#13433a;">@c.Code</span></td>
+                    <td class="fw-bold text-gray-900">@(isAr ? c.Title : (string.IsNullOrEmpty(c.TitleEn) ? c.Title : c.TitleEn))</td>
+                    <td class="text-muted fs-7">@(isAr ? c.Provider : (string.IsNullOrEmpty(c.ProviderEn) ? c.Provider : c.ProviderEn))</td>
+                    <td class="text-center">@c.Hours.ToString("0.#")</td>
+                    <td class="text-end">@c.Cost.ToString("N2")</td>
+                    <td class="text-center">
+                        @if (c.IsActive) { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@SR["Active"]</span> }
+                        else { <span class="badge badge-light-secondary fw-bold">@SR["Inactive"]</span> }
+                    </td>
+                    <td class="text-end pe-4">
+                        <a href="@Url.Action("CourseEnrollments","Admin", new { courseId = c.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@Localizer["Enrollments"]"><i class="ki-outline ki-people fs-5"></i></a>
+                        <a href="@Url.Action("TrainingCourseEditor","Admin", new { id = c.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-5"></i></a>
+                        <form asp-action="DeleteTrainingCourse" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete course and its enrollments?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table></div></div></div>
+    </div></div>
+</div>
+
+@section Scripts {
+<link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
+<script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js"></script>
+<style>
+    #coursesTable_wrapper .dataTables_paginate .paginate_button.current,
+    #coursesTable_wrapper .dataTables_paginate .paginate_button.current:hover { background:#1f6253 !important; border-color:#1f6253 !important; color:#fff !important; }
+    #coursesTable_wrapper .dataTables_paginate .paginate_button:hover { color:#1f6253 !important; }
+    #coursesTable_wrapper .dataTables_info { color:#a1a5b7; padding-top:1rem; }
+    #coursesTable tbody tr { border-bottom:1px dashed #eef1f6; }
+</style>
+<script>
+(function () {
+    if (!(window.jQuery && jQuery.fn && jQuery.fn.DataTable)) return;
+    var $t = jQuery('#coursesTable');
+    if (!$t.length || jQuery.fn.dataTable.isDataTable($t)) return;
+    var isAr = @(isAr ? "true" : "false");
+    var dt = $t.DataTable({
+        info: true,
+        order: [[0, 'asc']],
+        pageLength: 10,
+        lengthChange: false,
+        columnDefs: [{ orderable: false, targets: [6] }],
+        dom: "t<'d-flex flex-stack flex-wrap align-items-center mt-4'ip>",
+        language: {
+            emptyTable: '@Localizer["No courses"]',
+            zeroRecords: '@Localizer["No courses"]',
+            info: isAr ? 'عرض _START_ إلى _END_ من _TOTAL_' : 'Showing _START_ to _END_ of _TOTAL_',
+            infoEmpty: isAr ? 'لا نتائج' : 'No records',
+            infoFiltered: isAr ? '(مُرشّح من _MAX_)' : '(filtered from _MAX_)',
+            paginate: { previous: '‹', next: '›' }
+        }
+    });
+    var box = document.getElementById('coursesSearch');
+    if (box) {
+        if (box.value) dt.search(box.value).draw();
+        box.addEventListener('keyup', function (e) { dt.search(e.target.value).draw(); });
+    }
+})();
+</script>
+}

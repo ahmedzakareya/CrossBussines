@@ -1,0 +1,277 @@
+@using CrossBuy.Controllers
+@model ManufDashboardDto
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutManufacturing.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var monthsAr = new[] { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+    var monthsEn = new[] { "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    string Money(decimal v) => v.ToString("N2");
+    // brand-safe status palette: green = done/active-ok, amber-caution = in-progress, red = cancelled, gray = draft
+    string stStyle(string s) => s switch {
+        "Completed" => "background:#eaf3ef;color:#13433a;",
+        "Released" or "InProgress" => "background:#fef3e2;color:#b96a00;",
+        "Cancelled" => "background:#fdeaea;color:#d92d20;",
+        _ => "background:#f2f4f7;color:#475467;" };
+    string stName(string s) => s switch {
+        "Completed" => Localizer["Completed"].Value, "Released" => Localizer["Released"].Value,
+        "InProgress" => Localizer["In progress"].Value, "Cancelled" => Localizer["Cancelled"].Value,
+        _ => Localizer["Draft"].Value };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Manufacturing"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Manufacturing dashboard"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a href="@Url.Action("WorkOrders","Inventory")" class="btn btn-sm btn-flex btn-light fw-bold">@Localizer["Work orders"]</a>
+                <a href="@Url.Action("NewWorkOrder","Inventory")" class="btn btn-sm btn-flex btn-primary fw-bold"><i class="ki-outline ki-plus fs-3"></i>@Localizer["New work order"]</a>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            <!--begin::Row 1 — production trend + value card-->
+            <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Production output"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@Localizer["Last 6 months — completed value"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("ManufReports","Inventory")" class="btn btn-sm btn-light">@Localizer["Reports"]</a></div>
+                        </div>
+                        <div class="card-body pt-0 px-3 pb-3">
+                            <div id="manuf_trend_chart" style="height:330px"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background:linear-gradient(135deg,#1f6253 0%,#13433a 100%)">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@Localizer["Production this month"]</span></h3>
+                            <div class="card-toolbar"><a href="@Url.Action("WorkOrders","Inventory")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a></div>
+                        </div>
+                        <div class="card-body d-flex justify-content-between flex-column pt-1 px-0 pb-0">
+                            <div class="d-flex flex-wrap px-9 mb-4">
+                                <div class="rounded min-w-125px py-3 px-4 my-1 me-6" style="border:1px dashed rgba(255,255,255,0.4)">
+                                    <div class="text-white fs-2 fw-bold">@Money(Model.MonthProducedValue)</div>
+                                    <div class="fw-semibold fs-7 text-white opacity-75">@Localizer["Produced value"]</div>
+                                </div>
+                                <div class="rounded min-w-125px py-3 px-4 my-1" style="border:1px dashed rgba(255,255,255,0.4)">
+                                    <div class="text-white fs-2 fw-bold">@Model.MonthCompleted</div>
+                                    <div class="fw-semibold fs-7 text-white opacity-75">@Localizer["Completed WOs"]</div>
+                                </div>
+                            </div>
+                            <div class="px-9">
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Open WIP"]</span><span class="fw-bold fs-7">@Money(Model.OpenWip)</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Active orders"]</span><span class="fw-bold fs-7">@Model.Active</span></div>
+                                <div class="d-flex flex-stack text-white"><span class="fw-bold fs-7">@Localizer["Total produced value"]</span><span class="fw-bold fs-7">@Money(Model.TotalProducedValue)</span></div>
+                            </div>
+                            <div class="pb-9"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 1-->
+
+            <!--begin::Row 2 — stat cards-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                @{
+                    // (label, value, icon, bg, fg, href)
+                    var stats = new (string label, string value, string icon, string bg, string fg, string href)[] {
+                        (Localizer["Work orders"].Value, Model.TotalWos.ToString(), "ki-gear", "#eaf3ef", "#13433a", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Draft"].Value, Model.Draft.ToString(), "ki-document", "#f2f4f7", "#475467", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Active orders"].Value, Model.Active.ToString(), "ki-time", "#fef3e2", "#b96a00", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Completed"].Value, Model.Completed.ToString(), "ki-check-circle", "#eaf3ef", "#13433a", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Open WIP"].Value, Money(Model.OpenWip), "ki-abstract-26", "#eaf3ef", "#13433a", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Cancelled"].Value, Model.Cancelled.ToString(), "ki-cross-circle", Model.Cancelled>0?"#fdeaea":"#f2f4f7", Model.Cancelled>0?"#d92d20":"#475467", Url.Action("WorkOrders","Inventory")),
+                    };
+                }
+                @foreach (var s in stats)
+                {
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <a href="@s.href" class="card h-100 text-decoration-none">
+                            <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                                <div class="symbol symbol-40px mb-4"><span class="symbol-label" style="background:@s.bg;"><i class="ki-outline @s.icon fs-2x" style="color:@s.fg;"></i></span></div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2">@s.value</span>
+                                <div class="m-0 mt-2"><span class="fw-semibold fs-7 text-gray-500">@s.label</span></div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+            <!--end::Row 2-->
+
+            <!--begin::Row 3 — recent work orders + cost breakdown-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Recent work orders"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-6">@Localizer["Latest 10"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("WorkOrders","Inventory")" class="btn btn-sm btn-light">@Localizer["View all"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive">
+                            <table class="table align-middle fs-6 gy-3 my-0" style="font-variant-numeric:tabular-nums;">
+                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                    <th class="ps-4">@Localizer["WO"]</th><th class="min-w-200px">@SR["Item"]</th><th class="text-end">@SR["Quantity"]</th>
+                                    <th class="text-end">@Localizer["Cost"]</th><th>@SR["Date"]</th><th class="text-center pe-4">@SR["Status"]</th>
+                                </tr></thead>
+                                <tbody class="fw-semibold text-gray-700">
+                                    @if (Model.Recent.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-10">@Localizer["No work orders yet"]</td></tr> }
+                                    @foreach (var w in Model.Recent)
+                                    {
+                                        <tr style="border-bottom:1px dashed #eef1f6;">
+                                            <td class="ps-4"><a href="@Url.Action("WorkOrderDetails","Inventory", new { id = w.Id })" class="fw-bold text-gray-900 text-hover-primary">@(w.WoNo ?? ("#" + w.Id))</a></td>
+                                            <td class="text-truncate mw-300px">@w.ItemName</td>
+                                            <td class="text-end fw-bold text-gray-900">@w.ProducedQty.ToString("0.##") <span class="text-muted fw-semibold">/ @w.Qty.ToString("0.##")</span></td>
+                                            <td class="text-end fw-bold text-gray-800">@Money(w.TotalCost)</td>
+                                            <td class="text-muted">@(w.When?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                            <td class="text-center pe-4"><span class="badge fw-bold" style="@stStyle(w.Status)">@stName(w.Status)</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Cost breakdown"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["Completed orders"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body pt-2 d-flex flex-column">
+                            @if (Model.TotMaterial + Model.TotLabor + Model.TotOverhead <= 0) { <div class="text-center text-muted py-15">@Localizer["No completed orders yet"]</div> }
+                            else
+                            {
+                                <div id="manuf_cost_chart" style="height:220px"></div>
+                                <div class="mt-4">
+                                    <div class="d-flex flex-stack mb-2"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#1f6253;width:9px;height:9px;"></span>@Localizer["Material"]</span><span class="fw-bold text-gray-900">@Money(Model.TotMaterial)</span></div>
+                                    <div class="d-flex flex-stack mb-2"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#b96a00;width:9px;height:9px;"></span>@Localizer["Labor"]</span><span class="fw-bold text-gray-900">@Money(Model.TotLabor)</span></div>
+                                    <div class="d-flex flex-stack"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#7c9c93;width:9px;height:9px;"></span>@Localizer["Overhead"]</span><span class="fw-bold text-gray-900">@Money(Model.TotOverhead)</span></div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 3-->
+
+            <!--begin::Row 4 — top items + quick access-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-4">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7"><h3 class="card-title fw-bold text-gray-900">@Localizer["Top manufactured items"]</h3></div>
+                        <div class="card-body pt-2">
+                            @if (Model.TopItems.Count == 0) { <div class="text-center text-muted py-10">@Localizer["No completed orders yet"]</div> }
+                            @foreach (var t in Model.TopItems)
+                            {
+                                <div class="d-flex flex-stack mb-2"><span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@t.Name</span><span class="text-gray-900 fw-bold me-3">@Money(t.Value)</span></div>
+                                <div class="d-flex align-items-center w-100 mb-4"><div class="progress h-6px w-100 me-2" style="background:#eaf3ef;"><div class="progress-bar" style="width:@(t.Pct)%;background:#1f6253;"></div></div><span class="text-gray-500 fw-semibold fs-7">@t.Pct%</span></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-8">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7"><h3 class="card-title fw-bold text-gray-900">@Localizer["Quick Access"]</h3></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3">
+                                @{
+                                    var links = new (string action, string label, string icon)[] {
+                                        ("NewWorkOrder", Localizer["New work order"].Value, "ki-plus-square"),
+                                        ("WorkOrders", Localizer["Work orders"].Value, "ki-gear"),
+                                        ("ProductionPlanning", Localizer["Production planning"].Value, "ki-chart-line-up"),
+                                        ("NewAssembly", Localizer["Quick assembly"].Value, "ki-abstract-26"),
+                                        ("WorkCenters", Localizer["Work centers"].Value, "ki-technology-2"),
+                                        ("Items", Localizer["Items & BOMs"].Value, "ki-package"),
+                                        ("Units", Localizer["Units"].Value, "ki-ruler"),
+                                        ("ManufReports", Localizer["Reports"].Value, "ki-chart-simple"),
+                                    };
+                                }
+                                @foreach (var l in links)
+                                {
+                                    <div class="col-3">
+                                        <a href="@Url.Action(l.action,"Inventory")" class="d-flex flex-column flex-center bg-hover-light rounded h-100 py-5 border border-gray-200 text-decoration-none">
+                                            <i class="ki-outline @l.icon fs-2x mb-2" style="color:#1f6253;"></i>
+                                            <span class="fs-8 fw-semibold text-gray-800 text-center px-1">@l.label</span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 4-->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+    var isAr = @(isAr ? "true" : "false");
+    var months = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => (isAr ? monthsAr : monthsEn)[m.Month] + " " + m.Year)));
+    var vals = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => m.Value)));
+    var cnts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Months.Select(m => m.Count)));
+    // serialize costs via JSON (culture-invariant) — raw @@Model on the Arabic UI emits Arabic decimal marks that break JS
+    var costData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new[] { Model.TotMaterial, Model.TotLabor, Model.TotOverhead }));
+    function boot(){
+    if (typeof ApexCharts === 'undefined') return;
+    var trendEl = document.querySelector('#manuf_trend_chart');
+    if (trendEl && !trendEl.getAttribute('data-drawn')) {
+    trendEl.setAttribute('data-drawn','1');
+    new ApexCharts(trendEl, {
+        chart: { type: 'area', height: 330, fontFamily: 'inherit', toolbar: { show: false } },
+        series: [ { name: '@Localizer["Produced value"]', data: vals } ],
+        colors: ['#1f6253'],
+        xaxis: { categories: months, labels: { style: { colors: '#99A1B7' } } },
+        yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return v.toLocaleString(); } } },
+        stroke: { curve: 'smooth', width: 3 },
+        fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.05 } },
+        dataLabels: { enabled: false }, legend: { show: false },
+        grid: { borderColor: '#E4E6EF', strokeDashArray: 4 },
+        tooltip: { y: { formatter: function (v) { return v.toLocaleString() + (isAr ? ' ج.م' : ' EGP'); } } }
+    }).render();
+    }
+
+    var costEl = document.querySelector('#manuf_cost_chart');
+    if (costEl && !costEl.getAttribute('data-drawn')) {
+        costEl.setAttribute('data-drawn','1');
+        new ApexCharts(costEl, {
+            chart: { type: 'donut', height: 220, fontFamily: 'inherit' },
+            series: costData,
+            labels: ['@Localizer["Material"]', '@Localizer["Labor"]', '@Localizer["Overhead"]'],
+            colors: ['#1f6253', '#b96a00', '#7c9c93'],
+            legend: { show: false },
+            dataLabels: { enabled: true, formatter: function (v) { return Math.round(v) + '%'; } },
+            plotOptions: { pie: { donut: { size: '62%' } } },
+            tooltip: { y: { formatter: function (v) { return v.toLocaleString() + (isAr ? ' ج.م' : ' EGP'); } } }
+        }).render();
+    }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else setTimeout(boot, 60);
+})();
+</script>
+}

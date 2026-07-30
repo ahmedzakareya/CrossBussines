@@ -1,0 +1,126 @@
+@using CrossBuy.Models.Context.Admin
+@model List<JobApplication>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var stages = ViewBag.Stages as string[] ?? new[] { "New", "Review", "Interview", "Accepted", "Rejected", "Hired" };
+    var jobTitles = (ViewBag.JobTitles as List<JobTitle> ?? new()).ToDictionary(t => t.ID, t => isAr ? t.TitleAr : (string.IsNullOrEmpty(t.Title) ? t.TitleAr : t.Title));
+    string stageName(string s) => s switch { "New" => Localizer["New"].Value, "Review" => Localizer["Review"].Value, "Interview" => Localizer["Interview"].Value, "Accepted" => Localizer["Accepted"].Value, "Rejected" => Localizer["Rejected"].Value, "Hired" => Localizer["Hired"].Value, _ => s };
+    string stageCls(string s) => s switch { "New" => "secondary", "Review" => "info", "Interview" => "primary", "Accepted" => "success", "Rejected" => "danger", "Hired" => "dark", _ => "secondary" };
+    string jt(int? id) => id.HasValue && jobTitles.ContainsKey(id.Value) ? jobTitles[id.Value] : "—";
+}
+<style>
+    .kanban-card { transition: box-shadow .15s ease, transform .15s ease; }
+    .kanban-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.08); transform: translateY(-1px); }
+    .kanban-col.is-locked { opacity: .85; }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Job applications"]</h1>
+            <span class="text-muted fs-7">@Localizer["Drag an applicant between columns to change stage. Hiring is done from the applicant card."]</span>
+        </div>
+        <a href="@Url.Action("ApplicationForm","Admin")" class="btn btn-sm btn-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New application"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrMsg"] != null) { <div class="alert alert-success">@TempData["HrMsg"]</div> }
+        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
+
+        <div id="board" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-5">
+            @foreach (var s in stages)
+            {
+                var cls = stageCls(s);
+                var col = Model.Where(a => a.Status == s).ToList();
+                var locked = s == "Hired";
+                <div class="col">
+                    <div class="card card-bordered h-100">
+                        <div class="card-header min-h-55px">
+                            <div class="card-title">
+                                <span class="bullet bullet-dot bg-@cls h-10px w-10px me-3"></span>
+                                <span class="fw-bold fs-5 text-gray-900">@stageName(s)</span>
+                            </div>
+                            <div class="card-toolbar"><span class="badge badge-light-@cls fw-bold col-count">@col.Count</span></div>
+                        </div>
+                        <div class="card-body pt-4 kanban-col @(locked ? "is-locked" : "")" data-stage="@s" data-cls="@cls" data-locked="@(locked ? "1" : "0")" style="min-height:130px;">
+                            @if (!col.Any())
+                            {
+                                <div class="text-muted fs-8 text-center py-4 empty-hint">@Localizer["Empty"]</div>
+                            }
+                            @foreach (var a in col)
+                            {
+                                var nmeAr = string.IsNullOrWhiteSpace(a.FullName) ? (a.FirstName + " " + a.LastName).Trim() : a.FullName;
+                                var nme = isAr ? nmeAr : (string.IsNullOrWhiteSpace(a.FullNameEn) ? nmeAr : a.FullNameEn);
+                                var init = string.IsNullOrWhiteSpace(nme) ? "?" : nme.Trim().Substring(0, 1);
+                                <div class="card border border-gray-300 mb-4 kanban-card @(locked ? "" : "draggable")" draggable="@(locked ? "false" : "true")" data-id="@a.ID" style="@(locked ? "" : "cursor:grab;")">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-center">
+                                            <span class="symbol symbol-45px flex-shrink-0">
+                                                @if (!string.IsNullOrEmpty(a.PhotoPath)) { <img src="@a.PhotoPath" class="symbol-label" style="object-fit:cover;" alt="" /> }
+                                                else { <span class="symbol-label bg-light-@cls k-tint"><span class="fs-4 fw-bold text-@cls k-color">@init</span></span> }
+                                            </span>
+                                            <div class="d-flex flex-column flex-grow-1 mx-3">
+                                                <span class="fw-bold text-gray-900 fs-5 lh-1">@nme</span>
+                                                <span class="text-muted fw-semibold fs-8 mt-1">@jt(a.JobTitleID)</span>
+                                            </div>
+                                            <a href="@Url.Action("ApplicationDetail","Admin", new { id = a.ID })" class="btn btn-icon btn-sm btn-light-@cls" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-5"></i></a>
+                                        </div>
+                                        <div class="separator separator-dashed my-3"></div>
+                                        <div class="d-flex flex-stack">
+                                            <span class="badge badge-light-@cls">#@a.ApplicationNo</span>
+                                            @if (a.AppliedAt != null)
+                                            {
+                                                <span class="text-muted fw-semibold fs-8"><i class="ki-outline ki-calendar fs-6 me-1"></i>@a.AppliedAt.Value.ToString("yyyy-MM-dd")</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div></div>
+</div>
+@Html.AntiForgeryToken()
+@section Scripts {
+<script>
+(function () {
+    var moveUrl = '@Url.Action("MoveApplication","Admin")';
+    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    var COLORS = ['secondary', 'info', 'primary', 'success', 'danger', 'dark'];
+    var dragged = null, fromCol = null;
+    function recount(col) {
+        var n = col.querySelectorAll('.kanban-card').length;
+        var badge = col.closest('.card').querySelector('.col-count'); if (badge) badge.textContent = n;
+        var hint = col.querySelector('.empty-hint'); if (hint) hint.style.display = n > 0 ? 'none' : '';
+    }
+    function recolor(card, cls) {
+        if (!cls) return;
+        card.querySelectorAll('.k-tint').forEach(function (e) { COLORS.forEach(function (c) { e.classList.remove('bg-light-' + c); }); e.classList.add('bg-light-' + cls); });
+        card.querySelectorAll('.k-color').forEach(function (e) { COLORS.forEach(function (c) { e.classList.remove('text-' + c); }); e.classList.add('text-' + cls); });
+    }
+    var board = document.getElementById('board');
+    board.addEventListener('dragstart', function (e) { var c = e.target.closest('.draggable'); if (!c) return; dragged = c; fromCol = c.closest('.kanban-col'); c.style.opacity = '0.4'; e.dataTransfer.effectAllowed = 'move'; });
+    board.addEventListener('dragend', function () { if (dragged) dragged.style.opacity = ''; });
+    [].slice.call(document.querySelectorAll('.kanban-col')).forEach(function (col) {
+        if (col.getAttribute('data-locked') === '1') return;   // Hired column is not a drop target
+        col.addEventListener('dragover', function (e) { e.preventDefault(); col.style.background = '#eef4f1'; });
+        col.addEventListener('dragleave', function () { col.style.background = ''; });
+        col.addEventListener('drop', function (e) {
+            e.preventDefault(); col.style.background = ''; if (!dragged || col === fromCol) return;
+            var id = dragged.getAttribute('data-id'), stage = col.getAttribute('data-stage'), src = fromCol;
+            col.appendChild(dragged); recolor(dragged, col.getAttribute('data-cls')); recount(col); recount(src);
+            var body = new URLSearchParams(); body.set('id', id); body.set('stage', stage); body.set('__RequestVerificationToken', token);
+            fetch(moveUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (!d.ok) { src.appendChild(dragged); recount(col); recount(src); CB.toast.error(d.error || '@Localizer["Move failed"]'); } })
+                .catch(function () { src.appendChild(dragged); recount(col); recount(src); });
+        });
+    });
+})();
+</script>
+}

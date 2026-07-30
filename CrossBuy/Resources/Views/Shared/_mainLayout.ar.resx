@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Nest - Multipurpose eCommerce HTML Template" xml:space="preserve">
+    <value>نيست - قالب HTML للتجارة الإلكترونية متعدد الأغراض</value>
+  </data>
+  <data name="About Us" xml:space="preserve">
+    <value>من نحن</value>
+  </data>
+  <data name="My Account" xml:space="preserve">
+    <value>حسابي</value>
+  </data>
+  <data name="Wishlist" xml:space="preserve">
+    <value>قائمة الرغبات</value>
+  </data>
+  <data name="Order Tracking" xml:space="preserve">
+    <value>تتبع الطلب</value>
+  </data>
+  <data name="English" xml:space="preserve">
+    <value>الإنجليزية</value>
+  </data>
+  <data name="Arabic" xml:space="preserve">
+    <value>العربية</value>
+  </data>
+  <data name="Russian" xml:space="preserve">
+    <value>الروسية</value>
+  </data>
+  <data name="All Categories" xml:space="preserve">
+    <value>كل الفئات</value>
+  </data>
+  <data name="Search for items..." xml:space="preserve">
+    <value>ابحث عن المنتجات...</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>مقارنة</value>
+  </data>
+  <data name="Cart" xml:space="preserve">
+    <value>السلة</value>
+  </data>
+  <data name="View cart" xml:space="preserve">
+    <value>عرض السلة</value>
+  </data>
+  <data name="Checkout" xml:space="preserve">
+    <value>إتمام الشراء</value>
+  </data>
+  <data name="My Voucher" xml:space="preserve">
+    <value>قسائمي</value>
+  </data>
+  <data name="My Wishlist" xml:space="preserve">
+    <value>قائمة رغباتي</value>
+  </data>
+  <data name="Setting" xml:space="preserve">
+    <value>الإعدادات</value>
+  </data>
+  <data name="Sign out" xml:space="preserve">
+    <value>تسجيل الخروج</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>تصفح</value>
+  </data>
+  <data name="Show more..." xml:space="preserve">
+    <value>عرض المزيد...</value>
+  </data>
+  <data name="Deals" xml:space="preserve">
+    <value>العروض</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>حول</value>
+  </data>
+  <data name="Shop" xml:space="preserve">
+    <value>المتجر</value>
+  </data>
+  <data name="Vendors" xml:space="preserve">
+    <value>البائعون</value>
+  </data>
+  <data name="Mega menu" xml:space="preserve">
+    <value>القائمة الكبرى</value>
+  </data>
+  <data name="Blog" xml:space="preserve">
+    <value>المدونة</value>
+  </data>
+  <data name="Pages" xml:space="preserve">
+    <value>الصفحات</value>
+  </data>
+  <data name="Contact" xml:space="preserve">
+    <value>اتصل بنا</value>
+  </data>
+  <data name="Login" xml:space="preserve">
+    <value>تسجيل الدخول</value>
+  </data>
+  <data name="Register" xml:space="preserve">
+    <value>إنشاء حساب</value>
+  </data>
+  <data name="Forgot password" xml:space="preserve">
+    <value>نسيت كلمة المرور</value>
+  </data>
+  <data name="Reset password" xml:space="preserve">
+    <value>إعادة تعيين كلمة المرور</value>
+  </data>
+  <data name="Purchase Guide" xml:space="preserve">
+    <value>دليل الشراء</value>
+  </data>
+  <data name="Privacy Policy" xml:space="preserve">
+    <value>سياسة الخصوصية</value>
+  </data>
+  <data name="Terms of Service" xml:space="preserve">
+    <value>شروط الخدمة</value>
+  </data>
+  <data name="404 Page" xml:space="preserve">
+    <value>صفحة 404</value>
+  </data>
+  <data name="shop" xml:space="preserve">
+    <value>المتجر</value>
+  </data>
+  <data name="French" xml:space="preserve">
+    <value>الفرنسية</value>
+  </data>
+  <data name="German" xml:space="preserve">
+    <value>الألمانية</value>
+  </data>
+  <data name="Spanish" xml:space="preserve">
+    <value>الإسبانية</value>
+  </data>
+  <data name="Search for items…" xml:space="preserve">
+    <value>ابحث عن المنتجات…</value>
+  </data>
+  <data name="Our location" xml:space="preserve">
+    <value>موقعنا</value>
+  </data>
+  <data name="Log In / Sign Up" xml:space="preserve">
+    <value>تسجيل الدخول / إنشاء حساب</value>
+  </data>
+  <data name="Follow Us" xml:space="preserve">
+    <value>تابعنا</value>
+  </data>
+  <data name="Your emaill address" xml:space="preserve">
+    <value>عنوان بريدك الإلكتروني</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>اشترك</value>
+  </data>
+  <data name="Corporate" xml:space="preserve">
+    <value>الشركة</value>
+  </data>
+  <data name="Popular" xml:space="preserve">
+    <value>الأكثر رواجاً</value>
+  </data>
+  <data name="Install App" xml:space="preserve">
+    <value>تثبيت التطبيق</value>
+  </data>
+  <data name="Delivery Information" xml:space="preserve">
+    <value>معلومات التوصيل</value>
+  </data>
+  <data name="Terms &amp; Conditions" xml:space="preserve">
+    <value>الشروط والأحكام</value>
+  </data>
+  <data name="Contact Us" xml:space="preserve">
+    <value>اتصل بنا</value>
+  </data>
+  <data name="Support Center" xml:space="preserve">
+    <value>مركز الدعم</value>
+  </data>
+  <data name="Careers" xml:space="preserve">
+    <value>الوظائف</value>
+  </data>
+  <data name="Sign In" xml:space="preserve">
+    <value>تسجيل الدخول</value>
+  </data>
+  <data name="View Cart" xml:space="preserve">
+    <value>عرض السلة</value>
+  </data>
+  <data name="Track My Order" xml:space="preserve">
+    <value>تتبع طلبي</value>
+  </data>
+  <data name="Help Ticket" xml:space="preserve">
+    <value>تذكرة الدعم</value>
+  </data>
+  <data name="Shipping Details" xml:space="preserve">
+    <value>تفاصيل الشحن</value>
+  </data>
+  <data name="Compare products" xml:space="preserve">
+    <value>مقارنة المنتجات</value>
+  </data>
+  <data name="Become a Vendor" xml:space="preserve">
+    <value>كن بائعاً</value>
+  </data>
+  <data name="Affiliate Program" xml:space="preserve">
+    <value>برنامج الشركاء</value>
+  </data>
+  <data name="Farm Business" xml:space="preserve">
+    <value>أعمال المزارع</value>
+  </data>
+  <data name="Farm Careers" xml:space="preserve">
+    <value>وظائف المزارع</value>
+  </data>
+  <data name="Our Suppliers" xml:space="preserve">
+    <value>موردونا</value>
+  </data>
+  <data name="Accessibility" xml:space="preserve">
+    <value>إمكانية الوصول</value>
+  </data>
+  <data name="Promotions" xml:space="preserve">
+    <value>العروض الترويجية</value>
+  </data>
+  <data name="From App Store or Google Play" xml:space="preserve">
+    <value>من App Store أو Google Play</value>
+  </data>
+  <data name="Secured Payment Gateways" xml:space="preserve">
+    <value>بوابات دفع آمنة</value>
+  </data>
+</root>

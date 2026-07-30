@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Rack stock" xml:space="preserve">
+    <value>جرد الرفوف</value>
+  </data>
+  <data name="Movements &amp; balances" xml:space="preserve">
+    <value>الحركات والأرصدة</value>
+  </data>
+  <data name="Distribute current item balances onto their default locations?" xml:space="preserve">
+    <value>توزيع أرصدة الأصناف الحالية على مواقعها الافتراضية؟ (للأصناف التي لا مواقع لها بعد)</value>
+  </data>
+  <data name="Initialize from defaults" xml:space="preserve">
+    <value>تهيئة من المواقع الافتراضية</value>
+  </data>
+  <data name="Select warehouse" xml:space="preserve">
+    <value>اختر المخزن</value>
+  </data>
+  <data name="Per-item quantity on each rack — built automatically from located movements. Quantity only, no value/GL." xml:space="preserve">
+    <value>كمية كل صنف على كل رف — تُبنى تلقائيًا من الحركات التي تحمل موقعًا. بُعد كمّي فقط، لا قيمة ولا قيود.</value>
+  </data>
+  <data name="Select a warehouse to view rack stock." xml:space="preserve">
+    <value>اختر المخزن لعرض أرصدة الرفوف.</value>
+  </data>
+  <data name="Rack balances" xml:space="preserve">
+    <value>أرصدة الرفوف</value>
+  </data>
+  <data name="Location" xml:space="preserve">
+    <value>الموقع</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Count / move" xml:space="preserve">
+    <value>جرد / نقل</value>
+  </data>
+  <data name="Save this rack count?" xml:space="preserve">
+    <value>حفظ جرد هذا الرف؟</value>
+  </data>
+  <data name="Save count" xml:space="preserve">
+    <value>حفظ الجرد</value>
+  </data>
+  <data name="Move to another location" xml:space="preserve">
+    <value>نقل لموقع آخر</value>
+  </data>
+  <data name="No rack stock yet — use &quot;Initialize from defaults&quot; or post located movements." xml:space="preserve">
+    <value>لا توجد أرصدة رفوف بعد — استخدم «تهيئة من المواقع الافتراضية» أو رحّل حركات تحمل موقعًا.</value>
+  </data>
+  <data name="Reconciliation" xml:space="preserve">
+    <value>المطابقة</value>
+  </data>
+  <data name="Rack-located vs warehouse total. &quot;Unlocated&quot; = qty with no location." xml:space="preserve">
+    <value>المرصود على الرفوف مقابل رصيد المخزن. «غير محدَّد» = كمية بلا موقع.</value>
+  </data>
+  <data name="Racks" xml:space="preserve">
+    <value>رفوف</value>
+  </data>
+  <data name="WH" xml:space="preserve">
+    <value>المخزن</value>
+  </data>
+  <data name="Unloc." xml:space="preserve">
+    <value>غير محدَّد</value>
+  </data>
+  <data name="Move between locations" xml:space="preserve">
+    <value>نقل بين المواقع</value>
+  </data>
+  <data name="To location" xml:space="preserve">
+    <value>إلى موقع</value>
+  </data>
+  <data name="Move" xml:space="preserve">
+    <value>نقل</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>المتاح</value>
+  </data>
+</root>

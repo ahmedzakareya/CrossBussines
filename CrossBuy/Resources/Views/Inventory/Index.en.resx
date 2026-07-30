@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Inventory Dashboard" xml:space="preserve">
+    <value>Inventory Dashboard</value>
+  </data>
+  <data name="On-hand" xml:space="preserve">
+    <value>On-hand</value>
+  </data>
+  <data name="New movement" xml:space="preserve">
+    <value>New movement</value>
+  </data>
+  <data name="Stock movement (In vs Out)" xml:space="preserve">
+    <value>Stock movement (In vs Out)</value>
+  </data>
+  <data name="Last 6 months — by value" xml:space="preserve">
+    <value>Last 6 months — by value</value>
+  </data>
+  <data name="All movements" xml:space="preserve">
+    <value>All movements</value>
+  </data>
+  <data name="In" xml:space="preserve">
+    <value>In</value>
+  </data>
+  <data name="Out" xml:space="preserve">
+    <value>Out</value>
+  </data>
+  <data name="Inventory Value" xml:space="preserve">
+    <value>Inventory Value</value>
+  </data>
+  <data name="Total value" xml:space="preserve">
+    <value>Total value</value>
+  </data>
+  <data name="Total qty" xml:space="preserve">
+    <value>Total qty</value>
+  </data>
+  <data name="Warehouses" xml:space="preserve">
+    <value>Warehouses</value>
+  </data>
+  <data name="Out of stock" xml:space="preserve">
+    <value>Out of stock</value>
+  </data>
+  <data name="items" xml:space="preserve">
+    <value>items</value>
+  </data>
+  <data name="Stock value" xml:space="preserve">
+    <value>Stock value</value>
+  </data>
+  <data name="cost" xml:space="preserve">
+    <value>cost</value>
+  </data>
+  <data name="wh" xml:space="preserve">
+    <value>wh</value>
+  </data>
+  <data name="Categories" xml:space="preserve">
+    <value>Categories</value>
+  </data>
+  <data name="cat" xml:space="preserve">
+    <value>cat</value>
+  </data>
+  <data name="Composite" xml:space="preserve">
+    <value>Composite</value>
+  </data>
+  <data name="alert" xml:space="preserve">
+    <value>alert</value>
+  </data>
+  <data name="ok" xml:space="preserve">
+    <value>ok</value>
+  </data>
+  <data name="Recent movements" xml:space="preserve">
+    <value>Recent movements</value>
+  </data>
+  <data name="Latest 10" xml:space="preserve">
+    <value>Latest 10</value>
+  </data>
+  <data name="View all" xml:space="preserve">
+    <value>View all</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="No movements yet" xml:space="preserve">
+    <value>No movements yet</value>
+  </data>
+  <data name="Opening" xml:space="preserve">
+    <value>Opening</value>
+  </data>
+  <data name="Receipt" xml:space="preserve">
+    <value>Receipt</value>
+  </data>
+  <data name="Issue" xml:space="preserve">
+    <value>Issue</value>
+  </data>
+  <data name="Adjustment" xml:space="preserve">
+    <value>Adjustment</value>
+  </data>
+  <data name="Purchase" xml:space="preserve">
+    <value>Purchase</value>
+  </data>
+  <data name="Sale" xml:space="preserve">
+    <value>Sale</value>
+  </data>
+  <data name="Assembly" xml:space="preserve">
+    <value>Assembly</value>
+  </data>
+  <data name="Disassembly" xml:space="preserve">
+    <value>Disassembly</value>
+  </data>
+  <data name="Top items by value" xml:space="preserve">
+    <value>Top items by value</value>
+  </data>
+  <data name="Top 5" xml:space="preserve">
+    <value>Top 5</value>
+  </data>
+  <data name="No balances yet" xml:space="preserve">
+    <value>No balances yet</value>
+  </data>
+  <data name="Value by warehouse" xml:space="preserve">
+    <value>Value by warehouse</value>
+  </data>
+  <data name="Quick Access" xml:space="preserve">
+    <value>Quick Access</value>
+  </data>
+  <data name="Units" xml:space="preserve">
+    <value>Units</value>
+  </data>
+  <data name="Movements" xml:space="preserve">
+    <value>Movements</value>
+  </data>
+</root>

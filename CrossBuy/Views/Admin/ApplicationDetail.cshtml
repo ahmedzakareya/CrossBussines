@@ -1,0 +1,295 @@
+@using CrossBuy.Models.Context.Admin
+@using CrossBuy.BL
+@model JobApplication
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var checklist = ViewBag.Checklist as List<ChecklistItem> ?? new();
+    var otherDocs = ViewBag.OtherDocs as List<ApplicationDocument> ?? new();
+    var stages = ViewBag.Stages as string[] ?? new[] { "New", "Review", "Interview", "Accepted", "Rejected", "Hired" };
+    string jobTitleName = ViewBag.JobTitleName as string ?? "—";
+    string branchName = ViewBag.BranchName as string ?? "—";
+    string deptName = ViewBag.DeptName as string ?? "—";
+    var nmeAr = string.IsNullOrWhiteSpace(Model.FullName) ? (Model.FirstName + " " + Model.LastName).Trim() : Model.FullName;
+    var nme = isAr ? nmeAr : (string.IsNullOrWhiteSpace(Model.FullNameEn) ? nmeAr : Model.FullNameEn);
+    var avatar = !string.IsNullOrWhiteSpace(Model.PhotoPath) ? Url.Content("~" + Model.PhotoPath.Replace("\\", "/")) : Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+    string stageName(string s) => s switch { "New" => Localizer["New"].Value, "Review" => Localizer["Review"].Value, "Interview" => Localizer["Interview"].Value, "Accepted" => Localizer["Accepted"].Value, "Rejected" => Localizer["Rejected"].Value, "Hired" => Localizer["Hired"].Value, _ => s };
+    string stageCls(string s) => s switch { "New" => "secondary", "Review" => "info", "Interview" => "primary", "Accepted" => "success", "Rejected" => "danger", "Hired" => "dark", _ => "secondary" };
+    int mandTotal = checklist.Count(c => c.Type.IsMandatory);
+    int mandDone = checklist.Count(c => c.Type.IsMandatory && c.Present);
+    int pct = mandTotal == 0 ? 100 : (int)Math.Round(100.0 * mandDone / mandTotal);
+    string dt(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "—";
+    string dash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v!;
+    string nmt(RequiredDocumentType t) => isAr ? t.Name : (string.IsNullOrEmpty(t.NameEn) ? t.Name : t.NameEn);
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar (mirrors People/Profile)-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Application details"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Admin")" class="text-muted">@SR["HumanResources"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Applications","Admin")" class="text-muted">@Localizer["Job applications"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">#@Model.ApplicationNo</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["HrMsg"] != null) { <div class="alert alert-success">@TempData["HrMsg"]</div> }
+        @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
+
+        <!--begin::Profile header (mirrors People/Profile)-->
+        <div class="card mb-5">
+            <div class="card-body pt-9 pb-0">
+                <div class="d-flex flex-wrap flex-sm-nowrap mb-3">
+                    <div class="me-7 mb-4">
+                        <div class="symbol symbol-100px symbol-lg-160px symbol-fixed position-relative">
+                            <img src="@avatar" alt="@nme" style="object-fit:cover;" />
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                            <div class="d-flex flex-column">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="text-gray-900 fs-2 fw-bold me-3">@nme</span>
+                                    <span class="badge badge-light-@stageCls(Model.Status)">@stageName(Model.Status)</span>
+                                </div>
+                                <div class="d-flex flex-wrap fw-semibold fs-6 mb-4 pe-2">
+                                    <span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-profile-circle fs-4 me-1"></i>@dash(jobTitleName)</span>
+                                    <span class="d-flex align-items-center text-gray-500 me-5 mb-2"><i class="ki-outline ki-geolocation fs-4 me-1"></i>@dash(branchName)</span>
+                                    <span class="d-flex align-items-center text-gray-500 mb-2"><i class="ki-outline ki-sms fs-4 me-1"></i>@dash(Model.Email)</span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 my-2">
+                                <a href="@Url.Action("Applications","Admin")" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-3"></i>@Localizer["Job applications"]</a>
+                                @if (Model.Status != "Hired") { <a href="@Url.Action("ApplicationForm","Admin", new { id = Model.ID })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-pencil fs-4"></i>@Localizer["Edit"]</a> }
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap flex-stack">
+                            <div class="d-flex flex-column flex-grow-1 pe-8">
+                                <div class="d-flex flex-wrap">
+                                    <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                                        <div class="fs-2 fw-bold text-gray-900">#@Model.ApplicationNo</div>
+                                        <div class="fw-semibold fs-6 text-gray-500">@Localizer["Application"]</div>
+                                    </div>
+                                    <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                                        <div class="fs-2 fw-bold text-gray-900">@dt(Model.AppliedAt)</div>
+                                        <div class="fw-semibold fs-6 text-gray-500">@Localizer["Applied on"]</div>
+                                    </div>
+                                    <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 mb-3">
+                                        <div class="fs-2 fw-bold text-@(mandDone == mandTotal ? "success" : "warning")">@mandDone / @mandTotal</div>
+                                        <div class="fw-semibold fs-6 text-gray-500">@Localizer["Mandatory documents"]</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::Profile header-->
+
+        <div class="row g-5">
+            <!--begin::Document checklist-->
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header align-items-center">
+                        <h3 class="card-title fw-bold">@Localizer["Required documents"]</h3>
+                        <div class="card-toolbar"><span class="badge badge-light-@(mandDone == mandTotal ? "success" : "warning") fs-7">@Localizer["Mandatory"]: @mandDone / @mandTotal</span></div>
+                    </div>
+                    <div class="card-body pt-3">
+                        <div class="progress h-6px mb-6 bg-light-success"><div class="progress-bar bg-@(mandDone == mandTotal ? "success" : "warning")" style="width:@pct%"></div></div>
+
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var c in checklist)
+                            {
+                                <div class="d-flex align-items-center border border-gray-300 border-dashed rounded p-4">
+                                    <span class="symbol symbol-40px me-3"><span class="symbol-label bg-light-@(c.Present ? "success" : "warning")"><i class="ki-outline @(c.Present ? "ki-check-circle" : "ki-document") fs-2 text-@(c.Present ? "success" : "warning")"></i></span></span>
+                                    <div class="d-flex flex-column flex-grow-1">
+                                        <span class="fw-bold text-gray-900">@nmt(c.Type)
+                                            @if (c.Type.IsMandatory) { <span class="badge badge-light-danger ms-1 fs-8">@Localizer["Mandatory"]</span> } else { <span class="badge badge-light-secondary ms-1 fs-8">@Localizer["Optional"]</span> }
+                                        </span>
+                                        @if (c.Present) { <span class="text-muted fs-8"><i class="ki-outline ki-paper-clip fs-7 me-1"></i>@c.Doc!.FileName</span> }
+                                        else { <span class="text-muted fs-8">@Localizer["Not attached"]</span> }
+                                    </div>
+                                    @if (c.Present)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-icon btn-light-primary me-2 js-view" data-url="@c.Doc!.FilePath" data-name="@c.Doc!.FileName" title="@Localizer["View"]"><i class="ki-outline ki-eye fs-5"></i></button>
+                                        <form asp-action="DeleteApplicationDoc" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete this document?"]">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.Doc!.ID" /><input type="hidden" name="applicationId" value="@Model.ID" />
+                                            <button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-light-primary js-upload" data-type="@c.Type.ID" data-label="@nmt(c.Type)"><i class="ki-outline ki-cloud-add fs-4"></i>@Localizer["Upload"]</button>
+                                    }
+                                </div>
+                            }
+                            @if (!checklist.Any()) { <div class="text-muted text-center py-6">@Localizer["No document types configured. Add them in Required documents."]</div> }
+                        </div>
+
+                        <div class="d-flex flex-stack mt-8 mb-3">
+                            <h4 class="fw-bold text-gray-800 m-0">@Localizer["Other documents"]</h4>
+                            <button type="button" class="btn btn-sm btn-light js-upload" data-type="" data-label="@Localizer["Other document"]"><i class="ki-outline ki-plus fs-4"></i>@Localizer["Add"]</button>
+                        </div>
+                        @if (otherDocs.Any())
+                        {
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var d in otherDocs)
+                                {
+                                    <div class="d-flex align-items-center border border-gray-200 rounded p-3">
+                                        <i class="ki-outline ki-document fs-2 text-muted me-3"></i>
+                                        <span class="flex-grow-1 text-gray-800 fw-semibold fs-7">@d.FileName</span>
+                                        <button type="button" class="btn btn-sm btn-icon btn-light-primary me-2 js-view" data-url="@d.FilePath" data-name="@d.FileName" title="@Localizer["View"]"><i class="ki-outline ki-eye fs-5"></i></button>
+                                        <form asp-action="DeleteApplicationDoc" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete this document?"]">
+                                            @Html.AntiForgeryToken()<input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="applicationId" value="@Model.ID" />
+                                            <button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else { <div class="text-muted fs-8">@Localizer["No other documents"]</div> }
+                    </div>
+                </div>
+            </div>
+            <!--end::Document checklist-->
+
+            <!--begin::More details + stage actions-->
+            <div class="col-lg-5">
+                <div class="card mb-5">
+                    <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Applicant details"]</h3></div>
+                    <div class="card-body pt-3">
+                        <div class="d-flex flex-column gap-3 fs-6">
+                            <div class="d-flex flex-stack"><span class="text-muted">@Localizer["Phone"]</span><span class="fw-semibold text-gray-800">@dash(Model.PhoneNumber)</span></div>
+                            <div class="separator separator-dashed"></div>
+                            <div class="d-flex flex-stack"><span class="text-muted">@Localizer["Department"]</span><span class="fw-semibold text-gray-800">@deptName</span></div>
+                            <div class="separator separator-dashed"></div>
+                            <div class="d-flex flex-stack"><span class="text-muted">@Localizer["Expected salary"]</span><span class="fw-semibold text-gray-800">@(Model.ExpectedSalary?.ToString("N0") ?? "—")</span></div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                        {
+                            <div class="separator separator-dashed my-4"></div>
+                            <div class="text-muted fs-7 mb-1">@Localizer["Notes"]</div>
+                            <div class="fs-6 text-gray-800">@Model.Notes</div>
+                        }
+                    </div>
+                </div>
+
+                @if (Model.Status != "Hired")
+                {
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Move stage"]</h3></div>
+                        <div class="card-body pt-4">
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var s in stages.Where(x => x != "Hired" && x != Model.Status))
+                                {
+                                    <form asp-action="ChangeApplicationStage" method="post" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Move this applicant to"] @stageName(s)؟">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@Model.ID" /><input type="hidden" name="stage" value="@s" />
+                                        <button class="btn btn-sm btn-light-@stageCls(s)"><span class="bullet bullet-dot bg-@stageCls(s) me-2"></span>@stageName(s)</button>
+                                    </form>
+                                }
+                            </div>
+                            @if (Model.Status == "Accepted")
+                            {
+                                <div class="separator separator-dashed my-4"></div>
+                                <a href="@Url.Action("EmployeeData","Admin", new { fromApplication = Model.ID })" class="btn btn-success w-100"><i class="ki-outline ki-user-tick fs-3"></i>@Localizer["Hire (convert to employee)"]</a>
+                                <div class="text-muted fs-8 mt-2 text-center">@Localizer["Opens the employee wizard prefilled; documents transfer on save."]</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <!--end::More details-->
+        </div>
+    </div></div>
+</div>
+
+<!--begin::Upload modal-->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-550px">
+        <div class="modal-content rounded">
+            <div class="modal-header"><h2 class="fw-bold" id="upTitle">@Localizer["Upload"]</h2><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <form asp-action="UploadApplicationDoc" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="applicationId" value="@Model.ID" />
+                <input type="hidden" name="requiredDocumentTypeId" id="upTypeId" />
+                <div class="modal-body px-8 py-6">
+                    <div class="mb-5"><label class="required fs-6 fw-semibold mb-2">@Localizer["File"]</label><input type="file" name="file" id="upFile" class="form-control form-control-solid" required /></div>
+                    <div id="upPreview" class="text-center mb-5 d-none"><img src="" style="max-height:160px;max-width:100%;border-radius:.5rem;" /></div>
+                    <div class="row g-4">
+                        <div class="col-md-6"><label class="fs-6 fw-semibold mb-2">@Localizer["Document number"]</label><input name="docNumber" class="form-control form-control-solid" /></div>
+                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@Localizer["Issue date"]</label><input name="issueDate" class="form-control form-control-solid js-date" autocomplete="off" /></div>
+                        <div class="col-md-3"><label class="fs-6 fw-semibold mb-2">@Localizer["Expiry date"]</label><input name="expiryDate" class="form-control form-control-solid js-date" autocomplete="off" /></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button type="submit" class="btn btn-primary">@Localizer["Upload"]</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+<!--end::Upload modal-->
+
+<!--begin::View modal-->
+<div class="modal fade" id="viewDocModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-850px">
+        <div class="modal-content rounded">
+            <div class="modal-header py-4"><h2 class="fw-bold fs-4" id="viewDocTitle">@Localizer["View"]</h2><div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+            <div class="modal-body p-0 bg-light" id="viewDocBody" style="min-height:60vh;"></div>
+            <div class="modal-footer py-3">
+                <a id="viewDocOpen" href="#" target="_blank" class="btn btn-light-primary"><i class="ki-outline ki-exit-up fs-4"></i>@Localizer["Open in new tab"]</a>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::View modal-->
+
+@section Scripts {
+<script>
+(function () {
+    if (typeof flatpickr !== 'undefined') document.querySelectorAll('.js-date').forEach(function (d) { flatpickr(d, { dateFormat: "Y-m-d", locale: { firstDayOfWeek: 6 }, allowInput: true }); });
+    document.querySelectorAll('.js-upload').forEach(function (b) {
+        b.addEventListener('click', function () {
+            document.getElementById('upTypeId').value = b.getAttribute('data-type') || '';
+            document.getElementById('upTitle').textContent = b.getAttribute('data-label') || '@Localizer["Upload"]';
+            var p = document.getElementById('upPreview'); if (p) { p.classList.add('d-none'); p.querySelector('img').src = ''; }
+            $('#uploadModal').modal('show');
+        });
+    });
+    // preview the selected image before uploading
+    var upFile = document.getElementById('upFile');
+    if (upFile) upFile.addEventListener('change', function () {
+        var p = document.getElementById('upPreview'), f = this.files && this.files[0];
+        if (f && /^image\//.test(f.type)) { var r = new FileReader(); r.onload = function (e) { p.querySelector('img').src = e.target.result; p.classList.remove('d-none'); }; r.readAsDataURL(f); }
+        else if (p) { p.classList.add('d-none'); }
+    });
+
+    // open an attached document inside a modal (image / pdf / other)
+    document.querySelectorAll('.js-view').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var url = b.getAttribute('data-url') || '', name = b.getAttribute('data-name') || '';
+            document.getElementById('viewDocTitle').textContent = name || '@Localizer["View"]';
+            document.getElementById('viewDocOpen').href = url;
+            var body = document.getElementById('viewDocBody');
+            var ext = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+            if (!url) { body.innerHTML = '<div class="text-center text-muted p-10">' + '@Localizer["No file"]' + '</div>'; }
+            else if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].indexOf(ext) >= 0) { body.innerHTML = '<div class="text-center p-4"><img src="' + url + '" style="max-width:100%;max-height:70vh;border-radius:.5rem;" onerror="this.parentNode.innerHTML=\'<div class=&quot;text-muted p-10&quot;>@Localizer["File not found"]</div>\'"/></div>'; }
+            else if (ext === 'pdf') { body.innerHTML = '<iframe src="' + url + '" style="width:100%;height:70vh;border:0;"></iframe>'; }
+            else { body.innerHTML = '<div class="text-center text-muted p-10"><i class="ki-outline ki-document fs-3x mb-3 d-block"></i>' + name + '<div class="mt-4"><a href="' + url + '" target="_blank" class="btn btn-primary btn-sm">@Localizer["Open in new tab"]</a></div></div>'; }
+            $('#viewDocModal').modal('show');
+        });
+    });
+})();
+</script>
+}

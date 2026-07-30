@@ -1,0 +1,193 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model PeopleProfileVm
+@{
+    Layout = "~/Views/Shared/_LayoutPeople.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var e = Model.Employee;
+    var name = isAr ? (e.FullName ?? e.FullNameEn) : (e.FullNameEn ?? e.FullName);
+    var job = isAr ? (Model.JobTitleAr ?? Model.JobTitleEn) : (Model.JobTitleEn ?? Model.JobTitleAr);
+    var company = isAr ? (Model.CompanyAr ?? Model.CompanyEn) : (Model.CompanyEn ?? Model.CompanyAr);
+    var branch = isAr ? (Model.BranchAr ?? Model.BranchEn) : (Model.BranchEn ?? Model.BranchAr);
+    var avatar = !string.IsNullOrWhiteSpace(e.ProfileImage)
+        ? Url.Content("~" + e.ProfileImage.Replace("\\", "/"))
+        : Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+    string dash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v!;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div id="kt_app_toolbar_container" class="app-container container-fluid d-flex align-items-stretch">
+            <div class="page-title d-flex flex-column justify-content-center gap-1 me-3">
+                <h1 class="page-heading d-flex flex-column justify-content-center text-gray-900 fw-bold fs-3 m-0">
+                    @Localizer["My Profile"]
+                </h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@Localizer["People"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["My Profile"]</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <!--begin::Content-->
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div id="kt_app_content_container" class="app-container container-fluid">
+
+            <!--begin::Profile header card-->
+            <div class="card mb-5 mb-xl-10">
+                <div class="card-body pt-9 pb-0">
+                    <div class="d-flex flex-wrap flex-sm-nowrap mb-3">
+                        <div class="me-7 mb-4">
+                            <div class="symbol symbol-100px symbol-lg-160px symbol-fixed position-relative">
+                                <img src="@avatar" alt="@name" />
+                                <div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-body h-20px w-20px"></div>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="text-gray-900 fs-2 fw-bold me-1">@dash(name)</span>
+                                        <i class="ki-outline ki-verify fs-1 text-primary"></i>
+                                    </div>
+                                    <div class="d-flex flex-wrap fw-semibold fs-6 mb-4 pe-2">
+                                        <span class="d-flex align-items-center text-gray-500 me-5 mb-2">
+                                            <i class="ki-outline ki-profile-circle fs-4 me-1"></i>@dash(job)
+                                        </span>
+                                        <span class="d-flex align-items-center text-gray-500 me-5 mb-2">
+                                            <i class="ki-outline ki-bank fs-4 me-1"></i>@dash(company)
+                                        </span>
+                                        <span class="d-flex align-items-center text-gray-500 mb-2">
+                                            <i class="ki-outline ki-sms fs-4 me-1"></i>@dash(e.Email)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap flex-stack">
+                                <div class="d-flex flex-column flex-grow-1 pe-8">
+                                    <div class="d-flex flex-wrap">
+                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                                            <div class="fs-2 fw-bold text-gray-900">@($"EMP{e.ID.ToString().PadLeft(3, '0')}")</div>
+                                            <div class="fw-semibold fs-6 text-gray-500">@Localizer["Employee No."]</div>
+                                        </div>
+                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+                                            <div class="fs-2 fw-bold text-gray-900">@(e.DateOfJoining?.ToString("yyyy/MM/dd") ?? "—")</div>
+                                            <div class="fw-semibold fs-6 text-gray-500">@Localizer["Joining Date"]</div>
+                                        </div>
+                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 mb-3">
+                                            <div class="fs-2 fw-bold text-gray-900 d-flex align-items-center">
+                                                <span class="badge badge-light-@(Model.IsActive ? "success" : "danger") fs-base">@(Model.IsActive ? SR["Active"] : SR["Inactive"])</span>
+                                            </div>
+                                            <div class="fw-semibold fs-6 text-gray-500">@SR["Status"]</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Profile header card-->
+
+            <div class="row g-5 g-xl-10">
+                <!--begin::Personal details-->
+                <div class="col-xl-6">
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-header border-0">
+                            <div class="card-title m-0">
+                                <h3 class="fw-bold m-0">@Localizer["Personal Details"]</h3>
+                            </div>
+                        </div>
+                        <div class="card-body p-9 pt-0">
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@Localizer["Full Name"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(name)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@SR["Email"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(e.Email)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@SR["Phone"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(e.PhoneNumber)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@SR["Address"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(e.Address)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@Localizer["Gender"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(e.Gender)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-2">
+                                <label class="col-lg-4 fw-semibold text-muted">@Localizer["Marital Status"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(e.MaritalStatus)</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Personal details-->
+
+                <!--begin::Work details-->
+                <div class="col-xl-6">
+                    <div class="card mb-5 mb-xl-10">
+                        <div class="card-header border-0">
+                            <div class="card-title m-0">
+                                <h3 class="fw-bold m-0">@Localizer["Work Details"]</h3>
+                            </div>
+                        </div>
+                        <div class="card-body p-9 pt-0">
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@SR["JobTitle"]</label>
+                                <div class="col-lg-8"><span class="badge badge-light-primary fs-7 fw-bold">@dash(job)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@SR["Company"]</label>
+                                <div class="col-lg-8"><span class="badge badge-light-primary fs-7 fw-bold">@dash(company)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@SR["Branch"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(branch)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@SR["Department"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@dash(isAr ? (Model.DepartmentAr ?? Model.DepartmentEn) : (Model.DepartmentEn ?? Model.DepartmentAr))</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@Localizer["Employment"]</label>
+                                <div class="col-lg-8"><span class="badge badge-light-primary fs-7 fw-bold">@dash(Model.EmploymentType)</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-7">
+                                <label class="col-lg-4 fw-semibold text-muted">@Localizer["Joining Date"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@(e.DateOfJoining?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                            </div>
+                            <div class="separator separator-dashed my-3"></div>
+                            <div class="row mb-2">
+                                <label class="col-lg-4 fw-semibold text-muted">@Localizer["Date of Birth"]</label>
+                                <div class="col-lg-8"><span class="fw-bold fs-6 text-gray-900">@(e.DateOfBirth?.ToString("yyyy/MM/dd") ?? "—")</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Work details-->
+            </div>
+
+        </div>
+    </div>
+    <!--end::Content-->
+</div>

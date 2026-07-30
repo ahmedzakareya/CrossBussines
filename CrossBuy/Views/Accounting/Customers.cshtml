@@ -1,0 +1,104 @@
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@SR["Customers"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted">@SR["Accounting"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@SR["Customers"]</li>
+            </ul>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="custNew()"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New customer"]</button>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <!--begin::Advanced search-->
+        <div class="card card-flush mb-5"><div class="card-body py-5">
+            <div class="row g-4 align-items-end">
+                <div class="col-md-7"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (name / tax / phone / segment / contact)"]</label>
+                    <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
+                <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Status"]</label>
+                    <select id="f_status" class="form-select form-select-solid cb-filter" data-control="select2" data-hide-search="true"><option value="">@SR["All"]</option><option value="active">@SR["Active"]</option><option value="inactive">@SR["Inactive"]</option></select></div>
+                <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100" title="@SR["Reset"]"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
+            </div>
+        </div></div>
+        <!--end::Advanced search-->
+
+        <div class="card">
+            <div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
+                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+            </div>
+            <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3" id="t">
+                <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@SR["Name"]</th><th>@Localizer["Segment"]</th><th>@SR["Phone"]</th><th>@Localizer["Contact"]</th><th class="text-end">@Localizer["Credit limit"]</th><th>@Localizer["Used / Available"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@SR["Actions"]</th></tr></thead>
+                <tbody id="rows"></tbody>
+            </table></div>
+                <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>
+                <div class="text-center text-muted py-10 d-none" id="emptyRow">@Localizer["No matching customers"]</div>
+                <div class="d-flex flex-stack flex-wrap pt-5"><div class="fs-7 text-muted" id="pageInfo"></div><ul class="pagination" id="pager"></ul></div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="mNew" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+    <form asp-action="SaveCustomer" method="post" data-cb-confirm data-cb-action="edit" data-cb-confirm-if="#f_id" data-cb-text="@Localizer["Save changes?"]">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="f_id" value="0" />
+        <div class="modal-header"><h2 class="fw-bold" id="mTitle">@Localizer["New customer"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+        <div class="modal-body py-6 px-8">
+            <div class="row">
+                <div class="col-md-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="name" id="f_name" class="form-control form-control-solid" required /></div>
+                <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" id="f_nameen" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Tax No"]</label><input name="taxRegNo" id="f_tax" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Segment"]</label><input name="segment" id="f_segment" class="form-control form-control-solid" placeholder="VIP / @Localizer["Wholesale"] / @Localizer["Retail"]" /></div>
+                <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Credit limit"]</label><input name="creditLimit" id="f_credit" type="number" step="0.01" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Phone"]</label><input name="phone" id="f_phone" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@SR["Email"]</label><input name="email" id="f_email" type="email" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Contact person"]</label><input name="contactPerson" id="f_contact" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Payment terms (days)"]</label><input name="paymentTermsDays" id="f_terms" type="number" class="form-control form-control-solid" /></div>
+                <div class="col-md-4 mb-4 d-flex align-items-end"><input type="hidden" name="isActive" value="false" /><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="isActive" value="true" id="f_active" checked /><label class="form-check-label fw-semibold ms-2" for="f_active">@SR["Active"]</label></div></div>
+                <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Billing address"]</label><textarea name="address" id="f_address" class="form-control form-control-solid" rows="2"></textarea></div>
+                <div class="col-md-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Shipping address"]</label><textarea name="shippingAddress" id="f_shipping" class="form-control form-control-solid" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
+    </form>
+</div></div></div>
+
+@section Scripts {
+<script>
+cbServerList({
+  url:'@Url.Action("CustomersData","Accounting")',
+  exportUrl:'@Url.Action("CustomersExport","Accounting")',
+  suggestUrl:'@Url.Action("CustomersSuggest","Accounting")',
+  isAr:@(isAr ? "true" : "false"),
+  addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('active', s.value==='active'?'true':'false'); }
+});
+var modal;
+function val(id,v){document.getElementById(id).value=v||'';}
+function custNew(){
+  document.getElementById('mTitle').textContent='@Localizer["New customer"]';
+  val('f_id','0');val('f_name','');val('f_nameen','');val('f_tax','');val('f_segment','');val('f_credit','');
+  val('f_phone','');val('f_email','');val('f_contact','');val('f_terms','');val('f_address','');val('f_shipping','');
+  document.getElementById('f_active').checked=true;
+  modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show();
+}
+function custEdit(btn){
+  var r=btn.closest('tr');
+  document.getElementById('mTitle').textContent='@Localizer["Edit customer"]';
+  val('f_id',r.getAttribute('data-id'));val('f_name',r.getAttribute('data-name'));val('f_nameen',r.getAttribute('data-nameen'));
+  val('f_tax',r.getAttribute('data-tax'));val('f_segment',r.getAttribute('data-segment'));val('f_credit',r.getAttribute('data-credit'));
+  val('f_phone',r.getAttribute('data-phone'));val('f_email',r.getAttribute('data-email'));val('f_contact',r.getAttribute('data-contact'));
+  val('f_terms',r.getAttribute('data-terms'));val('f_address',r.getAttribute('data-address'));val('f_shipping',r.getAttribute('data-shipping'));
+  document.getElementById('f_active').checked=r.getAttribute('data-active')==='1';
+  modal=modal||new bootstrap.Modal(document.getElementById('mNew'));modal.show();
+}
+</script>
+}

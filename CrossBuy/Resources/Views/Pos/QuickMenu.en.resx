@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Quick items (cashier)" xml:space="preserve">
+    <value>Quick items (cashier)</value>
+  </data>
+  <data name="Per-branch touch buttons + tabs + quick (PLU) codes — read by the cashier later." xml:space="preserve">
+    <value>Per-branch touch buttons + tabs + quick (PLU) codes — read by the cashier later.</value>
+  </data>
+  <data name="This company has no branches." xml:space="preserve">
+    <value>This company has no branches.</value>
+  </data>
+  <data name="Select company" xml:space="preserve">
+    <value>Select company</value>
+  </data>
+  <data name="Select branch" xml:space="preserve">
+    <value>Select branch</value>
+  </data>
+  <data name="Select a branch to configure quick items." xml:space="preserve">
+    <value>Select a branch to configure quick items.</value>
+  </data>
+  <data name="Add tab" xml:space="preserve">
+    <value>Add tab</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>Name (AR)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>Name (EN)</value>
+  </data>
+  <data name="Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Kitchen station" xml:space="preserve">
+    <value>Kitchen station</value>
+  </data>
+  <data name="Default (first kitchen)" xml:space="preserve">
+    <value>Default (first kitchen)</value>
+  </data>
+  <data name="Add without tab" xml:space="preserve">
+    <value>Add without tab</value>
+  </data>
+  <data name="No tab" xml:space="preserve">
+    <value>No tab</value>
+  </data>
+  <data name="Search &amp; pick from catalog" xml:space="preserve">
+    <value>Search &amp; pick from catalog</value>
+  </data>
+  <data name="To add an item inside a tab, use the “Add item” button next to the tab name. This button adds without a tab." xml:space="preserve">
+    <value>To add an item inside a tab, use the “Add item” button next to the tab name. This button adds without a tab.</value>
+  </data>
+  <data name="Cashier buttons" xml:space="preserve">
+    <value>Cashier buttons</value>
+  </data>
+  <data name="buttons" xml:space="preserve">
+    <value>buttons</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Add item" xml:space="preserve">
+    <value>Add item</value>
+  </data>
+  <data name="Delete tab? Its buttons stay ungrouped." xml:space="preserve">
+    <value>Delete tab? Its buttons stay ungrouped.</value>
+  </data>
+  <data name="No buttons in this tab." xml:space="preserve">
+    <value>No buttons in this tab.</value>
+  </data>
+  <data name="Quick code" xml:space="preserve">
+    <value>Quick code</value>
+  </data>
+  <data name="Save code" xml:space="preserve">
+    <value>Save code</value>
+  </data>
+  <data name="Remove button?" xml:space="preserve">
+    <value>Remove button?</value>
+  </data>
+  <data name="Add a tab, then buttons from the catalog." xml:space="preserve">
+    <value>Add a tab, then buttons from the catalog.</value>
+  </data>
+  <data name="Search for item" xml:space="preserve">
+    <value>Search for item</value>
+  </data>
+  <data name="Group" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="Select group" xml:space="preserve">
+    <value>Select group</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="Select category" xml:space="preserve">
+    <value>Select category</value>
+  </data>
+  <data name="Barcode" xml:space="preserve">
+    <value>Barcode</value>
+  </data>
+  <data name="Scan/type + Enter" xml:space="preserve">
+    <value>Scan/type + Enter</value>
+  </data>
+  <data name="Item name" xml:space="preserve">
+    <value>Item name</value>
+  </data>
+  <data name="Enter item name" xml:space="preserve">
+    <value>Enter item name</value>
+  </data>
+  <data name="Adding to tab:" xml:space="preserve">
+    <value>Adding to tab:</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="No results." xml:space="preserve">
+    <value>No results.</value>
+  </data>
+  <data name="Save &amp; add to tab" xml:space="preserve">
+    <value>Save &amp; add to tab</value>
+  </data>
+  <data name="Picker price currency" xml:space="preserve">
+    <value></value>
+  </data>
+  <data name="Showing" xml:space="preserve">
+    <value>Showing</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>of</value>
+  </data>
+  <data name="Added" xml:space="preserve">
+    <value>Added</value>
+  </data>
+  <data name="Select at least one item" xml:space="preserve">
+    <value>Select at least one item</value>
+  </data>
+</root>

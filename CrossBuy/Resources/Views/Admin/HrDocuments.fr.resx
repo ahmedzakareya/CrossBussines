@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Employee contracts &amp; documents" xml:space="preserve">
+    <value>Contrats &amp; documents des employés</value>
+  </data>
+  <data name="Select employee…" xml:space="preserve">
+    <value>Sélectionner un employé…</value>
+  </data>
+  <data name="Contracts" xml:space="preserve">
+    <value>Contrats</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouvert</value>
+  </data>
+  <data name="Terminated" xml:space="preserve">
+    <value>Résilié</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>Expiré</value>
+  </data>
+  <data name="Delete contract?" xml:space="preserve">
+    <value>Supprimer le contrat ?</value>
+  </data>
+  <data name="No contracts." xml:space="preserve">
+    <value>Aucun contrat.</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>Début</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>Fin</value>
+  </data>
+  <data name="blank = permanent" xml:space="preserve">
+    <value>vide = permanent</value>
+  </data>
+  <data name="Contract file (optional)" xml:space="preserve">
+    <value>Fichier du contrat (facultatif)</value>
+  </data>
+  <data name="Add contract" xml:space="preserve">
+    <value>Ajouter un contrat</value>
+  </data>
+  <data name="Document vault" xml:space="preserve">
+    <value>Coffre-fort de documents</value>
+  </data>
+  <data name="Expiry" xml:space="preserve">
+    <value>Expiration</value>
+  </data>
+  <data name="Delete document?" xml:space="preserve">
+    <value>Supprimer le document ?</value>
+  </data>
+  <data name="No documents." xml:space="preserve">
+    <value>Aucun document.</value>
+  </data>
+  <data name="Issue date" xml:space="preserve">
+    <value>Date de délivrance</value>
+  </data>
+  <data name="Expiry date" xml:space="preserve">
+    <value>Date d'expiration</value>
+  </data>
+  <data name="File (optional)" xml:space="preserve">
+    <value>Fichier (facultatif)</value>
+  </data>
+  <data name="Add document" xml:space="preserve">
+    <value>Ajouter un document</value>
+  </data>
+  <data name="Pick an employee to manage contracts &amp; documents." xml:space="preserve">
+    <value>Choisissez un employé pour gérer les contrats &amp; documents.</value>
+  </data>
+  <data name="Permanent" xml:space="preserve">
+    <value>Permanent</value>
+  </data>
+  <data name="Fixed-term" xml:space="preserve">
+    <value>Durée déterminée</value>
+  </data>
+  <data name="Probation" xml:space="preserve">
+    <value>Période d'essai</value>
+  </data>
+  <data name="Part-time" xml:space="preserve">
+    <value>Temps partiel</value>
+  </data>
+  <data name="National ID" xml:space="preserve">
+    <value>Carte d'identité nationale</value>
+  </data>
+  <data name="Passport" xml:space="preserve">
+    <value>Passeport</value>
+  </data>
+  <data name="Qualification" xml:space="preserve">
+    <value>Diplôme</value>
+  </data>
+  <data name="Contract" xml:space="preserve">
+    <value>Contrat</value>
+  </data>
+  <data name="Insurance" xml:space="preserve">
+    <value>Assurance</value>
+  </data>
+  <data name="Work permit" xml:space="preserve">
+    <value>Permis de travail</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>Autre</value>
+  </data>
+</root>

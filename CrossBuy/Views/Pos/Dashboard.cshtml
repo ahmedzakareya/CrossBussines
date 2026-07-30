@@ -1,0 +1,278 @@
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model PosDashboardDto
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+    var typeMeta = new Dictionary<string, (string label, string color, string icon)>
+    {
+        ["Dine-in"] = (Localizer["Dine-in"].Value, "primary", "ki-cup"),
+        ["Takeaway"] = (Localizer["Takeaway"].Value, "success", "ki-handcart"),
+        ["Delivery"] = (Localizer["Delivery"].Value, "warning", "ki-scooter"),
+    };
+    (string label, string color, string icon) tm(string k) => typeMeta.TryGetValue(k, out var v) ? v : (k, "secondary", "ki-basket");
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Restaurant"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Dashboard"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a href="@Url.Action("Setup","Pos")" class="btn btn-sm btn-light fw-bold"><i class="ki-outline ki-setting-2 fs-3"></i>@Localizer["Operations setup"]</a>
+                <a href="@Url.Action("Start","PosApp")" class="btn btn-sm btn-primary fw-bold"><i class="ki-outline ki-handcart fs-3"></i>@Localizer["Cashier terminal"]</a>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            <!--begin::Row 1 — sales trend + month card-->
+            <div class="row g-5 gx-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Sales"]</span>
+                                <span class="text-gray-500 pt-2 fw-semibold fs-6">@Localizer["Last 7 days"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body pt-0 px-3 pb-3">
+                            <div id="pos_sales_chart" class="min-h-auto" style="height:330px"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--begin::Month card (brand green)-->
+                <div class="col-xl-4">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#1f6253">
+                        <div class="card-header pt-5">
+                            <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@Localizer["Sales this month"]</span></h3>
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Start","PosApp")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex justify-content-between flex-column pt-1 px-0 pb-5">
+                            <div class="px-9 mb-4">
+                                <div class="text-white fs-2tx fw-bold lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.SalesMonth)" data-kt-countup-decimal-places="2">@Model.SalesMonth.ToString("N2")</div>
+                                <div class="fw-semibold fs-7 text-white opacity-75 mt-1">@Localizer["Sales this month"]</div>
+                            </div>
+                            <div class="px-9">
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Orders"]</span><span class="fw-bold fs-7">@Model.OrdersMonth</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Average ticket"]</span><span class="fw-bold fs-7">@Model.AvgTicket.ToString("N2")</span></div>
+                                <div class="d-flex flex-stack text-white opacity-75 mb-2"><span class="fw-semibold fs-7">@Localizer["Sales today"]</span><span class="fw-bold fs-7">@Model.SalesToday.ToString("N2")</span></div>
+                                <div class="d-flex flex-stack text-white"><span class="fw-bold fs-7">@Localizer["Open shifts"]</span><span class="fw-bold fs-7">@Model.OpenShifts</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Month card-->
+            </div>
+            <!--end::Row 1-->
+
+            <!--begin::Row 2 — stat cards-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                @{
+                    var stats = new (string label, string value, string icon, string color, string badge, string badgeColor)[] {
+                        (Localizer["Sales today"].Value, Model.SalesToday.ToString("N0"), "ki-dollar", "success", Localizer["Today"].Value, "success"),
+                        (Localizer["Sales this month"].Value, Model.SalesMonth.ToString("N0"), "ki-chart-line-up", "primary", Model.Year.ToString(), "primary"),
+                        (Localizer["Orders"].Value, Model.OrdersMonth.ToString(), "ki-handcart", "info", Localizer["This month"].Value, "info"),
+                        (Localizer["Average ticket"].Value, Model.AvgTicket.ToString("N0"), "ki-basket", "dark", Localizer["Per order"].Value, "dark"),
+                        (Localizer["Open orders"].Value, Model.OpenOrders.ToString(), "ki-time", "warning", $"{Model.OccupiedTables} {Localizer["tables"].Value}", "warning"),
+                        (Localizer["Open shifts"].Value, Model.OpenShifts.ToString(), "ki-devices", "danger", $"{Model.Terminals} {Localizer["terminals"].Value}", "danger"),
+                    };
+                }
+                @foreach (var s in stats)
+                {
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="card h-100">
+                            <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                                <div class="d-flex flex-stack w-100 mb-4">
+                                    <div class="symbol symbol-40px"><span class="symbol-label bg-light-@s.color"><i class="ki-outline @s.icon fs-2x text-@s.color"></i></span></div>
+                                    <span class="badge badge-light-@s.badgeColor fs-8 fw-bold">@s.badge</span>
+                                </div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2">@s.value</span>
+                                <div class="m-0 mt-2"><span class="fw-semibold fs-7 text-gray-500">@s.label</span></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <!--end::Row 2-->
+
+            <!--begin::Row 3 — recent orders + orders by type-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-8">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Recent orders"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-6">@Localizer["Paid"]</span>
+                            </h3>
+                            <div class="card-toolbar"><a href="@Url.Action("Start","PosApp")" class="btn btn-sm btn-light">@SR["View"]</a></div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                <thead>
+                                    <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                        <th>@Localizer["Receipt"]</th><th>@SR["Type"]</th><th>@SR["Date"]</th>
+                                        <th class="text-end">@Localizer["Total"]</th><th class="text-center">@SR["Status"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.Recent.Count == 0)
+                                    {
+                                        <tr><td colspan="5" class="text-center text-muted py-10">@SR["NoData"]</td></tr>
+                                    }
+                                    @foreach (var o in Model.Recent)
+                                    {
+                                        var m = tm(o.Type);
+                                        <tr>
+                                            <td class="fw-bold text-gray-900">@(string.IsNullOrEmpty(o.ReceiptNo) ? "—" : o.ReceiptNo)</td>
+                                            <td><span class="badge badge-light-@m.color"><i class="ki-outline @m.icon fs-7 me-1"></i>@m.label</span></td>
+                                            <td class="text-muted fw-semibold">@o.When.ToString("yyyy/MM/dd HH:mm")</td>
+                                            <td class="text-end fw-bold text-gray-800">@o.Total.ToString("N2")</td>
+                                            <td class="text-center"><span class="badge badge-light-success">@Localizer["Paid"]</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card card-flush h-lg-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Orders by type"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["This month"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between pt-2 pb-5">
+                            @if (Model.ByType.Count == 0)
+                            {
+                                <div class="text-center text-muted py-15">@SR["NoData"]</div>
+                            }
+                            else
+                            {
+                                foreach (var b in Model.ByType)
+                                {
+                                    var m = tm(b.Type);
+                                    <div class="d-flex flex-stack mb-2">
+                                        <span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3"><i class="ki-outline @m.icon fs-6 text-@m.color me-2"></i>@m.label</span>
+                                        <span class="text-gray-900 fw-bold me-3">@b.Amount.ToString("N0")</span>
+                                    </div>
+                                    <div class="d-flex align-items-center w-100 mb-4">
+                                        <div class="progress h-6px w-100 me-2 bg-light-@m.color"><div class="progress-bar bg-@m.color" style="width:@(b.Pct)%"></div></div>
+                                        <span class="text-gray-500 fw-semibold fs-7">@b.Count</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 3-->
+
+            <!--begin::Row 4 — top items + quick access-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-xl-7">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Top items"]</span>
+                                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Localizer["This month"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body pt-2">
+                            @if (Model.TopItems.Count == 0)
+                            {
+                                <div class="text-center text-muted py-10">@SR["NoData"]</div>
+                            }
+                            else
+                            {
+                                var idx = 0;
+                                foreach (var it in Model.TopItems)
+                                {
+                                    idx++;
+                                    <div class="d-flex align-items-center mb-4">
+                                        <span class="symbol symbol-35px me-3"><span class="symbol-label bg-light-primary fw-bold text-primary">@idx</span></span>
+                                        <div class="d-flex flex-column flex-grow-1 me-3">
+                                            <span class="fw-bold text-gray-900 fs-7 text-truncate">@it.Name</span>
+                                            <div class="progress h-5px mt-1 bg-light-primary"><div class="progress-bar bg-primary" style="width:@(it.Pct)%"></div></div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-gray-800">@it.Amount.ToString("N2")</div>
+                                            <div class="text-muted fw-semibold fs-8">@it.Qty.ToString("0.##") @Localizer["qty"]</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card card-flush h-100">
+                        <div class="card-header pt-7"><h3 class="card-title fw-bold text-gray-900">@Localizer["Quick Access"]</h3></div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3">
+                                @{
+                                    var links = new (string action, string controller, string label, string icon, string color)[] {
+                                        ("Start", "PosApp", Localizer["Cashier terminal"].Value, "ki-handcart", "primary"),
+                                        ("Kitchen", "PosApp", Localizer["Kitchen display"].Value, "ki-teacher", "danger"),
+                                        ("Delivery", "PosApp", Localizer["Delivery board"].Value, "ki-scooter", "warning"),
+                                        ("FloorPlan", "Pos", Localizer["Floor plan"].Value, "ki-geolocation", "info"),
+                                        ("Reservations", "Pos", Localizer["Reservations"].Value, "ki-calendar", "success"),
+                                        ("Setup", "Pos", Localizer["Operations setup"].Value, "ki-setting-2", "dark"),
+                                    };
+                                }
+                                @foreach (var l in links)
+                                {
+                                    <div class="col-6 col-md-4">
+                                        <a href="@Url.Action(l.action,l.controller)" class="d-flex flex-column flex-center bg-hover-light rounded h-100 py-5 border border-gray-200 text-decoration-none">
+                                            <i class="ki-outline @l.icon fs-2x text-@l.color mb-2"></i>
+                                            <span class="fs-8 fw-semibold text-gray-800 text-center px-1">@l.label</span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Row 4-->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            if (!window.ApexCharts) return;
+            var isAr = @(isAr ? "true" : "false");
+            var days = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Last7.Select(p => p.Date.ToString("MM/dd"))));
+            var totals = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Last7.Select(p => p.Total)));
+            new ApexCharts(document.querySelector('#pos_sales_chart'), {
+                chart: { type: 'area', height: 330, fontFamily: 'inherit', toolbar: { show: false } },
+                series: [{ name: '@Localizer["Sales"]', data: totals }],
+                colors: ['#13433a'],
+                xaxis: { categories: days, labels: { style: { colors: '#99A1B7' } } },
+                yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return Math.round(v); } } },
+                stroke: { curve: 'smooth', width: 3 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.05 } },
+                dataLabels: { enabled: false }, legend: { show: false },
+                grid: { borderColor: '#E4E6EF', strokeDashArray: 4 }
+            }).render();
+        })();
+    </script>
+}

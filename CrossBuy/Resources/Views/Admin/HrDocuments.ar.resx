@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Employee contracts &amp; documents" xml:space="preserve">
+    <value>مستندات وعقود الموظفين</value>
+  </data>
+  <data name="Select employee…" xml:space="preserve">
+    <value>اختر موظفًا…</value>
+  </data>
+  <data name="Contracts" xml:space="preserve">
+    <value>العقود</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>مفتوح</value>
+  </data>
+  <data name="Terminated" xml:space="preserve">
+    <value>منتهٍ بالإنهاء</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>منتهٍ</value>
+  </data>
+  <data name="Delete contract?" xml:space="preserve">
+    <value>حذف العقد؟</value>
+  </data>
+  <data name="No contracts." xml:space="preserve">
+    <value>لا توجد عقود.</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>تاريخ البداية</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>تاريخ النهاية</value>
+  </data>
+  <data name="blank = permanent" xml:space="preserve">
+    <value>اتركه فارغًا = دائم</value>
+  </data>
+  <data name="Contract file (optional)" xml:space="preserve">
+    <value>ملف العقد (اختياري)</value>
+  </data>
+  <data name="Add contract" xml:space="preserve">
+    <value>إضافة عقد</value>
+  </data>
+  <data name="Document vault" xml:space="preserve">
+    <value>خزنة المستندات</value>
+  </data>
+  <data name="Expiry" xml:space="preserve">
+    <value>الانتهاء</value>
+  </data>
+  <data name="Delete document?" xml:space="preserve">
+    <value>حذف المستند؟</value>
+  </data>
+  <data name="No documents." xml:space="preserve">
+    <value>لا توجد مستندات.</value>
+  </data>
+  <data name="Issue date" xml:space="preserve">
+    <value>تاريخ الإصدار</value>
+  </data>
+  <data name="Expiry date" xml:space="preserve">
+    <value>تاريخ الانتهاء</value>
+  </data>
+  <data name="File (optional)" xml:space="preserve">
+    <value>الملف (اختياري)</value>
+  </data>
+  <data name="Add document" xml:space="preserve">
+    <value>إضافة مستند</value>
+  </data>
+  <data name="Pick an employee to manage contracts &amp; documents." xml:space="preserve">
+    <value>اختر موظفًا لإدارة عقوده ومستنداته.</value>
+  </data>
+  <data name="Permanent" xml:space="preserve">
+    <value>دائم</value>
+  </data>
+  <data name="Fixed-term" xml:space="preserve">
+    <value>محدد المدة</value>
+  </data>
+  <data name="Probation" xml:space="preserve">
+    <value>تحت الاختبار</value>
+  </data>
+  <data name="Part-time" xml:space="preserve">
+    <value>دوام جزئي</value>
+  </data>
+  <data name="National ID" xml:space="preserve">
+    <value>بطاقة رقم قومي</value>
+  </data>
+  <data name="Passport" xml:space="preserve">
+    <value>جواز سفر</value>
+  </data>
+  <data name="Qualification" xml:space="preserve">
+    <value>مؤهل</value>
+  </data>
+  <data name="Contract" xml:space="preserve">
+    <value>عقد</value>
+  </data>
+  <data name="Insurance" xml:space="preserve">
+    <value>تأمين</value>
+  </data>
+  <data name="Work permit" xml:space="preserve">
+    <value>تصريح عمل</value>
+  </data>
+  <data name="Other" xml:space="preserve">
+    <value>أخرى</value>
+  </data>
+  <data name="Needs attention" xml:space="preserve">
+    <value>يحتاج انتباه</value>
+  </data>
+  <data name="Active contracts" xml:space="preserve">
+    <value>العقود النشطة</value>
+  </data>
+  <data name="Document &amp; contract expiry alerts" xml:space="preserve">
+    <value>تنبيهات انتهاء المستندات والعقود</value>
+  </data>
+  <data name="Some items need attention" xml:space="preserve">
+    <value>بعض العناصر تحتاج انتباه</value>
+  </data>
+  <data name="{0} expired and {1} expiring within 60 days." xml:space="preserve">
+    <value>{0} منتهٍ و{1} على وشك الانتهاء خلال 60 يومًا.</value>
+  </data>
+  <data name="Nothing is expired or expiring within the next 60 days." xml:space="preserve">
+    <value>لا يوجد منتهٍ أو قارب على الانتهاء خلال الـ 60 يومًا القادمة.</value>
+  </data>
+  <data name="Attachments">
+    <value>المرفقات</value>
+  </data>
+  <data name="View">
+    <value>عرض</value>
+  </data>
+  <data name="Files (optional)">
+    <value>ملفات (اختياري)</value>
+  </data>
+  <data name="All contracts &amp; documents are valid">
+    <value>كل العقود والمستندات سارية</value>
+  </data>
+  <data name="Contract files (optional)">
+    <value>ملفات العقد (اختياري)</value>
+  </data>
+  <data name="Open in new tab">
+    <value>فتح في تبويب جديد</value>
+  </data>
+  <data name="Download">
+    <value>تنزيل</value>
+  </data>
+  <data name="No file attached">
+    <value>لا يوجد ملف مرفق</value>
+  </data>
+</root>

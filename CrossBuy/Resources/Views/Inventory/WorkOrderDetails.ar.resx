@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Work orders" xml:space="preserve">
+    <value>أوامر التشغيل</value>
+  </data>
+  <data name="Routing" xml:space="preserve">
+    <value>مسار التصنيع</value>
+  </data>
+  <data name="Release? Materials will be issued to WIP." xml:space="preserve">
+    <value>إصدار أمر التشغيل؟ سيتم صرف المواد إلى الإنتاج تحت التشغيل.</value>
+  </data>
+  <data name="Release (issue to WIP)" xml:space="preserve">
+    <value>إصدار (صرف للـ WIP)</value>
+  </data>
+  <data name="Complete directly? Issue materials, produce the item and post the JE in one step." xml:space="preserve">
+    <value>إكمال مباشر؟ سيتم صرف المواد وإنتاج الصنف وترحيل القيد في خطوة واحدة.</value>
+  </data>
+  <data name="Complete directly" xml:space="preserve">
+    <value>إكمال مباشر</value>
+  </data>
+  <data name="Cancel this work order?" xml:space="preserve">
+    <value>إلغاء أمر التشغيل؟</value>
+  </data>
+  <data name="Cancel WO" xml:space="preserve">
+    <value>إلغاء الأمر</value>
+  </data>
+  <data name="Complete? Materials will be consumed, the item produced and the JE posted." xml:space="preserve">
+    <value>تنفيذ الأمر؟ سيتم استهلاك المواد وإنتاج الصنف وترحيل القيد.</value>
+  </data>
+  <data name="Complete production" xml:space="preserve">
+    <value>تنفيذ الإنتاج</value>
+  </data>
+  <data name="Produce at standard cost? (on finalize the variance posts to 520109)" xml:space="preserve">
+    <value>إنتاج الكمية بالتكلفة المعيارية؟ (عند الإقفال يُرحَّل الانحراف لحساب 520109)</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>إنتاج جزئي</value>
+  </data>
+  <data name="qty" xml:space="preserve">
+    <value>كمية</value>
+  </data>
+  <data name="finalize" xml:space="preserve">
+    <value>إقفال</value>
+  </data>
+  <data name="Produce" xml:space="preserve">
+    <value>إنتاج</value>
+  </data>
+  <data name="Journal entry" xml:space="preserve">
+    <value>القيد</value>
+  </data>
+  <data name="Work order" xml:space="preserve">
+    <value>بيانات الأمر</value>
+  </data>
+  <data name="Save changes?" xml:space="preserve">
+    <value>حفظ التعديلات؟</value>
+  </data>
+  <data name="Qty" xml:space="preserve">
+    <value>الكمية</value>
+  </data>
+  <data name="Start" xml:space="preserve">
+    <value>بداية</value>
+  </data>
+  <data name="End" xml:space="preserve">
+    <value>نهاية</value>
+  </data>
+  <data name="Labor" xml:space="preserve">
+    <value>العمالة</value>
+  </data>
+  <data name="Overhead" xml:space="preserve">
+    <value>الأوفرهيد</value>
+  </data>
+  <data name="Components (BOM)" xml:space="preserve">
+    <value>المكوّنات (قائمة المواد)</value>
+  </data>
+  <data name="Component" xml:space="preserve">
+    <value>المكوّن</value>
+  </data>
+  <data name="Planned qty" xml:space="preserve">
+    <value>الكمية المخطّطة</value>
+  </data>
+  <data name="Issued" xml:space="preserve">
+    <value>المصروفة</value>
+  </data>
+  <data name="Unit cost" xml:space="preserve">
+    <value>تكلفة الوحدة</value>
+  </data>
+  <data name="No components" xml:space="preserve">
+    <value>لا توجد مكوّنات</value>
+  </data>
+  <data name="Loaded" xml:space="preserve">
+    <value>إجمالي محمّل</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>المصدر</value>
+  </data>
+  <data name="Hrs" xml:space="preserve">
+    <value>ساعات</value>
+  </data>
+  <data name="Rate" xml:space="preserve">
+    <value>السعر</value>
+  </data>
+  <data name="WHT" xml:space="preserve">
+    <value>ض.خصم</value>
+  </data>
+  <data name="External" xml:space="preserve">
+    <value>خارجي</value>
+  </data>
+  <data name="Applied" xml:space="preserve">
+    <value>مطبّقة</value>
+  </data>
+  <data name="Remove this labor line and reverse its entry?" xml:space="preserve">
+    <value>حذف سطر العمالة وعكس قيده؟</value>
+  </data>
+  <data name="No labor loaded yet." xml:space="preserve">
+    <value>لا عمالة محمّلة بعد.</value>
+  </data>
+  <data name="External worker" xml:space="preserve">
+    <value>عامل خارجي</value>
+  </data>
+  <data name="Applied (no source)" xml:space="preserve">
+    <value>مطبّقة (بلا مصدر)</value>
+  </data>
+  <data name="Select" xml:space="preserve">
+    <value>اختر</value>
+  </data>
+  <data name="Worker name" xml:space="preserve">
+    <value>اسم العامل</value>
+  </data>
+  <data name="Hours" xml:space="preserve">
+    <value>ساعات</value>
+  </data>
+  <data name="Rate/hr" xml:space="preserve">
+    <value>سعر/ساعة</value>
+  </data>
+  <data name="auto for employee" xml:space="preserve">
+    <value>تلقائي للموظف</value>
+  </data>
+  <data name="WHT (optional)" xml:space="preserve">
+    <value>ض.خصم (اختياري)</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>بدون</value>
+  </data>
+  <data name="Pay account" xml:space="preserve">
+    <value>حساب السداد</value>
+  </data>
+  <data name="FX rate" xml:space="preserve">
+    <value>سعر الصرف</value>
+  </data>
+  <data name="auto" xml:space="preserve">
+    <value>تلقائي</value>
+  </data>
+  <data name="Load" xml:space="preserve">
+    <value>تحميل</value>
+  </data>
+  <data name="Employee: Dr WIP / Cr wage expense (reclass). External: Dr WIP / Cr cash or payable (+WHT). Foreign: rate in foreign, converted to functional at entry (Buy rate) — WIP stays functional." xml:space="preserve">
+    <value>الموظف: مدين WIP / دائن مصروف الأجور (إعادة تصنيف). الخارجي: مدين WIP / دائن نقدية أو مستحق (+ض.خصم). بعملة أجنبية: السعر بالأجنبي ويُحوَّل للوظيفية عند الإدخال (سعر «شراء») — WIP يبقى بالوظيفية. تُحمَّل القيمة فورًا.</value>
+  </data>
+  <data name="Cost summary" xml:space="preserve">
+    <value>ملخّص التكلفة</value>
+  </data>
+  <data name="Materials" xml:space="preserve">
+    <value>تكلفة المواد</value>
+  </data>
+  <data name="Sourced labor" xml:space="preserve">
+    <value>عمالة بمصدر</value>
+  </data>
+  <data name="Applied labor" xml:space="preserve">
+    <value>عمالة مطبّقة</value>
+  </data>
+  <data name="Total cost" xml:space="preserve">
+    <value>إجمالي التكلفة</value>
+  </data>
+  <data name="Produced unit cost" xml:space="preserve">
+    <value>تكلفة الوحدة المنتَجة</value>
+  </data>
+  <data name="Held in WIP" xml:space="preserve">
+    <value>محتجز بالإنتاج تحت التشغيل (WIP)</value>
+  </data>
+  <data name="Method" xml:space="preserve">
+    <value>طريقة التصنيع</value>
+  </data>
+  <data name="Immediate" xml:space="preserve">
+    <value>فوري</value>
+  </data>
+  <data name="OrderBased" xml:space="preserve">
+    <value>بمراحل</value>
+  </data>
+  <data name="Produced &amp; posted" xml:space="preserve">
+    <value>تم الإنتاج وترحيل القيد</value>
+  </data>
+  <data name="Materials issued to WIP. Click &quot;Complete production&quot; to receive finished goods and clear WIP." xml:space="preserve">
+    <value>المواد مصروفة إلى WIP. اضغط "تنفيذ الإنتاج" لاستلام التام وتصفية WIP.</value>
+  </data>
+  <data name="Released" xml:space="preserve">
+    <value>مُصدَر</value>
+  </data>
+  <data name="InProgress" xml:space="preserve">
+    <value>قيد التشغيل</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>مكتمل</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>مُغلق</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>ملغى</value>
+  </data>
+</root>

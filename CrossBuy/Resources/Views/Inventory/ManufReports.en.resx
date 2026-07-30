@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Manufacturing reports" xml:space="preserve">
+    <value>Manufacturing reports</value>
+  </data>
+  <data name="Reports" xml:space="preserve">
+    <value>Reports</value>
+  </data>
+  <data name="Run" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="WOs completed" xml:space="preserve">
+    <value>WOs completed</value>
+  </data>
+  <data name="Produced value" xml:space="preserve">
+    <value>Produced value</value>
+  </data>
+  <data name="Materials" xml:space="preserve">
+    <value>Materials</value>
+  </data>
+  <data name="Labor + OH" xml:space="preserve">
+    <value>Labor + OH</value>
+  </data>
+  <data name="Production cost &amp; variance vs standard" xml:space="preserve">
+    <value>Production cost &amp; variance vs standard</value>
+  </data>
+  <data name="WO" xml:space="preserve">
+    <value>WO</value>
+  </data>
+  <data name="Produced" xml:space="preserve">
+    <value>Produced</value>
+  </data>
+  <data name="Mat." xml:space="preserve">
+    <value>Mat.</value>
+  </data>
+  <data name="Labor" xml:space="preserve">
+    <value>Labor</value>
+  </data>
+  <data name="OH" xml:space="preserve">
+    <value>OH</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="Std" xml:space="preserve">
+    <value>Std</value>
+  </data>
+  <data name="Var." xml:space="preserve">
+    <value>Var.</value>
+  </data>
+  <data name="No completed work orders in this period." xml:space="preserve">
+    <value>No completed work orders in this period.</value>
+  </data>
+  <data name="Variance = actual − standard unit cost (positive = over standard). Standard is indicative using current component avg cost and may differ from time of completion." xml:space="preserve">
+    <value>Variance = actual − standard unit cost (positive = over standard). Standard is indicative using current component avg cost and may differ from time of completion.</value>
+  </data>
+  <data name="Work-center load" xml:space="preserve">
+    <value>Work-center load</value>
+  </data>
+  <data name="Work center" xml:space="preserve">
+    <value>Work center</value>
+  </data>
+  <data name="Minutes" xml:space="preserve">
+    <value>Minutes</value>
+  </data>
+  <data name="Hours" xml:space="preserve">
+    <value>Hours</value>
+  </data>
+  <data name="Labor cost" xml:space="preserve">
+    <value>Labor cost</value>
+  </data>
+  <data name="Overhead" xml:space="preserve">
+    <value>Overhead</value>
+  </data>
+  <data name="No routings for items produced in this period." xml:space="preserve">
+    <value>No routings for items produced in this period.</value>
+  </data>
+</root>

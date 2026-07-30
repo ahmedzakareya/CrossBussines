@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="To whom it may concern" xml:space="preserve">
+    <value>To whom it may concern</value>
+  </data>
+  <data name="Letter" xml:space="preserve">
+    <value>Letter</value>
+  </data>
+  <data name="Ref" xml:space="preserve">
+    <value>Ref</value>
+  </data>
+  <data name="This is to certify that {0} is employed with us as {1} since {2:yyyy-MM-dd}, with the following monthly salary:" xml:space="preserve">
+    <value>This is to certify that {0} is employed with us as {1} since {2:yyyy-MM-dd}, with the following monthly salary:</value>
+  </data>
+  <data name="Base salary" xml:space="preserve">
+    <value>Base salary</value>
+  </data>
+  <data name="Allowances" xml:space="preserve">
+    <value>Allowances</value>
+  </data>
+  <data name="Gross earnings" xml:space="preserve">
+    <value>Gross earnings</value>
+  </data>
+  <data name="Net salary" xml:space="preserve">
+    <value>Net salary</value>
+  </data>
+  <data name="For month" xml:space="preserve">
+    <value>For month</value>
+  </data>
+  <data name="No posted payslip yet." xml:space="preserve">
+    <value>No posted payslip yet.</value>
+  </data>
+  <data name="This is to certify that {0} has worked with us as {1} from {2:yyyy-MM-dd} to date, demonstrating competence and commitment." xml:space="preserve">
+    <value>This is to certify that {0} has worked with us as {1} from {2:yyyy-MM-dd} to date, demonstrating competence and commitment.</value>
+  </data>
+  <data name="This is to certify that {0} is employed with us as {1} since {2:yyyy-MM-dd}. This letter is issued upon their request." xml:space="preserve">
+    <value>This is to certify that {0} is employed with us as {1} since {2:yyyy-MM-dd}. This letter is issued upon their request.</value>
+  </data>
+  <data name="Purpose" xml:space="preserve">
+    <value>Purpose</value>
+  </data>
+  <data name="Signature &amp; stamp" xml:space="preserve">
+    <value>Signature &amp; stamp</value>
+  </data>
+</root>

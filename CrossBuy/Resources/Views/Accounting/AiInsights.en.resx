@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AI Insights" xml:space="preserve">
+    <value>AI Insights</value>
+  </data>
+  <data name="AI analytics" xml:space="preserve">
+    <value>AI analytics</value>
+  </data>
+  <data name="Suggestions for review only" xml:space="preserve">
+    <value>Suggestions for review only</value>
+  </data>
+  <data name="AI service is currently unavailable" xml:space="preserve">
+    <value>AI service is currently unavailable</value>
+  </data>
+  <data name="Make sure the Python AI service is running on port 8000." xml:space="preserve">
+    <value>Make sure the Python AI service is running on port 8000.</value>
+  </data>
+  <data name="Flagged of" xml:space="preserve">
+    <value>Flagged of</value>
+  </data>
+  <data name="Projected balance (90d)" xml:space="preserve">
+    <value>Projected balance (90d)</value>
+  </data>
+  <data name="Slow-moving items" xml:space="preserve">
+    <value>Slow-moving items</value>
+  </data>
+  <data name="Dead-stock value" xml:space="preserve">
+    <value>Dead-stock value</value>
+  </data>
+  <data name="Journal anomalies" xml:space="preserve">
+    <value>Journal anomalies</value>
+  </data>
+  <data name="Duplicates" xml:space="preserve">
+    <value>Duplicates</value>
+  </data>
+  <data name="Severity" xml:space="preserve">
+    <value>Severity</value>
+  </data>
+  <data name="Entry" xml:space="preserve">
+    <value>Entry</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="No anomalies found" xml:space="preserve">
+    <value>No anomalies found</value>
+  </data>
+  <data name="Cash-flow projection" xml:space="preserve">
+    <value>Cash-flow projection</value>
+  </data>
+  <data name="Negative-balance risk" xml:space="preserve">
+    <value>Negative-balance risk</value>
+  </data>
+  <data name="Opening cash" xml:space="preserve">
+    <value>Opening cash</value>
+  </data>
+  <data name="Expected inflow" xml:space="preserve">
+    <value>Expected inflow</value>
+  </data>
+  <data name="Expected outflow" xml:space="preserve">
+    <value>Expected outflow</value>
+  </data>
+  <data name="Min projected balance" xml:space="preserve">
+    <value>Min projected balance</value>
+  </data>
+  <data name="Projected end balance" xml:space="preserve">
+    <value>Projected end balance</value>
+  </data>
+  <data name="Inventory alerts" xml:space="preserve">
+    <value>Inventory alerts</value>
+  </data>
+  <data name="Stockout" xml:space="preserve">
+    <value>Stockout</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>On hand</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Reorder" xml:space="preserve">
+    <value>Reorder</value>
+  </data>
+  <data name="No alerts" xml:space="preserve">
+    <value>No alerts</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="Slow" xml:space="preserve">
+    <value>Slow</value>
+  </data>
+</root>

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Save changes?" xml:space="preserve">
+    <value>حفظ التعديلات؟</value>
+  </data>
+  <data name="Edit category" xml:space="preserve">
+    <value>تعديل فئة</value>
+  </data>
+  <data name="Add category" xml:space="preserve">
+    <value>فئة جديدة</value>
+  </data>
+  <data name="Categories" xml:space="preserve">
+    <value>التصنيفات</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>جديد</value>
+  </data>
+  <data name="Costing" xml:space="preserve">
+    <value>التقييم</value>
+  </data>
+  <data name="Default costing method" xml:space="preserve">
+    <value>طريقة التقييم الافتراضية</value>
+  </data>
+  <data name="Moving Average (default)" xml:space="preserve">
+    <value>المتوسط المرجح (افتراضي)</value>
+  </data>
+  <data name="Moving Average" xml:space="preserve">
+    <value>المتوسط المرجح</value>
+  </data>
+  <data name="Items in this category inherit this method unless set on the item." xml:space="preserve">
+    <value>الأصناف داخل هذه الفئة ترث هذه الطريقة ما لم تُحدَّد على الصنف.</value>
+  </data>
+  <data name="Category details" xml:space="preserve">
+    <value>بيانات الفئة</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>المستوى</value>
+  </data>
+  <data name="Category (root)" xml:space="preserve">
+    <value>فئة رئيسية</value>
+  </data>
+  <data name="Group (under a category)" xml:space="preserve">
+    <value>مجموعة (تحت فئة)</value>
+  </data>
+  <data name="Parent category" xml:space="preserve">
+    <value>الفئة الأب</value>
+  </data>
+  <data name="— Root —" xml:space="preserve">
+    <value>— رئيسية —</value>
+  </data>
+  <data name="A Group inherits its GL account mapping from its parent Category when left empty." xml:space="preserve">
+    <value>المجموعة ترث ربط حسابات دفتر الأستاذ من فئتها الأب عند تركها فارغة.</value>
+  </data>
+  <data name="Name (AR)" xml:space="preserve">
+    <value>الاسم (عربي)</value>
+  </data>
+  <data name="Name (EN)" xml:space="preserve">
+    <value>الاسم (إنجليزي)</value>
+  </data>
+  <data name="GL account mapping" xml:space="preserve">
+    <value>ربط حسابات دفتر الأستاذ</value>
+  </data>
+  <data name="Used to auto-generate inventory journal entries (receipts, issues, COGS, adjustments)." xml:space="preserve">
+    <value>تُستخدم في توليد قيود المخزون تلقائيًا (الاستلام، الصرف، التكلفة، فروق الجرد).</value>
+  </data>
+  <data name="Inventory account" xml:space="preserve">
+    <value>حساب المخزون</value>
+  </data>
+  <data name="COGS account" xml:space="preserve">
+    <value>حساب التكلفة (COGS)</value>
+  </data>
+  <data name="Adjustment account" xml:space="preserve">
+    <value>حساب فروق الجرد</value>
+  </data>
+  <data name="GRNI account" xml:space="preserve">
+    <value>حساب بضاعة لم تُفوتر (GRNI)</value>
+  </data>
+  <data name="Storefront image" xml:space="preserve">
+    <value>صورة الفئة</value>
+  </data>
+  <data name="Shown on the storefront categories." xml:space="preserve">
+    <value>تظهر في تصنيفات المتجر.</value>
+  </data>
+  <data name="Items count (display)" xml:space="preserve">
+    <value>عدد الأصناف (للعرض)</value>
+  </data>
+  <data name="Change image" xml:space="preserve">
+    <value>تغيير الصورة</value>
+  </data>
+  <data name="Remove image" xml:space="preserve">
+    <value>إزالة الصورة</value>
+  </data>
+</root>

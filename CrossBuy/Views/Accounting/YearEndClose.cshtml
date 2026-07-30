@@ -1,0 +1,145 @@
+@using CrossBuy.BL
+@using CrossBuy.Models.Context.Accounting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model List<FiscalYear>
+@{
+    Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
+    var closings = ViewBag.Closings as List<YearEndClosing> ?? new();
+    var previews = ViewBag.Previews as Dictionary<int, YearClosePreview> ?? new();
+    YearEndClosing? ClosingFor(int yearId) => closings.FirstOrDefault(c => c.FiscalYearId == yearId && c.Status == "Closed");
+    var openCount = Model.Count(y => y.Status != "Closed");
+    var closedCount = Model.Count(y => y.Status == "Closed");
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Year-end Close"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Accounting")" class="text-muted text-hover-primary">@SR["Accounting"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Year-end Close"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge fs-7 fw-bold px-4 py-2" style="background:#eaf3ef;color:#13433a;"><i class="ki-outline ki-lock-3 fs-6 me-1" style="color:#13433a;"></i>@openCount @Localizer["Open"]</span>
+            <span class="badge fs-7 fw-bold px-4 py-2" style="background:#f1f3f7;color:#7e8299;"><i class="ki-outline ki-lock-2 fs-6 me-1" style="color:#7e8299;"></i>@closedCount @Localizer["Closed"]</span>
+        </div>
+    </div></div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        <!--begin::Notice-->
+        <div class="notice d-flex rounded border border-dashed p-6 mb-5" style="background:#eaf3ef;border-color:#13433a !important;">
+            <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#13433a;"><i class="ki-outline ki-lock-2 fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@Localizer["Year-end Close"]</h4>
+                    <div class="fs-6 text-gray-700">@Localizer["The year-end entry closes all revenue and expense accounts and transfers the net result to Retained Earnings (3201), then locks all of the year's periods."]</div>
+                </div>
+            </div>
+        </div>
+        <!--end::Notice-->
+
+        <!--begin::Fiscal Years-->
+        <div class="card mb-5">
+            <div class="card-header card-header-stretch">
+                <div class="card-title"><h3>@Localizer["Fiscal Years"]</h3></div>
+            </div>
+            <div class="card-body px-0 pt-0 pb-4">
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                        <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                            <tr>
+                                <th class="ps-9">@Localizer["Year"]</th>
+                                <th>@Localizer["Period"]</th>
+                                <th class="text-end">@Localizer["Revenue"]</th>
+                                <th class="text-end">@Localizer["Expenses"]</th>
+                                <th class="text-end">@Localizer["Net result"]</th>
+                                <th class="text-center">@SR["Status"]</th>
+                                <th class="text-center pe-9">@Localizer["Action"]</th>
+                            </tr>
+                        </thead>
+                        <tbody class="fs-6 fw-semibold text-gray-700">
+                        @foreach (var y in Model)
+                        {
+                            var p = previews.TryGetValue(y.ID, out var pv) ? pv : null;
+                            var closing = ClosingFor(y.ID);
+                            var net = p?.NetResult ?? 0;
+                            <tr>
+                                <td class="ps-9"><span class="symbol symbol-35px me-3"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-calendar fs-5" style="color:#13433a;"></i></span></span><span class="fw-bold text-gray-900">@y.Name</span></td>
+                                <td class="text-muted">@y.StartDate.ToString("yyyy/MM/dd") &mdash; @y.EndDate.ToString("yyyy/MM/dd")</td>
+                                <td class="text-end text-gray-800">@(p?.TotalRevenue.ToString("N2") ?? "—")</td>
+                                <td class="text-end fw-bold text-danger">@(p?.TotalExpense.ToString("N2") ?? "—")</td>
+                                <td class="text-end fw-bold @(net >= 0 ? "" : "text-danger")" style="@(net >= 0 ? "color:#13433a" : "")">@(p?.NetResult.ToString("N2") ?? "—")</td>
+                                <td class="text-center">
+                                    @if (y.Status == "Closed")
+                                    {
+                                        <span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;"><i class="ki-outline ki-lock-2 fs-7 me-1" style="color:#7e8299;"></i>@Localizer["Closed"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;"><i class="ki-outline ki-lock-3 fs-7 me-1" style="color:#13433a;"></i>@Localizer["Open"]</span>
+                                    }
+                                </td>
+                                <td class="text-center pe-9">
+                                    @if (y.Status != "Closed")
+                                    {
+                                        <form asp-action="CloseYear" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Confirm closing the year?"]" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="fiscalYearId" value="@y.ID" /><button class="btn btn-sm" style="background:#eaf3ef;color:#13433a;"><i class="ki-outline ki-lock-2 fs-5" style="color:#13433a;"></i>@Localizer["Close"]</button></form>
+                                    }
+                                    else if (closing != null)
+                                    {
+                                        <form asp-action="ReopenYear" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Reopen and reverse closing entry?"]" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="closingId" value="@closing.ID" /><button class="btn btn-sm" style="background:#f1f3f7;color:#7e8299;"><i class="ki-outline ki-lock-3 fs-5" style="color:#7e8299;"></i>@Localizer["Reopen"]</button></form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (Model.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-10">@Localizer["No fiscal years"]</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!--end::Fiscal Years-->
+
+        <!--begin::Closing History-->
+        <div class="card">
+            <div class="card-header card-header-stretch">
+                <div class="card-title"><h3>@Localizer["Closing History"]</h3></div>
+            </div>
+            <div class="card-body px-0 pt-0 pb-4">
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                        <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                            <tr>
+                                <th class="ps-9">@Localizer["Close date"]</th>
+                                <th class="text-end">@Localizer["Revenue"]</th>
+                                <th class="text-end">@Localizer["Expenses"]</th>
+                                <th class="text-end">@Localizer["Net result"]</th>
+                                <th class="text-center">@SR["Status"]</th>
+                                <th class="text-center pe-9">@Localizer["Entry"]</th>
+                            </tr>
+                        </thead>
+                        <tbody class="fs-6 fw-semibold text-gray-700">
+                        @foreach (var c in closings)
+                        {
+                            <tr>
+                                <td class="ps-9 fw-bold text-gray-900">@c.CloseDate.ToString("yyyy/MM/dd")</td>
+                                <td class="text-end text-gray-800">@c.TotalRevenue.ToString("N2")</td>
+                                <td class="text-end fw-bold text-danger">@c.TotalExpense.ToString("N2")</td>
+                                <td class="text-end fw-bold @(c.NetResult >= 0 ? "" : "text-danger")" style="@(c.NetResult >= 0 ? "color:#13433a" : "")">@c.NetResult.ToString("N2")</td>
+                                <td class="text-center"><span class="badge fw-bold" style="@(c.Status=="Closed"?"background:#f1f3f7;color:#7e8299;":"background:#eaf3ef;color:#13433a;")">@(c.Status=="Closed"?Localizer["Closed"]:Localizer["Reopened"])</span></td>
+                                <td class="text-center pe-9">@if (c.JournalEntryId.HasValue) { <a href="@Url.Action("JournalEntry","Accounting", new { id = c.JournalEntryId })" class="btn btn-sm btn-icon" style="background:#eaf3ef;" title="@Localizer["Entry"]"><i class="ki-outline ki-eye fs-6" style="color:#13433a;"></i></a> }</td>
+                            </tr>
+                        }
+                        @if (closings.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-10">@Localizer["No closings yet"]</td></tr> }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!--end::Closing History-->
+    </div></div>
+</div>

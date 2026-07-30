@@ -1,0 +1,58 @@
+@using CrossBuy.ViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model EmployeeViewModel
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = isAr ? "إعدادات الحساب" : "Account settings";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@(isAr ? "إعدادات الحساب" : "Account settings")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Profile","Account")" class="text-muted">@(isAr ? "حسابي" : "My Account")</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(isAr ? "الإعدادات" : "Settings")</li></ul></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="row g-5">
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><h3 class="fw-bold">@(isAr ? "تغيير كلمة المرور" : "Change password")</h3></div></div>
+                    <div class="card-body pt-2">
+                        @if (TempData["PwMsg"] != null)
+                        {
+                            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                                <i class="ki-outline ki-check-circle fs-2x text-primary me-3"></i>
+                                <div class="fw-semibold fs-7 text-gray-800 align-self-center">@TempData["PwMsg"]</div>
+                            </div>
+                        }
+                        @if (TempData["PwErr"] != null)
+                        {
+                            <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 mb-5">
+                                <i class="ki-outline ki-information-5 fs-2x text-danger me-3"></i>
+                                <div class="fw-semibold fs-7 text-gray-800 align-self-center">@TempData["PwErr"]</div>
+                            </div>
+                        }
+                        <form asp-action="ChangePassword" method="post">@Html.AntiForgeryToken()
+                            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@(isAr ? "كلمة المرور الحالية" : "Current password")</label><input name="currentPassword" type="password" class="form-control form-control-solid" autocomplete="current-password" required /></div>
+                            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@(isAr ? "كلمة المرور الجديدة" : "New password")</label><input name="newPassword" type="password" class="form-control form-control-solid" autocomplete="new-password" required /></div>
+                            <div class="mb-5"><label class="required fw-semibold fs-6 mb-2">@(isAr ? "تأكيد كلمة المرور" : "Confirm password")</label><input name="confirmPassword" type="password" class="form-control form-control-solid" autocomplete="new-password" required /></div>
+                            <button class="btn btn-primary"><i class="ki-outline ki-check fs-3"></i>@(isAr ? "حفظ كلمة المرور" : "Save password")</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-header border-0 pt-6"><div class="card-title"><h3 class="fw-bold">@(isAr ? "بيانات الحساب" : "Account info")</h3></div></div>
+                    <div class="card-body pt-2">
+                        <div class="row gy-4">
+                            <div class="col-md-6"><div class="fs-7 text-muted">@SR["Name"]</div><div class="fw-bold text-gray-900">@Model.FullName</div></div>
+                            <div class="col-md-6"><div class="fs-7 text-muted">@SR["Email"]</div><div class="fw-bold text-gray-900">@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</div></div>
+                        </div>
+                        <div class="separator my-5"></div>
+                        <div class="fw-semibold fs-7 text-muted">@(isAr ? "اللغة تتغيّر من قائمة المستخدم أعلى الصفحة." : "Language can be changed from the user menu at the top.")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>

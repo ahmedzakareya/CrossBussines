@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="New work order" xml:space="preserve">
+    <value>Nouvel ordre de fabrication</value>
+  </data>
+  <data name="Work orders" xml:space="preserve">
+    <value>Ordres de fabrication</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="Manufactured item (has a BOM)" xml:space="preserve">
+    <value>Article fabriqué (dispose d'une BOM)</value>
+  </data>
+  <data name="Only items that have defined components appear here." xml:space="preserve">
+    <value>Seuls les articles ayant des composants définis apparaissent ici.</value>
+  </data>
+  <data name="Qty to produce" xml:space="preserve">
+    <value>Qté à produire</value>
+  </data>
+  <data name="Planned start" xml:space="preserve">
+    <value>Début planifié</value>
+  </data>
+  <data name="Planned end" xml:space="preserve">
+    <value>Fin planifiée</value>
+  </data>
+  <data name="Labor cost (total)" xml:space="preserve">
+    <value>Coût de main-d'œuvre (total)</value>
+  </data>
+  <data name="Overhead (total)" xml:space="preserve">
+    <value>Frais généraux (total)</value>
+  </data>
+  <data name="Create work order" xml:space="preserve">
+    <value>Créer l'ordre de fabrication</value>
+  </data>
+  <data name="After creating: BOM components are pulled automatically; release then complete to consume materials, produce the item and post the JE (materials + labor + overhead via the WIP account)." xml:space="preserve">
+    <value>Après la création : les composants de la BOM sont récupérés automatiquement ; lancez puis terminez pour consommer les matières, produire l'article et comptabiliser le JE (matières + main-d'œuvre + frais généraux via le compte WIP).</value>
+  </data>
+  <data name="Search a manufactured item…" xml:space="preserve">
+    <value>Rechercher un article fabriqué…</value>
+  </data>
+</root>
