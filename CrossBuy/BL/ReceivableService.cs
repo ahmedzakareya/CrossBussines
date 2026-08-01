@@ -83,7 +83,7 @@ namespace CrossBuy.BL
 		Task<List<SalesReturn>> GetSalesReturnsAsync(int companyId);
 		Task<SalesReturn?> GetSalesReturnAsync(int companyId, int id);
 		Task<(bool ok, string? error, SalesReturn? ret)> CreateSalesReturnAsync(int companyId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null);
-		Task<(bool ok, string? error, SalesReturn? ret)> EditSalesReturnAsync(int companyId, int returnId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId);
+		Task<(bool ok, string? error, SalesReturn? ret)> EditSalesReturnAsync(int companyId, int returnId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null);
 	}
 
 	public class ReceivableService : IReceivableService
@@ -483,7 +483,7 @@ namespace CrossBuy.BL
 
 		// P3: EDIT a posted sales return — reverse the original postings (stock subledger at exact cost + all GL via mirror entries), then re-post on the same row/number.
 		public async Task<(bool ok, string? error, SalesReturn? ret)> EditSalesReturnAsync(
-			int companyId, int returnId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId)
+			int companyId, int returnId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null)
 		{
 			var ret = await _context.SalesReturns.Include(r => r.Lines).FirstOrDefaultAsync(r => r.ID == returnId && r.CompanyID == companyId);
 			if (ret == null) return (false, "المرتجع غير موجود", null);
@@ -492,8 +492,23 @@ namespace CrossBuy.BL
 			if (cust == null) return (false, "العميل غير موجود", null);
 			if (lines == null || lines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند واحد على الأقل", null);
 			var vatOut = await AccIdAsync(companyId, "210201");
-			int __fdp = await _rounding.DecimalsAsync(companyId, null);   // HM-2: functional-currency-only method (no currencyId)
+			// HM-2 (3-ج-0): same currency rule as CreateSalesReturnAsync — settle at the ORIGINAL INVOICE rate (else return-day). All JE lines base.
+			var functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+			var cur = currencyId ?? ret.CurrencyId ?? functional;
+			decimal rate;
+			if (originalInvoiceId != null)
+			{
+				var origRate = await _context.SalesInvoices.AsNoTracking().Where(i => i.ID == originalInvoiceId.Value && i.CompanyID == companyId).Select(i => i.ExchangeRate).FirstOrDefaultAsync();
+				rate = (origRate.HasValue && origRate.Value > 0) ? origRate.Value : 1m;
+			}
+			else if (cur == functional) rate = 1m;
+			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
+			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Sell"); rate = r; }
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+			decimal ToBase(decimal foreignAmt) => foreignAmt * rate;   // RAW at the settlement rate
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole reverse+repost so an edit is all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -519,22 +534,25 @@ namespace CrossBuy.BL
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = Rf(l.Qty * l.UnitPrice - l.DiscountAmount);
-				sub += lineTotal; tax += Rf(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);   // document
+				sub += lineTotal; tax += Rd(lineTotal * l.TaxRate / 100m);
 				ret.Lines.Add(new SalesReturnLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
 			ret.CustomerId = customerId; ret.OriginalInvoiceId = originalInvoiceId; ret.ReturnDate = date.Date; ret.Notes = notes;
-			ret.WarehouseId = lines.FirstOrDefault()?.WarehouseId;
-			ret.SubTotal = Rf(sub); ret.TaxTotal = Rf(tax); ret.GrandTotal = Rf(sub + tax);
+			ret.WarehouseId = lines.FirstOrDefault()?.WarehouseId; ret.CurrencyId = cur; ret.ExchangeRate = R4(rate);
+			ret.SubTotal = Rd(sub); ret.TaxTotal = Rd(tax); ret.GrandTotal = Rd(sub + tax);   // document totals
+			var revGroups = ret.Lines.GroupBy(l => l.RevenueAccountId).Select(g => new { Acc = g.Key, Base = ToBase(g.Sum(x => x.LineTotal)) }).ToList();
+			decimal revBase = revGroups.Sum(g => g.Base), vatBase = ToBase(ret.TaxTotal), grandBase = revBase + vatBase;   // single raw grandBase
+			ret.SubTotalBase = Rf(revBase); ret.TaxTotalBase = Rf(vatBase); ret.GrandTotalBase = Rf(grandBase);
 			await _context.SaveChangesAsync();
 
-			// (4) new credit-note JE (Dr revenue per line + Dr VAT-out / Cr AR)
+			// (4) new credit-note JE (all functional/base): Dr revenue + Dr VAT / Cr AR (single grandBase)
 			var jlines = new List<JournalLineInput>();
-			foreach (var g in ret.Lines.GroupBy(l => l.RevenueAccountId))
-				jlines.Add(new JournalLineInput { AccountId = g.Key, Debit = Rf(g.Sum(x => x.LineTotal)), Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
-			if (ret.TaxTotal > 0 && vatOut != null)
-				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = ret.TaxTotal, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
-			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = ret.GrandTotal, Description = $"إشعار دائن {ret.ReturnNo} (معدّل)" });
+			foreach (var g in revGroups)
+				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = g.Base, Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
+			if (vatBase > 0 && vatOut != null)
+				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = vatBase, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
+			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = grandBase, Description = $"إشعار دائن {ret.ReturnNo} (معدّل)" });
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "SalesReturn", SourceId = ret.ID,

@@ -44,7 +44,8 @@ namespace CrossBuy.BL
 		private readonly IStockService _stock;
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
-		public PayableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; }
+		private readonly ICurrencyRounding _rounding;
+		public PayableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; }
 
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
@@ -333,6 +334,10 @@ namespace CrossBuy.BL
 			var grniAcc = await AccIdAsync(companyId, "210203");
 			var vatIn = await AccIdAsync(companyId, "110401");
 			if (grniAcc == null) return (false, "حساب فواتير لم ترد (210203) غير موجود", null);
+			// HM-2: a purchase return is valued at the item's STORED COST (functional — from mv.TotalCost via StockService), NOT the
+			// document/purchase amount (that would be HM-D16 territory). So all values are functional ⇒ round to the functional dp (Rf).
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
 			var ret = new PurchaseReturn { CompanyID = companyId, VendorId = vendorId, OriginalInvoiceId = originalInvoiceId, ReturnDate = date.Date, WarehouseId = itemLines[0].WarehouseId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow };
 			_context.PurchaseReturns.Add(ret);
@@ -353,21 +358,23 @@ namespace CrossBuy.BL
 					_context.PurchaseReturns.Remove(ret); await _context.SaveChangesAsync();
 					return (false, serr ?? "تعذّر إخراج البضاعة من المخزون", null);
 				}
-				var lineCost = R(mv.TotalCost);
-				var lineVat = R(lineCost * l.TaxRate / 100m);
+				var lineCost = Rf(mv.TotalCost);
+				var lineVat = Rf(lineCost * l.TaxRate / 100m);
 				costTotal += lineCost; vatTotal += lineVat;
 				var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId.Value);
-				_context.PurchaseReturnLines.Add(new PurchaseReturnLine { PurchaseReturnId = ret.ID, LineNo = ln++, ItemId = l.ItemId.Value, ItemDescription = string.IsNullOrWhiteSpace(l.ItemDescription) ? (item?.Name ?? "") : l.ItemDescription, Qty = l.Qty, WarehouseId = l.WarehouseId.Value, TaxRate = l.TaxRate, UnitCost = l.Qty > 0 ? R(lineCost / l.Qty) : 0, LineTotal = lineCost });
+				_context.PurchaseReturnLines.Add(new PurchaseReturnLine { PurchaseReturnId = ret.ID, LineNo = ln++, ItemId = l.ItemId.Value, ItemDescription = string.IsNullOrWhiteSpace(l.ItemDescription) ? (item?.Name ?? "") : l.ItemDescription, Qty = l.Qty, WarehouseId = l.WarehouseId.Value, TaxRate = l.TaxRate, UnitCost = l.Qty > 0 ? Rf(lineCost / l.Qty) : 0, LineTotal = lineCost });
 			}
-			ret.SubTotal = R(costTotal); ret.TaxTotal = R(vatTotal); ret.GrandTotal = R(costTotal + vatTotal);
+			ret.SubTotal = Rf(costTotal); ret.TaxTotal = Rf(vatTotal); ret.GrandTotal = Rf(costTotal + vatTotal);
+			// functional-cost values ⇒ the base columns equal the document columns; ap_sub uses GrandTotalBase (= the single 2101 line value)
+			ret.SubTotalBase = ret.SubTotal; ret.TaxTotalBase = ret.TaxTotal; ret.GrandTotalBase = ret.GrandTotal;
 			await _context.SaveChangesAsync();
 
-			// debit-note JE: Dr AP (cost+vat) / Cr GRNI (cost) / Cr VAT-input (vat)
+			// debit-note JE (all functional): Dr AP (grandBase) / Cr GRNI (cost) / Cr VAT-input (vat) — 2101 from the single GrandTotal
 			var jlines = new List<JournalLineInput> { new() { AccountId = ven.ControlAccountId, Debit = ret.GrandTotal, Credit = 0, Description = $"إشعار مدين {ret.ReturnNo}", DescriptionEn = $"Debit note {ret.ReturnNo}" } };
-			jlines.Add(new JournalLineInput { AccountId = grniAcc.Value, Debit = 0, Credit = R(costTotal), Description = "عكس استلام (GRNI)", DescriptionEn = "GRNI reversal" });
+			jlines.Add(new JournalLineInput { AccountId = grniAcc.Value, Debit = 0, Credit = Rf(costTotal), Description = "عكس استلام (GRNI)", DescriptionEn = "GRNI reversal" });
 			if (vatTotal > 0 && vatIn != null)
-				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = 0, Credit = R(vatTotal), Description = "عكس ض.ق.م مدخلات", DescriptionEn = "Input VAT reversal" });
-			else if (vatTotal > 0) { jlines[0].Debit = R(costTotal); ret.TaxTotal = 0; ret.GrandTotal = R(costTotal); await _context.SaveChangesAsync(); }
+				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = 0, Credit = Rf(vatTotal), Description = "عكس ض.ق.م مدخلات", DescriptionEn = "Input VAT reversal" });
+			else if (vatTotal > 0) { jlines[0].Debit = Rf(costTotal); ret.TaxTotal = 0; ret.GrandTotal = Rf(costTotal); ret.GrandTotalBase = ret.GrandTotal; await _context.SaveChangesAsync(); }
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
@@ -394,6 +401,8 @@ namespace CrossBuy.BL
 			var grniAcc = await AccIdAsync(companyId, "210203");
 			var vatIn = await AccIdAsync(companyId, "110401");
 			if (grniAcc == null) return (false, "حساب فواتير لم ترد (210203) غير موجود", null);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);   // HM-2: functional-cost values
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole reverse+repost so an edit is all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -429,20 +438,21 @@ namespace CrossBuy.BL
 					Qty = l.Qty, SourceType = "PurchaseReturn", SourceId = ret.ID, PostToGl = true, Notes = $"مرتجع شراء {ret.ReturnNo} (معدّل)"
 				}, userId?.ToString());
 				if (!sok || mv == null) return (false, serr ?? "تعذّر إخراج البضاعة من المخزون", null);
-				var lineCost = R(mv.TotalCost); var lineVat = R(lineCost * l.TaxRate / 100m);
+				var lineCost = Rf(mv.TotalCost); var lineVat = Rf(lineCost * l.TaxRate / 100m);
 				costTotal += lineCost; vatTotal += lineVat;
 				var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId.Value);
-				_context.PurchaseReturnLines.Add(new PurchaseReturnLine { PurchaseReturnId = ret.ID, LineNo = ln++, ItemId = l.ItemId.Value, ItemDescription = string.IsNullOrWhiteSpace(l.ItemDescription) ? (item?.Name ?? "") : l.ItemDescription, Qty = l.Qty, WarehouseId = l.WarehouseId.Value, TaxRate = l.TaxRate, UnitCost = l.Qty > 0 ? R(lineCost / l.Qty) : 0, LineTotal = lineCost });
+				_context.PurchaseReturnLines.Add(new PurchaseReturnLine { PurchaseReturnId = ret.ID, LineNo = ln++, ItemId = l.ItemId.Value, ItemDescription = string.IsNullOrWhiteSpace(l.ItemDescription) ? (item?.Name ?? "") : l.ItemDescription, Qty = l.Qty, WarehouseId = l.WarehouseId.Value, TaxRate = l.TaxRate, UnitCost = l.Qty > 0 ? Rf(lineCost / l.Qty) : 0, LineTotal = lineCost });
 			}
-			ret.SubTotal = R(costTotal); ret.TaxTotal = R(vatTotal); ret.GrandTotal = R(costTotal + vatTotal);
+			ret.SubTotal = Rf(costTotal); ret.TaxTotal = Rf(vatTotal); ret.GrandTotal = Rf(costTotal + vatTotal);
+			ret.SubTotalBase = ret.SubTotal; ret.TaxTotalBase = ret.TaxTotal; ret.GrandTotalBase = ret.GrandTotal;
 			await _context.SaveChangesAsync();
 
-			// (5) new debit-note JE: Dr AP / Cr GRNI / Cr VAT-input
+			// (5) new debit-note JE (all functional): Dr AP (single GrandTotal) / Cr GRNI / Cr VAT-input
 			var jlines = new List<JournalLineInput> { new() { AccountId = ven.ControlAccountId, Debit = ret.GrandTotal, Credit = 0, Description = $"إشعار مدين {ret.ReturnNo} (معدّل)", DescriptionEn = $"Debit note {ret.ReturnNo} (edited)" } };
-			jlines.Add(new JournalLineInput { AccountId = grniAcc.Value, Debit = 0, Credit = R(costTotal), Description = "عكس استلام (GRNI)", DescriptionEn = "GRNI reversal" });
+			jlines.Add(new JournalLineInput { AccountId = grniAcc.Value, Debit = 0, Credit = Rf(costTotal), Description = "عكس استلام (GRNI)", DescriptionEn = "GRNI reversal" });
 			if (vatTotal > 0 && vatIn != null)
-				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = 0, Credit = R(vatTotal), Description = "عكس ض.ق.م مدخلات", DescriptionEn = "Input VAT reversal" });
-			else if (vatTotal > 0) { jlines[0].Debit = R(costTotal); ret.TaxTotal = 0; ret.GrandTotal = R(costTotal); await _context.SaveChangesAsync(); }
+				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = 0, Credit = Rf(vatTotal), Description = "عكس ض.ق.م مدخلات", DescriptionEn = "Input VAT reversal" });
+			else if (vatTotal > 0) { jlines[0].Debit = Rf(costTotal); ret.TaxTotal = 0; ret.GrandTotal = Rf(costTotal); ret.GrandTotalBase = ret.GrandTotal; await _context.SaveChangesAsync(); }
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "PurchaseReturn", SourceId = ret.ID,
@@ -474,14 +484,20 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Buy"); rate = r; }
+			// HM-2: document amounts round to document dp (Rd); base to functional (Rf). Like the receipt, the payment JE has no eligible
+			// P&L line (cash/AP/WHT/FX all forbidden), so it balances by construction — fxNet absorbs the conversion sub-unit as realized FX.
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
 			// "amount" (gross, foreign) — WHT withheld, net paid in cash (both translated at the payment rate).
-			var whtForeign = R(amount * whtRate / 100m);
-			var netForeign = R(amount - whtForeign);
+			var whtForeign = Rd(amount * whtRate / 100m);
+			var netForeign = Rd(amount - whtForeign);
 			var whtAcc = whtForeign > 0 ? await AccIdAsync(companyId, "210202") : null;   // Withholding Tax Payable
 			if (whtForeign > 0 && whtAcc == null) return (false, "حساب ضريبة الخصم والتحصيل (210202) غير موجود");
 
-			var pay = new Payment { CompanyID = companyId, VendorId = vendorId, PaymentDate = date.Date, Amount = R(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
+			var pay = new Payment { CompanyID = companyId, VendorId = vendorId, PaymentDate = date.Date, Amount = Rd(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
 			_context.Payments.Add(pay);
 			await _context.SaveChangesAsync();
 			pay.PaymentNo = $"PY-{date:yyyy}-{pay.ID:D5}";
@@ -495,25 +511,25 @@ namespace CrossBuy.BL
 								.GroupBy(a => a.PurchaseInvoiceId).Select(g => new { Inv = g.Key, F = g.Sum(x => x.ForeignAmount) }).ToListAsync())
 								.ToDictionary(x => x.Inv, x => x.F);
 
-			decimal left = R(amount), apBaseTotal = 0m;
+			decimal left = Rd(amount), apBaseTotal = 0m;
 			var allocs = new List<PaymentAllocation>();
 			foreach (var inv in openInvoices)
 			{
 				if (left <= 0) break;
-				var remaining = R(inv.GrandTotal - (settledByInv.TryGetValue(inv.ID, out var s) ? s : 0m));
+				var remaining = Rd(inv.GrandTotal - (settledByInv.TryGetValue(inv.ID, out var s) ? s : 0m));   // document
 				if (remaining <= 0) continue;
 				var take = Math.Min(remaining, left);
 				var invRate = (inv.ExchangeRate.HasValue && inv.ExchangeRate.Value > 0) ? inv.ExchangeRate.Value : 1m;
-				var apBase = R(take * invRate);
-				apBaseTotal += apBase; left = R(left - take);
-				allocs.Add(new PaymentAllocation { CompanyID = companyId, PaymentId = pay.ID, PurchaseInvoiceId = inv.ID, ForeignAmount = take, InvoiceRate = R4(invRate), PaymentRate = R4(rate), ApBase = apBase, FxDiff = apBase - R(take * rate), CreatedAt = DateTime.UtcNow });
+				var apBase = Rf(take * invRate);           // AP cleared at the INVOICE rate (functional) — matches GrandTotalBase
+				apBaseTotal += apBase; left = Rd(left - take);
+				allocs.Add(new PaymentAllocation { CompanyID = companyId, PaymentId = pay.ID, PurchaseInvoiceId = inv.ID, ForeignAmount = take, InvoiceRate = R4(invRate), PaymentRate = R4(rate), ApBase = apBase, FxDiff = apBase - Rf(take * rate), CreatedAt = DateTime.UtcNow });
 			}
-			if (left > 0) apBaseTotal += R(left * rate);   // unallocated (advance) → AP at payment rate, no FX
+			if (left > 0) apBaseTotal += Rf(left * rate);   // unallocated (advance) → AP at payment rate, no FX
 
-			decimal cashBase = R(netForeign * rate);
-			decimal whtBase = R(whtForeign * rate);
-			pay.AmountBase = apBaseTotal;                  // AP cleared = subledger basis
-			decimal fxNet = R(apBaseTotal - cashBase - whtBase);   // gain(+) when we settle for less base than the liability
+			decimal cashBase = Rf(netForeign * rate);
+			decimal whtBase = Rf(whtForeign * rate);
+			pay.AmountBase = apBaseTotal;                  // AP cleared = subledger basis (single source → the 2101 JE line)
+			decimal fxNet = Rf(apBaseTotal - cashBase - whtBase);   // gain(+) when we settle for less base than the liability
 
 			var lines = new List<JournalLineInput>
 			{
