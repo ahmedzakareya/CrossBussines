@@ -1357,7 +1357,12 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 				// raw column value straight from SQL Server (bypassing EF), via EF's own raw-SQL channel (joins the ambient tx)
 				var rawRows = await _db.Database.SqlQueryRaw<decimal>("SELECT OpeningFloat AS Value FROM PosShifts WHERE ID = {0}", sh!.ID).ToListAsync();
 				decimal rawRead = rawRows.Count > 0 ? rawRows[0] : -1m;
-				var res = new { wroteViaEf = 1.733m, efReadBack = efRead, rawSqlColumn = rawRead, filsSurvivedEfPersistence = efRead == 1.733m, columnItselfHoldsFils = rawRead == 1.733m };
+				// an 8-decimal FX rate must ALSO survive (rate columns are decimal(19,8) and were raised past the (19,4) default)
+				var er = new CrossBuy.Models.Context.Accounting.ExchangeRate { CurrencyId = 5, RateDate = DateTime.Today, Rate = 0.00612345m, RateType = "ZZ-D27" };
+				_db.ExchangeRates.Add(er); await _db.SaveChangesAsync();
+				decimal rateRead = await _db.ExchangeRates.AsNoTracking().Where(x => x.ID == er.ID).Select(x => x.Rate).FirstAsync();
+				var res = new { wroteViaEf = 1.733m, efReadBack = efRead, rawSqlColumn = rawRead, filsSurvivedEfPersistence = efRead == 1.733m, columnItselfHoldsFils = rawRead == 1.733m,
+					wroteRate = 0.00612345m, rateReadBack = rateRead, rate8dpSurvives = rateRead == 0.00612345m };
 				await tx.RollbackAsync();
 				return res;
 			}

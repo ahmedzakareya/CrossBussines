@@ -10,8 +10,19 @@ namespace CrossBuy.Models.Context
     {
         public CrossDbContext(DbContextOptions<CrossDbContext> options) : base (options)
         {
-                
+
         }
+
+		// HM-2 (Batch 4.5 / HM-D27): EF Core's DEFAULT decimal mapping is (18,2). With no precision declared on the
+		// money properties, EF sent Scale=2 parameters and SILENTLY ROUNDED every money value to 2dp ON SAVE — dropping
+		// KWD fils (3rd decimal) even though the DB columns are decimal(19,4). Default all decimals to (19,4) to match
+		// the money/cost columns; the finer-scale rate/factor columns are raised in OnModelCreating below.
+		// Widening scale 2→4 never changes an EGP (2dp) value, so EGP behavior is unaffected.
+		protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+		{
+			base.ConfigureConventions(configurationBuilder);
+			configurationBuilder.Properties<decimal>().HavePrecision(19, 4);
+		}
 
 		protected override void OnModelCreating(ModelBuilder builder)
 		{
@@ -109,6 +120,27 @@ namespace CrossBuy.Models.Context
 					  .HasForeignKey(n => n.RecipientEmployeeID)
 					  .OnDelete(DeleteBehavior.Restrict);
 			});
+
+			// HM-2 (Batch 4.5 / HM-D27): exchange-rate and UoM-factor columns are FINER than money (DB: rates decimal(19,8),
+			// UoMConversions.Factor decimal(19,6)). The (19,4) default convention above would truncate them on save (an FX rate
+			// like 0.00612345 → 0.0061), so raise those properties to match their columns. Property-name targeted; any same-named
+			// property on a coarser column is harmless (SQL rounds to that column's own scale). SentQty (18,3) stays under (19,4).
+			foreach (var et in builder.Model.GetEntityTypes())
+				foreach (var p in et.GetProperties())
+				{
+					if (p.ClrType != typeof(decimal) && p.ClrType != typeof(decimal?)) continue;
+					switch (p.Name)
+					{
+						case "ExchangeRate":
+						case "Rate":
+						case "InvoiceRate":
+						case "PaymentRate":
+						case "ReceiptRate":
+							p.SetPrecision(19); p.SetScale(8); break;
+						case "Factor":
+							p.SetPrecision(19); p.SetScale(6); break;
+					}
+				}
 		}
 
         // (legacy empty/unused ItemCategory + ItemCategoryGroup scaffold removed — superseded by Inventory module)
