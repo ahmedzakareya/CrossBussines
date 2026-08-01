@@ -34,6 +34,8 @@ namespace CrossBuy.BL
         public DateTime? EditedAt { get; set; }
         public bool Deleted { get; set; }
         public int? ReplyToId { get; set; }
+        public string? ReplyToSender { get; set; }
+        public string? ReplyToBody { get; set; }
         public List<ChatReactionDto> Reactions { get; set; } = new();
     }
     public class ChatReactionDto { public string Emoji { get; set; } = ""; public int Count { get; set; } public bool Mine { get; set; } }
@@ -195,10 +197,31 @@ namespace CrossBuy.BL
             var ids = msgs.Select(m => m.ID).ToList();
             var reactions = await _db.ChatReactions.AsNoTracking().Where(r => ids.Contains(r.MessageId)).ToListAsync();
             var names = await NamesAsync(msgs.Select(m => m.SenderEmployeeId));
-            return msgs.Select(m => ToDto(m, meId, names, reactions)).ToList();
+            var replies = await ReplyPreviewsAsync(msgs.Where(m => m.ReplyToId.HasValue).Select(m => m.ReplyToId!.Value));
+            return msgs.Select(m => ToDto(m, meId, names, reactions, replies)).ToList();
         }
 
-        private static ChatMsgDto ToDto(ChatMessage m, int meId, Dictionary<int, (string name, string? avatar)> names, List<ChatReaction> reactions)
+        // For each message id, the quoted preview (sender display name + short body) used to render reply bubbles.
+        private async Task<Dictionary<int, (string sender, string? body)>> ReplyPreviewsAsync(IEnumerable<int> replyToIds)
+        {
+            var ids = replyToIds.Distinct().ToList();
+            if (ids.Count == 0) return new();
+            var srcs = await _db.ChatMessages.AsNoTracking().Where(m => ids.Contains(m.ID))
+                .Select(m => new { m.ID, m.SenderEmployeeId, m.Body, m.AttachmentType, m.AttachmentName, m.DeletedAt }).ToListAsync();
+            var senderNames = await NamesAsync(srcs.Select(s => s.SenderEmployeeId));
+            var map = new Dictionary<int, (string sender, string? body)>();
+            foreach (var s in srcs)
+            {
+                var nm = senderNames.TryGetValue(s.SenderEmployeeId, out var info) ? info.name : "-";
+                string? prev = s.DeletedAt != null ? null
+                    : !string.IsNullOrWhiteSpace(s.Body) ? (s.Body!.Length > 120 ? s.Body!.Substring(0, 120) : s.Body!)
+                    : (s.AttachmentType == "image" ? "📷" : (s.AttachmentName != null ? "📎 " + s.AttachmentName : null));
+                map[s.ID] = (nm, prev);
+            }
+            return map;
+        }
+
+        private static ChatMsgDto ToDto(ChatMessage m, int meId, Dictionary<int, (string name, string? avatar)> names, List<ChatReaction> reactions, Dictionary<int, (string sender, string? body)>? replies = null)
         {
             names.TryGetValue(m.SenderEmployeeId, out var info);
             var rx = reactions.Where(r => r.MessageId == m.ID).GroupBy(r => r.Emoji)
@@ -210,6 +233,8 @@ namespace CrossBuy.BL
                 AttachmentPath = m.DeletedAt != null ? null : m.AttachmentPath, AttachmentName = m.AttachmentName, AttachmentType = m.AttachmentType,
                 Mine = m.SenderEmployeeId == meId, CreatedAt = m.CreatedAt, EditedAt = m.EditedAt, Deleted = m.DeletedAt != null,
                 ReplyToId = m.ReplyToId, Reactions = rx,
+                ReplyToSender = m.ReplyToId.HasValue && replies != null && replies.TryGetValue(m.ReplyToId.Value, out var rp) ? rp.sender : null,
+                ReplyToBody = m.ReplyToId.HasValue && replies != null && replies.TryGetValue(m.ReplyToId.Value, out var rp2) ? rp2.body : null,
             };
         }
 
@@ -236,14 +261,15 @@ namespace CrossBuy.BL
             await _db.SaveChangesAsync();
 
             var names = await NamesAsync(new[] { meId });
-            var dto = ToDto(msg, meId, names, new List<ChatReaction>());
+            var replies = replyToId.HasValue ? await ReplyPreviewsAsync(new[] { replyToId.Value }) : null;
+            var dto = ToDto(msg, meId, names, new List<ChatReaction>(), replies);
 
             // realtime push to the conversation room (mark not-mine for other viewers is done client-side by senderId compare)
             await _hub.Clients.Group(ChatHub.ConvGroup(conversationId)).SendAsync("message", new
             {
                 conversationId, id = dto.Id, senderId = dto.SenderId, senderName = dto.SenderName, senderAvatar = dto.SenderAvatar,
                 body = dto.Body, attachmentPath = dto.AttachmentPath, attachmentName = dto.AttachmentName, attachmentType = dto.AttachmentType,
-                replyToId = dto.ReplyToId, createdAt = dto.CreatedAt,
+                replyToId = dto.ReplyToId, replyToSender = dto.ReplyToSender, replyToBody = dto.ReplyToBody, createdAt = dto.CreatedAt,
             });
 
             // other members: conversation-list bump + a bell notification (deduped per conversation) + mentions

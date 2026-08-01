@@ -27,6 +27,9 @@
     .cbchat-icbtn:hover { color: var(--bs-primary); background: rgba(0,0,0,.05); }
     .cbchat-send { width: 46px; height: 46px; border-radius: 50%; flex: 0 0 auto; box-shadow: 0 2px 6px rgba(31,125,87,.35); }
     .cbchat-send i { font-size: 20px; }
+    .cbchat-quote { max-width: 420px; }
+    .cbchat-flash { animation: cbchatFlash 1.2s ease; }
+    @@keyframes cbchatFlash { 0%, 100% { box-shadow: none; } 25% { box-shadow: 0 0 0 3px rgba(31,125,87,.45); } }
 </style>
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -154,6 +157,20 @@
 </div></div></div>
 <!--end::Image/attachment preview modal-->
 
+<!--begin::Edit message modal-->
+<div class="modal fade" id="chatEditModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header py-3"><h2 class="fs-5 m-0">@Localizer["Edit message"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body">
+        <input type="hidden" id="chatEditId" />
+        <textarea id="chatEditText" class="form-control form-control-solid" rows="4"></textarea>
+    </div>
+    <div class="modal-footer py-3">
+        <button class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+        <button class="btn btn-primary" id="chatEditSave"><i class="ki-outline ki-check fs-4"></i>@SR["Save"]</button>
+    </div>
+</div></div></div>
+<!--end::Edit message modal-->
+
 @section Scripts {
 <script>
 (function () {
@@ -251,7 +268,15 @@ document.addEventListener('DOMContentLoaded', function () {
             '<span class="text-muted fs-8">' + timeStr(m.createdAt) + (m.editedAt ? ' · @Localizer["edited"]' : '') + '</span></div>' + (mine ? avatar : '') + '</div>';
         var att = attachHtml(m);
         var txt = m.body ? esc(m.body).replace(/\n/g, '<br>') : '';
-        var inner = att ? (att + (txt ? '<div class="mt-2">' + txt + '</div>' : '')) : txt;
+        var quote = '';
+        if (m.replyToId) {
+            var qs = esc(m.replyToSender || '@Localizer["Message"]');
+            var qb = m.replyToBody != null ? esc(m.replyToBody) : '@Localizer["Message deleted"]';
+            quote = '<div class="cbchat-quote border-start border-3 border-primary bg-light rounded ps-3 pe-2 py-1 mb-2 cursor-pointer" data-goto="' + m.replyToId + '">' +
+                '<div class="fs-8 fw-bold text-primary">' + qs + '</div>' +
+                '<div class="fs-8 text-gray-600 text-truncate">' + qb + '</div></div>';
+        }
+        var inner = quote + (att ? (att + (txt ? '<div class="mt-2">' + txt + '</div>' : '')) : txt);
         var content = m.deleted
             ? '<div class="p-3 rounded bg-light text-muted fst-italic mw-lg-450px">@Localizer["Message deleted"]</div>'
             : '<div class="p-4 rounded ' + bubbleBg + ' text-gray-900 fw-semibold mw-lg-450px text-' + side + '">' + inner + '</div>';
@@ -269,8 +294,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function bindMsg(el, m) {
         el.querySelectorAll('.rx').forEach(function (b) { b.addEventListener('click', function () { post('/Chat/React', { id: el.getAttribute('data-id'), emoji: b.getAttribute('data-emoji') }); }); });
         var re = el.querySelector('.re'); if (re) re.addEventListener('click', function () { setReply(el.getAttribute('data-id'), el.getAttribute('data-text')); });
-        var ed = el.querySelector('.ed'); if (ed) ed.addEventListener('click', function () { var nb = prompt('@Localizer["Edit message"]', el.getAttribute('data-body')); if (nb != null && nb.trim()) post('/Chat/Edit', { id: el.getAttribute('data-id'), body: nb.trim() }); });
+        var ed = el.querySelector('.ed'); if (ed) ed.addEventListener('click', function () { openEdit(el.getAttribute('data-id'), el.getAttribute('data-body')); });
         var dl = el.querySelector('.dl'); if (dl) dl.addEventListener('click', function () { if (confirm('@Localizer["Delete message?"]')) post('/Chat/Delete', { id: el.getAttribute('data-id') }); });
+        var qt = el.querySelector('.cbchat-quote'); if (qt) qt.addEventListener('click', function () {
+            var tid = qt.getAttribute('data-goto'); var tgt = scroll.querySelector('.chat-msg[data-id="' + tid + '"]');
+            if (tgt) { tgt.scrollIntoView({ behavior: 'smooth', block: 'center' }); var b = tgt.querySelector('.rounded'); if (b) { b.classList.add('cbchat-flash'); setTimeout(function () { b.classList.remove('cbchat-flash'); }, 1200); } }
+        });
     }
     function appendMsg(m, prepend) {
         if (m.id) { if (seen[m.id]) return null; seen[m.id] = 1; }
@@ -324,7 +353,8 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/Chat/Header?c=' + id, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (h) {
             if (!h) return;
             otherReadUpTo = h.otherReadMessageId || 0;
-            if (curHeader) curHeader.memberCount = h.memberCount;
+            if (curHeader) { curHeader.memberCount = h.memberCount; curHeader.isOwner = !!h.isOwner; }
+            members = h.members || [];   // group members → mention picker + member management
             memberReads = {}; (h.memberReads || []).forEach(function (r) { memberReads[r.employeeId] = r.lastReadMessageId; });
             updateSeenBar();
         });
@@ -453,6 +483,23 @@ document.addEventListener('DOMContentLoaded', function () {
         sendCore(cap, f);
     });
     $('chatImgModal').addEventListener('hidden.bs.modal', function () { pendingFile = null; attach.value = ''; $('chatImgPreviewWrap').innerHTML = ''; $('chatImgCaption').value = ''; });
+
+    // ---------- edit message (modal shows the CURRENT text, user edits it) ----------
+    var editModal = new bootstrap.Modal($('chatEditModal'));
+    function openEdit(id, body) {
+        $('chatEditId').value = id;
+        var t = $('chatEditText'); t.value = body || '';
+        editModal.show();
+        setTimeout(function () { t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (x) {} }, 250);
+    }
+    function saveEdit() {
+        var id = $('chatEditId').value, nb = $('chatEditText').value.trim();
+        if (!id || !nb) return;
+        post('/Chat/Edit', { id: id, body: nb });
+        editModal.hide();
+    }
+    $('chatEditSave').addEventListener('click', saveEdit);
+    $('chatEditText').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveEdit(); } });
 
     // ---------- directory / new chat / new group ----------
     function loadDir(cb) { fetch('/Chat/Directory', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) { dir = list; if (cb) cb(list); }); }

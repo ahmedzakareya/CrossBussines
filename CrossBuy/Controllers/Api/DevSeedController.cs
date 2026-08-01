@@ -1036,6 +1036,72 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
 		}
 
+		// GET /api/dev/hm2-cashier-return-fx-test?key=seed123 — HM-2 3-ج-0: the AUTHORIZED refund-FX path, exercised at a DIFFERENT rate.
+		// Invoice @163, then cashier return today @165 (and @161, and a credit no-FX case). Rolled-back tx.
+		[HttpGet("hm2-cashier-return-fx-test")]
+		public async Task<IActionResult> Hm2CashierReturnFxTest(string key, [FromServices] CrossBuy.BL.IReceivableService ar)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int ctrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			int drawer = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			int uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => u.ID).FirstOrDefaultAsync();
+			int cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => c.ID).FirstOrDefaultAsync();
+			int f4902 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4902").Select(a => a.ID).FirstOrDefaultAsync();
+			int f5902 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "5902").Select(a => a.ID).FirstOrDefaultAsync();
+
+			var br = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "ZZ-CASHIER-BR" && b.CompanyID == company);
+			if (br == null) { br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-CASHIER-BR", NameAr = "كاشير ZZ", Location = "t", CountryID = 32, CompanyID = company, PhoneNumber = "", Email = "", Description = "" }; _db.Branches.Add(br); await _db.SaveChangesAsync(); }
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == br.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = br.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh; setting.DefaultCurrencyId = 5; await _db.SaveChangesAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == br.ID && t.Code == "ZZCASH-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = br.ID, Code = "ZZCASH-T", Name = "cash", CashAccountId = drawer, ReceiptPrefix = "ZZC-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			var svc = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-CASH-SVC");
+			if (svc == null) { var (iok, ierr, it) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-CASH-SVC", Barcode = "ZZCASHSVC", Name = "خدمة", NameEn = "svc", ItemCategoryId = cat, ItemType = "Service", BaseUoMId = uom, SalesPrice = 1m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "svc item: " + ierr }); svc = await _db.Items.FirstAsync(i => i.ID == it!.ID); }
+			var cust = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-CASH-CUST");
+			if (cust == null) { cust = new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-CASH-CUST", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
+
+			async Task<decimal> Out() => await ar.CustomerOutstandingAsync(company, cust.ID);
+			async Task<object> OneCase(string tag, decimal todayRateVal)
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				// today's KWD rate (rolled back) — drives the refund's return-day rate
+				await _db.Database.ExecuteSqlRawAsync("INSERT INTO ExchangeRates (CurrencyId, RateDate, Rate, RateType) VALUES (5, {0}, {1}, 'Sell')", DateTime.Today, todayRateVal);
+				// invoice @163 (explicit) for a 10-KWD service line
+				var line = new List<CrossBuy.BL.SalesLineInput> { new CrossBuy.BL.SalesLineInput { ItemDescription = "svc", Qty = 10, UnitPrice = 1.000m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = svc!.ID, WarehouseId = wh } };
+				var (iok, ierr, inv) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, line, "cash inv", null, 5, 163m);
+				if (!iok) { await tx.RollbackAsync(); return new { tag, error = "inv: " + ierr }; }
+				var ord = new CrossBuy.Models.Context.Pos.PosOrder { CompanyId = company, BranchId = br.ID, TerminalId = term.ID, CustomerId = cust.ID, Status = "Paid", InvoiceId = inv!.ID, CurrencyId = 5, OrderType = "Takeaway", OpenedAt = DateTime.UtcNow };
+				_db.PosOrders.Add(ord); await _db.SaveChangesAsync();
+				var ol = new CrossBuy.Models.Context.Pos.PosOrderLine { OrderId = ord.ID, ItemId = svc.ID, ItemName = "svc", Qty = 10, UnitPrice = 1.000m, DiscountAmount = 0, TaxRate = 0, LineTotal = 10.000m, Sort = 1 };
+				_db.PosOrderLines.Add(ol); await _db.SaveChangesAsync();
+				// the ORIGINAL cash payment (@invoice rate 163) that settled the invoice to zero — a real Paid order has this
+				await ar.CreateReceiptAsync(company, cust.ID, DateTime.Today, inv.GrandTotal, "Cash", drawer, "orig pay", null, 5, 163m);
+				decimal outBefore = await Out();
+				var (rok, rerr, retId) = await _posOrders.ReturnOrderLinesAsync(company, ord.ID, new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = ol.ID, Qty = 10 } }, null);
+				object res;
+				if (!rok) res = new { tag, error = "return: " + rerr };
+				else
+				{
+					decimal outAfter = await Out();
+					var rr = await _db.Receipts.AsNoTracking().Where(r => r.CustomerId == cust.ID && r.Amount < 0).OrderByDescending(r => r.ID).FirstOrDefaultAsync();
+					var refundJe = await _db.JournalEntries.AsNoTracking().Where(e => e.SourceType == "PosRefund").OrderByDescending(e => e.ID).Select(e => e.ID).FirstOrDefaultAsync();
+					var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == refundJe).ToListAsync();
+					decimal fx4902 = jl.Where(l => l.AccountId == f4902).Sum(l => l.Credit - l.Debit);
+					decimal fx5902 = jl.Where(l => l.AccountId == f5902).Sum(l => l.Debit - l.Credit);
+					decimal arRefund = jl.Where(l => l.AccountId == ctrl).Sum(l => l.Debit);
+					res = new { tag, todayRate = todayRateVal, arClosedAtInvoiceRate = arRefund, fxGain4902 = fx4902, fxLoss5902 = fx5902, refundReceiptRate = rr?.ExchangeRate, refundReceiptAmountBase = rr?.AmountBase, refundJeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit), arNetsToZero = outAfter == 0m, outBefore, outAfter };
+				}
+				await tx.RollbackAsync();
+				return res;
+			}
+			var results = new List<object> { await OneCase("a: return @165 (gain)", 165m), await OneCase("b: return @161 (loss)", 161m) };
+			return Ok(new { note = "each case rolled back; invoice @163, cashier return today at the shown rate", results });
+		}
+
 		// GET /api/dev/hm2-kwd-return-test?key=seed123 — HM-2 Batch 3-ج-0: a KWD sales return of a KWD invoice must reverse AR at the
 		// INVOICE rate ⇒ GrandTotalBase (at invoice rate) == the 1102 JE line, fils preserved, JE balanced, ar_sub nets to 0. Rolled-back tx.
 		[HttpGet("hm2-kwd-return-test")]
