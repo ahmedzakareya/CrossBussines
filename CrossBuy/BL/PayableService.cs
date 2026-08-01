@@ -133,14 +133,22 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Buy"); rate = r; }
-			decimal ToBase(decimal foreignAmt) => R(foreignAmt * rate);
+			// HM-2 (3-ج): document totals round to document dp (Rd); the base is FUNCTIONAL (Rf). The purchase invoice JE has NO eligible
+			// P&L line for a pure-stockable invoice (Dr 1103 / Cr 2101 / Dr VAT are all reconciled), so it must balance BY CONSTRUCTION:
+			// GrandTotalBase (= Σ Rf line bases + Rf VAT) is BOTH the stored column AND the single 2101 line, and the Dr lines are those
+			// same Rf bases ⇒ Σ Dr = 2101 exactly, no remainder reaches JES. No distribution onto a reconciled account (no stock_gl drift).
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+			decimal ToBase(decimal foreignAmt) => Rf(foreignAmt * rate);   // functional base per component
 
 			var inv = new PurchaseInvoice { CompanyID = companyId, VendorId = vendorId, InvoiceDate = date.Date, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate), ProjectId = projectId };
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount);
-				var lineTax = R(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);   // document
+				var lineTax = Rd(lineTotal * l.TaxRate / 100m);
 				sub += lineTotal; tax += lineTax;
 				// for an inventory item, the line debits the category inventory account (perpetual)
 				var acct = l.ExpenseAccountId;
@@ -153,10 +161,10 @@ namespace CrossBuy.BL
 				}
 				inv.Lines.Add(new PurchaseInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, ExpenseAccountId = acct, CostCenterId = l.CostCenterId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
-			inv.SubTotal = R(sub); inv.TaxTotal = R(tax); inv.GrandTotal = R(sub + tax);
-			// base totals: sum of per-line bases so the GL balances exactly in functional currency
+			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);   // document totals
+			// base totals: sum of per-line functional bases so the GL balances exactly (Σ Dr = GrandTotalBase = 2101)
 			decimal subBase = inv.Lines.Sum(l => ToBase(l.LineTotal));
-			decimal taxBase = inv.Lines.Sum(l => ToBase(R(l.LineTotal * l.TaxRate / 100m)));
+			decimal taxBase = inv.Lines.Sum(l => ToBase(Rd(l.LineTotal * l.TaxRate / 100m)));
 			inv.SubTotalBase = subBase; inv.TaxTotalBase = taxBase; inv.GrandTotalBase = subBase + taxBase;
 			// HM-1-أ ب-3: ONE ambient transaction — the invoice + its GL + the stock receipt are all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -188,7 +196,7 @@ namespace CrossBuy.BL
 			foreach (var l in inv.Lines.Where(x => x.ItemId != null && x.WarehouseId != null && x.Qty > 0).OrderBy(x => x.ItemId).ThenBy(x => x.WarehouseId))
 			{
 				if (!CrossBuy.Models.Context.Inventory.ItemTypes.RequiresStock(recItemTypes.GetValueOrDefault(l.ItemId!.Value))) continue;
-				var unitCost = R(ToBase(l.LineTotal) / l.Qty);   // base cost net of discount, excl. tax
+				var unitCost = Rf(ToBase(l.LineTotal) / l.Qty);   // FUNCTIONAL base cost (converted) net of discount, excl. tax
 				var (sok, serr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,
@@ -229,7 +237,13 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Buy"); rate = r; }
-			decimal ToBase(decimal foreignAmt) => R(foreignAmt * rate);
+			// HM-2 (3-ج): same as create — document Rd, base Rf; balance by construction (Σ Dr = GrandTotalBase = 2101). Reverse+repost
+			// use the SAME rate resolution, so a KWD edit leaves no artifact in 2101 or stock_gl.
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+			decimal ToBase(decimal foreignAmt) => Rf(foreignAmt * rate);
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole reverse+repost so an edit is all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -261,8 +275,8 @@ namespace CrossBuy.BL
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
-				var lineTotal = R(l.Qty * l.UnitPrice - l.DiscountAmount);
-				var lineTax = R(lineTotal * l.TaxRate / 100m);
+				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);   // document
+				var lineTax = Rd(lineTotal * l.TaxRate / 100m);
 				sub += lineTotal; tax += lineTax;
 				var acct = l.ExpenseAccountId;
 				if (l.ItemId != null)
@@ -274,10 +288,10 @@ namespace CrossBuy.BL
 				inv.Lines.Add(new PurchaseInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, ExpenseAccountId = acct, CostCenterId = l.CostCenterId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
 			decimal subBase = inv.Lines.Sum(l => ToBase(l.LineTotal));
-			decimal taxBase = inv.Lines.Sum(l => ToBase(R(l.LineTotal * l.TaxRate / 100m)));
+			decimal taxBase = inv.Lines.Sum(l => ToBase(Rd(l.LineTotal * l.TaxRate / 100m)));
 			inv.VendorId = vendorId; inv.InvoiceDate = date.Date; inv.Notes = notes; inv.CurrencyId = cur; inv.ExchangeRate = R4(rate); inv.ProjectId = projectId;
-			inv.SubTotal = R(sub); inv.TaxTotal = R(tax); inv.GrandTotal = R(sub + tax);
-			inv.SubTotalBase = subBase; inv.TaxTotalBase = taxBase; inv.GrandTotalBase = subBase + taxBase;
+			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);   // document totals
+			inv.SubTotalBase = subBase; inv.TaxTotalBase = taxBase; inv.GrandTotalBase = subBase + taxBase;   // Σ Dr = 2101 by construction
 			await _context.SaveChangesAsync();
 
 			// (5) new GL entry
@@ -302,7 +316,7 @@ namespace CrossBuy.BL
 			foreach (var l in inv.Lines.Where(x => x.ItemId != null && x.WarehouseId != null && x.Qty > 0).OrderBy(x => x.ItemId).ThenBy(x => x.WarehouseId))
 			{
 				if (!CrossBuy.Models.Context.Inventory.ItemTypes.RequiresStock(recItemTypes.GetValueOrDefault(l.ItemId!.Value))) continue;
-				var unitCost = R(ToBase(l.LineTotal) / l.Qty);
+				var unitCost = Rf(ToBase(l.LineTotal) / l.Qty);   // FUNCTIONAL base cost
 				var (sok, serr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,

@@ -1036,6 +1036,44 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
 		}
 
+		// GET /api/dev/hm2-3c-test?key=seed123 — HM-2 3-ج: KWD stockable-only purchase invoice (balances by construction, 2101=column, fils
+		// preserved) + KWD GRN (unit cost 3dp → TotalValue base, 1103=movement value, stock_gl unchanged). Rolled-back tx.
+		[HttpGet("hm2-3c-test")]
+		public async Task<IActionResult> Hm23cTest(string key, [FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.IProcurementService proc)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int apCtrl = await _db.Vendors.AsNoTracking().Select(v => v.ControlAccountId).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			int uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => u.ID).FirstOrDefaultAsync();
+			var cat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.InventoryAccountId != null);
+			int invAcc = cat!.InventoryAccountId!.Value;
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-KWD-VEN") ?? new CrossBuy.Models.Context.Accounting.Vendor { CompanyID = company, Name = "ZZ-KWD-VEN", ControlAccountId = apCtrl, IsActive = true, CreatedAt = DateTime.UtcNow };
+			if (ven.ID == 0) { _db.Vendors.Add(ven); await _db.SaveChangesAsync(); }
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-3C-ITM");
+			if (itm == null) { var (iok, ierr, it) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-3C-ITM", Barcode = "ZZ3CITM", Name = "3c", NameEn = "3c", ItemCategoryId = cat.ID, ItemType = CrossBuy.Models.Context.Inventory.ItemTypes.Stockable, BaseUoMId = uom, SalesPrice = 1m, OpeningCost = 20m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "item: " + ierr }); itm = await _db.Items.FirstAsync(i => i.ID == it!.ID); }
+
+			// (1) KWD stockable-only purchase invoice @163, 3 × 0.755
+			object piCase;
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				var (ok, err, pi) = await ap.CreatePurchaseInvoiceAsync(company, ven.ID, DateTime.Today, new List<CrossBuy.BL.PurchaseLineInput> { new CrossBuy.BL.PurchaseLineInput { ItemDescription = "3c", Qty = 3, UnitPrice = 0.755m, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = invAcc, ItemId = itm!.ID, WarehouseId = wh } }, "kwd pi", null, 5, 163m);
+				if (!ok || pi == null) piCase = new { error = err };
+				else { var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == pi.JournalEntryId).ToListAsync(); piCase = new { documentGrand = pi.GrandTotal, filsPreserved = pi.GrandTotal == 2.265m, grandBase = pi.GrandTotalBase, apLine2101 = jl.Where(l => l.AccountId == apCtrl).Sum(l => l.Credit), columnEqualsJeLine = pi.GrandTotalBase == jl.Where(l => l.AccountId == apCtrl).Sum(l => l.Credit), jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit), invLine1103 = jl.Where(l => l.AccountId == invAcc).Sum(l => l.Debit) }; }
+				await tx.RollbackAsync();
+			}
+			// (3) KWD GRN, unit cost 0.755 (3dp)
+			object grnCase;
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				var (ok, err, gr) = await proc.CreateReceiptAsync(company, ven.ID, wh, null, DateTime.Today, "kwd grn", new List<CrossBuy.BL.ReceiptLineInput> { new CrossBuy.BL.ReceiptLineInput { ItemId = itm!.ID, Qty = 3, UoMId = uom, UnitCost = 0.755m } }, null, 5, 163m);
+				if (!ok || gr == null) grnCase = new { error = err };
+				else { var mv = await _db.StockMovements.AsNoTracking().Where(m => m.SourceType == "Receipt" && m.SourceId == gr.ID).OrderByDescending(m => m.ID).FirstOrDefaultAsync(); var jl = mv?.JournalEntryId == null ? new List<CrossBuy.Models.Context.Accounting.JournalEntryLine>() : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == mv.JournalEntryId).ToListAsync(); grnCase = new { receiptTotalCostBase = gr.TotalCost, movementTotalCost = mv?.TotalCost, movementUnitCost = mv?.UnitCost, inv1103Dr = jl.Where(l => l.AccountId == invAcc).Sum(l => l.Debit), line1103EqualsMovement = jl.Where(l => l.AccountId == invAcc).Sum(l => l.Debit) == (mv?.TotalCost ?? -1), jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit) }; }
+				await tx.RollbackAsync();
+			}
+			return Ok(new { note = "rolled-back; KWD @163", stockablePurchaseInvoice = piCase, kwdGrn = grnCase });
+		}
+
 		// GET /api/dev/hm2-3c0-proofs?key=seed123 — HM-2 3-ج-0 remaining numeric proofs: (هـ) return with NO original invoice (today rate, no FX);
 		// vendor payment KWD @ a different rate (FX on 4902/5902, ap_sub=0). Rolled-back tx. ((د) partial is proven in hm2-cashier-return-fx-test.)
 		[HttpGet("hm2-3c0-proofs")]

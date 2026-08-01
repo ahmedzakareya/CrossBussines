@@ -30,6 +30,7 @@
     .cbchat-quote { max-width: 420px; }
     .cbchat-flash { animation: cbchatFlash 1.2s ease; }
     @@keyframes cbchatFlash { 0%, 100% { box-shadow: none; } 25% { box-shadow: 0 0 0 3px rgba(31,125,87,.45); } }
+    .cbchat-locked { opacity: .55; pointer-events: none; }
 </style>
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -489,12 +490,19 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!cur) return;
         body = (body || '').trim();
         if (!body && !file) return;
+        if (file && file.size > 50 * 1024 * 1024) { if (window.toastr) toastr.error('@Localizer["Image too large"]'); return; }
         var fd = new FormData(); fd.append('c', cur); if (body) fd.append('body', body);
         if (replyTo) fd.append('replyToId', replyTo);
         var mids = detectMentions(body); if (mids) fd.append('mentionedIds', mids);
         if (file) fd.append('file', file);
         replyTo = null; $('chatReplyBar').classList.add('d-none');
-        post('/Chat/Send', fd).then(function (dto) { if (dto) { appendMsg(dto, false); scrollBottom(); updateSeenBar(); loadConvs(); } });
+        var sb = $('chatSend'); if (sb) sb.disabled = true;
+        // dedicated fetch (not the silent post()) so mobile upload failures SURFACE a reason instead of vanishing
+        fetch('/Chat/Send', { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function (r) { if (!r.ok) return r.text().then(function () { throw new Error('HTTP ' + r.status); }); return r.json(); })
+            .then(function (dto) { if (dto) { appendMsg(dto, false); scrollBottom(); updateSeenBar(); loadConvs(); } else { throw new Error('empty'); } })
+            .catch(function (err) { if (window.toastr) toastr.error('@Localizer["Send failed"]' + ' (' + (err && err.message ? err.message : '') + ')'); })
+            .then(function () { if (sb) sb.disabled = false; });
     }
     function doSend() { var b = input.value.trim(); if (!b) return; input.value = ''; sendCore(b, null); }
     sendBtn.addEventListener('click', doSend);
@@ -546,6 +554,78 @@ document.addEventListener('DOMContentLoaded', function () {
     $('chatEditSave').addEventListener('click', saveEdit);
     $('chatEditText').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveEdit(); } });
 
+    // ---------- group members: view / add / remove ----------
+    var membersModal = new bootstrap.Modal($('chatMembersModal'));
+    function membersModalOpen() { return $('chatMembersModal').classList.contains('show'); }
+    function setComposerEnabled(on) {
+        footer.classList.toggle('cbchat-locked', !on);
+        input.disabled = !on; input.placeholder = on ? '@Localizer["Type a message"]' : '@Localizer["You are no longer a member of this group"]';
+        var sb = $('chatSend'); if (sb) sb.disabled = !on;
+    }
+    function updateMembersBtn() {
+        var btn = $('chatMembersBtn'); if (!btn) return;
+        var isGroup = curHeader && curHeader.kind === 'Group';
+        btn.classList.toggle('d-none', !isGroup);
+        if (isGroup) $('chatMembersCount').textContent = (curHeader.memberCount || (members.length + 1));
+    }
+    function memberRowHtml(d, removable) {
+        return '<div class="d-flex align-items-center p-2 rounded bg-hover-light" data-id="' + d.id + '">' +
+            '<div class="symbol symbol-35px symbol-circle position-relative me-3"><img src="' + (d.avatar || blank) + '" alt="" />' +
+              '<span class="badge badge-circle w-8px h-8px ' + (d.online ? 'badge-success' : 'badge-secondary') + ' position-absolute bottom-0 end-0"></span></div>' +
+            '<span class="fw-semibold text-gray-800 flex-grow-1">' + esc(d.name) + '</span>' +
+            (removable ? '<button class="btn btn-icon btn-sm btn-light-danger mem-del" title="@Localizer["Remove"]"><i class="ki-outline ki-trash fs-6"></i></button>' : '') +
+            '</div>';
+    }
+    function renderMembers() {
+        var owner = curHeader && curHeader.isOwner;
+        // "me" first (with a Leave button), then the rest
+        var meRow = '<div class="d-flex align-items-center p-2 rounded" data-id="' + meId + '">' +
+            '<div class="symbol symbol-35px symbol-circle me-3"><span class="symbol-label bg-light-primary text-primary fw-bold">@Localizer["You"]</span></div>' +
+            '<span class="fw-semibold text-gray-800 flex-grow-1">@Localizer["You"]' + (owner ? ' · <span class="badge badge-light-primary">@Localizer["Owner"]</span>' : '') + '</span>' +
+            '<button class="btn btn-sm btn-light-danger mem-leave">@Localizer["Leave group"]</button></div>';
+        $('memList').innerHTML = meRow + members.map(function (d) { return memberRowHtml(d, owner); }).join('');
+        $('memList').querySelectorAll('.mem-del').forEach(function (b) {
+            b.addEventListener('click', function () { var row = b.closest('[data-id]'); removeMember(parseInt(row.getAttribute('data-id'))); });
+        });
+        var lv = $('memList').querySelector('.mem-leave'); if (lv) lv.addEventListener('click', function () { if (confirm('@Localizer["Leave this group?"]')) removeMember(meId); });
+        // add-section: any member may add; list = directory minus current members
+        $('memAddWrap').classList.remove('d-none');
+        loadDir(function () { renderMemAddList(''); });
+    }
+    function renderMemAddList(q) {
+        var have = {}; members.forEach(function (d) { have[d.id] = 1; }); have[meId] = 1;
+        var list = dir.filter(function (d) { return !have[d.id] && d.name.toLowerCase().indexOf(q.toLowerCase()) !== -1; }).slice(0, 30);
+        $('memAddList').innerHTML = list.length ? list.map(function (d) {
+            return '<div class="d-flex align-items-center p-2 rounded bg-hover-light" data-id="' + d.id + '">' +
+                '<div class="symbol symbol-35px symbol-circle me-3"><img src="' + (d.avatar || blank) + '" alt="" /></div>' +
+                '<span class="fw-semibold text-gray-800 flex-grow-1">' + esc(d.name) + '</span>' +
+                '<button class="btn btn-icon btn-sm btn-light-primary mem-add" title="@Localizer["Add member"]"><i class="ki-outline ki-plus fs-4"></i></button></div>';
+        }).join('') : '<div class="text-muted text-center py-4 fs-8">@Localizer["No results"]</div>';
+        $('memAddList').querySelectorAll('.mem-add').forEach(function (b) {
+            b.addEventListener('click', function () { var row = b.closest('[data-id]'); addMember(parseInt(row.getAttribute('data-id'))); });
+        });
+    }
+    function addMember(id) { if (!cur) return; post('/Chat/AddMember', { c: cur, employeeId: id }).then(function () { refreshHeaderMembers(); }); }
+    function removeMember(id) {
+        if (!cur) return;
+        post('/Chat/RemoveMember', { c: cur, employeeId: id }).then(function () {
+            if (id === meId) { membersModal.hide(); setComposerEnabled(false); toastr && toastr.info('@Localizer["You left the group"]'); cur = null; loadConvs(); }
+            else refreshHeaderMembers();
+        });
+    }
+    function refreshHeaderMembers() {
+        if (!cur) return;
+        fetch('/Chat/Header?c=' + cur, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (h) {
+            if (!h) return;
+            if (curHeader) { curHeader.memberCount = h.memberCount; curHeader.isOwner = !!h.isOwner; }
+            members = h.members || [];
+            updateMembersBtn();
+            if (membersModalOpen()) renderMembers();
+        });
+    }
+    $('chatMembersBtn').addEventListener('click', function () { if (!curHeader || curHeader.kind !== 'Group') return; renderMembers(); membersModal.show(); });
+    $('memSearch').addEventListener('input', function () { renderMemAddList(this.value); });
+
     // ---------- directory / new chat / new group ----------
     function loadDir(cb) { fetch('/Chat/Directory', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (list) { dir = list; if (cb) cb(list); }); }
     function dirRowHtml(d, checkbox) {
@@ -590,6 +670,13 @@ document.addEventListener('DOMContentLoaded', function () {
         conn.on('typing', function (e) { if (e.conversationId === cur) { var nm = ''; if (curHeader && curHeader.kind === 'Group') { var d = dir.find(function (x) { return x.id === e.employeeId; }); if (d) nm = d.name + ' — '; } typingEl.textContent = nm + '@Localizer["typing..."]'; clearTimeout(window._typingT); window._typingT = setTimeout(function () { typingEl.textContent = ''; }, 2500); } });
         conn.on('presence', function (e) { if (curHeader && curHeader.kind === 'Direct' && curHeader.other === e.employeeId) { presenceEl.innerHTML = '<span class="badge badge-circle w-8px h-8px me-1 ' + (e.online ? 'badge-success' : 'badge-secondary') + '"></span>' + (e.online ? '@Localizer["Active"]' : '@Localizer["Offline"]'); } loadConvs(); });
         conn.on('conversation', function () { loadConvs(); });
+        // group membership changed (someone added/removed) → refresh members list + mention source
+        conn.on('members', function (e) { if (e && e.conversationId === cur) refreshHeaderMembers(); loadConvs(); });
+        // I was removed from a group → lock the composer and inform me
+        conn.on('removed', function (e) {
+            if (e && e.conversationId === cur) { setComposerEnabled(false); if (membersModalOpen()) membersModal.hide(); if (window.toastr) toastr.warning('@Localizer["You were removed from this group"]'); }
+            loadConvs();
+        });
         conn.on('read', function (e) { if (e.conversationId === cur && e.employeeId !== meId) { otherReadUpTo = Math.max(otherReadUpTo, e.lastReadId || 0); memberReads[e.employeeId] = Math.max(memberReads[e.employeeId] || 0, e.lastReadId || 0); updateSeenBar(); } });
         // on auto-reconnect the server-side group membership is lost → rejoin the open conversation + refresh once
         conn.onreconnected(function () {

@@ -49,7 +49,8 @@ namespace CrossBuy.BL
 		private readonly IThreeWayMatchService _match;
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
-		public ProcurementService(CrossDbContext context, IStockService stock, IPayableService payables, IFixedAssetService fixedAssets, IThreeWayMatchService match, INotificationService notify, ICurrencyService currency) { _context = context; _stock = stock; _payables = payables; _fixedAssets = fixedAssets; _match = match; _notify = notify; _currency = currency; }
+		private readonly ICurrencyRounding _rounding;
+		public ProcurementService(CrossDbContext context, IStockService stock, IPayableService payables, IFixedAssetService fixedAssets, IThreeWayMatchService match, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _stock = stock; _payables = payables; _fixedAssets = fixedAssets; _match = match; _notify = notify; _currency = currency; _rounding = rounding; }
 
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
@@ -100,7 +101,9 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Buy"); rate = r; }
-			decimal BaseUnit(decimal foreignUnit) => R4(foreignUnit * rate);
+			decimal BaseUnit(decimal foreignUnit) => R4(foreignUnit * rate);   // FUNCTIONAL unit cost (converted at source) — inventory is valued in the functional currency
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);        // HM-2 (3-ج): GRN value is functional-cost ⇒ round to functional dp
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
 			var gr = new GoodsReceipt { CompanyID = companyId, VendorId = vendorId, WarehouseId = warehouseId, PurchaseOrderId = poId, ReceiptDate = date.Date, Status = "Posted", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
 			_context.GoodsReceipts.Add(gr);
@@ -122,7 +125,7 @@ namespace CrossBuy.BL
 					if (grni == null) { _context.GoodsReceiptLines.RemoveRange(gr.Lines); _context.GoodsReceipts.Remove(gr); await _context.SaveChangesAsync(); return (false, "حساب فواتير لم ترد (GRNI) غير مُهيّأ لرسملة الأصل", null); }
 					var cc = await _context.CostCenters.AsNoTracking().Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
 					var aUnit = BaseUnit(l.UnitCost);
-					decimal aCost = R(l.Qty * aUnit);
+					decimal aCost = Rf(l.Qty * aUnit);
 					var (aok, aerr, asset) = await _fixedAssets.CreateAssetAsync(companyId, new FixedAssetInput
 					{ Name = hdr.Name, NameEn = hdr.NameEn, Cost = aCost, SalvageValue = 0, UsefulLifeMonths = 60, AcquisitionDate = date, FundingAccountId = grni.Value, CostCenterId = cc }, null);
 					if (!aok) { _context.GoodsReceiptLines.RemoveRange(gr.Lines); _context.GoodsReceipts.Remove(gr); await _context.SaveChangesAsync(); return (false, $"تعذّرت رسملة الأصل: {aerr}", null); }
@@ -158,7 +161,7 @@ namespace CrossBuy.BL
 					if (pol != null) { pol.Qty = pol.Qty; pol.ReceivedQty += l.Qty; }
 				}
 			}
-			gr.TotalCost = R(total);
+			gr.TotalCost = Rf(total);
 			await _context.SaveChangesAsync();
 
 			// update PO status if fully received
