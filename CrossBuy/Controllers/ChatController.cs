@@ -139,5 +139,22 @@ namespace CrossBuy.Controllers
             await _chat.MarkReadAsync(me.Value.empId, c);
             return Json(new { ok = true });
         }
+
+        // Group management — any member may add; only the Owner may remove others (anyone may remove/leave themselves).
+        [HttpPost]
+        public async Task<IActionResult> AddMember(int c, int employeeId)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            var ok = await _chat.AddMemberAsync(me.Value.companyId, me.Value.empId, c, employeeId);
+            return Json(new { ok });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveMember(int c, int employeeId)
+        {
+            var me = await MeAsync(); if (me == null) return Unauthorized();
+            var ok = await _chat.RemoveMemberAsync(me.Value.companyId, me.Value.empId, c, employeeId);
+            return Json(new { ok });
+        }
     }
 }

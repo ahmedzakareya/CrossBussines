@@ -1036,6 +1036,58 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { manifest, teardown = new { jeReversals = rev, itemsZeroed = new[] { itA, itB, zitm.ID } } });
 		}
 
+		// GET /api/dev/hm2-3c0-proofs?key=seed123 — HM-2 3-ج-0 remaining numeric proofs: (هـ) return with NO original invoice (today rate, no FX);
+		// vendor payment KWD @ a different rate (FX on 4902/5902, ap_sub=0). Rolled-back tx. ((د) partial is proven in hm2-cashier-return-fx-test.)
+		[HttpGet("hm2-3c0-proofs")]
+		public async Task<IActionResult> Hm23c0Proofs(string key, [FromServices] CrossBuy.BL.IReceivableService ar, [FromServices] CrossBuy.BL.IPayableService ap)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int ctrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			int apCtrl = await _db.Vendors.AsNoTracking().Select(v => v.ControlAccountId).FirstOrDefaultAsync();
+			int cash = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			int exp = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "520101").Select(a => a.ID).FirstOrDefaultAsync();
+			int g4902 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4902").Select(a => a.ID).FirstOrDefaultAsync();
+			int g5902 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "5902").Select(a => a.ID).FirstOrDefaultAsync();
+
+			// (هـ) sales return with NO original invoice → today rate, no FX
+			var cust = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-CUST3") ?? new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-KWD-CUST3", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow };
+			if (cust.ID == 0) { _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
+			object eCase;
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				var line = new List<CrossBuy.BL.SalesLineInput> { new CrossBuy.BL.SalesLineInput { ItemDescription = "ZZ", Qty = 3, UnitPrice = 0.755m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = null, WarehouseId = null } };
+				decimal outBefore = await ar.CustomerOutstandingAsync(company, cust.ID);
+				var (rok, rerr, ret) = await ar.CreateSalesReturnAsync(company, cust.ID, null, DateTime.Today, line, "no-orig", null, 5, 163m);   // null invoice → return-day rate
+				if (!rok || ret == null) eCase = new { ok = rok, err = rerr };
+				else { var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == ret.JournalEntryId).ToListAsync(); bool anyFx = jl.Any(l => l.AccountId == g4902 || l.AccountId == g5902); eCase = new { ok = rok, err = rerr, exchangeRate = ret.ExchangeRate, grandBase = ret.GrandTotalBase, jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit), noFxLine = !anyFx, arDeltaBase = await ar.CustomerOutstandingAsync(company, cust.ID) - outBefore }; }
+				await tx.RollbackAsync();
+			}
+
+			// vendor payment KWD @165 for a KWD purchase invoice @163 → FX
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-KWD-VEN") ?? new CrossBuy.Models.Context.Accounting.Vendor { CompanyID = company, Name = "ZZ-KWD-VEN", ControlAccountId = apCtrl, IsActive = true, CreatedAt = DateTime.UtcNow };
+			if (ven.ID == 0) { _db.Vendors.Add(ven); await _db.SaveChangesAsync(); }
+			object payCase;
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				int vid = ven.ID;
+				async Task<decimal> ApOut() => (await _db.PurchaseInvoices.AsNoTracking().Where(i => i.VendorId == vid && i.Status == "Posted").SumAsync(i => (decimal?)(i.GrandTotalBase ?? i.GrandTotal)) ?? 0m) - (await _db.Payments.AsNoTracking().Where(p => p.VendorId == vid && p.Status == "Posted").SumAsync(p => (decimal?)(p.AmountBase ?? p.Amount)) ?? 0m) - (await _db.PurchaseReturns.AsNoTracking().Where(r => r.VendorId == vid && r.Status == "Posted").SumAsync(r => (decimal?)(r.GrandTotalBase ?? r.GrandTotal)) ?? 0m);
+				int cc = await _db.CostCenters.AsNoTracking().Where(x => x.CompanyID == company).OrderBy(x => x.ID).Select(x => (int?)x.ID).FirstOrDefaultAsync() ?? 0;
+				var (piok, pierr, pi) = await ap.CreatePurchaseInvoiceAsync(company, ven.ID, DateTime.Today, new List<CrossBuy.BL.PurchaseLineInput> { new CrossBuy.BL.PurchaseLineInput { ItemDescription = "svc", Qty = 10, UnitPrice = 1.000m, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = exp, CostCenterId = cc, ItemId = null, WarehouseId = null } }, "kwd pi", null, 5, 163m);
+				if (!piok || pi == null) payCase = new { piError = pierr };
+				else {
+				decimal apBefore = await ApOut();
+				var (pyok, pyerr) = await ap.CreatePaymentAsync(company, ven.ID, DateTime.Today, pi.GrandTotal, "Cash", cash, "pay@165", null, 0m, 5, 165m);
+				decimal apAfter = await ApOut();
+				var payJe = await _db.JournalEntries.AsNoTracking().Where(e => e.SourceType == "Payment").OrderByDescending(e => e.ID).Select(e => e.ID).FirstOrDefaultAsync();
+				var pjl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == payJe).ToListAsync();
+				payCase = new { invoiceGrandBase = pi.GrandTotalBase, apBefore, paymentOk = pyok, err = pyerr, apOutstandingAfter = apAfter, apNetsToZero = apAfter == 0m, apLineDr = pjl.Where(l => l.AccountId == apCtrl).Sum(l => l.Debit), fxGain4902 = pjl.Where(l => l.AccountId == g4902).Sum(l => l.Credit - l.Debit), fxLoss5902 = pjl.Where(l => l.AccountId == g5902).Sum(l => l.Debit - l.Credit), jeBalanced = pjl.Sum(l => l.Debit) == pjl.Sum(l => l.Credit) }; }
+				await tx.RollbackAsync();
+			}
+			return Ok(new { note = "rolled-back", e_noOriginalInvoice = eCase, vendorPaymentKwdFx = payCase });
+		}
+
 		// GET /api/dev/hm2-cashier-return-fx-test?key=seed123 — HM-2 3-ج-0: the AUTHORIZED refund-FX path, exercised at a DIFFERENT rate.
 		// Invoice @163, then cashier return today @165 (and @161, and a credit no-FX case). Rolled-back tx.
 		[HttpGet("hm2-cashier-return-fx-test")]
@@ -1065,7 +1117,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			if (cust == null) { cust = new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-CASH-CUST", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
 
 			async Task<decimal> Out() => await ar.CustomerOutstandingAsync(company, cust.ID);
-			async Task<object> OneCase(string tag, decimal todayRateVal)
+			async Task<object> OneCase(string tag, decimal todayRateVal, decimal returnQty = 10m)
 			{
 				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
 				// today's KWD rate (rolled back) — drives the refund's return-day rate
@@ -1081,7 +1133,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 				// the ORIGINAL cash payment (@invoice rate 163) that settled the invoice to zero — a real Paid order has this
 				await ar.CreateReceiptAsync(company, cust.ID, DateTime.Today, inv.GrandTotal, "Cash", drawer, "orig pay", null, 5, 163m);
 				decimal outBefore = await Out();
-				var (rok, rerr, retId) = await _posOrders.ReturnOrderLinesAsync(company, ord.ID, new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = ol.ID, Qty = 10 } }, null);
+				var (rok, rerr, retId) = await _posOrders.ReturnOrderLinesAsync(company, ord.ID, new List<CrossBuy.BL.SplitAllocation> { new CrossBuy.BL.SplitAllocation { LineId = ol.ID, Qty = returnQty } }, null);
 				object res;
 				if (!rok) res = new { tag, error = "return: " + rerr };
 				else
@@ -1098,7 +1150,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 				await tx.RollbackAsync();
 				return res;
 			}
-			var results = new List<object> { await OneCase("a: return @165 (gain)", 165m), await OneCase("b: return @161 (loss)", 161m) };
+			var results = new List<object> { await OneCase("a: return @165 (gain)", 165m), await OneCase("b: return @161 (loss)", 161m), await OneCase("d: PARTIAL return 5/10 @165", 165m, 5m) };
 			return Ok(new { note = "each case rolled back; invoice @163, cashier return today at the shown rate", results });
 		}
 

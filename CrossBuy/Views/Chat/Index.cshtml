@@ -83,6 +83,11 @@
                                 <div class="mb-0 lh-1"><span id="chatPresence" class="fs-7 fw-semibold text-muted"></span></div>
                             </div>
                         </div>
+                        <div class="card-toolbar">
+                            <button type="button" class="btn btn-sm btn-light-primary d-none" id="chatMembersBtn" title="@Localizer["Members"]">
+                                <i class="ki-outline ki-people fs-4 me-1"></i><span id="chatMembersCount"></span>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body" id="cbchat_messenger_body">
                         <div id="chatEmpty" class="d-flex flex-center flex-column py-20 text-muted">
@@ -96,7 +101,7 @@
                     <div class="card-footer pt-4 d-none" id="chatFooter">
                         <div id="chatMentionBox" class="d-none position-absolute bg-body border border-gray-300 rounded shadow-sm p-1" style="bottom:100%;inset-inline-start:12px;margin-bottom:6px;max-height:230px;overflow:auto;width:270px;z-index:30;"></div>
                         <div id="chatReplyBar" class="d-none align-items-center bg-light-primary rounded p-2 mb-2">
-                            <i class="ki-outline ki-arrow-bottom-right fs-5 text-primary me-2"></i>
+                            <i class="ki-outline ki-share fs-5 text-primary me-2"></i>
                             <span class="fs-8 text-gray-700 flex-grow-1 text-truncate" id="chatReplyText"></span>
                             <button type="button" class="btn btn-icon btn-sm" id="chatReplyCancel"><i class="ki-outline ki-cross fs-6"></i></button>
                         </div>
@@ -171,6 +176,21 @@
 </div></div></div>
 <!--end::Edit message modal-->
 
+<!--begin::Group members modal-->
+<div class="modal fade" id="chatMembersModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["Members"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body">
+        <div id="memList" class="scroll-y mh-250px mb-2"></div>
+        <div id="memAddWrap" class="border-top pt-3 d-none">
+            <label class="fw-semibold fs-7 mb-2 d-block">@Localizer["Add member"]</label>
+            <input type="text" id="memSearch" class="form-control form-control-solid mb-3" placeholder="@SR["Search"]" autocomplete="off" />
+            <div id="memAddList" class="scroll-y mh-200px"></div>
+        </div>
+    </div>
+    <div class="modal-footer py-3"><button class="btn btn-light" data-bs-dismiss="modal">@SR["Close"]</button></div>
+</div></div></div>
+<!--end::Group members modal-->
+
 @section Scripts {
 <script>
 (function () {
@@ -192,6 +212,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var isAr = @(isAr ? "true" : "false");
     var meId = @meId;
     var blank = '@blank';
+    var EMO = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤩','🥳','😅','😉','🙂','😇','🤔','🤗','😴','😢','😭','😡','👍','👎','👏','🙏','💪','🙌','👌','✌️','🤝','❤️','🔥','⭐','✅','❌','🎉','💯','☕','🚀','📎','📌'];
     var openConv = @(openConv?.ToString() ?? "null");
     var signalrSrc = '@Url.Content("~/Backend-assets/plugins/signalr.min.js")';
     var cur = null, curHeader = null, dir = [], members = [], conn = null, replyTo = null, oldestId = null, loading = false, seen = {}, otherReadUpTo = 0, memberReads = {}, pendingFile = null;
@@ -285,14 +306,36 @@ document.addEventListener('DOMContentLoaded', function () {
               '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="👍">👍</button>' +
               '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="❤️">❤️</button>' +
               '<button class="btn btn-icon btn-xs btn-light rx" data-emoji="😂">😂</button>' +
-              '<button class="btn btn-icon btn-xs btn-light re"><i class="ki-outline ki-arrow-bottom-right fs-7"></i></button>' +
+              '<button class="btn btn-icon btn-xs btn-light rxmore" title="@Localizer["React"]"><i class="ki-outline ki-emoji-happy fs-7"></i></button>' +
+              '<button class="btn btn-icon btn-xs btn-light re" title="@Localizer["Reply"]"><i class="ki-outline ki-share fs-7"></i></button>' +
               (mine ? '<button class="btn btn-icon btn-xs btn-light ed"><i class="ki-outline ki-pencil fs-7"></i></button><button class="btn btn-icon btn-xs btn-light-danger dl"><i class="ki-outline ki-trash fs-7"></i></button>' : '') +
             '</div>';
         return '<div class="d-flex justify-content-' + side + ' mb-6 chat-msg" data-id="' + m.id + '" data-mine="' + (mine ? 1 : 0) + '" data-body="' + esc(m.body || '') + '" data-text="' + esc(m.body || (m.attachmentName || '')) + '">' +
             '<div class="d-flex flex-column chat-col align-items-' + side + '">' + head + content + reactionsHtml(m) + tools + '</div></div>';
     }
+    // shared full-emoji reaction picker (react with ANY emoji, not only the 3 quick ones)
+    var rxPop = document.createElement('div');
+    rxPop.className = 'd-none position-fixed bg-body border border-gray-300 rounded shadow-sm p-2';
+    rxPop.style.cssText += 'width:284px;max-height:210px;overflow:auto;z-index:1085;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;';
+    rxPop.innerHTML = EMO.map(function (e) { return '<span class="cbemo" style="cursor:pointer;font-size:20px;text-align:center;padding:4px;border-radius:6px;">' + e + '</span>'; }).join('');
+    document.body.appendChild(rxPop);
+    var rxTargetId = null;
+    function openRxPicker(btn, id) {
+        rxTargetId = id;
+        var r = btn.getBoundingClientRect();
+        rxPop.classList.remove('d-none');
+        var w = rxPop.offsetWidth, h = rxPop.offsetHeight;
+        var left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8);
+        var top = r.top - h - 8; if (top < 8) top = r.bottom + 8;
+        rxPop.style.left = left + 'px'; rxPop.style.top = top + 'px';
+    }
+    rxPop.addEventListener('click', function (e) { var t = e.target.closest('.cbemo'); if (!t || !rxTargetId) return; post('/Chat/React', { id: rxTargetId, emoji: t.textContent }); rxPop.classList.add('d-none'); rxTargetId = null; });
+    document.addEventListener('click', function (e) { if (!rxPop.classList.contains('d-none') && !rxPop.contains(e.target) && !e.target.closest('.rxmore')) { rxPop.classList.add('d-none'); rxTargetId = null; } });
+    window.addEventListener('scroll', function () { if (!rxPop.classList.contains('d-none')) { rxPop.classList.add('d-none'); rxTargetId = null; } }, true);
+
     function bindMsg(el, m) {
         el.querySelectorAll('.rx').forEach(function (b) { b.addEventListener('click', function () { post('/Chat/React', { id: el.getAttribute('data-id'), emoji: b.getAttribute('data-emoji') }); }); });
+        var rxm = el.querySelector('.rxmore'); if (rxm) rxm.addEventListener('click', function (e) { e.stopPropagation(); openRxPicker(rxm, el.getAttribute('data-id')); });
         var re = el.querySelector('.re'); if (re) re.addEventListener('click', function () { setReply(el.getAttribute('data-id'), el.getAttribute('data-text')); });
         var ed = el.querySelector('.ed'); if (ed) ed.addEventListener('click', function () { openEdit(el.getAttribute('data-id'), el.getAttribute('data-body')); });
         var dl = el.querySelector('.dl'); if (dl) dl.addEventListener('click', function () { if (confirm('@Localizer["Delete message?"]')) post('/Chat/Delete', { id: el.getAttribute('data-id') }); });
@@ -338,12 +381,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function openConversation(id, meta) {
         if (conn && cur) { try { conn.invoke('LeaveConversation', cur); } catch (e) {} }
-        cur = id; curHeader = { kind: meta.kind, other: meta.other || null }; replyTo = null; $('chatReplyBar').classList.add('d-none'); oldestId = null;
-        emptyBox.classList.add('d-none'); scroll.classList.remove('d-none'); footer.classList.remove('d-none'); fitMessenger();
+        cur = id; curHeader = { kind: meta.kind, other: meta.other || null }; replyTo = null; $('chatReplyBar').classList.add('d-none'); oldestId = null; members = [];
+        emptyBox.classList.add('d-none'); scroll.classList.remove('d-none'); footer.classList.remove('d-none'); setComposerEnabled(true); fitMessenger();
         titleEl.textContent = meta.title || '';
         headSym.classList.toggle('d-none', meta.kind === 'Group');
         headAvatar.src = meta.avatar || blank;
         presenceEl.innerHTML = meta.kind === 'Direct' ? ('<span class="badge badge-circle w-8px h-8px me-1 ' + (meta.online ? 'badge-success' : 'badge-secondary') + '"></span>' + (meta.online ? '@Localizer["Active"]' : '@Localizer["Offline"]')) : '@Localizer["Group"]';
+        updateMembersBtn();
         seen = {}; otherReadUpTo = 0; memberReads = {}; scroll.innerHTML = ''; var se = $('chatSeen'); if (se) se.innerHTML = '';
         fetch('/Chat/Messages?c=' + id, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (msgs) {
             msgs.forEach(function (m) { appendMsg(m, false); });
@@ -357,6 +401,8 @@ document.addEventListener('DOMContentLoaded', function () {
             members = h.members || [];   // group members → mention picker + member management
             memberReads = {}; (h.memberReads || []).forEach(function (r) { memberReads[r.employeeId] = r.lastReadMessageId; });
             updateSeenBar();
+            updateMembersBtn();
+            if (membersModalOpen()) renderMembers();   // live-refresh if the modal is open
         });
         if (conn) { try { conn.invoke('JoinConversation', id); } catch (e) {} }
         post('/Chat/MarkRead', { c: id }).then(function () { loadConvs(); if (window.__cbnbReload) window.__cbnbReload(); });
@@ -423,7 +469,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // ---------- emoji picker (lightweight, no external lib) ----------
     (function () {
         var btn = $('chatEmojiBtn'); if (!btn) return;
-        var EMO = ['😀','😁','😂','🤣','😊','😍','😘','😎','🤩','🥳','😅','😉','🙂','😇','🤔','🤗','😴','😢','😭','😡','👍','👎','👏','🙏','💪','🙌','👌','✌️','🤝','❤️','🔥','⭐','✅','❌','🎉','💯','☕','🚀','📎','📌'];
         var pop = document.createElement('div');
         pop.className = 'd-none position-absolute bg-body border border-gray-300 rounded shadow-sm p-2';
         pop.style.cssText += 'bottom:100%;inset-inline-start:6px;margin-bottom:8px;width:284px;max-height:210px;overflow:auto;z-index:31;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;';
