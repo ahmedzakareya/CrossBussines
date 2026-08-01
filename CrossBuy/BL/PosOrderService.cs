@@ -1102,7 +1102,9 @@ namespace CrossBuy.BL
 			decimal each = R(total / parts);
 			var portions = new decimal[parts];
 			for (int i = 0; i < parts; i++) portions[i] = each;
-			portions[parts - 1] = R(portions[parts - 1] + (total - each * parts));   // remainder → last part; Σ == total
+			// HM-2 (4-أ): the rounding remainder loads on the LARGEST portion (consistent with JES "largest line bears remainder").
+			// In an EQUAL split every portion is identical, so the tie-break (lowest index) puts it on the FIRST part — was the last.
+			portions[0] = R(portions[0] + (total - each * parts));   // remainder → largest (first on tie); Σ == total
 			var note = parts > 1 ? $"تحصيل نقدي (تقسيم {parts}) — طلب كاشير #{o.ID}" : $"تحصيل نقدي — طلب كاشير #{o.ID}";
 			foreach (var p in portions)
 			{
@@ -1136,6 +1138,9 @@ namespace CrossBuy.BL
 			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", null);
 			tenders = (tenders ?? new()).Where(t => t.Amount > 0 && !string.IsNullOrWhiteSpace(t.Method)).ToList();
 			if (tenders.Count == 0) return (false, "لا توجد وسيلة دفع", null);
+			// HM-2 (4-أ): tender amounts round to the order's DOCUMENT currency (was the static 2dp R → dropped fils on KWD).
+			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
+			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).OrderBy(l => l.Sort).ToListAsync();
 			if (lines.Count == 0) return (false, "لا يمكن دفع طلب فارغ", null);
 
@@ -1181,16 +1186,21 @@ namespace CrossBuy.BL
 			var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"طلب كاشير #{o.ID}", userId, currencyId);
 			if (!iok || inv == null) return (false, ierr ?? "فشل إنشاء الفاتورة", null);
 
-			// tenders must cover the grand total; the LAST tender absorbs any rounding so Σ receipts == grand EXACTLY
+			// tenders must cover the grand total; the LARGEST tender absorbs the rounding/change so Σ receipts == grand EXACTLY.
+			// HM-2 (4-أ): remainder → LARGEST tender (was the LAST), consistent with JES "largest line bears remainder". The sum is
+			// validated at the DOCUMENT-currency unit so a legitimate 3dp KWD tender sum is neither rejected nor truncated.
 			decimal grand = inv.GrandTotal, sum = R(tenders.Sum(t => t.Amount));
-			if (sum < grand - 0.01m) return (false, $"المدفوع {sum:N2} أقل من الإجمالي {grand:N2}", null);
+			decimal unit = 1m; for (int u = 0; u < __dp; u++) unit /= 10m;
+			if (sum < grand - unit) return (false, $"المدفوع {sum} أقل من الإجمالي {grand}", null);
 			var parts = tenders.Select(t => new { t.Method, Amount = R(t.Amount) }).ToList();
-			decimal alloc = 0; var recv = new List<(string method, decimal amt)>();
+			int big = 0; for (int i = 1; i < parts.Count; i++) if (parts[i].Amount > parts[big].Amount) big = i;   // lowest-index tie-break
+			decimal others = R(parts.Where((p, i) => i != big).Sum(p => p.Amount));
+			var recv = new List<(string method, decimal amt)>();
 			for (int i = 0; i < parts.Count; i++)
 			{
-				decimal amt = i == parts.Count - 1 ? R(grand - alloc) : parts[i].Amount;   // last = remainder → Σ == grand
+				decimal amt = i == big ? R(grand - others) : parts[i].Amount;   // largest = grand − Σ(others) → Σ == grand
 				if (amt <= 0) continue;
-				alloc = R(alloc + amt); recv.Add((parts[i].Method, amt));
+				recv.Add((parts[i].Method, amt));
 			}
 			foreach (var (method, amt) in recv)
 			{
@@ -1220,6 +1230,9 @@ namespace CrossBuy.BL
 			if (o == null) return (false, "الطلب غير موجود", new());
 			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", new());
 			if (method != "Cash") return (false, "طريقة الدفع غير مدعومة بعد (النقدي فقط)", new());
+			// HM-2 (4-أ): per-bill amounts round to the order's DOCUMENT currency (was the static 2dp R → dropped fils on KWD).
+			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
+			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).OrderBy(l => l.Sort).ToListAsync();
 			if (lines.Count == 0) return (false, "لا يمكن دفع طلب فارغ", new());
 			if (bills == null || bills.Count == 0) return (false, "لا توجد حسابات للتقسيم", new());
@@ -1271,7 +1284,10 @@ namespace CrossBuy.BL
 				var svc = svcPct > 0 ? R(sub * svcPct / 100m) : 0m; if (svc > 0) tax += R(svc * vat / 100m);
 				return R(sub + svc + tax);
 			}
-			decimal sumBills = bills.Sum(b => BillGrand(b));
+			// HM-2 (4-أ): the rounding residual loads on the LARGEST bill (was the last), consistent with JES "largest bears remainder".
+			var billGrands = bills.Select(b => BillGrand(b)).ToList();
+			int bigBill = 0; for (int i = 1; i < billGrands.Count; i++) if (billGrands[i] > billGrands[bigBill]) bigBill = i;   // lowest-index tie-break
+			decimal sumBills = billGrands.Sum();
 			// POS-C1: order-level delivery fee is billed ONCE (on the first bill); include it so the residual is pure rounding
 			int delAcct = setting?.DeliveryRevenueAccountId ?? revenue;
 			decimal delTax = (setting?.DeliveryTaxExempt == true) ? 0m : vat;
@@ -1294,7 +1310,7 @@ namespace CrossBuy.BL
 				}
 				if (svcPct > 0) { var svc = R(billSub * svcPct / 100m); if (svc > 0) invLines.Add(new SalesLineInput { ItemDescription = "رسوم خدمة", Qty = 1, UnitPrice = svc, DiscountAmount = 0, TaxRate = vat, RevenueAccountId = revenue, ItemId = null, WarehouseId = null }); }
 				if (bi == 0 && o.DeliveryFee > 0) invLines.Add(new SalesLineInput { ItemDescription = "رسوم توصيل", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct, ItemId = null, WarehouseId = null });
-					if (bi == bills.Count - 1 && residual != 0m) invLines.Add(new SalesLineInput { ItemDescription = "تسوية تقريب", Qty = 1, UnitPrice = residual, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = revenue, ItemId = null, WarehouseId = null });
+					if (bi == bigBill && residual != 0m) invLines.Add(new SalesLineInput { ItemDescription = "تسوية تقريب", Qty = 1, UnitPrice = residual, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = revenue, ItemId = null, WarehouseId = null });
 
 				var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"طلب كاشير #{o.ID} — تقسيم {bi + 1}/{bills.Count}", userId, currencyId);
 				if (!iok || inv == null) return (false, ierr ?? "فشل إنشاء فاتورة التقسيم", new());

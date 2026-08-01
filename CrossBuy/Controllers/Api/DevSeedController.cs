@@ -1192,6 +1192,193 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			return Ok(new { note = "each case rolled back; invoice @163, cashier return today at the shown rate", results });
 		}
 
+		// GET /api/dev/hm2-4-proofs?key=seed123 — HM-2 Batch 4: POS payment + shift currency-awareness on ZZ KWD (3dp) entities.
+		//  (1) Z report + expected drawer cash carry the 3rd decimal (fils); Z total == Σ paid orders exactly (no 2dp loss); a
+		//      counted == expected close yields variance 0 ⇒ NO variance JE.
+		//  (2) a real drawer variance posts ONE balanced JE on 520111 with BOTH lines from a SINGLE conversion (Rf), VarianceJournalEntryId set.
+		//  (3) multi-tender: the LARGEST tender absorbs the change so Σ receipts == grand; AR nets to 0; each receipt JE balanced.
+		//  (4) split-by-item: Σ invoices == the order grand (residual on the LARGEST bill); AR nets to 0.
+		// Every proof runs in its own rolled-back tx (zero persistence). Scaffolding (ZZ branch/terminal/item) is idempotent.
+		[HttpGet("hm2-4-proofs")]
+		public async Task<IActionResult> Hm24Proofs(string key, [FromServices] CrossBuy.BL.IReceivableService ar, [FromServices] CrossBuy.BL.ICurrencyRounding _rounding, [FromServices] CrossBuy.BL.ICurrencyService _currency)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int drawer = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			int over511 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "520111").Select(a => a.ID).FirstOrDefaultAsync();
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstOrDefaultAsync();
+			int uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => u.ID).FirstOrDefaultAsync();
+			int cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => c.ID).FirstOrDefaultAsync();
+			if (drawer == 0 || over511 == 0) return BadRequest(new { message = "need 110101 + 520111 (run SQL)" });
+
+			// --- idempotent ZZ KWD scaffolding (persisted, reused across runs) ---
+			var br = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "ZZ-CASHIER-BR" && b.CompanyID == company);
+			if (br == null) { br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-CASHIER-BR", NameAr = "كاشير ZZ", Location = "t", CountryID = 32, CompanyID = company, PhoneNumber = "", Email = "", Description = "" }; _db.Branches.Add(br); await _db.SaveChangesAsync(); }
+			var setting = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == br.ID);
+			if (setting == null) { setting = new CrossBuy.Models.Context.Pos.BranchPosSetting { BranchId = br.ID }; _db.BranchPosSettings.Add(setting); }
+			setting.DefaultSalesWarehouseId = wh; setting.DefaultCurrencyId = 5; setting.ServiceChargePct = 0m; await _db.SaveChangesAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == br.ID && t.Code == "ZZCASH-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = br.ID, Code = "ZZCASH-T", Name = "cash", CashAccountId = drawer, ReceiptPrefix = "ZZC-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			if (!await _db.BranchPaymentMethods.AnyAsync(p => p.BranchId == br.ID && p.PaymentMethod == "Card"))
+			{ _db.BranchPaymentMethods.Add(new CrossBuy.Models.Context.Pos.BranchPaymentMethod { BranchId = br.ID, PaymentMethod = "Card", TargetAccountId = drawer, IsActive = true }); await _db.SaveChangesAsync(); }
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-CASH-KWD3");
+			if (item == null) { var (iok, ierr, it) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-CASH-KWD3", Barcode = "ZZCASHKWD3", Name = "بند 3 خانات", NameEn = "kwd3", ItemCategoryId = cat, ItemType = "Service", BaseUoMId = uom, SalesPrice = 0.755m, IsActive = true }, null); if (!iok) return BadRequest(new { message = "item: " + ierr }); item = await _db.Items.FirstAsync(i => i.ID == it!.ID); }
+
+			// diagnostics: what currency/precision does the shift path resolve for this terminal?
+			int ddpKwd = await _rounding.DecimalsAsync(company, 5);
+			int ddpFunc = await _rounding.DecimalsAsync(company, null);
+			int funcCur = await _currency.GetFunctionalCurrencyIdAsync(company, null);
+			int? termBranch = await _db.PosTerminals.AsNoTracking().Where(t => t.ID == term.ID).Select(t => (int?)t.BranchId).FirstOrDefaultAsync();
+			int? branchDefCur = termBranch == null ? null : await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == termBranch.Value).Select(s => s.DefaultCurrencyId).FirstOrDefaultAsync();
+			var diag = new { ddpForKwd5 = ddpKwd, ddpFunctional = ddpFunc, functionalCurrency = funcCur, terminalBranch = termBranch, branchDefaultCurrency = branchDefCur };
+
+			async Task<int> OrderLineId(int orderId) => await _db.PosOrderLines.AsNoTracking().Where(l => l.OrderId == orderId).OrderBy(l => l.Sort).Select(l => l.ID).FirstAsync();
+			async Task<decimal> OrderGrand(int orderId) => await _db.PosOrders.AsNoTracking().Where(o => o.ID == orderId).Select(o => o.GrandTotal).FirstAsync();
+			async Task<int> WalkInOf(int orderId) => await _db.PosOrders.AsNoTracking().Where(o => o.ID == orderId).Select(o => o.CustomerId ?? 0).FirstAsync();
+
+			// ---------- Proof 1: Z report + expected cash at 3dp; systematic diff 0; variance 0 ⇒ no JE ----------
+			async Task<object> Proof1()
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+				var sh = await _posSetup.GetOpenShiftAsync(term.ID);
+				var (_a, _ae, oa) = await _posOrders.CreateOrderAsync(company, br.ID, "Takeaway", null, null, term.ID, sh!.ID);
+				await _posOrders.AddLineAsync(company, oa, item!.ID, 3);   // 3 × 0.755 = 2.265
+				var (pa, paErr, _pi) = await _posOrders.PayAsync(company, oa, "Cash", null);
+				var (_b, _be, ob) = await _posOrders.CreateOrderAsync(company, br.ID, "Takeaway", null, null, term.ID, sh.ID);
+				await _posOrders.AddLineAsync(company, ob, item.ID, 2);    // 2 × 0.755 = 1.510
+				await _posOrders.PayAsync(company, ob, "Cash", null);
+				decimal sumOrders = await _db.PosOrders.AsNoTracking().Where(o => o.ShiftId == sh.ID && o.Status == "Paid").SumAsync(o => o.GrandTotal);
+				var oaRow = await _db.PosOrders.AsNoTracking().Where(o => o.ID == oa).Select(o => new { o.SubTotal, o.TaxTotal, o.GrandTotal, o.CurrencyId }).FirstAsync();
+				var z = await _posSetup.GetShiftZReportAsync(company, term.ID, sh.ID);
+				decimal expected = await _posSetup.ExpectedCashAsync(company, sh);
+				var (cok, cerr) = await _posSetup.CloseShiftAsync(company, term.ID, sh.ID, expected, null, DateTime.Today, null);   // counted == expected → variance 0
+				var shAfter = await _db.PosShifts.AsNoTracking().FirstAsync(x => x.ID == sh.ID);
+				var res = new
+				{
+					orderCurrencyId = oaRow.CurrencyId, orderASubTotal = oaRow.SubTotal, orderATaxTotal = oaRow.TaxTotal, orderAGrandTotal = oaRow.GrandTotal,
+					payOrderA = pa ? "ok" : paErr, zGrandTotal = z!.GrandTotal, sumPaidOrders = sumOrders,
+					systematicDiff = z.GrandTotal - sumOrders, zEqualsOrders = z.GrandTotal == sumOrders,
+					expectedCash = expected, expectedEqualsCash = expected == sumOrders,
+					closeOk = cok, closeErr = cerr, variance = shAfter.CashVariance, noVarianceJe = shAfter.VarianceJournalEntryId == null
+				};
+				await tx.RollbackAsync();
+				return res;
+			}
+
+			// ---------- Proof 2: real drawer variance → ONE balanced JE on 520111, single conversion, VarianceJournalEntryId set ----------
+			async Task<object> Proof2()
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+				var sh = await _posSetup.GetOpenShiftAsync(term.ID);
+				var (_o, _oe, oid) = await _posOrders.CreateOrderAsync(company, br.ID, "Takeaway", null, null, term.ID, sh!.ID);
+				await _posOrders.AddLineAsync(company, oid, item!.ID, 3);
+				await _posOrders.PayAsync(company, oid, "Cash", null);
+				decimal expected = await _posSetup.ExpectedCashAsync(company, sh);
+				decimal counted = expected + 0.005m;   // 5-fils overage (a 3rd-decimal variance a 2dp path would lose)
+				var (cok, cerr) = await _posSetup.CloseShiftAsync(company, term.ID, sh.ID, counted, null, DateTime.Today, null);
+				var shAfter = await _db.PosShifts.AsNoTracking().FirstAsync(x => x.ID == sh.ID);
+				var je = await _db.JournalEntries.AsNoTracking().Where(e => e.SourceType == "PosShiftClose" && e.SourceId == sh.ID).OrderByDescending(e => e.ID).Select(e => (int?)e.ID).FirstOrDefaultAsync();
+				var jl = je == null ? new List<CrossBuy.Models.Context.Accounting.JournalEntryLine>() : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == je).ToListAsync();
+				decimal drawerDr = jl.Where(l => l.AccountId == drawer).Sum(l => l.Debit - l.Credit);
+				decimal over511Cr = jl.Where(l => l.AccountId == over511).Sum(l => l.Credit - l.Debit);
+				var res = new
+				{
+					closeOk = cok, closeErr = cerr, expectedCash = expected, countedFloat = counted,
+					variance = shAfter.CashVariance, variance3dp = shAfter.CashVariance == 0.005m,
+					varianceJeSet = shAfter.VarianceJournalEntryId != null,
+					drawerDebitBase = drawerDr, over520111CreditBase = over511Cr,
+					bothLinesEqual = drawerDr == over511Cr && drawerDr > 0,   // single conversion ⇒ identical magnitude
+					jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit)
+				};
+				await tx.RollbackAsync();
+				return res;
+			}
+
+			// ---------- Proof 3: multi-tender — largest tender absorbs change, Σ receipts == grand, AR nets to 0 ----------
+			async Task<object> Proof3()
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				var (_o, _oe, oid) = await _posOrders.CreateOrderAsync(company, br.ID, "Takeaway", null, null, term.ID, null);
+				await _posOrders.AddLineAsync(company, oid, item!.ID, 3);   // grand 2.265
+				decimal grand = await OrderGrand(oid);
+				int walkIn = await WalkInOf(oid);
+				decimal outBefore = await ar.CustomerOutstandingAsync(company, walkIn);
+				// Cash 1.000 + Card = grand (Σ = grand + 1 > grand) → the LARGEST tender (Card) absorbs the change to grand − 1.000
+				var tenders = new List<CrossBuy.BL.PosTenderInput> { new() { Method = "Cash", Amount = 1.000m }, new() { Method = "Card", Amount = grand } };
+				var (pok, perr, invId) = await _posOrders.PayTendersAsync(company, oid, tenders, null);
+				var pays = await _db.PosPayments.AsNoTracking().Where(p => p.OrderId == oid).ToListAsync();
+				decimal outAfter = await ar.CustomerOutstandingAsync(company, walkIn);
+				decimal cardAmt = pays.Where(p => p.PaymentMethod == "Card").Sum(p => p.Amount);
+				var res = new
+				{
+					payOk = pok, payErr = perr, grand,
+					cashReceipt = pays.Where(p => p.PaymentMethod == "Cash").Sum(p => p.Amount),
+					cardReceipt = cardAmt, cardIsLargestAndAbsorbedChange = cardAmt == grand - 1.000m,
+					sumReceipts = pays.Sum(p => p.Amount), receiptsEqualGrand = pays.Sum(p => p.Amount) == grand,
+					arNetsToZero = outAfter == outBefore, outBefore, outAfter
+				};
+				await tx.RollbackAsync();
+				return res;
+			}
+
+			// ---------- Proof 4: split-by-item — Σ invoices == order grand, AR nets to 0 ----------
+			async Task<object> Proof4()
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				var (_o, _oe, oid) = await _posOrders.CreateOrderAsync(company, br.ID, "Takeaway", null, null, term.ID, null);
+				await _posOrders.AddLineAsync(company, oid, item!.ID, 3);   // 3 units → split 2 + 1
+				decimal grand = await OrderGrand(oid);
+				int lineId = await OrderLineId(oid);
+				int walkIn = await WalkInOf(oid);
+				decimal outBefore = await ar.CustomerOutstandingAsync(company, walkIn);
+				var bills = new List<List<CrossBuy.BL.SplitAllocation>>
+				{
+					new() { new CrossBuy.BL.SplitAllocation { LineId = lineId, Qty = 2m } },
+					new() { new CrossBuy.BL.SplitAllocation { LineId = lineId, Qty = 1m } },
+				};
+				var (pok, perr, invIds) = await _posOrders.PaySplitByItemAsync(company, oid, bills, "Cash", null);
+				decimal sumInv = invIds == null || invIds.Count == 0 ? 0m : await _db.SalesInvoices.AsNoTracking().Where(i => invIds.Contains(i.ID)).SumAsync(i => i.GrandTotal);
+				decimal outAfter = await ar.CustomerOutstandingAsync(company, walkIn);
+				var res = new { payOk = pok, payErr = perr, grand, invoiceCount = invIds?.Count ?? 0, sumInvoices = sumInv, invoicesEqualGrand = sumInv == grand, arNetsToZero = outAfter == outBefore, outBefore, outAfter };
+				await tx.RollbackAsync();
+				return res;
+			}
+
+			// ---------- Proof 0: EF persistence precision — does a 3dp money value survive a DB round-trip? ----------
+			async Task<object> Proof0()
+			{
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 1.733m);   // OpeningFloat carries a 3rd decimal (fils)
+				var sh = await _posSetup.GetOpenShiftAsync(term.ID);
+				// force a fresh DB read (round-trip) via a new no-tracking query — EF materializes through the model's decimal precision
+				decimal efRead = await _db.PosShifts.AsNoTracking().Where(x => x.ID == sh!.ID).Select(x => x.OpeningFloat).FirstAsync();
+				// raw column value straight from SQL Server (bypassing EF), via EF's own raw-SQL channel (joins the ambient tx)
+				var rawRows = await _db.Database.SqlQueryRaw<decimal>("SELECT OpeningFloat AS Value FROM PosShifts WHERE ID = {0}", sh!.ID).ToListAsync();
+				decimal rawRead = rawRows.Count > 0 ? rawRows[0] : -1m;
+				var res = new { wroteViaEf = 1.733m, efReadBack = efRead, rawSqlColumn = rawRead, filsSurvivedEfPersistence = efRead == 1.733m, columnItselfHoldsFils = rawRead == 1.733m };
+				await tx.RollbackAsync();
+				return res;
+			}
+
+			var proof0 = await Proof0();
+			var proof1 = await Proof1();
+			var proof2 = await Proof2();
+			var proof3 = await Proof3();
+			var proof4 = await Proof4();
+			return Ok(new
+			{
+				note = "HM-2 Batch 4 — KWD (3dp) POS payment/shift proofs; each proof rolled back (zero persistence)",
+				diagnostics = diag,
+				proof0_efPersistencePrecision = proof0,
+				proof1_zReportAndVarianceZero = proof1,
+				proof2_realVarianceJe = proof2,
+				proof3_multiTenderLargestAbsorbs = proof3,
+				proof4_splitByItem = proof4
+			});
+		}
+
 		// GET /api/dev/hm2-kwd-return-test?key=seed123 — HM-2 Batch 3-ج-0: a KWD sales return of a KWD invoice must reverse AR at the
 		// INVOICE rate ⇒ GrandTotalBase (at invoice rate) == the 1102 JE line, fils preserved, JE balanced, ar_sub nets to 0. Rolled-back tx.
 		[HttpGet("hm2-kwd-return-test")]

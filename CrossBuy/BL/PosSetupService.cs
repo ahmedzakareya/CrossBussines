@@ -150,7 +150,20 @@ namespace CrossBuy.BL
 	{
 		private readonly CrossDbContext _db;
 		private readonly IJournalEntryService _journals;   // RC-6a: cash-drawer variance JE at shift close
-		public PosSetupService(CrossDbContext db, IJournalEntryService journals) { _db = db; _journals = journals; }
+		private readonly ICurrencyService _currency;
+		private readonly ICurrencyRounding _rounding;
+		public PosSetupService(CrossDbContext db, IJournalEntryService journals, ICurrencyService currency, ICurrencyRounding rounding) { _db = db; _journals = journals; _currency = currency; _rounding = rounding; }
+
+		// HM-2 (4-ب): the shift's DOCUMENT currency = the terminal's branch DefaultCurrencyId (KWD for a hyper), else the functional.
+		private async Task<(int cur, decimal rate, int ddp, int fdp)> ShiftCurrencyAsync(int companyId, int terminalId)
+		{
+			int functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+			int? branchId = await _db.PosTerminals.AsNoTracking().Where(t => t.ID == terminalId).Select(t => (int?)t.BranchId).FirstOrDefaultAsync();
+			int? branchCur = branchId == null ? null : await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == branchId.Value).Select(s => s.DefaultCurrencyId).FirstOrDefaultAsync();
+			int cur = branchCur ?? functional;
+			decimal rate = cur == functional ? 1m : (await _currency.ToBaseAsync(1m, cur, functional, DateTime.Today, "Sell")).effectiveRate;
+			return (cur, rate, await _rounding.DecimalsAsync(companyId, cur), await _rounding.DecimalsAsync(companyId, null));
+		}
 
 		private static string NewToken() => Guid.NewGuid().ToString("N").Substring(0, 16);
 
@@ -885,6 +898,8 @@ namespace CrossBuy.BL
 			var s = await _db.PosShifts.AsNoTracking().FirstOrDefaultAsync(x => x.ID == shiftId && x.TerminalId == terminalId);
 			if (s == null) return null;
 			var term = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.ID == terminalId);
+			// HM-2 (4-ب): every Z total is presented in the shift's DOCUMENT currency precision (Rd), not a hardcoded 2dp.
+			var (_zc, _zr, zdp, _zf) = await ShiftCurrencyAsync(companyId, terminalId);
 
 			// paid orders in this shift (sales); totals read straight off the order snapshot (RecomputeAsync-computed)
 			var paid = await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == companyId && o.ShiftId == shiftId && o.Status == "Paid").ToListAsync();
@@ -900,13 +915,13 @@ namespace CrossBuy.BL
 				ShiftId = s.ID, TerminalCode = term?.Code ?? "", ShiftType = s.ShiftType, Status = s.Status,
 				OpenedAt = s.OpenedAt, ClosedAt = s.ClosedAt, ClosedByEmployeeId = s.ClosedByEmployeeId,
 				OrderCount = paid.Count,
-				SubTotal = Math.Round(paid.Sum(o => o.SubTotal), 2),
-				ServiceAmount = Math.Round(paid.Sum(o => o.ServiceAmount), 2),
-				TaxTotal = Math.Round(paid.Sum(o => o.TaxTotal), 2),
-				GrandTotal = Math.Round(paid.Sum(o => o.GrandTotal), 2),
+				SubTotal = Math.Round(paid.Sum(o => o.SubTotal), zdp, MidpointRounding.AwayFromZero),
+				ServiceAmount = Math.Round(paid.Sum(o => o.ServiceAmount), zdp, MidpointRounding.AwayFromZero),
+				TaxTotal = Math.Round(paid.Sum(o => o.TaxTotal), zdp, MidpointRounding.AwayFromZero),
+				GrandTotal = Math.Round(paid.Sum(o => o.GrandTotal), zdp, MidpointRounding.AwayFromZero),
 				Payments = pays.OrderByDescending(x => x.Amount).ToList(),
 				ReturnsTotal = 0m,   // RC-6c will populate refunds/returns for the shift
-				TipsTotal = Math.Round(paid.Sum(o => o.TipAmount), 2),   // RC-5: total gratuities collected this shift
+				TipsTotal = Math.Round(paid.Sum(o => o.TipAmount), zdp, MidpointRounding.AwayFromZero),   // RC-5: total gratuities collected this shift
 
 				OpeningFloat = s.OpeningFloat,
 				ExpectedCash = s.Status == "Closed" ? (s.ExpectedCash ?? await ExpectedCashAsync(companyId, s)) : await ExpectedCashAsync(companyId, s),
@@ -925,7 +940,8 @@ namespace CrossBuy.BL
 									select (decimal?)p.Amount).SumAsync() ?? 0m;   // RC-6c: a voided order's cash was refunded OUT of the drawer → exclude
 			// RC-5: cash tips physically land in the drawer → part of expected cash (card tips go to the bank)
 			decimal cashTips = await _db.PosOrders.Where(o => o.CompanyId == companyId && o.ShiftId == s.ID && o.Status != "Voided" && o.TipMethod == "Cash").SumAsync(o => (decimal?)o.TipAmount) ?? 0m;
-			return Math.Round(s.OpeningFloat + cashIn + cashTips, 2);
+			var (_, _, ddp, _2) = await ShiftCurrencyAsync(companyId, s.TerminalId);   // HM-2: drawer cash is in the DOCUMENT currency
+			return Math.Round(s.OpeningFloat + cashIn + cashTips, ddp, MidpointRounding.AwayFromZero);
 		}
 
 		// RC-6a: close a shift with a counted drawer → compute expected + variance; post the over/short to 520111 (via the
@@ -938,8 +954,11 @@ namespace CrossBuy.BL
 			if (s.Status == "Closed") return (false, "الوردية مُغلقة بالفعل");
 			if (closingFloat < 0) closingFloat = 0;
 
+			// HM-2 (4-ب): counted cash / expected / variance are in the DOCUMENT currency (Rd); the JE posts the SINGLE variance
+			// converted ONCE to the functional (Rf) on both lines ⇒ balances by construction (no eligible P&L line — rejection-safe).
+			var (_, rate, ddp, fdp) = await ShiftCurrencyAsync(companyId, terminalId);
 			decimal expected = await ExpectedCashAsync(companyId, s);
-			decimal variance = Math.Round(closingFloat - expected, 2);
+			decimal variance = Math.Round(closingFloat - expected, ddp, MidpointRounding.AwayFromZero);   // document currency
 
 			// HM-1-أ (هـ): the variance JE AND the close-field write (incl. VarianceJournalEntryId) must be ATOMIC — ONE
 			// own-or-join transaction — else a "JE posted but close-fields unsaved" failure leaves an ORPHAN variance JE and
@@ -954,7 +973,8 @@ namespace CrossBuy.BL
 				if (drawer == 0) drawer = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
 				var over = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "520111").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 				if (drawer == 0 || over == null) { await tx.RollbackAsync(); return (false, "حساب النقدية أو حساب عجز/زيادة النقدية (520111) غير موجود — شغّل SQL"); }
-				decimal amt = Math.Abs(variance);
+				// SINGLE conversion of the variance to the functional currency ⇒ both JE lines use the SAME value ⇒ balances by construction.
+				decimal amt = Math.Round(Math.Abs(variance) * rate, fdp, MidpointRounding.AwayFromZero);
 				var lines = new List<JournalLineInput>
 				{
 					// overage (variance>0): more cash than book → Dr drawer / Cr 520111 (gain)
