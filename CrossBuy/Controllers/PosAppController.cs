@@ -94,6 +94,11 @@ namespace CrossBuy.Controllers
 			var actPreset = await _db.Branches.AsNoTracking().Where(b => b.ID == acc.BranchId).Select(b => b.ActivityPresetCode).FirstOrDefaultAsync();
 			var (laneOk, _) = _access.IsActivityAllowedForLane(actPreset, "restaurant");
 			if (!laneOk) { await _signIn.SignOutAsync(); TempData["PosErr"] = L["This branch does not belong to the restaurant system"].Value; return RedirectToAction(nameof(Login)); }
+			// HM-1/HM-D34: COMPANY GUARD at the gateway (HARD REJECT). After the HM-D34 relabel every legitimate employee/branch is
+			// company 1, so an employee whose company differs from the branch's is a real cross-company login — refuse.
+			var gEmpCo = await _db.Employee.AsNoTracking().Where(e => e.ID == acc.EmployeeId).Select(e => (int?)e.EmpCompanyID).FirstOrDefaultAsync();
+			var gBrCo = await _db.Branches.AsNoTracking().Where(b => b.ID == acc.BranchId).Select(b => (int?)b.CompanyID).FirstOrDefaultAsync();
+			if (gEmpCo == null || gBrCo == null || gEmpCo.Value != gBrCo.Value) { await _signIn.SignOutAsync(); TempData["PosErr"] = L["Your account belongs to another company than this branch — cross-company operations are blocked."].Value; return RedirectToAction(nameof(Login)); }
 			var ctx = new PosCtx { EmployeeId = acc.EmployeeId, EmployeeName = acc.EmployeeName, EmployeeNameEn = acc.EmployeeNameEn, EmployeePhoto = acc.EmployeePhoto, BranchId = acc.BranchId, BranchName = acc.BranchName, Roles = acc.Roles };
 			SetCtx(ctx);
 			return HomeFor(ctx);   // kitchen-only → KDS; others → start

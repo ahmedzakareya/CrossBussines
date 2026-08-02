@@ -10,6 +10,10 @@
     var caps = ViewBag.Caps as List<HyperController.HyperCapRow> ?? new();
     var hasCapConfig = ViewBag.HasCapConfig as bool? ?? true;
     var z = ViewBag.Z as ZReportDto;
+    // HM-1: the open cart + document-currency decimals (both computed server-side; the view only formats for display).
+    var order = ViewBag.Order as PosOrderDto;
+    var docDp = (int)(ViewBag.DocDp ?? 2);
+    var fmt = docDp > 0 ? "0." + new string('0', docDp) : "0";
     ViewData["Title"] = isAr ? "الممرّ" : "Lane";
 }
 <div id="kt_app_content" class="app-content flex-column-fluid">
@@ -24,13 +28,91 @@
             <div class="alert alert-danger d-flex align-items-center mb-6"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@TempData["PosErr"]</div>
         }
 
-        <!--begin::HM-0 notice — this is a structure lane, no selling -->
-        <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-5 mb-6">
-            <i class="ki-outline ki-information-5 fs-2tx text-warning me-4"></i>
-            <div class="d-flex flex-stack flex-grow-1">
-                <div class="fs-6 text-gray-700">@(isAr ? "ممرّ الهيكل (HM-0): لا بيع ولا سلة ولا مسح باركود — فتح/إغلاق وردية فقط." : "Structure lane (HM-0): no selling, no cart, no scanning — shift open/close only.")</div>
+        <!--begin::HM-1 selling panel — scan → cart → cash pay. Server computes everything (RecomputeAsync); this only displays.-->
+        @if (openShift == null)
+        {
+            <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-5 mb-6">
+                <i class="ki-outline ki-information-5 fs-2tx text-warning me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1">
+                    <div class="fs-6 text-gray-700">@(isAr ? "افتح وردية للبدء في البيع." : "Open a shift to start selling.")</div>
+                </div>
             </div>
-        </div>
+        }
+        else
+        {
+            <div class="card card-flush shadow-sm mb-6">
+                <div class="card-header pt-6">
+                    <h3 class="card-title fw-bold text-gray-900">@(isAr ? "البيع" : "Sell")</h3>
+                    <div class="card-toolbar"><span class="badge badge-light-primary fs-7">@term?.Code · @(isAr ? "وردية" : "Shift") #@openShift.ID</span></div>
+                </div>
+                <div class="card-body pt-2">
+                    <!--scan box (autofocus)-->
+                    <form method="post" action="/hyper/pos/scan" class="d-flex gap-3 mb-5" autocomplete="off">
+                        @Html.AntiForgeryToken()
+                        <input type="text" name="barcode" autofocus class="form-control form-control-solid" placeholder="@(isAr ? "امسح الباركود..." : "Scan barcode...")" />
+                        <button type="submit" class="btn btn-primary"><i class="ki-outline ki-plus fs-4"></i>@(isAr ? "إضافة" : "Add")</button>
+                    </form>
+
+                    @if (order == null || order.Lines.Count == 0)
+                    {
+                        <div class="text-muted fs-6 text-center py-8">@(isAr ? "السلة فارغة — امسح صنفًا للبدء." : "Cart is empty — scan an item to start.")</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-row-dashed align-middle gs-0 gy-3 mb-0">
+                                <thead>
+                                    <tr class="fw-semibold text-muted fs-7 text-uppercase">
+                                        <th>@(isAr ? "الصنف" : "Item")</th>
+                                        <th class="text-end">@(isAr ? "السعر" : "Unit price")</th>
+                                        <th class="text-center w-175px">@(isAr ? "الكمية" : "Qty")</th>
+                                        <th class="text-end">@(isAr ? "الإجمالي" : "Total")</th>
+                                        <th class="w-50px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ln in order.Lines)
+                                    {
+                                        <tr>
+                                            <td class="fw-semibold text-gray-900">@ln.Name</td>
+                                            <td class="text-end" style="font-variant-numeric:tabular-nums">@ln.UnitPrice.ToString(fmt)</td>
+                                            <td class="text-center">
+                                                <form method="post" action="/hyper/pos/line/qty" class="d-inline-flex align-items-center gap-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="lineId" value="@ln.Id" />
+                                                    <input type="number" name="qty" value="@ln.Qty.ToString("0.###")" min="0" step="1" class="form-control form-control-solid form-control-sm w-90px text-center" />
+                                                    <button type="submit" class="btn btn-icon btn-sm btn-light" title="@(isAr ? "تحديث" : "Update")"><i class="ki-outline ki-check fs-5"></i></button>
+                                                </form>
+                                            </td>
+                                            <td class="text-end fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@ln.LineTotal.ToString(fmt)</td>
+                                            <td>
+                                                <form method="post" action="/hyper/pos/line/remove">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="lineId" value="@ln.Id" />
+                                                    <button type="submit" class="btn btn-icon btn-sm btn-light-danger" title="@(isAr ? "حذف" : "Remove")"><i class="ki-outline ki-trash fs-5"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="separator separator-dashed my-4"></div>
+                        <div class="d-flex flex-stack">
+                            <div>
+                                <span class="text-muted fs-6 me-2">@(isAr ? "الإجمالي" : "Total")</span>
+                                <span class="fs-2 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@order.GrandTotal.ToString(fmt)</span>
+                            </div>
+                            <form method="post" action="/hyper/pos/pay">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success btn-lg"><i class="ki-outline ki-dollar fs-3"></i>@(isAr ? "دفع نقدي" : "Pay cash")</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
 
         <div class="row g-6">
             <!--begin::Terminal + shift-->
@@ -46,7 +128,7 @@
                                 @if (openShift != null)
                                 {
                                     <div class="fs-4 fw-semibold"><span class="badge badge-light-success fs-6"><i class="ki-outline ki-time fs-7 text-success me-1"></i>@(isAr ? "مفتوحة" : "Open") #@openShift.ID</span></div>
-                                    <div class="text-muted fs-8">@(isAr ? "الرصيد الافتتاحي" : "Opening float"): @openShift.OpeningFloat.ToString("0.00")</div>
+                                    <div class="text-muted fs-8">@(isAr ? "الرصيد الافتتاحي" : "Opening float"): @openShift.OpeningFloat.ToString(fmt)</div>
                                 }
                                 else
                                 {
@@ -62,7 +144,7 @@
                                 @Html.AntiForgeryToken()
                                 <div>
                                     <label class="form-label fs-8 text-muted mb-1">@(isAr ? "النقد المعدود عند الإغلاق" : "Counted cash at close")</label>
-                                    <input type="number" step="0.01" name="closingFloat" value="@openShift.OpeningFloat.ToString("0.00")" class="form-control form-control-solid form-control-sm w-200px" />
+                                    <input type="number" step="any" name="closingFloat" value="@openShift.OpeningFloat.ToString(fmt)" class="form-control form-control-solid form-control-sm w-200px" />
                                 </div>
                                 <button type="submit" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-cross-circle fs-5"></i>@(isAr ? "إغلاق الوردية" : "Close shift")</button>
                             </form>
@@ -116,9 +198,9 @@
                 <div class="card-body pt-2">
                     <div class="row g-4">
                         <div class="col-6 col-md-3"><div class="fs-8 text-muted">@(isAr ? "عدد الطلبات" : "Orders")</div><div class="fs-4 fw-bold text-gray-900">@z.OrderCount</div></div>
-                        <div class="col-6 col-md-3"><div class="fs-8 text-muted">@(isAr ? "إجمالي المبيعات" : "Grand total")</div><div class="fs-4 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@z.GrandTotal.ToString("0.00")</div></div>
-                        <div class="col-6 col-md-3"><div class="fs-8 text-muted">@(isAr ? "النقد المتوقّع" : "Expected cash")</div><div class="fs-4 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@z.ExpectedCash.ToString("0.00")</div></div>
-                        <div class="col-6 col-md-3"><div class="fs-8 text-muted">@(isAr ? "فرق الدرج" : "Cash variance")</div><div class="fs-4 fw-bold @((z.CashVariance ?? 0) == 0 ? "text-gray-900" : "text-danger")" style="font-variant-numeric:tabular-nums">@((z.CashVariance ?? 0).ToString("0.00"))</div></div>
+                        <div class="col-6 col-md-3"><div class="fs-8 text-muted">@(isAr ? "إجمالي المبيعات" : "Grand total")</div><div class="fs-4 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@z.GrandTotal.ToString(fmt)</div></div>
+                        <div class="col-6 col-md-3"><div class="fs-8 text-muted">@(isAr ? "النقد المتوقّع" : "Expected cash")</div><div class="fs-4 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@z.ExpectedCash.ToString(fmt)</div></div>
+                        <div class="col-6 col-md-3"><div class="fs-8 text-muted">@(isAr ? "فرق الدرج" : "Cash variance")</div><div class="fs-4 fw-bold @((z.CashVariance ?? 0) == 0 ? "text-gray-900" : "text-danger")" style="font-variant-numeric:tabular-nums">@((z.CashVariance ?? 0).ToString(fmt))</div></div>
                     </div>
                 </div>
             </div>

@@ -152,7 +152,8 @@ namespace CrossBuy.BL
 		private readonly IJournalEntryService _journals;   // RC-6a: cash-drawer variance JE at shift close
 		private readonly ICurrencyService _currency;
 		private readonly ICurrencyRounding _rounding;
-		public PosSetupService(CrossDbContext db, IJournalEntryService journals, ICurrencyService currency, ICurrencyRounding rounding) { _db = db; _journals = journals; _currency = currency; _rounding = rounding; }
+		private readonly Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> L;
+		public PosSetupService(CrossDbContext db, IJournalEntryService journals, ICurrencyService currency, ICurrencyRounding rounding, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer) { _db = db; _journals = journals; _currency = currency; _rounding = rounding; L = localizer; }
 
 		// HM-2 (4-ب): the shift's DOCUMENT currency = the terminal's branch DefaultCurrencyId (KWD for a hyper), else the functional.
 		private async Task<(int cur, decimal rate, int ddp, int fdp)> ShiftCurrencyAsync(int companyId, int terminalId)
@@ -952,6 +953,10 @@ namespace CrossBuy.BL
 			var s = await _db.PosShifts.FirstOrDefaultAsync(x => x.ID == shiftId && x.TerminalId == terminalId);
 			if (s == null) return (false, "الوردية غير موجودة");
 			if (s.Status == "Closed") return (false, "الوردية مُغلقة بالفعل");
+			// HM-1/HM-D34: cross-company guard (HARD REJECT). After the HM-D34 relabel every legitimate terminal/branch is company 1,
+			// so a terminal whose branch belongs to another company is a real cross-company shift-close JE — reject.
+			int? shiftBranchCo = await _db.PosTerminals.Where(t => t.ID == terminalId).Join(_db.Branches, t => t.BranchId, b => b.ID, (t, b) => (int?)b.CompanyID).FirstOrDefaultAsync();
+			if (shiftBranchCo != companyId) return (false, L["This terminal belongs to another company — cross-company operations are blocked."]);
 			if (closingFloat < 0) closingFloat = 0;
 
 			// HM-2 (4-ب): counted cash / expected / variance are in the DOCUMENT currency (Rd); the JE posts the SINGLE variance

@@ -2961,4 +2961,12 @@
   <data name="The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry." xml:space="preserve">
     <value>سعر الصرف عمره {0} يومًا — لم يُدخَل سعر اليوم. اطلب من محاسب الفرع إدخاله من شاشة أسعار الصرف ثم أعِد المحاولة.</value>
   </data>
+  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>هذا الفرع يخصّ شركة أخرى — العمليات العابرة للشركات ممنوعة.</value></data>
+  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>هذا الترمينال يخصّ شركة أخرى — العمليات العابرة للشركات ممنوعة.</value></data>
+  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve"><value>حسابك يخصّ شركة أخرى غير شركة هذا الفرع — العمليات العابرة للشركات ممنوعة.</value></data>
+  <data name="No item matches this barcode." xml:space="preserve"><value>لا يوجد صنف بهذا الباركود.</value></data>
+  <data name="Open a shift before taking payment." xml:space="preserve"><value>افتح وردية قبل الدفع.</value></data>
+  <data name="The cart is empty." xml:space="preserve"><value>السلة فارغة.</value></data>
+  <data name="Paid — invoice #{0} created." xml:space="preserve"><value>تم الدفع — أُنشئت الفاتورة رقم {0}.</value></data>
+  <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve"><value>هذا الصنف غير مُدرَج في قائمة أسعار الفرع — لا يمكن بيعه حتى يُسعَّر.</value></data>
 </root>

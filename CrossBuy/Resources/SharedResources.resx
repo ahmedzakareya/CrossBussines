@@ -1333,4 +1333,12 @@
   <data name="The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry." xml:space="preserve">
     <value>The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry.</value>
   </data>
+  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>This branch belongs to another company — cross-company operations are blocked.</value></data>
+  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>This terminal belongs to another company — cross-company operations are blocked.</value></data>
+  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve"><value>Your account belongs to another company than this branch — cross-company operations are blocked.</value></data>
+  <data name="No item matches this barcode." xml:space="preserve"><value>No item matches this barcode.</value></data>
+  <data name="Open a shift before taking payment." xml:space="preserve"><value>Open a shift before taking payment.</value></data>
+  <data name="The cart is empty." xml:space="preserve"><value>The cart is empty.</value></data>
+  <data name="Paid — invoice #{0} created." xml:space="preserve"><value>Paid — invoice #{0} created.</value></data>
+  <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve"><value>This item is not in the branch price list — it cannot be sold until it is priced.</value></data>
 </root>

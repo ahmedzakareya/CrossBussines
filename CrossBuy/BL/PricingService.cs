@@ -80,7 +80,7 @@ namespace CrossBuy.BL
 		// Resolve the effective unit price + discount for an item, given the customer (specific + segment), the
 		// document currency, ordered qty and date. Price lists are matched by currency (foreign price is fixed);
 		// priority: customer-specific > segment > general, then list Priority, then the most specific qty break.
-		Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf);
+		Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null);
 		// Pricing 2A — gross-margin floor. netUnitPrice is in the document currency; converted to functional before comparing
 		// to cost×(1+margin%). currencyId/exchangeRate describe the document; if rate missing it is resolved (Sell). asOf = doc date.
 		Task<MarginCheckResult> CheckMarginAsync(int companyId, int itemId, decimal netUnitPrice, int? currencyId, decimal? exchangeRate, DateTime asOf);
@@ -108,7 +108,7 @@ namespace CrossBuy.BL
 		public PricingService(CrossDbContext context, ICurrencyService currency, IManufService manuf, ICurrencyRounding rounding) { _context = context; _currency = currency; _manuf = manuf; _rounding = rounding; }
 
 
-		public async Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf)
+		public async Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null)
 		{
 			var q = qty <= 0 ? 1m : qty;
 			var seg = string.IsNullOrWhiteSpace(segment) ? null : segment.Trim();
@@ -123,6 +123,7 @@ namespace CrossBuy.BL
 				from l in _context.PriceListLines.AsNoTracking()
 				join pl in _context.PriceLists.AsNoTracking() on l.PriceListId equals pl.ID
 				where pl.CompanyID == companyId && pl.IsActive && l.ItemId == itemId && l.MinQty <= q
+					&& (priceListId == null || pl.ID == priceListId.Value)   // HM-D18: when a branch list is passed, restrict candidates to it
 					&& ((pl.CurrencyId ?? functional) == docCur || l.PricingMode == "CostPlus")   // cost-plus is currency-agnostic (computed then converted)
 					&& ((customerId != null && pl.CustomerId == customerId) || (pl.CustomerId == null && (pl.Segment == null || pl.Segment == seg)))
 					&& (pl.ValidFrom == null || pl.ValidFrom <= asOf) && (pl.ValidTo == null || pl.ValidTo >= asOf)

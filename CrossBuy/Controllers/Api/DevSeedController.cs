@@ -171,12 +171,14 @@ namespace CrossBuy.Controllers.Api
 			{
 				branch = new CrossBuy.Models.Context.Admin.Branch
 				{
-					Name = "HYPER-DEMO", NameAr = "هايبر ديمو", Location = "Kuwait", CountryID = 32, CompanyID = 79,
+					// HM-D33/HM-D34: HYPER-DEMO runs on the REAL operating company #1 (functional EGP, KWD branch) — NOT the empty
+					// test shell 79. Seeding it on 79 was the HM-0 defect that produced the cross-company mismatch.
+					Name = "HYPER-DEMO", NameAr = "هايبر ديمو", Location = "Kuwait", CountryID = 32, CompanyID = 1,
 					PhoneNumber = "", Email = "", Description = "HM-0 hypermarket demo", ActivityPresetCode = "Hyper"
 				};
 				_db.Branches.Add(branch); await _db.SaveChangesAsync(); log.Add("branch CREATED #" + branch.ID);
 			}
-			else { if (branch.ActivityPresetCode != "Hyper") { branch.ActivityPresetCode = "Hyper"; await _db.SaveChangesAsync(); } log.Add("branch exists #" + branch.ID); }
+			else { bool ch = false; if (branch.ActivityPresetCode != "Hyper") { branch.ActivityPresetCode = "Hyper"; ch = true; } if (branch.CompanyID != 1) { branch.CompanyID = 1; ch = true; } if (ch) await _db.SaveChangesAsync(); log.Add("branch exists #" + branch.ID + (ch ? " (repaired)" : "")); }
 			int bid = branch.ID;
 
 			// 2) capabilities — hyper defaults (direct upsert; deterministic, no preset coupling)
@@ -288,6 +290,116 @@ namespace CrossBuy.Controllers.Api
 			}
 
 			return Ok(new { ok = true, branchId = bid, terminals = new { HM_L1 = l1, HM_L2 = l2 }, login = new { hyper = "hyper1/Hyper@123", restaurant = "rest1/Rest@123 (branch15, isolation control)" }, note = "NO items/customers/stock/GL created.", log });
+		}
+
+		// GET /api/dev/hm1-seed?key=seed123 — HM-1 core fixtures (Development). Requires hyper-hm0-seed first. Makes branch 17
+		// coherent for selling: (1) grants the company-1 cashier (hyper1) a pos-cashier role; (2) closes the open HM-0 shift via
+		// CloseShiftAsync at variance 0 and PROVES no journal entry was created; (3) seeds ONE item HM-DEMO-001 (mineral water
+		// 600ml, Stockable, no tracking, single unit, barcode 6281234567890, SalesPrice 0.750 KWD); (4) posts 100 units of
+		// opening stock via PostOpeningStockAsync ONLY (no GRN/purchase). Idempotent. Opening UnitCost is a DEV ESTIMATE (functional EGP).
+		[HttpGet("hm1-seed")]
+		public async Task<IActionResult> Hm1Seed(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup, [FromServices] CrossBuy.BL.IStockService stock)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			var branch = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "HYPER-DEMO");
+			if (branch == null) return BadRequest(new { message = "run hyper-hm0-seed first (HYPER-DEMO branch missing)" });
+			int bid = branch.ID;
+			Chk("branch 17 (HYPER-DEMO) is company 1", branch.CompanyID == company);
+
+			// (1) coherent cashier — grant hyper1 (EmpCompanyID=1) a pos-cashier role on branch 17
+			var user = await _um.FindByNameAsync("hyper1");
+			if (user == null) return BadRequest(new { message = "run hyper-hm0-seed first (hyper1 missing)" });
+			var emp = await _db.Employee.FirstOrDefaultAsync(e => e.UserId == user.Id);
+			Chk("cashier employee EmpCompanyID == 1", emp != null && emp.EmpCompanyID == company);
+			if (emp != null && !await _db.BranchUserRoles.AnyAsync(r => r.BranchId == bid && r.EmployeeId == emp.ID && r.PosRole == "pos-cashier" && r.IsActive))
+			{ _db.BranchUserRoles.Add(new CrossBuy.Models.Context.Pos.BranchUserRole { BranchId = bid, EmployeeId = emp.ID, PosRole = "pos-cashier", IsActive = true, CreatedAt = DateTime.UtcNow }); await _db.SaveChangesAsync(); log.Add("pos-cashier granted to hyper1"); }
+			else log.Add("pos-cashier role already present");
+
+			// (2) close the open HM-0 shift(s) on branch-17 terminals via CloseShiftAsync at variance 0 → NO journal entry
+			var termIds = await _db.PosTerminals.Where(t => t.BranchId == bid).Select(t => t.ID).ToListAsync();
+			var openShifts = await _db.PosShifts.Where(s => termIds.Contains(s.TerminalId) && s.Status == "Open").ToListAsync();
+			int jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			foreach (var sh in openShifts)
+			{
+				// HM-0 shift has zero sales ⇒ expected drawer cash == opening float ⇒ closing at the opening float gives variance 0.
+				var (cok, cerr) = await posSetup.CloseShiftAsync(company, sh.TerminalId, sh.ID, sh.OpeningFloat, null, DateTime.Today, null);
+				Chk($"HM-0 shift #{sh.ID} closed at variance 0", cok); if (!cok) log.Add($"closeErr #{sh.ID}: {cerr}");
+			}
+			int jeAfter = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			Chk("closing HM-0 shift created NO journal entry (variance 0)", jeAfter == jeBefore);
+			log.Add($"open shifts closed={openShifts.Count}; JE before={jeBefore} after={jeAfter}");
+
+			// (3) seed HM-DEMO-001 — Stockable, NO tracking, single unit, barcode, KWD sales price.
+			// ISOLATED hyper category (HM-D39): its COGS points at 510101 — the de-facto COGS account (misnamed "Rent Expense";
+			// rename deferred to HM-D39). We do NOT touch the 23 shared categories nor create a new COGS account. Accounts copied
+			// from category 1 (Inventory 1103, COGS 510101, GRNI, Adjustment) so the item's cost posts to the correct COGS line.
+			var srcCat = await _db.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == 1);
+			var hcat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "HYPER-CAT");
+			if (hcat == null)
+			{
+				hcat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Code = "HYPER-CAT", Name = "هايبر", NameEn = "Hyper", InventoryAccountId = srcCat?.InventoryAccountId, CogsAccountId = srcCat?.CogsAccountId, GrniAccountId = srcCat?.GrniAccountId, AdjustmentAccountId = srcCat?.AdjustmentAccountId };
+				_db.ItemCategories.Add(hcat); await _db.SaveChangesAsync(); log.Add("hyper category CREATED #" + hcat.ID + " (COGS→510101)");
+			}
+			else log.Add("hyper category exists #" + hcat.ID);
+			// HM-D38: Kuwait branch ⇒ tax-exempt (item-level VATEX 0%); no company/category tax touched.
+			int? vatexId = await _db.TaxCodes.Where(t => t.CompanyID == company && t.Code == "VATEX").Select(t => (int?)t.ID).FirstOrDefaultAsync();
+			int uom = await _db.UnitsOfMeasure.Select(u => u.ID).FirstAsync();
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001");
+			if (item == null)
+			{
+				item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "HM-DEMO-001", Barcode = "6281234567890", Name = "مياه معدنية 600 مل", NameEn = "Mineral Water 600ml", ItemCategoryId = hcat.ID, DefaultTaxCodeId = vatexId, ItemType = "Stockable", BaseUoMId = uom, TrackBatch = false, TrackExpiry = false, TrackSerial = false, IsComposite = false, IsActive = true, CostingMethod = "Average", SalesPrice = 0.750m, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(item); await _db.SaveChangesAsync(); log.Add("item HM-DEMO-001 CREATED #" + item.ID);
+			}
+			else { item.Barcode = "6281234567890"; item.SalesPrice = 0.750m; item.TrackBatch = false; item.TrackExpiry = false; item.TrackSerial = false; item.IsActive = true; item.ItemType = "Stockable"; item.ItemCategoryId = hcat.ID; item.DefaultTaxCodeId = vatexId; await _db.SaveChangesAsync(); log.Add("item HM-DEMO-001 exists #" + item.ID + " (category→hyper, tax→VATEX)"); }
+			Chk("HM-DEMO-001 in hyper category (COGS→510101) + tax-exempt (VATEX)", item.ItemCategoryId == hcat.ID && item.DefaultTaxCodeId == vatexId);
+			Chk("item Stockable + no tracking + barcode 6281234567890 + price 0.750", item.ItemType == "Stockable" && !item.TrackBatch && !item.TrackExpiry && !item.TrackSerial && item.Barcode == "6281234567890" && item.SalesPrice == 0.750m);
+
+			// (4) opening stock 100 via PostOpeningStockAsync ONLY (no GRN/purchase). UnitCost is a DEV ESTIMATE in functional EGP.
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstOrDefaultAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			var (bq, _, _) = await stock.GetBalanceAsync(company, item.ID, wh);
+			if (bq < 100m)
+			{
+				var lines = new List<CrossBuy.BL.OpeningStockLineInput> { new CrossBuy.BL.OpeningStockLineInput { ItemId = item.ID, WarehouseId = wh, Qty = 100m - bq, UnitCost = 80m } };
+				var (ook, oerr, ojeId, ototal) = await stock.PostOpeningStockAsync(company, DateTime.Today, lines, null);
+				Chk("opening stock posted via PostOpeningStockAsync", ook); if (!ook) log.Add("openErr:" + oerr);
+				log.Add($"opening stock jeId={ojeId} total={ototal}");
+			}
+			else log.Add("opening stock already >= 100");
+			var (fq, _1, _2) = await stock.GetBalanceAsync(company, item.ID, wh);
+			Chk("HM-DEMO-001 balance == 100", fq == 100m);
+
+			// (5) HM-D18 (minimal): a DOCUMENT-CURRENCY (KWD) price list the cashier path consumes — the price is entered directly
+			// in KWD (0.750), so GetPriceAsync returns it from the list (Source="list") with NO functional→document conversion.
+			int kwdId = await _db.Currencies.Where(cu => cu.Code == "KWD").Select(cu => cu.ID).FirstAsync();
+			var plist = await _db.PriceLists.FirstOrDefaultAsync(p => p.CompanyID == company && p.Name == "Hyper KWD" && p.CurrencyId == kwdId);
+			if (plist == null)
+			{
+				plist = new CrossBuy.Models.Context.Inventory.PriceList { CompanyID = company, Code = "HYPER-KWD", Name = "Hyper KWD", NameEn = "Hyper KWD", CurrencyId = kwdId, CustomerId = null, Segment = null, Priority = 0, IsActive = true };
+				_db.PriceLists.Add(plist); await _db.SaveChangesAsync(); log.Add("KWD price list CREATED #" + plist.ID);
+			}
+			else log.Add("KWD price list exists #" + plist.ID);
+			var pline = await _db.PriceListLines.FirstOrDefaultAsync(l => l.PriceListId == plist.ID && l.ItemId == item.ID);
+			if (pline == null) { _db.PriceListLines.Add(new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = plist.ID, ItemId = item.ID, MinQty = 1m, UnitPrice = 0.750m, DiscountPercent = 0m, PricingMode = "Fixed" }); await _db.SaveChangesAsync(); log.Add("price line HM-DEMO-001 = 0.750 KWD CREATED"); }
+			else { pline.UnitPrice = 0.750m; pline.PricingMode = "Fixed"; await _db.SaveChangesAsync(); log.Add("price line exists (0.750)"); }
+			var bps = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == bid);
+			if (bps != null && bps.DefaultPriceListId != plist.ID) { bps.DefaultPriceListId = plist.ID; await _db.SaveChangesAsync(); log.Add("branch 17 DefaultPriceListId → #" + plist.ID); }
+			Chk("branch 17 linked to KWD price list + HM-DEMO-001 priced 0.750 KWD", bps != null && bps.DefaultPriceListId == plist.ID);
+
+			return Ok(new { allPass, branchId = bid, itemId = item.ID, warehouse = wh, balance = fq, priceListId = plist.ID, log });
+		}
+
+		// GET /api/dev/hm1-void-order?key=seed123&orderId=NNN — reverse a paid HM-1 test order (invoice+JEs+stock+receipt) via the
+		// SOLE service path, so an acceptance run can be re-done cleanly. Dev-only.
+		[HttpGet("hm1-void-order")]
+		public async Task<IActionResult> Hm1VoidOrder(string key, int orderId)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var (ok, err) = await _posOrders.VoidPaidOrderAsync(1, orderId, null);
+			return Ok(new { ok, err, orderId });
 		}
 
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
@@ -5573,6 +5685,11 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			}
 
 			// 1) Company
+			// HM-D34 WARNING: this fixture creates a SEPARATE company with NO accounting setup (0 accounts, 0 fiscal years,
+			// 0 warehouses) — it is an ORG/HR/notification test org only. Its branches must NEVER be used for POS/accounting:
+			// doing so posts documents onto company #1 via the HM-D31 hardcode while the branch is labelled on this shell,
+			// producing the cross-company mismatch that HM-D34 had to relabel. The re-enabled company guard + the counted
+			// branch_company_mismatch classification now surface any such misuse. Do not point POS terminals/BPS at these branches.
 			var company = new Companies
 			{
 				CompanyName = "Test Branches Co.",
@@ -9599,6 +9716,69 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
 			await _db.SaveChangesAsync();
 			return Ok(new { allPass, log, failedCount = run.FailedCount });
+		}
+
+		// GET /api/dev/hm-d34-guard-regression?key=seed123 — HM-D34 conditions 6+7.
+		// (6) restaurant regression: a FULL cash sale on a LIVE branch that HM-D34 relabeled from a shell (65/71/79) to company 1
+		//     — proves the relabel + re-enabled guard did NOT break a working branch. (7) proves the guard ALLOWS the valid
+		//     same-company sale and REJECTS a synthetic cross-company one. Self-cleaning (void + remove the ZZ probe branch).
+		[HttpGet("hm-d34-guard-regression")]
+		public async Task<IActionResult> HmD34GuardRegression(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			// a live branch HM-D34 relabeled (branch 4 = 135 orders, formerly on shell 71); fall back to any non-#1 branch.
+			var B = await _db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.ID == 4)
+					?? await _db.Branches.AsNoTracking().Where(b => b.ID != 1).OrderByDescending(b => b.ID).FirstOrDefaultAsync();
+			if (B == null) return BadRequest(new { message = "no branch" });
+			Chk($"relabeled live branch #{B.ID} is now company 1", B.CompanyID == company);
+
+			int wh = await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == B.ID).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstOrDefaultAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			int cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == company && c.InventoryAccountId != null).Select(c => c.ID).FirstAsync();
+			int uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => u.ID).FirstAsync();
+
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-D34-ITEM");
+			if (item == null) { item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "ZZ-D34-ITEM", Barcode = "ZZ-D34-ITEM", Name = "ZZ D34", ItemCategoryId = cat, ItemType = "Stockable", BaseUoMId = uom, IsActive = true, CostingMethod = "Average", SalesPrice = 25m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(item); await _db.SaveChangesAsync(); }
+			else { item.SalesPrice = 25m; item.IsActive = true; await _db.SaveChangesAsync(); }
+			var (q, _, _) = await _stock.GetBalanceAsync(company, item.ID, wh);
+			if (q < 5) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = item.ID, WarehouseId = wh, Direction = 1, Qty = 50, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = true }, null);
+
+			int drawer = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == B.ID && t.Code == "ZZ-D34-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = B.ID, Code = "ZZ-D34-T", Name = "D34 regression", CashAccountId = drawer, ReceiptPrefix = "ZZD34-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			// (6/7-allow) VALID same-company sale on the relabeled branch — guard must ALLOW; full chain must post.
+			int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
+			var (cok, cerr, oid) = await _posOrders.CreateOrderAsync(company, B.ID, "Takeaway", null, null, term.ID, shift!.ID);
+			Chk("guard ALLOWS valid same-company sale (order created)", cok && oid > 0);
+			if (!cok) log.Add("createErr:" + cerr);
+			if (cok)
+			{
+				await _posOrders.AddLineAsync(company, oid, item.ID, 1);
+				var (pok, perr, invId) = await _posOrders.PayAsync(company, oid, "Cash", null);
+				Chk("cash sale paid (invoice created)", pok && invId > 0); if (!pok) log.Add("payErr:" + perr);
+				Chk("sale posted journal entries", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) > jeB);
+				if (pok) { var (vok, verr) = await _posOrders.VoidPaidOrderAsync(company, oid, null); Chk("self-clean: void ok", vok); if (!vok) log.Add("voidErr:" + verr); }
+			}
+
+			// (7-reject) CROSS-COMPANY attempt — a probe branch on shell 79; guard must REJECT with the localized message.
+			var zz = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-D34-XCO", NameAr = "عبر شركات", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "d34 reject probe", ActivityPresetCode = null };
+			_db.Branches.Add(zz); await _db.SaveChangesAsync();
+			var (rok, rerr, _) = await _posOrders.CreateOrderAsync(company, zz.ID, "Takeaway", null, null, term.ID, shift.ID);
+			Chk("guard REJECTS cross-company sale (branch on shell 79)", !rok);
+			log.Add("reject message: " + rerr);
+			var zzRow = await _db.Branches.FirstOrDefaultAsync(b => b.ID == zz.ID); if (zzRow != null) { _db.Branches.Remove(zzRow); await _db.SaveChangesAsync(); }
+
+			foreach (var s2 in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s2.Status = "Closed"; s2.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, branchTested = B.ID, log });
 		}
 
 		// GET /api/dev/rc6c2-test?key=seed123 — RC-6c-2 PARTIAL return. A multi-line paid order (A×2 + B×1); return ONLY 1×A.

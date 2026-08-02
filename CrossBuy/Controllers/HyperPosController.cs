@@ -27,11 +27,13 @@ namespace CrossBuy.Controllers
 		private readonly UserManager<Users> _users;
 		private readonly IPosAccessService _access;
 		private readonly IPosSetupService _pos;
+		private readonly IPosOrderService _posOrders;
+		private readonly CrossBuy.BL.ICurrencyRounding _rounding;
 		private readonly CrossDbContext _db;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 		public HyperPosController(SignInManager<Users> signIn, UserManager<Users> users, IPosAccessService access,
-			IPosSetupService pos, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _db = db; L = localizer; }
+			IPosSetupService pos, IPosOrderService posOrders, CrossBuy.BL.ICurrencyRounding rounding, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
+		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _posOrders = posOrders; _rounding = rounding; _db = db; L = localizer; }
 
 		// ---- session context (own key, HyperCtx) ----
 		public class HyperCtx
@@ -46,6 +48,7 @@ namespace CrossBuy.Controllers
 			public int? TerminalId { get; set; }
 			public string? TerminalCode { get; set; }
 			public int? ShiftId { get; set; }
+			public int? OrderId { get; set; }   // HM-1: the open cart for this lane session
 		}
 		private HyperCtx? Ctx()
 		{
@@ -88,6 +91,11 @@ namespace CrossBuy.Controllers
 			var preset = await _db.Branches.AsNoTracking().Where(b => b.ID == acc.BranchId).Select(b => b.ActivityPresetCode).FirstOrDefaultAsync();
 			var (laneOk, _) = _access.IsActivityAllowedForLane(preset, "hyper");
 			if (!laneOk) { await _signIn.SignOutAsync(); TempData["PosErr"] = L["This branch does not belong to the hypermarket system"].Value; return RedirectToAction(nameof(Login)); }
+			// HM-1 (HM-D33) COMPANY GUARD at the gateway: the employee must belong to the branch's company.
+			// A cross-company login (employee of company A entering a branch of company B) is refused here with a clear message.
+			var gEmpCo = await _db.Employee.AsNoTracking().Where(e => e.ID == acc.EmployeeId).Select(e => (int?)e.EmpCompanyID).FirstOrDefaultAsync();
+			var gBrCo = await _db.Branches.AsNoTracking().Where(b => b.ID == acc.BranchId).Select(b => (int?)b.CompanyID).FirstOrDefaultAsync();
+			if (gEmpCo == null || gBrCo == null || gEmpCo.Value != gBrCo.Value) { await _signIn.SignOutAsync(); TempData["PosErr"] = L["Your account belongs to another company than this branch — cross-company operations are blocked."].Value; return RedirectToAction(nameof(Login)); }
 			var ctx = new HyperCtx { EmployeeId = acc.EmployeeId, EmployeeName = acc.EmployeeName, EmployeeNameEn = acc.EmployeeNameEn, EmployeePhoto = acc.EmployeePhoto, BranchId = acc.BranchId, BranchName = acc.BranchName, Roles = acc.Roles };
 			SetCtx(ctx);
 			return HomeFor(ctx);
@@ -147,6 +155,17 @@ namespace CrossBuy.Controllers
 			int sid = openShift?.ID ?? c.ShiftId ?? 0;
 			if (sid != 0) z = await _pos.GetShiftZReportAsync(PosCompanyId, c.TerminalId.Value, sid);
 			ViewBag.HasCapConfig = await _pos.HasCapabilityConfigAsync(c.BranchId);
+			// HM-1: the open cart for this lane session (server holds/computes it; the view only displays). Clear a stale ref.
+			PosOrderDto? order = null;
+			if (c.OrderId != null)
+			{
+				order = await _posOrders.GetOrderAsync(PosCompanyId, c.OrderId.Value);
+				if (order == null || order.Status != "Open") { c.OrderId = null; SetCtx(c); order = null; }
+			}
+			// document-currency decimals from the SINGLE rounding source (KWD ⇒ 3) — the total is shown at this precision, not toFixed(2).
+			int ccyId = await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == c.BranchId).Select(s => s.DefaultCurrencyId ?? 0).FirstOrDefaultAsync();
+			ViewBag.DocDp = await _rounding.DecimalsAsync(PosCompanyId, ccyId == 0 ? (int?)null : ccyId, c.BranchId);
+			ViewBag.Order = order;
 			ViewBag.Ctx = c; ViewBag.Terminal = term; ViewBag.OpenShift = openShift; ViewBag.Caps = caps; ViewBag.Z = z;
 			return View("~/Views/Hyper/PosLane.cshtml");
 		}
@@ -159,6 +178,73 @@ namespace CrossBuy.Controllers
 			var (ok, err) = await _pos.CloseShiftAsync(PosCompanyId, c.TerminalId.Value, c.ShiftId.Value, closingFloat, c.EmployeeId, DateTime.Today, null);
 			if (!ok) { TempData["PosErr"] = err; return RedirectToAction(nameof(Lane)); }
 			TempData["PosMsg"] = L["Shift closed"].Value;
+			return RedirectToAction(nameof(Lane));
+		}
+
+		// ==================== HM-1 SELLING (pure delegation to PosOrderService; the controller computes NOTHING) ====================
+		// Ensure an open cart exists for this lane session; returns its id. CreateOrderAsync carries the company guard + KWD currency.
+		private async Task<(bool ok, string? err, int orderId)> EnsureOrderAsync(HyperCtx c)
+		{
+			if (c.OrderId != null)
+			{
+				var existing = await _posOrders.GetOrderAsync(PosCompanyId, c.OrderId.Value);
+				if (existing != null && existing.Status == "Open") return (true, null, c.OrderId.Value);
+			}
+			var (ok, err, oid) = await _posOrders.CreateOrderAsync(PosCompanyId, c.BranchId, "Takeaway", null, null, c.TerminalId, c.ShiftId);
+			if (!ok) return (false, err, 0);
+			c.OrderId = oid; SetCtx(c);
+			return (true, null, oid);
+		}
+
+		[HttpPost("scan")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> Scan(string barcode)
+		{
+			var c = Ctx(); if (c?.TerminalId == null || c.ShiftId == null) return RedirectToAction(nameof(Login));
+			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Lane)); }
+			barcode = (barcode ?? "").Trim();
+			if (barcode.Length == 0) return RedirectToAction(nameof(Lane));
+			// HM-1: resolve by the item's single barcode (company-scoped, active). NO multi-barcode, weight, or price-list lookup.
+			var itemId = await _db.Items.AsNoTracking().Where(i => i.CompanyID == PosCompanyId && i.IsActive && i.Barcode == barcode).Select(i => (int?)i.ID).FirstOrDefaultAsync();
+			if (itemId == null) { TempData["PosErr"] = L["No item matches this barcode."].Value; return RedirectToAction(nameof(Lane)); }
+			var (eok, eerr, oid) = await EnsureOrderAsync(c);
+			if (!eok) { TempData["PosErr"] = eerr; return RedirectToAction(nameof(Lane)); }
+			var (aok, aerr) = await _posOrders.AddLineAsync(PosCompanyId, oid, itemId.Value, 1m);
+			if (!aok) TempData["PosErr"] = aerr;
+			return RedirectToAction(nameof(Lane));
+		}
+
+		[HttpPost("line/qty")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> SetQty(int lineId, decimal qty)
+		{
+			var c = Ctx(); if (c?.TerminalId == null || c.OrderId == null) return RedirectToAction(nameof(Lane));
+			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Lane)); }
+			var (ok, err) = await _posOrders.SetLineQtyAsync(PosCompanyId, c.OrderId.Value, lineId, qty);
+			if (!ok) TempData["PosErr"] = err;
+			return RedirectToAction(nameof(Lane));
+		}
+
+		[HttpPost("line/remove")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> RemoveLine(int lineId)
+		{
+			var c = Ctx(); if (c?.TerminalId == null || c.OrderId == null) return RedirectToAction(nameof(Lane));
+			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Lane)); }
+			var (ok, err) = await _posOrders.RemoveLineAsync(PosCompanyId, c.OrderId.Value, lineId);
+			if (!ok) TempData["PosErr"] = err;
+			return RedirectToAction(nameof(Lane));
+		}
+
+		[HttpPost("pay")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> Pay()
+		{
+			var c = Ctx(); if (c?.TerminalId == null) return RedirectToAction(nameof(Login));
+			// HM-1: an OPEN shift is required to take payment — hyper lane only (restaurant path untouched).
+			if (c.ShiftId == null || await _pos.GetOpenShiftAsync(c.TerminalId.Value) == null) { TempData["PosErr"] = L["Open a shift before taking payment."].Value; return RedirectToAction(nameof(Lane)); }
+			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Lane)); }
+			if (c.OrderId == null) { TempData["PosErr"] = L["The cart is empty."].Value; return RedirectToAction(nameof(Lane)); }
+			var (ok, err, invId) = await _posOrders.PayAsync(PosCompanyId, c.OrderId.Value, "Cash", null);
+			if (!ok) { TempData["PosErr"] = err; return RedirectToAction(nameof(Lane)); }
+			c.OrderId = null; SetCtx(c);
+			TempData["PosMsg"] = L["Paid — invoice #{0} created.", invId ?? 0].Value;
 			return RedirectToAction(nameof(Lane));
 		}
 	}

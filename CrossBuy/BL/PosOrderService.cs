@@ -204,8 +204,9 @@ namespace CrossBuy.BL
 		private readonly Microsoft.Extensions.Logging.ILogger<PosOrderService> _logger;   // HM-D5-أ 5ب-3: independent app-log channel for non-blocking anomalies
 		private readonly ICurrencyRounding _rounding;
 		private readonly ICurrencyService _currency;
-		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding, ICurrencyService currency)
-		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; _currency = currency; }
+		private readonly Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> L;
+		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding, ICurrencyService currency, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer)
+		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; _currency = currency; L = localizer; }
 
 		// HM-D5-أ 5ب-4: TEST-ONLY fault seam (default null ⇒ no-op in production). Set by a dev self-test to force a
 		// failure right before the sync-log commit, proving the whole replay rolls back atomically. Never set in prod.
@@ -411,6 +412,11 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int orderId)> CreateOrderAsync(int companyId, int branchId, string orderType, int? tableId, int? userId, int? terminalId = null, int? shiftId = null)
 		{
 			orderType = orderType switch { "Dine-in" => "Dine-in", "Delivery" => "Delivery", _ => "Takeaway" };
+			// HM-1/HM-D34: cross-company guard (HARD REJECT). After the HM-D34 relabel every legitimate branch is company 1, so a
+			// branch whose company differs from the operating company is a real cross-company leak — reject, never swallow.
+			var branchCo = await _db.Branches.Where(b => b.ID == branchId).Select(b => (int?)b.CompanyID).FirstOrDefaultAsync();
+			if (branchCo == null) return (false, L["Branch not found."], 0);
+			if (branchCo.Value != companyId) return (false, L["This branch belongs to another company — cross-company operations are blocked."], 0);
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == branchId);
 			var brandId = await _db.Branches.Where(b => b.ID == branchId).Select(b => b.BrandId).FirstOrDefaultAsync();   // Brand dimension carried on the order
 			var walkIn = await EnsureWalkInAsync(companyId);   // new orders default to the global cash customer
@@ -554,7 +560,13 @@ namespace CrossBuy.BL
 				}
 			}
 
-			var price = await _pricing.GetPriceAsync(companyId, itemId, null, null, o.CurrencyId, qty, DateTime.Today);
+			// HM-D18: a branch may pin a document-currency price list (BranchPosSetting.DefaultPriceListId). When set, the price
+			// MUST come from that list — an item absent from it is REJECTED (never silently converted from the functional SalesPrice
+			// nor priced at zero). Branches with no list (e.g. restaurant, DefaultPriceListId=null) behave exactly as before.
+			int? branchListId = await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == o.BranchId).Select(s => s.DefaultPriceListId).FirstOrDefaultAsync();
+			var price = await _pricing.GetPriceAsync(companyId, itemId, null, null, o.CurrencyId, qty, DateTime.Today, branchListId);
+			if (branchListId != null && price.Source != "list" && price.Source != "costplus")
+				return (false, L["This item is not in the branch price list — it cannot be sold until it is priced."]);
 			decimal basePrice = price.UnitPrice > 0 ? price.UnitPrice : (item.SalesPrice ?? 0m);
 			decimal extras = chosen.Sum(x => x.ExtraPrice);          // per-unit add-on price folded into UnitPrice
 			decimal unit = basePrice + extras;                       // ← the "price includes modifiers" fold

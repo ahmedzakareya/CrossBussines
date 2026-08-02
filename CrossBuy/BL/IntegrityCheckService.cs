@@ -267,6 +267,20 @@ namespace CrossBuy.BL
 				Expected = 0, Actual = CurrencyService.StaleRateSales, Ok = true,
 				Note = $"count={CurrencyService.StaleRateSales} (منذ الإقلاع)", Detail = "/Currency/ExchangeRates" });
 
+			// HM-1 (HM-D33): cross-company references — a branch/terminal/employee that does not belong to its document's company.
+			// COUNTED (visible, never raises failedCount). Three dimensions: orders whose company != branch company; shifts on a
+			// terminal whose branch company != the order's company on that terminal; terminals whose cash account company != branch
+			// company; employees on a branch of another company. Surfaces the HM-D33 incoherence; must return to 0 after the fix.
+			int xOrders = await _db.PosOrders.AsNoTracking().Join(_db.Branches.AsNoTracking(), o => o.BranchId, b => b.ID, (o, b) => new { o.CompanyId, bco = b.CompanyID }).CountAsync(x => x.CompanyId != x.bco);
+			int xTerms = await _db.PosTerminals.AsNoTracking().Where(t => t.CashAccountId != null)
+				.Join(_db.Branches.AsNoTracking(), t => t.BranchId, b => b.ID, (t, b) => new { t.CashAccountId, bco = b.CompanyID })
+				.Join(_db.Accounts.AsNoTracking(), x => x.CashAccountId, a => a.ID, (x, a) => new { x.bco, aco = a.CompanyID }).CountAsync(x => x.bco != x.aco);
+			int xEmps = await _db.BranchUserRoles.AsNoTracking().Join(_db.Branches.AsNoTracking(), r => r.BranchId, b => b.ID, (r, b) => new { r.EmployeeId, bco = b.CompanyID })
+				.Join(_db.Employee.AsNoTracking(), x => x.EmployeeId, e => e.ID, (x, e) => new { x.bco, eco = e.EmpCompanyID }).CountAsync(x => x.bco != x.eco);
+			res.Add(new IntegrityCheck { Key = "branch_company_mismatch", NameAr = "مراجع عابرة للشركات: فرع/ترمينال/موظّف ≠ الشركة (معدودة، HM-D33)", NameEn = "Cross-company refs (branch/terminal/employee, counted)",
+				Expected = 0, Actual = xOrders + xTerms + xEmps, Ok = true,
+				Note = $"orders={xOrders} · terminals={xTerms} · employees={xEmps}", Detail = "/Pos/Terminals" });
+
 			return res;
 		}
 
