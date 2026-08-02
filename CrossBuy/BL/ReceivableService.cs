@@ -94,7 +94,8 @@ namespace CrossBuy.BL
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
 		private readonly ICurrencyRounding _rounding;
-		public ReceivableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; }
+		private readonly Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> L;
+		public ReceivableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; L = localizer; }
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
@@ -192,6 +193,19 @@ namespace CrossBuy.BL
 			if (cur == functional) rate = 1m;
 			else if (exchangeRate.HasValue && exchangeRate.Value > 0) rate = exchangeRate.Value;
 			else { var (_, r) = await _currency.ToBaseAsync(1m, cur, functional, date, "Sell"); rate = r; }
+			// HM-D23: rate was LOOKED UP (not caller-supplied) and older than RateMaxAgeDays vs the DOCUMENT date ⇒ Reject (blocks, zero
+			// effect) or Warn (proceed + on-screen notification + counted in inv-test-integrity), per the company's RateStaleBehavior.
+			if (cur != functional && !exchangeRate.HasValue)
+			{
+				var (stale, ageDays, _maxAge, behavior) = await _currency.RateStalenessAsync(companyId, cur, date);
+				if (stale)
+				{
+					if (behavior == "Reject")
+						return (false, L["The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry.", ageDays], null);
+					System.Threading.Interlocked.Increment(ref CrossBuy.BL.CurrencyService.StaleRateSales);
+					try { await _notify.NotifyRoleAsync(companyId, "acc", new[] { "Accountant", "ChiefAccountant" }, "بيع بسعر صرف بائت", "Sale at a stale rate", $"تمّ بيع بسعر صرف عمره {ageDays} يومًا — يرجى تحديث سعر اليوم من شاشة أسعار الصرف.", $"A sale posted at an exchange rate {ageDays} days old — update today's rate in the Exchange Rates screen.", "ExchangeRate", null); } catch { }
+				}
+			}
 			// HM-2: document totals round to the DOCUMENT currency (Rd); stored base totals round to the FUNCTIONAL currency (Rf).
 			// ToBase stays RAW — JournalEntryService rounds the JE lines to functional dp and owns the rounding remainder (Batch 1).
 			int __ddp = await _rounding.DecimalsAsync(companyId, cur);
@@ -200,7 +214,7 @@ namespace CrossBuy.BL
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			decimal ToBase(decimal foreignAmt) => foreignAmt * rate;   // RAW (unrounded)
 
-			var inv = new SalesInvoice { CompanyID = companyId, CustomerId = customerId, InvoiceDate = date.Date, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate), ProjectId = projectId };
+			var inv = new SalesInvoice { CompanyID = companyId, CustomerId = customerId, InvoiceDate = date.Date, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate, ProjectId = projectId };
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
@@ -355,7 +369,7 @@ namespace CrossBuy.BL
 			}
 			var revGroups = inv.Lines.GroupBy(l => l.RevenueAccountId).Select(g => new { Acc = g.Key, Base = ToBase(g.Sum(x => x.LineTotal)) }).ToList();
 			decimal revBase = revGroups.Sum(g => g.Base), vatBase = ToBase(Rd(tax)), grandBase = revBase + vatBase;   // single raw grandBase
-			inv.CustomerId = customerId; inv.InvoiceDate = date.Date; inv.Notes = notes; inv.CurrencyId = cur; inv.ExchangeRate = R4(rate); inv.ProjectId = projectId;
+			inv.CustomerId = customerId; inv.InvoiceDate = date.Date; inv.Notes = notes; inv.CurrencyId = cur; inv.ExchangeRate = rate; inv.ProjectId = projectId;
 			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);
 			inv.SubTotalBase = Rf(revBase); inv.TaxTotalBase = Rf(vatBase); inv.GrandTotalBase = Rf(grandBase);
 			await _context.SaveChangesAsync();
@@ -424,7 +438,7 @@ namespace CrossBuy.BL
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			decimal ToBase(decimal foreignAmt) => foreignAmt * rate;   // RAW at the settlement (invoice) rate
 
-			var ret = new SalesReturn { CompanyID = companyId, CustomerId = customerId, OriginalInvoiceId = originalInvoiceId, ReturnDate = date.Date, WarehouseId = lines.FirstOrDefault()?.WarehouseId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
+			var ret = new SalesReturn { CompanyID = companyId, CustomerId = customerId, OriginalInvoiceId = originalInvoiceId, ReturnDate = date.Date, WarehouseId = lines.FirstOrDefault()?.WarehouseId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate };
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
@@ -538,7 +552,7 @@ namespace CrossBuy.BL
 				ret.Lines.Add(new SalesReturnLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
 			}
 			ret.CustomerId = customerId; ret.OriginalInvoiceId = originalInvoiceId; ret.ReturnDate = date.Date; ret.Notes = notes;
-			ret.WarehouseId = lines.FirstOrDefault()?.WarehouseId; ret.CurrencyId = cur; ret.ExchangeRate = R4(rate);
+			ret.WarehouseId = lines.FirstOrDefault()?.WarehouseId; ret.CurrencyId = cur; ret.ExchangeRate = rate;
 			ret.SubTotal = Rd(sub); ret.TaxTotal = Rd(tax); ret.GrandTotal = Rd(sub + tax);   // document totals
 			var revGroups = ret.Lines.GroupBy(l => l.RevenueAccountId).Select(g => new { Acc = g.Key, Base = ToBase(g.Sum(x => x.LineTotal)) }).ToList();
 			decimal revBase = revGroups.Sum(g => g.Base), vatBase = ToBase(ret.TaxTotal), grandBase = revBase + vatBase;   // single raw grandBase
@@ -607,7 +621,7 @@ namespace CrossBuy.BL
 			decimal Rd(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
-			var rc = new Receipt { CompanyID = companyId, CustomerId = customerId, ReceiptDate = date.Date, Amount = Rd(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
+			var rc = new Receipt { CompanyID = companyId, CustomerId = customerId, ReceiptDate = date.Date, Amount = Rd(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate };
 			_context.Receipts.Add(rc);
 			await _context.SaveChangesAsync();
 			rc.ReceiptNo = $"RC-{date:yyyy}-{rc.ID:D5}";

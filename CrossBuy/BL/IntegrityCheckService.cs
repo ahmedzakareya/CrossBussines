@@ -262,6 +262,11 @@ namespace CrossBuy.BL
 				Expected = 0, Actual = reconTotal, Ok = true,
 				Note = $"إجمالي={reconTotal} · آخر 30 يومًا={recon30}", Detail = "/Inventory/StockBalances" });
 
+			// HM-D23: sales that PROCEEDED at a stale exchange rate (Warn behavior). COUNTED — visible, never raises failedCount.
+			res.Add(new IntegrityCheck { Key = "stale_rate_sales", NameAr = "بيوع مرّت بسعر صرف بائت (معدودة، HM-D23)", NameEn = "Sales posted at a stale exchange rate (counted)",
+				Expected = 0, Actual = CurrencyService.StaleRateSales, Ok = true,
+				Note = $"count={CurrencyService.StaleRateSales} (منذ الإقلاع)", Detail = "/Currency/ExchangeRates" });
+
 			return res;
 		}
 

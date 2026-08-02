@@ -107,7 +107,7 @@ namespace CrossBuy.BL
 			int __fdp = await _rounding.DecimalsAsync(companyId, null);        // HM-2 (3-ج): GRN value is functional-cost ⇒ round to functional dp
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
-			var gr = new GoodsReceipt { CompanyID = companyId, VendorId = vendorId, WarehouseId = warehouseId, PurchaseOrderId = poId, ReceiptDate = date.Date, Status = "Posted", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
+			var gr = new GoodsReceipt { CompanyID = companyId, VendorId = vendorId, WarehouseId = warehouseId, PurchaseOrderId = poId, ReceiptDate = date.Date, Status = "Posted", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate };
 			_context.GoodsReceipts.Add(gr);
 			await _context.SaveChangesAsync();
 			gr.ReceiptNo = $"GRN-{date:yyyy}-{gr.ID:D5}";

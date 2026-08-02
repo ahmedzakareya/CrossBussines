@@ -142,7 +142,7 @@ namespace CrossBuy.BL
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			decimal ToBase(decimal foreignAmt) => Rf(foreignAmt * rate);   // functional base per component
 
-			var inv = new PurchaseInvoice { CompanyID = companyId, VendorId = vendorId, InvoiceDate = date.Date, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate), ProjectId = projectId };
+			var inv = new PurchaseInvoice { CompanyID = companyId, VendorId = vendorId, InvoiceDate = date.Date, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate, ProjectId = projectId };
 			var ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
@@ -288,7 +288,7 @@ namespace CrossBuy.BL
 			}
 			decimal subBase = inv.Lines.Sum(l => ToBase(l.LineTotal));
 			decimal taxBase = inv.Lines.Sum(l => ToBase(Rd(l.LineTotal * l.TaxRate / 100m)));
-			inv.VendorId = vendorId; inv.InvoiceDate = date.Date; inv.Notes = notes; inv.CurrencyId = cur; inv.ExchangeRate = R4(rate); inv.ProjectId = projectId;
+			inv.VendorId = vendorId; inv.InvoiceDate = date.Date; inv.Notes = notes; inv.CurrencyId = cur; inv.ExchangeRate = rate; inv.ProjectId = projectId;
 			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);   // document totals
 			inv.SubTotalBase = subBase; inv.TaxTotalBase = taxBase; inv.GrandTotalBase = subBase + taxBase;   // Σ Dr = 2101 by construction
 			await _context.SaveChangesAsync();
@@ -510,7 +510,7 @@ namespace CrossBuy.BL
 			var whtAcc = whtForeign > 0 ? await AccIdAsync(companyId, "210202") : null;   // Withholding Tax Payable
 			if (whtForeign > 0 && whtAcc == null) return (false, "حساب ضريبة الخصم والتحصيل (210202) غير موجود");
 
-			var pay = new Payment { CompanyID = companyId, VendorId = vendorId, PaymentDate = date.Date, Amount = Rd(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
+			var pay = new Payment { CompanyID = companyId, VendorId = vendorId, PaymentDate = date.Date, Amount = Rd(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate };
 			_context.Payments.Add(pay);
 			await _context.SaveChangesAsync();
 			pay.PaymentNo = $"PY-{date:yyyy}-{pay.ID:D5}";

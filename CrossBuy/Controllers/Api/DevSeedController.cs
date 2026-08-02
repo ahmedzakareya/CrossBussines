@@ -1928,6 +1928,50 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 		// PrecisionDivergenceCountAsync (used by the integrity endpoint) is compiled in Release too.
 		public class DecColRow { public string TableName { get; set; } = ""; public string ColumnName { get; set; } = ""; public int Prec { get; set; } public int Scale { get; set; } }
 
+		// GET /api/dev/hm2-rate-staleness-test?key=seed123 — HM-D23: the exchange-rate staleness policy (AccountingSettings.RateMaxAgeDays
+		// + RateStaleBehavior). Four ZZ scenarios (KWD, each rolled-back): default(0)=no effect · Warn=proceed+counted · Reject=blocked
+		// with an actionable message + zero effect · enter today's rate then retry=succeeds.
+		[HttpGet("hm2-rate-staleness-test")]
+		public async Task<IActionResult> Hm2RateStalenessTest(string key, [FromServices] CrossBuy.BL.IReceivableService ar)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int ctrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			var cust = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-CUST");
+			if (cust == null) { cust = new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-KWD-CUST", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
+			var line = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "ZZ", Qty = 10, UnitPrice = 1.000m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = null, WarehouseId = null } };
+
+			async Task SetPolicy(int maxAge, string behavior)
+			{
+				var s = await _db.AccountingSettings.FirstOrDefaultAsync(x => x.CompanyID == company);
+				if (s == null) { s = new CrossBuy.Models.Context.Accounting.AccountingSettings { CompanyID = company }; _db.AccountingSettings.Add(s); }
+				s.RateMaxAgeDays = maxAge; s.RateStaleBehavior = behavior; await _db.SaveChangesAsync();
+			}
+			async Task<object> Scenario(string tag, int maxAge, string behavior, bool insertTodayRate)
+			{
+				long before = CrossBuy.BL.CurrencyService.StaleRateSales;
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+				await SetPolicy(maxAge, behavior);
+				if (insertTodayRate) { _db.ExchangeRates.Add(new CrossBuy.Models.Context.Accounting.ExchangeRate { CurrencyId = 5, RateDate = DateTime.Today, Rate = 163m, RateType = "Sell" }); await _db.SaveChangesAsync(); }
+				int invBefore = await _db.SalesInvoices.CountAsync(i => i.CustomerId == cust.ID);
+				var (ok, err, inv) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, line, "ZZ stale", null, 5);   // KWD, rate looked up (no explicit)
+				int invAfter = await _db.SalesInvoices.CountAsync(i => i.CustomerId == cust.ID);
+				long delta = CrossBuy.BL.CurrencyService.StaleRateSales - before;
+				var res = new { tag, maxAge, behavior, ok, err, invoiceCreated = inv != null, invoiceRowDelta = invAfter - invBefore, countedDelta = delta };
+				await tx.RollbackAsync();
+				return res;
+			}
+			var results = new List<object>
+			{
+				await Scenario("1: day-old policy off (MaxAge=0) → no effect (default)", 0, "Warn", false),
+				await Scenario("2: 213-day rate, MaxAge=1, Warn → proceeds + counted", 1, "Warn", false),
+				await Scenario("3: same, Reject → blocked, actionable msg, zero effect", 1, "Reject", false),
+				await Scenario("4: Reject but enter TODAY's rate first → succeeds", 1, "Reject", true),
+			};
+			return Ok(new { note = "each scenario rolled back (zero persistence); KWD latest rate is 2026-01-01 (stale)", results });
+		}
+
 		// GET /api/dev/hm2-kwd-functional-company?key=seed123 — HM-2 Phase C ج-٥: ALL prior proofs are EGP-functional; the FUNCTIONAL-currency
 		// cost path at 3dp was never exercised. Create a ZZ company whose FUNCTIONAL currency is KWD (3dp) and prove the stock cost path
 		// rounds to 3dp (functional), not the old hardcoded 2dp. Rolled-back tx (zero persistence).
@@ -2003,7 +2047,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 		// Passes an explicit 8dp rate to EVERY document path, then reads the STORED rate from a FRESH AsNoTracking query (not the
 		// tracked entity). Also reads back ExchangeRates.Rate to show the RATE TABLE keeps 8dp. Rolled-back tx (zero persistence).
 		[HttpGet("hm2-rate-precision-probe")]
-		public async Task<IActionResult> Hm2RatePrecisionProbe(string key, [FromServices] CrossBuy.BL.IReceivableService ar, [FromServices] CrossBuy.BL.IPayableService ap)
+		public async Task<IActionResult> Hm2RatePrecisionProbe(string key, [FromServices] CrossBuy.BL.IReceivableService ar, [FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.ICurrencyRounding rounding)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			const int company = 1;
@@ -2041,7 +2085,14 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			decimal? piRate = pinv == null ? null : await _db.PurchaseInvoices.AsNoTracking().Where(x => x.ID == pinv.ID).Select(x => (decimal?)x.ExchangeRate).FirstAsync();
 			var (pmok, pmerr) = await ap.CreatePaymentAsync(company, ven.ID, DateTime.Today, 5m, "Cash", cash, "ZZ rate", null, 0, 5, src);
 			decimal? pmRate = await _db.Payments.AsNoTracking().Where(x => x.VendorId == ven.ID).OrderByDescending(x => x.ID).Select(x => (decimal?)x.ExchangeRate).FirstOrDefaultAsync();
+			// HM-D29 reproducibility: recompute GrandTotalBase from the STORED rate (fresh read) — must equal the stored base exactly now.
+			int fdp = await rounding.DecimalsAsync(company, null);
+			var siRow = inv == null ? null : await _db.SalesInvoices.AsNoTracking().Where(x => x.ID == inv.ID).Select(x => new { x.GrandTotal, x.GrandTotalBase, x.ExchangeRate }).FirstAsync();
+			decimal? reproBase = siRow == null ? null : Math.Round(siRow.GrandTotal * (siRow.ExchangeRate ?? 1m), fdp, MidpointRounding.AwayFromZero);
+			bool baseReproducible = siRow != null && reproBase == siRow.GrandTotalBase;
 			await tx.RollbackAsync();
+			// existing docs UNCHANGED (forward-only fix; no backfill): sample 2 pre-existing invoices' stored rates outside the tx
+			var existingSample = await _db.SalesInvoices.AsNoTracking().Where(x => x.CompanyID == company && x.ExchangeRate != null).OrderByDescending(x => x.ID).Skip(5).Take(2).Select(x => new { x.ID, x.CurrencyId, x.ExchangeRate }).ToListAsync();
 
 			var docRates = new[] { siRate, rcRate, srRate, piRate, pmRate };
 			return Ok(new
@@ -2050,8 +2101,9 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 				sourceRate_8dp = src, r4_expected = r4,
 				exchangeRatesTable_keeps8dp = tableRate == src, exchangeRatesTable_value = tableRate,
 				documentStoredRate = new { salesInvoice = siRate, receipt = rcRate, salesReturn = srRate, purchaseInvoice = piRate, payment = pmRate },
-				everyDocumentCutTo4dp = docRates.All(x => x == r4),
-				anyDocumentKept8dp = docRates.Any(x => x == src),
+				everyDocumentKept8dp = docRates.All(x => x == src),
+				storedGrandTotalBase = siRow?.GrandTotalBase, recomputedFromStoredRate = reproBase, baseReproducibleFromStoredRate = baseReproducible,
+				existingDocsUnchanged_sample = existingSample,
 				errors = new { ierr, rcerr, srerr, pierr, pmerr }
 			});
 		}

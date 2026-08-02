@@ -81,7 +81,7 @@ namespace CrossBuy.BL
 			var (cur, rate) = await ResolveCurAsync(companyId, currencyId, exchangeRate, date);
 			int __ddp = await _rounding.DecimalsAsync(companyId, cur);   // HM-2 Batch 5: document-currency dp (EGP no-op; KWD keeps fils; no static R)
 			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
-			var so = new SalesOrder { CompanyID = companyId, CustomerId = customerId, WarehouseId = warehouseId, OrderDate = date.Date, ExpectedDate = expected, Status = "Approved", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate), ProjectId = projectId };
+			var so = new SalesOrder { CompanyID = companyId, CustomerId = customerId, WarehouseId = warehouseId, OrderDate = date.Date, ExpectedDate = expected, Status = "Approved", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate, ProjectId = projectId };
 			int ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{
@@ -120,7 +120,7 @@ namespace CrossBuy.BL
 			var (cur, rate) = await ResolveCurAsync(companyId, currencyId, exchangeRate, date);
 			int __ddp = await _rounding.DecimalsAsync(companyId, cur);   // HM-2 Batch 5: document-currency dp (EGP no-op; no static R)
 			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
-			var q = new Quotation { CompanyID = companyId, CustomerId = customerId, WarehouseId = warehouseId, QuoteDate = date.Date, ValidUntil = validUntil, Status = "Draft", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
+			var q = new Quotation { CompanyID = companyId, CustomerId = customerId, WarehouseId = warehouseId, QuoteDate = date.Date, ValidUntil = validUntil, Status = "Draft", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate };
 			int ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
 			{

@@ -22,6 +22,7 @@ namespace CrossBuy.BL
 		/// currency. Returns the base amount (rounded to 4 dp) + the effective from→functional rate used.
 		/// Throws InvalidOperationException with an Arabic message if a required rate is missing.
 		Task<(decimal baseAmount, decimal effectiveRate)> ToBaseAsync(decimal amount, int fromCurrencyId, int functionalCurrencyId, DateTime date, string rateType);
+		Task<(bool stale, int ageDays, int maxAgeDays, string behavior)> RateStalenessAsync(int companyId, int currencyId, DateTime asOf);   // HM-D23
 	}
 
 	public class CurrencyService : ICurrencyService
@@ -82,6 +83,28 @@ namespace CrossBuy.BL
 
 			var effectiveRate = R4(fromRate / funcRate);   // from → functional
 			return (R4(amount * fromRate / funcRate), effectiveRate);
+		}
+
+		// HM-D23: sales that PROCEEDED with a stale rate (Warn), counted since boot — surfaced by inv-test-integrity (never fails).
+		public static long StaleRateSales;
+
+		// HM-D23: is the looked-up rate for `currencyId` older than the company's RateMaxAgeDays (measured vs the DOCUMENT date asOf)?
+		// Returns (stale, ageDays, maxAgeDays, behavior). stale=false when currency==functional, MaxAgeDays==0, or no rate found
+		// (the existing "no rate → throw" path handles a missing rate). Age is vs the document date so a legitimately BACK-DATED
+		// document is judged against the rate valid for its own date, not today.
+		public async Task<(bool stale, int ageDays, int maxAgeDays, string behavior)> RateStalenessAsync(int companyId, int currencyId, DateTime asOf)
+		{
+			var functional = await GetFunctionalCurrencyIdAsync(companyId, null);
+			var s = await _db.AccountingSettings.AsNoTracking().Where(x => x.CompanyID == companyId).Select(x => new { x.RateMaxAgeDays, x.RateStaleBehavior }).FirstOrDefaultAsync();
+			string behavior = string.IsNullOrWhiteSpace(s?.RateStaleBehavior) ? "Warn" : s!.RateStaleBehavior;
+			int maxAge = s?.RateMaxAgeDays ?? 0;
+			if (currencyId == functional || maxAge <= 0) return (false, 0, maxAge, behavior);   // no conversion, or no limit set (default)
+			var d = asOf.Date;
+			var rateDate = await _db.ExchangeRates.AsNoTracking().Where(r => r.CurrencyId == currencyId && r.RateDate <= d)
+				.OrderByDescending(r => r.RateDate).ThenByDescending(r => r.ID).Select(r => (DateTime?)r.RateDate).FirstOrDefaultAsync();
+			if (rateDate == null) return (false, 0, maxAge, behavior);   // no rate at all — the throw on ToBaseAsync handles it
+			int age = (int)(d - rateDate.Value.Date).TotalDays;
+			return (age > maxAge, age, maxAge, behavior);
 		}
 	}
 }

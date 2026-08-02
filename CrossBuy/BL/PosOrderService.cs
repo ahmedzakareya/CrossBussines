@@ -1481,7 +1481,7 @@ namespace CrossBuy.BL
 				var refundReceipt = new CrossBuy.Models.Context.Accounting.Receipt
 				{
 					CompanyID = companyId, CustomerId = cust.ID, ReceiptDate = DateTime.Today, Amount = -ret.GrandTotal, AmountBase = -arBase,
-					Method = "Cash", CashAccountId = drawer, Status = "Posted", JournalEntryId = jentry!.ID, CurrencyId = ordCur, ExchangeRate = Math.Round(todayRate, 4, MidpointRounding.AwayFromZero),
+					Method = "Cash", CashAccountId = drawer, Status = "Posted", JournalEntryId = jentry!.ID, CurrencyId = ordCur, ExchangeRate = todayRate,
 					Notes = $"رد نقدي مرتجع {ret.ReturnNo} — طلب #{o.ID}", CreatedAt = DateTime.UtcNow,
 				};
 				_db.Receipts.Add(refundReceipt);
