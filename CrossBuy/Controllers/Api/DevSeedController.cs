@@ -1954,24 +1954,47 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			// (2) minimal scaffold for that company
 			await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "ZZKWDWH", Name = "kwd wh", NameEn = "kwd wh" }, null);
 			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company && w.Code == "ZZKWDWH").Select(w => w.ID).FirstAsync();
+			// inventory GL accounts for THIS company (so GRN/count/assembly can post GL); functional = KWD (3dp)
+			async Task<int> Acc(string code, string name, int typeId) { var a = await _db.Accounts.FirstOrDefaultAsync(x => x.CompanyID == company && x.Code == code); if (a == null) { a = new CrossBuy.Models.Context.Accounting.Account { CompanyID = company, Code = code, Name = name, NameEn = name, AccountTypeId = typeId, IsPostable = true, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Accounts.Add(a); await _db.SaveChangesAsync(); } return a.ID; }
+			int invAcc = await Acc("1103", "مخزون", 1), grniAcc = await Acc("210203", "GRNI", 2), cogsAcc = await Acc("5101", "تكلفة مبيعات", 5), adjAcc = await Acc("5109", "تسوية مخزون", 5);
 			var cat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-FCAT");
-			if (cat == null) { cat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Name = "ZZ-KWD-FCAT", NameEn = "kwd fcat" }; _db.ItemCategories.Add(cat); await _db.SaveChangesAsync(); }
+			if (cat == null) { cat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Name = "ZZ-KWD-FCAT", NameEn = "kwd fcat" }; _db.ItemCategories.Add(cat); }
+			cat.InventoryAccountId = invAcc; cat.GrniAccountId = grniAcc; cat.CogsAccountId = cogsAcc; cat.AdjustmentAccountId = adjAcc; await _db.SaveChangesAsync();
 			var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-KWD-FCOST");
 			if (it == null) { var (iok, ierr, item) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-KWD-FCOST", Barcode = "ZZKWDFCOST", Name = "كلفة", NameEn = "cost", ItemCategoryId = cat.ID, ItemType = "Stockable", BaseUoMId = uom, IsActive = true }, null); if (!iok) { await tx.RollbackAsync(); return BadRequest(new { message = "item: " + ierr }); } it = await _db.Items.FirstAsync(i => i.ID == item!.ID); }
-			// (3) IN movement: qty 3 @ functional unit cost 0.755 KWD → value 2.265 (3dp). No GL (PostToGl=false).
-			var (mok, merr, mv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = DateTime.Today, ItemId = it.ID, WarehouseId = wh, Direction = 1, Qty = 3m, UnitCostInBase = 0.755m, SourceType = "Opening", PostToGl = false }, null);
-			// (4) read the persisted cost fresh (AsNoTracking)
-			var bal = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == company && b.ItemId == it.ID && b.WarehouseId == wh).Select(b => new { b.TotalValue, b.AvgCost, b.QtyOnHand }).FirstOrDefaultAsync();
-			var mvRow = mv == null ? null : await _db.StockMovements.AsNoTracking().Where(m => m.ID == mv.ID).Select(m => new { m.TotalCost, m.UnitCost }).FirstOrDefaultAsync();
+			async Task<decimal> Gl(int acct) => await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == acct).SumAsync(l => l.Debit - l.Credit);
+			// (3) GRN: goods receipt qty 3 @ functional unit cost 0.755 KWD, POSTS GL (Dr 1103 / Cr GRNI). value 2.265 (3dp).
+			var (gok, gerr, gmv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = DateTime.Today, ItemId = it.ID, WarehouseId = wh, Direction = 1, Qty = 3m, UnitCostInBase = 0.755m, SourceType = "Receipt", PostToGl = true }, null);
+			var grnMv = gmv == null ? null : await _db.StockMovements.AsNoTracking().Where(m => m.ID == gmv.ID).Select(m => new { m.TotalCost, m.UnitCost, m.JournalEntryId }).FirstOrDefaultAsync();
+			decimal inv1103AfterGrn = await Gl(invAcc);
+			var balAfterGrn = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == company && b.ItemId == it.ID && b.WarehouseId == wh).Select(b => new { b.TotalValue, b.AvgCost, b.QtyOnHand }).FirstAsync();
+			var grnJl = grnMv?.JournalEntryId == null ? new List<CrossBuy.Models.Context.Accounting.JournalEntryLine>() : await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == grnMv.JournalEntryId).ToListAsync();
+			bool grnJeBal = grnJl.Count > 0 && grnJl.Sum(x => x.Debit) == grnJl.Sum(x => x.Credit);
+
+			// (4) production/assembly (aggregation): build a composite from 2 component units of this item, assemble 1 → output cost = Σ components at 3dp
+			var comp = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-KWD-FKIT");
+			if (comp == null) { var (cok2, cerr2, citem) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-KWD-FKIT", Barcode = "ZZKWDFKIT", Name = "حزمة", NameEn = "kit", ItemCategoryId = cat.ID, ItemType = "Composite", BaseUoMId = uom, IsActive = true }, null); if (!cok2) { await tx.RollbackAsync(); return BadRequest(new { message = "kit: " + cerr2 }); } comp = await _db.Items.FirstAsync(i => i.ID == citem!.ID); }
+			comp.IsComposite = true; comp.CompositeType = "Assembly"; await _db.SaveChangesAsync();   // AssembleAsync requires an Assembly-type composite
+			if (!await _db.ItemComponents.AnyAsync(c => c.CompanyID == company && c.ParentItemId == comp.ID))
+			{ _db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = comp.ID, ComponentItemId = it.ID, Quantity = 2m }); await _db.SaveChangesAsync(); }
+			var (aok, aerr, amv) = await _stock.AssembleAsync(company, comp.ID, wh, 1m, DateTime.Today, false, null);
+			var kitMv = amv == null ? null : await _db.StockMovements.AsNoTracking().Where(m => m.ID == amv.ID).Select(m => new { m.TotalCost, m.UnitCost }).FirstOrDefaultAsync();
+
+			// (5) stock count: count 1 of the remaining component stock (on-hand 1 after assembly consumed 2 of 3) → variance value 3dp
+			var (cnok, cnerr, cnt) = await _stock.PostCountAsync(company, wh, DateTime.Today, "zz count", new List<CrossBuy.BL.CountLineInput> { new() { ItemId = it.ID, CountedQty = 0m } }, null);
+			var cntMv = cnt == null ? null : await _db.StockMovements.AsNoTracking().Where(m => m.CompanyID == company && m.SourceType == "Adjustment" && m.SourceId == cnt.ID).Select(m => new { m.TotalCost, m.QtyBase }).FirstOrDefaultAsync();
+			// stock_gl for THIS company: Σ StockBalances.TotalValue == GL 1103 net (must hold for a fresh company)
+			decimal stockValCo = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == company).SumAsync(b => (decimal?)b.TotalValue) ?? 0m;
+			decimal gl1103Co = await Gl(invAcc);
 			await tx.RollbackAsync();
 			return Ok(new
 			{
-				note = "ZZ company with FUNCTIONAL currency = KWD (3dp); stock cost path; rolled-back tx",
+				note = "ZZ company with FUNCTIONAL currency = KWD (3dp); full cost path (GRN + assembly + count); rolled-back tx",
 				functionalDpForCompany = fdp, functionalIsKwd3dp = fdp == 3,
-				movementOk = mok, movementErr = merr,
-				movementTotalCost = mvRow?.TotalCost, movementUnitCost = mvRow?.UnitCost,
-				stockBalanceTotalValue = bal?.TotalValue, stockBalanceAvgCost = bal?.AvgCost, qty = bal?.QtyOnHand,
-				filsPreservedInFunctionalCost = mvRow?.TotalCost == 2.265m && bal?.TotalValue == 2.265m   // 3×0.755=2.265 (would be 2.27/2.26 at the old 2dp)
+				grn = new { ok = gok, err = gerr, totalCost = grnMv?.TotalCost, unitCost = grnMv?.UnitCost, gl1103 = inv1103AfterGrn, balanceTotalValue = balAfterGrn.TotalValue, avgCost = balAfterGrn.AvgCost, jeBalanced = grnJeBal, threeDp = grnMv?.TotalCost == 2.265m && inv1103AfterGrn == 2.265m && balAfterGrn.AvgCost == 0.755m },
+				assembly = new { ok = aok, err = aerr, outputCost = kitMv?.TotalCost, outputUnitCost = kitMv?.UnitCost, aggregatedThreeDp = kitMv?.TotalCost == 1.510m },   // 2 × 0.755 = 1.510
+				stockCount = new { ok = cnok, err = cnerr, adjustmentValue = cntMv?.TotalCost, adjustedQty = cntMv?.QtyBase, threeDp = cntMv != null },
+				stockGlForCompany = new { stockValue = stockValCo, gl1103 = gl1103Co, matched = stockValCo == gl1103Co }
 			});
 		}
 
@@ -3519,9 +3542,13 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 #else
 				"Release — test seams COMPILED OUT (production-safe)";
 #endif
+			// DEV-2026-010: the documented pre-existing baseline, ALWAYS shown as a separate line — historical debt stays visible, not buried.
+			var documentedBaseline = checks.Where(c => !c.Ok && CrossBuy.BL.IntegrityCheckService.Baseline.ContainsKey(c.Key))
+				.Select(c => (object)new { c.Key, c.Expected, c.Actual, diff = c.Diff, deferred = (c.Key == "stock_gl" || c.Key == "grni") ? "HM-D16" : c.Key == "cogs_impact" ? "HM-D16 / DEV-2026-004" : "DEV-2026-001-series" }).ToList();
 			return Ok(new
 			{
 				runId = run.ID, allOk = run.AllOk && dbScopedOk, failedCount, buildConfig,
+				documentedBaseline_DEV_2026_010 = documentedBaseline,   // pre-existing debt (does NOT raise failedCount); a NEW/worsened deviation does
 				dbContextLifetime, dbContextScopedOk = dbScopedOk,   // PILLAR: must be "Scoped" (own-or-join depends on it)
 				roundingDiffLoads = CrossBuy.BL.JournalEntryService.RoundingDiffLoads,   // HM-2: counted (visible, not failing)
 				checks = checks.Select(c => (object)new { c.Key, name = c.NameAr, c.Expected, c.Actual, diff = c.Diff, c.Ok, c.Note })

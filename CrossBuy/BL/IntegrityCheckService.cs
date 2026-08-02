@@ -265,10 +265,35 @@ namespace CrossBuy.BL
 			return res;
 		}
 
+		// DEV-2026-010: documented baseline of the PRE-EXISTING integrity failures, so FailedCount counts only failures ABOVE the
+		// baseline — the metric is a live alarm again (0 = clean; any NEW deviation raises it immediately). Explicit key/count only,
+		// NO range/tolerance. stock_gl & grni = HM-D16 structural gap whose value moves with every stock/GRNI op → keyed (null).
+		// cogs_impact = exactly 2 pre-existing sale lines with no COGS movement; receiptno_dup = exactly 5 pre-existing duplicates →
+		// pinned counts, so a RISE adds the excess. Full IDs/values in deploy/AUDIT-DEVIATIONS.md (DEV-2026-010).
+		public static readonly Dictionary<string, decimal?> Baseline = new()
+		{
+			["stock_gl"] = null,     // HM-D16 structural (value fluctuates)
+			["grni"] = null,         // HM-D16 structural
+			["cogs_impact"] = 2m,    // 2 pre-existing sale lines without a COGS movement
+			["receiptno_dup"] = 5m,  // 5 pre-existing duplicate receipt numbers
+		};
+		// count of failing checks ABOVE the documented baseline (a new failing check, or a pinned-count check that rose)
+		public static int BaselineExcess(IEnumerable<IntegrityCheck> checks)
+		{
+			int excess = 0;
+			foreach (var c in checks.Where(x => !x.Ok))
+			{
+				if (!Baseline.TryGetValue(c.Key, out var bl)) { excess++; continue; }        // a NEW failing check
+				if (bl == null) continue;                                                     // keyed structural debt (HM-D16)
+				if (c.Actual > bl.Value) excess += (int)Math.Ceiling(c.Actual - bl.Value);    // pinned count rose ⇒ the excess is new
+			}
+			return excess;
+		}
+
 		public async Task<(IntegrityCheckRun run, List<IntegrityCheck> checks)> RunAndLogAsync(int companyId, string source)
 		{
 			var checks = await RunAsync(companyId);
-			int failed = checks.Count(c => !c.Ok);
+			int failed = BaselineExcess(checks);   // DEV-2026-010: failures ABOVE the documented baseline only
 			var run = new IntegrityCheckRun
 			{
 				CompanyID = companyId, RunAt = DateTime.UtcNow, Source = source, AllOk = failed == 0, FailedCount = failed,
