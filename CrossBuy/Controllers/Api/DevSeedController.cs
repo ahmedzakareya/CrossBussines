@@ -1928,6 +1928,53 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 		// PrecisionDivergenceCountAsync (used by the integrity endpoint) is compiled in Release too.
 		public class DecColRow { public string TableName { get; set; } = ""; public string ColumnName { get; set; } = ""; public int Prec { get; set; } public int Scale { get; set; } }
 
+		// GET /api/dev/hm2-kwd-functional-company?key=seed123 — HM-2 Phase C ج-٥: ALL prior proofs are EGP-functional; the FUNCTIONAL-currency
+		// cost path at 3dp was never exercised. Create a ZZ company whose FUNCTIONAL currency is KWD (3dp) and prove the stock cost path
+		// rounds to 3dp (functional), not the old hardcoded 2dp. Rolled-back tx (zero persistence).
+		[HttpGet("hm2-kwd-functional-company")]
+		public async Task<IActionResult> Hm2KwdFunctionalCompany(string key, [FromServices] CrossBuy.BL.ICurrencyRounding rounding)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			int uom = await _db.UnitsOfMeasure.AsNoTracking().Select(u => u.ID).FirstAsync();
+			await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+			// (1) a company whose FUNCTIONAL currency is KWD (currency 5, 3dp)
+			var co = await _db.Companies.FirstOrDefaultAsync(c => c.CompanyName == "ZZ-KWD-FUNC-CO");
+			if (co == null) { co = new CrossBuy.Models.Context.Admin.Companies { CompanyName = "ZZ-KWD-FUNC-CO", Address = "t", PhoneNumber = "", Email = "", CountryID = 32, CompanyTypeId = 1, DefaultCurrencyId = 5 }; _db.Companies.Add(co); await _db.SaveChangesAsync(); }
+			else { co.DefaultCurrencyId = 5; await _db.SaveChangesAsync(); }
+			int company = co.CompanyID;
+			int fdp = await rounding.DecimalsAsync(company, null);   // functional dp — MUST be 3 (KWD)
+			// open fiscal period covering today (PostMovement's PeriodGuard requires one)
+			if (!await _db.FiscalYears.AnyAsync(y => y.CompanyID == company))
+			{
+				var fy = new CrossBuy.Models.Context.Accounting.FiscalYear { CompanyID = company, Name = "ZZ-KWD-FY", StartDate = new DateTime(DateTime.Today.Year, 1, 1), EndDate = new DateTime(DateTime.Today.Year, 12, 31), Status = "Open" };
+				_db.FiscalYears.Add(fy); await _db.SaveChangesAsync();
+				_db.FiscalPeriods.Add(new CrossBuy.Models.Context.Accounting.FiscalPeriod { FiscalYearId = fy.ID, PeriodNo = (byte)DateTime.Today.Month, StartDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), EndDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 28), Status = "Open" });
+				await _db.SaveChangesAsync();
+			}
+			// (2) minimal scaffold for that company
+			await _whSvc.CreateWarehouseAsync(company, new CrossBuy.Models.Context.Inventory.Warehouse { Code = "ZZKWDWH", Name = "kwd wh", NameEn = "kwd wh" }, null);
+			int wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == company && w.Code == "ZZKWDWH").Select(w => w.ID).FirstAsync();
+			var cat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-FCAT");
+			if (cat == null) { cat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Name = "ZZ-KWD-FCAT", NameEn = "kwd fcat" }; _db.ItemCategories.Add(cat); await _db.SaveChangesAsync(); }
+			var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-KWD-FCOST");
+			if (it == null) { var (iok, ierr, item) = await _itemSvc.CreateItemAsync(company, new CrossBuy.BL.ItemInput { ItemCode = "ZZ-KWD-FCOST", Barcode = "ZZKWDFCOST", Name = "كلفة", NameEn = "cost", ItemCategoryId = cat.ID, ItemType = "Stockable", BaseUoMId = uom, IsActive = true }, null); if (!iok) { await tx.RollbackAsync(); return BadRequest(new { message = "item: " + ierr }); } it = await _db.Items.FirstAsync(i => i.ID == item!.ID); }
+			// (3) IN movement: qty 3 @ functional unit cost 0.755 KWD → value 2.265 (3dp). No GL (PostToGl=false).
+			var (mok, merr, mv) = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = DateTime.Today, ItemId = it.ID, WarehouseId = wh, Direction = 1, Qty = 3m, UnitCostInBase = 0.755m, SourceType = "Opening", PostToGl = false }, null);
+			// (4) read the persisted cost fresh (AsNoTracking)
+			var bal = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == company && b.ItemId == it.ID && b.WarehouseId == wh).Select(b => new { b.TotalValue, b.AvgCost, b.QtyOnHand }).FirstOrDefaultAsync();
+			var mvRow = mv == null ? null : await _db.StockMovements.AsNoTracking().Where(m => m.ID == mv.ID).Select(m => new { m.TotalCost, m.UnitCost }).FirstOrDefaultAsync();
+			await tx.RollbackAsync();
+			return Ok(new
+			{
+				note = "ZZ company with FUNCTIONAL currency = KWD (3dp); stock cost path; rolled-back tx",
+				functionalDpForCompany = fdp, functionalIsKwd3dp = fdp == 3,
+				movementOk = mok, movementErr = merr,
+				movementTotalCost = mvRow?.TotalCost, movementUnitCost = mvRow?.UnitCost,
+				stockBalanceTotalValue = bal?.TotalValue, stockBalanceAvgCost = bal?.AvgCost, qty = bal?.QtyOnHand,
+				filsPreservedInFunctionalCost = mvRow?.TotalCost == 2.265m && bal?.TotalValue == 2.265m   // 3×0.755=2.265 (would be 2.27/2.26 at the old 2dp)
+			});
+		}
+
 		// GET /api/dev/hm2-rate-precision-probe?key=seed123 — HM-2 Batch 5 item 4-أ: does an 8-decimal FX rate survive to the DOCUMENT,
 		// or does CurrencyService.R4 (ToBaseAsync:83-84) + the `ExchangeRate = R4(rate)` write on every document cut it to 4dp?
 		// Passes an explicit 8dp rate to EVERY document path, then reads the STORED rate from a FRESH AsNoTracking query (not the
