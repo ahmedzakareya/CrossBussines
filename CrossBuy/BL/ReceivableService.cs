@@ -98,7 +98,6 @@ namespace CrossBuy.BL
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
-		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private async Task<int?> AccIdAsync(int companyId, string code) =>
 			await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync();
 
@@ -174,7 +173,7 @@ namespace CrossBuy.BL
 			var inv = await _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId && i.CustomerId == customerId && i.Status == "Posted").SumAsync(i => (decimal?)(i.GrandTotalBase ?? i.GrandTotal)) ?? 0m;
 			var rcpt = await _context.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.Status == "Posted").SumAsync(r => (decimal?)(r.AmountBase ?? r.Amount)) ?? 0m;
 			var ret = await _context.SalesReturns.AsNoTracking().Where(s => s.CompanyID == companyId && s.CustomerId == customerId && s.Status == "Posted").SumAsync(s => (decimal?)(s.GrandTotalBase ?? s.GrandTotal)) ?? 0m;
-			return R(inv - rcpt - ret);
+			return await _rounding.RoundAsync(companyId, inv - rcpt - ret, null);   // HM-2 Batch 5: functional-currency round via the central helper (no static R)
 		}
 
 		public async Task<(bool ok, string? error, SalesInvoice? inv)> CreateSalesInvoiceAsync(
@@ -732,6 +731,7 @@ namespace CrossBuy.BL
 			var cogsRetById = cogsRet.ToDictionary(x => x.id, x => x.v);
 
 			var result = new CustomerAnalytics();
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);   // HM-2 Batch 5: analytics averages in functional dp (no literal ,2)
 			foreach (var c in customers)
 			{
 				if (!invById.TryGetValue(c.ID, out var iv)) continue;   // only customers with posted sales
@@ -749,7 +749,7 @@ namespace CrossBuy.BL
 					Revenue = revenue, Cogs = cogs, Margin = margin,
 					MarginPct = revenue != 0 ? Math.Round(margin / revenue * 100, 1) : 0,
 					InvoiceCount = iv.cnt, FirstInvoice = iv.first, LastInvoice = iv.last,
-					AvgInvoice = iv.cnt > 0 ? Math.Round(iv.grand / iv.cnt, 2) : 0
+					AvgInvoice = iv.cnt > 0 ? Math.Round(iv.grand / iv.cnt, __fdp, MidpointRounding.AwayFromZero) : 0
 				});
 			}
 			result.Rows = result.Rows.OrderByDescending(r => r.Revenue).ToList();

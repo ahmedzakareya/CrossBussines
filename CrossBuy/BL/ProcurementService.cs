@@ -52,7 +52,6 @@ namespace CrossBuy.BL
 		private readonly ICurrencyRounding _rounding;
 		public ProcurementService(CrossDbContext context, IStockService stock, IPayableService payables, IFixedAssetService fixedAssets, IThreeWayMatchService match, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _stock = stock; _payables = payables; _fixedAssets = fixedAssets; _match = match; _notify = notify; _currency = currency; _rounding = rounding; }
 
-		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
 		public async Task<List<PurchaseOrder>> GetPurchaseOrdersAsync(int companyId) =>
@@ -66,6 +65,9 @@ namespace CrossBuy.BL
 			if (vendorId <= 0) return (false, "المورد مطلوب", null);
 			if (lines == null || lines.Count == 0) return (false, "أمر الشراء يجب أن يحتوي على بند واحد على الأقل", null);
 
+			// HM-2 Batch 5: PO carries no document currency here → round to the FUNCTIONAL dp via the central helper (EGP no-op; no static R).
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal R(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			var po = new PurchaseOrder { CompanyID = companyId, VendorId = vendorId, WarehouseId = warehouseId, OrderDate = date.Date, ExpectedDate = expected, Status = "Approved", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, ProjectId = projectId };
 			int ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)

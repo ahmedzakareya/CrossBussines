@@ -1059,7 +1059,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
 				var (ok, err, pi) = await ap.CreatePurchaseInvoiceAsync(company, ven.ID, DateTime.Today, new List<CrossBuy.BL.PurchaseLineInput> { new CrossBuy.BL.PurchaseLineInput { ItemDescription = "3c", Qty = 3, UnitPrice = 0.755m, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = invAcc, ItemId = itm!.ID, WarehouseId = wh } }, "kwd pi", null, 5, 163m);
 				if (!ok || pi == null) piCase = new { error = err };
-				else { var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == pi.JournalEntryId).ToListAsync(); piCase = new { documentGrand = pi.GrandTotal, filsPreserved = pi.GrandTotal == 2.265m, grandBase = pi.GrandTotalBase, apLine2101 = jl.Where(l => l.AccountId == apCtrl).Sum(l => l.Credit), columnEqualsJeLine = pi.GrandTotalBase == jl.Where(l => l.AccountId == apCtrl).Sum(l => l.Credit), jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit), invLine1103 = jl.Where(l => l.AccountId == invAcc).Sum(l => l.Debit) }; }
+				else { var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == pi.JournalEntryId).ToListAsync(); var piRow = await _db.PurchaseInvoices.AsNoTracking().Where(x => x.ID == pi.ID).Select(x => new { x.GrandTotal, x.GrandTotalBase }).FirstAsync(); piCase = new { documentGrand = piRow.GrandTotal, filsPreserved = piRow.GrandTotal == 2.265m, grandBase = piRow.GrandTotalBase, apLine2101 = jl.Where(l => l.AccountId == apCtrl).Sum(l => l.Credit), columnEqualsJeLine = piRow.GrandTotalBase == jl.Where(l => l.AccountId == apCtrl).Sum(l => l.Credit), jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit), invLine1103 = jl.Where(l => l.AccountId == invAcc).Sum(l => l.Debit) }; }
 				await tx.RollbackAsync();
 			}
 			// (3) KWD GRN, unit cost 0.755 (3dp)
@@ -1384,6 +1384,80 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			});
 		}
 
+		// GET /api/dev/hm2-precision-audit?key=seed123 — HM-2 Batch 5 item 1: for EVERY decimal property in the EF model, compare
+		// what the HavePrecision(19,4) convention (+ rate/factor overrides) gave it against the ACTUAL DB column type. Flags:
+		//  efScaleLtDb = EF scale < column scale ⇒ EF still TRUNCATES on save (the HM-D27 bug pattern — should be ZERO after 4.5);
+		//  efScaleGtDb = EF scale > column scale ⇒ EF sends more decimals than the column holds (SQL rounds to the column — harmless).
+		// Read-only. Also surveys existing FRACTIONAL quantities (weighed/partial units) as a Qty-truncation footprint check.
+		[HttpGet("hm2-precision-audit")]
+		public async Task<IActionResult> Hm2PrecisionAudit(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			var db = await _db.Database.SqlQueryRaw<DecColRow>(
+				"SELECT t.name AS TableName, c.name AS ColumnName, CAST(c.precision AS int) AS Prec, CAST(c.scale AS int) AS Scale " +
+				"FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id " +
+				"WHERE ty.name IN ('decimal','numeric')").ToListAsync();
+			var dbMap = new Dictionary<string, (int P, int S)>(StringComparer.OrdinalIgnoreCase);
+			foreach (var r in db) dbMap[r.TableName + "." + r.ColumnName] = (r.Prec, r.Scale);
+
+			var rows = new List<Dictionary<string, object?>>();
+			foreach (var et in _db.Model.GetEntityTypes())
+			{
+				var table = et.GetTableName();
+				if (table == null) continue;
+				var soi = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table(table, et.GetSchema());
+				foreach (var p in et.GetProperties())
+				{
+					if (p.ClrType != typeof(decimal) && p.ClrType != typeof(decimal?)) continue;
+					var col = p.GetColumnName(soi) ?? p.Name;
+					int? efP = p.GetPrecision(); int? efS = p.GetScale();
+					bool inDb = dbMap.TryGetValue(table + "." + col, out var dbv);
+					bool fullMatch = inDb && (efP ?? 0) == dbv.P && (efS ?? 0) == dbv.S;   // model type == DB column type EXACTLY
+					bool scaleMatch = inDb && (efS ?? 0) == dbv.S;
+					bool efScaleLtDb = inDb && (efS ?? 0) < dbv.S;   // EF truncates below the column ⇒ silent precision loss
+					bool efScaleGtDb = inDb && (efS ?? 0) > dbv.S;   // column is authoritative ⇒ harmless
+					rows.Add(new Dictionary<string, object?> {
+						["table"] = table, ["column"] = col, ["prop"] = p.Name,
+						["efPrec"] = efP, ["efScale"] = efS, ["dbPrec"] = inDb ? (int?)dbv.P : null, ["dbScale"] = inDb ? (int?)dbv.S : null,
+						["inDb"] = inDb, ["fullMatch"] = fullMatch, ["scaleMatch"] = scaleMatch, ["efScaleLtDb"] = efScaleLtDb, ["efScaleGtDb"] = efScaleGtDb
+					});
+				}
+			}
+			bool RiskLt(Dictionary<string, object?> r) => (bool)r["efScaleLtDb"]!;
+			bool RiskGt(Dictionary<string, object?> r) => (bool)r["efScaleGtDb"]!;
+			// distinct (efScale -> dbScale) signatures for a compact overview
+			var sigs = rows.Where(r => (bool)r["inDb"]!).GroupBy(r => $"ef{r["efScale"]}->db{r["dbScale"]}")
+				.Select(g => new { signature = g.Key, count = g.Count(), sample = g.Take(6).Select(r => $"{r["table"]}.{r["column"]}").ToList() })
+				.OrderByDescending(x => x.count).ToList();
+
+			// FRACTIONAL-quantity footprint (read-only): before 4.5 EF (18,2) truncated Qty to 2dp on save
+			var qty = new List<object>();
+			foreach (var tc in new[] { ("StockMovements", "QtyBase"), ("PosOrderLines", "Qty"), ("SalesInvoiceLines", "Qty"), ("PurchaseInvoiceLines", "Qty"), ("GoodsReceiptLines", "Qty"), ("StockCountLines", "CountedQty") })
+			{
+				try
+				{
+					int frac = await _db.Database.SqlQueryRaw<int>($"SELECT COUNT(*) AS Value FROM {tc.Item1} WHERE {tc.Item2} <> ROUND({tc.Item2},0)").FirstAsync();
+					int items = await _db.Database.SqlQueryRaw<int>($"SELECT COUNT(DISTINCT ItemId) AS Value FROM {tc.Item1} WHERE {tc.Item2} <> ROUND({tc.Item2},0)").FirstAsync();
+					qty.Add(new { table = tc.Item1, col = tc.Item2, fractionalRows = frac, distinctItems = items });
+				}
+				catch (Exception ex) { qty.Add(new { table = tc.Item1, col = tc.Item2, error = ex.Message.Split('\n')[0] }); }
+			}
+
+			var divergent = rows.Where(r => !(bool)r["fullMatch"]!).ToList();
+			return Ok(new
+			{
+				totalDecimalProps = rows.Count,
+				fullyMatched = rows.Count(r => (bool)r["fullMatch"]!),
+				divergenceCount = divergent.Count,   // model (P,S) != DB (P,S) — MUST be 0 after Batch 5 item 1
+				efScaleLtDbCount = rows.Count(RiskLt),   // EF scale < DB scale ⇒ still truncating (MUST be 0)
+				efScaleGtDbCount = rows.Count(RiskGt),   // EF scale > DB scale ⇒ SQL rounds to column
+				notInDb = rows.Count(r => !(bool)r["inDb"]!),
+				scaleSignatures = sigs,
+				divergences = divergent,
+				fractionalQtyFootprint = qty
+			});
+		}
+
 		// GET /api/dev/hm2-kwd-return-test?key=seed123 — HM-2 Batch 3-ج-0: a KWD sales return of a KWD invoice must reverse AR at the
 		// INVOICE rate ⇒ GrandTotalBase (at invoice rate) == the 1102 JE line, fils preserved, JE balanced, ar_sub nets to 0. Rolled-back tx.
 		[HttpGet("hm2-kwd-return-test")]
@@ -1405,12 +1479,14 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			decimal outAfterRet = await Out();
 			var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == ret!.JournalEntryId).ToListAsync();
 			decimal arLine = jl.Where(l => l.AccountId == ctrl).Sum(l => l.Credit);
+				var retRow = await _db.SalesReturns.AsNoTracking().Where(x => x.ID == ret!.ID).Select(x => new { x.GrandTotal, x.GrandTotalBase, x.ExchangeRate }).FirstAsync();   // HM-2 rule: fresh persisted read
+				var invR = await _db.SalesInvoices.AsNoTracking().Where(x => x.ID == inv.ID).Select(x => (decimal?)x.ExchangeRate).FirstAsync();
 			return Ok(new
 			{
 				note = "rolled-back tx",
-				returnDocGrand = ret.GrandTotal, filsPreserved = ret.GrandTotal == 2.265m,
-				returnGrandBase = ret.GrandTotalBase, returnExchangeRate = ret.ExchangeRate, invoiceRate = inv.ExchangeRate,
-				settledAtInvoiceRate = ret.ExchangeRate == inv.ExchangeRate, columnEqualsJeLine = ret.GrandTotalBase == arLine,
+				returnDocGrand = retRow.GrandTotal, filsPreserved = retRow.GrandTotal == 2.265m,
+				returnGrandBase = retRow.GrandTotalBase, returnExchangeRate = retRow.ExchangeRate, invoiceRate = invR,
+				settledAtInvoiceRate = retRow.ExchangeRate == invR, columnEqualsJeLine = retRow.GrandTotalBase == arLine,
 				jeBalanced = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit),
 				outstandingAfterInvoice = outAfterInv, outstandingAfterFullReturn = outAfterRet, arNetsToZero = outAfterRet == 0m,
 			});
@@ -1444,7 +1520,8 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == recJe).ToListAsync();
 			var fxLine = jl.Where(l => l.AccountId == g4902).Sum(l => l.Credit - l.Debit);
 			bool jeBal = jl.Sum(l => l.Debit) == jl.Sum(l => l.Credit);
-			var fx = new { invoiceGrandBase = inv.GrandTotalBase, invRate = inv.ExchangeRate, outAfterInvoice = outAfterInv, receiptOk = r1ok, receiptErr = r1err, outstandingBaseAfterFullPay = outAfterPay, settledToZero = outAfterPay == 0m, realizedFxOn4902 = fxLine, receiptJeBalanced = jeBal };
+			var invRow = await _db.SalesInvoices.AsNoTracking().Where(x => x.ID == inv.ID).Select(x => new { x.GrandTotalBase, x.ExchangeRate }).FirstAsync();   // HM-2 rule: persisted value via fresh read
+			var fx = new { invoiceGrandBase = invRow.GrandTotalBase, invRate = invRow.ExchangeRate, outAfterInvoice = outAfterInv, receiptOk = r1ok, receiptErr = r1err, outstandingBaseAfterFullPay = outAfterPay, settledToZero = outAfterPay == 0m, realizedFxOn4902 = fxLine, receiptJeBalanced = jeBal };
 
 			// (2) three partial collections of a fresh KWD invoice priced to force fractions
 			var (i2ok, _, inv2) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, new List<CrossBuy.BL.SalesLineInput> {
@@ -1482,12 +1559,14 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 				var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == inv.JournalEntryId).ToListAsync();
 				decimal arLine = jl.Where(l => l.AccountId == ctrl).Sum(l => l.Debit);
 				decimal jd = jl.Sum(l => l.Debit), jc = jl.Sum(l => l.Credit);
+				// HM-2 rule: prove PERSISTED values by reading a FRESH row (AsNoTracking), not the tracked entity (which holds the in-memory computed value).
+				var row = await _db.SalesInvoices.AsNoTracking().Where(x => x.ID == inv.ID).Select(x => new { x.GrandTotal, x.GrandTotalBase, x.ExchangeRate }).FirstAsync();
 				result = new
 				{
 					posted = true,
-					documentCurrency = "KWD", documentGrandTotal = inv.GrandTotal, filsPreserved = inv.GrandTotal == 2.265m,   // 3 × 0.755 = 2.265 (would be 2.27 or 2.26 at 2dp)
-					grandTotalBase = inv.GrandTotalBase, arJeLine1102 = arLine, columnEqualsJeLine = inv.GrandTotalBase == arLine,
-					jeBalanced = jd == jc, exchangeRate = inv.ExchangeRate, roundingDiffLoaded = CrossBuy.BL.JournalEntryService.RoundingDiffLoads - loads0
+					documentCurrency = "KWD", documentGrandTotal = row.GrandTotal, filsPreserved = row.GrandTotal == 2.265m,   // 3 × 0.755 = 2.265 (would be 2.27 or 2.26 at 2dp)
+					grandTotalBase = row.GrandTotalBase, arJeLine1102 = arLine, columnEqualsJeLine = row.GrandTotalBase == arLine,
+					jeBalanced = jd == jc, exchangeRate = row.ExchangeRate, roundingDiffLoaded = CrossBuy.BL.JournalEntryService.RoundingDiffLoads - loads0
 				};
 			}
 			else result = new { posted = false, error = err };
@@ -1844,6 +1923,68 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			});
 		}
 #endif
+
+		// Row shape for the precision-divergence raw SQL. Defined OUTSIDE #if DEBUG because
+		// PrecisionDivergenceCountAsync (used by the integrity endpoint) is compiled in Release too.
+		public class DecColRow { public string TableName { get; set; } = ""; public string ColumnName { get; set; } = ""; public int Prec { get; set; } public int Scale { get; set; } }
+
+		// GET /api/dev/hm2-rate-precision-probe?key=seed123 — HM-2 Batch 5 item 4-أ: does an 8-decimal FX rate survive to the DOCUMENT,
+		// or does CurrencyService.R4 (ToBaseAsync:83-84) + the `ExchangeRate = R4(rate)` write on every document cut it to 4dp?
+		// Passes an explicit 8dp rate to EVERY document path, then reads the STORED rate from a FRESH AsNoTracking query (not the
+		// tracked entity). Also reads back ExchangeRates.Rate to show the RATE TABLE keeps 8dp. Rolled-back tx (zero persistence).
+		[HttpGet("hm2-rate-precision-probe")]
+		public async Task<IActionResult> Hm2RatePrecisionProbe(string key, [FromServices] CrossBuy.BL.IReceivableService ar, [FromServices] CrossBuy.BL.IPayableService ap)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1;
+			int ctrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstOrDefaultAsync();
+			int apCtrl = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "2101").Select(a => a.ID).FirstOrDefaultAsync();
+			int rev = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
+			int cash = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			int exp = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.AccountTypeId == 5 && a.IsPostable).Select(a => a.ID).FirstOrDefaultAsync();
+			int? cc = await _db.CostCenters.AsNoTracking().Where(c => c.CompanyID == company).Select(c => (int?)c.ID).FirstOrDefaultAsync();
+			if (ctrl == 0 || apCtrl == 0 || rev == 0 || cash == 0 || exp == 0) return BadRequest(new { message = "need 1102/2101/4101/110101/expense" });
+			var cust = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.Name == "ZZ-KWD-CUST");
+			if (cust == null) { cust = new CrossBuy.Models.Context.Accounting.Customer { CompanyID = company, Name = "ZZ-KWD-CUST", ControlAccountId = ctrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Customers.Add(cust); await _db.SaveChangesAsync(); }
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-KWD-VEN");
+			if (ven == null) { ven = new CrossBuy.Models.Context.Accounting.Vendor { CompanyID = company, Name = "ZZ-KWD-VEN", ControlAccountId = apCtrl, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.Vendors.Add(ven); await _db.SaveChangesAsync(); }
+
+			decimal src = 3.14159265m;                                   // an 8-decimal rate
+			decimal r4 = Math.Round(src, 4, MidpointRounding.AwayFromZero);   // 3.1416 — what R4 keeps
+
+			await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);
+			// write the rate via the EF ENTITY (the production path, which respects the model's (19,8)) — NOT raw SQL (whose default
+			// parameter scale would itself truncate). Read back fresh to show the RATE TABLE keeps 8dp.
+			var erRow = new CrossBuy.Models.Context.Accounting.ExchangeRate { CurrencyId = 5, RateDate = DateTime.Today, Rate = src, RateType = "ZZ-D-RATE" };
+			_db.ExchangeRates.Add(erRow); await _db.SaveChangesAsync();
+			decimal tableRate = await _db.ExchangeRates.AsNoTracking().Where(x => x.ID == erRow.ID).Select(x => x.Rate).FirstAsync();
+
+			var sLine = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "ZZ", Qty = 1, UnitPrice = 10m, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = rev, ItemId = null, WarehouseId = null } };
+			var (iok, ierr, inv) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, sLine, "ZZ rate", null, 5, src);
+			decimal? siRate = inv == null ? null : await _db.SalesInvoices.AsNoTracking().Where(x => x.ID == inv.ID).Select(x => (decimal?)x.ExchangeRate).FirstAsync();
+			var (rcok, rcerr) = await ar.CreateReceiptAsync(company, cust.ID, DateTime.Today, 5m, "Cash", cash, "ZZ rate", null, 5, src);
+			decimal? rcRate = await _db.Receipts.AsNoTracking().Where(x => x.CustomerId == cust.ID).OrderByDescending(x => x.ID).Select(x => (decimal?)x.ExchangeRate).FirstOrDefaultAsync();
+			var (srok, srerr, ret) = await ar.CreateSalesReturnAsync(company, cust.ID, inv?.ID, DateTime.Today, sLine, "ZZ rate", null, 5, src);
+			decimal? srRate = ret == null ? null : await _db.SalesReturns.AsNoTracking().Where(x => x.ID == ret.ID).Select(x => (decimal?)x.ExchangeRate).FirstAsync();
+			var pLine = new List<CrossBuy.BL.PurchaseLineInput> { new() { ItemDescription = "ZZ", Qty = 1, UnitPrice = 10m, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = exp, CostCenterId = cc } };
+			var (piok, pierr, pinv) = await ap.CreatePurchaseInvoiceAsync(company, ven.ID, DateTime.Today, pLine, "ZZ rate", null, 5, src);
+			decimal? piRate = pinv == null ? null : await _db.PurchaseInvoices.AsNoTracking().Where(x => x.ID == pinv.ID).Select(x => (decimal?)x.ExchangeRate).FirstAsync();
+			var (pmok, pmerr) = await ap.CreatePaymentAsync(company, ven.ID, DateTime.Today, 5m, "Cash", cash, "ZZ rate", null, 0, 5, src);
+			decimal? pmRate = await _db.Payments.AsNoTracking().Where(x => x.VendorId == ven.ID).OrderByDescending(x => x.ID).Select(x => (decimal?)x.ExchangeRate).FirstOrDefaultAsync();
+			await tx.RollbackAsync();
+
+			var docRates = new[] { siRate, rcRate, srRate, piRate, pmRate };
+			return Ok(new
+			{
+				note = "rolled-back tx; explicit 8dp rate passed to EVERY path; document rate read fresh (AsNoTracking)",
+				sourceRate_8dp = src, r4_expected = r4,
+				exchangeRatesTable_keeps8dp = tableRate == src, exchangeRatesTable_value = tableRate,
+				documentStoredRate = new { salesInvoice = siRate, receipt = rcRate, salesReturn = srRate, purchaseInvoice = piRate, payment = pmRate },
+				everyDocumentCutTo4dp = docRates.All(x => x == r4),
+				anyDocumentKept8dp = docRates.Any(x => x == src),
+				errors = new { ierr, rcerr, srerr, pierr, pmerr }
+			});
+		}
 
 		// GET /api/dev/seed-currencies?key=seed123 — seed common currencies + recent exchange rates (Currency module test data)
 		[HttpGet("seed-currencies")]
@@ -3248,8 +3389,55 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		}
 
 		// GET /api/dev/inv-test-integrity?key=seed123 — runs all integrity checks and prints a summary
+		// HM-2 (Batch 5 item 2a): count decimal properties whose EF model (precision,scale) != their DB column's. 0 = model matches DB.
+		private async Task<int> PrecisionDivergenceCountAsync()
+		{
+			var db = await _db.Database.SqlQueryRaw<DecColRow>(
+				"SELECT t.name AS TableName, c.name AS ColumnName, CAST(c.precision AS int) AS Prec, CAST(c.scale AS int) AS Scale " +
+				"FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id JOIN sys.types ty ON ty.user_type_id=c.user_type_id " +
+				"WHERE ty.name IN ('decimal','numeric')").ToListAsync();
+			var dbMap = new Dictionary<string, (int P, int S)>(StringComparer.OrdinalIgnoreCase);
+			foreach (var r in db) dbMap[r.TableName + "." + r.ColumnName] = (r.Prec, r.Scale);
+			int divergence = 0;
+			foreach (var et in _db.Model.GetEntityTypes())
+			{
+				var table = et.GetTableName();
+				if (table == null) continue;
+				var soi = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table(table, et.GetSchema());
+				foreach (var p in et.GetProperties())
+				{
+					if (p.ClrType != typeof(decimal) && p.ClrType != typeof(decimal?)) continue;
+					var col = p.GetColumnName(soi) ?? p.Name;
+					if (!dbMap.TryGetValue(table + "." + col, out var dbv) || (p.GetPrecision() ?? 0) != dbv.P || (p.GetScale() ?? 0) != dbv.S) divergence++;
+				}
+			}
+			return divergence;
+		}
+
+		// HM-2 Batch 5 (ب-4): DATA-level guard, distinct from ef_precision_vs_db (which is SCHEMA-level: model vs column). This asserts no
+		// PERSISTED value carries more decimals than ITS CURRENCY allows — a GL line (functional) or a document grand (its document currency).
+		// A (19,4) column HOLDS a 4-decimal value (schema OK) yet that value violates a 2dp/3dp currency — a rounding bug only this catches.
+		// Legacy is separated by a fixed cutoff (HM-2 currency-aware rounding go-live) so pre-HM-2 rows never inflate the count.
+		private async Task<int> Bp4CurrencyPrecisionViolationsAsync(CrossBuy.BL.ICurrencyRounding rounding)
+		{
+			var cutoff = new DateTime(2026, 7, 30);   // HM-2 Phase B (currency-aware rounding) start — legacy < cutoff excluded
+			int fdp = await rounding.DecimalsAsync(1, null);   // company 1 functional dp
+			// (a) GL lines (functional): Debit/Credit must have ≤ fdp decimals
+			int jeViol = (await _db.Database.SqlQueryRaw<int>(
+				"SELECT COUNT(*) AS Value FROM JournalEntryLines jl JOIN JournalEntries je ON jl.JournalEntryId=je.ID " +
+				"WHERE je.EntryDate >= {0} AND (jl.Debit <> ROUND(jl.Debit,{1}) OR jl.Credit <> ROUND(jl.Credit,{1}))", cutoff, fdp).ToListAsync()).First();
+			// (b) document grand totals: ≤ THEIR document currency's dp (null CurrencyId → functional)
+			int docViol = (await _db.Database.SqlQueryRaw<int>(
+				"SELECT (" +
+				" (SELECT COUNT(*) FROM SalesInvoices d LEFT JOIN Currencies c ON d.CurrencyId=c.ID WHERE d.InvoiceDate>={0} AND d.GrandTotal <> ROUND(d.GrandTotal, ISNULL(c.DecimalPlaces,{1})))" +
+				"+(SELECT COUNT(*) FROM PurchaseInvoices d LEFT JOIN Currencies c ON d.CurrencyId=c.ID WHERE d.InvoiceDate>={0} AND d.GrandTotal <> ROUND(d.GrandTotal, ISNULL(c.DecimalPlaces,{1})))" +
+				"+(SELECT COUNT(*) FROM SalesReturns d LEFT JOIN Currencies c ON d.CurrencyId=c.ID WHERE d.ReturnDate>={0} AND d.GrandTotal <> ROUND(d.GrandTotal, ISNULL(c.DecimalPlaces,{1})))" +
+				") AS Value", cutoff, fdp).ToListAsync()).First();
+			return jeViol + docViol;
+		}
+
 		[HttpGet("inv-test-integrity")]
-		public async Task<IActionResult> InvTestIntegrity(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, [FromServices] IServiceScopeFactory scopeFactory)
+		public async Task<IActionResult> InvTestIntegrity(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, [FromServices] IServiceScopeFactory scopeFactory, [FromServices] CrossBuy.BL.ICurrencyRounding rounding)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var (run, checks) = await integ.RunAndLogAsync(1, "Manual");
@@ -3270,7 +3458,12 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				dbContextLifetime = sameInScope ? (diffAcrossScopes ? "Scoped" : "Singleton") : "Transient";
 				dbScopedOk = sameInScope && diffAcrossScopes;
 			}
-			int failedCount = run.FailedCount + (dbScopedOk ? 0 : 1);   // a non-Scoped DbContext is a REAL failure (breaks own-or-join)
+			// HM-2 (Batch 5 item 2a): PERMANENT precision guard. EF's default (18,2) silently truncated every money value for 14
+			// months because NOTHING checked the model against the DB. This asserts every decimal property's model (precision,scale)
+			// EQUALS its DB column's — any drift is a REAL failure that raises failedCount the same day (not a counted-only note).
+			int precisionDivergence = await PrecisionDivergenceCountAsync();
+			int bp4Violations = await Bp4CurrencyPrecisionViolationsAsync(rounding);   // ب-4: persisted value exceeds ITS currency's precision (data-level)
+			int failedCount = run.FailedCount + (dbScopedOk ? 0 : 1) + precisionDivergence + bp4Violations;   // non-Scoped DbContext OR precision drift OR over-precise value = REAL failure
 			// HM-D6 item 3: show the ACTUAL build config of the running assembly + the state of the #if DEBUG test seams,
 			// so a Debug deployment (which would REVIVE the bypass/fault seams) is visible here. Display only; changes nothing.
 			string buildConfig =
@@ -3286,7 +3479,9 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				roundingDiffLoads = CrossBuy.BL.JournalEntryService.RoundingDiffLoads,   // HM-2: counted (visible, not failing)
 				checks = checks.Select(c => (object)new { c.Key, name = c.NameAr, c.Expected, c.Actual, diff = c.Diff, c.Ok, c.Note })
 					.Append((object)new { Key = "dbcontext_lifetime", name = "عمر CrossDbContext = Scoped (ركيزة امتلك-أو-انضمّ)", Ok = dbScopedOk, Note = $"actual={dbContextLifetime} (runtime)" })
-					.Append((object)new { Key = "rounding_diff_loads", name = "تحميلات فرق التقريب (HM-2، معدود لا مُفشِل)", Ok = true, Note = $"count={CrossBuy.BL.JournalEntryService.RoundingDiffLoads} (منذ الإقلاع)" }),
+					.Append((object)new { Key = "rounding_diff_loads", name = "تحميلات فرق التقريب (HM-2، معدود لا مُفشِل)", Ok = true, Note = $"count={CrossBuy.BL.JournalEntryService.RoundingDiffLoads} (منذ الإقلاع)" })
+					.Append((object)new { Key = "ef_precision_vs_db", name = "دقّة كل عمود decimal في النموذج = دقّة العمود في القاعدة (حارس HM-D27، مستوى المخطط)", Ok = precisionDivergence == 0, Note = $"انحرافات={precisionDivergence} من 352 خاصية (أي انحراف يرفع failedCount)" })
+					.Append((object)new { Key = "bp4_value_vs_currency_precision", name = "لا قيمة مخزَّنة تتجاوز دقّة عملتها (سطر قيد/إجمالي مستند، مستوى البيانات، منذ 2026-07-30)", Ok = bp4Violations == 0, Note = $"مخالفات={bp4Violations} (متمّم لـ ef_precision_vs_db: القيمة لا العمود)" }),
 				note = "نفس الفحوص يشغّلها HostedService يوميًا ويُخطر مديري المخزون عند أي انحراف. فحص عمر CrossDbContext يُقرأ من مزوّد الخدمات وقت التشغيل: أي قيمة غير Scoped تُبطل المعاملة المحيطة وترفع failedCount."
 			});
 		}
@@ -5055,7 +5250,9 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 			var lines = new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "مرتجع اختبار", Qty = 2, UnitPrice = 100, DiscountAmount = 0, TaxRate = 14, RevenueAccountId = revAcc.ID } };
 			var (ok, err, ret) = await ar.CreateSalesReturnAsync(company, cust.ID, null, DateTime.Today, lines, "test", null);
-			bool totalsOk = ret != null && ret.GrandTotal == 228.00m && ret.ReturnNo != null && ret.ReturnNo.StartsWith("CN-");
+			// HM-2 rule: assert the PERSISTED total (fresh AsNoTracking read), not the tracked entity's in-memory value
+			var retRow = ret == null ? null : await _db.SalesReturns.AsNoTracking().Where(x => x.ID == ret.ID).Select(x => new { x.GrandTotal, x.ReturnNo }).FirstOrDefaultAsync();
+			bool totalsOk = retRow != null && retRow.GrandTotal == 228.00m && retRow.ReturnNo != null && retRow.ReturnNo.StartsWith("CN-");
 
 			// verify the credit-note JE: Dr revenue 200 + Dr VAT 28 / Cr AR(1102) 228
 			decimal arCredit = 0, revDebit = 0;
@@ -5114,7 +5311,9 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			decimal apDebit = 0;
 			if (ret?.JournalEntryId != null)
 				apDebit = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == ret.JournalEntryId && l.AccountId == ven.ControlAccountId).SumAsync(l => l.Debit);
-			bool apOk = ret != null && apDebit == ret.GrandTotal && ret.GrandTotal > 0;
+			// HM-2 rule: compare AP debit to the PERSISTED return total (fresh AsNoTracking read), not the tracked entity
+			decimal retGrandDb = ret == null ? 0m : await _db.PurchaseReturns.AsNoTracking().Where(x => x.ID == ret.ID).Select(x => x.GrandTotal).FirstAsync();
+			bool apOk = ret != null && apDebit == retGrandDb && retGrandDb > 0;
 
 			var tb = await _db.JournalEntryLines.AsNoTracking()
 				.Join(_db.JournalEntries.AsNoTracking().Where(e => e.CompanyID == company && e.Status == "Posted"), l => l.JournalEntryId, e => e.ID, (l, e) => l)

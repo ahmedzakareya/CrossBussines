@@ -158,7 +158,6 @@ namespace CrossBuy.BL
 		internal static bool _testBypassLockReadRefresh;
 #endif
 
-		private static decimal R2(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
 		// period guard: every stock document is rejected if its date falls in a Closed period —
@@ -842,6 +841,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, string? docNo, int? docId, string mode)> WriteOffAsync(
 			int companyId, int warehouseId, DateTime date, string? reason, string? notes, List<WriteOffLineInput> lines, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			if (warehouseId <= 0) return (false, "المخزن مطلوب", null, null, "");
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null, null, ""); }
 			lines = (lines ?? new()).Where(l => l.ItemId > 0 && l.Qty > 0).ToList();
@@ -931,6 +931,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? jeId, decimal total)> PostOpeningStockAsync(
 			int companyId, DateTime cutoff, List<OpeningStockLineInput> lines, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			lines = (lines ?? new()).Where(l => l.ItemId > 0 && l.WarehouseId > 0 && l.Qty > 0).ToList();
 			if (lines.Count == 0) return (false, "أضف بندًا واحدًا على الأقل", null, 0);
 			{ var pErr = await PeriodGuardAsync(companyId, cutoff); if (pErr != null) return (false, pErr, null, 0); }
@@ -989,6 +990,7 @@ namespace CrossBuy.BL
 		// Dr Fixed Asset (1201) / Cr Inventory (1103) — stock value drops by the relieved cost so stock == 1103 holds.
 		public async Task<(bool ok, string? error, int? assetId, decimal cost)> CapitalizeFromStockAsync(int companyId, int itemId, int warehouseId, decimal qty, DateTime date, int? costCenterId, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", null, 0);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null, 0); }
 			var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == itemId && i.CompanyID == companyId);
@@ -1041,6 +1043,7 @@ namespace CrossBuy.BL
 		// produce (assemble) or break down (disassemble) an Assembly composite item
 		public async Task<(bool ok, string? error, StockMovement? produced)> AssembleAsync(int companyId, int assemblyItemId, int warehouseId, decimal qty, DateTime date, bool disassemble, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", null);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 			var kit = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == assemblyItemId && i.CompanyID == companyId);
@@ -1178,6 +1181,7 @@ namespace CrossBuy.BL
 			int companyId, ManufWorkOrder wo, List<ManufWorkOrderComponent> comps,
 			List<JournalLineInput> glLines, List<int> accForCc, int wipAccId, DateTime date, string desc, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var compItemIds = comps.Select(c => c.ItemId).Distinct().ToList();
 			var compItems = await _context.Items.AsNoTracking().Where(i => compItemIds.Contains(i.ID)).ToListAsync();
 			var compCatIds = compItems.Select(i => i.ItemCategoryId).Distinct().ToList();
@@ -1264,6 +1268,7 @@ namespace CrossBuy.BL
 		// One (or, when staged, the second) balanced JE; WIP for this order nets to 0; inventory == GL preserved.
 		public async Task<(bool ok, string? error, decimal unitCost)> CompleteWorkOrderAsync(int companyId, int workOrderId, DateTime date, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, 0);
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
 			if (wo == null) return (false, "أمر التشغيل غير موجود", 0);
@@ -1346,6 +1351,7 @@ namespace CrossBuy.BL
 		// so the wip_gl invariant (GL 1105 == Σ open-order WipBalance) stays intact throughout.
 		public async Task<(bool ok, string? error, decimal produced)> ProducePartialAsync(int companyId, int workOrderId, decimal qty, decimal stdUnitCost, bool finalize, DateTime date, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, 0);
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
 			if (wo == null) return (false, "أمر التشغيل غير موجود", 0);
@@ -1437,6 +1443,7 @@ namespace CrossBuy.BL
 		// (Released, WIP>0) reverse them: re-receive components into raw inventory (Dr raw / Cr WIP), clearing WIP.
 		public async Task<(bool ok, string? error)> CancelWorkOrderAsync(int companyId, int workOrderId, DateTime date, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
 			if (wo == null) return (false, "أمر التشغيل غير موجود");
 			if (wo.Status == "Completed") return (false, "لا يمكن إلغاء أمر مكتمل");
@@ -1520,6 +1527,7 @@ namespace CrossBuy.BL
 		// Sourced labor REPLACES 520108 for that amount (no double-count). Raises WIP + the order's WipBalance.
 		public async Task<(bool ok, string? error, int laborId)> AddWorkOrderLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal ratePerHour, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: labor cost rounds to functional dp (no static R2)
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, 0);
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
 			if (wo == null) return (false, "أمر التشغيل غير موجود", 0);
@@ -1602,6 +1610,7 @@ namespace CrossBuy.BL
 		// بند3: remove a labor line — post the reverse (Dr its source / Cr WIP), reduce WipBalance, delete the row.
 		public async Task<(bool ok, string? error)> RemoveWorkOrderLaborAsync(int companyId, int laborId, DateTime date, string? userId)
 		{
+			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var lab = await _context.ManufWorkOrderLabor.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == laborId);
 			if (lab == null) return (false, "سطر العمالة غير موجود");
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == lab.WorkOrderId);

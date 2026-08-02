@@ -47,7 +47,6 @@ namespace CrossBuy.BL
 		private readonly ICurrencyRounding _rounding;
 		public PayableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; }
 
-		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 		private async Task<int?> AccIdAsync(int companyId, string code) =>
 			await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync();

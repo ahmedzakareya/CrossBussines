@@ -121,26 +121,55 @@ namespace CrossBuy.Models.Context
 					  .OnDelete(DeleteBehavior.Restrict);
 			});
 
-			// HM-2 (Batch 4.5 / HM-D27): exchange-rate and UoM-factor columns are FINER than money (DB: rates decimal(19,8),
-			// UoMConversions.Factor decimal(19,6)). The (19,4) default convention above would truncate them on save (an FX rate
-			// like 0.00612345 → 0.0061), so raise those properties to match their columns. Property-name targeted; any same-named
-			// property on a coarser column is harmless (SQL rounds to that column's own scale). SentQty (18,3) stays under (19,4).
+			// HM-2 (Batch 5 item 1 / HM-D27): the (19,4) default above matches the 305 money/cost columns. EVERY decimal column
+			// whose real DB type differs from (19,4) is pinned HERE to its EXACT (precision,scale) — so the EF model equals the DB
+			// on all 352 decimal properties (ZERO divergence), which the permanent precision check in inv-test-integrity asserts.
+			// Keyed by table.column (authoritative), sourced from sys.columns. No name heuristics (a bare "Rate" is FX vs tax-% by table).
+			// NOTE: this is model-only — the DB is already these types (manual SQL); no migration exists or should be generated.
+			var pin = new Dictionary<string, (int p, int s)>(StringComparer.OrdinalIgnoreCase)
+			{
+				// FX / settlement rates — decimal(19,8)
+				["DeliveryNotes.ExchangeRate"] = (19, 8), ["ExchangeRates.Rate"] = (19, 8), ["GoodsReceipts.ExchangeRate"] = (19, 8),
+				["JournalEntryLines.ExchangeRate"] = (19, 8), ["ManufWorkOrderLabor.ExchangeRate"] = (19, 8),
+				["PaymentAllocations.InvoiceRate"] = (19, 8), ["PaymentAllocations.PaymentRate"] = (19, 8), ["Payments.ExchangeRate"] = (19, 8),
+				["PurchaseInvoices.ExchangeRate"] = (19, 8), ["PurchaseOrders.ExchangeRate"] = (19, 8), ["PurchaseReturns.ExchangeRate"] = (19, 8),
+				["Quotations.ExchangeRate"] = (19, 8), ["ReceiptAllocations.InvoiceRate"] = (19, 8), ["ReceiptAllocations.ReceiptRate"] = (19, 8),
+				["Receipts.ExchangeRate"] = (19, 8), ["SalesInvoices.ExchangeRate"] = (19, 8), ["SalesOrders.ExchangeRate"] = (19, 8),
+				["SalesReturns.ExchangeRate"] = (19, 8),
+				// UoM conversion factor — decimal(19,6)
+				["UoMConversions.Factor"] = (19, 6),
+				// percentages / tax rates / confidence — scale 4, narrower precision than money
+				["AiInteractions.Confidence"] = (5, 4),
+				["PurchaseInvoiceLines.TaxRate"] = (7, 4), ["SalesInvoiceLines.TaxRate"] = (7, 4), ["TaxCodes.Rate"] = (7, 4),
+				["BranchPosSettings.ServiceChargePct"] = (9, 4), ["PosOrderLines.TaxRate"] = (9, 4),
+				["ProgressBillings.RetentionPercent"] = (9, 4), ["ProgressBillings.TaxRate"] = (9, 4),
+				["ProjectProgresses.OverallPercent"] = (9, 4), ["ProjectProgressLines.ManualPercent"] = (9, 4),
+				["Projects.AdvancePercent"] = (9, 4), ["Projects.RetentionPercent"] = (9, 4),
+				["PurchaseOrderLines.TaxRate"] = (9, 4), ["SalesOrderLines.TaxRate"] = (9, 4),
+				["SubcontractBillings.RetentionPercent"] = (9, 4), ["SubcontractBillings.TaxRate"] = (9, 4),
+				["Subcontracts.RetentionPercent"] = (9, 4),
+				// kitchen-dispatched quantity — decimal(18,3)
+				["PosOrderLines.SentQty"] = (18, 3),
+				// hours / layout coordinates / rating / legacy 2dp price — scale 2 (their columns are 2dp by design)
+				["Items.StoreRating"] = (3, 2), ["AttendancePolicies.WorkHoursPerDay"] = (4, 2), ["AttendanceRecords.WorkedHours"] = (9, 2),
+				["RestaurantTables.H"] = (9, 2), ["RestaurantTables.W"] = (9, 2), ["RestaurantTables.X"] = (9, 2), ["RestaurantTables.Y"] = (9, 2),
+				["TaskItems.ActualHours"] = (9, 2), ["TaskItems.EstimatedHours"] = (9, 2), ["TimesheetEntries.Hours"] = (9, 2),
+				// HM-D28 (deferred): StoreOldPrice is a MONEY column at 2dp — in a 3-decimal currency it would lose the fil.
+				// Pinned to its real 2dp here so model==DB; widening it needs a manual idempotent SQL script (deploy/sql) IF the storefront ever prices in KWD.
+				["Items.StoreOldPrice"] = (10, 2),
+			};
 			foreach (var et in builder.Model.GetEntityTypes())
+			{
+				var table = et.GetTableName();
+				if (table == null) continue;
+				var soi = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier.Table(table, et.GetSchema());
 				foreach (var p in et.GetProperties())
 				{
 					if (p.ClrType != typeof(decimal) && p.ClrType != typeof(decimal?)) continue;
-					switch (p.Name)
-					{
-						case "ExchangeRate":
-						case "Rate":
-						case "InvoiceRate":
-						case "PaymentRate":
-						case "ReceiptRate":
-							p.SetPrecision(19); p.SetScale(8); break;
-						case "Factor":
-							p.SetPrecision(19); p.SetScale(6); break;
-					}
+					var col = p.GetColumnName(soi) ?? p.Name;
+					if (pin.TryGetValue(table + "." + col, out var pr)) { p.SetPrecision(pr.p); p.SetScale(pr.s); }
 				}
+			}
 		}
 
         // (legacy empty/unused ItemCategory + ItemCategoryGroup scaffold removed — superseded by Inventory module)

@@ -51,9 +51,9 @@ namespace CrossBuy.BL
 		private readonly IReceivableService _receivables;
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
-		public SellingService(CrossDbContext context, IStockService stock, IReceivableService receivables, INotificationService notify, ICurrencyService currency) { _context = context; _stock = stock; _receivables = receivables; _notify = notify; _currency = currency; }
+		private readonly ICurrencyRounding _rounding;
+		public SellingService(CrossDbContext context, IStockService stock, IReceivableService receivables, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _stock = stock; _receivables = receivables; _notify = notify; _currency = currency; _rounding = rounding; }
 
-		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
 		// Multi-Currency: resolve the document currency + foreign→functional rate (Sell, for sales docs)
@@ -79,6 +79,8 @@ namespace CrossBuy.BL
 			if (lines == null || lines.Count == 0) return (false, "أمر البيع يجب أن يحتوي على بند واحد على الأقل", null);
 
 			var (cur, rate) = await ResolveCurAsync(companyId, currencyId, exchangeRate, date);
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);   // HM-2 Batch 5: document-currency dp (EGP no-op; KWD keeps fils; no static R)
+			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			var so = new SalesOrder { CompanyID = companyId, CustomerId = customerId, WarehouseId = warehouseId, OrderDate = date.Date, ExpectedDate = expected, Status = "Approved", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate), ProjectId = projectId };
 			int ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
@@ -116,6 +118,8 @@ namespace CrossBuy.BL
 			if (lines == null || lines.Count == 0) return (false, "عرض السعر يجب أن يحتوي على بند واحد على الأقل", null);
 
 			var (cur, rate) = await ResolveCurAsync(companyId, currencyId, exchangeRate, date);
+			int __ddp = await _rounding.DecimalsAsync(companyId, cur);   // HM-2 Batch 5: document-currency dp (EGP no-op; no static R)
+			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			var q = new Quotation { CompanyID = companyId, CustomerId = customerId, WarehouseId = warehouseId, QuoteDate = date.Date, ValidUntil = validUntil, Status = "Draft", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = R4(rate) };
 			int ln = 1; decimal sub = 0, tax = 0;
 			foreach (var l in lines)
@@ -172,6 +176,9 @@ namespace CrossBuy.BL
 			if (warehouseId <= 0) return (false, "المخزن مطلوب", null);
 			if (lines == null || lines.Count == 0) return (false, "إذن الصرف يجب أن يحتوي على بند واحد على الأقل", null);
 
+			// HM-2 Batch 5: TotalCost is a FUNCTIONAL cost (Σ movement TotalCost) → round to functional dp via the central helper (EGP no-op; no static R).
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal R(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			var dn = new DeliveryNote { CompanyID = companyId, CustomerId = customerId, WarehouseId = warehouseId, SalesOrderId = soId, DeliveryDate = date.Date, Status = "Posted", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow };
 			_context.DeliveryNotes.Add(dn);
 			await _context.SaveChangesAsync();

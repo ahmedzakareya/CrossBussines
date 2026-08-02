@@ -104,9 +104,9 @@ namespace CrossBuy.BL
 		private readonly CrossDbContext _context;
 		private readonly ICurrencyService _currency;
 		private readonly IManufService _manuf;
-		public PricingService(CrossDbContext context, ICurrencyService currency, IManufService manuf) { _context = context; _currency = currency; _manuf = manuf; }
+		private readonly ICurrencyRounding _rounding;
+		public PricingService(CrossDbContext context, ICurrencyService currency, IManufService manuf, ICurrencyRounding rounding) { _context = context; _currency = currency; _manuf = manuf; _rounding = rounding; }
 
-		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 
 		public async Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf)
 		{
@@ -114,6 +114,8 @@ namespace CrossBuy.BL
 			var seg = string.IsNullOrWhiteSpace(segment) ? null : segment.Trim();
 			var functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
 			var docCur = currencyId ?? functional;
+			int __ddp = await _rounding.DecimalsAsync(companyId, docCur);   // HM-2 Batch 5: price in the DOCUMENT currency dp (no static R)
+			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 
 			// candidates: active list, item matches, qty break + validity satisfied,
 			// currency matches the document (null list currency == functional), and targeting allows this customer
@@ -153,7 +155,7 @@ namespace CrossBuy.BL
 					decimal markup = best.MarkupPercent < 0 ? 0m : best.MarkupPercent;
 					decimal priceFunc = costFunc * (1 + markup / 100m);
 					decimal priceDoc = await FromFunctionalAsync(priceFunc, docCur, functional, asOf);
-					result = new PriceResult { UnitPrice = await RoundToCurrencyAsync(priceDoc, docCur), DiscountPercent = disc, PriceListId = best.ListId, PriceListName = best.Name, PriceListNameEn = best.NameEn, CurrencyId = docCur, Source = "costplus" };
+					result = new PriceResult { UnitPrice = await RoundToCurrencyAsync(companyId, priceDoc, docCur), DiscountPercent = disc, PriceListId = best.ListId, PriceListName = best.Name, PriceListNameEn = best.NameEn, CurrencyId = docCur, Source = "costplus" };
 				}
 				else
 				{
@@ -191,6 +193,8 @@ namespace CrossBuy.BL
 			int docCur, int functional, decimal q, DateTime asOf, PriceResult result)
 		{
 			if (result.UnitPrice <= 0) return;   // nothing to discount (source=none / manual entry)
+			int __ddp = await _rounding.DecimalsAsync(companyId, docCur);   // HM-2 Batch 5: promotion amounts in the DOCUMENT currency dp (no static R)
+			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			var promos = await _context.Promotions.AsNoTracking()
 				.Where(p => p.CompanyID == companyId && p.IsActive && p.MinQty <= q
 					&& (p.ValidFrom == null || p.ValidFrom <= asOf) && (p.ValidTo == null || p.ValidTo >= asOf)
@@ -212,7 +216,7 @@ namespace CrossBuy.BL
 				decimal discAmt;
 				if (p.DiscountType == "Amount")
 				{
-					decimal amtDoc = await ConvertToDocAsync(p.Value, p.CurrencyId ?? functional, docCur, functional, asOf);
+					decimal amtDoc = await ConvertToDocAsync(companyId, p.Value, p.CurrencyId ?? functional, docCur, functional, asOf);
 					discAmt = Math.Min(amtDoc, netAfterList);   // a fixed discount can't exceed the net
 				}
 				else
@@ -237,8 +241,10 @@ namespace CrossBuy.BL
 		}
 
 		// convert an amount from one currency to another (functional/EGP pivot, Sell rate).
-		private async Task<decimal> ConvertToDocAsync(decimal amount, int fromCur, int docCur, int functional, DateTime asOf)
+		private async Task<decimal> ConvertToDocAsync(int companyId, decimal amount, int fromCur, int docCur, int functional, DateTime asOf)
 		{
+			int __ddp = await _rounding.DecimalsAsync(companyId, docCur);   // HM-2 Batch 5: result in the DOCUMENT currency dp (no static R)
+			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			if (fromCur == docCur) return R(amount);
 			decimal inFunc = fromCur == functional ? amount : (await _currency.ToBaseAsync(amount, fromCur, functional, asOf, "Sell")).baseAmount;
 			if (docCur == functional) return R(inFunc);
@@ -250,6 +256,8 @@ namespace CrossBuy.BL
 		// manufactured (has a BOM) → standard manufactured unit cost; else moving-average stock cost; else opening cost.
 		private async Task<decimal> ResolveItemCostAsync(int companyId, int itemId)
 		{
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);   // HM-2 Batch 5: cost is FUNCTIONAL → functional dp (no static R)
+			decimal R(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			bool manufactured = await _context.ItemComponents.AsNoTracking().AnyAsync(c => c.CompanyID == companyId && c.ParentItemId == itemId);
 			if (manufactured)
 			{
@@ -272,17 +280,16 @@ namespace CrossBuy.BL
 			return (found && docRate > 0) ? amountFunc / docRate : amountFunc;
 		}
 
-		// round to the currency's configured decimal places (falls back to 2).
-		private async Task<decimal> RoundToCurrencyAsync(decimal v, int currencyId)
-		{
-			var dp = await _context.Currencies.AsNoTracking().Where(c => c.ID == currencyId).Select(c => (int?)c.DecimalPlaces).FirstOrDefaultAsync() ?? 2;
-			if (dp < 0) dp = 2; else if (dp > 6) dp = 6;
-			return Math.Round(v, dp, MidpointRounding.AwayFromZero);
-		}
+		// HM-2 Batch 5: round to the currency's configured decimal places via the SINGLE central helper (no direct DecimalPlaces
+		// read, no silent ?? 2 — ICurrencyRounding throws for an undefined currency, keeping one source of precision truth).
+		private Task<decimal> RoundToCurrencyAsync(int companyId, decimal v, int currencyId)
+			=> _rounding.RoundAsync(companyId, v, currencyId);
 
 		// Pricing 2A — gross-margin floor check (all comparison in functional currency).
 		public async Task<MarginCheckResult> CheckMarginAsync(int companyId, int itemId, decimal netUnitPrice, int? currencyId, decimal? exchangeRate, DateTime asOf)
 		{
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);   // HM-2 Batch 5: margin/cost analysis is FUNCTIONAL → functional dp (no static R)
+			decimal R(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			var settings = await _context.InventorySettings.AsNoTracking().Where(s => s.CompanyID == companyId)
 				.Select(s => new { s.MinMarginPct, s.MinMarginMode }).FirstOrDefaultAsync();
 			var mode = string.IsNullOrWhiteSpace(settings?.MinMarginMode) ? "Off" : settings!.MinMarginMode;

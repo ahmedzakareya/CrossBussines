@@ -215,7 +215,6 @@ namespace CrossBuy.BL
 		internal static Func<Task>? _testFaultBeforeConflictSave;   // forces ONLY the post-commit conflict save to fail (proves order still succeeds)
 #endif
 
-		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 
 		// HM-1-أ (ب-1-2): ATOMIC receipt-number allocation. ONE `UPDATE … OUTPUT deleted.NextReceiptNo` takes an
 		// exclusive row lock and returns the pre-increment value — no read-then-write race across concurrent lanes.
@@ -1410,6 +1409,8 @@ namespace CrossBuy.BL
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
 			if (o == null) return (false, "الطلب غير موجود", null);
 			if (o.Status != "Paid") return (false, "المرتجع الجزئي متاح للفواتير المدفوعة فقط", null);
+			int __ddp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2 Batch 5: order document dp (no static R)
+			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			allocations = (allocations ?? new()).Where(a => a.Qty > 0).ToList();
 			if (allocations.Count == 0) return (false, "اختر صنفًا وكمية للإرجاع", null);
 
@@ -1517,6 +1518,9 @@ namespace CrossBuy.BL
 				var (cok, cerr, oid) = await CreateOrderAsync(companyId, branchId, p.OrderType ?? "Takeaway", p.TableId, userId, p.TerminalId, p.ShiftId);
 				if (!cok) { await tx.RollbackAsync(); return (false, cerr, null, false); }
 				orderId = oid;
+				// HM-2 Batch 5: offline-replay line totals + price-conflict checks round to the order's document dp (no static R). RecomputeAsync re-does LineTotal authoritatively.
+				int __ddp = await _rounding.DecimalsAsync(companyId, await _db.PosOrders.AsNoTracking().Where(x => x.ID == orderId).Select(x => x.CurrencyId).FirstAsync(), branchId);
+				decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 				if (p.CustomerId != null) await SetOrderCustomerAsync(companyId, orderId, p.CustomerId.Value);
 				foreach (var l in p.Lines)
 				{
@@ -1592,6 +1596,9 @@ namespace CrossBuy.BL
 				// option → extra price (to reconstruct the expected catalog unit price for a modified line)
 				var allOpt = p.Lines.Where(l => l.OptionIds != null).SelectMany(l => l.OptionIds!).Distinct().ToList();
 				var optExtra = allOpt.Count == 0 ? new Dictionary<int, decimal>() : await _db.ModifierOptions.AsNoTracking().Where(o => allOpt.Contains(o.ID)).ToDictionaryAsync(o => o.ID, o => o.ExtraPrice);
+				// HM-2 Batch 5: expected catalog price compared in the order's document dp (no static R). Post-tx scope → own shadow.
+				int __cdp = await _rounding.DecimalsAsync(companyId, await _db.PosOrders.AsNoTracking().Where(x => x.ID == orderId).Select(x => x.CurrencyId).FirstAsync());
+				decimal R(decimal v) => Math.Round(v, __cdp, MidpointRounding.AwayFromZero);
 				foreach (var l in p.Lines)
 				{
 					if (!items.TryGetValue(l.ItemId, out var it)) continue;
@@ -1671,6 +1678,8 @@ namespace CrossBuy.BL
 			if (o == null) return (false, "الطلب غير موجود");
 			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
 			if (o.OrderType != "Delivery") return (false, "هذا الطلب ليس توصيلًا");
+			int __ddp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2 Batch 5: order document dp (no static R)
+			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			if (customerId != null && await _db.Customers.AnyAsync(c => c.ID == customerId && c.CompanyID == companyId)) o.CustomerId = customerId;
 			DeliveryZone? zone = null;
 			if (zoneId != null) { zone = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.ID == zoneId && z.BranchId == o.BranchId && z.IsActive); if (zone == null) return (false, "منطقة التوصيل غير صحيحة"); }
