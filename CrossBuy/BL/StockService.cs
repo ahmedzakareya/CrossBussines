@@ -260,7 +260,16 @@ namespace CrossBuy.BL
 				.GroupBy(m => m.BatchId!.Value)
 				.Select(g => new { BatchId = g.Key, Qty = g.Sum(x => x.Direction * x.QtyBase) })
 				.Where(x => x.Qty > 0).ToListAsync();
-			if (perBatch.Count == 0) return (false, null, none);
+			if (perBatch.Count == 0)
+			{
+				// HM-D8: no batched stock for this item/warehouse. If it nonetheless has physical on-hand, that stock is
+				// UNBATCHED — invisible to FEFO. BLOCK the issue with a clear data-correction message instead of silently
+				// selling it unbatched (which would bypass expiry). Genuinely-zero stock falls through to the normal path.
+				decimal onHand0 = await _context.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == item.ID && b.WarehouseId == warehouseId).Select(b => (decimal?)b.QtyOnHand).FirstOrDefaultAsync() ?? 0m;
+				if (onHand0 > 0)
+					return (true, $"الصنف ({item.ItemCode}) به رصيد غير مرتبط بدفعات ({onHand0:0.##}) — لا يمكن صرفه بنظام الصلاحية؛ يلزم تصحيح البيانات بإدخال الدفعات", none);
+				return (false, null, none);
+			}
 			var batchIds = perBatch.Select(p => p.BatchId).ToList();
 			var batches = await _context.StockBatches.AsNoTracking().Where(b => batchIds.Contains(b.ID)).ToListAsync();
 			var dateOnly = date.Date;
@@ -275,6 +284,11 @@ namespace CrossBuy.BL
 			{
 				var expiredQty = avail.Where(p => p.Expired).Sum(p => p.Qty);
 				var hint = expiredQty > 0 ? $" (مستبعَد {expiredQty:0.##} من دفعات منتهية)" : "";
+				// HM-D8: if the item ALSO holds unbatched physical stock beyond the batched total, the "available" figure
+				// undercounts — say so, so the shortfall reads as a data problem, not a genuine stock-out.
+				decimal batchedTotal = avail.Sum(p => p.Qty);
+				decimal onHand = await _context.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == item.ID && b.WarehouseId == warehouseId).Select(b => (decimal?)b.QtyOnHand).FirstOrDefaultAsync() ?? 0m;
+				if (onHand > batchedTotal) hint += $" (+ {onHand - batchedTotal:0.##} غير مرتبط بدفعات — يلزم تصحيح البيانات)";
 				return (true, $"الرصيد الصالح غير كافٍ: المتاح {validQty:0.##}، المطلوب {neededBase:0.##}{hint}", none);
 			}
 			var alloc = new List<(string batchNo, decimal qtyBase)>();
@@ -319,6 +333,20 @@ namespace CrossBuy.BL
 				}
 				catch (Exception ex) { await btx.RollbackAsync(); return (false, "خطأ أثناء تفكيك الحزمة: " + ex.Message, null); }
 			}
+
+			// ===== HM-D8: FORCE a batch on the batch-capable USER input paths for expiry-tracked items — else the stock is
+			// invisible to FEFO (the "available 0 while stock exists" bug). Placed BEFORE the FEFO block so a write-off
+			// must name its batch (an expired write-off can't be FEFO-auto-picked). EXCLUDED: sale/issue (SalesInvoice/
+			// Issue → FEFO auto-allocates), manufacturing/assembly output, purchase/GRN (HM-D16/HM-16 — no batch entry yet),
+			// and transfer (carries the batch inherited from the transfer line). StockService has no localizer by design —
+			// every message here is hardcoded Arabic (file convention); adding a localizer would itself be a new writer
+			// coupling (HM-D53). This guard touches ONLY input validation — no FEFO/cost/rounding logic changes.
+			// Write-off of a tracked item MUST name its batch — placed BEFORE FEFO so an expired write-off is not
+			// FEFO-auto-picked (FEFO excludes expired). Inbound force-batch lives in PostSingleAsync (below) so it also
+			// covers PostOpeningStockAsync, which reaches PostSingleAsync directly.
+			if (hdr.TrackExpiry && req.Direction == -1 && req.SourceType == "StockWriteOff"
+				&& string.IsNullOrWhiteSpace(req.BatchNo) && string.IsNullOrWhiteSpace(req.SerialNo))
+				return (false, $"الصنف ({hdr.ItemCode}) يُتتبَّع بالصلاحية — يجب تحديد رقم الدفعة المراد إعدامها", null);
 
 			// ===== FEFO: auto-pick nearest-expiry batches on issue for expiry-tracked items =====
 			// Triggers only when the caller didn't name a batch/serial. Allocates the issue across batches
@@ -380,6 +408,20 @@ namespace CrossBuy.BL
 			if (item == null) return (false, "الصنف غير موجود", null);
 			var wh = await _context.Warehouses.FirstOrDefaultAsync(w => w.ID == req.WarehouseId && w.CompanyID == companyId);
 			if (wh == null) return (false, "المخزن غير موجود", null);
+
+			// ===== HM-D8: FORCE a batch (+expiry) on INBOUND user-entry for expiry-tracked items — the single choke point
+			// (PostOpeningStockAsync, manual receipt/adjustment and the normal path all reach here). Excluded: sale/issue
+			// (FEFO auto-allocates on the way in), manufacturing/assembly output, purchase/GRN (HM-D16/HM-16), transfer-in
+			// (carries the inherited batch). Input validation only — no FEFO/cost/rounding change. Hardcoded Arabic (file
+			// convention; StockService has no localizer by design — adding one would itself be a new writer coupling, HM-D53).
+			var inboundEntrySources = new HashSet<string> { "OpeningStock", "Opening", "Receipt", "Adjustment" };
+			if (item.TrackExpiry && req.Direction == 1 && inboundEntrySources.Contains(req.SourceType ?? "")
+				&& string.IsNullOrWhiteSpace(req.BatchNo) && string.IsNullOrWhiteSpace(req.SerialNo))
+				return (false, $"الصنف ({item.ItemCode}) يُتتبَّع بالصلاحية — يجب إدخال رقم الدفعة", null);
+			if (item.TrackExpiry && req.Direction == 1 && inboundEntrySources.Contains(req.SourceType ?? "")
+				&& !string.IsNullOrWhiteSpace(req.BatchNo) && req.Expiry == null)
+				return (false, $"الصنف ({item.ItemCode}) يُتتبَّع بالصلاحية — يجب تحديد تاريخ الصلاحية للدفعة عند الإدخال", null);
+
 			var cat = await _context.ItemCategories.FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId && c.CompanyID == companyId);
 
 			var method = !string.IsNullOrWhiteSpace(item.CostingMethod) ? item.CostingMethod

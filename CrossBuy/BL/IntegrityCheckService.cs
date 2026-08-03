@@ -363,6 +363,17 @@ namespace CrossBuy.BL
 				Note = newCouplings.Count == 0 ? "no dependency outside the allow-list" : string.Join(" · ", newCouplings) + " — constructor-injection only (not call-sites / static locator)",
 				Detail = null });
 
+			// ---- HM-D8 (COUNTED): inbound stock of an expiry-tracked item that carries NO batch — invisible to FEFO. ----
+			// Surfaces the legacy footprint that must be cleaned; documented legacy, NEVER raises failedCount. The HM-D8
+			// input guard blocks NEW ones, so this count only decreases (as legacy movements are cleaned/consumed).
+			var unbatchedInbound = await (from m in _db.StockMovements.AsNoTracking()
+										  join i in _db.Items.AsNoTracking() on m.ItemId equals i.ID
+										  where i.CompanyID == companyId && i.TrackExpiry && m.Direction == 1 && m.BatchId == null
+										  select m.ItemId).ToListAsync();
+			res.Add(new IntegrityCheck { Key = "unbatched_inbound_tracked", NameAr = "وارد بلا دفعة لصنف مُتتبَّع بالصلاحية (معدود، HM-D8)", NameEn = "Unbatched inbound for an expiry-tracked item (counted, HM-D8)",
+				Expected = 0, Actual = unbatchedInbound.Count, Ok = true,
+				Note = $"movements={unbatchedInbound.Count} · items={unbatchedInbound.Distinct().Count()} (legacy — invisible to FEFO; the HM-D8 input guard blocks new ones)", Detail = "/Inventory/StockMovements" });
+
 			return res;
 		}
 

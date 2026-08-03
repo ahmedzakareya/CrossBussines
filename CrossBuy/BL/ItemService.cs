@@ -395,6 +395,14 @@ namespace CrossBuy.BL
 			return null;
 		}
 
+		// HM-6 (HM-D8): TrackBatch has no issue-ordering behaviour of its own (FEFO orders by EXPIRY), so enabling it
+		// without TrackExpiry would fake a tracking the system does not enforce. Refuse it until batch-only tracking is
+		// implemented. (All existing TrackBatch items already have TrackExpiry, so this breaks nothing.)
+		private static string? TrackingGuard(ItemInput x)
+			=> (x.TrackBatch && !x.TrackExpiry)
+				? "تتبّع الدفعات دون تتبّع الصلاحية غير مدعوم — فعّل تتبّع الصلاحية (يُرتِّب الصرف بنظام FEFO)."
+				: null;
+
 		private static (bool ok, string? error) ValidateItem(ItemInput x)
 		{
 			if (string.IsNullOrWhiteSpace(x.ItemCode)) return (false, "كود الصنف مطلوب");
@@ -415,6 +423,8 @@ namespace CrossBuy.BL
 			if (bcErr != null) return (false, bcErr, null);
 			var wErr = await WeightedItemGuardAsync(companyId, 0, x);   // HM-3
 			if (wErr != null) return (false, wErr, null);
+			var tErr = TrackingGuard(x);   // HM-6/HM-D8
+			if (tErr != null) return (false, tErr, null);
 
 			var item = new Item
 			{
@@ -451,6 +461,8 @@ namespace CrossBuy.BL
 			if (bcErr != null) return (false, bcErr);
 			var wErr = await WeightedItemGuardAsync(companyId, id, x);   // HM-3
 			if (wErr != null) return (false, wErr);
+			var tErr = TrackingGuard(x);   // HM-6/HM-D8
+			if (tErr != null) return (false, tErr);
 			item.ItemCode = code; item.Barcode = bar; item.Name = x.Name.Trim(); item.NameEn = x.NameEn;
 			item.ItemCategoryId = x.ItemCategoryId; item.ItemType = x.ItemType; item.BaseUoMId = x.BaseUoMId;
 			item.PurchaseUoMId = x.PurchaseUoMId; item.SalesUoMId = x.SalesUoMId; item.CostingMethod = x.CostingMethod;

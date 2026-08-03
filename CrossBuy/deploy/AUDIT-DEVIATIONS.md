@@ -645,3 +645,56 @@ Both live in `IntegrityCheckService.RunAsync` (our file) and run in `inv-test-in
   added to the list (that is the point — a new dependency is surfaced for a human decision, not silently accepted).
 - **Constants after the batch:** failedCount 0 · ar_sub 0 · ap_sub 0 · ef_precision 0/352 · bp4 0 · bal_qty_vs_moves
   متطابق · culture allPass · dbContextLifetime Scoped.
+
+## HM-6 — expiry & batches (retail FEFO enforcement) — 2026-08-03
+### HM-D8 (RESOLVED for the retail input paths) — force a batch on tracked input; fix the misleading issue
+The long-standing HM-D8 gap (tracked stock enters without a batch → invisible to FEFO → an "available 0" style
+confusion) is closed for the batch-capable USER paths:
+- **Force-batch guard in `StockService.PostSingleAsync`** (the single choke point every caller reaches, incl.
+  `PostOpeningStockAsync` which bypasses the `PostMovementAsync` wrapper): an INBOUND movement of a `TrackExpiry` item
+  with `SourceType ∈ {OpeningStock, Opening, Receipt, Adjustment}` and no batch is REJECTED; a batch without an expiry
+  DATE is likewise rejected. A **write-off** of a tracked item must name its batch — that check sits in
+  `PostMovementAsync` BEFORE the FEFO block so an expired write-off is not FEFO-auto-picked. EXCLUDED (unchanged):
+  sale/issue (FEFO auto-allocates), manufacturing/assembly output, purchase/GRN (**HM-D16 ⇒ HM-16**, no batch entry
+  yet), transfer (carries the inherited batch). Input validation only — **no change to FEFO/cost/rounding**.
+- **FEFO now BLOCKS an unbatched issue** (behaviour change, deliberate): when a `TrackExpiry` item has NO batched
+  stock but DOES have physical on-hand, `FefoAllocateAsync` returns a clear data-correction message instead of
+  silently falling through to a normal (unbatched, expiry-bypassing) issue. When it has SOME batched stock but the
+  valid quantity is short AND unbatched stock also exists, the shortfall message names the unbatched remainder. This
+  is the "misleading `available 0`" fix — the real reachable case was a *silent sell*, now a clear block.
+- Messages are hardcoded Arabic (StockService/ItemService have no localizer by design — every message in them is
+  hardcoded Arabic; injecting one would itself be a new writer coupling that HM-D53 flags).
+
+### HM-6 — TrackBatch decision (the 4th dead flag) — reject batch-only tracking
+`TrackBatch` had no behaviour of its own (FEFO orders by EXPIRY). Enabling it without `TrackExpiry` faked a tracking
+the system does not enforce. `ItemService` now **rejects `TrackBatch && !TrackExpiry`** on create/update with a clear
+message ("batch tracking without expiry is not supported — enable expiry tracking"). Verified state: all 10 existing
+`TrackBatch` items are ALSO `TrackExpiry` (0 batch-only, 0 movements, 0 on-hand), so this breaks nothing. Batch-only
+lot traceability (no expiry ordering) is deferred by name.
+
+### HM-6 — counted classification (the legacy footprint)
+`unbatched_inbound_tracked` (`IntegrityCheckService`, COUNTED, never fails): inbound stock of a `TrackExpiry` item
+with no batch — invisible to FEFO. Current: **27 movements across 6 items** (legacy). The input guard blocks new ones,
+so the count only decreases as legacy is cleaned/consumed.
+
+### HM-6 deferred (named)
+- **HM-D54** — a promotion targeted at a specific batch (clearance discount on a near-expiry lot): `Promotion` has no
+  batch dimension; needs one. Deferred.
+- **Cleaning the 27 legacy unbatched movements** — data cleanup, deferred (surfaced by the classification; the guard
+  stops new ones).
+- **Purchase/GRN batch entry** — HM-D16 ⇒ HM-16 (do not touch the purchase invoice / GRN in HM-6).
+- **Near-expiry PUSH notification** (a report `ExpiryAlerts` exists) · **per-branch/item expiry threshold** ·
+  **auto-generated batch numbers** · **batch-only (no-expiry) tracking**.
+
+### HM-6 acceptance — 9/9 PASS + regression (2026-08-03, FRESH full build, read from the DB)
+Seed `hm6-seed` (fill-to-floor via `PostOpeningStockAsync`): ZZ-EXP (numeric, TrackExpiry) LOT-A(+10d,100)/LOT-B(+60d,
+100)/LOT-EXP(-5d,50); ZZ-WEXP (weighted, TrackExpiry) WLOT-A(+5d,0.500kg)/WLOT-B(+40d,2.000kg).
+**T1** sell 30 ⇒ FEFO from LOT-A (100→70), LOT-B 100. **T2** sell 150 ⇒ LOT-A→0 + LOT-B→50 (split). **T3** weighted
+0.755kg ⇒ WLOT-A 0.500→0 + WLOT-B 2.000→1.745 (Σ drawn 0.755 EXACT, no truncation). **T4** named expired batch blocked;
+FEFO short ⇒ excludes expired with a clear message (+ notes unbatched remainder). **T5** opening/receipt/adjustment/
+write-off WITHOUT a batch ⇒ all rejected. **T6** unbatched physical stock ⇒ clear data-correction message (not
+"available 0"). **T7** expired write-off ⇒ 510103 debited, LOT-EXP 50→40. **T8** ExpiryAlerts shows LOT-A (near) +
+LOT-EXP (expired). **T9** TrackBatch without TrackExpiry rejected; with it allowed. **T10 regression:** restaurant
+`rc6c` allPass; constants **failedCount 0 · ar_sub 0 · ap_sub 0 · ef_precision 0/352 · bp4 0 · bal_qty_vs_moves match ·
+batch_no_negative 0 · culture allPass · dbContext Scoped**; new checks `dbset_tables_exist` GREEN, `writer_coupling`
+counted (1), `unbatched_inbound_tracked` counted (27).

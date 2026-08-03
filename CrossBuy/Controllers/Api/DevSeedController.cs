@@ -1011,6 +1011,177 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, log });
 		}
 
+		// GET /api/dev/hm6-seed?key=seed123 — HM-6 expiry/batch fixtures via PostOpeningStockAsync (fill-to-floor):
+		// ZZ-EXP (numeric, TrackExpiry) with LOT-A(+10d,100)/LOT-B(+60d,100)/LOT-EXP(-5d,50); ZZ-WEXP (weighted,
+		// TrackExpiry) with WLOT-A(+5d,0.500kg)/WLOT-B(+40d,2.000kg) for the fractional split test.
+		[HttpGet("hm6-seed")]
+		public async Task<IActionResult> Hm6Seed(string key, [FromServices] CrossBuy.BL.IStockService stock)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var branch = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "HYPER-DEMO");
+			if (branch == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1/2/3-seed first" });
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == branch.ID).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstOrDefaultAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int kg = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "KG").Select(u => u.ID).FirstAsync();
+			int hcat = await _db.ItemCategories.Where(c => c.CompanyID == company && c.Code == "HYPER-CAT").Select(c => c.ID).FirstAsync();
+
+			async Task<int> EnsureExpItem(string code, int uom, bool weighted, int? scale)
+			{
+				var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (it == null) { it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = "ZZBC-" + code, Name = code, NameEn = code, ItemCategoryId = hcat, ItemType = "Stockable", BaseUoMId = uom, TrackExpiry = true, TrackBatch = false, IsWeighted = weighted, ScaleCode = scale, IsActive = true, CostingMethod = "Average", SalesPrice = 1m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); }
+				else { it.TrackExpiry = true; it.BaseUoMId = uom; it.IsWeighted = weighted; it.ScaleCode = scale; await _db.SaveChangesAsync(); }
+				return it.ID;
+			}
+			int expId = await EnsureExpItem("ZZ-EXP", pcs, false, null);
+			int wexpId = await EnsureExpItem("ZZ-WEXP", kg, true, 39001);
+
+			async Task Fill(int itemId, string lot, DateTime exp, decimal floor, decimal cost)
+			{
+				int? bid = await _db.StockBatches.Where(b => b.CompanyID == company && b.ItemId == itemId && b.BatchNo == lot).Select(b => (int?)b.ID).FirstOrDefaultAsync();
+				decimal cur = bid == null ? 0m : (await _db.StockMovements.Where(m => m.ItemId == itemId && m.WarehouseId == wh && m.BatchId == bid).SumAsync(m => (decimal?)(m.Direction * m.QtyBase)) ?? 0m);
+				if (cur < floor) { var (ok, err, _, _) = await stock.PostOpeningStockAsync(company, DateTime.Today, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = itemId, WarehouseId = wh, Qty = floor - cur, UnitCost = cost, BatchNo = lot, Expiry = exp } }, "dev"); if (!ok) log.Add($"  fill {lot} err: {err}"); }
+			}
+			var T = DateTime.Today;
+			await Fill(expId, "LOT-A", T.AddDays(10), 100m, 2m);
+			await Fill(expId, "LOT-B", T.AddDays(60), 100m, 2m);
+			await Fill(expId, "LOT-EXP", T.AddDays(-5), 50m, 2m);
+			await Fill(wexpId, "WLOT-A", T.AddDays(5), 0.500m, 450m);
+			await Fill(wexpId, "WLOT-B", T.AddDays(40), 2.000m, 450m);
+
+			Chk("ZZ-EXP + ZZ-WEXP (TrackExpiry) with dated batches via PostOpeningStockAsync", true);
+			return Ok(new { allPass, expId, wexpId, wh, log });
+		}
+
+		// GET /api/dev/hm6-accept?key=seed123 — HM-6 acceptance through the REAL StockService/ItemService, read from DB.
+		[HttpGet("hm6-accept")]
+		public async Task<IActionResult> Hm6Accept(string key, [FromServices] CrossBuy.BL.IStockService stock, [FromServices] CrossBuy.BL.IItemService items, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			int branchId = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstAsync();
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == branchId).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstOrDefaultAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int kg = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "KG").Select(u => u.ID).FirstAsync();
+			int hcat = await _db.ItemCategories.Where(c => c.CompanyID == company && c.Code == "HYPER-CAT").Select(c => c.ID).FirstAsync();
+			int expId = await _db.Items.Where(i => i.CompanyID == company && i.ItemCode == "ZZ-EXP").Select(i => i.ID).FirstAsync();
+			int wexpId = await _db.Items.Where(i => i.CompanyID == company && i.ItemCode == "ZZ-WEXP").Select(i => i.ID).FirstAsync();
+			var T = DateTime.Today;
+
+			async Task<decimal> Batch(int itemId, string lot)
+			{
+				int? bid = await _db.StockBatches.AsNoTracking().Where(b => b.CompanyID == company && b.ItemId == itemId && b.BatchNo == lot).Select(b => (int?)b.ID).FirstOrDefaultAsync();
+				return bid == null ? 0m : (await _db.StockMovements.AsNoTracking().Where(m => m.ItemId == itemId && m.WarehouseId == wh && m.BatchId == bid).SumAsync(m => (decimal?)(m.Direction * m.QtyBase)) ?? 0m);
+			}
+			async Task Fill(int itemId, string lot, DateTime exp, decimal floor, decimal cost)
+			{
+				decimal cur = await Batch(itemId, lot);
+				if (cur < floor) await stock.PostOpeningStockAsync(company, DateTime.Today, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = itemId, WarehouseId = wh, Qty = floor - cur, UnitCost = cost, BatchNo = lot, Expiry = exp } }, "dev");
+			}
+			async Task Reseed()
+			{
+				await Fill(expId, "LOT-A", T.AddDays(10), 100m, 2m); await Fill(expId, "LOT-B", T.AddDays(60), 100m, 2m); await Fill(expId, "LOT-EXP", T.AddDays(-5), 50m, 2m);
+				await Fill(wexpId, "WLOT-A", T.AddDays(5), 0.500m, 450m); await Fill(wexpId, "WLOT-B", T.AddDays(40), 2.000m, 450m);
+			}
+			async Task<(bool ok, string? err)> Issue(int itemId, decimal qty, int uom, string src, string? batch = null)
+			{
+				var (ok, err, _) = await stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = T, ItemId = itemId, WarehouseId = wh, Direction = -1, Qty = qty, UoMId = uom, SourceType = src, BatchNo = batch, PostToGl = false, Notes = "hm6" }, "dev");
+				return (ok, err);
+			}
+
+			// T1: FEFO sells from LOT-A (nearest expiry) first
+			await Reseed();
+			await Issue(expId, 30m, pcs, "Issue");
+			Chk("T1: sell 30 ⇒ FEFO from LOT-A (100→70), LOT-B untouched (100)", await Batch(expId, "LOT-A") == 70m && await Batch(expId, "LOT-B") == 100m);
+			log.Add($"  T1 LOT-A={await Batch(expId, "LOT-A")} LOT-B={await Batch(expId, "LOT-B")}");
+
+			// T2: sell 150 ⇒ 100 from A + 50 from B
+			await Reseed();
+			await Issue(expId, 150m, pcs, "Issue");
+			Chk("T2: sell 150 ⇒ LOT-A→0, LOT-B→50 (split across two batches)", await Batch(expId, "LOT-A") == 0m && await Batch(expId, "LOT-B") == 50m);
+			log.Add($"  T2 LOT-A={await Batch(expId, "LOT-A")} LOT-B={await Batch(expId, "LOT-B")}");
+
+			// T3: weighted 0.755 kg ⇒ 0.500 from WLOT-A + 0.255 from WLOT-B (fractional split, exact)
+			await Reseed();
+			await Issue(wexpId, 0.755m, kg, "Issue");
+			decimal wa = await Batch(wexpId, "WLOT-A"), wbq = await Batch(wexpId, "WLOT-B");
+			Chk("T3: weighted 0.755kg ⇒ WLOT-A 0.500→0.000, WLOT-B 2.000→1.745 (Σ drawn = 0.755 exact)", wa == 0.000m && wbq == 1.745m);
+			log.Add($"  T3 WLOT-A={wa} WLOT-B={wbq} drawn={0.500m + (2.000m - wbq)}");
+
+			// T4: named expired batch blocked; FEFO excludes expired and reports it
+			await Reseed();
+			var (n4ok, n4err) = await Issue(expId, 5m, pcs, "Issue", "LOT-EXP");
+			Chk("T4a: named expired batch ⇒ blocked", !n4ok && (n4err ?? "").Contains("منتهية"));
+			var (f4ok, f4err) = await Issue(expId, 250m, pcs, "Issue");   // > valid 200, so 50 expired excluded
+			Chk("T4b: FEFO short ⇒ excludes expired, clear message", !f4ok && (f4err ?? "").Contains("مستبعَد") && (f4err ?? "").Contains("منتهية"));
+			log.Add($"  T4 named='{n4err}' · fefo='{f4err}'");
+
+			// T5: input without a batch rejected in each user path (zero effect)
+			await Reseed();
+			var (o5ok, o5err, _, _) = await stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = expId, WarehouseId = wh, Qty = 5m, UnitCost = 2m } }, "dev");
+			var (r5ok, r5err, _) = await stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = T, ItemId = expId, WarehouseId = wh, Direction = 1, Qty = 5m, UoMId = pcs, SourceType = "Receipt", PostToGl = false }, "dev");
+			var (a5ok, a5err, _) = await stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = T, ItemId = expId, WarehouseId = wh, Direction = 1, Qty = 5m, UoMId = pcs, SourceType = "Adjustment", PostToGl = false }, "dev");
+			var (w5ok, w5err, _) = await stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = T, ItemId = expId, WarehouseId = wh, Direction = -1, Qty = 5m, UoMId = pcs, SourceType = "StockWriteOff", PostToGl = false }, "dev");
+			Chk("T5: opening/receipt/adjustment/write-off WITHOUT batch ⇒ all rejected", !o5ok && !r5ok && !a5ok && !w5ok);
+			log.Add($"  T5 opening='{o5err}' receipt='{r5err}' adj='{a5err}' writeoff='{w5err}'");
+
+			// T6: unbatched physical stock ⇒ the NEW clear message (not 'available 0')
+			var ub = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-UNBATCH");
+			if (ub == null) { ub = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "ZZ-UNBATCH", Barcode = "ZZBC-UNBATCH", Name = "ZZ unbatched", NameEn = "ZZ unbatched", ItemCategoryId = hcat, ItemType = "Stockable", BaseUoMId = pcs, TrackExpiry = true, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow }; _db.Items.Add(ub); await _db.SaveChangesAsync(); }
+			// craft unbatched physical stock directly (bypassing the guard) — legacy footprint
+			if (await Batch(ub.ID, "") == 0m && !(await _db.StockMovements.AnyAsync(m => m.ItemId == ub.ID && m.BatchId == null && m.Direction == 1)))
+			{
+				_db.StockMovements.Add(new CrossBuy.Models.Context.Inventory.StockMovement { CompanyID = company, MovementNo = "ZZUB-1", MovementDate = T, ItemId = ub.ID, WarehouseId = wh, Direction = 1, QtyBase = 50m, QtyInUoM = 50m, UoMId = pcs, UnitCost = 2m, TotalCost = 100m, SourceType = "LegacyUnbatched", CreatedAt = DateTime.UtcNow });
+				var sb = await _db.StockBalances.FirstOrDefaultAsync(b => b.CompanyID == company && b.ItemId == ub.ID && b.WarehouseId == wh);
+				if (sb == null) _db.StockBalances.Add(new CrossBuy.Models.Context.Inventory.StockBalance { CompanyID = company, ItemId = ub.ID, WarehouseId = wh, QtyOnHand = 50m, TotalValue = 100m, AvgCost = 2m }); else { sb.QtyOnHand += 50m; sb.TotalValue += 100m; }
+				await _db.SaveChangesAsync();
+			}
+			var (u6ok, u6err) = await Issue(ub.ID, 10m, pcs, "Issue");
+			Chk("T6: unbatched physical stock ⇒ clear data-correction message (not 'available 0')", !u6ok && (u6err ?? "").Contains("غير مرتبط بدفعات"));
+			log.Add($"  T6 '{u6err}'");
+
+			// T7: write off an expired batch ⇒ posts to 510103, balance drops
+			await Reseed();
+			decimal expBefore = await Batch(expId, "LOT-EXP");
+			var (wo7ok, wo7err, _, _, _) = await stock.WriteOffAsync(company, wh, T, "Expired", "hm6 expired write-off", new List<CrossBuy.BL.WriteOffLineInput> { new() { ItemId = expId, Qty = 10m, UoMId = pcs, BatchNo = "LOT-EXP", Reason = "Expired" } }, "dev");
+			decimal expAfter = await Batch(expId, "LOT-EXP");
+			int woAcc = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "510103").Select(a => a.ID).FirstOrDefaultAsync();
+			bool wo510103 = await _db.JournalEntryLines.AnyAsync(l => l.AccountId == woAcc && l.Debit > 0 && _db.JournalEntries.Any(j => j.ID == l.JournalEntryId && j.SourceType == "StockWriteOff"));
+			Chk("T7: expired write-off ⇒ ok, LOT-EXP 50→40, 510103 debited", wo7ok && expBefore == 50m && expAfter == 40m && wo510103);
+			log.Add($"  T7 ok={wo7ok} before={expBefore} after={expAfter} 510103={wo510103} err={wo7err}");
+
+			// T8: ExpiryAlerts data shows LOT-A (near) + LOT-EXP (expired)
+			var alertRows = await _db.StockBatches.AsNoTracking().Where(b => b.CompanyID == company && b.ItemId == expId)
+				.Select(b => new { b.BatchNo, b.ExpiryDate }).ToListAsync();
+			bool hasNear = alertRows.Any(r => r.BatchNo == "LOT-A" && r.ExpiryDate != null && (r.ExpiryDate.Value.Date - T).TotalDays is > 0 and <= 30);
+			bool hasExpired = alertRows.Any(r => r.BatchNo == "LOT-EXP" && r.ExpiryDate != null && r.ExpiryDate.Value.Date < T);
+			Chk("T8: ExpiryAlerts shows LOT-A (near) + LOT-EXP (expired)", hasNear && hasExpired);
+
+			// T9: TrackBatch decision — rejected without TrackExpiry, allowed with it
+			async Task CleanTb()
+			{
+				_db.ItemBarcodes.RemoveRange(await _db.ItemBarcodes.Where(z => z.Barcode == "ZZBC-ZZ-TB-ONLY" || z.Barcode == "ZZBC-ZZ-TB-EXP").ToListAsync());
+				_db.Items.RemoveRange(await _db.Items.Where(i => i.CompanyID == company && (i.ItemCode == "ZZ-TB-ONLY" || i.ItemCode == "ZZ-TB-EXP")).ToListAsync());
+				await _db.SaveChangesAsync();
+			}
+			await CleanTb();   // idempotency: remove any leftover items AND their orphan ItemBarcodes rows
+			CrossBuy.BL.ItemInput Mk(string code, bool batch, bool expiry) => new CrossBuy.BL.ItemInput { ItemCode = code, Barcode = "ZZBC-" + code, Name = "zz", NameEn = "zz", ItemCategoryId = hcat, ItemType = "Stockable", BaseUoMId = pcs, CostingMethod = "Average", TrackBatch = batch, TrackExpiry = expiry, IsActive = true };
+			var (t9aok, t9aerr, _) = await items.CreateItemAsync(company, Mk("ZZ-TB-ONLY", true, false), null);
+			var (t9bok, t9berr, _) = await items.CreateItemAsync(company, Mk("ZZ-TB-EXP", true, true), null);
+			Chk("T9: TrackBatch without TrackExpiry ⇒ rejected", !t9aok); log.Add("  T9a " + t9aerr);
+			Chk("T9: TrackBatch WITH TrackExpiry ⇒ allowed", t9bok); log.Add("  T9b " + t9berr);
+			await CleanTb();
+
+			// classification count
+			var cls = (await integrity.RunAsync(company)).First(c => c.Key == "unbatched_inbound_tracked");
+			log.Add($"  classification unbatched_inbound_tracked: Actual={cls.Actual} · {cls.Note}");
+			return Ok(new { allPass, log });
+		}
+
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
 		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
 		[HttpGet("apply-preset-guard-test")]
