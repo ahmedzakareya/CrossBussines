@@ -856,3 +856,25 @@ code change, no parallel-file touch): persist the session across requests with a
 (culture-check seeds the blob + Set-Cookie), then call the acceptance with the same cookie so the middleware resolves the
 scope. This mirrors a real browser session.** Recorded, not "fixed". writer_coupling on the stock writer stays CLEAN (this
 is a read-filter infra, not a writer coupling), so the HM-7 stop-condition was not triggered.
+
+## HM-D59 (refined) — the parallel company-scope filter is DELIBERATE and EXCLUDES StockBalance, naming our guard
+Read-only investigation verdict. It is a GLOBAL QUERY FILTER (CrossDbContext model, CompanyQueryFilters.Apply →
+builder.Entity<T>().HasQueryFilter reading db.CompanyScope.FilterCompanyId per executing context) — not an MVC filter, not
+a SaveChanges interceptor. Filtered (PilotEntities, 12): JournalEntry, SalesInvoice, PurchaseInvoice, Customer, Item,
+Warehouse, Quotation, Lead, Opportunity, CrmAccount, BusinessEvent, Notification. **Deliberately UNfiltered (by code,
+`DeliberatelyUnfiltered`): StockBalance — with the literal reason "FromSqlInterpolated UPDLOCK/HOLDLOCK — the sole-writer
+overselling guard"** (+ Employee, *UserRole, Companies, Branch, BusinessEventDispatch, FiscalPeriod). So the entire stock
+writer (StockBalances/StockMovements/StockBatches/StockCostLayer) is unfiltered; the ONLY FromSql in all of BL is
+StockService:455 (StockBalances, unfiltered) — no FromSql-locked read touches a filtered entity ⇒ NO locked-vs-normal
+divergence. Production resolves the scope (== the operation's company) so filtered reads match our explicit CompanyID;
+only single-shot UNauthenticated curl breaks (unresolved scope), handled by a persisted session (cookie jar). **This is the
+FIRST positive evidence of coordination FROM the parallel side: they read OUR code and excluded StockBalance by name citing
+our UPDLOCK guard.** Reclassified from "discovery" to "deliberate, excludes StockBalance, names our guard." HM-D7 is safe:
+the filter does not touch the balance row it locks.
+
+## HM-D60 (their item — record, do NOT fix) — FilterCompanyId => CompanyId ?? 0 is a silent empty grid, not an exception
+`CompanyScopeHolder.FilterCompanyId => CompanyId ?? 0` — an UNRESOLVED scope yields CompanyID==0 ⇒ ZERO rows on the 12
+filtered entities (Item, Warehouse, invoices, JE, CRM…), NOT an exception. Not dangerous today (stock tables are excluded,
+production resolves the scope), but it is the SAME anti-pattern we fought since HM-1: a silent fallback instead of an
+explicit failure — the exact shape of the ToBaseAsync `factor ?? 1` bug. A NEW background path that reads Item with no
+scope would get "no items" and continue. Theirs, not ours — raise with the owner; do not touch their code.

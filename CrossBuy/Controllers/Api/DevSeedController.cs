@@ -1447,13 +1447,16 @@ namespace CrossBuy.Controllers.Api
 			log.Add($"  T5 LOT-C book={cUncounted} stillThere={lotCUntouched} inCountedLines={counted5.Contains("ZC-LOT-C")}");
 
 			// ===== T6/T10: counted batch NOT in the system ⇒ created + line flagged + classification rises =====
+			// RE-RUNNABLE: a UNIQUE batch name per run (so "created" is always a genuinely fresh batch) + DELTA assertions
+			// (classification +1, not an absolute), then the +20 is issued back out so ZZ-CNT-EXP nets zero (no residue).
 			int classBefore = (int)((await integrity.RunAsync(company)).First(c => c.Key == "batches_created_in_count").Actual);
-			string newBn = "ZC-NEW-A";
+			string newBn = "ZC-NEW-" + DateTime.UtcNow.Ticks;
 			var (c6ok, _, cnt6) = await _stock.PostCountAsync(company, wh, T, "hm7 T6", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, 20m, newBn, T.AddDays(120)) }, "dev");
 			var l6 = cnt6 != null ? await _db.StockCountLines.AsNoTracking().Where(l => l.StockCountId == cnt6.ID && l.BatchNo == newBn).FirstOrDefaultAsync() : null;
 			int classAfter = (int)((await integrity.RunAsync(company)).First(c => c.Key == "batches_created_in_count").Actual);
-			Chk("T6/T10 unregistered batch ⇒ created (BOH=20), line flagged, classification +1", c6ok && await BOH(exp.ID, newBn) == 20m && l6 != null && l6.BatchCreatedInCount && classAfter == classBefore + 1);
-			log.Add($"  T6 BOH(new)={await BOH(exp.ID, newBn)} flagged={l6?.BatchCreatedInCount} classif {classBefore}→{classAfter}");
+			Chk("T6/T10 unregistered batch ⇒ created (BOH=20), line flagged, classification +1 (delta)", c6ok && await BOH(exp.ID, newBn) == 20m && l6 != null && l6.BatchCreatedInCount && classAfter == classBefore + 1);
+			log.Add($"  T6 batch={newBn} BOH={await BOH(exp.ID, newBn)} flagged={l6?.BatchCreatedInCount} classif {classBefore}→{classAfter}");
+			await _stock.PostCountAsync(company, wh, T, "hm7 T6 reset", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, 0m, newBn, T.AddDays(120)) }, "dev");   // issue the +20 back ⇒ net zero, no residue
 
 			// ===== T7/T11: same, WITHOUT expiry ⇒ rejected, ZERO effect (atomic) =====
 			decimal qExpBefore = await Qty(exp.ID);
