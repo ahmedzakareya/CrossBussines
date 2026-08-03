@@ -20,6 +20,10 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
 - **Company guard** at every gateway; cross-company operations are refused.
 - **Selective commits.** Commit only our files. Shared files (CrossDbContext, Program.cs, resx) get **our lines only**
   via git plumbing (`git show HEAD:… > base; insert our lines; hash-object -w; update-index --cacheinfo`).
+- **Build freshness before acceptance.** Before running any acceptance, verify the build is **fresh and complete**, not a
+  prior binary in `bin/Debug`. If a shared-tree break (e.g. parallel WIP) forces acceptance on an **older binary**, that
+  MUST be declared in the report, with exactly what the old binary did not cover and how any later change was otherwise
+  verified. (Origin: HM-D52 — parallel WIP broke the tree right after an acceptance run.)
 
 ## Standing decisions
 

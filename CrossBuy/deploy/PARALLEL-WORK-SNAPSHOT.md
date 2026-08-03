@@ -91,3 +91,17 @@ The other unpublished scripts back parallel modules whose endpoints we don't cal
 - Notifications for onboarded facts are now derived from events via `NotificationProjectionConsumer` (post-commit,
   in the worker); the legacy inline `NotifyRoleAsync` for the sale was deleted to avoid double-notifying.
 </content>
+
+---
+
+## Update — 2026-08-03 (post-HM-5), material changes since the snapshot above
+
+Two developments reclassify the risk from "new modules alongside us" to "they are editing our code and can break our build":
+
+1. **They now edit an OWNED writer.** `BL/JournalEntryService.cs` (our GL writer) was modified (mtime 14:01:51): constructor gained `IBusinessEventService _events`, and `ReverseAsync` now calls `RecordAsync(JournalEntry.Reversed)` — in-transaction, before commit, no try/catch, **Visibility = Confidential** (their first non-Internal event). The **ledger posting is unchanged** (reversal entry + status flip identical; the event only writes `BusinessEvents`), so GL numbers are ledger-neutral — but `ReverseAsync` now **hard-depends on the kernel** (`EntityRegistry.JournalEntry`, `JournalEntryEvents.Reversed`, `JournalEntryEventPayload`, the `BusinessEvents` table). **This corrects §1's "our critical writers are UNTOUCHED":** `JournalEntryService` (GL) is now kernel-wired; `StockService` (stock) remains clean. See AUDIT HM-D53.
+
+2. **Their WIP broke the shared build.** A rebuild after HM-5 acceptance failed with 2 errors, both in their files: `BL/Platform/IEventDispatchStore.cs:45` (`CS0246: 'BusinessContext' not found`) and `BL/Platform/SqlEventDispatchStore.cs:24` (`CS0535: does not implement RetryAsync`) — a live half-refactor. HM-D44 realised: the base moved under us. See AUDIT HM-D52.
+
+**Verified this snapshot cycle — our other owned files carry ONLY our changes (no parallel bleed):** `PricingService`, `PosOrderService`, `IntegrityCheckService`, `HyperPosController`, `ShelfLabelService`, `ScaleBarcodeParser`, `StockService`. Only `JournalEntryService` (among ours) was touched by them.
+
+**Owner action (raise with them):** (a) commit their work so our base stops shifting; (b) coordinate before editing our writers; (c) fix the two Platform build errors.
