@@ -230,7 +230,8 @@ namespace CrossBuy.Models.Context.Pos
 		public int OrderId { get; set; }
 		public int ItemId { get; set; }
 		public string ItemName { get; set; } = "";            // snapshot at add time (name may change later)
-		public decimal Qty { get; set; } = 1;
+		public decimal Qty { get; set; } = 1;                 // in UoMId (or the item's base unit when null)
+		public int? UoMId { get; set; }                       // HM-2: the unit this line is sold in (null = base); used at pay-time deduction
 		public decimal UnitPrice { get; set; }
 		public decimal DiscountAmount { get; set; }
 		public decimal TaxRate { get; set; }                  // resolved from Item.DefaultTaxCodeId → else company default VAT code → else 0

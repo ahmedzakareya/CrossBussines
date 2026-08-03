@@ -18,6 +18,8 @@ namespace CrossBuy.BL
 		public int ItemId { get; set; }
 		public string Name { get; set; } = "";
 		public string? Image { get; set; }
+		public int? UoMId { get; set; }            // HM-2: the sold unit (null = base)
+		public string? UoMName { get; set; }       // HM-2: unit name for the cart line (null when base)
 		public decimal Qty { get; set; }
 		public decimal UnitPrice { get; set; }
 		public decimal DiscountAmount { get; set; }
@@ -105,7 +107,7 @@ namespace CrossBuy.BL
 		// Returns (advanced, anomaly): anomaly != null ⇒ record a conflict but NEVER fail the sync.
 		Task<(bool advanced, string? anomaly)> AdvanceCounterPastOfflineReceiptAsync(PosTerminal term, string? receiptNo);
 		Task<(bool ok, string? error, int orderId)> CreateOrderAsync(int companyId, int branchId, string orderType, int? tableId, int? userId, int? terminalId = null, int? shiftId = null);
-		Task<(bool ok, string? error)> AddLineAsync(int companyId, int orderId, int itemId, decimal qty, List<int>? optionIds = null);   // RC-4: optionIds = chosen modifier options
+		Task<(bool ok, string? error)> AddLineAsync(int companyId, int orderId, int itemId, decimal qty, List<int>? optionIds = null, int? uomId = null);   // RC-4: optionIds = chosen modifier options
 		Task<List<ModChooserGroupDto>> GetItemModifiersAsync(int companyId, int itemId);   // RC-4b: groups+options for the add-time chooser
 		Task<(bool ok, string? error)> SetLineQtyAsync(int companyId, int orderId, int lineId, decimal qty);
 		Task<(bool ok, string? error)> RemoveLineAsync(int companyId, int orderId, int lineId);
@@ -327,7 +329,7 @@ namespace CrossBuy.BL
 			}
 			else
 			{
-				invLines.Add(new SalesLineInput { ItemDescription = l.ItemName, Qty = qty, UnitPrice = l.UnitPrice, DiscountAmount = discount, TaxRate = l.TaxRate, RevenueAccountId = revenue, ItemId = l.ItemId, WarehouseId = whId });
+				invLines.Add(new SalesLineInput { ItemDescription = l.ItemName, Qty = qty, UnitPrice = l.UnitPrice, DiscountAmount = discount, TaxRate = l.TaxRate, RevenueAccountId = revenue, ItemId = l.ItemId, WarehouseId = whId, UoMId = l.UoMId });   // HM-2: carry the sold unit to the stock movement
 			}
 			AppendModifierLines(modsByLine, l.ID, qty, revenue, whId, invLines);
 		}
@@ -529,7 +531,7 @@ namespace CrossBuy.BL
 			return await CreateOrderAsync(companyId, branchId, "Dine-in", tableId, userId, terminalId, shiftId);
 		}
 
-		public async Task<(bool ok, string? error)> AddLineAsync(int companyId, int orderId, int itemId, decimal qty, List<int>? optionIds = null)
+		public async Task<(bool ok, string? error)> AddLineAsync(int companyId, int orderId, int itemId, decimal qty, List<int>? optionIds = null, int? uomId = null)
 		{
 			if (qty <= 0) qty = 1;
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
@@ -537,6 +539,14 @@ namespace CrossBuy.BL
 			if (o.Status != "Open") return (false, "لا يمكن التعديل على طلب غير مفتوح");
 			var item = await _db.Items.FirstOrDefaultAsync(i => i.ID == itemId && i.CompanyID == companyId);
 			if (item == null) return (false, "الصنف غير موجود");
+			// HM-2 UNIT GUARD: the sold unit must be the item's base unit OR have a defined conversion to base on THIS item —
+			// else reject (never a silent factor-1). The unit is stored on the line and re-read at pay time (not re-derived from
+			// the barcode, which may change/vanish between add and pay).
+			if (uomId != null && uomId != item.BaseUoMId)
+			{
+				bool hasConv = await _db.UoMConversions.AsNoTracking().AnyAsync(cv => cv.ItemId == item.ID && cv.FromUoMId == uomId.Value && cv.ToUoMId == item.BaseUoMId);
+				if (!hasConv) return (false, L["This unit has no conversion defined for the item — it cannot be sold."]);
+			}
 			// HM-2: line amounts round to the order's document currency.
 			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
 			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
@@ -578,7 +588,7 @@ namespace CrossBuy.BL
 			// MUST come from that list — an item absent from it is REJECTED (never silently converted from the functional SalesPrice
 			// nor priced at zero). Branches with no list (e.g. restaurant, DefaultPriceListId=null) behave exactly as before.
 			int? branchListId = await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == o.BranchId).Select(s => s.DefaultPriceListId).FirstOrDefaultAsync();
-			var price = await _pricing.GetPriceAsync(companyId, itemId, null, null, o.CurrencyId, qty, DateTime.Today, branchListId);
+			var price = await _pricing.GetPriceAsync(companyId, itemId, null, null, o.CurrencyId, qty, DateTime.Today, branchListId, uomId);   // HM-2: price for THIS unit
 			if (branchListId != null && price.Source != "list" && price.Source != "costplus")
 				return (false, L["This item is not in the branch price list — it cannot be sold until it is priced."]);
 			decimal basePrice = price.UnitPrice > 0 ? price.UnitPrice : (item.SalesPrice ?? 0m);
@@ -589,8 +599,9 @@ namespace CrossBuy.BL
 
 			// RC-4: an item WITH modifier groups NEVER merges — each add is its own line (different choices = different lines).
 			// A plain item (no groups) keeps the merge-into-existing behaviour.
+			// HM-2: merge only lines of the SAME item AND SAME unit — a carton line and a piece line are distinct.
 			PosOrderLine? existing = groupIds.Count == 0
-				? await _db.PosOrderLines.FirstOrDefaultAsync(l => l.OrderId == orderId && l.ItemId == itemId)
+				? await _db.PosOrderLines.FirstOrDefaultAsync(l => l.OrderId == orderId && l.ItemId == itemId && l.UoMId == uomId)
 				: null;
 			if (existing != null) { existing.Qty += qty; }
 			else
@@ -598,7 +609,7 @@ namespace CrossBuy.BL
 				var sort = (await _db.PosOrderLines.Where(l => l.OrderId == orderId).MaxAsync(l => (int?)l.Sort) ?? 0) + 1;
 				var line = new PosOrderLine
 				{
-					OrderId = orderId, ItemId = itemId, ItemName = item.Name, Qty = qty, UnitPrice = unit,
+					OrderId = orderId, ItemId = itemId, ItemName = item.Name, Qty = qty, UoMId = uomId, UnitPrice = unit,
 					DiscountAmount = disc, TaxRate = taxR, LineTotal = R(unit * qty - disc), Sort = sort,
 				};
 				_db.PosOrderLines.Add(line);
@@ -1022,6 +1033,7 @@ namespace CrossBuy.BL
 							   select new PosOrderLineDto
 							   {
 								   Id = l.ID, ItemId = l.ItemId, Name = isAr ? l.ItemName : (i.NameEn != null && i.NameEn != "" ? i.NameEn : l.ItemName), Image = i.ImagePath,
+								   UoMId = l.UoMId, UoMName = l.UoMId == null ? null : _db.UnitsOfMeasure.Where(u => u.ID == l.UoMId).Select(u => isAr ? u.Name : u.NameEn).FirstOrDefault(),
 								   Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, LineTotal = l.LineTotal,
 								   SentQty = l.SentQty, KdsStatus = l.KdsStatus,
 							   }).ToListAsync();

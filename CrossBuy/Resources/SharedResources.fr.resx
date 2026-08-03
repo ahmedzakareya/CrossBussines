@@ -2612,4 +2612,7 @@
   <data name="The cart is empty." xml:space="preserve"><value>Le panier est vide.</value></data>
   <data name="Paid — invoice #{0} created." xml:space="preserve"><value>Payé — facture #{0} créée.</value></data>
   <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve"><value>Cet article n'est pas dans la liste de prix de la succursale — il ne peut être vendu tant qu'il n'est pas tarifé.</value></data>
+  <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>Ce code-barres est enregistré sur plus d'un article — les données doivent être corrigées.</value></data>
+  <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>Les codes-barres multiples ne sont pas activés sur cette succursale.</value></data>
+  <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>Aucune conversion n'est définie pour cette unité sur l'article — il ne peut être vendu.</value></data>
 </root>

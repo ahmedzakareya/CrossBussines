@@ -281,6 +281,29 @@ namespace CrossBuy.BL
 				Expected = 0, Actual = xOrders + xTerms + xEmps, Ok = true,
 				Note = $"orders={xOrders} · terminals={xTerms} · employees={xEmps}", Detail = "/Pos/Terminals" });
 
+			// HM-2 COUNTED: a barcode registered on more than one item across Items.Barcode + ItemBarcodes (no cross-table
+			// uniqueness is enforced, so a scan would be ambiguous — the scan path rejects it; this surfaces the data).
+			int barcodeDup = await _db.Database.SqlQueryRaw<int>(@"
+				SELECT COUNT(*) AS Value FROM (
+					SELECT bc FROM (
+						SELECT Barcode AS bc, ID AS itm FROM Items WHERE Barcode IS NOT NULL AND Barcode<>''
+						UNION ALL SELECT b.Barcode, b.ItemId FROM ItemBarcodes b
+					) a GROUP BY bc HAVING COUNT(DISTINCT itm) > 1
+				) d").FirstAsync();
+			res.Add(new IntegrityCheck { Key = "barcode_cross_table_dup", NameAr = "باركود مكرّر على أكثر من صنف عبر الجدولين (معدودة، HM-2)", NameEn = "Barcode registered on >1 item across tables (counted)",
+				Expected = 0, Actual = barcodeDup, Ok = true, Note = $"count={barcodeDup}", Detail = "/Inventory/Items" });
+
+			// HM-2 COUNTED: a non-base unit used with NO defined conversion — on a stock movement OR a POS order line. Would
+			// silently deduct a wrong base qty under the old code; now rejected. Barrier check confirmed 0 movements at start.
+			int moveNoConv = await _db.StockMovements.AsNoTracking().Join(_db.Items.AsNoTracking(), m => m.ItemId, i => i.ID, (m, i) => new { m.UoMId, i.ID, i.BaseUoMId })
+				.Where(x => x.UoMId != null && x.UoMId != x.BaseUoMId
+					&& !_db.UoMConversions.Any(cv => cv.ItemId == x.ID && cv.FromUoMId == x.UoMId && cv.ToUoMId == x.BaseUoMId)).CountAsync();
+			int lineNoConv = await _db.PosOrderLines.AsNoTracking().Join(_db.Items.AsNoTracking(), l => l.ItemId, i => i.ID, (l, i) => new { l.UoMId, i.ID, i.BaseUoMId })
+				.Where(x => x.UoMId != null && x.UoMId != x.BaseUoMId
+					&& !_db.UoMConversions.Any(cv => cv.ItemId == x.ID && cv.FromUoMId == x.UoMId && cv.ToUoMId == x.BaseUoMId)).CountAsync();
+			res.Add(new IntegrityCheck { Key = "unit_no_conversion", NameAr = "وحدة غير أساس بلا تحويل: حركات/أسطر (معدودة، HM-2)", NameEn = "Non-base unit with no conversion: movements/lines (counted)",
+				Expected = 0, Actual = moveNoConv + lineNoConv, Ok = true, Note = $"movements={moveNoConv} · orderLines={lineNoConv}", Detail = "/Inventory/Units" });
+
 			return res;
 		}
 

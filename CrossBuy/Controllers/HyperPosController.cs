@@ -203,12 +203,28 @@ namespace CrossBuy.Controllers
 			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Lane)); }
 			barcode = (barcode ?? "").Trim();
 			if (barcode.Length == 0) return RedirectToAction(nameof(Lane));
-			// HM-1: resolve by the item's single barcode (company-scoped, active). NO multi-barcode, weight, or price-list lookup.
-			var itemId = await _db.Items.AsNoTracking().Where(i => i.CompanyID == PosCompanyId && i.IsActive && i.Barcode == barcode).Select(i => (int?)i.ID).FirstOrDefaultAsync();
-			if (itemId == null) { TempData["PosErr"] = L["No item matches this barcode."].Value; return RedirectToAction(nameof(Lane)); }
+			// HM-2: resolve the barcode across Items.Barcode (base unit) AND ItemBarcodes (its own unit). BarcodeMulti gates the
+			// secondary barcodes (and therefore multi-unit): OFF ⇒ only the primary (base) barcode resolves.
+			bool multiOn = await _pos.IsCapabilityEnabledAsync(c.BranchId, "BarcodeMulti");
+			var primary = await _db.Items.AsNoTracking().Where(i => i.CompanyID == PosCompanyId && i.IsActive && i.Barcode == barcode)
+				.Select(i => new { i.ID, UoMId = (int?)i.BaseUoMId }).ToListAsync();
+			var secondary = multiOn
+				? await _db.ItemBarcodes.AsNoTracking().Where(b => b.Barcode == barcode && _db.Items.Any(i => i.ID == b.ItemId && i.CompanyID == PosCompanyId && i.IsActive))
+					.Select(b => new { ID = b.ItemId, b.UoMId }).ToListAsync()
+				: new();
+			var resolved = primary.Concat(secondary).Select(m => new { m.ID, m.UoMId }).Distinct().ToList();
+			if (resolved.Count > 1) { TempData["PosErr"] = L["This barcode is registered on more than one item — the data must be corrected."].Value; return RedirectToAction(nameof(Lane)); }
+			if (resolved.Count == 0)
+			{
+				// distinguish "not enabled" from "not found": a secondary barcode exists but BarcodeMulti is OFF on this branch.
+				if (!multiOn && await _db.ItemBarcodes.AsNoTracking().AnyAsync(b => b.Barcode == barcode && _db.Items.Any(i => i.ID == b.ItemId && i.CompanyID == PosCompanyId)))
+				{ TempData["PosErr"] = L["Multiple barcodes are not enabled on this branch."].Value; return RedirectToAction(nameof(Lane)); }
+				TempData["PosErr"] = L["No item matches this barcode."].Value; return RedirectToAction(nameof(Lane));
+			}
+			var match = resolved[0];
 			var (eok, eerr, oid) = await EnsureOrderAsync(c);
 			if (!eok) { TempData["PosErr"] = eerr; return RedirectToAction(nameof(Lane)); }
-			var (aok, aerr) = await _posOrders.AddLineAsync(PosCompanyId, oid, itemId.Value, 1m);
+			var (aok, aerr) = await _posOrders.AddLineAsync(PosCompanyId, oid, match.ID, 1m, null, match.UoMId);   // HM-2: pass the resolved unit
 			if (!aok) TempData["PosErr"] = aerr;
 			return RedirectToAction(nameof(Lane));
 		}

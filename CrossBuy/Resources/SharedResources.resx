@@ -1341,4 +1341,7 @@
   <data name="The cart is empty." xml:space="preserve"><value>The cart is empty.</value></data>
   <data name="Paid — invoice #{0} created." xml:space="preserve"><value>Paid — invoice #{0} created.</value></data>
   <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve"><value>This item is not in the branch price list — it cannot be sold until it is priced.</value></data>
+  <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>This barcode is registered on more than one item — the data must be corrected.</value></data>
+  <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>Multiple barcodes are not enabled on this branch.</value></data>
+  <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>This unit has no conversion defined for the item — it cannot be sold.</value></data>
 </root>

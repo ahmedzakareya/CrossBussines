@@ -461,6 +461,108 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, branchTaxCode = bps?.DefaultTaxCodeId, case1_untagged = tax1, case2_tagged = tax2, log });
 		}
 
+		// GET /api/dev/hm2-seed?key=seed123 — HM-2 demo: HM-DEMO-002 "Milk", base PCS, DZN→PCS=12, CTN→PCS=144, three barcodes
+		// (primary PCS + secondary DZN/CTN), three KWD price lines per unit (0.500/5.500/60.000 — NOT multiples, proving the price
+		// is entered not computed), opening stock 500 base via PostOpeningStockAsync only (fill-to-floor). Idempotent.
+		[HttpGet("hm2-seed")]
+		public async Task<IActionResult> Hm2Seed(string key, [FromServices] CrossBuy.BL.IStockService stock)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var branch = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "HYPER-DEMO");
+			if (branch == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1-seed first" });
+			int bid = branch.ID;
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int dzn = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "DZN").Select(u => u.ID).FirstAsync();
+			int ctn = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "CTN").Select(u => u.ID).FirstAsync();
+			int hcat = await _db.ItemCategories.Where(c => c.CompanyID == company && c.Code == "HYPER-CAT").Select(c => c.ID).FirstAsync();
+
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-002");
+			if (item == null)
+			{
+				item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "HM-DEMO-002", Barcode = "6280000000021", Name = "حليب طازج 1 لتر", NameEn = "Fresh Milk 1L", ItemCategoryId = hcat, DefaultTaxCodeId = null, ItemType = "Stockable", BaseUoMId = pcs, TrackBatch = false, TrackExpiry = false, TrackSerial = false, IsComposite = false, IsActive = true, CostingMethod = "Average", SalesPrice = 0.500m, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(item); await _db.SaveChangesAsync(); log.Add("item HM-DEMO-002 CREATED #" + item.ID);
+			}
+			else { item.Barcode = "6280000000021"; item.BaseUoMId = pcs; item.ItemCategoryId = hcat; item.DefaultTaxCodeId = null; item.ItemType = "Stockable"; item.IsActive = true; await _db.SaveChangesAsync(); log.Add("item HM-DEMO-002 exists #" + item.ID); }
+
+			async Task EnsureConv(int from, decimal factor) { if (!await _db.UoMConversions.AnyAsync(cv => cv.ItemId == item.ID && cv.FromUoMId == from && cv.ToUoMId == pcs)) { _db.UoMConversions.Add(new CrossBuy.Models.Context.Inventory.UoMConversion { ItemId = item.ID, FromUoMId = from, ToUoMId = pcs, Factor = factor }); await _db.SaveChangesAsync(); } }
+			await EnsureConv(dzn, 12m); await EnsureConv(ctn, 144m);
+			async Task EnsureBc(string bc, int uom) { var ex = await _db.ItemBarcodes.FirstOrDefaultAsync(b => b.Barcode == bc); if (ex == null) { _db.ItemBarcodes.Add(new CrossBuy.Models.Context.Inventory.ItemBarcode { ItemId = item.ID, Barcode = bc, UoMId = uom }); await _db.SaveChangesAsync(); } else { ex.ItemId = item.ID; ex.UoMId = uom; await _db.SaveChangesAsync(); } }
+			await EnsureBc("6280000000038", dzn); await EnsureBc("6280000000045", ctn);
+
+			int listId = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultPriceListId ?? 0).FirstAsync();
+			async Task EnsurePrice(int uom, decimal price) { var ex = await _db.PriceListLines.FirstOrDefaultAsync(l => l.PriceListId == listId && l.ItemId == item.ID && l.UoMId == uom); if (ex == null) { _db.PriceListLines.Add(new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = listId, ItemId = item.ID, UoMId = uom, MinQty = 1, UnitPrice = price, DiscountPercent = 0, PricingMode = "Fixed" }); await _db.SaveChangesAsync(); } else { ex.UnitPrice = price; await _db.SaveChangesAsync(); } }
+			await EnsurePrice(pcs, 0.500m); await EnsurePrice(dzn, 5.500m); await EnsurePrice(ctn, 60.000m);
+			log.Add($"conversions DZN=12/CTN=144 · barcodes PCS/DZN/CTN · price lines 0.500/5.500/60.000 on list #{listId}");
+
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			var (bq, _, _) = await stock.GetBalanceAsync(company, item.ID, wh);
+			if (bq < 500m) { await stock.PostOpeningStockAsync(company, DateTime.Today, new List<CrossBuy.BL.OpeningStockLineInput> { new CrossBuy.BL.OpeningStockLineInput { ItemId = item.ID, WarehouseId = wh, Qty = 500m - bq, UnitCost = 0.300m } }, null); }
+			var (fq, _1, _2) = await stock.GetBalanceAsync(company, item.ID, wh);
+			Chk("HM-DEMO-002 balance >= 500 (base PCS, fill-to-floor)", fq >= 500m);
+
+			return Ok(new { allPass, itemId = item.ID, listId, units = new { pcs, dzn, ctn }, warehouse = wh, balance = fq, barcodes = new { pcs = "6280000000021", dzn = "6280000000038", ctn = "6280000000045" }, log });
+		}
+
+		// GET /api/dev/hm2-edge?key=seed123 — HM-2 acceptance points 6 (no-conversion reject at add + at deduct) and 8
+		// (deterministic price priority: explicit UoMId precedes null; higher MinQty precedes lower). Self-cleaning.
+		[HttpGet("hm2-edge")]
+		public async Task<IActionResult> Hm2Edge(string key, [FromServices] CrossBuy.BL.IStockService stock, [FromServices] CrossBuy.BL.IPricingService pricing, [FromServices] CrossBuy.BL.IPosSetupService posSetup)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-002");
+			if (item == null) return BadRequest(new { message = "run hm2-seed first" });
+			int bid = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstAsync();
+			int kg = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "KG").Select(u => u.ID).FirstAsync();
+			int ctn = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "CTN").Select(u => u.ID).FirstAsync();
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstAsync();
+			int listId = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultPriceListId ?? 0).FirstAsync();
+
+			// ===== POINT 6: KG has NO conversion for this item =====
+			// (a) add-time reject via AddLineAsync (needs an order on the hyper branch)
+			int drawer = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid && t.Code == "ZZ-D38-T") ?? await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid);
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term!.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term!.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+			var (_, _, oid) = await _posOrders.CreateOrderAsync(company, bid, "Takeaway", null, null, term.ID, shift!.ID);
+			var (aok, aerr) = await _posOrders.AddLineAsync(company, oid, item.ID, 1m, null, kg);
+			Chk("point6a: AddLine with KG (no conversion) REJECTED at add", !aok);
+			log.Add("  add-reject msg: " + aerr);
+			// (b) deduct-time reject via PostMovementAsync directly
+			var (mok, merr, _) = await stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = item.ID, WarehouseId = wh, Direction = -1, Qty = 1, UoMId = kg, SourceType = "ZZ-D38-EDGE", PostToGl = false }, null);
+			Chk("point6b: PostMovement with KG (no conversion) REJECTED at deduct", !mok);
+			log.Add("  deduct-reject msg: " + merr);
+
+			// ===== POINT 8: deterministic priority =====
+			// (a) explicit UoMId precedes null: add a null-unit line at 99.000; a CTN scan must still take the CTN line (60.000)
+			var nullLine = new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = listId, ItemId = item.ID, UoMId = null, MinQty = 1, UnitPrice = 99.000m, DiscountPercent = 0, PricingMode = "Fixed" };
+			_db.PriceListLines.Add(nullLine); await _db.SaveChangesAsync();
+			int kwd = await _db.Currencies.Where(cu => cu.Code == "KWD").Select(cu => cu.ID).FirstAsync();
+			var pCtn = await pricing.GetPriceAsync(company, item.ID, null, null, kwd, 1m, DateTime.Today, listId, ctn);
+			Chk($"point8a: explicit CTN line (60) precedes null line (99) ⇒ got {pCtn.UnitPrice}", pCtn.UnitPrice == 60.000m);
+			// (b) higher MinQty precedes: add a CTN line MinQty=2 at 55.000; qty 3 ⇒ 55, qty 1 ⇒ 60
+			var ctnQtyLine = new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = listId, ItemId = item.ID, UoMId = ctn, MinQty = 2, UnitPrice = 55.000m, DiscountPercent = 0, PricingMode = "Fixed" };
+			_db.PriceListLines.Add(ctnQtyLine); await _db.SaveChangesAsync();
+			var pQ3 = await pricing.GetPriceAsync(company, item.ID, null, null, kwd, 3m, DateTime.Today, listId, ctn);
+			var pQ1 = await pricing.GetPriceAsync(company, item.ID, null, null, kwd, 1m, DateTime.Today, listId, ctn);
+			Chk($"point8b: qty3 ⇒ MinQty=2 line (55), qty1 ⇒ MinQty=1 line (60) ⇒ got {pQ3.UnitPrice}/{pQ1.UnitPrice}", pQ3.UnitPrice == 55.000m && pQ1.UnitPrice == 60.000m);
+
+			// cleanup the two scratch price lines + the scratch order + shift
+			_db.PriceListLines.Remove(nullLine); _db.PriceListLines.Remove(ctnQtyLine);
+			_db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == oid).ToListAsync());
+			var ord = await _db.PosOrders.FirstOrDefaultAsync(o => o.ID == oid); if (ord != null) _db.PosOrders.Remove(ord);
+			await _db.SaveChangesAsync();
+			foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s.Status = "Closed"; s.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, log });
+		}
+
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
 		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
 		[HttpGet("apply-preset-guard-test")]

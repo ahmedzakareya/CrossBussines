@@ -88,6 +88,7 @@ namespace CrossBuy.Models.Context.Accounting
 		public decimal LineTotal { get; set; }
 		public int? ItemId { get; set; }          // inventory link → stock-out + COGS on post
 		public int? WarehouseId { get; set; }
+		public int? UoMId { get; set; }           // HM-2: sold unit (null = base) — used to convert qty to base at stock-out
 		[ForeignKey(nameof(SalesInvoiceId))] public SalesInvoice? Invoice { get; set; }
 	}
 

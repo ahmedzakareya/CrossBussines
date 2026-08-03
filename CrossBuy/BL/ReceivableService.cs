@@ -14,6 +14,7 @@ namespace CrossBuy.BL
 		public int RevenueAccountId { get; set; }
 		public int? ItemId { get; set; }          // when set → stock-out + COGS on post
 		public int? WarehouseId { get; set; }
+		public int? UoMId { get; set; }           // HM-2: sold unit (null = base) — carried to the stock movement so qty converts to base
 	}
 
 	public class AgingRow
@@ -221,7 +222,7 @@ namespace CrossBuy.BL
 				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);   // document currency
 				var lineTax = Rd(lineTotal * l.TaxRate / 100m);              // per-line tax (no header distribution)
 				sub += lineTotal; tax += lineTax;
-				inv.Lines.Add(new SalesInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
+				inv.Lines.Add(new SalesInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, UoMId = l.UoMId, LineTotal = lineTotal });
 			}
 			inv.SubTotal = Rd(sub); inv.TaxTotal = Rd(tax); inv.GrandTotal = Rd(sub + tax);   // document totals = Σ rounded lines
 			// functional-currency base totals — RAW conversion of ONE grand value; stored rounded to functional dp (Rf).
@@ -285,7 +286,7 @@ namespace CrossBuy.BL
 				var (sok, serr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = -1,
-					Qty = l.Qty, SourceType = "SalesInvoice", SourceId = inv.ID, SourceLineId = l.ID,
+					Qty = l.Qty, UoMId = l.UoMId, SourceType = "SalesInvoice", SourceId = inv.ID, SourceLineId = l.ID,
 					PostToGl = true, ProjectId = inv.ProjectId, Notes = $"صرف فاتورة بيع {inv.InvoiceNo}"
 				}, userId?.ToString());
 				if (!sok) return (false, serr ?? "تعذّر صرف المخزون", null);
@@ -365,7 +366,7 @@ namespace CrossBuy.BL
 				var lineTotal = Rd(l.Qty * l.UnitPrice - l.DiscountAmount);
 				var lineTax = Rd(lineTotal * l.TaxRate / 100m);
 				sub += lineTotal; tax += lineTax;
-				inv.Lines.Add(new SalesInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, LineTotal = lineTotal });
+				inv.Lines.Add(new SalesInvoiceLine { LineNo = ln++, ItemDescription = l.ItemDescription, Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, RevenueAccountId = l.RevenueAccountId, ItemId = l.ItemId, WarehouseId = l.WarehouseId, UoMId = l.UoMId, LineTotal = lineTotal });
 			}
 			var revGroups = inv.Lines.GroupBy(l => l.RevenueAccountId).Select(g => new { Acc = g.Key, Base = ToBase(g.Sum(x => x.LineTotal)) }).ToList();
 			decimal revBase = revGroups.Sum(g => g.Base), vatBase = ToBase(Rd(tax)), grandBase = revBase + vatBase;   // single raw grandBase
@@ -396,7 +397,7 @@ namespace CrossBuy.BL
 				var (sok, serr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = -1,
-					Qty = l.Qty, SourceType = "SalesInvoice", SourceId = inv.ID, SourceLineId = l.ID,
+					Qty = l.Qty, UoMId = l.UoMId, SourceType = "SalesInvoice", SourceId = inv.ID, SourceLineId = l.ID,
 					PostToGl = true, ProjectId = inv.ProjectId, Notes = $"صرف فاتورة بيع {inv.InvoiceNo} (معدّلة)"
 				}, userId?.ToString());
 				if (!sok) return (false, serr ?? "تعذّر صرف المخزون", null);

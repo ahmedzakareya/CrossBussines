@@ -458,3 +458,29 @@ Tax was resolved from the item/category, blind to the branch's country — a Kuw
 
 ## HM-D40 (deferred, logged not treated) — service & delivery tax still company-level, ignoring the branch
 `DefaultVatRateAsync(companyId)` (company default VAT) still drives **service charge and delivery fee tax** at ~6 sites in `PosOrderService` (RecomputeAsync + the invoice build). So a Kuwait branch that correctly charges 0% on ITEMS would still tax a delivery fee at the Egyptian 14%. Not urgent — the hypermarket has no delivery/service now — but it is the same branch-blindness as HM-D38 and must not be forgotten: service/delivery tax should also consult the branch's tax code. Logged; NOT treated in this batch.
+
+## HM-2 — multi-barcode + multi-unit (started 2026-08-03)
+**HM-D15 update — a dormant code path activated for the first time:** the read-only barrier check proved the multi-unit stock path has **NEVER** been exercised — **zero** stock movements with a non-base unit exist (and zero with a non-base unit lacking a conversion). So HM-2 turns on a path that has lived in the code unused, joining Receipt/GRN and the offline layer in HM-D15. **The HM-2 acceptance is therefore a FIRST RUN, not a regression check of known behaviour** — any surprise is treated as a first-run finding: report, do not fix by improvisation.
+**R4 note → HM-3:** `ToBaseAsync` rounds the base quantity to the column's 4dp. This only loses anything when BOTH the conversion factor is fractional AND the quantity is fractional — exactly the WEIGHTED-item scenario. For HM-2's integer factors (12, 144) the base is exact. Logged as an HM-3 (weight/scale) item: weighed items need base precision > 4dp or an explicit rounding policy.
+
+## HM-2 GetPriceAsync — DETERMINISTIC price-line priority (2026-08-03)
+PriceListLine now has two match dimensions: `MinQty` (existing qty break) and `UoMId` (new, HM-2). Two lines can match one request, so the pick MUST be deterministic (never `FirstOrDefault` on an unordered set). Declared order (in `PricingService.GetPriceAsync`):
+1. **Explicit unit match first** — a line whose `UoMId` equals the requested unit beats a null-unit (base/any) line.
+2. Customer-specific > segment-specific > general (existing).
+3. Higher list **Priority** (existing).
+4. Most-specific qty break — highest `MinQty` ≤ qty (existing).
+5. **Smallest LineId** — stable final tie-break.
+If no line matches the requested unit AND no null-unit line exists, the price is rejected (never a fallback to `Item.SalesPrice`, never a factor multiply — the HM-D18 half-fils lesson). A branch-list-pinned path rejects via `AddLineAsync` (`Source != "list"`).
+
+## HM-2 acceptance — 10/10 PASS (2026-08-03), first run of the multi-unit path
+Driven through the REAL HTTP scan path where it is a controller concern; every value read fresh from the DB.
+Seed: HM-DEMO-002 (item 8186) base PCS, DZN→PCS=12, CTN→PCS=144, barcodes 6280000000021(PCS primary)/38(DZN)/45(CTN), KWD price lines 0.500/5.500/60.000 on list 35, opening 500 base @ 0.300 EGP via PostOpeningStockAsync.
+1. Scan PCS ⇒ line UnitPrice **0.500**, unit PCS. 2. Scan DZN ⇒ **5.500**, unit DZN. 3. Scan CTN ⇒ **60.000**, unit CTN. (cart shows قطعة/درزن/كرتونة.)
+4. Cart of all three ⇒ invoice 9419 SubTotal **66.000 KWD**, base 10758 EGP (66×163) = AR 1102 = Revenue 4101 (balanced, tax 0/exempt); stock movements QtyInUoM 1/1/1 → QtyBase **1/12/144 = 157**; balance 500→**343**; COGS = 3 JEs × 0.300 = **47.10** to "Cost of Goods Sold" (510101), base-costed; ar_sub drift **0**.
+5. Cross-table duplicate barcode ⇒ scan REJECTED "هذا الباركود مسجَّل على أكثر من صنف".
+6. KG (no conversion) ⇒ REJECTED at add (AddLineAsync) AND at deduct (PostMovementAsync/ToBaseAsync).
+7. BarcodeMulti OFF + secondary barcode ⇒ "الباركودات المتعدّدة غير مفعَّلة" (NOT "not found").
+8. Deterministic price priority: explicit CTN line (60) beats null line (99); qty3⇒MinQty=2 line (55), qty1⇒MinQty=1 line (60).
+9. Restaurant regression (rc6c) identical, failedCount 0.
+10. Constants: failedCount **0** · ar_sub/ap_sub drift **0** · branch_company_mismatch **0** · bal_qty_vs_moves **0** · **barcode_cross_table_dup 0** · **unit_no_conversion 0** · ef_precision **0/352** · bp4 **0** · culture **allPass** · PRJ-DEMO **30,920** · dbContext **Scoped**.
+Files: models (PosOrderLine/PriceListLine/SalesInvoiceLine + DTO UoMId), StockService.ToBaseAsync (reject), PricingService.GetPriceAsync (unit + deterministic priority), PosOrderService (AddLineAsync guard + unit price + sale-stock unit chain), ReceivableService (SalesLineInput/line UoMId → movement), HyperPosController.Scan (both tables + capability gate + dup reject), PosLane view (unit in cart), IntegrityCheckService (2 counted classifications), Resources (3 keys ×3 langs), deploy/sql/hm2_multiunit.sql. Balance fill-to-floor to 500 via re-running hm2-seed.

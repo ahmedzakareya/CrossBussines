@@ -27,6 +27,7 @@ namespace CrossBuy.Models.Context.Inventory
 		public int ID { get; set; }
 		public int PriceListId { get; set; }
 		public int ItemId { get; set; }
+		public int? UoMId { get; set; }                 // HM-2: unit this price applies to (null = base / any unit — backward-compatible)
 		public decimal MinQty { get; set; } = 1;       // quantity break: rule applies when ordered qty >= MinQty
 		public decimal? UnitPrice { get; set; }        // override price; null = use Item.SalesPrice then apply discount
 		public decimal DiscountPercent { get; set; }   // 0..100

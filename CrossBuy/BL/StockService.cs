@@ -221,13 +221,16 @@ namespace CrossBuy.BL
 				.Take(take).ToListAsync();
 
 		// converts a qty in UoMId to base units using the item's UoM conversions (1 alt = factor base)
-		private async Task<decimal> ToBaseAsync(Item item, int? uomId, decimal qty)
+		// HM-2: convert qty in <uomId> to the item's base unit. A non-base unit with NO defined conversion is REJECTED
+		// (returns an error) — never the old silent factor-1, which would deduct a wrong base quantity. Barrier-checked:
+		// zero existing movements used a non-base unit without a conversion, so this rejects nothing that ever worked.
+		private async Task<(decimal baseQty, string? error)> ToBaseAsync(Item item, int? uomId, decimal qty)
 		{
-			if (uomId == null || uomId == item.BaseUoMId) return qty;
+			if (uomId == null || uomId == item.BaseUoMId) return (qty, null);
 			var conv = await _context.UoMConversions.AsNoTracking()
 				.FirstOrDefaultAsync(c => c.ItemId == item.ID && c.FromUoMId == uomId && c.ToUoMId == item.BaseUoMId);
-			var factor = conv?.Factor ?? 1m;
-			return R4(qty * factor);
+			if (conv == null) return (0m, "لا يوجد تحويل وحدة معرَّف لهذا الصنف من الوحدة المطلوبة إلى الوحدة الأساس — تعذّر الخصم.");
+			return (R4(qty * conv.Factor), null);
 		}
 
 		private async Task<int?> ResolveBatchAsync(int companyId, int itemId, string? batchNo, DateTime? expiry)
@@ -322,7 +325,8 @@ namespace CrossBuy.BL
 			// First-Expired-First-Out, skipping expired ones, and fails if valid (non-expired) stock is short.
 			if (hdr.TrackExpiry && req.Direction == -1 && string.IsNullOrWhiteSpace(req.BatchNo) && string.IsNullOrWhiteSpace(req.SerialNo))
 			{
-				var needBase = await ToBaseAsync(hdr, req.UoMId, req.Qty);
+				var (needBase, cerr) = await ToBaseAsync(hdr, req.UoMId, req.Qty);
+				if (cerr != null) return (false, cerr, null);
 				if (needBase <= 0) return (false, "تعذّر تحويل الكمية إلى الوحدة الأساسية", null);
 
 				var (applicable, ferr, alloc) = await FefoAllocateAsync(companyId, hdr, req.WarehouseId, needBase, req.Date);
@@ -381,7 +385,8 @@ namespace CrossBuy.BL
 			var method = !string.IsNullOrWhiteSpace(item.CostingMethod) ? item.CostingMethod
 						: (!string.IsNullOrWhiteSpace(cat?.DefaultCostingMethod) ? cat!.DefaultCostingMethod : "Moving");
 
-			var qtyBase = await ToBaseAsync(item, req.UoMId, req.Qty);
+			var (qtyBase, cerr2) = await ToBaseAsync(item, req.UoMId, req.Qty);
+			if (cerr2 != null) return (false, cerr2, null);
 			if (qtyBase <= 0) return (false, "تعذّر تحويل الكمية إلى الوحدة الأساسية", null);
 
 			var batchId = await ResolveBatchAsync(companyId, item.ID, req.BatchNo, req.Expiry);
@@ -654,7 +659,8 @@ namespace CrossBuy.BL
 					var subs = new List<(string? batchNo, decimal qty, int? uom)>();
 					if (litem.TrackExpiry && string.IsNullOrWhiteSpace(l.BatchNo))
 					{
-						var needBase = await ToBaseAsync(litem, l.UoMId, l.Qty);
+						var (needBase, lcerr) = await ToBaseAsync(litem, l.UoMId, l.Qty);
+						if (lcerr != null) { await tx.RollbackAsync(); return (false, lcerr, null); }
 						var (app, ferr, alloc) = await FefoAllocateAsync(companyId, litem, fromWarehouseId, needBase, date);
 						if (app && ferr != null) { await tx.RollbackAsync(); return (false, ferr, null); }
 						if (app) foreach (var a in alloc) subs.Add((a.batchNo, a.qtyBase, litem.BaseUoMId));
@@ -1084,7 +1090,8 @@ namespace CrossBuy.BL
 						var subs = new List<(string? batchNo, decimal qty, int? uom)>();
 						if (citem != null && citem.TrackExpiry)
 						{
-							var needBase = await ToBaseAsync(citem, c.UoMId, reqQty);
+							var (needBase, ccerr) = await ToBaseAsync(citem, c.UoMId, reqQty);
+							if (ccerr != null) { await tx.RollbackAsync(); return (false, ccerr, null); }
 							var (app, ferr, alloc) = await FefoAllocateAsync(companyId, citem, warehouseId, needBase, date);
 							if (app && ferr != null) { await tx.RollbackAsync(); return (false, $"تعذّر صرف مكوّن: {ferr}", null); }
 							if (app) foreach (var a in alloc) subs.Add((a.batchNo, a.qtyBase, citem.BaseUoMId));
@@ -1197,7 +1204,8 @@ namespace CrossBuy.BL
 				var subs = new List<(string? batchNo, decimal qty, int? uom)>();
 				if (citem != null && citem.TrackExpiry)
 				{
-					var needBase = await ToBaseAsync(citem, c.UoMId, c.PlannedQty);
+					var (needBase, wcerr) = await ToBaseAsync(citem, c.UoMId, c.PlannedQty);
+					if (wcerr != null) return (false, wcerr, 0);
 					var (app, ferr, alloc) = await FefoAllocateAsync(companyId, citem, wo.WarehouseId, needBase, date);
 					if (app && ferr != null) return (false, $"تعذّر صرف مكوّن: {ferr}", 0);
 					if (app) foreach (var a in alloc) subs.Add((a.batchNo, a.qtyBase, citem.BaseUoMId));

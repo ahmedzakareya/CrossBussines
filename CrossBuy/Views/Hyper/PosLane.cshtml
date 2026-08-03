@@ -74,7 +74,7 @@
                                     @foreach (var ln in order.Lines)
                                     {
                                         <tr>
-                                            <td class="fw-semibold text-gray-900">@ln.Name</td>
+                                            <td class="fw-semibold text-gray-900">@ln.Name@(ln.UoMName != null ? " · " + ln.UoMName : "")</td>
                                             <td class="text-end" style="font-variant-numeric:tabular-nums">@ln.UnitPrice.ToString(fmt)</td>
                                             <td class="text-center">
                                                 <form method="post" action="/hyper/pos/line/qty" class="d-inline-flex align-items-center gap-1">

@@ -2969,4 +2969,7 @@
   <data name="The cart is empty." xml:space="preserve"><value>السلة فارغة.</value></data>
   <data name="Paid — invoice #{0} created." xml:space="preserve"><value>تم الدفع — أُنشئت الفاتورة رقم {0}.</value></data>
   <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve"><value>هذا الصنف غير مُدرَج في قائمة أسعار الفرع — لا يمكن بيعه حتى يُسعَّر.</value></data>
+  <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>هذا الباركود مسجَّل على أكثر من صنف — يجب تصحيح البيانات.</value></data>
+  <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>الباركودات المتعدّدة غير مفعَّلة على هذا الفرع.</value></data>
+  <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>لا يوجد تحويل معرَّف لهذه الوحدة على الصنف — لا يمكن بيعه.</value></data>
 </root>

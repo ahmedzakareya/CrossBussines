@@ -80,7 +80,7 @@ namespace CrossBuy.BL
 		// Resolve the effective unit price + discount for an item, given the customer (specific + segment), the
 		// document currency, ordered qty and date. Price lists are matched by currency (foreign price is fixed);
 		// priority: customer-specific > segment > general, then list Priority, then the most specific qty break.
-		Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null);
+		Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null, int? uomId = null);
 		// Pricing 2A — gross-margin floor. netUnitPrice is in the document currency; converted to functional before comparing
 		// to cost×(1+margin%). currencyId/exchangeRate describe the document; if rate missing it is resolved (Sell). asOf = doc date.
 		Task<MarginCheckResult> CheckMarginAsync(int companyId, int itemId, decimal netUnitPrice, int? currencyId, decimal? exchangeRate, DateTime asOf);
@@ -108,7 +108,7 @@ namespace CrossBuy.BL
 		public PricingService(CrossDbContext context, ICurrencyService currency, IManufService manuf, ICurrencyRounding rounding) { _context = context; _currency = currency; _manuf = manuf; _rounding = rounding; }
 
 
-		public async Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null)
+		public async Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null, int? uomId = null)
 		{
 			var q = qty <= 0 ? 1m : qty;
 			var seg = string.IsNullOrWhiteSpace(segment) ? null : segment.Trim();
@@ -124,11 +124,12 @@ namespace CrossBuy.BL
 				join pl in _context.PriceLists.AsNoTracking() on l.PriceListId equals pl.ID
 				where pl.CompanyID == companyId && pl.IsActive && l.ItemId == itemId && l.MinQty <= q
 					&& (priceListId == null || pl.ID == priceListId.Value)   // HM-D18: when a branch list is passed, restrict candidates to it
+						&& (l.UoMId == uomId || l.UoMId == null)                 // HM-2: the requested unit, or a null-unit (base/any) fallback line
 					&& ((pl.CurrencyId ?? functional) == docCur || l.PricingMode == "CostPlus")   // cost-plus is currency-agnostic (computed then converted)
 					&& ((customerId != null && pl.CustomerId == customerId) || (pl.CustomerId == null && (pl.Segment == null || pl.Segment == seg)))
 					&& (pl.ValidFrom == null || pl.ValidFrom <= asOf) && (pl.ValidTo == null || pl.ValidTo >= asOf)
 					&& (l.ValidFrom == null || l.ValidFrom <= asOf) && (l.ValidTo == null || l.ValidTo >= asOf)
-				select new { l.UnitPrice, l.DiscountPercent, l.MinQty, l.PricingMode, l.MarkupPercent, pl.Priority, pl.CustomerId, pl.Segment, pl.Name, pl.NameEn, ListId = pl.ID }
+				select new { l.UnitPrice, l.DiscountPercent, l.MinQty, l.PricingMode, l.MarkupPercent, l.UoMId, LineId = l.ID, pl.Priority, pl.CustomerId, pl.Segment, pl.Name, pl.NameEn, ListId = pl.ID }
 			).ToListAsync();
 
 			var itemInfo = await _context.Items.AsNoTracking()
@@ -137,12 +138,17 @@ namespace CrossBuy.BL
 			var basePrice = itemInfo?.SalesPrice ?? 0m;
 			int? itemCategoryId = itemInfo?.ItemCategoryId;
 
-			// rank: customer-specific > segment-specific > general, then higher Priority, then most-specific qty break
+			// HM-2 DETERMINISTIC rank (documented in AUDIT-DEVIATIONS.md): an explicit UoMId match for the requested unit
+			// beats a null-unit (base/any) line; then customer-specific > segment > general; then higher Priority; then the
+			// most-specific qty break (highest MinQty ≤ qty); then the smallest LineId as a stable tie-break (never FirstOrDefault
+			// on an unordered set). No random pick.
 			var best = candidates
-				.OrderByDescending(x => customerId != null && x.CustomerId == customerId)
+				.OrderByDescending(x => uomId != null && x.UoMId == uomId)
+				.ThenByDescending(x => customerId != null && x.CustomerId == customerId)
 				.ThenByDescending(x => x.Segment != null)
 				.ThenByDescending(x => x.Priority)
 				.ThenByDescending(x => x.MinQty)
+				.ThenBy(x => x.LineId)
 				.FirstOrDefault();
 
 			PriceResult result;
