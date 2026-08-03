@@ -304,6 +304,20 @@ namespace CrossBuy.BL
 			res.Add(new IntegrityCheck { Key = "unit_no_conversion", NameAr = "وحدة غير أساس بلا تحويل: حركات/أسطر (معدودة، HM-2)", NameEn = "Non-base unit with no conversion: movements/lines (counted)",
 				Expected = 0, Actual = moveNoConv + lineNoConv, Ok = true, Note = $"movements={moveNoConv} · orderLines={lineNoConv}", Detail = "/Inventory/Units" });
 
+			// HM-3 COUNTED: FIXED product barcodes that fall inside a configured scale-barcode prefix (GS1 reserves that range).
+			// Surfaces the HM-D42 data error (4 ITM-000x barcodes once branch 17's prefix is set); the save-guard blocks new ones.
+			int fixedInScaleRange = await _db.Database.SqlQueryRaw<int>($@"
+				SELECT COUNT(*) AS Value FROM (
+					SELECT DISTINCT bc FROM (
+						SELECT i.Barcode AS bc FROM Items i WHERE i.CompanyID={companyId} AND i.Barcode IS NOT NULL AND i.Barcode<>''
+						UNION SELECT b.Barcode FROM ItemBarcodes b JOIN Items i2 ON b.ItemId=i2.ID WHERE i2.CompanyID={companyId}
+					) a WHERE EXISTS (
+						SELECT 1 FROM BranchPosSettings s JOIN Branches br ON s.BranchId=br.ID
+						WHERE br.CompanyID={companyId} AND s.ScaleBarcodePrefix IS NOT NULL AND s.ScaleBarcodePrefix<>'' AND a.bc LIKE s.ScaleBarcodePrefix + '%')
+				) d").FirstAsync();
+			res.Add(new IntegrityCheck { Key = "fixed_barcode_in_scale_range", NameAr = "باركود ثابت داخل نطاق الميزان المحجوز (معدودة، HM-D42)", NameEn = "Fixed barcode inside the reserved scale range (counted)",
+				Expected = 0, Actual = fixedInScaleRange, Ok = true, Note = $"count={fixedInScaleRange}", Detail = "/Inventory/Items" });
+
 			return res;
 		}
 

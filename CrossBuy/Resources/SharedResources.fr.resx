@@ -2615,4 +2615,11 @@
   <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>Ce code-barres est enregistré sur plus d'un article — les données doivent être corrigées.</value></data>
   <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>Les codes-barres multiples ne sont pas activés sur cette succursale.</value></data>
   <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>Aucune conversion n'est définie pour cette unité sur l'article — il ne peut être vendu.</value></data>
+  <data name="No item is linked to this scale code." xml:space="preserve"><value>Aucun article n'est lié à ce code balance.</value></data>
+  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>Les codes-barres balance à prix intégré ne sont pas encore pris en charge.</value></data>
+  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>Le chiffre de contrôle du code-barres balance est invalide.</value></data>
+  <data name="The scale barcode format is invalid." xml:space="preserve"><value>Le format du code-barres balance est invalide.</value></data>
+  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>Ceci est un code-barres de produit fixe dans la plage réservée à la balance — les données doivent être corrigées.</value></data>
+  <data name="This item is not sold by weight." xml:space="preserve"><value>Cet article n'est pas vendu au poids.</value></data>
+  <data name="Weighted selling is not enabled on this branch." xml:space="preserve"><value>La vente au poids n'est pas activée sur cette succursale.</value></data>
 </root>

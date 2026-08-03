@@ -39,6 +39,13 @@ namespace CrossBuy.Models.Context.Pos
 		public int? DefaultSalesWarehouseId { get; set; }   // the cashier deducts stock from this warehouse
 		public int? DefaultPriceListId { get; set; }         // applied via PricingService (currency/promotions/priority unchanged)
 		public int? DefaultTaxCodeId { get; set; }           // HM-D38: branch-level tax (Kuwait branch ⇒ VATEX); resolution order item→branch→company
+		// HM-3: scale-barcode format (the scale is a per-branch device). Null prefix = no scale barcodes at this branch.
+		public string? ScaleBarcodePrefix { get; set; }
+		public int? ScaleItemCodeLength { get; set; }
+		public int? ScaleValueLength { get; set; }
+		public int? ScaleValueDecimals { get; set; }
+		public string? ScaleValueType { get; set; }          // 'Weight' (implemented) | 'Price' (rejected: not supported yet)
+		public string? ScaleCheckAlgo { get; set; }          // 'EanMod10'
 		public decimal? ServiceChargePct { get; set; }
 		public int? DefaultCurrencyId { get; set; }
 		// POS-C1 Delivery

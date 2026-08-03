@@ -563,6 +563,92 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, log });
 		}
 
+		// GET /api/dev/hm3-seed?key=seed123 — HM-3 demo: branch-17 scale config (GS1 EAN-13: prefix 2, item 5, value 6, dp 3),
+		// Weight capability on, HM-DEMO-003 "Beef" (IsWeighted, base KG, ScaleCode 30001), KWD price 3.500/kg, opening 100 kg @ 450
+		// EGP/kg via PostOpeningStockAsync (fill-to-floor), plus a non-weighted item with a scale code (point-5 fixture). Returns
+		// the built scale barcodes for the acceptance. Idempotent.
+		[HttpGet("hm3-seed")]
+		public async Task<IActionResult> Hm3Seed(string key, [FromServices] CrossBuy.BL.IStockService stock)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var branch = await _db.Branches.FirstOrDefaultAsync(b => b.Name == "HYPER-DEMO");
+			if (branch == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1-seed + hm2-seed first" });
+			int bid = branch.ID;
+			int kg = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "KG").Select(u => u.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int hcat = await _db.ItemCategories.Where(c => c.CompanyID == company && c.Code == "HYPER-CAT").Select(c => c.ID).FirstAsync();
+			int listId = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultPriceListId ?? 0).FirstAsync();
+
+			var bps = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == bid);
+			bps!.ScaleBarcodePrefix = "2"; bps.ScaleItemCodeLength = 5; bps.ScaleValueLength = 6; bps.ScaleValueDecimals = 3; bps.ScaleValueType = "Weight"; bps.ScaleCheckAlgo = "EanMod10";
+			await _db.SaveChangesAsync();
+			var cap = await _db.BranchCapabilities.FirstOrDefaultAsync(x => x.BranchId == bid && x.CapabilityKey == "Weight");
+			if (cap == null) _db.BranchCapabilities.Add(new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = bid, CapabilityKey = "Weight", Enabled = true }); else cap.Enabled = true;
+			await _db.SaveChangesAsync();
+			log.Add("branch 17: scale config (2/5/6/3/Weight/EanMod10) + Weight capability ON");
+
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-003");
+			if (item == null)
+			{
+				item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "HM-DEMO-003", Barcode = "6280000000902", Name = "لحم بقريّ", NameEn = "Beef", ItemCategoryId = hcat, DefaultTaxCodeId = null, ItemType = "Stockable", BaseUoMId = kg, IsWeighted = true, ScaleCode = 30001, TrackBatch = false, TrackExpiry = false, TrackSerial = false, IsComposite = false, IsActive = true, CostingMethod = "Average", SalesPrice = 3.500m, CreatedAt = DateTime.UtcNow };
+				_db.Items.Add(item); await _db.SaveChangesAsync(); log.Add("item HM-DEMO-003 CREATED #" + item.ID);
+			}
+			else { item.IsWeighted = true; item.ScaleCode = 30001; item.BaseUoMId = kg; item.ItemCategoryId = hcat; item.DefaultTaxCodeId = null; item.IsActive = true; await _db.SaveChangesAsync(); log.Add("item HM-DEMO-003 exists #" + item.ID); }
+			Chk("HM-DEMO-003: IsWeighted + base KG + ScaleCode 30001", item.IsWeighted && item.BaseUoMId == kg && item.ScaleCode == 30001);
+
+			// point-5 fixture: a NON-weighted item that carries a scale code (scan must reject "not sold by weight").
+			var nw = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-SCALE-NONWEIGH");
+			if (nw == null) { nw = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "ZZ-SCALE-NONWEIGH", Barcode = "6280000000919", Name = "ZZ عدديّ بكود ميزان", NameEn = "ZZ non-weighted", ItemCategoryId = hcat, ItemType = "Stockable", BaseUoMId = pcs, IsWeighted = false, ScaleCode = 39999, IsActive = true, CostingMethod = "Average", SalesPrice = 1m, CreatedAt = DateTime.UtcNow }; _db.Items.Add(nw); await _db.SaveChangesAsync(); }
+			else { nw.ScaleCode = 39999; nw.IsWeighted = false; await _db.SaveChangesAsync(); }
+
+			// MinQty = 0: a per-kg price applies from ANY positive weight (0.750 kg is a valid sale). GetPriceAsync filters
+			// MinQty <= qty, so MinQty=1 would reject every sub-kg weighing. (Product gap recorded deferred: PriceListService.Save
+			// normalizes MinQty<=0 to 1, so the standard pricing UI cannot yet express this — see HM-D43 in AUDIT-DEVIATIONS.md.)
+			var pline = await _db.PriceListLines.FirstOrDefaultAsync(l => l.PriceListId == listId && l.ItemId == item.ID && l.UoMId == kg);
+			if (pline == null) { _db.PriceListLines.Add(new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = listId, ItemId = item.ID, UoMId = kg, MinQty = 0, UnitPrice = 3.500m, DiscountPercent = 0, PricingMode = "Fixed" }); await _db.SaveChangesAsync(); } else { pline.UnitPrice = 3.500m; pline.MinQty = 0; await _db.SaveChangesAsync(); }
+
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstOrDefaultAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			var (bq, _, _) = await stock.GetBalanceAsync(company, item.ID, wh);
+			if (bq < 100m) { await stock.PostOpeningStockAsync(company, DateTime.Today, new List<CrossBuy.BL.OpeningStockLineInput> { new CrossBuy.BL.OpeningStockLineInput { ItemId = item.ID, WarehouseId = wh, Qty = 100m - bq, UnitCost = 450m } }, null); }
+			var (fq, _1, _2) = await stock.GetBalanceAsync(company, item.ID, wh);
+			Chk("HM-DEMO-003 balance >= 100 kg (fill-to-floor)", fq >= 100m);
+
+			var cfg = new CrossBuy.BL.ScaleBarcodeConfig { Prefix = "2", ItemCodeLength = 5, ValueLength = 6, ValueDecimals = 3, ValueType = "Weight", CheckAlgo = "EanMod10" };
+			string w0755 = CrossBuy.BL.ScaleBarcodeParser.Build(cfg, 30001, 0.755m);
+			string w1234 = CrossBuy.BL.ScaleBarcodeParser.Build(cfg, 30001, 1.234m);
+			string unlinked = CrossBuy.BL.ScaleBarcodeParser.Build(cfg, 88888, 0.5m);
+			string nonWeighted = CrossBuy.BL.ScaleBarcodeParser.Build(cfg, 39999, 0.5m);
+			string badCheck = w0755.Substring(0, w0755.Length - 1) + ((w0755[w0755.Length - 1] - '0' + 1) % 10).ToString();
+
+			return Ok(new { allPass, itemId = item.ID, scaleCode = 30001, balance = fq, kg, listId, warehouse = wh,
+				barcodes = new { w0755, w1234, unlinked, nonWeighted, badCheck, fixedInRange = "2001000000017" },
+				checkDigit = new { body = w0755.Substring(0, w0755.Length - 1), check = w0755.Substring(w0755.Length - 1) }, log });
+		}
+
+		// GET /api/dev/hm3-guard-test?key=seed123 — HM-3 acceptance point 8: item save guards (weighted requires KG + ScaleCode;
+		// fixed barcode inside the scale range is rejected). Uses the real ItemService. Rejections leave no residue.
+		[HttpGet("hm3-guard-test")]
+		public async Task<IActionResult> Hm3GuardTest(string key, [FromServices] CrossBuy.BL.IItemService items)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			int kg = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "KG").Select(u => u.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int hcat = await _db.ItemCategories.Where(c => c.CompanyID == company && c.Code == "HYPER-CAT").Select(c => c.ID).FirstAsync();
+			CrossBuy.BL.ItemInput Mk(string code, string bar, int uom, bool weighted, int? scale) => new CrossBuy.BL.ItemInput { ItemCode = code, Barcode = bar, Name = "zz", NameEn = "zz", ItemCategoryId = hcat, ItemType = "Stockable", BaseUoMId = uom, IsWeighted = weighted, ScaleCode = scale, IsActive = true };
+			var (aok, aerr, _) = await items.CreateItemAsync(company, Mk("ZZ-W-NOCODE", "6280000000926", kg, true, null), null);
+			Chk("weighted WITHOUT ScaleCode rejected at save", !aok); log.Add("  " + aerr);
+			var (bok, berr, _) = await items.CreateItemAsync(company, Mk("ZZ-W-NOTKG", "6280000000933", pcs, true, 31111), null);
+			Chk("weighted with NON-KG base rejected at save", !bok); log.Add("  " + berr);
+			var (cok, cerr, _) = await items.CreateItemAsync(company, Mk("ZZ-FIXED-INRANGE", "2999999999998", pcs, false, null), null);
+			Chk("fixed barcode in scale range rejected at save", !cok); log.Add("  " + cerr);
+			return Ok(new { allPass, log });
+		}
+
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
 		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
 		[HttpGet("apply-preset-guard-test")]

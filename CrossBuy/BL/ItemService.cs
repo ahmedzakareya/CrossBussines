@@ -51,6 +51,8 @@ namespace CrossBuy.BL
 		public bool TrackBatch { get; set; }
 		public bool TrackExpiry { get; set; }
 		public bool TrackSerial { get; set; }
+		public bool IsWeighted { get; set; }                  // HM-3
+		public int? ScaleCode { get; set; }                   // HM-3
 		public int? DefaultTaxCodeId { get; set; }
 		public decimal? SalesPrice { get; set; }
 		public decimal? MinMarginPct { get; set; }
@@ -369,6 +371,27 @@ namespace CrossBuy.BL
 				if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.Barcode == b && i.ID != itemId)) return $"الباركود «{b}» مستخدم من قبل لصنف آخر";
 				if (await _context.ItemBarcodes.AnyAsync(z => z.Barcode == b && z.ItemId != itemId)) return $"الباركود «{b}» مستخدم من قبل لصنف آخر";
 			}
+			// HM-3: a FIXED product barcode must not fall inside any scale-barcode prefix configured on the company's branches
+			// (GS1 reserves that range for variable-measure). Deliberate company-wide guard over a branch-level setting
+			// (see AUDIT-DEVIATIONS.md). Blocks only NEW saves; existing overlaps are surfaced by the counted classification.
+			var scalePrefixes = await _context.BranchPosSettings.AsNoTracking()
+				.Where(s => s.ScaleBarcodePrefix != null && s.ScaleBarcodePrefix != ""
+					&& _context.Branches.Any(br => br.ID == s.BranchId && br.CompanyID == companyId))
+				.Select(s => s.ScaleBarcodePrefix!).Distinct().ToListAsync();
+			foreach (var b in subs.Distinct())
+				foreach (var pfx in scalePrefixes)
+					if (b.StartsWith(pfx)) return $"الباركود «{b}» يقع في نطاق باركود الميزان المحجوز — غير مسموح لباركود ثابت.";
+			return null;
+		}
+
+		// HM-3: a weighted item must have a weight base unit (KG) and a unique scale code.
+		private async Task<string?> WeightedItemGuardAsync(int companyId, int itemId, ItemInput x)
+		{
+			if (!x.IsWeighted) return null;
+			if (x.ScaleCode == null) return "صنف موزون يستلزم كود ميزان (ScaleCode).";
+			var baseCode = await _context.UnitsOfMeasure.AsNoTracking().Where(u => u.ID == x.BaseUoMId).Select(u => u.Code).FirstOrDefaultAsync();
+			if (!string.Equals(baseCode, "KG", StringComparison.OrdinalIgnoreCase)) return "صنف موزون يستلزم وحدة أساس بالوزن (كجم).";
+			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ScaleCode == x.ScaleCode && i.ID != itemId)) return "كود الميزان مستخدم من قبل لصنف آخر.";
 			return null;
 		}
 
@@ -390,6 +413,8 @@ namespace CrossBuy.BL
 			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ItemCode == code)) return (false, "كود الصنف مستخدم من قبل", null);
 			var bcErr = await BarcodeConflictAsync(companyId, 0, x);
 			if (bcErr != null) return (false, bcErr, null);
+			var wErr = await WeightedItemGuardAsync(companyId, 0, x);   // HM-3
+			if (wErr != null) return (false, wErr, null);
 
 			var item = new Item
 			{
@@ -397,6 +422,7 @@ namespace CrossBuy.BL
 				Name = x.Name.Trim(), NameEn = x.NameEn, ItemCategoryId = x.ItemCategoryId, ItemType = x.ItemType,
 				BaseUoMId = x.BaseUoMId, PurchaseUoMId = x.PurchaseUoMId, SalesUoMId = x.SalesUoMId,
 				CostingMethod = x.CostingMethod, TrackBatch = x.TrackBatch, TrackExpiry = x.TrackExpiry, TrackSerial = x.TrackSerial,
+				IsWeighted = x.IsWeighted, ScaleCode = x.ScaleCode,   // HM-3
 				DefaultTaxCodeId = x.DefaultTaxCodeId, SalesPrice = x.SalesPrice, MinMarginPct = x.MinMarginPct, OpeningCost = x.OpeningCost,
 				ImagePath = x.ImagePath,
 				StoreOldPrice = x.StoreOldPrice, StoreBadge = x.StoreBadge, StoreRating = x.StoreRating, StoreVendor = x.StoreVendor, StoreHoverImage = x.StoreHoverImage,
@@ -423,10 +449,13 @@ namespace CrossBuy.BL
 			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ItemCode == code && i.ID != id)) return (false, "كود الصنف مستخدم من قبل");
 			var bcErr = await BarcodeConflictAsync(companyId, id, x);
 			if (bcErr != null) return (false, bcErr);
+			var wErr = await WeightedItemGuardAsync(companyId, id, x);   // HM-3
+			if (wErr != null) return (false, wErr);
 			item.ItemCode = code; item.Barcode = bar; item.Name = x.Name.Trim(); item.NameEn = x.NameEn;
 			item.ItemCategoryId = x.ItemCategoryId; item.ItemType = x.ItemType; item.BaseUoMId = x.BaseUoMId;
 			item.PurchaseUoMId = x.PurchaseUoMId; item.SalesUoMId = x.SalesUoMId; item.CostingMethod = x.CostingMethod;
 			item.TrackBatch = x.TrackBatch; item.TrackExpiry = x.TrackExpiry; item.TrackSerial = x.TrackSerial;
+			item.IsWeighted = x.IsWeighted; item.ScaleCode = x.ScaleCode;   // HM-3
 			item.DefaultTaxCodeId = x.DefaultTaxCodeId; item.SalesPrice = x.SalesPrice; item.MinMarginPct = x.MinMarginPct; item.OpeningCost = x.OpeningCost;
 			if (!string.IsNullOrEmpty(x.ImagePath)) item.ImagePath = x.ImagePath;
 			item.StoreOldPrice = x.StoreOldPrice; item.StoreBadge = x.StoreBadge; item.StoreRating = x.StoreRating; item.StoreVendor = x.StoreVendor;

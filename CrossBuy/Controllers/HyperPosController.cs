@@ -203,6 +203,43 @@ namespace CrossBuy.Controllers
 			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Lane)); }
 			barcode = (barcode ?? "").Trim();
 			if (barcode.Length == 0) return RedirectToAction(nameof(Lane));
+
+			// HM-3: SCALE-BARCODE routing FIRST (by prefix). A barcode in the branch's scale range is parsed (not looked up);
+			// non-scale barcodes fall through to the HM-2 lookup below. No silent fallback — every scale case is an explicit reject.
+			var bps = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == c.BranchId);
+			var scaleCfg = new ScaleBarcodeConfig
+			{
+				Prefix = bps?.ScaleBarcodePrefix, ItemCodeLength = bps?.ScaleItemCodeLength ?? 0, ValueLength = bps?.ScaleValueLength ?? 0,
+				ValueDecimals = bps?.ScaleValueDecimals ?? 0, ValueType = bps?.ScaleValueType ?? "Weight", CheckAlgo = bps?.ScaleCheckAlgo ?? "EanMod10",
+			};
+			if (ScaleBarcodeParser.MatchesPrefix(barcode, scaleCfg))
+			{
+				if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "Weight"))
+				{ TempData["PosErr"] = L["Weighted selling is not enabled on this branch."].Value; return RedirectToAction(nameof(Lane)); }
+				// a FIXED product barcode that happens to live in the scale range = data error (HM-D42) — reject explicitly.
+				bool isFixed = await _db.Items.AsNoTracking().AnyAsync(i => i.CompanyID == PosCompanyId && i.Barcode == barcode)
+					|| await _db.ItemBarcodes.AsNoTracking().AnyAsync(z => z.Barcode == barcode && _db.Items.Any(i => i.ID == z.ItemId && i.CompanyID == PosCompanyId));
+				if (isFixed) { TempData["PosErr"] = L["This is a fixed product barcode inside the reserved scale range — the data must be corrected."].Value; return RedirectToAction(nameof(Lane)); }
+				var pr = ScaleBarcodeParser.Parse(barcode, scaleCfg);
+				if (!pr.Ok)
+				{
+					var m = pr.ErrorCode == "check" ? L["The scale barcode check digit is invalid."]
+						  : pr.ErrorCode == "priceType" ? L["Price-embedded scale barcodes are not supported yet."]
+						  : L["The scale barcode format is invalid."];
+					TempData["PosErr"] = m.Value; return RedirectToAction(nameof(Lane));
+				}
+				var witem = await _db.Items.AsNoTracking().Where(i => i.CompanyID == PosCompanyId && i.ScaleCode == pr.ItemCode)
+					.Select(i => new { i.ID, i.IsWeighted, i.IsActive }).FirstOrDefaultAsync();
+				if (witem == null || !witem.IsActive) { TempData["PosErr"] = L["No item is linked to this scale code."].Value; return RedirectToAction(nameof(Lane)); }
+				if (!witem.IsWeighted) { TempData["PosErr"] = L["This item is not sold by weight."].Value; return RedirectToAction(nameof(Lane)); }
+				int kgUom = await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == PosCompanyId && u.Code == "KG").Select(u => u.ID).FirstOrDefaultAsync();
+				var (sok, serr, soid) = await EnsureOrderAsync(c);
+				if (!sok) { TempData["PosErr"] = serr; return RedirectToAction(nameof(Lane)); }
+				var (wok, werr) = await _posOrders.AddLineAsync(PosCompanyId, soid, witem.ID, pr.WeightKg!.Value, null, kgUom);   // qty = weight in KG
+				if (!wok) TempData["PosErr"] = werr;
+				return RedirectToAction(nameof(Lane));
+			}
+
 			// HM-2: resolve the barcode across Items.Barcode (base unit) AND ItemBarcodes (its own unit). BarcodeMulti gates the
 			// secondary barcodes (and therefore multi-unit): OFF ⇒ only the primary (base) barcode resolves.
 			bool multiOn = await _pos.IsCapabilityEnabledAsync(c.BranchId, "BarcodeMulti");

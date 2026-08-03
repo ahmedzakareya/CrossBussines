@@ -1344,4 +1344,11 @@
   <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>This barcode is registered on more than one item — the data must be corrected.</value></data>
   <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>Multiple barcodes are not enabled on this branch.</value></data>
   <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>This unit has no conversion defined for the item — it cannot be sold.</value></data>
+  <data name="No item is linked to this scale code." xml:space="preserve"><value>No item is linked to this scale code.</value></data>
+  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>Price-embedded scale barcodes are not supported yet.</value></data>
+  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>The scale barcode check digit is invalid.</value></data>
+  <data name="The scale barcode format is invalid." xml:space="preserve"><value>The scale barcode format is invalid.</value></data>
+  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>This is a fixed product barcode inside the reserved scale range — the data must be corrected.</value></data>
+  <data name="This item is not sold by weight." xml:space="preserve"><value>This item is not sold by weight.</value></data>
+  <data name="Weighted selling is not enabled on this branch." xml:space="preserve"><value>Weighted selling is not enabled on this branch.</value></data>
 </root>
