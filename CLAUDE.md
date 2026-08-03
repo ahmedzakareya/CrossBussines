@@ -35,6 +35,15 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
 - **Acceptance precondition (mandatory):** any DB we run acceptance against must have **slice-1
   (`platform_business_events.sql`) applied FIRST** — else the sale path fails with SQL-208 (their `RecordAsync` has no
   swallowing catch). Verify the `BusinessEvents` table exists before seeding/acceptance.
+- **Reversal now depends on the event platform (HM-D53).** The **only accounting-correction primitive**,
+  `JournalEntryService.ReverseAsync`, calls `RecordAsync(JournalEntry.Reversed)` in-transaction before commit with no
+  swallow. So **every correction path** — edit sales/purchase invoice, edit returns, **cancel a paid POS order (hyper
+  void)**, reopen fiscal year, FX-revaluation reverse, manual reversal — fails completely if `BusinessEvents` is
+  missing/schema-changed. Any environment we run acceptance or a deploy against needs **slice-1 applied before any
+  reversal**. (Normal posting — `CreateAndPost`/`Post` — is NOT coupled; only reversal is.)
+- **`JournalEntryService` and `StockService` are architectural invariants, not ordinary files.** They are our two
+  writers. A change to either (ours or the parallel team's) must be pre-coordinated with the owner — the parallel team
+  already kernel-wired `ReverseAsync` without coordination (HM-D53).
 
 ## Shared Platform Rules (from parallel work — Platform Kernel)
 
