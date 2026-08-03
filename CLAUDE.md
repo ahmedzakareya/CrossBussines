@@ -16,6 +16,10 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
   A **retail** price step (nearest 5/10 fils) is a *separate* commercial rounding — never routed through `ICurrencyRounding`.
 - **No test leaves an `inv-test-integrity` deviation.** `failedCount` stays 0; new classifications are *counted*, not failing.
 - **Every user-facing string via Resources** (or the file's own convention — e.g. `PricingService` errors are hardcoded Arabic).
+  - **Declared exception (HM-6):** `StockService` and `ItemService` carry **no localizer by design** — every message in
+    them is hardcoded Arabic (file convention). New messages there follow that convention. Injecting an `IStringLocalizer`
+    into `StockService` (our stock writer) would itself be a **new constructor coupling that `writer_coupling` (HM-D53)
+    flags** — so it is a deliberate exception, not an oversight. Controller-level and view strings still go via Resources.
 - **Capabilities via `IsCapabilityEnabledAsync`**; test on `ZZ-*` / demo-seed entities only.
 - **Company guard** at every gateway; cross-company operations are refused.
 - **Selective commits.** Commit only our files. Shared files (CrossDbContext, Program.cs, resx) get **our lines only**

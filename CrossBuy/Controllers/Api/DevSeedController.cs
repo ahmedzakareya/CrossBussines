@@ -1143,6 +1143,13 @@ namespace CrossBuy.Controllers.Api
 			var (u6ok, u6err) = await Issue(ub.ID, 10m, pcs, "Issue");
 			Chk("T6: unbatched physical stock ⇒ clear data-correction message (not 'available 0')", !u6ok && (u6err ?? "").Contains("غير مرتبط بدفعات"));
 			log.Add($"  T6 '{u6err}'");
+			// teardown the crafted ZZ-UNBATCH so this test leaves NO residue in the counted classification (our rule:
+			// no test leaves an inv-test-integrity deviation). The issue above was blocked, so there is no out-movement.
+			_db.StockMovements.RemoveRange(await _db.StockMovements.Where(m => m.ItemId == ub.ID).ToListAsync());
+			_db.StockBalances.RemoveRange(await _db.StockBalances.Where(b => b.ItemId == ub.ID).ToListAsync());
+			_db.ItemBarcodes.RemoveRange(await _db.ItemBarcodes.Where(z => z.ItemId == ub.ID).ToListAsync());
+			await _db.SaveChangesAsync();
+			var ubGone = await _db.Items.FindAsync(ub.ID); if (ubGone != null) { _db.Items.Remove(ubGone); await _db.SaveChangesAsync(); }
 
 			// T7: write off an expired batch ⇒ posts to 510103, balance drops
 			await Reseed();

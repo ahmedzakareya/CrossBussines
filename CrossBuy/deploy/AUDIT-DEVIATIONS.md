@@ -661,9 +661,24 @@ confusion) is closed for the batch-capable USER paths:
   stock but DOES have physical on-hand, `FefoAllocateAsync` returns a clear data-correction message instead of
   silently falling through to a normal (unbatched, expiry-bypassing) issue. When it has SOME batched stock but the
   valid quantity is short AND unbatched stock also exists, the shortfall message names the unbatched remainder. This
-  is the "misleading `available 0`" fix — the real reachable case was a *silent sell*, now a clear block.
+  is the fix for what was mis-described earlier as a "misleading `available 0`" message.
+- **CORRECTED framing (owner-requested):** the real defect was NOT a misleading rejection — it was a **hole in the
+  control**: an expiry-tracked item whose stock is unbatched was **sold/issued SILENTLY, bypassing expiry control
+  entirely** (`FefoAllocateAsync` returned `applicable=false` → the normal path issued it, no FEFO, no expiry check).
+  HM-6 closes it: the issue is now blocked with a clear data-correction message.
+- **Historical exposure through the hole (read-only census, 2026-08-03):** issue movements of a `TrackExpiry` item with
+  no `BatchId` = **50 legacy issues** (excluding 1 ZZ test artifact), qty ≈ 1119, cost value ≈ **6,676 EGP**, across
+  **4 items** (ITM-0001, ITM-0002, MFGT-R1, MFGT-R2). By source: **WorkOrder 36 · TransferOut 5 · Assembly 4 · Issue 3 ·
+  ProjectIssue 1 · StockWriteOff 1 · Adjustment 1** — **ZERO `SalesInvoice`**, i.e. **no retail sale ever bypassed**;
+  the exposure was manufacturing/transfer/project/manual consumption. HM-6 secured the retail input paths + FEFO sale;
+  the manufacturing/transfer/assembly consumption of expiry-tracked components is **still un-guarded** (excluded from
+  HM-6 scope) — recorded, not fixed.
+- **Test-residue correction (HM-6 acceptance):** an earlier acceptance run left 2 stray unbatched-inbound movements
+  (ZZ-EXP opening #10660 from a pre-guard-fix run; ZZ-UNBATCH #10661 crafted by T6), pushing the counted classification
+  25/4 → 27/6. Both cleaned; T6 now tears down its crafted item. **Documented baseline restored to 25 movements / 4
+  items** = ITM-0001 (18), ITM-0002 (1), MFGT-R1 (3), MFGT-R2 (3). No test leaves an integrity residue.
 - Messages are hardcoded Arabic (StockService/ItemService have no localizer by design — every message in them is
-  hardcoded Arabic; injecting one would itself be a new writer coupling that HM-D53 flags).
+  hardcoded Arabic; injecting one would itself be a new writer coupling that HM-D53 flags — see CLAUDE.md declared exception).
 
 ### HM-6 — TrackBatch decision (the 4th dead flag) — reject batch-only tracking
 `TrackBatch` had no behaviour of its own (FEFO orders by EXPIRY). Enabling it without `TrackExpiry` faked a tracking
