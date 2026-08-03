@@ -42,11 +42,33 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
   slice-2 missing → SQL-207 `Invalid column name 'EntityId'` (they now write `Notifications.EntityType/EntityId`). The
   kernel advanced past slice-1 without notice — **slice-1 alone is no longer sufficient (HM-D57)**. Apply slice-2 with
   sqlcmd `-I` (QUOTED_IDENTIFIER ON) so its filtered index also builds. Verify `Notifications.EntityId` exists before acceptance.
+  - **General rule (supersedes the slice-1-only rule): EVERY platform slice present in the working tree must be deployed
+    to any DB we run acceptance against, and the list is re-reviewed BEFORE EACH PHASE — not pinned once.** The kernel keeps
+    adding slices; a slice can be a new *column* on an existing table (SQL-207), not just a new table (SQL-208). The slices
+    that gate OUR path (sale/purchase/reversal/stock) are the `platform_business_events*` family: **slice-1**
+    (`platform_business_events.sql` → `BusinessEvents`/`BusinessEventDispatch`) and **slice-2**
+    (`platform_business_events_slice_002.sql` → `Notifications.EntityType/EntityId`). Slices that do NOT gate our path (safe
+    to lag): `comm_outbox_slice_003.sql` (Comm module, no GL/stock) and `platform_schema_history.sql` (a deploy-tracking
+    table — ironically itself unapplied on CrossBuyDB2, so it cannot be relied on to tell us what is applied). Before each
+    phase: `ls deploy/sql/platform_*` and confirm each `platform_business_events*` slice's tables+columns exist.
 - **The kernel now hard-requires a signed-in BusinessContext on our purchase/sale/reversal path (HM-D58).** The parallel
   team removed the company-1 fallback; `RecordAsync` (their wiring inside our `CreatePurchaseInvoiceAsync`/sales/reversal)
   throws `BusinessContextUnresolvedException` when no signed-in employee/company resolves from the request. A production UI
   request always carries it; an **unauthenticated dev/acceptance endpoint that creates a document must seed the `"Employee"`
   session blob** (a real active company-1 employee, as `AccountController` login does) before the call — see `hm16-accept`.
+  - **Permanent test rule:** every headless/curl-invoked dev endpoint that creates a document, posts a reversal, or syncs a
+    paid order (i.e. reaches `RecordAsync` via a writer/`ReverseAsync`) MUST seed the `"Employee"` blob first. Today ~74 such
+    calls exist across `DevSeedController` (25 sales-invoice, 16 reverse, 11 purchase-invoice, 11 POS-sync, plus returns/
+    convert) and **only `hm16-accept` seeds the blob** — every other doc-creating dev endpoint throws
+    `BusinessContextUnresolvedException` when hit without a signed-in session (they pass today only because they are driven
+    from a signed-in browser). Any new acceptance endpoint follows the `hm16-accept` pattern.
+  - **Verdict (HM-D58, read-only sweep): NO production background/hosted/consumer/hub path reaches `RecordAsync`.** No
+    `HostedService`/`BackgroundService`/dispatch-worker/consumer/hub injects or calls a document writer, `ReverseAsync`, or
+    the accessor; `NotificationService.NotifyAsync` never touches the accessor; `Publish`/`ForWorker`/`ForSystem` set the EF
+    company-scope, NOT the accessor cache, so they would not rescue `RecordAsync` even if a background path called it. The
+    two reversal producers the risk pointed at — `FxRevaluationService`, `ClosingService.ReopenYearAsync` — are invoked ONLY
+    by controllers (`CurrencyController.PostRevaluation`, `AccountingController.ReopenYear`), i.e. inside a user request with
+    an HTTP context. So the coupling is real but has **no silent production surface today**; it bites only headless tests.
 - **Reversal now depends on the event platform (HM-D53).** The **only accounting-correction primitive**,
   `JournalEntryService.ReverseAsync`, calls `RecordAsync(JournalEntry.Reversed)` in-transaction before commit with no
   swallow. So **every correction path** — edit sales/purchase invoice, edit returns, **cancel a paid POS order (hyper

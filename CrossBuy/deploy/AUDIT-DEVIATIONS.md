@@ -769,3 +769,32 @@ that create invoices) throws. Accommodation: seed the `"Employee"` session blob 
 `AccountController` login does) before the calls — done in `hm16-accept`. This is a NEW hard runtime coupling on our path;
 in production it is always satisfied (users are signed in), but it makes our sale/purchase path depend on their identity
 resolution as well as their event table. Recorded, not "fixed" — raise with the parallel owner.
+
+## HM-D58 verdict (read-only sweep) — NO silent production defect; it is a TEST-harness rule
+Swept every HostedService/BackgroundService/dispatch-worker/consumer/hub for a path that creates a document, reverses an
+entry, posts a movement, or calls RecordAsync from OUTSIDE a user request. Result: NONE. No hosted service injects a
+document writer (IReceivable/IPayable/IStock/IJournalEntry/IProcurement/IBusinessEvent); the dispatch worker + projection
+consumers never call RecordAsync/ReverseAsync/the accessor; NotificationService.NotifyAsync never touches the accessor;
+NotificationsHub posts nothing financial; ForWorker/ForSystem/Publish set the EF company-scope, NOT the accessor cache.
+The two reversal producers named as the risk — FxRevaluationService and ClosingService.ReopenYearAsync — are called ONLY
+by controllers (CurrencyController.PostRevaluation, AccountingController.ReopenYear), i.e. inside an HTTP request. So
+BusinessContextUnresolvedException CANNOT fire on a production background path today. It DOES fire on any headless dev
+endpoint that creates a document: ~74 event-emitting writer calls live in DevSeedController and only hm16-accept seeds the
+"Employee" blob — the rest pass only when driven from a signed-in browser. Pinned as a permanent test rule in CLAUDE.md.
+
+## HM-D57 slice map (read-only) — which platform SQL gates our path, and applied-state on CrossBuyDB2
+Platform-kernel slices (theirs), in order:
+  slice-1  platform_business_events.sql          → BusinessEvents + BusinessEventDispatch          GATES our path (SQL-208)   APPLIED
+  slice-2  platform_business_events_slice_002.sql → Notifications.EntityType/EntityId (+index)      GATES our path (SQL-207)   APPLIED (this session)
+  slice-3  comm_outbox_slice_003.sql             → CommMessage outbox dispatch state               does NOT gate our path      APPLIED
+  (batchB) platform_schema_history.sql           → PlatformSchemaHistory (deploy-tracking table)   does NOT gate our path      MISSING
+Only the platform_business_events* family gates sale/purchase/reversal/stock; both applied. platform_schema_history is
+MISSING — the table meant to record "what was applied" is itself unapplied, so it cannot be trusted as the source of truth.
+Rule generalised in CLAUDE.md: ALL working-tree platform slices deployed before acceptance; list re-reviewed every phase.
+
+## HM-D45 extension (DESIGN ONLY, not built) — column-existence, not just table-existence
+SQL-207 was a missing COLUMN (Notifications.EntityId), which the current dbset_tables_exist check (table-only) cannot catch.
+Smallest shape to close the gap: a COUNTED companion check `dbset_columns_exist` that asserts a hard-coded allow-list of
+(table, column) pairs on the kernel tables our path writes — e.g. {Notifications: EntityType,EntityId}, {BusinessEvents:
+EntityId,DedupKey,EventType} — resolved by COL_LENGTH/INFORMATION_SCHEMA at runtime; a missing pair FAILS (writer-path,
+like dbset_tables_exist) with the exact table.column named. NOT built — proposed for a future guards batch.
