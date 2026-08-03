@@ -713,3 +713,22 @@ LOT-EXP (expired). **T9** TrackBatch without TrackExpiry rejected; with it allow
 `rc6c` allPass; constants **failedCount 0 · ar_sub 0 · ap_sub 0 · ef_precision 0/352 · bp4 0 · bal_qty_vs_moves match ·
 batch_no_negative 0 · culture allPass · dbContext Scoped**; new checks `dbset_tables_exist` GREEN, `writer_coupling`
 counted (1), `unbatched_inbound_tracked` counted (27).
+
+## HM-D55 (blocker resolved, read-only census 2026-08-03) — account 210203 is GRNI mislabeled, NOT mixed
+Before any HM-16 code, the 210203 question was settled by census:
+- **Code treats 210203 as GRNI** (hard-coded: `PayableService.cs:421,488`, `ProcurementService.cs:126`), but it is
+  NAMED "ضرائب كسب عمل مستحقة / Payroll Tax Payable" (parent 2102 Taxes Payable).
+- **Every posting to 210203 is GRNI-nature, ZERO tax/payroll:** Auto·Inventory receipts (25 lines, −182,590),
+  Reversing·Reversal (12), Auto·PurchaseReturn (5, −230), Auto·PurchaseInvoice clearing (4, +1,440), Auto·FixedAsset
+  capitalization (1, −10,000), Auto·LandedCost (1, −200), Manual·StockReconcile (1, +720). Net in CrossBuyDB2 = −190,680
+  (the documented −39,860 is the production-scale figure — same account, different DB state).
+- **No tax ever posted there.** The DUPLICATE "Payroll Tax Payable" `210205` is EMPTY; real withholding tax posts to
+  `210202` (`PayableService.cs:584`). 24 item categories map `GrniAccountId → 210203`, 18 null.
+- **VERDICT — the FIRST branch (naming error, posting is pure GRNI):** exactly the 510101→COGS precedent (HM-D39). The
+  fix is a **rename** (210203 → "بضاعة وردت ولم تُفوتَر (GRNI) / Goods Received Not Invoiced"), done in HM-16. **No STOP.**
+  - The **rounding-diff forbidden list stays valid**: 210203 is a LIABILITY (balance-sheet), auto-excluded from
+    rounding-diff absorption by the "P&L-only (AccountType 4/5)" rule — it was never in the explicit 6-account P&L set
+    (`JournalEntryService.cs:66`), whose own comment already lists "GRNI/tax" as balance-sheet auto-excluded. No change.
+  - The **−39,860 dismantling stands** — it was built on the account that IS GRNI in practice (only mislabeled).
+  - The rename also resolves the **duplicate name** (210205 remains the payroll-tax account, currently unused).
+  - Config note for HM-16: keep future payroll tax posting to 210205; keep real WHT on 210202.
