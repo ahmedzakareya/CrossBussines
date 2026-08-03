@@ -376,13 +376,27 @@ namespace CrossBuy.BL
 				.Select(t => (decimal?)t.Rate).FirstOrDefaultAsync() ?? 0m;
 
 		// Item.DefaultTaxCodeId → its rate; else company default VAT; else 0. Supports per-item, 0% and exempt.
-		private async Task<decimal> ResolveTaxRateAsync(int companyId, Item item)
+		// HM-D38: resolution order — item's own tax code → the branch's default tax code → the company default VAT.
+		// A branch with no override (DefaultTaxCodeId null, e.g. restaurant) falls straight through to the company default,
+		// i.e. the exact pre-D38 behaviour. A Kuwait hyper branch pins VATEX (0%) so its items need no per-item tag.
+		private async Task<decimal> ResolveTaxRateAsync(int companyId, Item item, int? branchId)
 		{
 			if (item.DefaultTaxCodeId != null)
 			{
 				var r = await _db.TaxCodes.Where(t => t.ID == item.DefaultTaxCodeId && t.CompanyID == companyId)
 					.Select(t => (decimal?)t.Rate).FirstOrDefaultAsync();
 				if (r != null) return r.Value;
+			}
+			if (branchId != null)
+			{
+				var bt = await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == branchId.Value)
+					.Select(s => s.DefaultTaxCodeId).FirstOrDefaultAsync();
+				if (bt != null)
+				{
+					var r = await _db.TaxCodes.Where(t => t.ID == bt.Value && t.CompanyID == companyId)
+						.Select(t => (decimal?)t.Rate).FirstOrDefaultAsync();
+					if (r != null) return r.Value;
+				}
 			}
 			return await DefaultVatRateAsync(companyId);
 		}
@@ -571,7 +585,7 @@ namespace CrossBuy.BL
 			decimal extras = chosen.Sum(x => x.ExtraPrice);          // per-unit add-on price folded into UnitPrice
 			decimal unit = basePrice + extras;                       // ← the "price includes modifiers" fold
 			decimal disc = R(basePrice * qty * (price.DiscountPercent) / 100m);   // discount tied to the base item promo
-			decimal taxR = await ResolveTaxRateAsync(companyId, item);
+			decimal taxR = await ResolveTaxRateAsync(companyId, item, o.BranchId);
 
 			// RC-4: an item WITH modifier groups NEVER merges — each add is its own line (different choices = different lines).
 			// A plain item (no groups) keeps the merge-into-existing behaviour.

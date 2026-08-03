@@ -350,11 +350,12 @@ namespace CrossBuy.Controllers.Api
 			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001");
 			if (item == null)
 			{
-				item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "HM-DEMO-001", Barcode = "6281234567890", Name = "مياه معدنية 600 مل", NameEn = "Mineral Water 600ml", ItemCategoryId = hcat.ID, DefaultTaxCodeId = vatexId, ItemType = "Stockable", BaseUoMId = uom, TrackBatch = false, TrackExpiry = false, TrackSerial = false, IsComposite = false, IsActive = true, CostingMethod = "Average", SalesPrice = 0.750m, CreatedAt = DateTime.UtcNow };
+				// HM-D38: NO per-item tax tag — the tax comes from the BRANCH (VATEX 0%), proving branch-driven taxation.
+				item = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "HM-DEMO-001", Barcode = "6281234567890", Name = "مياه معدنية 600 مل", NameEn = "Mineral Water 600ml", ItemCategoryId = hcat.ID, DefaultTaxCodeId = null, ItemType = "Stockable", BaseUoMId = uom, TrackBatch = false, TrackExpiry = false, TrackSerial = false, IsComposite = false, IsActive = true, CostingMethod = "Average", SalesPrice = 0.750m, CreatedAt = DateTime.UtcNow };
 				_db.Items.Add(item); await _db.SaveChangesAsync(); log.Add("item HM-DEMO-001 CREATED #" + item.ID);
 			}
-			else { item.Barcode = "6281234567890"; item.SalesPrice = 0.750m; item.TrackBatch = false; item.TrackExpiry = false; item.TrackSerial = false; item.IsActive = true; item.ItemType = "Stockable"; item.ItemCategoryId = hcat.ID; item.DefaultTaxCodeId = vatexId; await _db.SaveChangesAsync(); log.Add("item HM-DEMO-001 exists #" + item.ID + " (category→hyper, tax→VATEX)"); }
-			Chk("HM-DEMO-001 in hyper category (COGS→510101) + tax-exempt (VATEX)", item.ItemCategoryId == hcat.ID && item.DefaultTaxCodeId == vatexId);
+			else { item.Barcode = "6281234567890"; item.SalesPrice = 0.750m; item.TrackBatch = false; item.TrackExpiry = false; item.TrackSerial = false; item.IsActive = true; item.ItemType = "Stockable"; item.ItemCategoryId = hcat.ID; item.DefaultTaxCodeId = null; await _db.SaveChangesAsync(); log.Add("item HM-DEMO-001 exists #" + item.ID + " (category→hyper, tax cleared → from branch)"); }
+			Chk("HM-DEMO-001 in hyper category (COGS→510101) + NO item tax tag (tax from branch)", item.ItemCategoryId == hcat.ID && item.DefaultTaxCodeId == null);
 			Chk("item Stockable + no tracking + barcode 6281234567890 + price 0.750", item.ItemType == "Stockable" && !item.TrackBatch && !item.TrackExpiry && !item.TrackSerial && item.Barcode == "6281234567890" && item.SalesPrice == 0.750m);
 
 			// (4) opening stock 100 via PostOpeningStockAsync ONLY (no GRN/purchase). UnitCost is a DEV ESTIMATE in functional EGP.
@@ -386,7 +387,12 @@ namespace CrossBuy.Controllers.Api
 			if (pline == null) { _db.PriceListLines.Add(new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = plist.ID, ItemId = item.ID, MinQty = 1m, UnitPrice = 0.750m, DiscountPercent = 0m, PricingMode = "Fixed" }); await _db.SaveChangesAsync(); log.Add("price line HM-DEMO-001 = 0.750 KWD CREATED"); }
 			else { pline.UnitPrice = 0.750m; pline.PricingMode = "Fixed"; await _db.SaveChangesAsync(); log.Add("price line exists (0.750)"); }
 			var bps = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == bid);
-			if (bps != null && bps.DefaultPriceListId != plist.ID) { bps.DefaultPriceListId = plist.ID; await _db.SaveChangesAsync(); log.Add("branch 17 DefaultPriceListId → #" + plist.ID); }
+			// HM-D18: link the KWD price list. HM-D38: pin the branch tax code to VATEX (0%) — Kuwait branch, tax follows the branch.
+			bool bpsCh = false;
+			if (bps != null && bps.DefaultPriceListId != plist.ID) { bps.DefaultPriceListId = plist.ID; bpsCh = true; }
+			if (bps != null && bps.DefaultTaxCodeId != vatexId) { bps.DefaultTaxCodeId = vatexId; bpsCh = true; }
+			if (bpsCh) { await _db.SaveChangesAsync(); log.Add($"branch 17 BPS → priceList #{plist.ID}, taxCode #{vatexId} (VATEX)"); }
+			Chk("branch 17 tax code = VATEX (0%)", bps != null && bps.DefaultTaxCodeId == vatexId);
 			Chk("branch 17 linked to KWD price list + HM-DEMO-001 priced 0.750 KWD", bps != null && bps.DefaultPriceListId == plist.ID);
 
 			return Ok(new { allPass, branchId = bid, itemId = item.ID, warehouse = wh, balance = fq, priceListId = plist.ID, log });
@@ -400,6 +406,59 @@ namespace CrossBuy.Controllers.Api
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var (ok, err) = await _posOrders.VoidPaidOrderAsync(1, orderId, null);
 			return Ok(new { ok, err, orderId });
+		}
+
+		// GET /api/dev/hm-d38-order-test?key=seed123 — HM-D38 proof (3): tax resolution ORDER (item tag → branch tag → company).
+		// On the hyper branch (VATEX 0%): an UNtagged item takes the branch rate (0); the SAME item temporarily tagged VAT14
+		// takes 14 (item tag precedes branch). Self-cleaning: scratch orders removed, item left untagged, shift closed.
+		[HttpGet("hm-d38-order-test")]
+		public async Task<IActionResult> HmD38OrderTest(string key, [FromServices] CrossBuy.BL.IPosSetupService posSetup)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+
+			int bid = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstOrDefaultAsync();
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001");
+			if (bid == 0 || item == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1-seed first" });
+			int vatex = await _db.TaxCodes.Where(t => t.CompanyID == company && t.Code == "VATEX").Select(t => t.ID).FirstAsync();
+			int vat14 = await _db.TaxCodes.Where(t => t.CompanyID == company && t.Code == "VAT14").Select(t => t.ID).FirstAsync();
+			var bps = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == bid);
+			Chk("branch 17 tax code = VATEX", bps != null && bps.DefaultTaxCodeId == vatex);
+
+			int drawer = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid && t.Code == "ZZ-D38-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = bid, Code = "ZZ-D38-T", Name = "D38 test", CashAccountId = drawer, ReceiptPrefix = "ZZD38-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await posSetup.GetOpenShiftAsync(term.ID);
+
+			// CASE 1: item has NO tag ⇒ tax from the branch (VATEX = 0)
+			item.DefaultTaxCodeId = null; await _db.SaveChangesAsync();
+			var (_, _, o1) = await _posOrders.CreateOrderAsync(company, bid, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, o1, item.ID, 1);
+			decimal tax1 = await _db.PosOrderLines.AsNoTracking().Where(l => l.OrderId == o1).Select(l => l.TaxRate).FirstAsync();
+			Chk($"untagged item ⇒ tax from branch = 0 (got {tax1})", tax1 == 0m);
+
+			// CASE 2: same item tagged VAT14 ⇒ item tag PRECEDES branch ⇒ 14
+			item.DefaultTaxCodeId = vat14; await _db.SaveChangesAsync();
+			var (_, _, o2) = await _posOrders.CreateOrderAsync(company, bid, "Takeaway", null, null, term.ID, shift.ID);
+			await _posOrders.AddLineAsync(company, o2, item.ID, 1);
+			decimal tax2 = await _db.PosOrderLines.AsNoTracking().Where(l => l.OrderId == o2).Select(l => l.TaxRate).FirstAsync();
+			Chk($"item tag VAT14 precedes branch VATEX ⇒ tax = 14 (got {tax2})", tax2 == 14m);
+
+			// reset item to untagged (final desired state) + clean the two scratch orders + close shift
+			item.DefaultTaxCodeId = null; await _db.SaveChangesAsync();
+			foreach (var oid in new[] { o1, o2 })
+			{
+				_db.PosOrderLines.RemoveRange(await _db.PosOrderLines.Where(l => l.OrderId == oid).ToListAsync());
+				var ord = await _db.PosOrders.FirstOrDefaultAsync(o => o.ID == oid); if (ord != null) _db.PosOrders.Remove(ord);
+			}
+			await _db.SaveChangesAsync();
+			foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s.Status = "Closed"; s.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, branchTaxCode = bps?.DefaultTaxCodeId, case1_untagged = tax1, case2_tagged = tax2, log });
 		}
 
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
@@ -5958,8 +6017,10 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				// Expenses
 				var exp = await Add("5", "المصروفات", "Expenses", "EXP", null, false);
 				var opEx = await Add("51", "مصروفات تشغيل", "Operating Expenses", "EXP", exp.ID, false);
-				await Add("510101", "مصروف إيجار", "Rent Expense", "EXP", opEx.ID, true, true, "Operating");
+				// HM-D39: 510101 is the de-facto COGS account (item categories post cost-of-goods here); named accordingly.
+				await Add("510101", "تكلفة البضاعة المباعة", "Cost of Goods Sold", "EXP", opEx.ID, true, true, "Operating");
 				await Add("510102", "مصروف كهرباء ومرافق", "Utilities Expense", "EXP", opEx.ID, true, true, "Operating");
+				await Add("510105", "مصروف إيجار", "Rent Expense", "EXP", opEx.ID, true, true, "Operating");   // HM-D39: the REAL rent account
 				var adminEx = await Add("52", "مصروفات إدارية ورواتب", "Administrative & Payroll", "EXP", exp.ID, false);
 				await Add("520101", "مصروف رواتب وأجور", "Salaries & Wages Expense", "EXP", adminEx.ID, true, true, "Operating");
 				await Add("520102", "مصروف تأمينات اجتماعية", "Social Insurance Expense", "EXP", adminEx.ID, true, true, "Operating");
@@ -12567,7 +12628,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var acc = await _db.Accounts.Where(a => a.CompanyID == companyId).ToDictionaryAsync(a => a.Code, a => a.ID);
 			int A(string code) => acc.TryGetValue(code, out var id) ? id : 0;
 			int cash = A("110101"), bankGl = A("110102"), capital = A("3101"), revenue = A("4101"),
-				rent = A("510101"), utilities = A("510102"), assetAcct = A("1201");
+				rent = A("510105"), utilities = A("510102"), assetAcct = A("1201");   // HM-D39: rent → the REAL rent account (510101 is COGS)
 
 			DateTime D(int m, int d) => new DateTime(2026, m, d);
 			var log = new List<string>();

@@ -440,3 +440,21 @@ Driven through the REAL HTTP controller path (login hyper1 → open shift HM-L1 
 ## HM-1 acceptance — two follow-up notes (2026-08-02)
 - **Fractional-qty proof (point 2) was momentary:** qty 1.5000 was verified live on a scratch order that was then deleted as residue, so it is not inspectable in the DB now. **Rule:** any future fractional-quantity test must leave a durable, inspectable state OR reverse its effect through the services (void/return) — never delete the order line to clean up. (Same spirit as the ZZ-entities-reversed-via-services rule.)
 - **Z report & drawer are in the DOCUMENT currency (KWD, 3dp); the journal entries are in the FUNCTIONAL currency (EGP) — BY DESIGN.** The shift Z (grand/expected/variance) and drawer counts read in KWD fils; the posted GL (revenue/COGS/AR/cash) reads in EGP at the day's rate. This split is intentional (document vs functional). Flagged as an item for the visual review in the hypermarket SCREEN phase (confirm the on-screen currency labels make the split obvious to the cashier/accountant).
+
+## HM-D39 EXECUTED — 510101 renamed to "Cost of Goods Sold"; separate rent account added (2026-08-02)
+**Gate (the line-12570 ruling) PASSED with evidence:** account 510101 holds **411 Inventory-source (COGS) JEs + 14 Reversal JEs = 425 total, and ZERO rent/purchase/manual entries**. `seed-acc-demo` ran (its vendor exists) and does `Purch(vTrans, …, 2500, rent=510101)`, yet **no PurchaseInvoice/manual JE ever landed on 510101** (A("510101") returned 0 before the chart seed, so the demo rent went nowhere on it). So "name wrong, routing sound" is ABSOLUTE here — no production rent to preserve, no historical reclassification.
+**Executed (`deploy/sql/hm_d39_rename_cogs.sql`, idempotent, NOT a migration):**
+- `UPDATE Accounts SET NameEn='Cost of Goods Sold', Name='تكلفة البضاعة المباعة' WHERE Code='510101'` (NAME only; ID/Code unchanged → every posting/report/reconciliation by ID/Code is unaffected; the acceptance's COGS JE now reads "Cost of Goods Sold").
+- Created a **real** Rent Expense account **510105** under 51 Operating Expenses.
+**Source fixed:** chart seed renames 510101 to COGS + adds 510105; `seed-acc-demo` now maps `rent → 510105` (no longer onto the COGS account). No historical JE touched; restaurant path untouched (its COGS is also correctly labelled now — a benefit).
+
+## HM-D38 EXECUTED — tax follows the BRANCH, not only the item category (2026-08-02)
+Tax was resolved from the item/category, blind to the branch's country — a Kuwait hyper item inherited Egyptian 14% VAT.
+**Fix (smallest, restaurant-safe):**
+- New nullable column `BranchPosSettings.DefaultTaxCodeId` (idempotent `deploy/sql/hm_d38_branch_tax.sql`, NOT a migration) + EF property.
+- `PosOrderService.ResolveTaxRateAsync` now takes `branchId`; resolution order = **item.DefaultTaxCodeId → BranchPosSetting.DefaultTaxCodeId → company default VAT**. A branch with NULL override (every restaurant branch) falls straight through to the company default — the EXACT pre-D38 behaviour (regression barrier).
+- Branch 17 (Kuwait hyper) pinned to **VATEX (0%)**; the per-item VATEX tag was REMOVED from HM-DEMO-001 so the 0% now demonstrably comes from the BRANCH, not the item.
+- Country route rejected: branch 17 CountryID=32 == restaurant branch 15, and `Countries` has no VAT column — a branch-level override is the reliable minimal design.
+
+## HM-D40 (deferred, logged not treated) — service & delivery tax still company-level, ignoring the branch
+`DefaultVatRateAsync(companyId)` (company default VAT) still drives **service charge and delivery fee tax** at ~6 sites in `PosOrderService` (RecomputeAsync + the invoice build). So a Kuwait branch that correctly charges 0% on ITEMS would still tax a delivery fee at the Egyptian 14%. Not urgent — the hypermarket has no delivery/service now — but it is the same branch-blindness as HM-D38 and must not be forgotten: service/delivery tax should also consult the branch's tax code. Logged; NOT treated in this batch.

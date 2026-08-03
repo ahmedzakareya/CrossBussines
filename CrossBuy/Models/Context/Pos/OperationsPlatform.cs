@@ -38,6 +38,7 @@ namespace CrossBuy.Models.Context.Pos
 		public int BranchId { get; set; }
 		public int? DefaultSalesWarehouseId { get; set; }   // the cashier deducts stock from this warehouse
 		public int? DefaultPriceListId { get; set; }         // applied via PricingService (currency/promotions/priority unchanged)
+		public int? DefaultTaxCodeId { get; set; }           // HM-D38: branch-level tax (Kuwait branch ⇒ VATEX); resolution order item→branch→company
 		public decimal? ServiceChargePct { get; set; }
 		public int? DefaultCurrencyId { get; set; }
 		// POS-C1 Delivery
