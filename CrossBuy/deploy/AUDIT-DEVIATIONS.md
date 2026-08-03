@@ -532,3 +532,13 @@ A startup/integrity check that every table backing a mapped `DbSet<>` physically
 
 ### HM-D46 (observation only, parallel internals — record, do NOT trace) — a second notification-producing path bypasses the outbox
 During HM-D44 slice-2 verification, the fan-out for `BusinessEvent` #1 (`SalesInvoice.Created`) showed a **single** dispatch row (`TimelineProjection`, Done), yet a `sales_invoice` notification (id 10290, recipient 5, RefId 9423) exists in `Notifications`. So that notification was produced by a path that does **not** go through the kernel outbox/`NotificationProjection` — a second, still-inline or otherwise-direct notification producer coexists with the event-driven one. This is entirely inside the parallel team's Platform-Kernel work (uncommitted). **Recorded, not traced, not touched** — it does not affect the ledger or our writers; flagged so the owner/parallel team can reconcile the two producers (risk: duplicate or divergent notifications) when their work lands.
+
+## HM-4 — pricing management + shelf labels + price-check (started 2026-08-03)
+### HM-D47 (deferred) — PricingService.SaveAsync full-replaces a list's lines (loses CreatedAt/By, renumbers LineIds)
+`PricingService.SaveAsync` on update does `RemoveRange(existing lines)` then re-inserts from `dto.Lines` ([PricingService.cs:404-405](../BL/PricingService.cs)). Consequence: every ordinary save of a price list **discards each line's `CreatedAt`/`CreatedBy` and assigns brand-new `LineId`s** — a `PriceListLine.ID` is not a stable identity across edits. Design impact absorbed by HM-4: **`PriceChangeLog` references `(PriceListId, ItemId, UoMId)`, never `LineId`** (a LineId reference would dangle after the first subsequent save). The full-replace behaviour itself is **not fixed now** (would touch the pricing save path more than HM-4 needs); deferred. Fix later: incremental upsert of lines that preserves identity + creation audit.
+
+### HM-D48 (deferred) — label-printer support (driver + device)
+HM-4 prints shelf labels as an **A4 grid via the browser** (`window.print`, same mechanism as the thermal receipt). Dedicated label-printer output (e.g. Zebra/TSC, a label-per-die roll) needs a printer driver and a physical device we do **not** have access to. Deferred until the hardware and its driver/command language (ZPL/EPL) are available.
+
+### HM-D49 (deferred) — open (login-less) price-check kiosk
+HM-4 price-check requires a cashier `HyperCtx` login (no shift), gated by the `PriceCheck` capability, reusing `PosLaneActivityGuard`. A **login-less kiosk** for the shop floor (a fixed screen anyone may scan at) needs a new, lighter guard (prices are not sensitive, but the screen still sits inside the branch). Deferred; not built with the cashier-session model.
