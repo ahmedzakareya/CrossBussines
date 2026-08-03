@@ -17,7 +17,9 @@ namespace CrossBuy.Controllers.Api
 	[Route("api/dev")]
 	[AllowAnonymous]
 	[CrossBuy.Models.DevOnly]   // SECURITY: all seeding/test/reset endpoints return 404 outside Development
-	public class DevSeedController : ControllerBase
+	// Derives from Controller (not ControllerBase) so the HM-D58 dev-context filter can override OnActionExecutionAsync,
+	// which MVC invokes as an implicit action filter. Controller : ControllerBase — every existing endpoint is unaffected.
+	public class DevSeedController : Controller
 	{
 		private readonly UserManager<Users> _um;
 		private readonly CrossDbContext _db;
@@ -50,6 +52,43 @@ namespace CrossBuy.Controllers.Api
 			CrossBuy.BL.IFxRevaluationService reval, CrossBuy.BL.IPosSetupService posSetup, CrossBuy.BL.IPosOrderService posOrders, CrossBuy.BL.IPosAccessService posAccess, IServiceScopeFactory scopes)
 		{
 			_um = um; _db = db; _costCenters = costCenters; _ar = ar; _ap = ap; _bank = bank; _posting = posting; _je = je; _fa = fa; _tax = tax; _itemSvc = itemSvc; _whSvc = whSvc; _stock = stock; _proc = proc; _sell = sell; _pricing = pricing; _match = match; _crm = crm; _reval = reval; _posSetup = posSetup; _posOrders = posOrders; _posAccess = posAccess; _scopes = scopes;
+		}
+
+		// ===== HM-D58 dev-context seed — a TEST-only accommodation, NOT a production fix (see CLAUDE.md / AUDIT-DEVIATIONS).
+		// The parallel kernel's RecordAsync (reached via our writers / ReverseAsync) now requires a resolvable
+		// BusinessContext. A real signed-in browser request carries the "Employee" session blob; a curl/automation hit
+		// does not, so ~38 doc-creating dev endpoints threw BusinessContextUnresolvedException. ONE choke point in THIS
+		// dev controller — guarded by the class-level [DevOnly] (404 outside Development), scoped to nothing else, no
+		// middleware, no global filter — seeds the blob, ONLY when it is ABSENT (a browser session wins), from a real
+		// ACTIVE company-1 employee. It carries {ID,BranchID,EmpCompanyID,UserId} — the ONLY fields any "Employee"-blob
+		// reader consults (the access services read .ID; BusinessContextFactory reads the 4 as hints, the DB Employee row
+		// being authoritative for company/branch), so no reader gets a null it needs. Explicit failure if no active
+		// employee (never the obscure deeper exception). The chosen employee is surfaced in the X-Dev-Context response
+		// header so a result difference (e.g. a smaller-id employee added later — OrderBy(ID) is deterministic but its
+		// value can shift) is explained, not mysterious. This masks HM-D58 for TESTS only; production interactive paths
+		// are covered by the real session, and any NEW parallel background path would still throw — HM-D58 stays open.
+		public override async Task OnActionExecutionAsync(
+			Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context,
+			Microsoft.AspNetCore.Mvc.Filters.ActionExecutionDelegate next)
+		{
+			if (string.IsNullOrEmpty(HttpContext.Session.GetString("Employee")))
+			{
+				var e = await _db.Employee.AsNoTracking().Where(x => x.EmpCompanyID == 1 && x.IsActive)
+					.OrderBy(x => x.ID).Select(x => new { x.ID, x.BranchID, x.EmpCompanyID, x.UserId }).FirstOrDefaultAsync();
+				if (e == null)
+				{
+					context.Result = new ObjectResult(new { message = "لا موظّف نشط في الشركة ١ — تعذّر زرع سياق dev (HM-D58)" }) { StatusCode = 500 };
+					return;   // explicit failure — do NOT let the obscure BusinessContextUnresolvedException surface from deeper in the stack
+				}
+				HttpContext.Session.SetString("Employee", System.Text.Json.JsonSerializer.Serialize(
+					new CrossBuy.ViewModel.EmployeeViewModel { ID = e.ID, BranchID = e.BranchID, EmpCompanyID = e.EmpCompanyID, UserId = e.UserId }));
+				Response.Headers["X-Dev-Context"] = $"seeded;employee={e.ID};branch={e.BranchID};company=1";
+			}
+			else
+			{
+				Response.Headers["X-Dev-Context"] = "signed-in-session";
+			}
+			await next();
 		}
 
 		// GET /api/dev/excel-smoke?key=seed123 — verifies the ClosedXML .xlsx builder runs (no runtime error)
@@ -1203,19 +1242,8 @@ namespace CrossBuy.Controllers.Api
 			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
 			decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 			var T = DateTime.Today;
-
-			// The parallel kernel's RecordAsync (invoked inside CreatePurchaseInvoiceAsync — THEIR wiring in our writer)
-			// now REQUIRES a resolvable BusinessContext: they removed the old company-1 fallback (BusinessContextAccessor),
-			// so it reads the signed-in employee from the "Employee" session blob and THROWS when there is none. A real UI
-			// request always carries it; this unauthenticated dev call does not — so seed it from a real ACTIVE company-1
-			// employee exactly as AccountController does on login, so the proof runs under a genuine context (not a fake
-			// default). This is a dev-harness accommodation for the parallel coupling, not part of HM-16.
-			var empRow = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == company && e.IsActive)
-				.OrderBy(e => e.ID).Select(e => new { e.ID, e.BranchID, e.EmpCompanyID, e.UserId }).FirstOrDefaultAsync();
-			if (empRow != null)
-				HttpContext.Session.SetString("Employee", System.Text.Json.JsonSerializer.Serialize(new CrossBuy.ViewModel.EmployeeViewModel
-				{ ID = empRow.ID, BranchID = empRow.BranchID, EmpCompanyID = empRow.EmpCompanyID, UserId = empRow.UserId }));
-			log.Add($"  ctx: employee={empRow?.ID} company={company} (BusinessContext seeded for the parallel kernel RecordAsync)");
+			// BusinessContext is seeded centrally by OnActionExecutionAsync (HM-D58 dev-context filter); the chosen
+			// employee is reported in the X-Dev-Context response header. No per-endpoint seeding here — one mechanism.
 
 			int wh = await _db.Warehouses.Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstAsync();
 			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
@@ -1533,7 +1561,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			// HM-D9 precondition: FAIL if ANY ZZ stock row survived OR integrity is not green after teardown
 			int zzResidue = await _db.StockMovements.CountAsync(m => m.ItemId == item.ID) + await _db.StockBalances.CountAsync(b => b.ItemId == item.ID) + await _db.StockCostLayers.CountAsync(l => l.ItemId == item.ID) + await _db.StockBatches.CountAsync(b => b.ItemId == item.ID);
 			var _integ9 = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IIntegrityCheckService>();
-			var (_run9, _) = await _integ9.RunAndLogAsync(company, "hm1-b3 teardown check");
+			var (_run9, _) = await _integ9.RunAndLogAsync(company, "hm1-b3-td");   // ≤20: IntegrityCheckRuns.Source is nvarchar(20)
 			bool teardownClean = zzResidue == 0 && _run9.FailedCount == 0;
 
 			return Ok(new
@@ -1660,7 +1688,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			// HM-D9 precondition: FAIL (not merely report) if ANY ZZ stock row survived OR integrity is not green after teardown
 			int zzResidue = await _db.StockMovements.CountAsync(m => m.ItemId == item.ID) + await _db.StockBalances.CountAsync(b => b.ItemId == item.ID) + await _db.StockCostLayers.CountAsync(l => l.ItemId == item.ID) + await _db.StockBatches.CountAsync(b => b.ItemId == item.ID);
 			var _integ9 = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IIntegrityCheckService>();
-			var (_run9, _) = await _integ9.RunAndLogAsync(company, "hm1-b3-tracker teardown check");
+			var (_run9, _) = await _integ9.RunAndLogAsync(company, "hm1-b3-trk-td");   // ≤20: IntegrityCheckRuns.Source is nvarchar(20)
 			bool teardownClean = zzResidue == 0 && _run9.FailedCount == 0;
 			pass = pass && teardownClean;
 
@@ -2706,7 +2734,15 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 
 			// ===== full reversal via services =====
 			var rev = new List<object>();
-			if (piOk && pi?.JournalEntryId != null) rev.Add(new { pi = pi.InvoiceNo, r = (await jes.ReverseAsync(pi.JournalEntryId.Value, null, "HM-D16 double-post test teardown")).ok });
+			if (piOk && pi?.JournalEntryId != null)
+			{
+				var rok = (await jes.ReverseAsync(pi.JournalEntryId.Value, null, "HM-D16 double-post test teardown")).ok;
+				// HM-D58-net: after reversing the invoice's JE, set the DOCUMENT status to match (no IPayableService cancel
+				// path exists → direct status update, no delete, no touching the JE) so the AP subledger stops counting it —
+				// else it becomes a Posted-doc/Reversed-JE orphan that drifts ap_sub (caught now by doc_je_status_mismatch).
+				if (rok) { var piRow = await _db.PurchaseInvoices.FirstOrDefaultAsync(z => z.ID == pi.ID); if (piRow != null && piRow.Status == "Posted") { piRow.Status = "Cancelled"; await _db.SaveChangesAsync(); } }
+				rev.Add(new { pi = pi.InvoiceNo, r = rok, statusSet = "Cancelled" });
+			}
 			if (grOk && grJe != 0) rev.Add(new { grn = gr!.ReceiptNo, r = (await jes.ReverseAsync(grJe, null, "HM-D16 double-post test teardown")).ok });
 			var q = await Bal();
 			if (q != 0) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { ItemId = itemId, WarehouseId = wh, Direction = (short)(q > 0 ? -1 : 1), Qty = Math.Abs(q), SourceType = "ZZ-STEP0-Teardown", PostToGl = false, Notes = "reverse double-post test" }, null);

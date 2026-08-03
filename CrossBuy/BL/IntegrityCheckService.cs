@@ -387,6 +387,30 @@ namespace CrossBuy.BL
 				Expected = 0, Actual = openGrn.Count, Ok = true,
 				Note = $"open={openGrn.Count} (legacy≤{PurchaseModelCutoffUtc:yyyy-MM-dd}={legacyOpenGrn} · new={newOpenGrn}) · GRNI value={openGrnVal:N2} — set-once guard blocks double-invoicing", Detail = "/Accounting/MatchReceipts" });
 
+			// HM-D58-net: every POSTED subledger document must have a POSTED journal entry (and a Cancelled doc a reversed
+			// JE). A doc left Posted with a Reversed JE (or Cancelled with a Posted JE) silently breaks ar_sub/ap_sub — and
+			// because THOSE checks compare TOTALS, a positive orphan and a negative one cancel out and vanish (same blind
+			// spot we hit on stock_gl). This lists EACH mismatch by id+value (never a sum) so nothing hides, and RAISES
+			// failedCount. Legacy prior-session orphans are frozen by id and excluded (kept visible in the Note); only NEW
+			// mismatches fail. Covers the six subledger docs the ar_sub/ap_sub sums are built from.
+			var docJeLegacy = new HashSet<string> { "PurchaseInvoice:1047", "PurchaseInvoice:1048", "PurchaseReturn:9" };   // frozen legacy (documented, DEV-2026-010)
+			var docMis = new List<(string type, int id, decimal amt)>();
+			var perType = new Dictionary<string, int>();
+			bool Bad(string ds, string js) => (ds == "Posted" && js != "Posted") || (ds == "Cancelled" && js == "Posted");
+
+			var siRows = await (from x in _db.SalesInvoices.AsNoTracking() join je in _db.JournalEntries.AsNoTracking() on x.JournalEntryId equals je.ID where x.CompanyID == companyId select new { x.ID, ds = x.Status, js = je.Status, amt = x.GrandTotalBase ?? x.GrandTotal }).ToListAsync();
+			var srRows = await (from x in _db.SalesReturns.AsNoTracking() join je in _db.JournalEntries.AsNoTracking() on x.JournalEntryId equals je.ID where x.CompanyID == companyId select new { x.ID, ds = x.Status, js = je.Status, amt = x.GrandTotalBase ?? x.GrandTotal }).ToListAsync();
+			var rcRows = await (from x in _db.Receipts.AsNoTracking() join je in _db.JournalEntries.AsNoTracking() on x.JournalEntryId equals je.ID where x.CompanyID == companyId select new { x.ID, ds = x.Status, js = je.Status, amt = x.AmountBase ?? x.Amount }).ToListAsync();
+			var piRows = await (from x in _db.PurchaseInvoices.AsNoTracking() join je in _db.JournalEntries.AsNoTracking() on x.JournalEntryId equals je.ID where x.CompanyID == companyId select new { x.ID, ds = x.Status, js = je.Status, amt = x.GrandTotalBase ?? x.GrandTotal }).ToListAsync();
+			var prRows = await (from x in _db.PurchaseReturns.AsNoTracking() join je in _db.JournalEntries.AsNoTracking() on x.JournalEntryId equals je.ID where x.CompanyID == companyId select new { x.ID, ds = x.Status, js = je.Status, amt = x.GrandTotalBase ?? x.GrandTotal }).ToListAsync();
+			var payRows = await (from x in _db.Payments.AsNoTracking() join je in _db.JournalEntries.AsNoTracking() on x.JournalEntryId equals je.ID where x.CompanyID == companyId select new { x.ID, ds = x.Status, js = je.Status, amt = x.AmountBase ?? x.Amount }).ToListAsync();
+			void Take(string type, IEnumerable<dynamic> rows) { var bad = rows.Where(r => Bad((string)r.ds, (string)r.js)).ToList(); perType[type] = bad.Count; foreach (var b in bad) docMis.Add((type, (int)b.ID, (decimal)b.amt)); }
+			Take("SalesInvoice", siRows); Take("SalesReturn", srRows); Take("Receipt", rcRows); Take("PurchaseInvoice", piRows); Take("PurchaseReturn", prRows); Take("Payment", payRows);
+			var docNew = docMis.Where(m => !docJeLegacy.Contains($"{m.type}:{m.id}")).ToList();
+			res.Add(new IntegrityCheck { Key = "doc_je_status_mismatch", NameAr = "حالة المستند توافق حالة قيده (لكل مستند بالمعرّف)", NameEn = "Document status matches its JE status (per-document, by id)",
+				Expected = 0, Actual = docNew.Count, Ok = docNew.Count == 0,
+				Note = $"SI={perType["SalesInvoice"]} SR={perType["SalesReturn"]} RCPT={perType["Receipt"]} PI={perType["PurchaseInvoice"]} PR={perType["PurchaseReturn"]} PAY={perType["Payment"]} · legacy(frozen)={docJeLegacy.Count} · new(fail)={docNew.Count}" + (docNew.Count > 0 ? " → " + string.Join(", ", docNew.Select(m => $"{m.type}#{m.id}={m.amt:N2}")) : ""), Detail = "/Accounting/Journals" });
+
 			return res;
 		}
 

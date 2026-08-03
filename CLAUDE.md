@@ -62,6 +62,12 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
     convert) and **only `hm16-accept` seeds the blob** — every other doc-creating dev endpoint throws
     `BusinessContextUnresolvedException` when hit without a signed-in session (they pass today only because they are driven
     from a signed-in browser). Any new acceptance endpoint follows the `hm16-accept` pattern.
+  - **Dev-context seed filter (masks HM-D58 for TESTS only — NOT a production fix).** `DevSeedController.OnActionExecutionAsync`
+    seeds the `"Employee"` session blob (a real active company-1 employee) when absent, so curl/automation hits of the ~38
+    doc-creating dev endpoints resolve a BusinessContext instead of throwing. It is scoped to that one `[DevOnly]` controller
+    — no middleware, no global filter. Production interactive paths are covered by the REAL signed-in session; **any NEW
+    background path the parallel team adds would still throw `BusinessContextUnresolvedException` and no filter would save
+    it — so monitoring background paths stays an OPEN item (HM-D58).** The filter is a test-harness plaster, not a cure.
   - **Verdict (HM-D58, read-only sweep): NO production background/hosted/consumer/hub path reaches `RecordAsync`.** No
     `HostedService`/`BackgroundService`/dispatch-worker/consumer/hub injects or calls a document writer, `ReverseAsync`, or
     the accessor; `NotificationService.NotifyAsync` never touches the accessor; `Publish`/`ForWorker`/`ForSystem` set the EF

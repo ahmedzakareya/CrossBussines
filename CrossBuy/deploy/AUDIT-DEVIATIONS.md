@@ -798,3 +798,35 @@ Smallest shape to close the gap: a COUNTED companion check `dbset_columns_exist`
 (table, column) pairs on the kernel tables our path writes — e.g. {Notifications: EntityType,EntityId}, {BusinessEvents:
 EntityId,DedupKey,EventType} — resolved by COL_LENGTH/INFORMATION_SCHEMA at runtime; a missing pair FAILS (writer-path,
 like dbset_tables_exist) with the exact table.column named. NOT built — proposed for a future guards batch.
+
+## HM-D58 dev-context seed filter (test-harness plaster, NOT a production fix)
+Verified before building: (1) DevSeedController IS guarded by class-level [DevOnly] (404 outside Development) — the filter
+is not unguarded. (4) Every "Employee"-blob reader consults at most {ID,BranchID,EmpCompanyID,UserId}: the three access
+services (Accounting/Crm/Inventory) read only .ID; BusinessContextFactory reads the 4 as HINTS and re-reads company/branch
+from the authoritative Employee row; SessionValidationMiddleware skips /api entirely; PosAccessService's Roles/FullName come
+from PosCtx/DB, not this blob. So the 4-field blob starves no reader. Implementation: ONE `OnActionExecutionAsync` override
+in DevSeedController — seeds only when the blob is ABSENT (browser session wins); EXPLICIT failure (500, clear Arabic) if no
+active company-1 employee (never the obscure deeper exception); the chosen employee (id+branch) is surfaced in the
+`X-Dev-Context` response header so a determinism shift (OrderBy(ID) picking a newly-added smaller id) is explained. Removed
+the now-redundant inline seed in hm16-accept (one mechanism). **This masks HM-D58 for TESTS only. Production interactive
+paths use the real session; any NEW parallel background path would still throw — monitoring background paths stays OPEN.**
+
+## HM-D58-net — doc-status/JE-status consistency (durable check + teardown fix + one-time cleanup)
+The HM-D58 dev-context filter let doc-creating tests COMPLETE, activating a dormant teardown bug: a test that reverses a
+document's JE but leaves the doc Status='Posted' creates a Posted-doc/Reversed-JE ORPHAN that the subledger keeps counting
+while the GL does not — drifting ar_sub/ap_sub. Worse, ar_sub/ap_sub compare TOTALS, so a positive orphan and a negative
+one cancel out and vanish (same blind spot as stock_gl). Fixes:
+- **Durable check** `doc_je_status_mismatch` (IntegrityCheckService, raises failedCount): per-document, by id+value (never a
+  sum), across all SIX subledger docs (SalesInvoice/SalesReturn/Receipt/PurchaseInvoice/PurchaseReturn/Payment). A
+  Posted-doc/non-Posted-JE (or Cancelled-doc/Posted-JE) FAILS. We found this by luck, not a guard — now there is a guard.
+- **Enumeration** (how many teardowns reverse a doc JE without setting status): exactly ONE in DevSeedController —
+  hm1-double-post-test (line 2737, `pi.JournalEntryId`). FIXED: after ReverseAsync, set PurchaseInvoice.Status='Cancelled'
+  (no IPayableService cancel path exists → direct status update; no delete, no touching the JE). No other doc-JE teardown found.
+- **One-time cleanup** (today's runs, JEs already reversed, zero economic effect — status update aligns the subledger):
+    PI-2026-04132  Posted→Cancelled  (JE Reversed)  80.00
+    PI-2026-04138  Posted→Cancelled  (JE Reversed)  80.00
+  Timestamp: applied this session (2026-08-03).
+- **Legacy frozen (NOT touched — prior-session existing data, kept visible)**, added to the check's baseline by id:
+    PurchaseInvoice #1047 = 100.00 (Posted/Reversed) · #1048 = 75.00 (Posted/Reversed)
+    PurchaseReturn  #9    = 20.00  (Posted/Reversed) — a THIRD legacy orphan the new per-document check surfaced in a type
+                                    (returns) we had not examined; baselined by the same "don't touch old data" rule.
