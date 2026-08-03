@@ -105,3 +105,13 @@ Two developments reclassify the risk from "new modules alongside us" to "they ar
 **Verified this snapshot cycle — our other owned files carry ONLY our changes (no parallel bleed):** `PricingService`, `PosOrderService`, `IntegrityCheckService`, `HyperPosController`, `ShelfLabelService`, `ScaleBarcodeParser`, `StockService`. Only `JournalEntryService` (among ours) was touched by them.
 
 **Owner action (raise with them):** (a) commit their work so our base stops shifting; (b) coordinate before editing our writers; (c) fix the two Platform build errors.
+
+---
+
+## Update — 2026-08-03 (pre-HM-16), before we modify PayableService
+
+About to touch **`PayableService.cs`** (our purchase-document writer) for HM-16. Snapshot of the parallel state at this moment:
+- `PayableService.cs` (mtime 12:02) is **kernel-wired** — 2× `RecordAsync` (purchase-invoice / return events), in-tx before commit, no swallow. We build our HM-16 change ON TOP of that; our selective commit uses the pre-kernel HEAD version, so their wiring stays uncommitted and ours is isolated.
+- `JournalEntryService.cs` still kernel-wired (1× RecordAsync in ReverseAsync — HM-D53). `ReceivableService`/`ManufService` kernel-wired.
+- Their earlier build break (IEventDispatchStore/SqlEventDispatchStore RetryAsync) is **fixed** — the tree compiles again. `Program.cs` re-saved 15:44 (they are still actively editing).
+- Coordination rule (CLAUDE.md) applies: editing `PayableService` (a document writer) is coordinated; we touch only the purchase-invoice posting, not their kernel lines.

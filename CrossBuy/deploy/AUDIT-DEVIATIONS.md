@@ -732,3 +732,11 @@ Before any HM-16 code, the 210203 question was settled by census:
   - The **−39,860 dismantling stands** — it was built on the account that IS GRNI in practice (only mislabeled).
   - The rename also resolves the **duplicate name** (210205 remains the payroll-tax account, currently unused).
   - Config note for HM-16: keep future payroll tax posting to 210205; keep real WHT on 210202.
+
+## HM-D56 (deferred, do NOT execute) — chart-of-accounts tree needs a structural review, not per-account fixes
+After HM-D55 renames 210203 to "Goods Received Not Invoiced (GRNI)", its PARENT is still 2102 (Taxes Payable) — a
+semantic error, because GRNI is not a tax. **Moving an account in the tree changes report roll-ups (it is riskier than
+renaming it)**, so it is NOT done per-account. It belongs to the wider naming/structure review: 510101 (de-facto COGS,
+renamed HM-D39), 510105, 210203 (GRNI, renamed HM-D55), 210205 (duplicate "Payroll Tax Payable", empty) were all
+mislabeled or mis-parented. The chart of accounts needs a **whole-tree review**, not account-by-account patching.
+Deferred by name.
