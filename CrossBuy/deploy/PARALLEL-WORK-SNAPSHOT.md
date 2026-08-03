@@ -130,3 +130,15 @@ re-checked per the standing rule:
   write-off approval gates in InventoryController) and `ManufService.cs` are being edited by the parallel team. We do NOT
   touch them; our count change is inside StockService + the count DTO/entity/screen only. If a NEW coupling appears on the
   stock writer during the batch, we STOP and report.
+
+---
+
+## Update — 2026-08-03 (pre-HM-7 batch-2: HM-D7 landed-cost lost-update fix), before we modify StockService again
+
+- **writer_coupling on the stock writer is CLEAN** (StockService ctor = six allowed deps; zero kernel wiring). Pre-step OK.
+- **NEW: `IntegrityCheckService.cs` is now a PARALLEL-SHARED file.** The parallel team's Stage-1-B5 edit company-scopes the
+  `barcode_cross_table_dup` raw SQL (uses `{0}` params + a "Stage 1 Batch B / B5" comment) in the WORKING TREE. It was
+  never in our commits (`git log -S` empty); a housekeeping commit accidentally staged it and was amended out. **Going
+  forward, commit IntegrityCheckService via HEAD-base plumbing (our lines only) like SharedResources/CrossDbContext.**
+- Parallel infra added today: `CompanyScopeMiddleware` + `CompanyQueryFilters` global query filter (HM-D59) — deliberately
+  EXCLUDES StockBalance (names our UPDLOCK guard). Does not touch the stock writer; only breaks single-shot curl (cookie jar).
