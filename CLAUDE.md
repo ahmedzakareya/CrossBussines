@@ -21,6 +21,17 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
 - **Selective commits.** Commit only our files. Shared files (CrossDbContext, Program.cs, resx) get **our lines only**
   via git plumbing (`git show HEAD:… > base; insert our lines; hash-object -w; update-index --cacheinfo`).
 
+## Standing decisions
+
+- **We do NOT raise platform business events in the hyper track yet (decided at HM-5).** Reason: raising one binds
+  us to their event queue + dispatcher + consumers, all uncommitted in git — their change or rollback would reach our
+  path. Events get adopted only after their work stabilises in git. Our sale still emits `SalesInvoice.Created`
+  because it goes through *their* `ReceivableService.CreateSalesInvoiceAsync` — that is their call inside their code,
+  not ours.
+- **Acceptance precondition (mandatory):** any DB we run acceptance against must have **slice-1
+  (`platform_business_events.sql`) applied FIRST** — else the sale path fails with SQL-208 (their `RecordAsync` has no
+  swallowing catch). Verify the `BusinessEvents` table exists before seeding/acceptance.
+
 ## Shared Platform Rules (from parallel work — Platform Kernel)
 
 Authoritative source: `docs/platform/ADR-001…007`, `PKS-001`, `Slice-002`; code in `CrossBuy/BL/Platform/`.
