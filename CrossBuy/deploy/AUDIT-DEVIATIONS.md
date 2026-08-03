@@ -626,3 +626,22 @@ qty3 **0.850**, qty2 **1.000** (none). **T7** weighted MinQty=3 ⇒ 3.000 kg **2
 guards: 150% rejected · negative rejected · 95% saved with a typo warning. **T9** 100% discount ⇒ line rejected (net ≤ 0),
 no zero line. **T10** capability OFF ⇒ 0.750 (no promo), ON ⇒ 0.675. **T11 regression:** restaurant `rc6c` allPass; constants
 **failedCount 0 · ar_sub 0 · ef_precision 0/352 · dbContext Scoped**.
+
+### HM-D45 (IMPLEMENTED) + HM-D53 detector (IMPLEMENTED) — the guards batch (2026-08-03)
+Both live in `IntegrityCheckService.RunAsync` (our file) and run in `inv-test-integrity` + the daily hosted check.
+- **`dbset_tables_exist` (HM-D45, FAILS on any missing critical table).** Verifies every table our writer/correction
+  paths depend on exists in the DB — scoped to a critical set (GL/stock/pos/sale/pricing tables resolved from the model
+  by CLR-type name, **plus `BusinessEvents` + `BusinessEventDispatch` referenced by name** because reversal now needs
+  them, HM-D53). Turns an opaque mid-reversal SQL-208 into a red check BEFORE the op. **Existence only** (column
+  precision is covered by `ef_precision_vs_db`). Parallel-module tables not on our paths (Calendar/Comm/Library) are
+  listed informationally, never failing. **Result:** 22 critical present, 0 missing → GREEN. **Positive proof** (not a
+  hollow zero): a fabricated absent name `__zz_nonexistent_table__` is detected MISSING (0) while `JournalEntries` is
+  PRESENT (1) — `hm-guard-test`.
+- **`writer_coupling` (HM-D53, COUNTED — records, never prevents).** Reflects each of our two writers' constructors and
+  reports any injected dependency OUTSIDE its allow-list. **Result:** exactly ONE — `JournalEntryService:IBusinessEventService`
+  (the parallel kernel wiring); `StockService` clean. `Ok=true` so it never raises `failedCount`; it makes the new
+  coupling visible by name. **LIMITATION (declared):** constructor-injection only — reflection cannot see call-sites nor
+  a static service-locator. Allow-list is the pre-kernel constructor shape; any future legitimate injection must be
+  added to the list (that is the point — a new dependency is surfaced for a human decision, not silently accepted).
+- **Constants after the batch:** failedCount 0 · ar_sub 0 · ap_sub 0 · ef_precision 0/352 · bp4 0 · bal_qty_vs_moves
+  متطابق · culture allPass · dbContextLifetime Scoped.

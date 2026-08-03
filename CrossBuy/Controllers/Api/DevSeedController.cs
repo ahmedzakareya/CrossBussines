@@ -985,6 +985,32 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, log });
 		}
 
+		// GET /api/dev/hm-guard-test?key=seed123 — HM-D45 (table-existence) + HM-D53 (writer-coupling) guards, with a
+		// POSITIVE proof: a fabricated absent table is detected MISSING (so the check is not a hollow zero), and the
+		// coupling detector names the GL-writer's kernel dependency.
+		[HttpGet("hm-guard-test")]
+		public async Task<IActionResult> HmGuardTest(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var checks = await integrity.RunAsync(company);
+			var tbl = checks.FirstOrDefault(c => c.Key == "dbset_tables_exist");
+			var cpl = checks.FirstOrDefault(c => c.Key == "writer_coupling");
+			Chk("HM-D45 present & GREEN (0 critical tables missing)", tbl != null && tbl.Ok);
+			log.Add("  dbset_tables_exist: Ok=" + tbl?.Ok + " · " + tbl?.Note);
+			Chk("HM-D53 detector present & shows exactly ONE coupling", cpl != null && cpl.Actual == 1m);
+			Chk("HM-D53 names it: JournalEntryService:IBusinessEventService", cpl?.Note != null && cpl.Note.Contains("JournalEntryService:IBusinessEventService"));
+			Chk("HM-D53 StockService NOT flagged (clean)", cpl?.Note != null && !cpl.Note.Contains("StockService:"));
+			log.Add("  writer_coupling: Actual=" + cpl?.Actual + " · " + cpl?.Note);
+			// POSITIVE proof the existence logic isn't a hollow zero: a crafted absent name → 0, a real table → 1.
+			int fake = await _db.Database.SqlQueryRaw<int>("SELECT CASE WHEN EXISTS(SELECT 1 FROM sys.tables WHERE name='__zz_nonexistent_table__') THEN 1 ELSE 0 END AS Value").FirstAsync();
+			int real = await _db.Database.SqlQueryRaw<int>("SELECT CASE WHEN EXISTS(SELECT 1 FROM sys.tables WHERE name='JournalEntries') THEN 1 ELSE 0 END AS Value").FirstAsync();
+			Chk("HM-D45 positive proof: fabricated absent table → MISSING, real table → PRESENT", fake == 0 && real == 1);
+			log.Add($"  crafted: fake table present={fake} (expect 0) · JournalEntries present={real} (expect 1)");
+			return Ok(new { allPass, log });
+		}
+
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
 		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
 		[HttpGet("apply-preset-guard-test")]

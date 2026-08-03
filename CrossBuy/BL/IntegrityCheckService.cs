@@ -318,6 +318,51 @@ namespace CrossBuy.BL
 			res.Add(new IntegrityCheck { Key = "fixed_barcode_in_scale_range", NameAr = "باركود ثابت داخل نطاق الميزان المحجوز (معدودة، HM-D42)", NameEn = "Fixed barcode inside the reserved scale range (counted)",
 				Expected = 0, Actual = fixedInScaleRange, Ok = true, Note = $"count={fixedInScaleRange}", Detail = "/Inventory/Items" });
 
+			// ---- HM-D45: every table our WRITER/CORRECTION paths depend on must EXIST in the DB (FAILS if any missing). ----
+			// Turns an opaque mid-operation SQL-208 (e.g. a missing BusinessEvents silently breaking a reversal — HM-D53)
+			// into a red check BEFORE the operation. EXISTENCE only; column precision is covered by ef_precision_vs_db.
+			// Scoped to writer-path tables: parallel-module tables not on our paths (Calendar/Comm/Library) are listed
+			// informationally (their SQL may simply be undeployed), never failing.
+			var presentTables = (await _db.Database.SqlQueryRaw<string>("SELECT name AS Value FROM sys.tables").ToListAsync())
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			string? TableOf(string clr) => _db.Model.GetEntityTypes().FirstOrDefault(e => e.ClrType.Name == clr)?.GetTableName();
+			var criticalTables = new[] { "JournalEntry", "JournalEntryLine", "Account", "StockMovement", "StockBalance", "StockBatch",
+					"PosOrder", "PosOrderLine", "SalesInvoice", "SalesInvoiceLine", "Item", "ItemCategory",
+					"PriceList", "PriceListLine", "Promotion", "PriceChangeLog", "Branch", "BranchPosSetting", "Currency", "ExchangeRate" }
+				.Select(TableOf).Where(t => t != null).Select(t => t!)
+				.Concat(new[] { "BusinessEvents", "BusinessEventDispatch" })   // HM-D53: reversal now needs these — referenced by NAME (no compile dependency on their types)
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			var missingCritical = criticalTables.Where(t => !presentTables.Contains(t)).OrderBy(t => t).ToList();
+			var missingOther = _db.Model.GetEntityTypes().Select(e => e.GetTableName()).Where(t => !string.IsNullOrEmpty(t)).Distinct()
+				.Where(t => !presentTables.Contains(t!) && !criticalTables.Contains(t!)).OrderBy(t => t).ToList();
+			res.Add(new IntegrityCheck { Key = "dbset_tables_exist", NameAr = "جداول مسارات الكاتبين موجودة في القاعدة (HM-D45)", NameEn = "Writer-path tables exist in DB (HM-D45)",
+				Expected = 0, Actual = missingCritical.Count, Ok = missingCritical.Count == 0,
+				Note = (missingCritical.Count == 0 ? $"{criticalTables.Count} critical tables present" : "MISSING CRITICAL: " + string.Join(", ", missingCritical))
+					+ $" · other mapped-not-deployed (info): {missingOther.Count}" + (missingOther.Count > 0 ? " [" + string.Join(", ", missingOther.Take(12)) + "]" : ""),
+				Detail = null });
+
+			// ---- HM-D53 detector: a NEW coupling on our two writers (COUNTED, never fails). ----
+			// Reflects each writer's constructor and reports any injected dependency OUTSIDE its known allow-list — e.g. the
+			// parallel team wiring IBusinessEventService into the GL writer. This RECORDS the coupling, it does not prevent it.
+			// LIMITATION: constructor-injection only — reflection cannot see call-sites nor a static service-locator.
+			var writerAllow = new (Type svc, string[] allow)[]
+			{
+				(typeof(JournalEntryService), new[] { "CrossDbContext", "IFiscalPeriodService", "IServiceScopeFactory", "IConfiguration", "ICurrencyRounding", "IStringLocalizer`1", "ILogger`1" }),
+				(typeof(StockService),        new[] { "CrossDbContext", "IJournalEntryService", "IFiscalPeriodService", "ICurrencyService", "ILogger`1", "ICurrencyRounding" }),
+			};
+			var newCouplings = new List<string>();
+			foreach (var (svc, allow) in writerAllow)
+			{
+				var allowSet = new HashSet<string>(allow, StringComparer.Ordinal);
+				var ctor = svc.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+				foreach (var p in ctor.GetParameters())
+					if (!allowSet.Contains(p.ParameterType.Name)) newCouplings.Add($"{svc.Name}:{p.ParameterType.Name}");
+			}
+			res.Add(new IntegrityCheck { Key = "writer_coupling", NameAr = "ارتباط جديد على الكاتبين (انعكاس المُنشئ، معدود، HM-D53)", NameEn = "New coupling on the two writers (ctor reflection, counted, HM-D53)",
+				Expected = 0, Actual = newCouplings.Count, Ok = true,
+				Note = newCouplings.Count == 0 ? "no dependency outside the allow-list" : string.Join(" · ", newCouplings) + " — constructor-injection only (not call-sites / static locator)",
+				Detail = null });
+
 			return res;
 		}
 
