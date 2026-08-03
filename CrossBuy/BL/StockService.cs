@@ -159,6 +159,9 @@ namespace CrossBuy.BL
 		// the bug FAILS before the fix and PASSES after — toggling precisely this fix. Prod ships -c Release ⇒ this field
 		// does not exist there and the fix ALWAYS runs unconditionally. Removal after Phase د (see hm-deferred-backlog).
 		internal static bool _testBypassLockReadRefresh;
+		// HM-D7 self-test seam (Debug only): bypass the landed-cost LOCKED read (use the old unlocked read) so a dev
+		// self-test can reproduce the lost update the fix prevents. In Release this field does not exist ⇒ the fix always runs.
+		internal static bool _testBypassLandedLockRead;
 #endif
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
@@ -798,7 +801,9 @@ namespace CrossBuy.BL
 				foreach (var ch in charges) _context.LandedCostCharges.Add(new LandedCostCharge { LandedCostId = lc.ID, LineNo = cln++, Description = ch.Description, Amount = R2(ch.Amount), AccountId = ch.AccountId });
 
 				var invDrByAccount = new Dictionary<int, decimal>();
+				var shareByItem = new Dictionary<int, decimal>();          // HM-D7: aggregate share per ITEM (one locked read each)
 				decimal allocated = 0; int idx = 0;
+				// ---- pass 1: allocate share per line (FORMULA UNCHANGED), record the movement + GL, aggregate by item ----
 				foreach (var line in grLines)
 				{
 					idx++;
@@ -807,16 +812,7 @@ namespace CrossBuy.BL
 						: R2(totalAdd * (byQty ? line.Qty / sumQty : line.LineTotal / sumVal));
 					allocated += share;
 					if (share == 0) continue;
-
-					// revalue the item at GR warehouse: +share value, qty unchanged
-					var bal = await _context.StockBalances.FirstOrDefaultAsync(b => b.CompanyID == companyId && b.ItemId == line.ItemId && b.WarehouseId == gr.WarehouseId);
-					if (bal == null) { bal = new StockBalance { CompanyID = companyId, ItemId = line.ItemId, WarehouseId = gr.WarehouseId }; _context.StockBalances.Add(bal); }
-					bal.TotalValue = R2(bal.TotalValue + share);
-					bal.AvgCost = bal.QtyOnHand > 0 ? R4(bal.TotalValue / bal.QtyOnHand) : bal.AvgCost;
-					// FIFO: spread the bump across remaining layers (per unit)
-					var layers = await _context.StockCostLayers.Where(l => l.CompanyID == companyId && l.ItemId == line.ItemId && l.WarehouseId == gr.WarehouseId && l.QtyRemaining > 0).ToListAsync();
-					var remQty = layers.Sum(l => l.QtyRemaining);
-					if (remQty > 0) { var bump = share / remQty; foreach (var l in layers) l.UnitCost = R4(l.UnitCost + bump); }
+					shareByItem[line.ItemId] = shareByItem.TryGetValue(line.ItemId, out var sv) ? sv + share : share;
 
 					_context.StockMovements.Add(new StockMovement { CompanyID = companyId, MovementDate = date, ItemId = line.ItemId, WarehouseId = gr.WarehouseId, Direction = 1, QtyBase = 0, UnitCost = 0, TotalCost = share, SourceType = "LandedCost", SourceId = lc.ID, Notes = $"تكلفة إضافية {lc.LandedNo}", CreatedBy = userId, CreatedAt = DateTime.UtcNow });
 
@@ -824,6 +820,47 @@ namespace CrossBuy.BL
 						.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => c.InventoryAccountId).FirstOrDefaultAsync();
 					if (cat == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد الأصناف", null); }
 					invDrByAccount[cat.Value] = invDrByAccount.TryGetValue(cat.Value, out var v) ? v + share : share;
+				}
+
+				// ---- pass 2 (HM-D7 lost-update fix): ONE LOCKED read PER ITEM (lock → guard → Reload → modify), so the
+				// moving-average base (TotalValue → COGS + margin) can't be lost to a concurrent receipt/sale on the same
+				// item — the exact un-locked read + batched save that HM-D7 flagged. The allocation above is UNCHANGED; only
+				// the balance READ is now the same locked-read discipline as PostSingleAsync. Aggregating share per item
+				// FIRST means each balance is locked-read EXACTLY ONCE ⇒ the Modified-guard is satisfied by construction. =====
+				foreach (var kv in shareByItem)
+				{
+					int itemId = kv.Key; decimal itemShare = kv.Value;
+					StockBalance? bal;
+#if DEBUG
+					if (_testBypassLandedLockRead)   // TEST-ONLY (Debug): the OLD unlocked read — reproduces the lost update
+						bal = await _context.StockBalances.FirstOrDefaultAsync(b => b.CompanyID == companyId && b.ItemId == itemId && b.WarehouseId == gr.WarehouseId);
+					else
+#endif
+						bal = (await _context.StockBalances
+							.FromSqlInterpolated($"SELECT * FROM StockBalances WITH (UPDLOCK, HOLDLOCK) WHERE CompanyID = {companyId} AND ItemId = {itemId} AND WarehouseId = {gr.WarehouseId}")
+							.AsTracking().ToListAsync()).FirstOrDefault();
+					if (bal == null) { bal = new StockBalance { CompanyID = companyId, ItemId = itemId, WarehouseId = gr.WarehouseId }; _context.StockBalances.Add(bal); }
+					else
+#if DEBUG
+					if (!_testBypassLandedLockRead)
+#endif
+					{
+						var entry = _context.Entry(bal);
+						if (entry.State == Microsoft.EntityFrameworkCore.EntityState.Modified || entry.State == Microsoft.EntityFrameworkCore.EntityState.Added)
+						{
+							System.Threading.Interlocked.Increment(ref LockReadGuardTrips);
+							await tx.RollbackAsync();
+							return (false, "تعذّر ترحيل التكلفة الإضافية: رصيد الصنف يحمل تعديلًا غير محفوظ لحظة القراءة المقفولة — أُلغيت العملية لمنع تحديث ضائع", null);
+						}
+						await entry.ReloadAsync();   // refresh the tracked instance to the LOCKED DB truth
+					}
+					bal.TotalValue = R2(bal.TotalValue + itemShare);
+					bal.AvgCost = bal.QtyOnHand > 0 ? R4(bal.TotalValue / bal.QtyOnHand) : bal.AvgCost;
+					// FIFO: spread the total bump for this item across its remaining layers (per unit) — equivalent to the
+					// per-line bumps summed (qty is unchanged, so remQty is constant); no cost-formula change.
+					var layers = await _context.StockCostLayers.Where(l => l.CompanyID == companyId && l.ItemId == itemId && l.WarehouseId == gr.WarehouseId && l.QtyRemaining > 0).ToListAsync();
+					var remQty = layers.Sum(l => l.QtyRemaining);
+					if (remQty > 0) { var bump = itemShare / remQty; foreach (var l in layers) l.UnitCost = R4(l.UnitCost + bump); }
 				}
 				await _context.SaveChangesAsync();
 

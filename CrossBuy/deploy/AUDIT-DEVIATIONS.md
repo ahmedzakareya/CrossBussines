@@ -878,3 +878,18 @@ filtered entities (Item, Warehouse, invoices, JE, CRM…), NOT an exception. Not
 production resolves the scope), but it is the SAME anti-pattern we fought since HM-1: a silent fallback instead of an
 explicit failure — the exact shape of the ToBaseAsync `factor ?? 1` bug. A NEW background path that reads Item with no
 scope would get "no items" and continue. Theirs, not ours — raise with the owner; do not touch their code.
+
+## HM-7 batch-2 / HM-D7 — landed-cost lost-update FIXED (fail-first proof, writer regression green)
+PostLandedCostAsync revalued StockBalance.TotalValue (the moving-average base that feeds COGS + margin) via an UNLOCKED
+read + batched save — a lost update under a concurrent receipt/sale on the same item (the normal hypermarket case). Fix
+(mirrors PostSingleAsync): aggregate share PER ITEM first ⇒ ONE locked read per item (FromSql UPDLOCK/HOLDLOCK → Modified
+guard → Reload → modify) ⇒ one save. Aggregating per item means each balance is locked-read EXACTLY ONCE, so the
+batch-2 Modified-guard is satisfied BY CONSTRUCTION (never fires on a second read). The allocation formula, cost formula,
+and FIFO-layer bump are UNCHANGED (per-item bump == summed per-line bumps; qty unchanged). Debug-only seam
+`_testBypassLandedLockRead` (mirrors `_testBypassLockReadRefresh`) reproduces the bug for the self-test. Proof
+(api/dev/hm7-landed-accept, deterministic via raw-SQL external write, one tx rolled back = zero persistence): pre-fix
+TotalValue=230 (V+share=230, concurrent Δ=50 LOST); fixed TotalValue=280 (V+Δ+share, Δ preserved) — a test that fails
+before the fix and passes after. Full stock-writer regression green (hm4/5/6/16-accept, hm7-count, hm7-landed, rc6c,
+mc-o2c, seed-acc-demo all PASS; the WO path's writer correctly rejects insufficient stock — a clean business rule, its
+manuf test fixture is under-stocked, pre-existing, not HM-D7). Constants: failedCount 0 · ar_sub/ap_sub/bal_qty_vs_moves/
+batch_no_negative/doc_je_status_mismatch/dbset_tables_exist/writer_coupling OK · stock_gl baseline · Scoped.

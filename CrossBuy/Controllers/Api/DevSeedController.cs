@@ -1489,6 +1489,56 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, failedCount = run.FailedCount, log });
 		}
 
+		// GET /api/dev/hm7-landed-accept?key=seed123 — HM-D7: the landed-cost lost-update. Mirrors hm1-d6-race-test's
+		// DETERMINISTIC technique: an EXTERNAL write via raw SQL (the identity map can't observe it) makes the tracked
+		// StockBalance stale, then landed cost runs. Pre-fix (seam ON = old unlocked read) overwrites with V+share, LOSING
+		// the concurrent Δ; fixed (seam OFF = locked read + Reload) sees V+Δ and yields V+Δ+share. Everything in one tx,
+		// rolled back ⇒ zero persistence. A test that does not FAIL before the fix proves nothing — so it asserts both.
+		[HttpGet("hm7-landed-accept")]
+		public async Task<IActionResult> Hm7LandedAccept(string key, [FromServices] CrossBuy.BL.IProcurementService proc)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var T = DateTime.Today;
+			int wh = await _db.Warehouses.Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int accInv = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "1103").Select(a => a.ID).FirstAsync();
+			int accGrni = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "210203").Select(a => a.ID).FirstAsync();
+			int accFreight = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "520103").Select(a => a.ID).FirstAsync();
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-LC-VEN");
+			if (ven == null) ven = await _ap.CreateVendorAsync(company, "ZZ-LC-VEN", "ZZ LC vendor", null);
+			var cat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "ZZ-LC-CAT");
+			if (cat == null) { cat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Code = "ZZ-LC-CAT", Name = "ZZ LC cat", NameEn = "ZZ LC cat", DefaultCostingMethod = "Average" }; _db.ItemCategories.Add(cat); }
+			cat.InventoryAccountId = accInv; cat.GrniAccountId = accGrni; await _db.SaveChangesAsync();
+			var itm = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-LC-ITM");
+			if (itm == null) { itm = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "ZZ-LC-ITM", Barcode = "ZZBC-LC", Name = "ZZ LC", NameEn = "ZZ LC", ItemCategoryId = cat.ID, ItemType = "Stockable", BaseUoMId = pcs, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow }; _db.Items.Add(itm); await _db.SaveChangesAsync(); }
+			int itemId = itm.ID;
+
+			const decimal V = 200m, DELTA = 50m, SHARE = 30m;   // GRN 10@20 ⇒ V=200 · external concurrent +50 · freight share 30
+			async Task<(decimal finalTV, bool lok)> Run(bool bypass)
+			{
+				CrossBuy.BL.StockService._testBypassLandedLockRead = bypass;
+				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);   // OWNER — rolled back (zero persistence)
+				var (gok, gerr, gr) = await proc.CreateReceiptAsync(company, ven!.ID, wh, null, T, "ZZ lc grn", new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = itemId, Qty = 10m, UnitCost = 20m } }, null);   // bal V=200, tracked
+				// EXTERNAL write the identity map can't see (a concurrent receipt/sale on the same item): +DELTA on TotalValue
+				await _db.Database.ExecuteSqlRawAsync("UPDATE StockBalances SET TotalValue = TotalValue + {0} WHERE CompanyID = {1} AND ItemId = {2} AND WarehouseId = {3}", DELTA, company, itemId, wh);
+				var (lok, lerr, _) = await _stock.PostLandedCostAsync(company, gr!.ID, T, "Value", new List<CrossBuy.BL.LandedChargeInput> { new() { Description = "freight", Amount = SHARE, AccountId = accFreight } }, "ZZ lc", null);
+				decimal finalTV = await _db.StockBalances.AsNoTracking().Where(b => b.ItemId == itemId && b.WarehouseId == wh).Select(b => b.TotalValue).FirstAsync();
+				await tx.RollbackAsync();
+				CrossBuy.BL.StockService._testBypassLandedLockRead = false;
+				return (finalTV, lok);
+			}
+
+			var (preTV, preOk) = await Run(true);    // pre-fix (unlocked stale read) ⇒ overwrites ⇒ V+share, Δ lost
+			var (postTV, postOk) = await Run(false); // fixed (locked read + Reload) ⇒ V+Δ+share
+			Chk($"pre-fix REPRODUCES the lost update: TotalValue={preTV} == V+share={V + SHARE} (concurrent Δ={DELTA} LOST)", preOk && preTV == V + SHARE);
+			Chk($"fixed PRESERVES the concurrent Δ: TotalValue={postTV} == V+Δ+share={V + DELTA + SHARE}", postOk && postTV == V + DELTA + SHARE);
+			log.Add($"  numbers: V={V} Δ={DELTA} share={SHARE} · pre-fix={preTV} (expect {V + SHARE}) · fixed={postTV} (expect {V + DELTA + SHARE})");
+			log.Add($"  zero persistence — both scenarios rolled back; ZZ-LC-ITM ends with no stock.");
+			return Ok(new { allPass, log });
+		}
+
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
 		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
 		[HttpGet("apply-preset-guard-test")]
