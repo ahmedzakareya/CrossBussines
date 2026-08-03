@@ -1,0 +1,96 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var priceLists = ViewBag.PriceLists as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var categories = ViewBag.Categories as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@SR["Bulk price change"]</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@SR["Pricing"]</li></ul></div>
+    </div></div>
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="card card-flush mb-5"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Choose a price list"]</label>
+                <select id="f_list" class="form-select form-select-solid" data-hide-search="true">
+                    @foreach (var p in priceLists) { <option value="@p.ID">@p.Name</option> }
+                </select></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Category (all)"]</label>
+                <select id="f_cat" class="form-select form-select-solid">
+                    <option value="">@SR["Category (all)"]</option>
+                    @foreach (var c in categories) { <option value="@c.ID">@c.Name</option> }
+                </select></div>
+            <div class="col-md-2"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Adjustment"]</label>
+                <select id="f_type" class="form-select form-select-solid" data-hide-search="true">
+                    <option value="Percent">@SR["Percentage %"]</option>
+                    <option value="Amount">@SR["Fixed amount"]</option>
+                </select></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Value"]</label>
+                <input type="number" step="any" id="f_value" class="form-control form-control-solid" value="5" /></div>
+            <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Price rounding"]</label>
+                <select id="f_round" class="form-select form-select-solid" data-hide-search="true">
+                    <option value="None">@SR["No rounding"]</option>
+                    <option value="Nearest5Fils">@SR["Nearest 5 fils"]</option>
+                    <option value="Nearest10Fils">@SR["Nearest 10 fils"]</option>
+                </select></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Reason"]</label>
+                <input type="text" id="f_reason" class="form-control form-control-solid" placeholder="@SR["Reason"]" /></div>
+            <div class="col-md-3"><button type="button" id="btnPreview" class="btn btn-light-primary w-100"><i class="ki-outline ki-eye fs-3"></i> @SR["Preview changes"]</button></div>
+        </div></div></div>
+
+        <div class="card card-flush mb-5 d-none" id="previewCard">
+            <div class="card-header align-items-center py-4"><div class="card-title"><span class="text-muted fs-7" id="pvCount">—</span></div>
+                <div class="card-toolbar"><button type="button" id="btnApply" class="btn btn-primary"><i class="ki-outline ki-check fs-3"></i> @SR["Apply changes"]</button></div>
+            </div>
+            <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
+                <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@SR["Code"]</th><th>@SR["Name"]</th><th class="text-end">@SR["Old"]</th><th class="text-end">@SR["New"]</th></tr></thead>
+                <tbody id="pvRows"></tbody>
+            </table></div></div>
+        </div>
+
+        <div class="card card-flush"><div class="card-body py-5"><div class="row g-4 align-items-end">
+            <div class="col-12"><h3 class="fs-5 fw-bold text-gray-800 mb-3">@SR["Undo a batch"]</h3></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Batch ID"]</label>
+                <input type="text" id="u_batch" class="form-control form-control-solid" placeholder="00000000-0000-0000-0000-000000000000" /></div>
+            <div class="col-md-5"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Reason"]</label>
+                <input type="text" id="u_reason" class="form-control form-control-solid" /></div>
+            <div class="col-md-2"><button type="button" id="btnUndo" class="btn btn-light-warning w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Undo"]</button></div>
+        </div></div></div>
+    </div></div>
+</div>
+@section Scripts {
+<script>
+(function(){
+  var tok = document.querySelector('input[name="__RequestVerificationToken"]').value;
+  var baseline = [];
+  function body(o){ var f=new URLSearchParams(); f.set('__RequestVerificationToken',tok); Object.keys(o).forEach(function(k){ if(o[k]!==null&&o[k]!==undefined) f.set(k,o[k]); }); return f; }
+  function params(){ return { priceListId:document.getElementById('f_list').value, categoryId:document.getElementById('f_cat').value||'', adjustType:document.getElementById('f_type').value, value:document.getElementById('f_value').value, priceRounding:document.getElementById('f_round').value }; }
+  document.getElementById('btnPreview').addEventListener('click',function(){
+    fetch('@Url.Action("BulkPreview","Inventory")',{method:'POST',body:body(params())}).then(function(r){return r.json();}).then(function(d){
+      if(!d.ok){ Swal.fire({icon:'error',text:d.error}); return; }
+      baseline = d.rows.map(function(r){ return { itemId:r.itemId, uoMId:r.uoMId, expectedOld:r.oldPrice }; });
+      var h=''; d.rows.forEach(function(r){ h+='<tr><td>'+r.itemCode+'</td><td>'+r.itemName+'</td><td class="text-end">'+r.oldPrice+'</td><td class="text-end fw-bold text-primary">'+r.newPrice+'</td></tr>'; });
+      document.getElementById('pvRows').innerHTML=h; document.getElementById('pvCount').textContent=d.rows.length+' '+'@SR["lines"]'; document.getElementById('previewCard').classList.remove('d-none');
+    });
+  });
+  document.getElementById('btnApply').addEventListener('click',function(){
+    var reason=document.getElementById('f_reason').value.trim();
+    if(!reason){ Swal.fire({icon:'warning',text:'@SR["A reason is required."]'}); return; }
+    var p=params(); p.reason=reason; p.baselineJson=JSON.stringify(baseline);
+    fetch('@Url.Action("BulkExecute","Inventory")',{method:'POST',body:body(p)}).then(function(r){return r.json();}).then(function(d){
+      if(!d.ok){ Swal.fire({icon:'error',text:d.error}); return; }
+      Swal.fire({icon:'success',html:'@SR["Prices updated"]'+' — '+d.changed+'<br><code>'+d.batchId+'</code>'}).then(function(){ location.reload(); });
+    });
+  });
+  document.getElementById('btnUndo').addEventListener('click',function(){
+    var reason=document.getElementById('u_reason').value.trim(); var batch=document.getElementById('u_batch').value.trim();
+    if(!reason){ Swal.fire({icon:'warning',text:'@SR["A reason is required."]'}); return; }
+    fetch('@Url.Action("BulkUndo","Inventory")',{method:'POST',body:body({batchId:batch,reason:reason})}).then(function(r){return r.json();}).then(function(d){
+      if(!d.ok){ Swal.fire({icon:'error',text:d.error}); return; }
+      Swal.fire({icon:'success',text:'@SR["Restored"]'+' '+d.restored}).then(function(){ location.reload(); });
+    });
+  });
+})();
+</script>
+}

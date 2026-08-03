@@ -80,7 +80,7 @@ namespace CrossBuy.BL
 		// Resolve the effective unit price + discount for an item, given the customer (specific + segment), the
 		// document currency, ordered qty and date. Price lists are matched by currency (foreign price is fixed);
 		// priority: customer-specific > segment > general, then list Priority, then the most specific qty break.
-		Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null, int? uomId = null);
+		Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null, int? uomId = null, bool applyPromotions = true);
 		// Pricing 2A — gross-margin floor. netUnitPrice is in the document currency; converted to functional before comparing
 		// to cost×(1+margin%). currencyId/exchangeRate describe the document; if rate missing it is resolved (Sell). asOf = doc date.
 		Task<MarginCheckResult> CheckMarginAsync(int companyId, int itemId, decimal netUnitPrice, int? currencyId, decimal? exchangeRate, DateTime asOf);
@@ -95,8 +95,33 @@ namespace CrossBuy.BL
 		// Pricing 2B — promotion management
 		Task<(List<PromotionRow> rows, int total)> SearchPromotionsAsync(int companyId, string? q, bool? active, int page, int pageSize);
 		Task<Models.Context.Inventory.Promotion?> GetPromotionAsync(int companyId, int id);
-		Task<(bool ok, string? error, int id)> SavePromotionAsync(int companyId, Models.Context.Inventory.Promotion dto, string? userId);
+		Task<(bool ok, string? error, string? warning, int id)> SavePromotionAsync(int companyId, Models.Context.Inventory.Promotion dto, string? userId);
 		Task<bool> DeletePromotionAsync(int companyId, int id);
+		// HM-4 — bulk price change. Preview computes every new price WITHOUT writing; Execute re-verifies the shown
+		// baseline then writes prices + audit in ONE transaction; Undo writes the logged OLD prices back as a new batch.
+		Task<(bool ok, string? error, List<BulkPreviewRow> rows)> BulkPreviewAsync(int companyId, int priceListId, int? itemCategoryId, string adjustType, decimal value, string priceRounding);
+		Task<(bool ok, string? error, Guid batchId, int changed)> BulkExecuteAsync(int companyId, int priceListId, int? itemCategoryId, string adjustType, decimal value, string priceRounding, string reason, List<BulkBaselineItem> baseline, string? userId);
+		Task<(bool ok, string? error, Guid newBatchId, int restored)> BulkUndoAsync(int companyId, Guid batchId, string reason, string? userId);
+	}
+
+	// HM-4 — one previewed price change (the shape the grid shows before/after).
+	public class BulkPreviewRow
+	{
+		public int ItemId { get; set; }
+		public int? UoMId { get; set; }
+		public string ItemCode { get; set; } = "";
+		public string ItemName { get; set; } = "";
+		public decimal OldPrice { get; set; }
+		public decimal NewPrice { get; set; }
+	}
+
+	// HM-4 — the caller's optimistic-concurrency baseline: what the preview SHOWED. Execute rejects if the live old
+	// price no longer equals ExpectedOld (someone edited a line between preview and execute).
+	public class BulkBaselineItem
+	{
+		public int ItemId { get; set; }
+		public int? UoMId { get; set; }
+		public decimal ExpectedOld { get; set; }
 	}
 
 	public class PricingService : IPricingService
@@ -108,7 +133,7 @@ namespace CrossBuy.BL
 		public PricingService(CrossDbContext context, ICurrencyService currency, IManufService manuf, ICurrencyRounding rounding) { _context = context; _currency = currency; _manuf = manuf; _rounding = rounding; }
 
 
-		public async Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null, int? uomId = null)
+		public async Task<PriceResult> GetPriceAsync(int companyId, int itemId, int? customerId, string? segment, int? currencyId, decimal qty, DateTime asOf, int? priceListId = null, int? uomId = null, bool applyPromotions = true)
 		{
 			var q = qty <= 0 ? 1m : qty;
 			var seg = string.IsNullOrWhiteSpace(segment) ? null : segment.Trim();
@@ -190,7 +215,10 @@ namespace CrossBuy.BL
 			}
 
 			// Pricing 2B — layer the best matching promotion on top (sequential discount, in doc currency).
-			await ApplyBestPromotionAsync(companyId, itemId, itemCategoryId, customerId, seg, docCur, functional, q, asOf, result);
+			// HM-5: the sell path passes applyPromotions=false when the branch's Promotions capability is OFF, so a
+			// disabled branch prices without promotions (management is central; activation is per-branch).
+			if (applyPromotions)
+				await ApplyBestPromotionAsync(companyId, itemId, itemCategoryId, customerId, seg, docCur, functional, q, asOf, result);
 			return result;
 		}
 
@@ -215,9 +243,15 @@ namespace CrossBuy.BL
 			decimal netAfterList = R(result.UnitPrice * (1 - result.DiscountPercent / 100m));
 			if (netAfterList <= 0) return;
 
-			// evaluate each promotion's per-unit discount amount in the document currency; the largest wins (tie → Priority)
-			Models.Context.Inventory.Promotion? bestPromo = null;
-			decimal bestDiscAmt = 0m;
+			// HM-5 DETERMINISTIC promotion rank (declared; documented in AUDIT-DEVIATIONS.md). Compute each candidate's
+			// per-unit discount amount, then pick by, IN ORDER:
+			//   1. SPECIFICITY — item-specific (ItemId set) > category (ItemCategoryId set) > general. The most specific
+			//      target wins so an item promo is NEVER drowned by a larger category/general promo (mirrors GetPriceAsync,
+			//      where an explicit-unit line beats a null-unit line).
+			//   2. Priority (higher wins) — the user's field, so it must rank ABOVE the amount; else Priority is meaningless.
+			//   3. Largest discount amount.
+			//   4. Smallest Promotion.ID — a stable final tie-break (never FirstOrDefault on an unordered set).
+			var scored = new List<(Models.Context.Inventory.Promotion p, decimal disc, int spec)>();
 			foreach (var p in promos)
 			{
 				decimal discAmt;
@@ -232,10 +266,19 @@ namespace CrossBuy.BL
 					discAmt = R(netAfterList * pct / 100m);
 				}
 				if (discAmt <= 0) continue;
-				if (bestPromo == null || discAmt > bestDiscAmt || (discAmt == bestDiscAmt && p.Priority > bestPromo.Priority))
-				{ bestPromo = p; bestDiscAmt = discAmt; }
+				int spec = p.ItemId != null ? 2 : (p.ItemCategoryId != null ? 1 : 0);
+				scored.Add((p, discAmt, spec));
 			}
-			if (bestPromo == null || bestDiscAmt <= 0) return;
+			if (scored.Count == 0) return;
+			var best = scored
+				.OrderByDescending(x => x.spec)          // 1. item > category > general
+				.ThenByDescending(x => x.p.Priority)     // 2. Priority BEFORE amount (the user's control)
+				.ThenByDescending(x => x.disc)           // 3. largest discount
+				.ThenBy(x => x.p.ID)                      // 4. stable tie-break
+				.First();
+			Models.Context.Inventory.Promotion bestPromo = best.p;
+			decimal bestDiscAmt = best.disc;
+			if (bestDiscAmt <= 0) return;
 
 			decimal netFinal = R(netAfterList - bestDiscAmt);
 			if (netFinal < 0) netFinal = 0m;
@@ -428,7 +471,11 @@ namespace CrossBuy.BL
 				bool costPlus = l.PricingMode == "CostPlus";
 				_context.PriceListLines.Add(new Models.Context.Inventory.PriceListLine
 				{
-					PriceListId = entity.ID, ItemId = l.ItemId, MinQty = l.MinQty <= 0 ? 1 : l.MinQty,
+					// HM-D43: clamp only NEGATIVE MinQty to 0 — a genuine 0 floor is legitimate (a per-kg weighted item
+					// must price from any positive weight; GetPriceAsync filters MinQty <= qty, so a 1 floor rejects
+					// every sub-kg weighing). The old <=0?1 made weighted retail unsellable from the UI. (The promotion
+					// engine's own MinQty normalization in SavePromotionAsync is HM-5 scope and is deliberately NOT touched.)
+					PriceListId = entity.ID, ItemId = l.ItemId, MinQty = l.MinQty < 0 ? 0 : l.MinQty,
 					UnitPrice = costPlus ? null : l.UnitPrice, DiscountPercent = l.DiscountPercent < 0 ? 0 : (l.DiscountPercent > 100 ? 100 : l.DiscountPercent),
 					PricingMode = costPlus ? "CostPlus" : "Fixed", MarkupPercent = costPlus ? (l.MarkupPercent < 0 ? 0 : l.MarkupPercent) : 0,
 					ValidFrom = l.ValidFrom, ValidTo = l.ValidTo
@@ -446,6 +493,168 @@ namespace CrossBuy.BL
 			_context.PriceLists.Remove(entity);
 			await _context.SaveChangesAsync();
 			return true;
+		}
+
+		// ---------------- HM-4: bulk price change (preview → execute → undo) ----------------
+
+		// Retail price rounding to a "nice" fils step (nearest 5/10 fils). This is a COMMERCIAL rounding, NOT currency
+		// rounding — deliberately separate from ICurrencyRounding and never routed through it. AwayFromZero matches the
+		// house midpoint policy (157.5 → 158). SIGN NOTE: AwayFromZero rounds a negative value AWAY from zero too
+		// (−0.7875 → −0.790); bulk callers reject any price <= 0 BEFORE calling this, so a value that will be rejected
+		// is never rounded here.
+		internal static decimal PriceRound(decimal v, decimal step)
+			=> step <= 0m ? v : Math.Round(v / step, 0, MidpointRounding.AwayFromZero) * step;
+
+		private static decimal StepForRounding(string? priceRounding) => priceRounding switch
+		{
+			"Nearest5Fils" => 0.005m,
+			"Nearest10Fils" => 0.010m,
+			_ => 0m,   // None
+		};
+
+		// A step finer than the currency's smallest unit would be erased by currency rounding — refuse it explicitly
+		// rather than apply it silently (HM-4 correction 1). e.g. step 0.005 with a 2-decimal currency (smallest 0.01).
+		private static bool StepFinerThanCurrency(decimal step, int currencyDp)
+		{
+			if (step <= 0m) return false;
+			decimal smallest = 1m; for (int i = 0; i < currencyDp; i++) smallest /= 10m;   // 10^-dp
+			return step < smallest;
+		}
+
+		// The one-line compute. Order (HM-4 correction 1): currency precision FIRST, then the commercial fils step —
+		// the reverse would let currency rounding erase the step when the currency is coarser than the step. The
+		// non-positive guard runs BEFORE PriceRound (correction 2) so a to-be-rejected value is never rounded.
+		private (bool ok, decimal newPrice) ComputeNewPrice(decimal old, string adjustType, decimal value, decimal step, int currencyDp)
+		{
+			decimal raw = adjustType == "Amount" ? old + value : old * (1m + value / 100m);
+			decimal r1 = Math.Round(raw, currencyDp, MidpointRounding.AwayFromZero);   // currency precision FIRST
+			if (r1 <= 0m) return (false, 0m);                                          // guard BEFORE PriceRound
+			return (true, PriceRound(r1, step));                                       // commercial step SECOND
+		}
+
+		// Fixed, priced lines of the list (optionally a category), read-only. CostPlus lines are excluded — their price
+		// is computed from cost, not a stored number to bump.
+		public async Task<(bool ok, string? error, List<BulkPreviewRow> rows)> BulkPreviewAsync(int companyId, int priceListId, int? itemCategoryId, string adjustType, decimal value, string priceRounding)
+		{
+			var pl = await _context.PriceLists.AsNoTracking().FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == priceListId);
+			if (pl == null) return (false, "قائمة الأسعار غير موجودة", new());
+			if (adjustType != "Percent" && adjustType != "Amount") return (false, "نوع تعديل غير معروف", new());
+			int functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+			int dp = await _rounding.DecimalsAsync(companyId, pl.CurrencyId ?? functional);
+			decimal step = StepForRounding(priceRounding);
+			if (StepFinerThanCurrency(step, dp)) return (false, "خطوة التقريب أدقّ من دقّة العملة", new());
+
+			var scope = await (from l in _context.PriceListLines.AsNoTracking()
+							   join i in _context.Items.AsNoTracking() on l.ItemId equals i.ID
+							   where l.PriceListId == priceListId && i.CompanyID == companyId
+								   && l.PricingMode == "Fixed" && l.UnitPrice != null
+								   && (itemCategoryId == null || i.ItemCategoryId == itemCategoryId)
+							   orderby i.ItemCode
+							   select new { l.ItemId, l.UoMId, l.UnitPrice, i.ItemCode, i.Name }).ToListAsync();
+			var rows = new List<BulkPreviewRow>();
+			foreach (var s in scope)
+			{
+				var (ok, np) = ComputeNewPrice(s.UnitPrice!.Value, adjustType, value, step, dp);
+				if (!ok) return (false, $"التعديل ينتج سعرًا غير موجب للصنف {s.ItemCode}", new());
+				rows.Add(new BulkPreviewRow { ItemId = s.ItemId, UoMId = s.UoMId, ItemCode = s.ItemCode, ItemName = s.Name, OldPrice = s.UnitPrice!.Value, NewPrice = np });
+			}
+			return (true, null, rows);
+		}
+
+		// Re-verifies the shown baseline against the LIVE prices (optimistic concurrency — HM-4 correction 3), then
+		// writes new prices + one audit row per line in ONE ScopedTx. Empty reason is refused; any non-positive result
+		// or baseline drift rolls the whole batch back (single SaveChanges after full validation → all-or-nothing).
+		public async Task<(bool ok, string? error, Guid batchId, int changed)> BulkExecuteAsync(int companyId, int priceListId, int? itemCategoryId, string adjustType, decimal value, string priceRounding, string reason, List<BulkBaselineItem> baseline, string? userId)
+		{
+			if (string.IsNullOrWhiteSpace(reason)) return (false, "سبب التعديل مطلوب", Guid.Empty, 0);
+			var pl = await _context.PriceLists.AsNoTracking().FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == priceListId);
+			if (pl == null) return (false, "قائمة الأسعار غير موجودة", Guid.Empty, 0);
+			if (adjustType != "Percent" && adjustType != "Amount") return (false, "نوع تعديل غير معروف", Guid.Empty, 0);
+			int functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
+			int dp = await _rounding.DecimalsAsync(companyId, pl.CurrencyId ?? functional);
+			decimal step = StepForRounding(priceRounding);
+			if (StepFinerThanCurrency(step, dp)) return (false, "خطوة التقريب أدقّ من دقّة العملة", Guid.Empty, 0);
+
+			var baseMap = (baseline ?? new()).ToDictionary(b => (b.ItemId, b.UoMId), b => b.ExpectedOld);
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+			var lines = await (from l in _context.PriceListLines
+							   join i in _context.Items on l.ItemId equals i.ID
+							   where l.PriceListId == priceListId && i.CompanyID == companyId
+								   && l.PricingMode == "Fixed" && l.UnitPrice != null
+								   && (itemCategoryId == null || i.ItemCategoryId == itemCategoryId)
+							   select l).ToListAsync();
+			if (lines.Count == 0) return (false, "لا أسطر ضمن النطاق", Guid.Empty, 0);
+
+			// PASS 1 — the whole shown set must still match the live set exactly (same lines + same old prices).
+			if (baseMap.Count != lines.Count) return (false, "تغيّرت الأسعار بعد المعاينة، أعِد المعاينة", Guid.Empty, 0);
+			foreach (var l in lines)
+				if (!baseMap.TryGetValue((l.ItemId, l.UoMId), out var expOld) || expOld != l.UnitPrice!.Value)
+					return (false, "تغيّرت الأسعار بعد المعاينة، أعِد المعاينة", Guid.Empty, 0);
+
+			// PASS 2 — compute + validate every new price BEFORE mutating anything.
+			var computed = new List<(Models.Context.Inventory.PriceListLine line, decimal np)>();
+			foreach (var l in lines)
+			{
+				var (ok, np) = ComputeNewPrice(l.UnitPrice!.Value, adjustType, value, step, dp);
+				if (!ok) return (false, "التعديل ينتج سعرًا غير موجب — أُلغيت الدفعة", Guid.Empty, 0);
+				computed.Add((l, np));
+			}
+
+			// PASS 3 — apply + log, in this transaction.
+			var batchId = Guid.NewGuid();
+			var now = DateTime.UtcNow;
+			foreach (var (l, np) in computed)
+			{
+				_context.PriceChangeLogs.Add(new Models.Context.Inventory.PriceChangeLog
+				{
+					CompanyID = companyId, BatchId = batchId, PriceListId = priceListId, ItemId = l.ItemId, UoMId = l.UoMId,
+					OldPrice = l.UnitPrice, NewPrice = np, AdjustType = adjustType, AdjustValue = value, PriceRounding = priceRounding,
+					Reason = reason.Trim(), PerformedBy = userId, PerformedAt = now
+				});
+				l.UnitPrice = np;
+			}
+			await _context.SaveChangesAsync();
+			await tx.CommitAsync();
+			return (true, null, batchId, computed.Count);
+		}
+
+		// Reverse a batch: write the LOGGED OLD price back to each line (HM-4 correction 2 — the stored value, never a
+		// reverse percentage, because +5% then −5% ≠ the original). Recorded as its own Undo batch referencing the
+		// original. Refuses an empty reason and a double-undo.
+		public async Task<(bool ok, string? error, Guid newBatchId, int restored)> BulkUndoAsync(int companyId, Guid batchId, string reason, string? userId)
+		{
+			if (string.IsNullOrWhiteSpace(reason)) return (false, "سبب التراجع مطلوب", Guid.Empty, 0);
+			var logRows = await _context.PriceChangeLogs.AsNoTracking()
+				.Where(x => x.CompanyID == companyId && x.BatchId == batchId && x.AdjustType != "Undo").ToListAsync();
+			if (logRows.Count == 0) return (false, "الدفعة غير موجودة", Guid.Empty, 0);
+			bool alreadyUndone = await _context.PriceChangeLogs.AnyAsync(x => x.CompanyID == companyId && x.ReversalOfBatchId == batchId);
+			if (alreadyUndone) return (false, "الدفعة متراجَع عنها من قبل", Guid.Empty, 0);
+
+			int plId = logRows[0].PriceListId;
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+			// in-memory key match (ItemId, UoMId) — null-safe and HM-D47-safe (never a LineId).
+			var lines = await _context.PriceListLines.Where(l => l.PriceListId == plId && l.PricingMode == "Fixed").ToListAsync();
+			var byKey = lines.GroupBy(l => (l.ItemId, l.UoMId)).ToDictionary(g => g.Key, g => g.First());
+			var newBatch = Guid.NewGuid();
+			var now = DateTime.UtcNow;
+			int restored = 0;
+			foreach (var r in logRows)
+			{
+				if (!byKey.TryGetValue((r.ItemId, r.UoMId), out var line)) continue;   // line removed since — nothing to restore
+				var curr = line.UnitPrice;
+				line.UnitPrice = r.OldPrice;   // the EXACT stored old value
+				_context.PriceChangeLogs.Add(new Models.Context.Inventory.PriceChangeLog
+				{
+					CompanyID = companyId, BatchId = newBatch, PriceListId = r.PriceListId, ItemId = r.ItemId, UoMId = r.UoMId,
+					OldPrice = curr, NewPrice = r.OldPrice, AdjustType = "Undo", AdjustValue = 0m, PriceRounding = "None",
+					Reason = reason.Trim(), ReversalOfBatchId = batchId, PerformedBy = userId, PerformedAt = now
+				});
+				restored++;
+			}
+			await _context.SaveChangesAsync();
+			await tx.CommitAsync();
+			return (true, null, newBatch, restored);
 		}
 
 		// ---------------- Pricing 2B: promotion management ----------------
@@ -479,15 +688,24 @@ namespace CrossBuy.BL
 		public Task<Models.Context.Inventory.Promotion?> GetPromotionAsync(int companyId, int id) =>
 			_context.Promotions.AsNoTracking().FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == id);
 
-		public async Task<(bool ok, string? error, int id)> SavePromotionAsync(int companyId, Models.Context.Inventory.Promotion dto, string? userId)
+		// HM-5: a percent above this is almost always a typo (50 for 5). We WARN, never block, so a genuine deep
+		// clearance still saves. Blocking guards (percent > 100, negative) are hard rejects below.
+		public const decimal PromotionPercentWarnThreshold = 90m;
+
+		public async Task<(bool ok, string? error, string? warning, int id)> SavePromotionAsync(int companyId, Models.Context.Inventory.Promotion dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "الكود والاسم مطلوبان", 0);
+			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "الكود والاسم مطلوبان", null, 0);
 			var dupCode = await _context.Promotions.AnyAsync(p => p.CompanyID == companyId && p.Code == dto.Code && p.ID != dto.ID);
-			if (dupCode) return (false, "كود العرض مستخدم من قبل", 0);
+			if (dupCode) return (false, "كود العرض مستخدم من قبل", null, 0);
 			var type = dto.DiscountType == "Amount" ? "Amount" : "Percent";
-			if (dto.Value < 0) return (false, "قيمة الخصم غير صحيحة", 0);
-			if (type == "Percent" && dto.Value > 100) return (false, "نسبة الخصم لا تتجاوز 100%", 0);
-			if (dto.ValidFrom.HasValue && dto.ValidTo.HasValue && dto.ValidTo < dto.ValidFrom) return (false, "تاريخ النهاية قبل البداية", 0);
+			// HM-5 save guards (block): negative value, and percent over 100 (would zero/negate the price).
+			if (dto.Value < 0) return (false, "قيمة الخصم لا يمكن أن تكون سالبة", null, 0);
+			if (type == "Percent" && dto.Value > 100) return (false, "نسبة الخصم لا يمكن أن تتجاوز 100%", null, 0);
+			if (dto.ValidFrom.HasValue && dto.ValidTo.HasValue && dto.ValidTo < dto.ValidFrom) return (false, "تاريخ النهاية قبل البداية", null, 0);
+			// HM-5 save guard (warn, non-blocking): an unusually high percent — a likely typo.
+			string? warning = (type == "Percent" && dto.Value > PromotionPercentWarnThreshold)
+				? $"نسبة خصم مرتفعة جدًّا ({dto.Value:0.##}%) — تأكّد أنها ليست خطأً مطبعيًّا"
+				: null;
 
 			Models.Context.Inventory.Promotion entity;
 			if (dto.ID > 0)
@@ -510,13 +728,15 @@ namespace CrossBuy.BL
 			entity.ItemCategoryId = dto.ItemCategoryId;
 			entity.CustomerId = dto.CustomerId;
 			entity.Segment = string.IsNullOrWhiteSpace(dto.Segment) ? null : dto.Segment.Trim();
-			entity.MinQty = dto.MinQty <= 0 ? 1 : dto.MinQty;
+			// HM-D43 (same fix as the price line): clamp only NEGATIVE MinQty to 0 — a genuine 0 floor lets a promotion
+			// apply from any positive quantity/weight (a per-kg weighted item can't reach a MinQty of 1 for a 0.75 kg sale).
+			entity.MinQty = dto.MinQty < 0 ? 0 : dto.MinQty;
 			entity.Priority = dto.Priority;
 			entity.ValidFrom = dto.ValidFrom;
 			entity.ValidTo = dto.ValidTo;
 			entity.IsActive = dto.IsActive;
 			await _context.SaveChangesAsync();
-			return (true, null, entity.ID);
+			return (true, null, warning, entity.ID);
 		}
 
 		public async Task<bool> DeletePromotionAsync(int companyId, int id)

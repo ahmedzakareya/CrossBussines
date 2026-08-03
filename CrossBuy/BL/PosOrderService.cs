@@ -588,7 +588,11 @@ namespace CrossBuy.BL
 			// MUST come from that list — an item absent from it is REJECTED (never silently converted from the functional SalesPrice
 			// nor priced at zero). Branches with no list (e.g. restaurant, DefaultPriceListId=null) behave exactly as before.
 			int? branchListId = await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == o.BranchId).Select(s => s.DefaultPriceListId).FirstOrDefaultAsync();
-			var price = await _pricing.GetPriceAsync(companyId, itemId, null, null, o.CurrencyId, qty, DateTime.Today, branchListId, uomId);   // HM-2: price for THIS unit
+			// HM-5: promotions apply ONLY where the branch's Promotions capability is enabled (management is central,
+			// activation is per-branch). Same semantics as IsCapabilityEnabledAsync — the enabled row must exist. A branch
+			// with the capability OFF (or unset) prices without promotions; creating promotions from admin is never blocked.
+			bool promoOn = await _db.BranchCapabilities.AsNoTracking().AnyAsync(cx => cx.BranchId == o.BranchId && cx.CapabilityKey == "Promotions" && cx.Enabled);
+			var price = await _pricing.GetPriceAsync(companyId, itemId, null, null, o.CurrencyId, qty, DateTime.Today, branchListId, uomId, promoOn);   // HM-2: unit; HM-5: promo gate
 			if (branchListId != null && price.Source != "list" && price.Source != "costplus")
 				return (false, L["This item is not in the branch price list — it cannot be sold until it is priced."]);
 			decimal basePrice = price.UnitPrice > 0 ? price.UnitPrice : (item.SalesPrice ?? 0m);
@@ -596,6 +600,11 @@ namespace CrossBuy.BL
 			decimal unit = basePrice + extras;                       // ← the "price includes modifiers" fold
 			decimal disc = R(basePrice * qty * (price.DiscountPercent) / 100m);   // discount tied to the base item promo
 			decimal taxR = await ResolveTaxRateAsync(companyId, item, o.BranchId);
+			// HM-5 sell-time safety net: a promotion/discount that drives a PRICED line to zero-or-below is REJECTED with a
+			// clear message, never a silent zero/negative line. A genuinely zero-priced item (basePrice==0, e.g. a free
+			// modifier component) is unaffected by this guard.
+			if (basePrice > 0m && R(unit * qty - disc) <= 0m)
+				return (false, L["The discount reduces the price to zero or below — the line was rejected."]);
 
 			// RC-4: an item WITH modifier groups NEVER merges — each add is its own line (different choices = different lines).
 			// A plain item (no groups) keeps the merge-into-existing behaviour.

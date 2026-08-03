@@ -1,0 +1,55 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutHyperPos.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var enabled = ViewBag.Enabled as bool? ?? false;
+    var result = ViewBag.Result as CrossBuy.BL.PriceCheckResult;
+    var error = ViewBag.Error as string;
+    ViewData["Title"] = isAr ? "استعلام السعر" : "Price check";
+}
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+        <div class="card card-flush mx-auto" style="max-width:640px;">
+            <div class="card-header pt-6"><div class="card-title"><h2 class="fs-2 fw-bold">@SR["Price check"]</h2></div></div>
+            <div class="card-body">
+                @if (!enabled)
+                {
+                    <div class="alert alert-warning d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@SR["Price check is not enabled on this branch."]</div>
+                }
+                else
+                {
+                    <form method="post" asp-action="PriceCheck" autocomplete="off">
+                        @Html.AntiForgeryToken()
+                        <label class="fw-semibold fs-6 text-muted mb-2">@SR["Scan a barcode to see its price"]</label>
+                        <div class="input-group input-group-lg mb-6">
+                            <span class="input-group-text"><i class="ki-outline ki-barcode fs-1"></i></span>
+                            <input type="text" name="barcode" class="form-control form-control-solid fs-2" autofocus placeholder="—" />
+                            <button type="submit" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-2"></i></button>
+                        </div>
+                    </form>
+
+                    @if (error != null)
+                    {
+                        <div class="alert alert-danger d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@error</div>
+                    }
+                    else if (result != null)
+                    {
+                        var fmt = result.Dp > 0 ? "0." + new string('0', result.Dp) : "0";
+                        <div class="text-center py-6 border border-dashed rounded">
+                            <div class="fs-3 fw-bold text-gray-900 mb-2">@result.Name</div>
+                            <div class="fs-4x fw-bolder text-primary">
+                                @result.Price.ToString(fmt)
+                                <span class="fs-3 text-muted">@(result.Weighted ? (SR["KWD"].Value + " / " + result.Unit) : result.Unit)</span>
+                            </div>
+                            @if (result.Weighted && result.ScaleCode != null)
+                            {
+                                <div class="fs-6 text-gray-600 mt-2">@SR["Scale code"]: @result.ScaleCode</div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

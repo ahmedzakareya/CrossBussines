@@ -161,6 +161,7 @@ builder.Services.AddScoped<IManufService, ManufService>();
 builder.Services.AddScoped<IProcurementService, ProcurementService>();
 builder.Services.AddScoped<ISellingService, SellingService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IShelfLabelService, ShelfLabelService>();   // HM-4: EAN-13 SVG shelf-label generator (zero dependency)
 builder.Services.AddScoped<IThreeWayMatchService, ThreeWayMatchService>();
 builder.Services.AddScoped<ICrmService, CrmService>();
 builder.Services.AddScoped<ICrmCustomerLink, CrmCustomerLink>();

@@ -31,10 +31,12 @@ namespace CrossBuy.Controllers
 		private readonly ICurrencyService _currency;
 		private readonly IAccountingAccessService _accAccess;
 		private readonly IManufService _manuf;
+		private readonly IShelfLabelService _labels;                    // HM-4: EAN-13 SVG for shelf labels
+		private readonly ICurrencyRounding _rounding;                   // HM-4: currency decimals for label/price display
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
-		public InventoryController(IItemService items, IWarehouseService warehouses, IChartOfAccountsService coa, CrossDbContext context, IWebHostEnvironment env, IStockService stock, IProcurementService proc, ISellingService sell, IInventoryAccessService access, IInventoryApprovalService approvals, IOpeningBalanceService opening, IIntegrityCheckService integrity, IPricingService pricing, IThreeWayMatchService match, ICurrencyService currency, IAccountingAccessService accAccess, IManufService manuf, IStringLocalizer<CrossBuy.SharedResources> localizer)
+		public InventoryController(IItemService items, IWarehouseService warehouses, IChartOfAccountsService coa, CrossDbContext context, IWebHostEnvironment env, IStockService stock, IProcurementService proc, ISellingService sell, IInventoryAccessService access, IInventoryApprovalService approvals, IOpeningBalanceService opening, IIntegrityCheckService integrity, IPricingService pricing, IThreeWayMatchService match, ICurrencyService currency, IAccountingAccessService accAccess, IManufService manuf, IShelfLabelService labels, ICurrencyRounding rounding, IStringLocalizer<CrossBuy.SharedResources> localizer)
 		{
-			_items = items; _warehouses = warehouses; _coa = coa; _context = context; _env = env; _stock = stock; _proc = proc; _sell = sell; _access = access; _approvals = approvals; _opening = opening; _integrity = integrity; _pricing = pricing; _match = match; _currency = currency; _accAccess = accAccess; _manuf = manuf; L = localizer;
+			_items = items; _warehouses = warehouses; _coa = coa; _context = context; _env = env; _stock = stock; _proc = proc; _sell = sell; _access = access; _approvals = approvals; _opening = opening; _integrity = integrity; _pricing = pricing; _match = match; _currency = currency; _accAccess = accAccess; _manuf = manuf; _labels = labels; _rounding = rounding; L = localizer;
 		}
 
 		// saves an uploaded item image to wwwroot/uploads/items and returns the public path (null if no file)
@@ -757,6 +759,84 @@ namespace CrossBuy.Controllers
 			return RedirectToAction(nameof(PriceLists));
 		}
 
+		// ---------------- HM-4: bulk price change ----------------
+		[HttpGet] public async Task<IActionResult> BulkPriceChange()
+		{
+			ViewBag.PriceLists = await _context.PriceLists.AsNoTracking().Where(p => p.CompanyID == DefaultCompanyId && p.IsActive)
+				.OrderBy(p => p.Name).Select(p => new { p.ID, p.Name }).ToListAsync();
+			ViewBag.Categories = await _context.ItemCategories.AsNoTracking().Where(c => c.CompanyID == DefaultCompanyId)
+				.OrderBy(c => c.Name).Select(c => new { c.ID, c.Name }).ToListAsync();
+			return View();
+		}
+
+		// Preview — read-only; returns the before/after grid. Writes NOTHING.
+		[HttpPost][ValidateAntiForgeryToken][InvPerm("doc")]
+		public async Task<IActionResult> BulkPreview(int priceListId, int? categoryId, string adjustType, decimal value, string priceRounding)
+		{
+			var (ok, err, rows) = await _pricing.BulkPreviewAsync(DefaultCompanyId, priceListId, categoryId, adjustType, value, priceRounding ?? "None");
+			if (!ok) return Json(new { ok = false, error = err });
+			return Json(new { ok = true, rows = rows.Select(r => new { r.ItemId, r.UoMId, r.ItemCode, r.ItemName, oldPrice = r.OldPrice, newPrice = r.NewPrice }) });
+		}
+
+		// Execute — re-verifies the shown baseline, then writes prices + audit in one transaction. Mandatory reason.
+		[HttpPost][ValidateAntiForgeryToken][InvPerm("doc")]
+		public async Task<IActionResult> BulkExecute(int priceListId, int? categoryId, string adjustType, decimal value, string priceRounding, string reason, string? baselineJson)
+		{
+			List<BulkBaselineItem> baseline;
+			try { baseline = System.Text.Json.JsonSerializer.Deserialize<List<BulkBaselineItem>>(baselineJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
+			catch { baseline = new(); }
+			var (ok, err, batchId, changed) = await _pricing.BulkExecuteAsync(DefaultCompanyId, priceListId, categoryId, adjustType, value, priceRounding ?? "None", reason ?? "", baseline, User?.Identity?.Name);
+			return Json(new { ok, error = err, batchId, changed });
+		}
+
+		// Undo — writes the logged OLD prices back as a new batch. Mandatory reason.
+		[HttpPost][ValidateAntiForgeryToken][InvPerm("doc")]
+		public async Task<IActionResult> BulkUndo(Guid batchId, string reason)
+		{
+			var (ok, err, newBatchId, restored) = await _pricing.BulkUndoAsync(DefaultCompanyId, batchId, reason ?? "", User?.Identity?.Name);
+			return Json(new { ok, error = err, newBatchId, restored });
+		}
+
+		// ---------------- HM-4: shelf labels (A4 grid, browser print) ----------------
+		[HttpGet] public async Task<IActionResult> ShelfLabels(int? priceListId)
+		{
+			ViewBag.PriceLists = await _context.PriceLists.AsNoTracking().Where(p => p.CompanyID == DefaultCompanyId && p.IsActive)
+				.OrderBy(p => p.Name).Select(p => new { p.ID, p.Name }).ToListAsync();
+			ViewBag.SelectedList = priceListId;
+			ViewBag.Cards = priceListId.HasValue ? await BuildLabelCardsAsync(priceListId.Value) : new List<ShelfLabelCard>();
+			return View();
+		}
+
+		// Build the printable cards for a price list's Fixed lines: name · price (currency dp) · unit · EAN-13 SVG
+		// (or the digits as text if the barcode is not a valid EAN-13) · scale code as text for weighted items.
+		private async Task<List<ShelfLabelCard>> BuildLabelCardsAsync(int priceListId)
+		{
+			var pl = await _context.PriceLists.AsNoTracking().FirstOrDefaultAsync(p => p.CompanyID == DefaultCompanyId && p.ID == priceListId);
+			if (pl == null) return new();
+			int functional = await _currency.GetFunctionalCurrencyIdAsync(DefaultCompanyId, null);
+			int dp = await _rounding.DecimalsAsync(DefaultCompanyId, pl.CurrencyId ?? functional);
+			string fmt = dp > 0 ? "0." + new string('0', dp) : "0";
+			var lines = await (from l in _context.PriceListLines.AsNoTracking()
+							   join i in _context.Items.AsNoTracking() on l.ItemId equals i.ID
+							   where l.PriceListId == priceListId && i.CompanyID == DefaultCompanyId && l.PricingMode == "Fixed" && l.UnitPrice != null
+							   join u in _context.UnitsOfMeasure.AsNoTracking() on i.BaseUoMId equals u.ID into uj
+							   from u in uj.DefaultIfEmpty()
+							   orderby i.Name
+							   select new { i.Name, i.Barcode, i.IsWeighted, i.ScaleCode, l.UnitPrice, UnitName = u != null ? u.Name : null }).ToListAsync();
+			var cards = new List<ShelfLabelCard>();
+			foreach (var ln in lines)
+			{
+				var (svg, ok, _) = _labels.BuildEan13Svg(ln.Barcode);
+				cards.Add(new ShelfLabelCard
+				{
+					Name = ln.Name, Price = (ln.UnitPrice ?? 0m).ToString(fmt, System.Globalization.CultureInfo.InvariantCulture),
+					Unit = ln.UnitName ?? "", Weighted = ln.IsWeighted, ScaleCode = ln.ScaleCode,
+					BarcodeSvg = ok ? svg : null, BarcodeText = ln.Barcode ?? ""
+				});
+			}
+			return cards;
+		}
+
 		// ---------------- Promotions (Pricing 2B) ----------------
 		[HttpGet] public IActionResult Promotions() => View();   // shell; rows via PromotionsData
 
@@ -796,8 +876,11 @@ namespace CrossBuy.Controllers
 				CustomerId = (customerId.HasValue && customerId.Value > 0) ? customerId : null, Segment = segment,
 				MinQty = minQty, Priority = priority, ValidFrom = validFrom, ValidTo = validTo, IsActive = isActive
 			};
-			var (ok, err, newId) = await _pricing.SavePromotionAsync(DefaultCompanyId, dto, User?.Identity?.Name);
-			TempData[ok ? "InvMsg" : "InvErr"] = ok ? (id > 0 ? L["Promotion updated"].Value : L["Promotion created"].Value) : err;
+			var (ok, err, warning, newId) = await _pricing.SavePromotionAsync(DefaultCompanyId, dto, User?.Identity?.Name);
+			// HM-5: on success, append the soft typo warning (high percent) to the success message (rendered in the
+			// existing InvMsg slot — no new layout slot). Hard errors still block as before.
+			var okMsg = (id > 0 ? L["Promotion updated"].Value : L["Promotion created"].Value) + (!string.IsNullOrEmpty(warning) ? " — " + warning : "");
+			TempData[ok ? "InvMsg" : "InvErr"] = ok ? okMsg : err;
 			return ok ? RedirectToAction(nameof(Promotions)) : RedirectToAction(nameof(PromotionEditor), new { id });
 		}
 
@@ -1043,9 +1126,21 @@ namespace CrossBuy.Controllers
 		}
 
 		// ================= Module 4: Manufacturing — Work Orders (4-1) =================
-		[HttpGet] public IActionResult WorkOrders() => View();
+		// Stage 0 (Slice-003) — DEFENSE IN DEPTH, not a write-security fix.
+		// The nine work-order WRITE actions below already carried [InvPerm("doc")] + [ValidateAntiForgeryToken];
+		// an earlier discovery pass reported them as unguarded and that finding was WRONG (its attribute scanner
+		// could not read several attributes concatenated on one line). What was genuinely missing was a READ gate
+		// on the manufacturing screens, which expose work-order cost, WIP balance and component data.
+		// [InvPerm("read")] routes through the module's own policy: InventoryAccessService grants "read" to any
+		// authenticated user today, so this changes no behaviour — it makes the gate explicit and gives
+		// manufacturing a single place to tighten when a real Manufacturing RBAC lands (Stage 1).
+		[HttpGet][InvPerm("read")] public async Task<IActionResult> WorkOrders()
+		{
+			ViewBag.CanDoc = await _access.CanAsync("doc");   // gates the "New work order" button
+			return View();
+		}
 
-		[HttpGet] public async Task<IActionResult> WorkOrdersData(string? q, string? status, int page = 1, int pageSize = 25)
+		[HttpGet][InvPerm("read")] public async Task<IActionResult> WorkOrdersData(string? q, string? status, int page = 1, int pageSize = 25)
 		{
 			var (rows, total) = await _manuf.SearchAsync(DefaultCompanyId, q, status, page, pageSize);
 			Response.Headers["X-Total"] = total.ToString(); Response.Headers["X-Page"] = page.ToString();
@@ -1053,15 +1148,17 @@ namespace CrossBuy.Controllers
 			return PartialView("_WorkOrderRows", rows);
 		}
 
-		[HttpGet] public async Task<IActionResult> WorkOrderItemPickData(string? term)
+		[HttpGet][InvPerm("read")] public async Task<IActionResult> WorkOrderItemPickData(string? term)
 		{
 			var rows = await _manuf.ManufacturableItemsAsync(DefaultCompanyId, term);
 			return Json(new { results = rows.Select(r => new { id = r.id, text = r.text }) });
 		}
 
-		[HttpGet] public async Task<IActionResult> NewWorkOrder()
+		[HttpGet][InvPerm("read")] public async Task<IActionResult> NewWorkOrder()
 		{
 			ViewBag.Warehouses = await _warehouses.GetWarehousesAsync(DefaultCompanyId);
+			// UI gating must agree with the server: the create form is only usable with "doc".
+			ViewBag.CanDoc = await _access.CanAsync("doc");
 			return View();
 		}
 
@@ -1074,10 +1171,14 @@ namespace CrossBuy.Controllers
 			return RedirectToAction(nameof(WorkOrderDetails), new { id });
 		}
 
-		[HttpGet] public async Task<IActionResult> WorkOrderDetails(int id)
+		[HttpGet][InvPerm("read")] public async Task<IActionResult> WorkOrderDetails(int id)
 		{
 			var wo = await _manuf.GetAsync(DefaultCompanyId, id);
 			if (wo == null) { TempData["InvErr"] = L["Work order not found"].Value; return RedirectToAction(nameof(WorkOrders)); }
+			// Stage 0: every lifecycle button on this screen posts to an [InvPerm("doc")] action, so the buttons
+			// are shown only when the same permission holds. The server remains the authority — hiding a button
+			// is never the control.
+			ViewBag.CanDoc = await _access.CanAsync("doc");
 			ViewBag.Components = await _manuf.GetComponentsAsync(DefaultCompanyId, id);
 			ViewBag.ItemName = await _context.Items.AsNoTracking().Where(i => i.ID == wo.ItemId).Select(i => i.ItemCode + " — " + i.Name).FirstOrDefaultAsync();
 			ViewBag.WarehouseName = await _context.Warehouses.AsNoTracking().Where(w => w.ID == wo.WarehouseId).Select(w => w.Name).FirstOrDefaultAsync();

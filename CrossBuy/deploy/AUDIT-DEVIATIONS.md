@@ -503,7 +503,7 @@ The scale-barcode prefix is a **branch-level** setting (`BranchPosSettings`), bu
 **Measured (2026-08-03):** `ADD IsWeighted BIT NOT NULL DEFAULT 0` on 186 rows = **4.5 ms**. A **constant** default is a metadata-only operation (SQL Server 2012+): the default is stored in the catalog, NOT written per-row, so duration is independent of row count. The rule still stands for a **non-constant** default (e.g. a function), which forces a per-row size-of-data rewrite.
 
 ### HM-D43 (deferred, RECLASSIFIED — a PRECONDITION for weighted retail, not a cleanup)
-**Statement:** a precondition for operating weighted items *from the pricing UI* (not from the seed). `PriceListService.SaveAsync` normalizes `MinQty = l.MinQty <= 0 ? 1 : l.MinQty` ([PricingService.cs:431](../BL/PricingService.cs) create + [:513](../BL/PricingService.cs) update), and `GetPriceAsync` filters `MinQty <= qty`. Together they make **every weighted item priced through the screen unsellable below one full kilo** — the item finds no list price for 0.750 kg and is rejected at scan ("not in the branch price list"). That closes the core of weighted retail (meat, cheese, produce are almost all weighed at < 1 kg). The HM-3 acceptance succeeded ONLY because the seed writes `MinQty = 0` **directly** into the DB, bypassing the service. So the runtime path (`GetPriceAsync` + scan + post) is proven correct; what is unproven — and blocked — is **pricing a weighted item from the standard UI**. Not fixed now (pricing logic is out of HM-3 scope), but this is a gate on any real weighted rollout, not a nicety.
+**Statement:** a precondition for operating weighted items *from the pricing UI* (not from the seed). `PricingService.SaveAsync` normalizes the **price-line** `MinQty = l.MinQty <= 0 ? 1 : l.MinQty` at [PricingService.cs:431](../BL/PricingService.cs), and `GetPriceAsync` filters `MinQty <= qty`. (CORRECTION to an earlier note: the second occurrence at `:513` is in `SavePromotionAsync` — the **promotion** engine's own `MinQty`, which is HM-5 scope, NOT a price-line "update" path. HM-4 fixes ONLY the price line at `:431`; `:513` is deliberately left to HM-5.) Together they make **every weighted item priced through the screen unsellable below one full kilo** — the item finds no list price for 0.750 kg and is rejected at scan ("not in the branch price list"). That closes the core of weighted retail (meat, cheese, produce are almost all weighed at < 1 kg). The HM-3 acceptance succeeded ONLY because the seed writes `MinQty = 0` **directly** into the DB, bypassing the service. So the runtime path (`GetPriceAsync` + scan + post) is proven correct; what is unproven — and blocked — is **pricing a weighted item from the standard UI**. Not fixed now (pricing logic is out of HM-3 scope), but this is a gate on any real weighted rollout, not a nicety.
 
 **Smallest-fix sketch (read-only, for a later decision):** the `<=0 ? 1` normalization most plausibly exists to (a) reject a *negative* MinQty and (b) give legacy rows without an explicit break a sane default of 1 — neither of which requires forbidding an *explicit* 0. Minimal fix: clamp only negatives (`MinQty < 0 ? 0 : MinQty`), or accept 0 only when the item `IsWeighted` (or a per-kg pricing mode). Impact to weigh: allowing a genuine 0-floor changes nothing for the restaurant/general lists that never set 0 (their existing 1-floors are untouched), and `MinQty <= qty` already treats 0 as "applies to any positive qty" — so the blast radius is confined to lines an author *chooses* to set to 0. Confirm no report/UI assumes `MinQty >= 1` before changing.
 
@@ -542,3 +542,83 @@ HM-4 prints shelf labels as an **A4 grid via the browser** (`window.print`, same
 
 ### HM-D49 (deferred) — open (login-less) price-check kiosk
 HM-4 price-check requires a cashier `HyperCtx` login (no shift), gated by the `PriceCheck` capability, reusing `PosLaneActivityGuard`. A **login-less kiosk** for the shop floor (a fixed screen anyone may scan at) needs a new, lighter guard (prices are not sensitive, but the screen still sits inside the branch). Deferred; not built with the cashier-session model.
+
+### HM-D50 (deferred) — bulk-change scope is filtered by category only
+HM-4 `BulkPreview/Execute` scope a price list optionally by ONE `ItemCategoryId`. Real operations want richer targeting: a **price range** ("everything under 1 KWD"), an **explicit selected-items** set, a **name/code search**, multiple categories, exclude-list. Deferred; the current category filter is enough to prove the preview → confirm → audit → undo machinery, and the wider filters are a UI/query addition on top of the same `BulkAdjust*` path.
+
+### HM-4 execution — acceptance PASS (2026-08-03), read from the DB (not tracked entities)
+Fixtures (`hm4-seed`): KWD test list **ZZ-HM4** (HM-DEMO-001=0.750, HM-DEMO-003=3.500/kg weighted, ZZ-LABEL=1.000 with a valid EAN-13 **6281234567895**), a 2-decimal EGP list **ZZ-HM4-EGP** for the step guard, `ShelfLabels`+`PriceCheck` capabilities ON (branch 17). SQL: `deploy/sql/hm4_pricing.sql` — table **PriceChangeLogs** (plural, to match the EF DbSet), decimals `decimal(19,4)` (model convention → `ef_precision` stays 0). Code: HM-D43 fix (`MinQty < 0 ? 0`), `BulkPreview/Execute/UndoAsync` + `PriceRound` (currency dp FIRST, then fils step; step-finer-than-currency refused; non-positive guard before rounding), `ShelfLabelService` (zero-dependency EAN-13 SVG + round-trip decode), `PriceCheck` action (reuses the unified scan resolution, calls `GetPriceAsync` never `AddLineAsync`).
+- **Rounding order (correction 1) proved:** `0.750 +5% = 0.7875 ⇒ R(KWD,3)=0.788 ⇒ PriceRound(0.005)=0.790`; `3.500 +5% = 3.675 ⇒ R(3)=3.675 ⇒ PriceRound=3.675`. **Guard:** 5-fils step on the 2-decimal EGP list ⇒ rejected ("خطوة التقريب أدقّ من دقّة العملة").
+- **Preview writes nothing:** lines=3/logs=0/prices unchanged before AND after preview (measured), then execute wrote prices + `PriceChangeLogs` rows in one `ScopedTx`.
+- **Undo (correction 2):** restored 0.750/3.500 **exactly** from the log (not a reverse %), recorded as an `Undo` batch with `ReversalOfBatchId` → the original.
+- **Consistency (correction 3):** preview → out-of-band edit of one line → execute with the stale baseline ⇒ **rejected**, no write.
+- **Poison line** (amount −10 ⇒ negative) ⇒ rejected, **no price changed, no log row** (single SaveChanges after full validation).
+- **Empty reason** ⇒ rejected. **Shelf label:** valid EAN-13 renders SVG bars + encode→decode round-trip matches; an invalid EAN-13 is refused (digits-as-text, no broken symbol). **Weighted card (correction 4):** shows unit **KWD/kg** + **"Scale code: 30001"** as text.
+- **Price-check (HTTP):** fixed `6281234567890` ⇒ 0.750/قطعة; scale `2300010007555` ⇒ 3.500 **د.ك/كجم**; unknown ⇒ clear error; capability OFF ⇒ "غير مفعَّل"; **PosOrders(branch 17) 5→5 — no order/cart created.**
+- **Regression:** bulk +10% on the live branch list (35) ⇒ hyper sale of HM-DEMO-001 uses **0.825**; undo restores **0.750**; restaurant `rc6c` allPass. Constants: **failedCount 0 · ar_sub 0 · ef_precision 0/352 · dbContext Scoped.**
+
+## HM-5 — retail promotions & discounts (started 2026-08-03)
+### HM-5 declared rule — deterministic promotion selection order
+`ApplyBestPromotionAsync` ([PricingService.cs](../BL/PricingService.cs)) now picks the winning promotion by, IN ORDER:
+**1) specificity** (item-specific `ItemId` > category `ItemCategoryId` > general) — so an item promo is never drowned by a
+larger category/general promo (mirrors `GetPriceAsync`, where an explicit-unit line beats a null-unit line); **2) Priority**
+(the user's field, ranked ABOVE the amount — else Priority would be meaningless); **3) largest discount amount**;
+**4) smallest `Promotion.ID`** as a stable final tie-break. No `FirstOrDefault` on an unordered set in any branch. Proven: 10
+identical-promo runs return one winner; an item promo (0.075 off) beats a bigger category promo (0.100 off); a higher-Priority
+5% beats a lower-Priority 8%.
+
+### HM-5 accounting — net-revenue method confirmed (no "discount allowed" account)
+A promotion/discount **reduces revenue directly** (`LineTotal = Qty×UnitPrice − DiscountAmount`, credited net to the
+revenue account) — there is **no "discount allowed" account and no discount JE line**, consistent with the census in
+[JournalEntryService.cs:64](../BL/JournalEntryService.cs). HM-5 keeps this: a promotion folds into `DiscountPercent`, lowering
+`LineTotal` exactly like a price change — **no new account, the 6-account rounding-diff forbidden set is untouched, and
+balance-by-construction is preserved** (the sale JE always has an eligible revenue P&L line; receipts/payments/GRN carry no
+promotions). Tax is computed on the **net** (discount before tax); moot for the Kuwait/hyper VATEX-0% branch.
+
+### HM-5 distinction — temporary price vs discount
+A **temporary absolute price** for a period = a **price-list line with `ValidFrom/To`** (reuses HM-4, `GetPriceAsync` already
+filters line validity — no new code). A **discount off the current price** (% or amount) = a **`Promotion`**. HM-5 implements
+only the discount side; temporary prices need no HM-5 code.
+
+### HM-5 — HM-D43 applied to the promotion MinQty
+`SavePromotionAsync` MinQty normalization changed `<= 0 ? 1` → `< 0 ? 0` (same fix as the price line): a per-kg weighted
+promotion must apply from any positive weight. Proven: a `MinQty = 3` promo on the weighted `HM-DEMO-003` applies at 3.000 kg
+and not at 2.500 kg.
+
+### HM-5 — save guards + sell-time safety net
+Save (block): percent > 100 and negative value are rejected in `SavePromotionAsync`. Save (warn, non-blocking): percent >
+`PromotionPercentWarnThreshold` (90) returns a typo warning (e.g. 50-for-5). Sell (net-zero net): `AddLineAsync` rejects a
+**priced** line driven to ≤ 0 by a discount with a clear message (a genuinely zero-priced item — a free modifier component —
+is unaffected). All proven.
+
+### HM-5 — Promotions capability gates the SELL path only
+`AddLineAsync` applies promotions only when the branch's `Promotions` capability is enabled (`IsCapabilityEnabledAsync`
+semantics — the enabled row must exist). Management (creating promotions) is **never** gated — central management, per-branch
+activation. Proven: capability OFF ⇒ line 0.750 (no promo); ON ⇒ 0.675. (Gives the 4th dead capability its first consumer.)
+
+### HM-5 deferred (named, out of core)
+- **HM-D51** — `Promotion` has no `UoMId`: an **amount** discount applies to every unit with wildly different effect
+  (0.100 off a 0.500 piece = 20%, off a 60.000 carton = 0.17%). Percent is fine; amount is not unit-aware. Deferred; the
+  promo editor should warn when "Amount" is chosen for a multi-unit item (UI note, not a block).
+- **Buy-X-get-Y**, **group/bundle deal**, **usage cap (per-customer / total)**, **promotion stacking**, **invoice-header
+  discount**, **"discount allowed" GL account** — all deferred by name; each needs basket-level evaluation, a counter, or a
+  new account that the net-revenue core deliberately avoids.
+
+### HM-D52 — parallel WIP broke the working-tree build mid-run (HM-D44 materialised, 2026-08-03)
+The HM-5 code built clean and its 11-point acceptance passed (below). **Immediately after**, a rebuild failed with **2 errors**, both in the **parallel team's** files (we do not own them, did not touch them):
+1. `BL/Platform/IEventDispatchStore.cs:45` — `CS0246: type 'BusinessContext' could not be found` (a new `RetryAsync(long, BusinessContext, string, bool, CancellationToken)` added with no `using`).
+2. `BL/Platform/SqlEventDispatchStore.cs:24` — `CS0535: 'SqlEventDispatchStore' does not implement 'IEventDispatchStore.RetryAsync(...)'`.
+A **live half-refactor** (method added to the interface, not yet implemented/imported; their files re-saved 13:09/13:14/14:01). **HM-D44 realised — the base moved under us.** Acceptance ran on the **last-good HM-5 binary** (still in `bin/Debug`); the one later change (seed fix — ZZ price lines `UoMId = null`) was verified by an **equivalent direct DB update**, not a rebuild. Fresh build blocked until their code compiles.
+
+### HM-D53 — parallel now edits OUR GL writer (JournalEntryService) — escalation beyond a build break
+Pre-HM-6 audit: the parallel team **modified an owned file**, `BL/JournalEntryService.cs` (mtime 14:01:51) — added `IBusinessEventService _events` to the constructor and `RecordAsync(JournalEntry.Reversed)` inside `ReverseAsync`: **in-transaction, before commit, no try/catch, Visibility = Confidential** (their first non-Internal event). **The ledger posting is UNCHANGED** (reversal entry + status flip identical; the event only writes `BusinessEvents`) — GL numbers are ledger-neutral — but `ReverseAsync` now **hard-depends on the kernel** (`EntityRegistry.JournalEntry`, `JournalEntryEvents.Reversed`, `JournalEntryEventPayload`, the `BusinessEvents` table). This **corrects the coordination snapshot's "both writers untouched"**: `JournalEntryService` (GL) is now kernel-wired; `StockService` (stock) stays clean; `PricingService`/`PosOrderService`/`IntegrityCheckService`/`HyperPosController`/`ShelfLabelService`/`ScaleBarcodeParser` carry **only our own** changes (no parallel bleed). Risk reclassified: "build break" → "they edit our core writers." We do **not** commit their `JournalEntryService` change (our selective commit uses the pre-kernel HEAD version). Owner action: coordinate edits to our writers + get their work committed.
+
+### HM-5 acceptance — 11/11 PASS (2026-08-03), read from the DB
+Seed `hm5-seed`: two ZZ categories (one carrying the category promo, one clean) + members, and 10 `ZZP-` promotions on list
+35 (KWD), Promotions capability ON. **T1** 10% on 0.750 ⇒ **0.675** (ZZP-A). **T2** category amount 0.100 on 0.500 ⇒ **0.400**
+(ZZP-CAT). **T3** 10 identical-promo runs ⇒ one deterministic winner (lowest ID). **T4** item 10% beats the bigger category
+0.100 ⇒ **0.675** (item, not category). **T5** Priority 10 (5%) beats Priority 1 (8%) ⇒ **0.950**. **T6** qty-break MinQty=3 ⇒
+qty3 **0.850**, qty2 **1.000** (none). **T7** weighted MinQty=3 ⇒ 3.000 kg **2.800**, 2.500 kg **3.500** (none). **T8** save
+guards: 150% rejected · negative rejected · 95% saved with a typo warning. **T9** 100% discount ⇒ line rejected (net ≤ 0),
+no zero line. **T10** capability OFF ⇒ 0.750 (no promo), ON ⇒ 0.675. **T11 regression:** restaurant `rc6c` allPass; constants
+**failedCount 0 · ar_sub 0 · ef_precision 0/352 · dbContext Scoped**.

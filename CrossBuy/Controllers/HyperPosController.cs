@@ -29,11 +29,12 @@ namespace CrossBuy.Controllers
 		private readonly IPosSetupService _pos;
 		private readonly IPosOrderService _posOrders;
 		private readonly CrossBuy.BL.ICurrencyRounding _rounding;
+		private readonly CrossBuy.BL.IPricingService _pricing;   // HM-4: price-check reads prices (never AddLine)
 		private readonly CrossDbContext _db;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 		public HyperPosController(SignInManager<Users> signIn, UserManager<Users> users, IPosAccessService access,
-			IPosSetupService pos, IPosOrderService posOrders, CrossBuy.BL.ICurrencyRounding rounding, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _posOrders = posOrders; _rounding = rounding; _db = db; L = localizer; }
+			IPosSetupService pos, IPosOrderService posOrders, CrossBuy.BL.ICurrencyRounding rounding, CrossBuy.BL.IPricingService pricing, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
+		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _posOrders = posOrders; _rounding = rounding; _pricing = pricing; _db = db; L = localizer; }
 
 		// ---- session context (own key, HyperCtx) ----
 		public class HyperCtx
@@ -299,6 +300,77 @@ namespace CrossBuy.Controllers
 			c.OrderId = null; SetCtx(c);
 			TempData["PosMsg"] = L["Paid — invoice #{0} created.", invId ?? 0].Value;
 			return RedirectToAction(nameof(Lane));
+		}
+
+		// ==================== HM-4: PRICE CHECK (read-only — no order, no cart, no shift) ====================
+		// Gated by the PriceCheck capability. Reuses the unified scan resolution (HM-2 fixed barcodes + HM-3 scale
+		// barcodes) but calls GetPriceAsync — NEVER AddLineAsync. Requires a cashier login (HyperCtx via the controller
+		// guard); a shift is NOT required because this writes nothing.
+		[HttpGet("pricecheck")]
+		public async Task<IActionResult> PriceCheck()
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			ViewBag.Ctx = c;
+			ViewBag.Enabled = await _pos.IsCapabilityEnabledAsync(c.BranchId, "PriceCheck");
+			return View("~/Views/Hyper/PriceCheck.cshtml");
+		}
+
+		[HttpPost("pricecheck")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> PriceCheck(string barcode)
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			ViewBag.Ctx = c; ViewBag.Enabled = true;
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "PriceCheck"))
+			{ ViewBag.Enabled = false; ViewBag.Error = L["Price check is not enabled on this branch."].Value; return View("~/Views/Hyper/PriceCheck.cshtml"); }
+			barcode = (barcode ?? "").Trim();
+			if (barcode.Length == 0) return View("~/Views/Hyper/PriceCheck.cshtml");
+
+			var bps = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == c.BranchId);
+			int? docCur = bps?.DefaultCurrencyId;
+			int? branchList = bps?.DefaultPriceListId;
+
+			int itemId = 0; int? uomId = null; bool weighted = false; int? scaleCode = null;
+			var scaleCfg = new ScaleBarcodeConfig
+			{
+				Prefix = bps?.ScaleBarcodePrefix, ItemCodeLength = bps?.ScaleItemCodeLength ?? 0, ValueLength = bps?.ScaleValueLength ?? 0,
+				ValueDecimals = bps?.ScaleValueDecimals ?? 0, ValueType = bps?.ScaleValueType ?? "Weight", CheckAlgo = bps?.ScaleCheckAlgo ?? "EanMod10",
+			};
+			if (ScaleBarcodeParser.MatchesPrefix(barcode, scaleCfg))
+			{
+				var pr = ScaleBarcodeParser.Parse(barcode, scaleCfg);
+				if (!pr.Ok) { ViewBag.Error = L["The scale barcode format is invalid."].Value; return View("~/Views/Hyper/PriceCheck.cshtml"); }
+				var wi = await _db.Items.AsNoTracking().Where(i => i.CompanyID == PosCompanyId && i.ScaleCode == pr.ItemCode)
+					.Select(i => new { i.ID, i.IsWeighted, i.IsActive, i.BaseUoMId, i.ScaleCode }).FirstOrDefaultAsync();
+				if (wi == null || !wi.IsActive) { ViewBag.Error = L["No item is linked to this scale code."].Value; return View("~/Views/Hyper/PriceCheck.cshtml"); }
+				itemId = wi.ID; uomId = wi.BaseUoMId; weighted = wi.IsWeighted; scaleCode = wi.ScaleCode;
+			}
+			else
+			{
+				var m = await _db.Items.AsNoTracking().Where(i => i.CompanyID == PosCompanyId && i.IsActive && i.Barcode == barcode)
+					.Select(i => new { i.ID, i.BaseUoMId, i.IsWeighted, i.ScaleCode }).FirstOrDefaultAsync();
+				if (m == null)
+				{
+					var sb = await _db.ItemBarcodes.AsNoTracking().Where(b => b.Barcode == barcode && _db.Items.Any(i => i.ID == b.ItemId && i.CompanyID == PosCompanyId && i.IsActive))
+						.Select(b => new { b.ItemId, b.UoMId }).FirstOrDefaultAsync();
+					if (sb == null) { ViewBag.Error = L["No item matches this barcode."].Value; return View("~/Views/Hyper/PriceCheck.cshtml"); }
+					itemId = sb.ItemId; uomId = sb.UoMId;
+					var it = await _db.Items.AsNoTracking().Where(i => i.ID == sb.ItemId).Select(i => new { i.IsWeighted, i.ScaleCode }).FirstOrDefaultAsync();
+					weighted = it?.IsWeighted ?? false; scaleCode = it?.ScaleCode;
+				}
+				else { itemId = m.ID; uomId = m.BaseUoMId; weighted = m.IsWeighted; scaleCode = m.ScaleCode; }
+			}
+
+			// qty = 1 → the unit price (per-kg for a weighted item). NO order, NO AddLine.
+			var price = await _pricing.GetPriceAsync(PosCompanyId, itemId, null, null, docCur, 1m, DateTime.Today, branchList, uomId);
+			var item = await _db.Items.AsNoTracking().Where(i => i.ID == itemId).Select(i => new { i.Name, i.NameEn }).FirstOrDefaultAsync();
+			var uom = uomId != null ? await _db.UnitsOfMeasure.AsNoTracking().Where(u => u.ID == uomId).Select(u => new { u.Code, u.Name }).FirstOrDefaultAsync() : null;
+			int dp = await _rounding.DecimalsAsync(PosCompanyId, price.CurrencyId, c.BranchId);
+			ViewBag.Result = new CrossBuy.BL.PriceCheckResult
+			{
+				Name = item?.Name, Price = price.UnitPrice, Dp = dp, Unit = uom?.Name,
+				Weighted = weighted, ScaleCode = scaleCode, Source = price.Source
+			};
+			return View("~/Views/Hyper/PriceCheck.cshtml");
 		}
 	}
 }

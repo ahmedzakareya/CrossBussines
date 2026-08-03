@@ -333,6 +333,7 @@ namespace CrossBuy.Models.Context
         public DbSet<Inventory.PriceList> PriceLists { get; set; }
         public DbSet<Inventory.PriceListLine> PriceListLines { get; set; }
         public DbSet<Inventory.Promotion> Promotions { get; set; }
+        public DbSet<Inventory.PriceChangeLog> PriceChangeLogs { get; set; }   // HM-4: bulk price-change audit
         public DbSet<Crm.Campaign> Campaigns { get; set; }
         public DbSet<Crm.Lead> Leads { get; set; }
         public DbSet<Crm.Opportunity> Opportunities { get; set; }
