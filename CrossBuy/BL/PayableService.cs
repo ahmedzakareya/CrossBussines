@@ -15,6 +15,10 @@ namespace CrossBuy.BL
 		public int? CostCenterId { get; set; }
 		public int? ItemId { get; set; }          // when set → posts a stock receipt + uses the category inventory account
 		public int? WarehouseId { get; set; }
+		// HM-16: when set → this line SETTLES a posted goods receipt (Dr GRNI / Cr AP, NO stock movement). The caller
+		// passes ExpenseAccountId = the category GRNI account and ItemId = null (the stock was already received on the GRN).
+		// CreatePurchaseInvoiceAsync validates the GRN is Posted+un-invoiced (set-once) and stamps it Invoiced in-tx.
+		public int? GoodsReceiptId { get; set; }
 	}
 
 	public interface IPayableService
@@ -27,6 +31,8 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error, PurchaseInvoice? inv)> CreatePurchaseInvoiceAsync(int companyId, int vendorId, DateTime date, List<PurchaseLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null);
 		// P3: edit a POSTED purchase invoice = reverse the original GL + stock (at the exact received cost), then re-post — same invoice number.
 		Task<(bool ok, string? error, PurchaseInvoice? inv)> EditPurchaseInvoiceAsync(int companyId, int invoiceId, int vendorId, DateTime date, List<PurchaseLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null);
+		// HM-16: match a POSTED goods receipt to a NEW purchase invoice that clears its GRNI (Dr GRNI / Cr AP, no re-receipt). 1:1 minimal.
+		Task<(bool ok, string? error, PurchaseInvoice? inv)> MatchGoodsReceiptToInvoiceAsync(int companyId, int goodsReceiptId, DateTime invoiceDate, decimal invoiceAmount, int? userId);
 		Task<(bool ok, string? error)> CreatePaymentAsync(int companyId, int vendorId, DateTime date, decimal amount, string method, int cashAccountId, string? notes, int? userId, decimal whtRate = 0, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null);
 		Task<List<PurchaseInvoice>> GetInvoicesAsync(int companyId);
 		Task<List<AgingRow>> AgingAsync(int companyId, DateTime asOf);
@@ -122,6 +128,24 @@ namespace CrossBuy.BL
 			if (ven == null) return (false, "المورد غير موجود", null);
 			if (lines == null || lines.Count == 0) return (false, "الفاتورة يجب أن تحتوي على بند واحد على الأقل", null);
 
+			// HM-16: some lines may SETTLE posted goods receipts (vendor-invoice matching). Load + validate those GRNs and
+			// enforce SET-ONCE *before* any posting, so a failed match leaves zero effect. Loaded TRACKED so we can stamp
+			// them Invoiced inside the same transaction below (they share the invoice's fate).
+			var grnIds = lines.Where(l => l.GoodsReceiptId is int).Select(l => l.GoodsReceiptId!.Value).Distinct().ToList();
+			var grns = new List<CrossBuy.Models.Context.Inventory.GoodsReceipt>();
+			if (grnIds.Count > 0)
+			{
+				grns = await _context.GoodsReceipts.Where(g => grnIds.Contains(g.ID) && g.CompanyID == companyId).ToListAsync();
+				foreach (var id in grnIds)
+				{
+					var g = grns.FirstOrDefault(x => x.ID == id);
+					if (g == null) return (false, $"إذن الاستلام ({id}) غير موجود", null);
+					if (g.Status != "Posted") return (false, $"إذن الاستلام ({g.ReceiptNo}) غير مُرحّل — لا يُفوتَر", null);
+					if (g.InvoiceId != null) return (false, $"إذن الاستلام ({g.ReceiptNo}) مُفوتَر بالفعل — لا يُفوتَر مرّتين", null);   // SET-ONCE guard
+					if (g.VendorId != null && g.VendorId != vendorId) return (false, $"إذن الاستلام ({g.ReceiptNo}) يخصّ مورّدًا آخر", null);
+				}
+			}
+
 			var vatIn = await AccIdAsync(companyId, "110401");
 
 			// Multi-Currency (1-3): document is in `cur`; books/GL/stock are in the branch functional currency.
@@ -204,6 +228,15 @@ namespace CrossBuy.BL
 				}, userId?.ToString());
 				if (!sok) return (false, serr ?? "تعذّر استلام المخزون", null);
 			}
+			// HM-16: stamp each settled goods receipt as Invoiced — SET-ONCE, inside this transaction so the link shares
+			// the invoice's fate (a rolled-back invoice leaves the GRN open). Re-verify un-invoiced under the tx to keep
+			// the guard honest against a racing match (the earlier read was pre-tx). grns were loaded tracked above.
+			foreach (var g in grns)
+			{
+				if (g.InvoiceId != null) return (false, $"إذن الاستلام ({g.ReceiptNo}) مُفوتَر بالفعل — لا يُفوتَر مرّتين", null);
+				g.InvoiceId = inv.ID;
+			}
+			if (grns.Count > 0) await _context.SaveChangesAsync();
 			await tx.CommitAsync();
 			try
 			{
@@ -214,6 +247,41 @@ namespace CrossBuy.BL
 			}
 			catch { /* notifications never block the business flow */ }
 			return (true, null, inv);
+		}
+
+		// HM-16: match a POSTED goods receipt to a NEW purchase invoice that CLEARS its GRNI (Dr GRNI / Cr AP, NO second
+		// stock movement — the goods were received on the GRN). 1:1 minimal: the billed amount MUST equal the received
+		// value; price/tax variance is deferred, so a mismatch is REFUSED (no partial/held difference). The invoice is
+		// booked in the branch FUNCTIONAL currency (GRNI is a functional balance) so the receipt's functional line costs
+		// pass straight through with no re-conversion. Set-once is enforced inside CreatePurchaseInvoiceAsync (it stamps
+		// GoodsReceipt.InvoiceId in-tx). Reuses CreatePurchaseInvoiceAsync — no re-implementation of the GRNI posting.
+		// Hardcoded Arabic (this file's convention — every PayableService message is hardcoded Arabic).
+		public async Task<(bool ok, string? error, PurchaseInvoice? inv)> MatchGoodsReceiptToInvoiceAsync(
+			int companyId, int goodsReceiptId, DateTime invoiceDate, decimal invoiceAmount, int? userId)
+		{
+			var gr = await _context.GoodsReceipts.AsNoTracking().Include(g => g.Lines)
+				.FirstOrDefaultAsync(g => g.ID == goodsReceiptId && g.CompanyID == companyId);
+			if (gr == null) return (false, "إذن الاستلام غير موجود", null);
+			if (gr.Status != "Posted" || gr.InvoiceId != null) return (false, "إذن الاستلام غير مُرحّل أو مُفوتَر بالفعل", null);
+			if (gr.VendorId == null) return (false, "إذن الاستلام بلا مورّد للفوترة عليه", null);
+			// value guard: price variance is deferred — the billed amount must equal the received value or the match is refused.
+			int __fdp = await _rounding.DecimalsAsync(companyId, null);
+			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
+			if (Rf(invoiceAmount) != Rf(gr.TotalCost))
+				return (false, $"قيمة الفاتورة ({Rf(invoiceAmount)}) تختلف عن قيمة المستلَم ({Rf(gr.TotalCost)})؛ مطابقة فرق السعر غير مدعومة — رُفِضت المطابقة", null);
+			// build the GRNI-clearing lines from the receipt: ExpenseAccountId = category GRNI, ItemId = null (no re-receipt),
+			// GoodsReceiptId set so CreatePurchaseInvoiceAsync enforces set-once and stamps the GRN Invoiced in-transaction.
+			var lines = new List<PurchaseLineInput>();
+			foreach (var l in gr.Lines)
+			{
+				var grni = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId && i.CompanyID == companyId)
+					.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => (int?)(c.GrniAccountId ?? c.InventoryAccountId)).FirstOrDefaultAsync();
+				if (grni == null || grni == 0) return (false, "أحد بنود الاستلام بلا حساب «بضاعة وردت ولم تُفوتَر»/مخزون مُهيّأ على فئته", null);
+				var name = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId).Select(i => i.Name).FirstOrDefaultAsync();
+				lines.Add(new PurchaseLineInput { ItemDescription = name ?? $"GRN {gr.ReceiptNo} #{l.LineNo}", Qty = l.Qty, UnitPrice = l.UnitCost, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = grni.Value, ItemId = null, WarehouseId = null, GoodsReceiptId = gr.ID });
+			}
+			if (lines.Count == 0) return (false, "إذن الاستلام لا يحتوي بنودًا للفوترة", null);
+			return await CreatePurchaseInvoiceAsync(companyId, gr.VendorId.Value, invoiceDate, lines, $"مطابقة إذن استلام {gr.ReceiptNo}", userId);
 		}
 
 		// P3: EDIT a posted purchase invoice — reverse the original postings (stock at the EXACT received cost), then re-post on the same row/number.

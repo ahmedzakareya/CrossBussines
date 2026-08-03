@@ -740,3 +740,32 @@ renaming it)**, so it is NOT done per-account. It belongs to the wider naming/st
 renamed HM-D39), 510105, 210203 (GRNI, renamed HM-D55), 210205 (duplicate "Payroll Tax Payable", empty) were all
 mislabeled or mis-parented. The chart of accounts needs a **whole-tree review**, not account-by-account patching.
 Deferred by name.
+
+## HM-16 — purchase-model unification (DONE, acceptance 10/10, failedCount 0)
+GRN-matched purchase invoice now clears GRNI (Dr 210203 / Cr AP, NO second stock movement); a standalone invoice still
+receives stock once; a GRN is invoiced at most once (set-once on `GoodsReceipt.InvoiceId`, enforced in
+`PayableService.CreatePurchaseInvoiceAsync` + a value-guarded matching service `MatchGoodsReceiptToInvoiceAsync`); the
+matching screen refuses any billed≠received amount (price/tax variance deferred); account 210203 renamed to
+"Goods Received Not Invoiced (GRNI)" via `deploy/sql/hm16_rename_grni.sql` (name only, parent 2102 unchanged — re-parenting
+is HM-D56); GRN batch-forcing for TrackExpiry items was ALREADY enforced by the HM-6 `"Receipt"` guard (verified T6, stale
+"excluded" comment fixed); cutoff = `IntegrityCheckService.PurchaseModelCutoffUtc` (a CONSTANT 2026-08-03, not config) with a
+COUNTED `open_grni_receipts` check split legacy(≤)/new(>). Acceptance `hm16-accept` proved every number from the DB.
+The −39,860 dismantling stands (re-confirmed on the correctly-named GRNI account). Two acceptance findings were
+TEST-assertion bugs, not defects: T7's GRNI correctly nets to 0 (three-way: stock-out Dr GRNI/Cr Inv + debit-note Dr AP/Cr
+GRNI); stock_gl is a `Baseline[null]` structural check (never raises failedCount) — our postings move stock+GL together.
+
+## HM-D57 — the kernel advanced past slice-1: slice-2 is now REQUIRED for any invoice/notification path
+The parallel `RecordAsync`/notification path writes `Notifications.EntityType`/`Notifications.EntityId`, columns added ONLY by
+`deploy/sql/platform_business_events_slice_002.sql`. With only slice-1 applied, a purchase invoice fails with SQL-207
+"Invalid column name 'EntityId'". Slice-1 alone is NO LONGER a sufficient acceptance precondition — **slice-2 must also be
+applied** (additive/idempotent; run with sqlcmd `-I` so its filtered index gets QUOTED_IDENTIFIER ON). Applied to CrossBuyDB2.
+
+## HM-D58 — the kernel now HARD-REQUIRES a signed-in BusinessContext on our purchase/sale path (fallback removed)
+The parallel team removed `BusinessContextAccessor.FallbackCompanyId = 1`. `RecordAsync` (invoked inside
+`CreatePurchaseInvoiceAsync`/sales/reversal — THEIR wiring in our writers) now calls `GetCurrentAsync`, which THROWS
+`BusinessContextUnresolvedException` when no signed-in employee/company resolves from the request. Impact: EVERY document
+path that emits an event now requires a resolvable HTTP context; any UNAUTHENTICATED caller (dev-seed/acceptance endpoints
+that create invoices) throws. Accommodation: seed the `"Employee"` session blob (a real active company-1 employee, exactly as
+`AccountController` login does) before the calls — done in `hm16-accept`. This is a NEW hard runtime coupling on our path;
+in production it is always satisfied (users are signed in), but it makes our sale/purchase path depend on their identity
+resolution as well as their event table. Recorded, not "fixed" — raise with the parallel owner.

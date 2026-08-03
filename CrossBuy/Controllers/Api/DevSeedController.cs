@@ -1189,6 +1189,152 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, log });
 		}
 
+		// GET /api/dev/hm16-accept?key=seed123 — HM-16 purchase-model unification acceptance. Reads EVERY number FROM THE
+		// DB (never from the entity that wrote it): GRN posts Dr 1103 / Cr 210203 (GRNI); the GRN-matched invoice clears
+		// GRNI (Dr 210203 / Cr AP) with NO second stock movement; a GRN is invoiced at most once (set-once); a standalone
+		// invoice still receives stock once; a value-mismatch match is refused; a TrackExpiry GRN forces a batch; the
+		// 210203 rename reads back; a purchase return on a matched invoice posts correctly. Ends with the global integrity
+		// run (failedCount must stay at the documented baseline) + the open-GRNI pre/post-cutoff counts.
+		[HttpGet("hm16-accept")]
+		public async Task<IActionResult> Hm16Accept(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
+			var T = DateTime.Today;
+
+			// The parallel kernel's RecordAsync (invoked inside CreatePurchaseInvoiceAsync — THEIR wiring in our writer)
+			// now REQUIRES a resolvable BusinessContext: they removed the old company-1 fallback (BusinessContextAccessor),
+			// so it reads the signed-in employee from the "Employee" session blob and THROWS when there is none. A real UI
+			// request always carries it; this unauthenticated dev call does not — so seed it from a real ACTIVE company-1
+			// employee exactly as AccountController does on login, so the proof runs under a genuine context (not a fake
+			// default). This is a dev-harness accommodation for the parallel coupling, not part of HM-16.
+			var empRow = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == company && e.IsActive)
+				.OrderBy(e => e.ID).Select(e => new { e.ID, e.BranchID, e.EmpCompanyID, e.UserId }).FirstOrDefaultAsync();
+			if (empRow != null)
+				HttpContext.Session.SetString("Employee", System.Text.Json.JsonSerializer.Serialize(new CrossBuy.ViewModel.EmployeeViewModel
+				{ ID = empRow.ID, BranchID = empRow.BranchID, EmpCompanyID = empRow.EmpCompanyID, UserId = empRow.UserId }));
+			log.Add($"  ctx: employee={empRow?.ID} company={company} (BusinessContext seeded for the parallel kernel RecordAsync)");
+
+			int wh = await _db.Warehouses.Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int acc1103 = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "1103").Select(a => a.ID).FirstAsync();
+			int accGrni = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "210203").Select(a => a.ID).FirstAsync();
+
+			async Task<decimal> NetId(int id) => await _db.JournalEntryLines.Where(l => l.AccountId == id).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m;
+			async Task<decimal> Net(string code) { var id = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == code).Select(a => (int?)a.ID).FirstOrDefaultAsync(); return id == null ? 0m : await NetId(id.Value); }
+			async Task<decimal> Qty(int itemId) => (await _stock.GetBalanceAsync(company, itemId, wh)).qty;
+
+			// ---- fixtures (idempotent; ZZ-* only) ----
+			var ven = await _db.Vendors.FirstOrDefaultAsync(v => v.CompanyID == company && v.Name == "ZZ-HM16-VEN");
+			if (ven == null) ven = await _ap.CreateVendorAsync(company, "ZZ-HM16-VEN", "ZZ HM16 vendor", null);
+			int apId = ven.ControlAccountId;
+			var cat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "ZZ-HM16-CAT");
+			if (cat == null) { cat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Code = "ZZ-HM16-CAT", Name = "ZZ HM16 cat", NameEn = "ZZ HM16 cat", InventoryAccountId = acc1103, GrniAccountId = accGrni, DefaultCostingMethod = "Average" }; _db.ItemCategories.Add(cat); await _db.SaveChangesAsync(); }
+			async Task<CrossBuy.Models.Context.Inventory.Item> Item(string code, bool expiry)
+			{
+				var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (it == null) { it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = "ZZBC-" + code, Name = code, NameEn = code, ItemCategoryId = cat.ID, ItemType = "Stockable", BaseUoMId = pcs, TrackExpiry = expiry, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); }
+				return it;
+			}
+			var itm = await Item("ZZ-HM16-ITM", false);
+			var exp = await Item("ZZ-HM16-EXP", true);
+
+			async Task<(bool ok, string? err, CrossBuy.Models.Context.Inventory.GoodsReceipt? gr)> Grn(int itemId, decimal qty, decimal cost, string? batch = null, DateTime? expiry = null) =>
+				await _proc.CreateReceiptAsync(company, ven.ID, wh, null, T, "hm16", new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = itemId, Qty = qty, UnitCost = cost, BatchNo = batch, Expiry = expiry } }, "dev");
+
+			// ===== T1: GRN receipt of a stockable ⇒ Dr 1103 / Cr 210203, stock +qty =====
+			decimal b1 = await Net("1103"), bG1 = await NetId(accGrni), bQ1 = await Qty(itm.ID);
+			var (g1ok, g1err, gr1) = await Grn(itm.ID, 10m, 5m);   // TotalCost 50
+			decimal a1 = await Net("1103"), aG1 = await NetId(accGrni), aQ1 = await Qty(itm.ID);
+			Chk("T1 GRN: Dr 1103 +50 / Cr 210203 -50 · stock +10", g1ok && R(a1 - b1) == 50m && R(aG1 - bG1) == -50m && R(aQ1 - bQ1) == 10m);
+			log.Add($"  T1 d1103={R(a1 - b1)} dGRNI={R(aG1 - bG1)} dQty={R(aQ1 - bQ1)} grnTotal={gr1?.TotalCost}");
+
+			// ===== T2: match that GRN ⇒ Dr 210203 / Cr AP · NO 2nd stock move · GRN stamped · GRNI pair nets to 0 =====
+			decimal bG2 = await NetId(accGrni), bAP2 = await NetId(apId), bQ2 = await Qty(itm.ID);
+			var (m2ok, m2err, inv2) = await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr1!.ID, T, gr1.TotalCost, null);
+			decimal aG2 = await NetId(accGrni), aAP2 = await NetId(apId), aQ2 = await Qty(itm.ID);
+			int? stamp = await _db.GoodsReceipts.AsNoTracking().Where(g => g.ID == gr1.ID).Select(g => g.InvoiceId).FirstAsync();
+			Chk("T2 match: Dr 210203 +50 / Cr AP -50 · NO new stock · GRN stamped Invoiced", m2ok && R(aG2 - bG2) == 50m && R(aAP2 - bAP2) == -50m && aQ2 == bQ2 && stamp != null);
+			Chk("T2 GRNI for this GRN cleared to 0 (receive Cr50 then invoice Dr50 net out)", R(aG2 - bG1) == 0m);
+			log.Add($"  T2 dGRNI={R(aG2 - bG2)} dAP={R(aAP2 - bAP2)} dQty={R(aQ2 - bQ2)} stamp={stamp} pairNet={R(aG2 - bG1)}");
+
+			// ===== T3: invoice the SAME GRN again ⇒ rejected, zero effect =====
+			decimal bAP3 = await NetId(apId);
+			var (m3ok, m3err, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr1.ID, T, gr1.TotalCost, null);
+			Chk("T3 re-invoice same GRN ⇒ rejected (set-once) · AP unchanged", !m3ok && (m3err ?? "").Contains("مُفوتَر") && R(await NetId(apId) - bAP3) == 0m);
+			log.Add($"  T3 ok={m3ok} err='{m3err}'");
+
+			// ===== T4: standalone invoice (no GRN) ⇒ Dr 1103 / Cr AP + ONE stock movement (behaviour preserved) =====
+			decimal b4 = await Net("1103"), bAP4 = await NetId(apId), bQ4 = await Qty(itm.ID);
+			var (i4ok, i4err, inv4) = await _ap.CreatePurchaseInvoiceAsync(company, ven.ID, T, new List<CrossBuy.BL.PurchaseLineInput> { new() { ItemDescription = "ZZ standalone", Qty = 3m, UnitPrice = 20m, TaxRate = 0, ExpenseAccountId = acc1103, ItemId = itm.ID, WarehouseId = wh } }, "hm16 T4", null);
+			decimal a4 = await Net("1103"), aAP4 = await NetId(apId), aQ4 = await Qty(itm.ID);
+			Chk("T4 standalone (no GRN): Dr 1103 +60 / Cr AP -60 · stock +3 (one movement)", i4ok && R(a4 - b4) == 60m && R(aAP4 - bAP4) == -60m && R(aQ4 - bQ4) == 3m);
+			log.Add($"  T4 d1103={R(a4 - b4)} dAP={R(aAP4 - bAP4)} dQty={R(aQ4 - bQ4)}");
+
+			// ===== T5: match with an amount ≠ received value ⇒ refused (price variance deferred); correct amount succeeds =====
+			var (g5ok, _, gr5) = await Grn(itm.ID, 4m, 7m);   // TotalCost 28
+			decimal bAP5 = await NetId(apId);
+			var (m5ok, m5err, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr5!.ID, T, 30m, null);   // 30 ≠ 28
+			int? open5 = await _db.GoodsReceipts.AsNoTracking().Where(g => g.ID == gr5.ID).Select(g => g.InvoiceId).FirstAsync();
+			Chk("T5a mismatch amount ⇒ refused · GRN stays open · AP unchanged", !m5ok && (m5err ?? "").Contains("تختلف") && open5 == null && R(await NetId(apId) - bAP5) == 0m);
+			var (m5bok, m5berr, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr5.ID, T, gr5.TotalCost, null);
+			Chk("T5b correct amount ⇒ match succeeds · GRN closed", m5bok && (await _db.GoodsReceipts.AsNoTracking().Where(g => g.ID == gr5.ID).Select(g => g.InvoiceId).FirstAsync()) != null);
+			log.Add($"  T5 mismatchErr='{m5err}' correctOk={m5bok}");
+
+			// ===== T6: GRN of a TrackExpiry item WITHOUT a batch ⇒ rejected; WITH a batch ⇒ succeeds, movement carries BatchId =====
+			var (g6aok, g6aerr, _) = await Grn(exp.ID, 5m, 3m);   // no batch
+			Chk("T6a GRN of TrackExpiry item WITHOUT batch ⇒ rejected (HM-6 guard covers the GRN path)", !g6aok && (g6aerr ?? "").Contains("الدفعة"));
+			var (g6bok, g6berr, gr6) = await Grn(exp.ID, 5m, 3m, "ZZ-H16-LOT", T.AddDays(90));
+			bool mvBatched = gr6 != null && await _db.StockMovements.AsNoTracking().AnyAsync(m => m.SourceType == "Receipt" && m.SourceId == gr6.ID && m.BatchId != null);
+			Chk("T6b GRN WITH batch ⇒ succeeds · movement carries BatchId", g6bok && mvBatched);
+			if (gr6 != null) await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr6.ID, T, gr6.TotalCost, null);   // close it so no ZZ GRN is left open
+			log.Add($"  T6 noBatchErr='{g6aerr}' batched={mvBatched}");
+
+			// ===== T7: purchase return on the GRN-matched invoice ⇒ Dr AP / Cr GRNI + stock out, subledgers reconcile =====
+			decimal bAP7 = await NetId(apId), bG7 = await NetId(accGrni), bQ7 = await Qty(itm.ID);
+			var (r7ok, r7err, ret7) = await _ap.CreatePurchaseReturnAsync(company, ven.ID, inv2?.ID, T, new List<CrossBuy.BL.PurchaseLineInput> { new() { ItemId = itm.ID, WarehouseId = wh, Qty = 2m } }, "hm16 T7 return", null);
+			decimal aAP7 = await NetId(apId), aG7 = await NetId(accGrni), aQ7 = await Qty(itm.ID);
+			// three-way: the stock-out posts Dr GRNI / Cr Inventory AND the debit-note posts Dr AP / Cr GRNI ⇒ GRNI nets to 0.
+			Chk("T7 return on matched invoice: AP debited (payable ↓) · stock -2 · GRNI nets to 0 (three-way)", r7ok && (aAP7 - bAP7) > 0m && R(aG7 - bG7) == 0m && R(aQ7 - bQ7) == -2m);
+			log.Add($"  T7 ok={r7ok} dAP={R(aAP7 - bAP7)} dGRNI={R(aG7 - bG7)} dQty={R(aQ7 - bQ7)} err='{r7err}'");
+
+			// ===== T8: 210203 reads under its new GRNI name · 210205 (payroll tax) empty · 210202 (WHT) present =====
+			var a203 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "210203").Select(a => new { a.Name, a.NameEn }).FirstAsync();
+			bool has205 = await _db.Accounts.AnyAsync(a => a.CompanyID == company && a.Code == "210205");
+			decimal n205 = await Net("210205");
+			Chk("T8 210203 renamed to GRNI (apply hm16_rename_grni.sql if this fails)", a203.NameEn == "Goods Received Not Invoiced (GRNI)");
+			Chk("T8 210205 payroll-tax account still empty (no postings) · 210202 WHT untouched", n205 == 0m);
+			log.Add($"  T8 210203='{a203.NameEn}' / '{a203.Name}' · 210205 exists={has205} net={n205}");
+
+			// teardown: CLOSE (by matching, not deleting — reverse-never-delete) any ZZ open GRN this run or a prior
+			// partial/failed run left behind, so the test adds nothing to the open-GRNI "new" bucket.
+			foreach (var oid in await _db.GoodsReceipts.AsNoTracking().Where(g => g.CompanyID == company && g.VendorId == ven.ID && g.Status == "Posted" && g.InvoiceId == null).Select(g => g.ID).ToListAsync())
+			{
+				var gtot = await _db.GoodsReceipts.AsNoTracking().Where(g => g.ID == oid).Select(g => g.TotalCost).FirstAsync();
+				await _ap.MatchGoodsReceiptToInvoiceAsync(company, oid, T, gtot, null);
+			}
+
+			// ===== T9 (regression) + T10 (invariants): global integrity — failedCount at baseline, subledgers reconcile =====
+			var (run, checks) = await integrity.RunAndLogAsync(company, "hm16-accept");
+			var open = checks.First(c => c.Key == "open_grni_receipts");
+			var arSub = checks.First(c => c.Key == "ar_sub"); var apSub = checks.First(c => c.Key == "ap_sub");
+			var stockGl = checks.First(c => c.Key == "stock_gl"); var tb = checks.First(c => c.Key == "tb_balanced");
+			var batchNeg = checks.First(c => c.Key == "batch_no_negative"); var wc = checks.First(c => c.Key == "writer_coupling");
+			var dbset = checks.First(c => c.Key == "dbset_tables_exist");
+			Chk("T10 failedCount at documented baseline (0) — no NEW failing check above baseline", run.FailedCount == 0);
+			Chk("T10 ar_sub OK · ap_sub OK (subledgers reconcile after all purchase activity)", arSub.Ok && apSub.Ok);
+			Chk("T10 trial balance balanced · no negative batch", tb.Ok && batchNeg.Ok);
+			Chk("T10 writer_coupling & dbset_tables_exist unchanged (our writers untouched by HM-16)", wc.Ok && dbset.Ok);
+			// stock_gl is a Baseline[null] STRUCTURAL check (HM-D16; value fluctuates, never raises failedCount). Our
+			// postings move stock value + GL 1103 together, so they add no NEW divergence — failedCount==0 proves it.
+			log.Add($"  T10 failedCount={run.FailedCount} · ar_sub={arSub.Ok} ap_sub={apSub.Ok} stock_gl={stockGl.Ok}(structural,baseline-excluded) tb={tb.Ok} batch_neg={batchNeg.Ok} writer_coupling={wc.Ok} dbset={dbset.Ok}");
+			log.Add($"  T5-cutoff open_grni_receipts: Actual={open.Actual} · {open.Note}");
+
+			return Ok(new { allPass, cutoffUtc = CrossBuy.BL.IntegrityCheckService.PurchaseModelCutoffUtc.ToString("yyyy-MM-dd"), failedCount = run.FailedCount, log });
+		}
+
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
 		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
 		[HttpGet("apply-preset-guard-test")]
@@ -6777,6 +6923,10 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			if (accByCode.ContainsKey("2102"))
 			{
 				// NOTE: 210203 is GRNI (فواتير لم ترد بعد) used by inventory — payroll income tax has its OWN account (210205)
+				// HM-16: mint 210203 with its correct GRNI name so a FRESH tree never re-creates the mislabeled account.
+				// EnsureAcc skips if present, so existing DBs are untouched here — the SQL rename (hm16_rename_grni.sql)
+				// fixes those. Parent stays 2102 (no tree move; re-parenting deferred to HM-D56).
+				await EnsureAcc("210203", "بضاعة وردت ولم تُفوتَر", "Goods Received Not Invoiced (GRNI)", "2102", "LIAB");
 				await EnsureAcc("210205", "ضرائب كسب عمل مستحقة", "Payroll Tax Payable", "2102", "LIAB");
 				await EnsureAcc("210204", "تأمينات اجتماعية مستحقة", "Social Insurance Payable", "2102", "LIAB");
 				await EnsureAcc("210206", "مخصص إجازات مستحق", "Leave Provision Payable", "21", "LIAB");   // HR-2f

@@ -962,6 +962,34 @@ namespace CrossBuy.Controllers
 			return ok ? RedirectToAction(nameof(PurchaseInvoices)) : RedirectToAction(nameof(NewPurchaseInvoice));
 		}
 
+		// ===== HM-16: vendor-invoice ↔ goods-receipt matching (1:1, minimal). Lists a vendor's OPEN goods receipts
+		// (Posted, not yet invoiced) and turns a chosen one into a purchase invoice that CLEARS its GRNI (Dr GRNI / Cr AP,
+		// no second stock movement). Price/tax variance is NOT supported here — the invoice value must equal the received
+		// value, else the match is REJECTED. The invoice is booked in the branch functional currency (GRNI is a functional
+		// balance), so the receipt's functional line costs pass straight through with no re-conversion.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> MatchReceipts(int? vendorId)
+		{
+			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
+			ViewBag.SelVendor = vendorId;
+			if (vendorId is int vid)
+				ViewBag.OpenReceipts = await _context.GoodsReceipts.AsNoTracking()
+					.Where(g => g.CompanyID == DefaultCompanyId && g.Status == "Posted" && g.InvoiceId == null && g.VendorId == vid)
+					.OrderByDescending(g => g.ID).ToListAsync();
+			return View();
+		}
+
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		[CrossBuy.Models.AccPerm("post")]
+		public async Task<IActionResult> CreateInvoiceFromReceipt(int goodsReceiptId, DateTime invoiceDate, decimal invoiceAmount)
+		{
+			// thin: all validation (posted / open / vendor / value-guard), line-building and set-once live in the service.
+			var vendorForReturn = await _context.GoodsReceipts.AsNoTracking().Where(g => g.ID == goodsReceiptId && g.CompanyID == DefaultCompanyId).Select(g => g.VendorId).FirstOrDefaultAsync();
+			var (ok, err, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(DefaultCompanyId, goodsReceiptId, invoiceDate, invoiceAmount, null);
+			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The vendor invoice was matched to the goods receipt and GRNI was cleared"].Value : err;
+			return ok ? RedirectToAction(nameof(PurchaseInvoices)) : RedirectToAction(nameof(MatchReceipts), new { vendorId = vendorForReturn });
+		}
+
 		// P3: edit a posted purchase invoice (reuses the New screen → UpdatePurchaseInvoice)
 		[SessionValidation][HttpGet]
 		[CrossBuy.Models.AccPerm("post")]

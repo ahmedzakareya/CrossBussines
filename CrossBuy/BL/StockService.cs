@@ -409,11 +409,14 @@ namespace CrossBuy.BL
 			var wh = await _context.Warehouses.FirstOrDefaultAsync(w => w.ID == req.WarehouseId && w.CompanyID == companyId);
 			if (wh == null) return (false, "المخزن غير موجود", null);
 
-			// ===== HM-D8: FORCE a batch (+expiry) on INBOUND user-entry for expiry-tracked items — the single choke point
-			// (PostOpeningStockAsync, manual receipt/adjustment and the normal path all reach here). Excluded: sale/issue
-			// (FEFO auto-allocates on the way in), manufacturing/assembly output, purchase/GRN (HM-D16/HM-16), transfer-in
-			// (carries the inherited batch). Input validation only — no FEFO/cost/rounding change. Hardcoded Arabic (file
-			// convention; StockService has no localizer by design — adding one would itself be a new writer coupling, HM-D53).
+			// ===== HM-D8 / HM-16: FORCE a batch (+expiry) on INBOUND user-entry for expiry-tracked items — the single
+			// choke point (PostOpeningStockAsync, the GRN receipt [ProcurementService posts SourceType="Receipt"], manual
+			// adjustment and the normal path all reach here). ENFORCED sources are the set below. HM-16 CONFIRMS the GRN
+			// receipt path is covered here via the "Receipt" source — closing the HM-6-deferred item (no new code: the
+			// HM-6 guard already forced it; only this comment mislabeled GRN as excluded). Excluded: sale/issue (FEFO
+			// auto-allocates on the way in), manufacturing/assembly output, transfer-in (carries the inherited batch).
+			// Input validation only — no FEFO/cost/rounding change. Hardcoded Arabic (file convention; StockService has no
+			// localizer by design — adding one would itself be a new writer coupling, HM-D53).
 			var inboundEntrySources = new HashSet<string> { "OpeningStock", "Opening", "Receipt", "Adjustment" };
 			if (item.TrackExpiry && req.Direction == 1 && inboundEntrySources.Contains(req.SourceType ?? "")
 				&& string.IsNullOrWhiteSpace(req.BatchNo) && string.IsNullOrWhiteSpace(req.SerialNo))

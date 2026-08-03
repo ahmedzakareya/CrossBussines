@@ -37,8 +37,16 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
   because it goes through *their* `ReceivableService.CreateSalesInvoiceAsync` — that is their call inside their code,
   not ours.
 - **Acceptance precondition (mandatory):** any DB we run acceptance against must have **slice-1
-  (`platform_business_events.sql`) applied FIRST** — else the sale path fails with SQL-208 (their `RecordAsync` has no
-  swallowing catch). Verify the `BusinessEvents` table exists before seeding/acceptance.
+  (`platform_business_events.sql`) AND slice-2 (`platform_business_events_slice_002.sql`) applied FIRST** — else the
+  sale/purchase path fails (their `RecordAsync` has no swallowing catch): slice-1 missing → SQL-208 (no `BusinessEvents`);
+  slice-2 missing → SQL-207 `Invalid column name 'EntityId'` (they now write `Notifications.EntityType/EntityId`). The
+  kernel advanced past slice-1 without notice — **slice-1 alone is no longer sufficient (HM-D57)**. Apply slice-2 with
+  sqlcmd `-I` (QUOTED_IDENTIFIER ON) so its filtered index also builds. Verify `Notifications.EntityId` exists before acceptance.
+- **The kernel now hard-requires a signed-in BusinessContext on our purchase/sale/reversal path (HM-D58).** The parallel
+  team removed the company-1 fallback; `RecordAsync` (their wiring inside our `CreatePurchaseInvoiceAsync`/sales/reversal)
+  throws `BusinessContextUnresolvedException` when no signed-in employee/company resolves from the request. A production UI
+  request always carries it; an **unauthenticated dev/acceptance endpoint that creates a document must seed the `"Employee"`
+  session blob** (a real active company-1 employee, as `AccountController` login does) before the call — see `hm16-accept`.
 - **Reversal now depends on the event platform (HM-D53).** The **only accounting-correction primitive**,
   `JournalEntryService.ReverseAsync`, calls `RecordAsync(JournalEntry.Reversed)` in-transaction before commit with no
   swallow. So **every correction path** — edit sales/purchase invoice, edit returns, **cancel a paid POS order (hyper

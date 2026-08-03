@@ -374,6 +374,19 @@ namespace CrossBuy.BL
 				Expected = 0, Actual = unbatchedInbound.Count, Ok = true,
 				Note = $"movements={unbatchedInbound.Count} · items={unbatchedInbound.Distinct().Count()} (legacy — invisible to FEFO; the HM-D8 input guard blocks new ones)", Detail = "/Inventory/StockMovements" });
 
+			// HM-16: open GRNI receipts (Posted, not yet invoiced) — COUNTED, split legacy(≤cutoff) vs new(>cutoff), never
+			// raises failedCount. The set-once guard (GoodsReceipt.InvoiceId, enforced in PayableService) prevents a GRN
+			// being invoiced twice going forward; this surfaces the still-unbilled-GRNI pipeline the matching screen clears.
+			var openGrn = await _db.GoodsReceipts.AsNoTracking()
+				.Where(g => g.CompanyID == companyId && g.Status == "Posted" && g.InvoiceId == null)
+				.Select(g => new { g.ReceiptDate, g.TotalCost }).ToListAsync();
+			int legacyOpenGrn = openGrn.Count(g => g.ReceiptDate < PurchaseModelCutoffUtc);
+			int newOpenGrn = openGrn.Count(g => g.ReceiptDate >= PurchaseModelCutoffUtc);
+			decimal openGrnVal = openGrn.Sum(g => g.TotalCost);
+			res.Add(new IntegrityCheck { Key = "open_grni_receipts", NameAr = "إيصالات استلام مفتوحة (GRNI غير مُفوتَر) — معدود، HM-16", NameEn = "Open GRNI receipts (posted, not yet invoiced) — counted, HM-16",
+				Expected = 0, Actual = openGrn.Count, Ok = true,
+				Note = $"open={openGrn.Count} (legacy≤{PurchaseModelCutoffUtc:yyyy-MM-dd}={legacyOpenGrn} · new={newOpenGrn}) · GRNI value={openGrnVal:N2} — set-once guard blocks double-invoicing", Detail = "/Accounting/MatchReceipts" });
+
 			return res;
 		}
 
@@ -382,6 +395,11 @@ namespace CrossBuy.BL
 		// NO range/tolerance. stock_gl & grni = HM-D16 structural gap whose value moves with every stock/GRNI op → keyed (null).
 		// cogs_impact = exactly 2 pre-existing sale lines with no COGS movement; receiptno_dup = exactly 5 pre-existing duplicates →
 		// pinned counts, so a RISE adds the excess. Full IDs/values in deploy/AUDIT-DEVIATIONS.md (DEV-2026-010).
+		// HM-16: the purchase-model unification go-live. A CONSTANT, not a config setting — a one-time model-change date
+		// must not be operator-editable (a config value could be moved forward to hide legacy unbilled-GRNI debt behind
+		// the "legacy" bucket). Checks that split before/after this date read it from here. Value = HM-16 apply date.
+		public static readonly DateTime PurchaseModelCutoffUtc = new(2026, 8, 3);
+
 		public static readonly Dictionary<string, decimal?> Baseline = new()
 		{
 			["stock_gl"] = null,     // HM-D16 structural (value fluctuates)
