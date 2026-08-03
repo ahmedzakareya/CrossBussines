@@ -115,3 +115,18 @@ About to touch **`PayableService.cs`** (our purchase-document writer) for HM-16.
 - `JournalEntryService.cs` still kernel-wired (1× RecordAsync in ReverseAsync — HM-D53). `ReceivableService`/`ManufService` kernel-wired.
 - Their earlier build break (IEventDispatchStore/SqlEventDispatchStore RetryAsync) is **fixed** — the tree compiles again. `Program.cs` re-saved 15:44 (they are still actively editing).
 - Coordination rule (CLAUDE.md) applies: editing `PayableService` (a document writer) is coordinated; we touch only the purchase-invoice posting, not their kernel lines.
+
+---
+
+## Update — 2026-08-03 (pre-HM-7 batch-1: batch-aware count), before we modify StockService
+
+About to touch **`StockService.cs`** (our stock writer) for HM-7 batch-1 (PostCountAsync + CountLineInput). Precondition
+re-checked per the standing rule:
+- **writer_coupling on the stock writer is CLEAN.** StockService constructor (line 137) = the six allowed deps only
+  {CrossDbContext, IJournalEntryService, IFiscalPeriodService, ICurrencyService, ILogger, ICurrencyRounding}; grep for
+  `_events`/`IBusinessEventService`/`RecordAsync`/`IStringLocalizer` = 0; no uncommitted diff vs HEAD. The integrity
+  `writer_coupling` actual=1 is the `JournalEntryService:IBusinessEventService` coupling (HM-D53), NOT StockService.
+- **Stock-adjacent parallel WIP still active:** `InventoryApprovalService.cs` (mtime 18:57 — used by the count/transfer/
+  write-off approval gates in InventoryController) and `ManufService.cs` are being edited by the parallel team. We do NOT
+  touch them; our count change is inside StockService + the count DTO/entity/screen only. If a NEW coupling appears on the
+  stock writer during the batch, we STOP and report.
