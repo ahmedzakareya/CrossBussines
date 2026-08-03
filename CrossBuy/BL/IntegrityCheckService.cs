@@ -245,10 +245,12 @@ namespace CrossBuy.BL
 			{ var net = g.Sum(x => x.Direction * x.QtyBase); if (net < -0.001m) { negBatch++; if (negBatchBad.Count < 8) negBatchBad.Add($"{codeById.GetValueOrDefault(g.Key.ItemId, g.Key.ItemId.ToString())} batch#{g.Key.BatchId}: {net:0.##}"); } }
 			res.Add(new IntegrityCheck { Key = "batch_no_negative", NameAr = "لا دفعة سالبة (أصناف الدفعات/الصلاحية)", NameEn = "No negative batch (batch/expiry items)",
 				Expected = 0, Actual = negBatch, Ok = negBatch == 0, Note = negBatch == 0 ? "لا دفعة سالبة" : string.Join(" · ", negBatchBad), Detail = "/Inventory/Batches" });
-			// (c) VALUE diff — COUNTED (never raises failedCount). Frozen baseline = {ITM-0001, MFGT-FIN}; "new" accumulates the HM-D7 footprint.
+			// (c) VALUE diff — COUNTED (never raises failedCount). Frozen baseline = {ITM-0001, MFGT-FIN}. "new" is an
+			// UNATTRIBUTED value diff: we do NOT name a cause (e.g. "HM-D7") until one is proven — same discipline as the
+			// stock_gl label correction. A candidate cause (the landed-cost lost update) exists but is not yet attributed.
 			res.Add(new IntegrityCheck { Key = "bal_value_diff", NameAr = "فروق قيمة الرصيد (معدودة)", NameEn = "Balance value diffs (counted)",
 				Expected = 0, Actual = valNew, Ok = true,
-				Note = $"baseline(ITM-0001/MFGT-FIN)={valBaseline} · new={valNew} [new = HM-D7 footprint / unreconciled]" + (valNewList.Count > 0 ? " · " + string.Join(" · ", valNewList) : ""), Detail = "/Inventory/StockBalances" });
+				Note = $"baseline(ITM-0001/MFGT-FIN)={valBaseline} · new={valNew} [new = unattributed value diff — cause not yet proven]" + (valNewList.Count > 0 ? " · " + string.Join(" · ", valNewList) : ""), Detail = "/Inventory/StockBalances" });
 			// (d) locked-read guard trips — COUNTED tripwire (process-lifetime); must stay 0 in prod.
 			res.Add(new IntegrityCheck { Key = "stock_guard_trips", NameAr = "إطلاق حارس القراءة المقفولة (معدود)", NameEn = "Locked-read guard trips (counted)",
 				Expected = 0, Actual = StockService.LockReadGuardTrips, Ok = true,
@@ -410,6 +412,16 @@ namespace CrossBuy.BL
 			res.Add(new IntegrityCheck { Key = "doc_je_status_mismatch", NameAr = "حالة المستند توافق حالة قيده (لكل مستند بالمعرّف)", NameEn = "Document status matches its JE status (per-document, by id)",
 				Expected = 0, Actual = docNew.Count, Ok = docNew.Count == 0,
 				Note = $"SI={perType["SalesInvoice"]} SR={perType["SalesReturn"]} RCPT={perType["Receipt"]} PI={perType["PurchaseInvoice"]} PR={perType["PurchaseReturn"]} PAY={perType["Payment"]} · legacy(frozen)={docJeLegacy.Count} · new(fail)={docNew.Count}" + (docNew.Count > 0 ? " → " + string.Join(", ", docNew.Select(m => $"{m.type}#{m.id}={m.amt:N2}")) : ""), Detail = "/Accounting/Journals" });
+
+			// HM-7: batches CREATED by a physical count (shelf stock with an unregistered batch). COUNTED — informational,
+			// never raises failedCount — but VISIBLE: creation during a count is a door stock enters through with no source
+			// document, so a rising count means disguised stock-in masquerading as a count, not a count. By id + qty.
+			var createdInCount = await _db.StockCountLines.AsNoTracking()
+				.Where(l => l.BatchCreatedInCount && _db.StockCounts.Any(c => c.ID == l.StockCountId && c.CompanyID == companyId))
+				.Select(l => new { l.ItemId, l.BatchNo, l.CountedQty }).ToListAsync();
+			res.Add(new IntegrityCheck { Key = "batches_created_in_count", NameAr = "دفعات أُنشئت أثناء الجرد (معدود، HM-7)", NameEn = "Batches created during a count (counted, HM-7)",
+				Expected = 0, Actual = createdInCount.Count, Ok = true,
+				Note = $"created={createdInCount.Count} · qty={createdInCount.Sum(x => x.CountedQty):N3}" + (createdInCount.Count > 0 ? " · " + string.Join(", ", createdInCount.Take(8).Select(x => $"item#{x.ItemId}/{x.BatchNo}={x.CountedQty:N2}")) : "") + " — creation during a count is stock-in without a source; watch the trend", Detail = "/Inventory/StockCounts" });
 
 			return res;
 		}

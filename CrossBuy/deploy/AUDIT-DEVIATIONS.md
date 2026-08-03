@@ -830,3 +830,29 @@ one cancel out and vanish (same blind spot as stock_gl). Fixes:
     PurchaseInvoice #1047 = 100.00 (Posted/Reversed) · #1048 = 75.00 (Posted/Reversed)
     PurchaseReturn  #9    = 20.00  (Posted/Reversed) — a THIRD legacy orphan the new per-document check surfaced in a type
                                     (returns) we had not examined; baselined by the same "don't touch old data" rule.
+
+## HM-7 batch-1 — batch-aware physical count (DONE, acceptance 12/12, failedCount 0)
+PostCountAsync counts expiry-tracked items ONE LINE PER BATCH; the diff is attributed to its batch (positive → Adjustment
+carrying the batch, passing the HM-6 guard; negative → issued from THAT batch, not FEFO — the FEFO gate only fires for an
+unnamed batch). Non-tracked items are the exact pre-HM-7 path (BatchNo null). The count is ATOMIC (one ScopedTx) so a reject
+leaves zero effect. A counted batch not in the system is CREATED (expiry required, HM-6 rule) and flagged
+(StockCountLine.BatchCreatedInCount). An uncounted batch is left UNTOUCHED and surfaced (never zeroed). Schema:
+deploy/sql/hm7_count_batch.sql (StockCountLines += BatchNo/ExpiryDate/BatchCreatedInCount, idempotent, nullable). New
+DURABLE classifications in inv-test-integrity: `batches_created_in_count` (COUNTED — creation during a count is stock-in
+without a source; watch the trend). bal_value_diff label corrected from "HM-D7 footprint" to "unattributed value diff —
+cause not yet proven" (no assumed cause, like the stock_gl fix). This closes the HM-6-introduced block: an expiry-tracked
+item could not be counted up (unbatched Adjustment → HM-6 guard rejected). Acceptance: api/dev/hm7-count-accept.
+
+## HM-D59 — parallel Stage-1-Batch-B2: company-scope query filters break single-shot dev acceptance
+The parallel team added (untracked, mtime ~22:27 today) `BL/Platform/CompanyScopeMiddleware.cs` + `CompanyQueryFilters`
+(a global `HasQueryFilter` on ~12 pilot company-scoped entities, applied LAST in CrossDbContext.OnModelCreating). The
+middleware resolves the BusinessContext and publishes the company to `ICompanyScopeHolder`; when NO context resolves it
+leaves the scope UNRESOLVED and every filtered entity returns ZERO ROWS ("will return no rows", it logs). It runs in the
+PIPELINE (before MVC action filters), so our dev-context seed (DevSeedController.OnActionExecutionAsync, HM-D58) — which
+seeds the "Employee" session DURING action execution — is TOO LATE: the scope was already resolved (empty) at middleware
+time. Impact: EVERY unauthenticated single-shot curl dev endpoint now reads nothing → FirstAsync throws → 500. PROVEN:
+hm16-accept (green earlier THIS session) now also 500s single-shot — so it is their change, not ours. **Workaround (no
+code change, no parallel-file touch): persist the session across requests with a cookie jar — prime with one call
+(culture-check seeds the blob + Set-Cookie), then call the acceptance with the same cookie so the middleware resolves the
+scope. This mirrors a real browser session.** Recorded, not "fixed". writer_coupling on the stock writer stays CLEAN (this
+is a read-filter infra, not a writer coupling), so the HM-7 stop-condition was not triggered.

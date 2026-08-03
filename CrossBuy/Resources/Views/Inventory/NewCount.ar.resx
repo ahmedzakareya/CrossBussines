@@ -106,4 +106,12 @@
   <data name="Post this stock count and create variance adjustments?" xml:space="preserve">
     <value>ترحيل الجرد الفعلي وإنشاء تسويات الفروقات؟</value>
   </data>
+  <data name="Batch" xml:space="preserve"><value>الدفعة</value></data>
+  <data name="not counted" xml:space="preserve"><value>لم تُعَدّ</value></data>
+  <data name="Unlisted batch" xml:space="preserve"><value>دفعة غير مُدرَجة</value></data>
+  <data name="Expiry-tracked" xml:space="preserve"><value>مُتتبَّع الصلاحية</value></data>
+  <data name="Batch no" xml:space="preserve"><value>رقم الدفعة</value></data>
+  <data name="Tick at least one batch/item to count" xml:space="preserve"><value>أشِّر دفعة/صنفًا واحدًا على الأقل للعدّ</value></data>
+  <data name="No balances in this warehouse." xml:space="preserve"><value>لا أرصدة في هذا المخزن.</value></data>
+  <data name="Expiry-tracked items are counted per batch. A batch you do not tick is treated as NOT counted — left untouched and reported as uncounted (its stock is never zeroed)." xml:space="preserve"><value>الأصناف مُتتبَّعة الصلاحية تُعَدّ لكل دفعة. الدفعة التي لا تؤشّرها تُعتبَر غير معدودة — تُترَك دون مساس وتُعرَض كغير معدودة (لا يُصفَّر رصيدها أبدًا).</value></data>
 </root>

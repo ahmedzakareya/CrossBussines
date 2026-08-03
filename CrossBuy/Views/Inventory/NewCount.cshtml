@@ -8,7 +8,12 @@
     var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
     int? fWh = ViewBag.FilterWarehouseId;
     var book = ((IEnumerable<dynamic>)(ViewBag.BookBalances ?? new List<object>())).ToList();
+    var batchBal = ((IEnumerable<dynamic>)(ViewBag.BatchBalances ?? new List<object>())).ToList();
     var itemById = items.ToDictionary(i => i.ID, i => i);
+    // HM-7: batches per tracked item, from the derived per-batch on-hand
+    var batchByItem = batchBal.GroupBy(b => (int)b.ItemId).ToDictionary(g => g.Key, g => g.ToList());
+    string Nm(Item it) => it.ItemCode + " — " + (isAr ? it.Name : (string.IsNullOrEmpty(it.NameEn) ? it.Name : it.NameEn));
+    string Inv(decimal v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }
 <form asp-action="PostCount" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
     <input type="hidden" name="linesJson" id="linesJson" />
@@ -32,54 +37,96 @@
         }
         else
         {
-            <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Items & counted quantities"]</h3><div class="card-toolbar d-flex gap-2"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan to add item"]" autocomplete="off" /></div></div></div>
-            <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
-                <th style="min-width:260px">@SR["Item"]</th><th class="text-end" style="width:130px">@Localizer["Book qty"]</th><th class="text-end" style="width:130px">@Localizer["Counted"]</th><th class="text-end" style="width:120px">@Localizer["Diff"]</th>
+            <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Items & counted quantities"]</h3></div>
+            <div class="card-body">
+                <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><span class="fs-8 text-gray-700">@Localizer["Expiry-tracked items are counted per batch. A batch you do not tick is treated as NOT counted — left untouched and reported as uncounted (its stock is never zeroed)."]</span></div>
+                <div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+                <th style="width:44px"></th><th style="min-width:260px">@SR["Item"]</th><th>@Localizer["Batch"]</th><th class="text-end" style="width:120px">@Localizer["Book qty"]</th><th class="text-end" style="width:130px">@Localizer["Counted"]</th><th class="text-end" style="width:110px">@Localizer["Diff"]</th>
             </tr></thead><tbody id="rows">
                 @foreach (var b in book)
                 {
                     int iid = (int)b.ItemId; decimal bq = (decimal)b.QtyOnHand;
                     var it = itemById.TryGetValue(iid, out var iv) ? iv : null;
-                    <tr data-item="@iid" data-book="@bq.ToString(System.Globalization.CultureInfo.InvariantCulture)">
-                        <td class="fw-bold text-gray-800">@(it == null ? ("#"+iid) : (it.ItemCode + " — " + (isAr ? it.Name : (string.IsNullOrEmpty(it.NameEn) ? it.Name : it.NameEn))))</td>
-                        <td class="text-end text-muted bookc">@bq.ToString("0.##")</td>
-                        <td class="text-end"><input type="number" step="0.0001" class="form-control form-control-solid form-control-sm text-end counted" value="@bq.ToString(System.Globalization.CultureInfo.InvariantCulture)"></td>
-                        <td class="text-end fw-bold diff">0</td>
-                    </tr>
+                    bool tracked = it != null && it.TrackExpiry;
+                    if (!tracked)
+                    {
+                        <tr data-item="@iid" data-tracked="0" data-book="@Inv(bq)" data-counted="1">
+                            <td></td>
+                            <td class="fw-bold text-gray-800">@(it == null ? ("#"+iid) : Nm(it))</td>
+                            <td class="text-muted fs-8">—</td>
+                            <td class="text-end text-muted bookc">@bq.ToString("0.##")</td>
+                            <td class="text-end"><input type="number" step="0.0001" class="form-control form-control-solid form-control-sm text-end counted" value="@Inv(bq)"></td>
+                            <td class="text-end fw-bold diff">0</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        var bats = batchByItem.TryGetValue(iid, out var bl) ? bl : new List<dynamic>();
+                        <tr class="bg-light-primary"><td colspan="6" class="fw-bold text-gray-800 py-2">@(it == null ? ("#"+iid) : Nm(it)) <span class="badge badge-light-primary ms-2">@Localizer["Expiry-tracked"]</span> <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 ms-2 js-addbatch" data-item="@iid">+ @Localizer["Unlisted batch"]</button></td></tr>
+                        foreach (var bt in bats)
+                        {
+                            decimal bbq = (decimal)bt.Qty; string bno = (string)bt.BatchNo; string exp = bt.ExpiryDate == null ? "" : ((DateTime)bt.ExpiryDate).ToString("yyyy-MM-dd");
+                            <tr data-item="@iid" data-tracked="1" data-batch="@bno" data-expiry="@exp" data-book="@Inv(bbq)" data-counted="0">
+                                <td class="text-center"><input type="checkbox" class="form-check-input countck"></td>
+                                <td class="text-muted fs-8">↳</td>
+                                <td><span class="fw-semibold">@bno</span> @if (!string.IsNullOrEmpty(exp)) { <span class="text-muted fs-8">· @exp</span> }</td>
+                                <td class="text-end text-muted bookc">@bbq.ToString("0.##")</td>
+                                <td class="text-end"><input type="number" step="0.0001" class="form-control form-control-solid form-control-sm text-end counted" value="@Inv(bbq)" disabled></td>
+                                <td class="text-end fw-bold diff text-muted">@Localizer["not counted"]</td>
+                            </tr>
+                        }
+                    }
                 }
             </tbody></table></div>
-            @if (book.Count == 0) { <div class="text-center text-muted py-10">@Localizer["No balances in this warehouse — scan/add items manually."]</div> }
+            @if (book.Count == 0) { <div class="text-center text-muted py-10">@Localizer["No balances in this warehouse."]</div> }
             </div></div>
         }
     </div></div>
 </form>
-<partial name="_ItemScanModal" />
-<partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
 <script>
-var ITEMS=[]; // scan provides code/name directly; no full-catalog preload
 var whSel=document.getElementById('whSel');
 if(whSel){ var go=function(){ location.href='?warehouseId='+(whSel.value||''); }; if(window.jQuery&&jQuery(whSel).data('select2'))jQuery(whSel).on('change',go); else whSel.addEventListener('change',go); }
-function recalc(tr){ var b=parseFloat(tr.getAttribute('data-book'))||0; var c=parseFloat(tr.querySelector('.counted').value)||0; var d=Math.round((c-b)*10000)/10000; var el=tr.querySelector('.diff'); el.textContent=(d>0?'+':'')+d; el.className='text-end fw-bold diff '+(d<0?'text-danger':(d>0?'text-primary':'text-muted')); }
 var rowsEl=document.getElementById('rows');
+function recalc(tr){
+  if(tr.getAttribute('data-counted')!=='1'){ var d0=tr.querySelector('.diff'); d0.textContent=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["not counted"].Value)); d0.className='text-end fw-bold diff text-muted'; return; }
+  var b=parseFloat(tr.getAttribute('data-book'))||0; var c=parseFloat(tr.querySelector('.counted').value)||0; var d=Math.round((c-b)*10000)/10000;
+  var el=tr.querySelector('.diff'); el.textContent=(d>0?'+':'')+d; el.className='text-end fw-bold diff '+(d<0?'text-danger':(d>0?'text-primary':'text-muted'));
+}
 if(rowsEl){
   rowsEl.addEventListener('input',function(e){ if(e.target.classList.contains('counted')) recalc(e.target.closest('tr')); });
-  [].slice.call(rowsEl.querySelectorAll('tr')).forEach(recalc);
+  rowsEl.addEventListener('change',function(e){
+    if(e.target.classList.contains('countck')){ var tr=e.target.closest('tr'); var on=e.target.checked; tr.setAttribute('data-counted',on?'1':'0'); tr.querySelector('.counted').disabled=!on; tr.classList.toggle('opacity-50',!on); recalc(tr); }
+    if(e.target.classList.contains('js-newexp')){ e.target.closest('tr').setAttribute('data-expiry',e.target.value); }
+  });
+  rowsEl.addEventListener('click',function(e){ var btn=e.target.closest('.js-addbatch'); if(!btn) return; addBatchRow(parseInt(btn.getAttribute('data-item')), btn.closest('tr')); });
+  [].slice.call(rowsEl.querySelectorAll('tr[data-item]')).forEach(recalc);
 }
-function findItem(id){ for(var i=0;i<ITEMS.length;i++) if(ITEMS[i].iD===id) return ITEMS[i]; return null; }
-window.onItemScanned=function(p){
-  if(!rowsEl) return;
-  var ex=rowsEl.querySelector('tr[data-item="'+p.id+'"]');
-  if(ex){ var ci=ex.querySelector('.counted'); ci.value=(parseFloat(ci.value)||0)+(p.qty||1); recalc(ex); return; }
-  var it=findItem(p.id)||{itemCode:p.code,name:p.name};
-  var tr=document.createElement('tr'); tr.setAttribute('data-item',p.id); tr.setAttribute('data-book','0');
-  tr.innerHTML='<td class="fw-bold text-gray-800">'+it.itemCode+' — '+(it.name||'')+'</td><td class="text-end text-muted bookc">0</td><td class="text-end"><input type="number" step="0.0001" class="form-control form-control-solid form-control-sm text-end counted" value="'+(p.qty||1)+'"></td><td class="text-end fw-bold diff">0</td>';
-  rowsEl.appendChild(tr); recalc(tr);
-};
+function addBatchRow(iid, headerTr){
+  var tr=document.createElement('tr'); tr.setAttribute('data-item',iid); tr.setAttribute('data-tracked','1'); tr.setAttribute('data-book','0'); tr.setAttribute('data-counted','1'); tr.setAttribute('data-batch',''); tr.setAttribute('data-expiry','');
+  tr.innerHTML='<td></td><td class="text-muted fs-8">↳ new</td>'+
+    '<td class="d-flex gap-1"><input class="form-control form-control-solid form-control-sm js-newbatch" placeholder="@Localizer["Batch no"]" style="width:110px"><input type="date" class="form-control form-control-solid form-control-sm js-newexp" style="width:140px"></td>'+
+    '<td class="text-end text-muted">0</td>'+
+    '<td class="text-end"><input type="number" step="0.0001" class="form-control form-control-solid form-control-sm text-end counted" value="1"></td>'+
+    '<td class="text-end fw-bold diff text-primary">+1</td>';
+  headerTr.parentNode.insertBefore(tr, headerTr.nextSibling);
+  tr.querySelector('.js-newbatch').addEventListener('input',function(){ tr.setAttribute('data-batch',this.value); });
+  tr.querySelector('.js-newexp').addEventListener('input',function(){ tr.setAttribute('data-expiry',this.value); });
+  recalc(tr);
+}
 var saveBtn=document.getElementById('save');
 if(saveBtn) saveBtn.addEventListener('click',function(){
-  var lines=[]; [].slice.call(rowsEl.querySelectorAll('tr')).forEach(function(tr){ var id=parseInt(tr.getAttribute('data-item')); var c=parseFloat(tr.querySelector('.counted').value); if(id&&!isNaN(c)) lines.push({itemId:id,countedQty:c}); });
-  if(!lines.length){ alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["No items"].Value))); return; }
+  var lines=[], missingExp=false;
+  [].slice.call(rowsEl.querySelectorAll('tr[data-item]')).forEach(function(tr){
+    if(tr.getAttribute('data-counted')!=='1') return;   // uncounted batch → left untouched (reported as uncounted)
+    var id=parseInt(tr.getAttribute('data-item')); var c=parseFloat(tr.querySelector('.counted').value);
+    if(!id||isNaN(c)) return;
+    var tracked=tr.getAttribute('data-tracked')==='1'; var bn=tr.getAttribute('data-batch')||''; var ex=tr.getAttribute('data-expiry')||'';
+    if(tracked && !bn) return;
+    var line={itemId:id, countedQty:c}; if(tracked){ line.batchNo=bn; if(ex) line.expiry=ex; }
+    lines.push(line);
+  });
+  if(!lines.length){ alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Tick at least one batch/item to count"].Value))); return; }
   CB.confirm({type:'generic', text:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Post this stock count and create variance adjustments?"].Value))}).then(function(ok){
     if(!ok) return;
     document.getElementById('linesJson').value=JSON.stringify(lines); document.getElementById('f').submit();

@@ -58,6 +58,9 @@ namespace CrossBuy.BL
 	{
 		public int ItemId { get; set; }
 		public decimal CountedQty { get; set; }
+		// HM-7 batch-aware count: for an expiry-tracked item, one line PER batch. BatchNo null = non-tracked item (unchanged).
+		public string? BatchNo { get; set; }
+		public DateTime? Expiry { get; set; }   // required only when this line's batch does not yet exist (creates it — HM-6 rule)
 	}
 
 	public class LandedChargeInput
@@ -851,39 +854,83 @@ namespace CrossBuy.BL
 			if (lines == null || lines.Count == 0) return (false, "الجرد يجب أن يحتوي على بند واحد على الأقل", null);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 
+			// HM-7: batch-aware count. An expiry-tracked item is counted ONE LINE PER BATCH (BatchNo set); the diff is
+			// attributed to its batch (positive → Adjustment carrying the batch, passing the HM-6 guard; negative → issued
+			// from THAT batch, not FEFO — the FEFO gate at line 357 only fires for an UNnamed batch). A non-tracked item
+			// (BatchNo null) is the exact pre-HM-7 behaviour. A counted batch that does not exist is CREATED (expiry
+			// required, HM-6 rule) and flagged. The whole count is ATOMIC (one ScopedTx) so any reject leaves zero effect.
 			var cnt = new StockCount { CompanyID = companyId, WarehouseId = warehouseId, CountDate = date.Date, Status = "Posted", Notes = notes, CreatedBy = userId, CreatedAt = DateTime.UtcNow };
-			_context.StockCounts.Add(cnt);
-			await _context.SaveChangesAsync();
-			cnt.CountNo = $"SC-{date:yyyy}-{cnt.ID:D5}";
-
-			int ln = 1; decimal totalAdj = 0;
-			foreach (var l in lines)
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
+			try
 			{
-				if (l.ItemId <= 0) continue;
-				var (bookQty, _, avg) = await GetBalanceAsync(companyId, l.ItemId, warehouseId);
-				var diff = R4(l.CountedQty - bookQty);
-				var cl = new StockCountLine { StockCountId = cnt.ID, LineNo = ln++, ItemId = l.ItemId, BookQty = bookQty, CountedQty = l.CountedQty, DiffQty = diff, UnitCost = avg };
-				if (diff != 0)
+				_context.StockCounts.Add(cnt);
+				await _context.SaveChangesAsync();
+				cnt.CountNo = $"SC-{date:yyyy}-{cnt.ID:D5}";
+
+				int ln = 1; decimal totalAdj = 0;
+				foreach (var l in lines)
 				{
-					short dir = diff > 0 ? (short)1 : (short)-1;
-					var (sok, serr, mv) = await PostMovementAsync(companyId, new MovementRequest
+					if (l.ItemId <= 0) continue;
+					var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId && i.CompanyID == companyId);
+					if (item == null) { await tx.RollbackAsync(); return (false, $"صنف غير موجود ({l.ItemId})", null); }
+					bool batchAware = item.TrackExpiry && !string.IsNullOrWhiteSpace(l.BatchNo);
+
+					decimal bookQty, avg; bool createdBatch = false; DateTime? lineExpiry = null;
+					if (batchAware)
 					{
-						Date = date, ItemId = l.ItemId, WarehouseId = warehouseId, Direction = dir, Qty = Math.Abs(diff),
-						UnitCostInBase = dir == 1 ? avg : (decimal?)null, SourceType = "Adjustment", SourceId = cnt.ID, PostToGl = true,
-						Notes = $"تسوية جرد {cnt.CountNo}"
-					}, userId);
-					if (!sok) { return (false, $"تعذّر ترحيل تسوية صنف: {serr}", null); }
-					cl.UnitCost = mv!.UnitCost;
-					cl.DiffValue = R2(dir * mv.TotalCost);
-					cl.AdjustmentMovementId = mv.ID;
-					totalAdj += cl.DiffValue;
+						var batch = await _context.StockBatches.AsNoTracking().FirstOrDefaultAsync(b => b.CompanyID == companyId && b.ItemId == l.ItemId && b.BatchNo == l.BatchNo);
+						if (batch == null)
+						{
+							// counted a batch the system does not know → the count creates it (real shelf stock). Expiry required.
+							createdBatch = true; bookQty = 0m; lineExpiry = l.Expiry;
+							if (l.CountedQty > 0 && l.Expiry == null)
+							{ await tx.RollbackAsync(); return (false, $"الدفعة ({l.BatchNo}) للصنف ({item.ItemCode}) غير مسجَّلة ويلزم تاريخ صلاحية لإنشائها أثناء الجرد", null); }
+						}
+						else { bookQty = await BatchOnHandAsync(companyId, l.ItemId, warehouseId, batch.ID); lineExpiry = batch.ExpiryDate ?? l.Expiry; }
+						var (_, _, itemAvg) = await GetBalanceAsync(companyId, l.ItemId, warehouseId);   // cost basis unchanged — item-level avg
+						avg = itemAvg;
+					}
+					else
+					{
+						var (bq, _, a) = await GetBalanceAsync(companyId, l.ItemId, warehouseId);
+						bookQty = bq; avg = a;
+					}
+
+					var diff = R4(l.CountedQty - bookQty);
+					var cl = new StockCountLine { StockCountId = cnt.ID, LineNo = ln++, ItemId = l.ItemId, BookQty = bookQty, CountedQty = l.CountedQty, DiffQty = diff, UnitCost = avg,
+						BatchNo = batchAware ? l.BatchNo : null, ExpiryDate = batchAware ? lineExpiry : null, BatchCreatedInCount = createdBatch && diff > 0 };
+					if (diff != 0)
+					{
+						short dir = diff > 0 ? (short)1 : (short)-1;
+						var (sok, serr, mv) = await PostMovementAsync(companyId, new MovementRequest
+						{
+							Date = date, ItemId = l.ItemId, WarehouseId = warehouseId, Direction = dir, Qty = Math.Abs(diff),
+							UnitCostInBase = dir == 1 ? avg : (decimal?)null, SourceType = "Adjustment", SourceId = cnt.ID, PostToGl = true,
+							BatchNo = batchAware ? l.BatchNo : null, Expiry = batchAware ? lineExpiry : null,
+							Notes = $"تسوية جرد {cnt.CountNo}"
+						}, userId);
+						if (!sok) { await tx.RollbackAsync(); return (false, $"تعذّر ترحيل تسوية صنف: {serr}", null); }
+						cl.UnitCost = mv!.UnitCost;
+						cl.DiffValue = R2(dir * mv.TotalCost);
+						cl.AdjustmentMovementId = mv.ID;
+						totalAdj += cl.DiffValue;
+					}
+					cnt.Lines.Add(cl);
 				}
-				cnt.Lines.Add(cl);
+				cnt.TotalAdjValue = R2(totalAdj);
+				await _context.SaveChangesAsync();
+				await tx.CommitAsync();
+				return (true, null, cnt);
 			}
-			cnt.TotalAdjValue = R2(totalAdj);
-			await _context.SaveChangesAsync();
-			return (true, null, cnt);
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء الجرد: " + ex.Message, null); }
 		}
+
+		// HM-7: on-hand of ONE batch in a warehouse, derived from movements (there is no per-batch balance row; batch qty
+		// is Σ Direction×QtyBase over its movements — same basis FefoAllocate uses). Read-only; no cost/FEFO change.
+		private async Task<decimal> BatchOnHandAsync(int companyId, int itemId, int warehouseId, int batchId) =>
+			await _context.StockMovements.AsNoTracking()
+				.Where(m => m.CompanyID == companyId && m.ItemId == itemId && m.WarehouseId == warehouseId && m.BatchId == batchId)
+				.SumAsync(m => (decimal?)(m.Direction * m.QtyBase)) ?? 0m;
 
 		// Write-off / damage: removes stock and books the loss to the write-off expense account (510103).
 		// Same accounting entry in BOTH modes — Dr write-off expense / Cr inventory (1103). The mode only

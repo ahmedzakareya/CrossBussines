@@ -509,6 +509,10 @@ namespace CrossBuy.Models.Context.Inventory
 		public decimal DiffValue { get; set; }
 		public int? AdjustmentMovementId { get; set; }
 		public string? Reason { get; set; }              // null=routine count; "WriteOff" etc. when an adjustment is a write-off (AdjustmentReason mode)
+		// HM-7 batch-aware count: the batch this line counted (null for a non-tracked item = the pre-HM-7 behaviour).
+		public string? BatchNo { get; set; }
+		public DateTime? ExpiryDate { get; set; }
+		public bool BatchCreatedInCount { get; set; }    // true when the count itself created this batch (shelf stock with an unregistered batch)
 	}
 
 	// ===== Write-off / damage document (separate-document mode) =====

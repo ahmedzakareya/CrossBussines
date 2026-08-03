@@ -1820,9 +1820,22 @@ namespace CrossBuy.Controllers
 				var balances = await _stock.GetBalancesAsync(DefaultCompanyId, warehouseId);
 				ViewBag.BookBalances = balances.Select(b => new InvBookBalanceRow { ItemId = b.ItemId, QtyOnHand = b.QtyOnHand, AvgCost = b.AvgCost }).ToList();
 				var ids = balances.Select(b => b.ItemId).Distinct().ToList();
-				ViewBag.Items = await _context.Items.AsNoTracking().Where(i => ids.Contains(i.ID)).OrderBy(i => i.ItemCode).ToListAsync();
+				var itemsInWh = await _context.Items.AsNoTracking().Where(i => ids.Contains(i.ID)).OrderBy(i => i.ItemCode).ToListAsync();
+				ViewBag.Items = itemsInWh;
+				// HM-7: per-batch on-hand for expiry-tracked items in this warehouse, so the count auto-decomposes them into
+				// one row per batch (batch qty = Σ Direction×QtyBase over its movements — same basis as FEFO/BatchOnHand).
+				var trackedIds = itemsInWh.Where(i => i.TrackExpiry).Select(i => i.ID).ToList();
+				var batchBal = new List<object>();
+				if (trackedIds.Count > 0 && warehouseId is int wid)
+					batchBal = (await (from m in _context.StockMovements.AsNoTracking()
+									   join b in _context.StockBatches.AsNoTracking() on m.BatchId equals b.ID
+									   where m.CompanyID == DefaultCompanyId && m.WarehouseId == wid && trackedIds.Contains(m.ItemId)
+									   group new { m, b } by new { m.ItemId, b.BatchNo, b.ExpiryDate } into g
+									   select new { g.Key.ItemId, g.Key.BatchNo, g.Key.ExpiryDate, Qty = g.Sum(x => x.m.Direction * x.m.QtyBase) })
+								   .ToListAsync()).Where(x => x.Qty != 0m).Cast<object>().ToList();
+				ViewBag.BatchBalances = batchBal;
 			}
-			else { ViewBag.Items = new List<Item>(); }
+			else { ViewBag.Items = new List<Item>(); ViewBag.BatchBalances = new List<object>(); }
 			return View();
 		}
 

@@ -68,6 +68,13 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
     — no middleware, no global filter. Production interactive paths are covered by the REAL signed-in session; **any NEW
     background path the parallel team adds would still throw `BusinessContextUnresolvedException` and no filter would save
     it — so monitoring background paths stays an OPEN item (HM-D58).** The filter is a test-harness plaster, not a cure.
+  - **Single-shot curl acceptance is now BROKEN by parallel company-scope filters (HM-D59) — use a cookie jar.** The
+    parallel team added `CompanyScopeMiddleware` + `CompanyQueryFilters` (a global `HasQueryFilter` on ~12 pilot entities).
+    An unresolved scope returns ZERO rows, and the middleware resolves the scope BEFORE our action-filter dev-context seed —
+    so a fresh single-shot curl reads nothing and 500s (hm16-accept, green earlier, now 500s single-shot too). **Run every
+    curl acceptance with a persisted session: `curl -c cj culture-check` to prime (seeds the blob + Set-Cookie), then
+    `curl -b cj <accept-endpoint>`** so the middleware resolves company 1 on the second call (mirrors a browser). No
+    parallel-file touch. Recorded HM-D59.
   - **Verdict (HM-D58, read-only sweep): NO production background/hosted/consumer/hub path reaches `RecordAsync`.** No
     `HostedService`/`BackgroundService`/dispatch-worker/consumer/hub injects or calls a document writer, `ReverseAsync`, or
     the accessor; `NotificationService.NotifyAsync` never touches the accessor; `Publish`/`ForWorker`/`ForSystem` set the EF

@@ -1363,6 +1363,129 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, cutoffUtc = CrossBuy.BL.IntegrityCheckService.PurchaseModelCutoffUtc.ToString("yyyy-MM-dd"), failedCount = run.FailedCount, log });
 		}
 
+		// GET /api/dev/hm7-count-accept?key=seed123 — HM-7 batch-1 (batch-aware physical count) acceptance. Every number is
+		// read FROM THE DB (per-batch on-hand = Σ Direction×QtyBase over movements, never from the tracked entity).
+		[HttpGet("hm7-count-accept")]
+		public async Task<IActionResult> Hm7CountAccept(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			decimal R(decimal v) => Math.Round(v, 3, MidpointRounding.AwayFromZero);
+			var T = DateTime.Today;
+			int wh = await _db.Warehouses.Where(w => w.CompanyID == company).OrderBy(w => w.ID).Select(w => w.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int kg = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "KG").Select(u => u.ID).FirstAsync();
+			int accInv = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "1103").Select(a => a.ID).FirstAsync();
+			int accAdj = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "520103").Select(a => a.ID).FirstOrDefaultAsync();
+			if (accAdj == 0) accAdj = await _db.ItemCategories.Where(c => c.CompanyID == company && c.AdjustmentAccountId != null).Select(c => c.AdjustmentAccountId!.Value).FirstAsync();
+			int accCogs = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "510101").Select(a => a.ID).FirstAsync();
+
+			var cat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "ZZ-CNT-CAT");
+			if (cat == null) { cat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Code = "ZZ-CNT-CAT", Name = "ZZ count cat", NameEn = "ZZ count cat", DefaultCostingMethod = "Average" }; _db.ItemCategories.Add(cat); }
+			cat.InventoryAccountId = accInv; cat.AdjustmentAccountId = accAdj; cat.CogsAccountId = accCogs; await _db.SaveChangesAsync();
+			async Task<CrossBuy.Models.Context.Inventory.Item> Item(string code, bool expiry, bool weighted, int uom)
+			{
+				var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (it == null) { it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = "ZZBC-" + code, Name = code, NameEn = code, ItemCategoryId = cat.ID, ItemType = "Stockable", BaseUoMId = uom, TrackExpiry = expiry, IsWeighted = weighted, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); }
+				return it;
+			}
+			var plain = await Item("ZZ-CNT-PLAIN", false, false, pcs);
+			var exp = await Item("ZZ-CNT-EXP", true, false, pcs);
+			var wexp = await Item("ZZ-CNT-WEXP", true, true, kg);
+
+			async Task<int?> BatchIdOf(int itemId, string bn) => await _db.StockBatches.AsNoTracking().Where(b => b.CompanyID == company && b.ItemId == itemId && b.BatchNo == bn).Select(b => (int?)b.ID).FirstOrDefaultAsync();
+			async Task<decimal> BOH(int itemId, string bn) { var bid = await BatchIdOf(itemId, bn); return bid == null ? 0m : (await _db.StockMovements.AsNoTracking().Where(m => m.ItemId == itemId && m.WarehouseId == wh && m.BatchId == bid).SumAsync(m => (decimal?)(m.Direction * m.QtyBase)) ?? 0m); }
+			async Task<decimal> Qty(int itemId) => (await _stock.GetBalanceAsync(company, itemId, wh)).qty;
+			async Task Fill(int itemId, string bn, DateTime exd, decimal floor, decimal cost)
+			{ var cur = await BOH(itemId, bn); if (cur < floor) await _stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = itemId, WarehouseId = wh, Qty = floor - cur, UnitCost = cost, BatchNo = bn, Expiry = exd } }, "dev"); }
+			async Task Reseed()
+			{
+				var q = await Qty(plain.ID); if (q < 100m) await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = T, ItemId = plain.ID, WarehouseId = wh, Direction = 1, Qty = 100m - q, UnitCostInBase = 10m, SourceType = "Opening", PostToGl = false }, "dev");
+				await Fill(exp.ID, "ZC-LOT-A", T.AddDays(10), 50m, 4m); await Fill(exp.ID, "ZC-LOT-B", T.AddDays(60), 50m, 4m); await Fill(exp.ID, "ZC-LOT-C", T.AddDays(90), 30m, 4m);
+				await Fill(wexp.ID, "ZC-WLOT", T.AddDays(45), 2.000m, 300m);
+			}
+			CrossBuy.BL.CountLineInput CL(int itemId, decimal counted, string? bn = null, DateTime? ex = null) => new() { ItemId = itemId, CountedQty = counted, BatchNo = bn, Expiry = ex };
+			async Task<CrossBuy.Models.Context.Inventory.StockMovement?> AdjMv(int countId, int itemId) => await _db.StockMovements.AsNoTracking().Where(m => m.SourceType == "Adjustment" && m.SourceId == countId && m.ItemId == itemId).OrderByDescending(m => m.ID).FirstOrDefaultAsync();
+
+			await Reseed();
+
+			// ===== T1: non-tracked item ⇒ exact pre-HM-7 behaviour (regression) =====
+			decimal p0 = await Qty(plain.ID);
+			var (c1ok, c1err, cnt1) = await _stock.PostCountAsync(company, wh, T, "hm7 T1", new List<CrossBuy.BL.CountLineInput> { CL(plain.ID, p0 - 5m) }, "dev");
+			var l1 = cnt1 != null ? await _db.StockCountLines.AsNoTracking().Where(l => l.StockCountId == cnt1.ID).FirstOrDefaultAsync() : null;
+			Chk("T1 non-tracked: diff -5 posted, line has NO batch (unchanged path)", c1ok && R(await Qty(plain.ID) - p0) == -5m && l1 != null && l1.BatchNo == null);
+			log.Add($"  T1 ok={c1ok} qtyDelta={R(await Qty(plain.ID) - p0)} lineBatch={l1?.BatchNo ?? "null"}");
+
+			// ===== T2: tracked, 2 batches, positive diff on ONE ⇒ Adjustment to the RIGHT batch, other untouched =====
+			decimal a0 = await BOH(exp.ID, "ZC-LOT-A"), b0 = await BOH(exp.ID, "ZC-LOT-B");
+			var (c2ok, _, cnt2) = await _stock.PostCountAsync(company, wh, T, "hm7 T2", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, a0 + 10m, "ZC-LOT-A", T.AddDays(10)) }, "dev");
+			var mv2 = cnt2 != null ? await AdjMv(cnt2.ID, exp.ID) : null; var lotAId = await BatchIdOf(exp.ID, "ZC-LOT-A");
+			Chk("T2 +10 on LOT-A ⇒ LOT-A +10, LOT-B untouched, movement carries LOT-A batch", c2ok && R(await BOH(exp.ID, "ZC-LOT-A") - a0) == 10m && await BOH(exp.ID, "ZC-LOT-B") == b0 && mv2 != null && mv2.BatchId == lotAId);
+			log.Add($"  T2 dA={R(await BOH(exp.ID, "ZC-LOT-A") - a0)} LOT-B={await BOH(exp.ID, "ZC-LOT-B")} mvBatch={mv2?.BatchId} lotA={lotAId}");
+
+			// ===== T3: negative diff on a SPECIFIC batch ⇒ issued from THAT batch, not FEFO (LOT-A expires sooner) =====
+			decimal a3 = await BOH(exp.ID, "ZC-LOT-A"), b3 = await BOH(exp.ID, "ZC-LOT-B");
+			var (c3ok, _, cnt3) = await _stock.PostCountAsync(company, wh, T, "hm7 T3", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, b3 - 5m, "ZC-LOT-B", T.AddDays(60)) }, "dev");
+			var mv3 = cnt3 != null ? await AdjMv(cnt3.ID, exp.ID) : null; var lotBId = await BatchIdOf(exp.ID, "ZC-LOT-B");
+            Chk("T3 -5 on LOT-B ⇒ LOT-B -5, LOT-A untouched (NOT FEFO), movement carries LOT-B", c3ok && R(await BOH(exp.ID, "ZC-LOT-B") - b3) == -5m && await BOH(exp.ID, "ZC-LOT-A") == a3 && mv3 != null && mv3.BatchId == lotBId);
+			log.Add($"  T3 dB={R(await BOH(exp.ID, "ZC-LOT-B") - b3)} LOT-A={await BOH(exp.ID, "ZC-LOT-A")}(was {a3}) mvBatch={mv3?.BatchId} lotB={lotBId}");
+
+			// ===== T4: two OPPOSITE diffs on two batches in ONE count ⇒ each to its batch, no netting =====
+			await Reseed(); decimal a4 = await BOH(exp.ID, "ZC-LOT-A"), b4 = await BOH(exp.ID, "ZC-LOT-B");
+			var (c4ok, _, _) = await _stock.PostCountAsync(company, wh, T, "hm7 T4", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, a4 + 8m, "ZC-LOT-A", T.AddDays(10)), CL(exp.ID, b4 - 8m, "ZC-LOT-B", T.AddDays(60)) }, "dev");
+			Chk("T4 +8/-8 on two batches ⇒ LOT-A +8 AND LOT-B -8 (not netted to 0)", c4ok && R(await BOH(exp.ID, "ZC-LOT-A") - a4) == 8m && R(await BOH(exp.ID, "ZC-LOT-B") - b4) == -8m);
+			log.Add($"  T4 dA={R(await BOH(exp.ID, "ZC-LOT-A") - a4)} dB={R(await BOH(exp.ID, "ZC-LOT-B") - b4)}");
+
+			// ===== T5/T9: an UNCOUNTED batch is left untouched AND surfaced as uncounted with its book qty =====
+			await Reseed(); decimal cUncounted = await BOH(exp.ID, "ZC-LOT-C");
+			var (c5ok, _, cnt5) = await _stock.PostCountAsync(company, wh, T, "hm7 T5", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, await BOH(exp.ID, "ZC-LOT-A"), "ZC-LOT-A", T.AddDays(10)) }, "dev");
+			var counted5 = cnt5 != null ? await _db.StockCountLines.AsNoTracking().Where(l => l.StockCountId == cnt5.ID).Select(l => l.BatchNo).ToListAsync() : new();
+			bool lotCUntouched = await BOH(exp.ID, "ZC-LOT-C") == cUncounted;
+			bool lotCSurfaced = !counted5.Contains("ZC-LOT-C") && cUncounted > 0m;   // on-hand batch not in the count's lines ⇒ "uncounted"
+			Chk("T5/T9 uncounted LOT-C ⇒ untouched AND surfaced as uncounted (book qty intact, not zeroed/hidden)", c5ok && lotCUntouched && lotCSurfaced);
+			log.Add($"  T5 LOT-C book={cUncounted} stillThere={lotCUntouched} inCountedLines={counted5.Contains("ZC-LOT-C")}");
+
+			// ===== T6/T10: counted batch NOT in the system ⇒ created + line flagged + classification rises =====
+			int classBefore = (int)((await integrity.RunAsync(company)).First(c => c.Key == "batches_created_in_count").Actual);
+			string newBn = "ZC-NEW-A";
+			var (c6ok, _, cnt6) = await _stock.PostCountAsync(company, wh, T, "hm7 T6", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, 20m, newBn, T.AddDays(120)) }, "dev");
+			var l6 = cnt6 != null ? await _db.StockCountLines.AsNoTracking().Where(l => l.StockCountId == cnt6.ID && l.BatchNo == newBn).FirstOrDefaultAsync() : null;
+			int classAfter = (int)((await integrity.RunAsync(company)).First(c => c.Key == "batches_created_in_count").Actual);
+			Chk("T6/T10 unregistered batch ⇒ created (BOH=20), line flagged, classification +1", c6ok && await BOH(exp.ID, newBn) == 20m && l6 != null && l6.BatchCreatedInCount && classAfter == classBefore + 1);
+			log.Add($"  T6 BOH(new)={await BOH(exp.ID, newBn)} flagged={l6?.BatchCreatedInCount} classif {classBefore}→{classAfter}");
+
+			// ===== T7/T11: same, WITHOUT expiry ⇒ rejected, ZERO effect (atomic) =====
+			decimal qExpBefore = await Qty(exp.ID);
+			var (c7ok, c7err, _) = await _stock.PostCountAsync(company, wh, T, "hm7 T7", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, 5m, "ZC-NOEXP", null) }, "dev");
+			Chk("T7/T11 unregistered batch WITHOUT expiry ⇒ rejected, zero effect", !c7ok && (c7err ?? "").Contains("صلاحية") && await Qty(exp.ID) == qExpBefore);
+			log.Add($"  T7 ok={c7ok} err='{c7err}' qtyUnchanged={await Qty(exp.ID) == qExpBefore}");
+
+			// ===== T8: WEIGHTED tracked, KG per batch ⇒ fractions preserved =====
+			await Reseed();
+			var (c8ok, _, _) = await _stock.PostCountAsync(company, wh, T, "hm7 T8", new List<CrossBuy.BL.CountLineInput> { CL(wexp.ID, 1.755m, "ZC-WLOT", T.AddDays(45)) }, "dev");
+			decimal wboh = await BOH(wexp.ID, "ZC-WLOT");
+			Chk("T8 weighted KG per batch ⇒ WLOT counted to 1.755 exactly (fractions kept)", c8ok && wboh == 1.755m);
+			log.Add($"  T8 WLOT boh={wboh}");
+
+			// ===== T12: three batches, TWO counted ⇒ adjust only those two, third untouched + surfaced =====
+			await Reseed(); decimal cBook = await BOH(exp.ID, "ZC-LOT-C");
+			var (c12ok, _, cnt12) = await _stock.PostCountAsync(company, wh, T, "hm7 T12", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, await BOH(exp.ID, "ZC-LOT-A") + 1m, "ZC-LOT-A", T.AddDays(10)), CL(exp.ID, await BOH(exp.ID, "ZC-LOT-B") - 1m, "ZC-LOT-B", T.AddDays(60)) }, "dev");
+			var counted12 = cnt12 != null ? await _db.StockCountLines.AsNoTracking().Where(l => l.StockCountId == cnt12.ID).Select(l => l.BatchNo).ToListAsync() : new();
+			Chk("T12 3 batches, 2 counted ⇒ LOT-C untouched + surfaced (not in counted lines)", c12ok && await BOH(exp.ID, "ZC-LOT-C") == cBook && !counted12.Contains("ZC-LOT-C") && cBook > 0m);
+			log.Add($"  T12 LOT-C={cBook} counted=[{string.Join(",", counted12)}]");
+
+			// ===== constants =====
+			var (run, checks) = await integrity.RunAndLogAsync(company, "hm7-count");
+			IntegrityCheck G(string k) => checks.First(c => c.Key == k);
+			Chk("CONST failedCount 0", run.FailedCount == 0);
+			Chk("CONST ar_sub/ap_sub OK · bal_qty_vs_moves OK · batch_no_negative OK", G("ar_sub").Ok && G("ap_sub").Ok && G("bal_qty_vs_moves").Ok && G("batch_no_negative").Ok);
+			Chk("CONST doc_je_status_mismatch 0 new · dbset_tables_exist 0 · writer_coupling counted", G("doc_je_status_mismatch").Ok && G("dbset_tables_exist").Ok && G("writer_coupling").Ok);
+			log.Add($"  CONST failedCount={run.FailedCount} · unbatched_inbound_tracked={G("unbatched_inbound_tracked").Actual} · batches_created_in_count={G("batches_created_in_count").Actual} · bal_value_diff:{G("bal_value_diff").Note}");
+
+			return Ok(new { allPass, failedCount = run.FailedCount, log });
+		}
+
 		// GET /api/dev/apply-preset-guard-test?key=seed123 — HM-1-أ صفر-تكميلي-3. Tests the ApplyPreset activity guard
 		// STRICTLY on throwaway branches it creates (ZZ-GUARD-*), then removes them. Touches NO existing branch.
 		[HttpGet("apply-preset-guard-test")]
