@@ -893,3 +893,15 @@ before the fix and passes after. Full stock-writer regression green (hm4/5/6/16-
 mc-o2c, seed-acc-demo all PASS; the WO path's writer correctly rejects insufficient stock — a clean business rule, its
 manuf test fixture is under-stocked, pre-existing, not HM-D7). Constants: failedCount 0 · ar_sub/ap_sub/bal_qty_vs_moves/
 batch_no_negative/doc_je_status_mismatch/dbset_tables_exist/writer_coupling OK · stock_gl baseline · Scoped.
+
+## HM-D12 (fixed) — manuf tests were not re-runnable; shared MFGT raws drained + stray TrackExpiry
+manuf-test-wo seeded MFGT-R1/R2 ONCE (`if (!AnyAsync)`), never replenishing; every WO drains 2×R1+1×R2 per unit, so the
+raws bled to 6.4 and every MFGT-consuming test 400'd ("insufficient stock") — the SAME pattern as T6 and hm1-b5b (third
+sighting). Sweep found ~10 MFGT-consuming endpoints (manuf-test-wo/wip/wipcheck/routing/scrap/labor/labor-fx/staged/
+partial + mfg-sale-chain-test), ALL relying on that one drained seed. Fix: one shared `EnsureMfgtRawFloorAsync` (fill-to-
+floor at the SAME cost ⇒ moving average stable) called by every consumer. It ALSO repairs a STRAY TrackExpiry/TrackBatch
+flag on MFGT-R1/R2 (the manuf tests never set tracking — corruption from a reused code) that was blocking the unbatched
+opening and would gate FEFO on the WO's component issue. Proven: all 12 manuf tests pass on TWO consecutive runs.
+SIDE EFFECT (a correction, not a regression): `unbatched_inbound_tracked` drops 25→19 — the 6 removed movements were
+MFGT-R1/R2's unbatched inbound while stray-TrackExpiry; repairing the flag removes them. failedCount stays 0. Baseline
+note updated: unbatched_inbound_tracked = 19 (was 25) after the MFGT repair.

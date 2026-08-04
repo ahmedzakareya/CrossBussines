@@ -10316,6 +10316,31 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 		// GET /api/dev/manuf-test-wo?key=seed123&companyId=1
 		// Module 4 4-1: raws + BOM → work order → complete (backflush + labor/overhead) → verify stock, GL & WIP.
+		// HM-D12: fill-to-floor the SHARED manufacturing raws so every MFGT-consuming test is RE-RUNNABLE. A work order
+		// drains 2×MFGT-R1 + 1×MFGT-R2 per unit; a one-time seed drains and the test breaks (the exact pattern behind T6
+		// and hm1-b5b). Top up at the SAME cost so the moving average (⇒ materialCost) stays stable. Used by manuf-test-wo,
+		// manuf-test-wip, manuf-test-wipcheck, mfg-sale-chain-test.
+		private async Task<string?> EnsureMfgtRawFloorAsync(int company, int wh)
+		{
+			async Task<string?> Fill(string code, decimal floor, decimal cost)
+			{
+				var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (it == null) return null;   // raw not created yet (manuf-test-wo creates it)
+				// the MFGT raws are PLAIN components — the manuf tests never set tracking. Repair a STRAY TrackExpiry/TrackBatch
+				// flag (corruption from a reused item code) so the unbatched opening below is accepted and FEFO does not gate the
+				// WO's component issue. Test-fixture repair (MFGT-*), not real data.
+				if (it.TrackExpiry || it.TrackBatch) { it.TrackExpiry = false; it.TrackBatch = false; await _db.SaveChangesAsync(); }
+				var (q, _, _) = await _stock.GetBalanceAsync(company, it.ID, wh);
+				if (q < floor)
+				{
+					var (ok, err, _, _) = await _stock.PostOpeningStockAsync(company, DateTime.UtcNow.AddDays(-1), new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = it.ID, WarehouseId = wh, Qty = floor - q, UnitCost = cost } }, "test");
+					if (!ok) return err;
+				}
+				return null;
+			}
+			return await Fill("MFGT-R1", 100m, 5m) ?? await Fill("MFGT-R2", 50m, 8m);
+		}
+
 		[HttpGet("manuf-test-wo")]
 		public async Task<IActionResult> ManufTestWo([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IStockService stock, string key, int companyId = 1)
 		{
@@ -10334,14 +10359,8 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			}
 			int r1 = await EnsureItem("MFGT-R1", false), r2 = await EnsureItem("MFGT-R2", false), fin = await EnsureItem("MFGT-FIN", true);
 
-			// opening stock for raws (idempotent: only if none)
-			if (!await _db.StockBalances.AnyAsync(b => b.CompanyID == companyId && b.ItemId == r1))
-			{
-				var (ook, oerr, _, _) = await stock.PostOpeningStockAsync(companyId, DateTime.UtcNow.AddDays(-1), new List<CrossBuy.BL.OpeningStockLineInput> {
-					new() { ItemId = r1, WarehouseId = wh.Value, Qty = 1000, UnitCost = 5 },
-					new() { ItemId = r2, WarehouseId = wh.Value, Qty = 500, UnitCost = 8 } }, "test");
-				if (!ook) return BadRequest(new { step = "opening-stock", error = oerr });
-			}
+			// raw stock: FILL-TO-FLOOR (re-runnable — HM-D12), shared with the other MFGT-consuming tests.
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }
 			// BOM: 2×R1 + 1×R2
 			if (!await _db.ItemComponents.AnyAsync(c => c.ParentItemId == fin))
 			{
@@ -10406,13 +10425,8 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			// reuse the manuf-test items; finished good gets a sales price so it can be sold
 			int r1 = await EnsureItem("MFGT-R1", false, null), r2 = await EnsureItem("MFGT-R2", false, null), fin = await EnsureItem("MFGT-FIN", true, 100m);
 
-			if (!await _db.StockBalances.AnyAsync(b => b.CompanyID == company && b.ItemId == r1))
-			{
-				var (ook0, oerr0, _, _) = await _stock.PostOpeningStockAsync(company, DateTime.UtcNow.AddDays(-1), new List<CrossBuy.BL.OpeningStockLineInput> {
-					new() { ItemId = r1, WarehouseId = wh.Value, Qty = 1000, UnitCost = 5 },
-					new() { ItemId = r2, WarehouseId = wh.Value, Qty = 500, UnitCost = 8 } }, "test");
-				if (!ook0) return BadRequest(new { step = "opening", error = oerr0 });
-			}
+			// raw stock: FILL-TO-FLOOR (re-runnable — HM-D12), shared helper (was a one-time seed that drained on re-run).
+			{ var fe = await EnsureMfgtRawFloorAsync(company, wh.Value); if (fe != null) return BadRequest(new { step = "opening", error = fe }); }
 			if (!await _db.ItemComponents.AnyAsync(c => c.ParentItemId == fin))
 			{
 				_db.ItemComponents.Add(new CrossBuy.Models.Context.Inventory.ItemComponent { CompanyID = company, ParentItemId = fin, ComponentItemId = r1, Quantity = 2, SortOrder = 1, CreatedAt = DateTime.UtcNow });
@@ -13129,6 +13143,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first (needs MFGT-FIN + a warehouse)" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 
 			// work center @ 60/hr labor + 30/hr overhead (idempotent)
 			var wc = await _db.ManufWorkCenters.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.Code == "WC-TEST");
@@ -13212,6 +13227,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var r1 = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-R1").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || r1 == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 
 			var r1Comp = await _db.ItemComponents.FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ParentItemId == fin.Value && c.ComponentItemId == r1.Value);
 			if (r1Comp == null) return BadRequest(new { message = "R1 BOM line missing" });
@@ -13240,6 +13256,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 			var usd = await _db.Currencies.AsNoTracking().Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
 			if (usd == null) return BadRequest(new { message = "run seed-multicurrency first (needs USD)" });
 			var whtCode = await _db.TaxCodes.FirstOrDefaultAsync(t => t.CompanyID == companyId && t.Kind == "WHT" && t.IsActive);
@@ -13291,6 +13308,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 			var wipAccId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			if (wipAccId == null) return BadRequest(new { message = "WIP account 1105 missing" });
 
@@ -13323,6 +13341,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var r1 = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-R1").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || r1 == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 			var wipAccId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			if (wipAccId == null) return BadRequest(new { message = "WIP 1105 missing" });
 			async Task<decimal> WipNet() => Math.Round(await _db.JournalEntryLines.AsNoTracking().Where(l => l.AccountId == wipAccId.Value).SumAsync(l => (decimal?)(l.Debit - l.Credit)) ?? 0m, 2);
@@ -13383,6 +13402,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 			var wipId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			var varId = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520109").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			if (wipId == null || varId == null) return BadRequest(new { message = "1105/520109 missing" });
@@ -13428,6 +13448,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 			var acc1105 = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			var accCash = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			if (acc1105 == null || accCash == null) return BadRequest(new { message = "accounts 1105/110101 missing" });
@@ -13488,6 +13509,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
 			var wh = await _db.Warehouses.AsNoTracking().Where(w => w.CompanyID == companyId).Select(w => (int?)w.ID).FirstOrDefaultAsync();
 			if (fin == null || wh == null) return BadRequest(new { message = "run manuf-test-wo first" });
+			{ var fe = await EnsureMfgtRawFloorAsync(companyId, wh.Value); if (fe != null) return BadRequest(new { step = "opening-stock", error = fe }); }   // HM-D12: fill-to-floor (re-runnable)
 
 			async Task<decimal> Net(string code)
 			{

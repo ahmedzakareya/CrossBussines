@@ -142,3 +142,21 @@ re-checked per the standing rule:
   forward, commit IntegrityCheckService via HEAD-base plumbing (our lines only) like SharedResources/CrossDbContext.**
 - Parallel infra added today: `CompanyScopeMiddleware` + `CompanyQueryFilters` global query filter (HM-D59) — deliberately
   EXCLUDES StockBalance (names our UPDLOCK guard). Does not touch the stock writer; only breaks single-shot curl (cookie jar).
+
+---
+
+## Shared-file & review list (raise with the parallel owner) — updated 2026-08-04
+
+**Files BOTH teams now edit (commit OUR lines via HEAD-base plumbing, never a whole-file `git add`):**
+- `CrossDbContext.cs`, `Program.cs`, `SharedResources.*.resx` (long-standing).
+- **`BL/IntegrityCheckService.cs` (NEW).** Every integrity check we built lives here; the parallel Stage-1-B5 edit
+  company-scopes the `barcode_cross_table_dup` raw SQL. A housekeeping commit accidentally staged it once and was amended
+  out. **Any commit touching this file goes through plumbing; any check of ours may be edited from their side — diff before
+  trusting a check's text.**
+
+**To review with the parallel owner:**
+1. **HM-D58** — `RecordAsync` hard-requires a signed-in BusinessContext (no company-1 fallback); any NEW background path
+   that emits an event throws. Monitor background paths.
+2. **HM-D60** — `FilterCompanyId => CompanyId ?? 0`: an unresolved scope returns a silent empty grid, not an exception —
+   the fallback-not-exception anti-pattern (like `factor ?? 1`).
+3. **IntegrityCheckService co-ownership** — agree a boundary so our checks and their scoping edits stop colliding.

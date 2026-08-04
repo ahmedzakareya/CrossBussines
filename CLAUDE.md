@@ -15,6 +15,12 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
 - **Currency-aware rounding, explicit `AwayFromZero`** via `ICurrencyRounding`. Never bake a 2-decimal assumption.
   A **retail** price step (nearest 5/10 fils) is a *separate* commercial rounding — never routed through `ICurrencyRounding`.
 - **No test leaves an `inv-test-integrity` deviation.** `failedCount` stays 0; new classifications are *counted*, not failing.
+- **Every test must be RE-RUNNABLE — no drain, no collision.** A test that consumes stock or uses sequential numbers/fixed
+  codes must survive repeated runs: **fill-to-floor** (`if (balance < floor) PostOpeningStock`), a **fixed `ZZ`/`MFGT`
+  entity reused idempotently, a **unique-per-run** name (asserted by DELTA), or a **full rollback** (owner tx). A one-time
+  `if (!AnyAsync) seed` drains; a fixed created-name asserted as "new" collides. We have found this THREE times (T6 batch
+  name · hm1-b5b receipt numbers · HM-D12 manuf raws) — sweep for it, don't rediscover it a fourth. (Baseline note:
+  `unbatched_inbound_tracked` = 19 after the HM-D12 MFGT stray-TrackExpiry repair, was 25.)
 - **Every user-facing string via Resources** (or the file's own convention — e.g. `PricingService` errors are hardcoded Arabic).
   - **Declared exception (HM-6):** `StockService` and `ItemService` carry **no localizer by design** — every message in
     them is hardcoded Arabic (file convention). New messages there follow that convention. Injecting an `IStringLocalizer`
