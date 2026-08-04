@@ -301,6 +301,7 @@ namespace CrossBuy.Models.Context
         public DbSet<Pos.ActivityPresetCapability> ActivityPresetCapabilities { get; set; }
         public DbSet<Pos.BranchCapability> BranchCapabilities { get; set; }
         public DbSet<Pos.BranchPosSetting> BranchPosSettings { get; set; }
+        public DbSet<Loyalty.PointsMovement> PointsMovements { get; set; }   // HM-9 slice 2: loyalty points ledger (derived balance)
         public DbSet<Pos.DiningArea> DiningAreas { get; set; }
         public DbSet<Pos.KitchenStation> KitchenStations { get; set; }
         public DbSet<Pos.RestaurantTable> RestaurantTables { get; set; }

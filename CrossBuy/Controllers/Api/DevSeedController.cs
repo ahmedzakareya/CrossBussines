@@ -223,7 +223,7 @@ namespace CrossBuy.Controllers.Api
 			// 2) capabilities — hyper defaults (direct upsert; deterministic, no preset coupling)
 			var defaults = new (string key, bool on)[]
 			{
-				("BarcodeMulti", true), ("CashDrawer", true), ("SuspendResume", true), ("PriceCheck", true),
+				("BarcodeMulti", true), ("CashDrawer", true), ("SuspendResume", true), ("PriceCheck", true), ("CustomerIdentity", true),
 				("Weight", false), ("ExpiryControl", false), ("Promotions", false), ("Loyalty", false), ("ShelfLabels", false)
 			};
 			var existingCaps = await _db.BranchCapabilities.Where(c => c.BranchId == bid).ToListAsync();
@@ -1564,10 +1564,10 @@ namespace CrossBuy.Controllers.Api
 			int otherBranch = await _db.Branches.Where(b => b.CompanyID == company && b.ID != bid).Select(b => b.ID).FirstOrDefaultAsync();
 			var walkIn = await _db.Customers.FirstAsync(c => c.CompanyID == company && c.NameEn == "POS Walk-in");
 
-			// capability "Loyalty" ON for branch 17 (idempotent) — its first real consumer
-			if (!await _db.BranchCapabilities.AnyAsync(x => x.BranchId == bid && x.CapabilityKey == "Loyalty"))
-			{ _db.BranchCapabilities.Add(new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = bid, CapabilityKey = "Loyalty", Enabled = true }); await _db.SaveChangesAsync(); }
-			else { var cap = await _db.BranchCapabilities.FirstAsync(x => x.BranchId == bid && x.CapabilityKey == "Loyalty"); if (!cap.Enabled) { cap.Enabled = true; await _db.SaveChangesAsync(); } }
+			// capability "CustomerIdentity" ON for branch 17 (idempotent) — slice-1 identity gates on THIS key now (split from Loyalty)
+			if (!await _db.BranchCapabilities.AnyAsync(x => x.BranchId == bid && x.CapabilityKey == "CustomerIdentity"))
+			{ _db.BranchCapabilities.Add(new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = bid, CapabilityKey = "CustomerIdentity", Enabled = true }); await _db.SaveChangesAsync(); }
+			else { var cap = await _db.BranchCapabilities.FirstAsync(x => x.BranchId == bid && x.CapabilityKey == "CustomerIdentity"); if (!cap.Enabled) { cap.Enabled = true; await _db.SaveChangesAsync(); } }
 
 			// real customer (phone = the lookup key) + a fresh quick-add customer, both idempotent by NameEn
 			var real = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.NameEn == "ZZ-HM9-REAL")
@@ -1655,9 +1655,9 @@ namespace CrossBuy.Controllers.Api
 			log.Add($"  T5 linkAfterPay ok={l5ok} err='{l5err}'");
 
 			// ===== T6: capability disabled on a branch without config ⇒ not enabled =====
-			bool capThis = await _posSetup.IsCapabilityEnabledAsync(bid, "Loyalty");
-			bool capOther = otherBranch != 0 && await _posSetup.IsCapabilityEnabledAsync(otherBranch, "Loyalty");
-			Chk("T6 Loyalty capability ON (branch 17) · not enabled on an un-configured branch", capThis && !capOther);
+			bool capThis = await _posSetup.IsCapabilityEnabledAsync(bid, "CustomerIdentity");
+			bool capOther = otherBranch != 0 && await _posSetup.IsCapabilityEnabledAsync(otherBranch, "CustomerIdentity");
+			Chk("T6 CustomerIdentity capability ON (branch 17) · not enabled on an un-configured branch", capThis && !capOther);
 			log.Add($"  T6 branch17={capThis} otherBranch({otherBranch})={capOther}");
 
 			// ===== T7: official invoice on a real linked customer ⇒ name+tax from the CUSTOMER, no override =====
@@ -1705,6 +1705,208 @@ namespace CrossBuy.Controllers.Api
 			foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == term!.ID && s.Status == "Open").ToListAsync()) { s.Status = "Closed"; s.ClosedAt = DateTime.UtcNow; }
 			await _db.SaveChangesAsync();
 
+			return Ok(new { allPass, failedCount = run.FailedCount, log });
+		}
+
+		// GET /api/dev/hm9-s2-accept?key=seed123 — HM-9 slice 2 (loyalty EARN) acceptance. Requires hyper-hm0/hm1-seed.
+		// Reuses the REAL POS pay path; points are a MEMO ledger (no GL). Balances are asserted as DELTAS (re-runnable despite
+		// accumulation). Proves: earn = floor(eligibleNet × rate) once per invoice, zero GL effect; capability gate; the
+		// CustomerIdentity/Loyalty split; branch-over-company rate; category eligibility + item override; net (not gross);
+		// explicit floor; reverse-on-return (full + partial, proportional) and on paid-cancel; derived balance = Σ movements.
+		[HttpGet("hm9-s2-accept")]
+		public async Task<IActionResult> Hm9S2Accept(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity, [FromServices] CrossBuy.BL.IStockService stock)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var T = DateTime.Today;
+
+			int bid = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstOrDefaultAsync();
+			var demo = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001");
+			if (bid == 0 || demo == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1-seed first" });
+			var bps = await _db.BranchPosSettings.FirstOrDefaultAsync(s => s.BranchId == bid);
+			if (bps?.DefaultPriceListId == null) return BadRequest(new { message = "branch 17 has no price list (run hm1-seed)" });
+			int plist = bps.DefaultPriceListId.Value;
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int wh = bps.DefaultSalesWarehouseId ?? await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			int hcat = demo.ItemCategoryId;   // HM-DEMO-001's category (eligible by default)
+			var walkIn = await _db.Customers.FirstAsync(c => c.CompanyID == company && c.NameEn == "POS Walk-in");
+			var real = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.NameEn == "ZZ-HM9-REAL")
+					   ?? await _ar.CreateCustomerAsync(company, "زبون ولاء للاختبار", "ZZ-HM9-REAL", "TAX-HM9-777", null);
+
+			// capabilities: CustomerIdentity + Loyalty ON for branch 17 (idempotent)
+			async Task Cap(string k, bool on)
+			{
+				var c = await _db.BranchCapabilities.FirstOrDefaultAsync(x => x.BranchId == bid && x.CapabilityKey == k);
+				if (c == null) _db.BranchCapabilities.Add(new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = bid, CapabilityKey = k, Enabled = on });
+				else c.Enabled = on;
+				await _db.SaveChangesAsync();
+			}
+			await Cap("CustomerIdentity", true); await Cap("Loyalty", true);
+
+			// rate: branch 17 override = 1 point/KWD; company default = 0.5 (for the override test)
+			bps.LoyaltyPointsPerCurrencyUnit = 1.0m; await _db.SaveChangesAsync();
+			var co = await _db.Companies.FirstAsync(x => x.CompanyID == company);
+			co.LoyaltyPointsPerCurrencyUnit = 0.5m; await _db.SaveChangesAsync();
+
+			// ineligible category + fixtures
+			var noCat = await _db.ItemCategories.FirstOrDefaultAsync(c => c.CompanyID == company && c.Code == "ZZ-LOY-NO");
+			if (noCat == null) { noCat = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Code = "ZZ-LOY-NO", Name = "ZZ ineligible", NameEn = "ZZ ineligible", LoyaltyEligible = false, IsActive = true }; _db.ItemCategories.Add(noCat); await _db.SaveChangesAsync(); }
+			else { noCat.LoyaltyEligible = false; await _db.SaveChangesAsync(); }
+			// give the ineligible category the SAME GL mapping as the eligible one so its items can be opening-stocked + sold (COGS)
+			{ var hc = await _db.ItemCategories.AsNoTracking().FirstAsync(c => c.ID == hcat); var noc = await _db.ItemCategories.FirstAsync(c => c.ID == noCat.ID);
+			  noc.InventoryAccountId = hc.InventoryAccountId; noc.CogsAccountId = hc.CogsAccountId; noc.AdjustmentAccountId = hc.AdjustmentAccountId; noc.GrniAccountId = hc.GrniAccountId; noc.DefaultCostingMethod = hc.DefaultCostingMethod ?? "Average"; await _db.SaveChangesAsync(); }
+
+			async Task<int> EnsureItem(string code, int catId, decimal price, bool? loy)
+			{
+				var it = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == code);
+				if (it == null) { it = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = code, Barcode = "ZZBC-" + code, Name = code, NameEn = code, ItemCategoryId = catId, ItemType = "Stockable", BaseUoMId = pcs, IsActive = true, CostingMethod = "Average", LoyaltyEligible = loy, CreatedAt = DateTime.UtcNow }; _db.Items.Add(it); await _db.SaveChangesAsync(); }
+				else { it.ItemCategoryId = catId; it.LoyaltyEligible = loy; it.IsActive = true; await _db.SaveChangesAsync(); }
+				var pl = await _db.PriceListLines.FirstOrDefaultAsync(l => l.PriceListId == plist && l.ItemId == it.ID);
+				if (pl == null) { _db.PriceListLines.Add(new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = plist, ItemId = it.ID, MinQty = 1m, UnitPrice = price, DiscountPercent = 0m, PricingMode = "Fixed" }); await _db.SaveChangesAsync(); }
+				else { pl.UnitPrice = price; pl.DiscountPercent = 0m; await _db.SaveChangesAsync(); }
+				var (bq, _q1, _q2) = await stock.GetBalanceAsync(company, it.ID, wh);
+				if (bq < 300m) await stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = it.ID, WarehouseId = wh, Qty = 300m - bq, UnitCost = 0.5m } }, null);
+				return it.ID;
+			}
+			int elig = await EnsureItem("ZZ-LOY-E", hcat, 2.000m, null);        // eligible (inherits eligible category)
+			int inel = await EnsureItem("ZZ-LOY-X", noCat.ID, 2.000m, null);    // ineligible (inherits ineligible category)
+			int ovr = await EnsureItem("ZZ-LOY-OVR", noCat.ID, 2.000m, true);   // ineligible category, item override = eligible
+			int frac = await EnsureItem("ZZ-LOY-F", hcat, 1.290m, null);        // eligible, for the floor test
+			// ensure HM-DEMO-001 stock
+			var (dq, _d1, _d2) = await stock.GetBalanceAsync(company, demo.ID, wh);
+			if (dq < 300m) await stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = demo.ID, WarehouseId = wh, Qty = 300m - dq, UnitCost = 0.5m } }, null);
+
+			// shift
+			int drawer = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid && t.Code == "ZZ-HM9S2-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = bid, Code = "ZZ-HM9S2-T", Name = "HM9s2", CashAccountId = drawer, ReceiptPrefix = "ZZS2-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await _posSetup.GetOpenShiftAsync(term.ID);
+
+			async Task<long> Bal() => await CrossBuy.BL.LoyaltyPointsHelper.GetBalanceAsync(_db, company, real.ID);
+			async Task<(int invId, int orderId, decimal grand)> Sell(List<(int itemId, decimal qty)> items, int? link)
+			{
+				var (_o1, _o2, oid) = await _posOrders.CreateOrderAsync(company, bid, "Takeaway", null, null, term!.ID, shift!.ID);
+				foreach (var it in items) await _posOrders.AddLineAsync(company, oid, it.itemId, it.qty);
+				if (link != null) await _posOrders.SetOrderCustomerAsync(company, oid, link.Value);
+				var (ok, err, invId) = await _posOrders.PayAsync(company, oid, "Cash", 1);
+				if (!ok || invId == null) { log.Add("  sell failed: " + err); return (0, oid, 0m); }
+				var g = await _db.SalesInvoices.AsNoTracking().Where(i => i.ID == invId.Value).Select(i => i.GrandTotal).FirstAsync();
+				return (invId.Value, oid, g);
+			}
+			long Floor(decimal net, decimal rate) => (long)Math.Floor(net * rate);
+
+			// ===== T1: eligible sale, Loyalty ON ⇒ points = floor(net × rate) · one movement linked to invoice · zero GL =====
+			long b0 = await Bal();
+			var s1 = await Sell(new() { (demo.ID, 20m) }, real.ID);   // 20 × 0.750 = 15.000 net · rate 1 ⇒ 15
+			long d1 = await Bal() - b0;
+			var mv1 = await _db.PointsMovements.AsNoTracking().Where(m => m.SourceInvoiceId == s1.invId).ToListAsync();
+			bool jeBal = false; { var jid = await _db.SalesInvoices.AsNoTracking().Where(i => i.ID == s1.invId).Select(i => i.JournalEntryId).FirstAsync();
+				if (jid != null) { var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == jid.Value).ToListAsync(); jeBal = Math.Round(jl.Sum(x => x.Debit) - jl.Sum(x => x.Credit), 2) == 0m; } }
+			Chk("T1 earn 15 = floor(15.000×1) · ONE Earn movement linked to the invoice · sale JE balanced (points are memo, no GL)",
+				d1 == 15 && mv1.Count == 1 && mv1[0].Kind == "Earn" && mv1[0].Points == 15 && s1.grand == 15.000m && jeBal);
+			log.Add($"  T1 delta={d1} movements={mv1.Count} pts={(mv1.Count > 0 ? mv1[0].Points : 0)} grand={s1.grand} jeBalanced={jeBal}");
+
+			// ===== T2/T3: Loyalty OFF ⇒ identity still works, NO points (the split) =====
+			await Cap("Loyalty", false);
+			long b23 = await Bal();
+			var s23 = await Sell(new() { (demo.ID, 20m) }, real.ID);
+			long d23 = await Bal() - b23;
+			int? s23cust = await _db.SalesInvoices.AsNoTracking().Where(i => i.ID == s23.invId).Select(i => (int?)i.CustomerId).FirstAsync();
+			Chk("T2 Loyalty OFF ⇒ NO points movement · T3 identity STILL works (invoice to the real customer) — the split", d23 == 0 && s23cust == real.ID);
+			log.Add($"  T2/T3 delta={d23} (expect 0) invoiceCustomer={s23cust}(real={real.ID})");
+			await Cap("Loyalty", true);
+
+			// ===== T4: rate resolution — branch OVERRIDE wins; without it ⇒ company DEFAULT (tested directly, no sale) =====
+			bps.LoyaltyPointsPerCurrencyUnit = 1.0m; await _db.SaveChangesAsync();
+			decimal rBranch = await CrossBuy.BL.LoyaltyPointsHelper.ResolveRateAsync(_db, company, bid);   // branch 1 wins over company 0.5
+			bps.LoyaltyPointsPerCurrencyUnit = null; await _db.SaveChangesAsync();
+			decimal rCompany = await CrossBuy.BL.LoyaltyPointsHelper.ResolveRateAsync(_db, company, bid);  // no override ⇒ company 0.5
+			bps.LoyaltyPointsPerCurrencyUnit = 1.0m; await _db.SaveChangesAsync();                          // restore for the rest
+			Chk("T4 branch override rate=1 wins over company · without override ⇒ company default 0.5", rBranch == 1.0m && rCompany == 0.5m);
+			log.Add($"  T4 branchOverride={rBranch} companyDefault={rCompany}");
+
+			// ===== T5: mixed basket ⇒ points on the ELIGIBLE line only =====
+			long b5 = await Bal(); var s5 = await Sell(new() { (demo.ID, 4m), (inel, 2m) }, real.ID); long d5 = await Bal() - b5;
+			// eligible net = 4×0.750 = 3.000 ⇒ 3 ; ineligible 2×2.000 = 4.000 earns nothing
+			Chk("T5 mixed basket ⇒ 3 = floor(3.000×1) on the eligible line only (ineligible 4.000 earns nothing)", d5 == 3);
+			log.Add($"  T5 delta={d5} (eligible 3.000×1=3 · ineligible 4.000 excluded) grand={s5.grand}");
+
+			// ===== T6: item override eligible inside an ineligible category ⇒ earns =====
+			long b6 = await Bal(); var s6 = await Sell(new() { (ovr, 5m) }, real.ID); long d6 = await Bal() - b6;   // 5×2.000=10.000 ⇒ 10
+			Chk("T6 item override (LoyaltyEligible=true) in an ineligible category ⇒ earns 10", d6 == 10);
+			log.Add($"  T6 delta={d6} (5×2.000=10.000×1=10)");
+
+			// ===== T7: promo-discounted sale ⇒ points on NET, not gross =====
+			await Cap("Promotions", true);
+			var promo = await _db.Promotions.FirstOrDefaultAsync(p => p.CompanyID == company && p.Code == "ZZ-LOY-PROMO");
+			// Percent (currency-agnostic; an Amount promo is in FUNCTIONAL currency and would convert to a KWD pittance)
+			if (promo == null) { _db.Promotions.Add(new CrossBuy.Models.Context.Inventory.Promotion { CompanyID = company, Code = "ZZ-LOY-PROMO", Name = "ZZ promo", NameEn = "ZZ promo", DiscountType = "Percent", Value = 20m, ItemId = demo.ID, MinQty = 1m, Priority = 1, ValidFrom = T.AddDays(-1), ValidTo = T.AddDays(1), IsActive = true, CreatedAt = DateTime.UtcNow }); await _db.SaveChangesAsync(); }
+			else { promo.DiscountType = "Percent"; promo.Value = 20m; promo.ItemId = demo.ID; promo.ValidFrom = T.AddDays(-1); promo.ValidTo = T.AddDays(1); promo.IsActive = true; await _db.SaveChangesAsync(); }
+			long b7 = await Bal(); var s7 = await Sell(new() { (demo.ID, 10m) }, real.ID); long d7 = await Bal() - b7;
+			// gross 10×0.750=7.500 (⇒7) ; net after 20% promo = 10×0.600 = 6.000 ⇒ 6
+			Chk("T7 promo sale ⇒ points on NET 6.000 (=floor 6), NOT gross 7.500 (would be 7)", d7 == 6 && s7.grand == 6.000m);
+			log.Add($"  T7 delta={d7} netGrand={s7.grand} (gross 7.500 → net 6.000 after 20%) grossPoints=7 netPoints=6");
+			await Cap("Promotions", false);
+
+			// ===== T8: fractional points ⇒ explicit floor (12.9 ⇒ 12, not 13) =====
+			long b8 = await Bal(); var s8 = await Sell(new() { (frac, 10m) }, real.ID); long d8 = await Bal() - b8;   // 10×1.290=12.900 ⇒ floor 12
+			Chk("T8 net 12.900 × 1 = 12.9 ⇒ floor 12 (NOT rounded to 13)", d8 == 12 && Floor(12.900m, 1m) == 12);
+			log.Add($"  T8 delta={d8} (12.900 ⇒ floor 12)");
+
+			// ===== T9: FULL return ⇒ negative movement reverses · derived per-invoice balance ⇒ 0 =====
+			long b9 = await Bal(); var s9 = await Sell(new() { (demo.ID, 20m) }, real.ID); long earn9 = await Bal() - b9;   // 15
+			var lines9 = await _db.PosOrderLines.AsNoTracking().Where(l => l.OrderId == s9.orderId).Select(l => new { l.ID, l.Qty }).ToListAsync();
+			var (r9ok, r9err, r9id) = await _posOrders.ReturnOrderLinesAsync(company, s9.orderId, lines9.Select(l => new CrossBuy.BL.SplitAllocation { LineId = l.ID, Qty = l.Qty }).ToList(), 1);
+			long net9 = await _db.PointsMovements.AsNoTracking().Where(m => m.SourceInvoiceId == s9.invId).SumAsync(m => (long?)m.Points) ?? 0;
+			Chk("T9 full return ⇒ reversal of −15 · per-invoice net points = 0 (reverse-never-delete)", r9ok && earn9 == 15 && net9 == 0);
+			log.Add($"  T9 earn={earn9} returnOk={r9ok} perInvoiceNet={net9} err='{r9err}'");
+
+			// ===== T10: PARTIAL return ⇒ proportional reversal =====
+			long b10 = await Bal(); var s10 = await Sell(new() { (demo.ID, 20m) }, real.ID); long earn10 = await Bal() - b10;   // 15
+			var lines10 = await _db.PosOrderLines.AsNoTracking().Where(l => l.OrderId == s10.orderId).Select(l => new { l.ID, l.Qty }).ToListAsync();
+			var half = lines10.Select(l => new CrossBuy.BL.SplitAllocation { LineId = l.ID, Qty = l.Qty / 2m }).ToList();   // return qty 10 of 20
+			var (r10ok, _r10e, _r10id) = await _posOrders.ReturnOrderLinesAsync(company, s10.orderId, half, 1);
+			long rev10 = -(await _db.PointsMovements.AsNoTracking().Where(m => m.SourceInvoiceId == s10.invId && m.Points < 0).SumAsync(m => (long?)m.Points) ?? 0);
+			// returned net = 10×0.750 = 7.500 · saleNet 15.000 · reversal = floor(15 × 7.5/15) = floor(7.5) = 7
+			Chk("T10 partial return (half) ⇒ proportional reversal 7 = floor(15 × 7.500/15.000)", r10ok && earn10 == 15 && rev10 == 7);
+			log.Add($"  T10 earn={earn10} reversed={rev10} (returned 7.500/15.000 ⇒ floor(15×0.5)=7)");
+
+			// ===== T11: cancel a PAID order ⇒ full reverse of the earn =====
+			long b11 = await Bal(); var s11 = await Sell(new() { (demo.ID, 20m) }, real.ID); long earn11 = await Bal() - b11;   // 15
+			var (v11ok, v11err) = await _posOrders.VoidPaidOrderAsync(company, s11.orderId, 1);
+			long net11 = await _db.PointsMovements.AsNoTracking().Where(m => m.SourceInvoiceId == s11.invId).SumAsync(m => (long?)m.Points) ?? 0;
+			Chk("T11 cancel paid order ⇒ earn fully reversed · per-invoice net points = 0", v11ok && earn11 == 15 && net11 == 0);
+			log.Add($"  T11 earn={earn11} voidOk={v11ok} perInvoiceNet={net11} err='{v11err}'");
+
+			// ===== T12: walk-in sale (no linked customer) ⇒ NO points =====
+			long wb0 = await CrossBuy.BL.LoyaltyPointsHelper.GetBalanceAsync(_db, company, walkIn.ID);
+			var s12 = await Sell(new() { (demo.ID, 20m) }, null);   // no link ⇒ walk-in
+			long wd = await CrossBuy.BL.LoyaltyPointsHelper.GetBalanceAsync(_db, company, walkIn.ID) - wb0;
+			int mv12 = await _db.PointsMovements.AsNoTracking().CountAsync(m => m.SourceInvoiceId == s12.invId);
+			Chk("T12 walk-in sale (no identified customer) ⇒ no points at all", wd == 0 && mv12 == 0);
+			log.Add($"  T12 walkInDelta={wd} movements={mv12}");
+
+			// ===== T13: derived balance = Σ signed movements (prove by query, not by a stored column) =====
+			long helperBal = await Bal();
+			long rawSum = await _db.PointsMovements.AsNoTracking().Where(m => m.CompanyID == company && m.CustomerId == real.ID).SumAsync(m => (long?)m.Points) ?? 0;
+			Chk("T13 derived balance == Σ signed movements (no stored balance column)", helperBal == rawSum);
+			log.Add($"  T13 helperBalance={helperBal} Σmovements={rawSum}");
+
+			// ===== T14: usual invariants + doc_je_status_mismatch = 0 (points add NO GL) =====
+			var (run, checks) = await integrity.RunAndLogAsync(company, "hm9-s2-accept");
+			var arSub = checks.First(c => c.Key == "ar_sub"); var apSub = checks.First(c => c.Key == "ap_sub");
+			var stockGl = checks.First(c => c.Key == "stock_gl"); var docJe = checks.First(c => c.Key == "doc_je_status_mismatch");
+			var wc = checks.First(c => c.Key == "writer_coupling"); var dbset = checks.First(c => c.Key == "dbset_tables_exist");
+			Chk("T14 failedCount 0 · ar_sub · ap_sub · doc_je_status_mismatch · writer_coupling · dbset all OK (points are memo)",
+				run.FailedCount == 0 && arSub.Ok && apSub.Ok && docJe.Ok && wc.Ok && dbset.Ok);
+			log.Add($"  T14 failedCount={run.FailedCount} ar_sub={arSub.Ok} ap_sub={apSub.Ok} doc_je_status_mismatch={docJe.Ok} stock_gl={stockGl.Ok}(structural) writer_coupling={wc.Ok} dbset={dbset.Ok}");
+
+			foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == term!.ID && s.Status == "Open").ToListAsync()) { s.Status = "Closed"; s.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
 			return Ok(new { allPass, failedCount = run.FailedCount, log });
 		}
 

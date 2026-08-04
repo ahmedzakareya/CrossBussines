@@ -52,6 +52,9 @@ namespace CrossBuy.Models.Context.Pos
 		public decimal? DefaultDeliveryFee { get; set; }   // fallback when a zone has no fee / no zone chosen
 		public int? DeliveryRevenueAccountId { get; set; } // GL account for delivery income (fallback = sales revenue)
 		public bool DeliveryTaxExempt { get; set; } = false;
+		// HM-9 slice 2: loyalty earn rate OVERRIDE for this branch (points per document-currency unit on net). Nullable →
+		// null means INHERIT the company default (Companies.LoyaltyPointsPerCurrencyUnit). Data, not code.
+		public decimal? LoyaltyPointsPerCurrencyUnit { get; set; }
 	}
 
 	// A dining hall / zone. A branch has one or more.

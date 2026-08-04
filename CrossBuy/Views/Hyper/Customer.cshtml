@@ -30,6 +30,13 @@
                             </div>
                             <span class="badge badge-light-success fs-7">@SR["Linked to the order"]</span>
                         </div>
+                        @if ((ViewBag.LoyaltyOn as bool? ?? false))
+                        {
+                            <div class="d-flex align-items-center justify-content-between border border-dashed rounded p-3 mb-6">
+                                <span class="fs-6 text-muted">@SR["Points balance"]</span>
+                                <span class="fs-3 fw-bolder text-primary">@(ViewBag.Balance ?? 0L)</span>
+                            </div>
+                        }
                     }
 
                     <label class="fw-semibold fs-6 text-muted mb-2">@SR["Find a customer by phone"]</label>

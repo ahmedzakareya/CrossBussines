@@ -1169,6 +1169,7 @@ namespace CrossBuy.BL
 			if (terminal != null) o.ReceiptNo = await AllocateReceiptNoAsync(terminal.ID);
 			o.Status = "Paid"; o.InvoiceId = inv.ID; o.ReceiptId = receiptId; o.ClosedAt = DateTime.UtcNow; o.CashierUserId = userId;
 			await _db.SaveChangesAsync();
+			await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
 			await tx.CommitAsync();
 			return (true, null, inv.ID);
 		}
@@ -1263,6 +1264,7 @@ namespace CrossBuy.BL
 			if (terminal != null) o.ReceiptNo = await AllocateReceiptNoAsync(terminal.ID);
 			o.Status = "Paid"; o.InvoiceId = inv.ID; o.ReceiptId = receiptId; o.ClosedAt = DateTime.UtcNow; o.CashierUserId = userId;
 			await _db.SaveChangesAsync();
+			await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
 			await tx.CommitAsync();
 			return (true, null, inv.ID);
 		}
@@ -1374,6 +1376,8 @@ namespace CrossBuy.BL
 			if (terminal != null) o.ReceiptNo = await AllocateReceiptNoAsync(terminal.ID);
 			o.Status = "Paid"; o.InvoiceId = invoiceIds.First(); o.ClosedAt = DateTime.UtcNow; o.CashierUserId = userId;
 			await _db.SaveChangesAsync();
+			foreach (var iid in invoiceIds)   // HM-9 s2: earn per split invoice (guarded no-op)
+				await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, iid, o.CustomerId ?? 0, userId);
 			await tx.CommitAsync();
 			return (true, null, invoiceIds);
 		}
@@ -1442,6 +1446,7 @@ namespace CrossBuy.BL
 				o.TipJournalEntryId = null; o.TipAmount = 0m;
 			}
 
+			await CrossBuy.BL.LoyaltyPointsHelper.ReverseAllForInvoiceAsync(_db, companyId, o.InvoiceId ?? 0, userId);   // HM-9 s2: reverse the earn on a paid-order cancel
 			o.Status = "Voided"; o.ClosedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
 			await tx.CommitAsync();
@@ -1536,6 +1541,7 @@ namespace CrossBuy.BL
 				refundReceipt.ReceiptNo = $"RF-{DateTime.Today:yyyy}-{refundReceipt.ID:D5}";
 				await _db.SaveChangesAsync();
 			}
+			await CrossBuy.BL.LoyaltyPointsHelper.ReverseForSaleUndoAsync(_db, companyId, ret.ID, "ReturnReversal", userId);   // HM-9 s2: reverse the earn proportionally to the returned eligible net
 			return (true, null, ret.ID);
 		}
 

@@ -29,6 +29,10 @@ namespace CrossBuy.Models.Context.Inventory
 		public int? AdjustmentAccountId { get; set; }
 		public int? GrniAccountId { get; set; }
 		public string? DefaultCostingMethod { get; set; }   // Moving / FIFO
+		// HM-9 slice 2: does a sale of items in this category EARN loyalty points? Default true. Exclusions (tobacco, gift/
+		// top-up cards, services) are set at the CATEGORY level (retail excludes whole categories, not thousands of items).
+		// An item may override this via Item.LoyaltyEligible (null there = inherit this flag). Data, not code.
+		public bool LoyaltyEligible { get; set; } = true;
 		public bool IsActive { get; set; } = true;
 		public string? CreatedBy { get; set; }
 		public DateTime? CreatedAt { get; set; }
@@ -73,6 +77,7 @@ namespace CrossBuy.Models.Context.Inventory
 		public string? ItemEgsCode { get; set; }
 		public decimal? SalesPrice { get; set; }
 		public decimal? MinMarginPct { get; set; }           // pricing 2A: per-item margin floor override (null → use InventorySettings)
+		public bool? LoyaltyEligible { get; set; }           // HM-9 slice 2: earn override; null = INHERIT the category's flag
 		public decimal? OpeningCost { get; set; }
 		public string? ImagePath { get; set; }
 		public string? QuickCode { get; set; }                // POS quick/PLU code for fast keyboard entry (nullable, optional, unique per company)

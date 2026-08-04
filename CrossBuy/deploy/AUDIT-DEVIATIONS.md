@@ -1020,6 +1020,9 @@ the app booted, acceptance ran, then the line was restored verbatim. `Program.cs
 it for HM-9). Declared here as required by the build-freshness rule: the acceptance binary differed from the parallel tree ONLY by
 that disabled parallel diagnostic (a startup permission-scope check that touches no GL/stock/POS path), so no part of OUR slice-1
 surface was left unverified.
+**Characterization for the review list: this is the FOURTH movement of the floor in two phases — broke the build twice
+(HM-D44/HM-D52), coupled into a GL writer (HM-D53, `ReverseAsync`→`RecordAsync`), and now broke boot (HM-D61) — and EVERY
+one was discovered by a failure mid-work, never by coordination.** The pattern, not any single break, is the item to raise.
 
 ### Acceptance — api/dev/hm9-s1-accept (11/11 PASS, allPass:true, failedCount=0, idempotent over 3 runs; cookie-jar)
 Reuses the REAL POS pay path (CreateOrder→AddLine→[link]→Pay) with fill-to-floor stock; every number read from a NEW DB query.
@@ -1031,3 +1034,68 @@ real customer (9045, tax TAX-HM9-777) · override null; T8 taxed 14% invoice to 
 on tax>0; T10 re-link before pay → the LAST customer (9046) is invoiced; T11 link then void → order Void · no invoice · no
 anomalous posting; T9 failedCount=0 · ar_sub · ap_sub · doc_je_status_mismatch · writer_coupling · dbset all OK (stock_gl is the
 structural baseline check, excluded from failedCount).
+
+## HM-9 slice 2 (built) — loyalty points EARN (memo ledger, no GL) + the CustomerIdentity/Loyalty capability split
+Points EARN on an identified sale. The balance is DERIVED (Σ signed `PointsMovements.Points`) — NO stored-balance column,
+mirroring HM-6 (batch on-hand from movements) and deliberately avoiding the stored-balance lost update we fought in #5173 /
+HM-D7. Points are a MEMO: no GL, no stock — `LoyaltyPointsHelper` writes ONLY `PointsMovements`, so it does not touch the two
+writers. Earn = `Math.Floor(eligibleNet × rate)` — an EXPLICIT floor on a COUNT, deliberately NOT routed through
+`ICurrencyRounding` (that is money rounding; this mirrors the separate retail fils-step). Guarded no-op unless the branch's
+`"Loyalty"` capability is ON and the sale carries a real (non-walk-in) customer; earn is idempotent (once per invoice).
+
+**Feasibility judgment (recorded): redemption is a MEDIUM-LARGE slice, not small** — it modifies the settlement/pay POSTING
+(Dr points-liability instead of cash, via the GL writer), adds a concurrency-guarded balance decrement, a new `21xxxx` account,
+the HM-8 invoice payment section, register UI, and return/void reversal. Therefore slice 2 ships EARN ALONE with the `"Loyalty"`
+capability kept OFF in production (seed default) until redemption lands — "full feature or nothing IN PRODUCTION": the code is
+dormant and tested, enabled only when earn+redeem are both ready.
+
+**Rate** = points per DOCUMENT-currency unit on NET (decision: not a percentage — "a point per dinar" is what the cashier and
+customer understand). Resolution: `BranchPosSetting.LoyaltyPointsPerCurrencyUnit` (branch override) → else
+`Companies.LoyaltyPointsPerCurrencyUnit` (company default) → else 0. Data, not code (the end-customer sets it).
+
+**Basis** = the NET line total (post-discount `LineTotal`, what actually reaches the ledger and what the customer paid).
+Promo-discounted lines DO earn, on the discounted net (proven T7: 20% promo ⇒ net 6.000 ⇒ 6 points, not gross 7 — and the
+technical reason redemption must be a liability not a discount stands: the single `DiscountAmount` scalar is owned by the promo).
+
+**Eligibility** at the CATEGORY level (decision: not per-item — tobacco/top-up-cards/services are whole categories; a per-item
+flag would mean tagging thousands). `ItemCategory.LoyaltyEligible` default true; `Item.LoyaltyEligible` (nullable) OVERRIDES,
+null = inherit the category — the same inheritance shape as the category's GL-account inheritance.
+
+**Reverse-never-delete on undo.** A return posts a NEGATIVE `PointsMovement` proportional to the returned eligible net
+(`ReverseForSaleUndoAsync`, hooked in `ReturnOrderLinesAsync`); a paid-order CANCEL reverses the full remaining earn
+(`ReverseAllForInvoiceAsync`, hooked in `VoidPaidOrderAsync` — it reverses the invoice JE directly, no SalesReturn to proportion
+against). A full return reverses exactly the earned points ⇒ the per-invoice derived balance returns to 0. Never over-reverses
+(capped at the un-reversed remainder). Earn hooks all three settlement paths (`PayAsync`/`PayTendersAsync`/`PaySplitByItemAsync`),
+in-transaction with the sale.
+
+**Capability SPLIT (decision 7): "CustomerIdentity" (slice 1) + "Loyalty" (slice 2) — two separate keys.** Identity resolves
+HM-8's taxed-invoice case and is semantically independent of a points program (a branch may identify customers with no loyalty);
+binding it under "Loyalty" would strand that HM-8 win until slice 3. Slice-1's gating was moved from "Loyalty" to
+"CustomerIdentity" and its acceptance re-run green on the new key. Seed updated: **CustomerIdentity ON, Loyalty OFF** (preset +
+DevSeed). A read-only derived points-balance line was added to the hyper Customer panel (shown only when Loyalty is enabled).
+
+**SQL:** `deploy/sql/hm9_loyalty_earn.sql` — idempotent, additive: `PointsMovements` table (+ two indexes) and four nullable/
+defaulted columns (Companies + BranchPosSettings rate; ItemCategories + Items eligibility). Zero financial impact. Not a migration.
+
+### Slice-3 constraint recorded NOW (decision 5) — negative balance on return-after-redeem
+A return AFTER points were redeemed can drive the balance negative. This does NOT arise in slice 2 (no redemption exists, so a
+reversal can never exceed the earned balance). **Before ANY redemption code, an explicit policy must be decided and documented:
+allow a negative balance · block the return · or force a cash settlement of the redeemed portion.** The redemption slice's design
+must open on this decision, not discover it. (Also carried: the three earn-accounting models — (i) no entry until redemption ·
+(ii) accrue a liability at earn · (iii) IFRS-15 deferred revenue — the choice depends on a materiality unknown before the program
+runs; slice 2 implements none, points remain a pure memo.)
+
+### Acceptance — api/dev/hm9-s2-accept (14/14 PASS, allPass:true, failedCount=0, idempotent over 3 runs; cookie-jar)
+Reuses the REAL POS pay path; balances asserted as DELTAS (re-runnable despite accumulation); every number from a NEW DB query.
+Numbers: T1 earn 15 = floor(15.000×1) · ONE Earn movement linked to the invoice · sale JE balanced (points are memo, no GL);
+T2/T3 Loyalty OFF ⇒ 0 points AND identity still issues the invoice to the real customer (the split); T4 branch override rate 1
+wins over company default 0.5 (ResolveRate); T5 mixed basket ⇒ 3 on the eligible line only (ineligible 4.000 excluded); T6 item
+override eligible in an ineligible category ⇒ earns 10; T7 20% promo ⇒ points on NET 6.000 (=6), not gross 7; T8 net 12.900 ⇒
+floor 12 (not 13); T9 full return ⇒ −15 reversal, per-invoice net 0; T10 partial (half) ⇒ proportional 7 = floor(15×7.5/15);
+T11 paid-order cancel ⇒ full reverse, per-invoice net 0; T12 walk-in sale ⇒ no points; T13 derived balance == Σ movements
+(126==126); T14 failedCount 0 · ar_sub · ap_sub · doc_je_status_mismatch · writer_coupling · dbset all OK (points add no GL).
+A test-setup bug the acceptance caught: the fail-closed-style opening-stock needs the item's CATEGORY to carry GL accounts —
+the ineligible ZZ category was given the eligible category's mapping so its items could be stocked/sold.
+
+**HM-D61 recurred this slice** (parallel `PermissionScopeStartupValidator` still breaks boot) — disabled temporarily to run
+acceptance, restored, never committed; `Program.cs` not in our commit. Same declared handling as before.

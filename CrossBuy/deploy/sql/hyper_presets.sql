@@ -29,12 +29,13 @@ INSERT INTO dbo.ActivityPresetCapabilities (PresetId, CapabilityKey, DefaultEnab
     (@pid, 'CashDrawer',    1),
     (@pid, 'SuspendResume', 1),
     (@pid, 'PriceCheck',    1),
+    (@pid, 'CustomerIdentity', 1),   -- HM-9 slice 1: identity ON (resolves HM-8's taxed-invoice case; independent of loyalty)
     (@pid, 'Weight',        0),   -- advanced OFF (branch enables when needed)
     (@pid, 'ExpiryControl', 0),
     (@pid, 'Promotions',    0),
-    (@pid, 'Loyalty',       0),
+    (@pid, 'Loyalty',       0),   -- HM-9 slice 2: points earning OFF until redemption ships (no half-feature in production)
     (@pid, 'ShelfLabels',   0);
-PRINT 'Hyper preset default capabilities set (4 ON / 5 OFF)';
+PRINT 'Hyper preset default capabilities set (5 ON / 5 OFF)';
 GO
 
 SELECT p.Code, c.CapabilityKey, c.DefaultEnabled

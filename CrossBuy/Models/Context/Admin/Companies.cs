@@ -30,6 +30,11 @@ namespace CrossBuy.Models.Context.Admin
 		public string? RegistrationNumber { get; set; }
 		public string? TaxNumber { get; set; }
 
+		// HM-9 slice 2: loyalty earn rate — points earned per 1 unit of the sale's DOCUMENT currency on the NET (post-discount)
+		// eligible amount. Company-level DEFAULT; a branch may override via BranchPosSetting.LoyaltyPointsPerCurrencyUnit.
+		// Nullable → no company default (a branch with no override earns nothing). Data, not code (the end-customer sets it).
+		public decimal? LoyaltyPointsPerCurrencyUnit { get; set; }
+
 		public string? Description { get; set; }
 
 		public int? ParentCompany { get; set; }

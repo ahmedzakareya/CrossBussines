@@ -374,7 +374,7 @@ namespace CrossBuy.Controllers
 		{
 			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
 			ViewBag.Ctx = c;
-			ViewBag.Enabled = await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty");
+			ViewBag.Enabled = await _pos.IsCapabilityEnabledAsync(c.BranchId, "CustomerIdentity");
 			CrossBuy.Models.Context.Accounting.Customer? cur = null;
 			if (c.OrderId != null)
 			{
@@ -382,6 +382,9 @@ namespace CrossBuy.Controllers
 				if (oCustId != null) cur = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == oCustId.Value && x.CompanyID == PosCompanyId && x.NameEn != "POS Walk-in");
 			}
 			ViewBag.Current = cur;
+			// HM-9 slice 2: read-only derived points balance (shown only when loyalty is enabled and a real customer is linked)
+			ViewBag.LoyaltyOn = await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty");
+			if (cur != null) ViewBag.Balance = await CrossBuy.BL.LoyaltyPointsHelper.GetBalanceAsync(_db, PosCompanyId, cur.ID);
 			return View("~/Views/Hyper/Customer.cshtml");
 		}
 
@@ -389,7 +392,7 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> CustomerSearch(string? q)
 		{
 			var c = Ctx(); if (c == null) return Json(new { ok = false });
-			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty"))
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "CustomerIdentity"))
 				return Json(new { ok = false, error = L["Customer identification is not enabled on this branch."].Value });
 			var (rows, _) = await _ar.SearchCustomersAsync(PosCompanyId, q, true, 1, 15);
 			return Json(new { ok = true, items = rows.Where(x => x.NameEn != "POS Walk-in").Select(x => new { id = x.ID, name = x.Name, phone = x.Phone }) });
@@ -400,7 +403,7 @@ namespace CrossBuy.Controllers
 		{
 			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
 			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Customer)); }
-			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty"))
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "CustomerIdentity"))
 			{ TempData["PosErr"] = L["Customer identification is not enabled on this branch."].Value; return RedirectToAction(nameof(Customer)); }
 			name = (name ?? "").Trim();
 			if (name.Length == 0) { TempData["PosErr"] = L["The customer name is required."].Value; return RedirectToAction(nameof(Customer)); }
@@ -418,7 +421,7 @@ namespace CrossBuy.Controllers
 		{
 			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
 			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Customer)); }
-			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty"))
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "CustomerIdentity"))
 			{ TempData["PosErr"] = L["Customer identification is not enabled on this branch."].Value; return RedirectToAction(nameof(Customer)); }
 			// fail-closed: never link a customer whose AR control account is missing/invalid
 			if (!await CustomerControlAccountValidAsync(customerId))

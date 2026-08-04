@@ -28,7 +28,8 @@ namespace CrossBuy.Controllers
 			("BarcodeMulti",  "باركود متعدّد",     "Multi-barcode"),
 			("ExpiryControl", "ضبط الصلاحية",      "Expiry control"),
 			("Promotions",    "العروض",           "Promotions"),
-			("Loyalty",       "الولاء",           "Loyalty"),
+			("CustomerIdentity", "تعريف العميل",   "Customer identity"),   // HM-9 slice 1: link a real customer to the order (identity only)
+			("Loyalty",       "الولاء",           "Loyalty"),               // HM-9 slice 2: points earning (kept OFF until redemption ships)
 			("ShelfLabels",   "ملصقات الرفوف",     "Shelf labels"),
 			("PriceCheck",    "استعلام السعر",     "Price check"),
 			("SuspendResume", "تعليق/استئناف",     "Suspend / resume"),
