@@ -165,11 +165,10 @@ namespace CrossBuy.Models.Menu
 			{
 				new() { LabelAr = "شاشة الكاشير", LabelEn = "Cashier terminal", Action = "Login", Controller = "HyperPos" },
 			}},
-			new() { LabelAr = "قريبًا", LabelEn = "Reports", Icon = "ki-outline ki-chart-simple", Items = new()
+			new() { LabelAr = "التقارير", LabelEn = "Reports", Icon = "ki-outline ki-chart-simple", Items = new()
 			{
-				new() { LabelAr = "الأصناف", LabelEn = "Items", Action = "Dashboard", Controller = "Hyper", Soon = true },
-				new() { LabelAr = "العروض", LabelEn = "Promotions", Action = "Dashboard", Controller = "Hyper", Soon = true },
-				new() { LabelAr = "التقارير", LabelEn = "Reports", Action = "Dashboard", Controller = "Hyper", Soon = true },
+				new() { LabelAr = "مبيعات الهايبر", LabelEn = "Hyper sales", Action = "Sales", Controller = "Hyper" },
+				new() { LabelAr = "هامش الصنف", LabelEn = "Item margin", Action = "ItemMargin", Controller = "Hyper" },
 			}},
 		};
 

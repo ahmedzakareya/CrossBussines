@@ -1,0 +1,81 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var rows = ViewBag.Rows as List<HyperController.ItemMarginRow> ?? new();
+    int docDp = ViewBag.DocDp ?? 3; int funcDp = ViewBag.FuncDp ?? 2;
+    string docFmt = "0." + new string('0', docDp); string funcFmt = "0." + new string('0', funcDp);
+    bool hasRate = ViewBag.HasRate ?? false;
+    var branches = ViewBag.HyperBranches as List<HyperController.HyperBranchItem> ?? new();
+    int? branchId = ViewBag.BranchId;
+    var from = (DateTime)ViewBag.From; var to = (DateTime)ViewBag.To;
+    ViewData["Title"] = isAr ? "هامش الصنف (هايبر)" : "Item margin (hyper)";
+    string StatusTag(string s) => s == "ZeroCost" ? (isAr ? "تكلفة صفر (عيّنة)" : "Zero cost (sample)") : (s == "Unposted" ? (isAr ? "تكلفة غير مُرحَّلة" : "Cost not posted") : "");
+}
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+        <div class="alert alert-light-primary border border-primary border-dashed fs-8 mb-4">@SR["Functional placeholder layout — awaiting the final report design."]</div>
+        <div class="card card-flush shadow-sm">
+            <div class="card-header pt-6">
+                <div class="card-title"><h2 class="fs-2 fw-bold">@SR["Item margin (hyper)"]</h2></div>
+                <div class="card-toolbar">
+                    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+                        <select name="branchId" class="form-select form-select-sm w-150px">
+                            <option value="">@SR["All hyper branches"]</option>
+                            @foreach (var b in branches) { <option value="@b.Id" selected="@(branchId == b.Id)">@(isAr ? b.NameAr : b.Name)</option> }
+                        </select>
+                        <input type="date" name="from" value="@from.ToString("yyyy-MM-dd")" class="form-control form-control-sm w-140px" />
+                        <input type="date" name="to" value="@to.ToString("yyyy-MM-dd")" class="form-control form-control-sm w-140px" />
+                        <button type="submit" class="btn btn-sm btn-primary">@SR["Show"]</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="fs-8 text-muted mb-3">@SR["Revenue is document currency (KWD); COGS and margin are functional (EGP); the indicative column converts the margin at today's rate."]@(hasRate ? "" : " — " + @SR["today's rate is unavailable, the indicative column is blank."].Value)</div>
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle gs-0 gy-3">
+                        <thead>
+                            <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                <th class="ps-4">@SR["Item"]</th><th>@SR["Category"]</th>
+                                <th class="text-end">@SR["Qty"]</th>
+                                <th class="text-end">@SR["Revenue"] (KWD)</th>
+                                <th class="text-end">@SR["COGS"] (EGP)</th>
+                                <th class="text-end">@SR["Margin"] (EGP)</th>
+                                <th class="text-end">@SR["Margin %"]</th>
+                                <th class="text-end pe-4">@SR["Margin"] (KWD~)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (rows.Count == 0) { <tr><td colspan="8" class="text-center text-muted py-8">—</td></tr> }
+                            @foreach (var r in rows)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-semibold text-gray-900">@r.ItemName</td>
+                                    <td class="text-muted fs-7">@r.CategoryName</td>
+                                    <td class="text-end" style="font-variant-numeric:tabular-nums">@r.Qty.ToString("0.###")</td>
+                                    <td class="text-end" style="font-variant-numeric:tabular-nums">@r.RevenueDoc.ToString(docFmt)</td>
+                                    @if (r.Status == "Unposted")
+                                    {
+                                        <td class="text-end text-muted">—</td>
+                                        <td class="text-end"><span class="badge badge-light-warning fs-8">@StatusTag(r.Status)</span></td>
+                                        <td class="text-end text-muted">—</td>
+                                        <td class="text-end pe-4 text-muted">—</td>
+                                    }
+                                    else
+                                    {
+                                        <td class="text-end" style="font-variant-numeric:tabular-nums">@r.Cogs.ToString(funcFmt)</td>
+                                        <td class="text-end fw-semibold" style="font-variant-numeric:tabular-nums;color:@((r.MarginFunc>=0)?"#1f7d57":"#d92d20")">@r.MarginFunc.ToString(funcFmt)@if (r.Status == "ZeroCost") {<span class="badge badge-light-primary fs-8 ms-1">@StatusTag(r.Status)</span>}</td>
+                                        <td class="text-end" style="color:@((r.MarginPct??0)>=0?"#1f7d57":"#d92d20")">@(r.MarginPct != null ? r.MarginPct.Value.ToString("0.#") + "%" : "—")</td>
+                                        <td class="text-end pe-4 text-muted" style="font-variant-numeric:tabular-nums">@(r.MarginDocIndicative != null ? r.MarginDocIndicative.Value.ToString(docFmt) : "—")</td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="fs-8 text-muted mt-3">@SR["(KWD~) is indicative — converted at today's rate, not posted; blank when no current rate."]</div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -101,7 +101,8 @@
                         <div class="card-body pt-2 pb-5">
                             <div class="d-flex flex-wrap mb-3">
                                 <div class="rounded min-w-100px py-3 px-4 my-1 me-4" style="border:1px dashed rgba(255,255,255,0.3)">
-                                    <div class="text-white fs-2 fw-bold">@Pct(Model.GrossMarginPct)</div>
+                                    @* HM-10 slice B: DISPLAY-only guard — if COGS is 0 the gross margin equals revenue (100%); show "cost not posted" instead of a misleading ratio. Stored/computed numbers are unchanged. *@
+                                    <div class="text-white fs-2 fw-bold">@(Model.Revenue != 0 && Model.GrossMargin == Model.Revenue ? SR["Cost not posted"].Value : Pct(Model.GrossMarginPct))</div>
                                     <div class="fw-semibold fs-8 text-white opacity-75">@Localizer["Gross margin"]</div>
                                 </div>
                                 <div class="rounded min-w-100px py-3 px-4 my-1" style="border:1px dashed rgba(255,255,255,0.3)">

@@ -53,7 +53,7 @@ namespace CrossBuy.Controllers
 
 		// ---------------- Main dashboard (system landing) — live POS stats, no fabricated data ----------------
 		[HttpGet]
-		public async Task<IActionResult> Dashboard()
+		public async Task<IActionResult> Dashboard(string? activity = null)
 		{
 			int companyId = DefaultCompanyId;
 			var today = DateTime.Today;
@@ -61,8 +61,15 @@ namespace CrossBuy.Controllers
 			var yearStart = new DateTime(today.Year, 1, 1);
 			var since = today.AddDays(-6);
 
+			// HM-10 slice B: OPTIONAL activity filter. Default (null) = ALL company-1 orders — the current behavior, ZERO
+			// regression. activity=="restaurant" EXCLUDES hyper-activity branches so this restaurant dashboard shows only
+			// restaurant sales (and ByType — Dine-in/Takeaway/Delivery — becomes accurate, no hyper Takeaway leaking in).
+			var hyperIds = await _context.Branches.AsNoTracking().Where(b => b.CompanyID == companyId && b.ActivityPresetCode == "Hyper").Select(b => b.ID).ToListAsync();
+			bool restaurantOnly = activity == "restaurant";
+			ViewBag.Activity = activity;
+
 			var paid = await _context.PosOrders.AsNoTracking()
-				.Where(o => o.CompanyId == companyId && o.Status == "Paid")
+				.Where(o => o.CompanyId == companyId && o.Status == "Paid" && (!restaurantOnly || !hyperIds.Contains(o.BranchId)))
 				.Select(o => new { o.GrandTotal, o.OrderType, o.ClosedAt, o.OpenedAt, o.ReceiptNo, o.Status })
 				.ToListAsync();
 			DateTime When(DateTime? closed, DateTime opened) => (closed ?? opened);
@@ -89,10 +96,10 @@ namespace CrossBuy.Controllers
 				.Where(x => x.Count > 0).ToList();
 
 			// live operational figures
-			var openOrders = await _context.PosOrders.AsNoTracking().Where(o => o.CompanyId == companyId && o.Status == "Open" && !o.IsHeld).ToListAsync();
+			var openOrders = await _context.PosOrders.AsNoTracking().Where(o => o.CompanyId == companyId && o.Status == "Open" && !o.IsHeld && (!restaurantOnly || !hyperIds.Contains(o.BranchId))).ToListAsync();
 			dto.OpenOrders = openOrders.Count;
 			dto.OccupiedTables = openOrders.Where(o => o.TableId != null).Select(o => o.TableId).Distinct().Count();
-			var branchIds = await _context.Branches.AsNoTracking().Where(b => b.CompanyID == companyId).Select(b => b.ID).ToListAsync();
+			var branchIds = await _context.Branches.AsNoTracking().Where(b => b.CompanyID == companyId && (!restaurantOnly || b.ActivityPresetCode != "Hyper")).Select(b => b.ID).ToListAsync();
 			var terminalIds = await _context.PosTerminals.AsNoTracking().Where(t => branchIds.Contains(t.BranchId)).Select(t => t.ID).ToListAsync();
 			dto.Terminals = terminalIds.Count;
 			dto.OpenShifts = await _context.PosShifts.AsNoTracking().CountAsync(s => terminalIds.Contains(s.TerminalId) && s.Status == "Open");
@@ -103,7 +110,7 @@ namespace CrossBuy.Controllers
 
 			// top items this month (from order lines of paid orders)
 			var paidIds = await _context.PosOrders.AsNoTracking()
-				.Where(o => o.CompanyId == companyId && o.Status == "Paid" && (o.ClosedAt ?? o.OpenedAt) >= monthStart)
+				.Where(o => o.CompanyId == companyId && o.Status == "Paid" && (o.ClosedAt ?? o.OpenedAt) >= monthStart && (!restaurantOnly || !hyperIds.Contains(o.BranchId)))
 				.Select(o => o.ID).ToListAsync();
 			if (paidIds.Count > 0)
 			{

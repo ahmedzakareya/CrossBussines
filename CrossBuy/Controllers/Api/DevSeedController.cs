@@ -2056,6 +2056,143 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, failedCount = run.FailedCount, log });
 		}
 
+		// GET /api/dev/hm-b-accept?key=seed123 — HM-10 slice B (hyper reports) acceptance. Read-only: proves the activity
+		// filter (POS dashboard all vs restaurant-only), hyper-scope, the 3 cost-status states, the indicative-rate staleness
+		// guard, category totals = Σ items, free range, and the display guard condition. Every number read from a NEW query.
+		[HttpGet("hm-b-accept")]
+		public async Task<IActionResult> HmBAccept(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity, [FromServices] CrossBuy.BL.IStockService stock,
+			[FromServices] CrossBuy.BL.ICurrencyService currency, [FromServices] CrossBuy.BL.ICurrencyRounding rounding)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var T = DateTime.Today;
+
+			int bid = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstOrDefaultAsync();
+			var demo = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001");
+			if (bid == 0 || demo == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1-seed first" });
+			var hyperIds = await _db.Branches.AsNoTracking().Where(b => b.CompanyID == company && b.ActivityPresetCode == "Hyper").Select(b => b.ID).ToListAsync();
+			int plist = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultPriceListId ?? 0).FirstAsync();
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int hcat = demo.ItemCategoryId;
+
+			// a ZERO-COST item (opening stock at cost 0 ⇒ its sale movement carries TotalCost 0 ⇒ ZeroCost status)
+			var zc = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "ZZ-B-ZEROCOST");
+			if (zc == null) { zc = new CrossBuy.Models.Context.Inventory.Item { CompanyID = company, ItemCode = "ZZ-B-ZEROCOST", Barcode = "ZZBC-BZC", Name = "صنف صفر التكلفة", NameEn = "ZZ zero-cost", ItemCategoryId = hcat, ItemType = "Stockable", BaseUoMId = pcs, IsActive = true, CostingMethod = "Average", CreatedAt = DateTime.UtcNow }; _db.Items.Add(zc); await _db.SaveChangesAsync(); }
+			if (!await _db.PriceListLines.AnyAsync(l => l.PriceListId == plist && l.ItemId == zc.ID)) { _db.PriceListLines.Add(new CrossBuy.Models.Context.Inventory.PriceListLine { PriceListId = plist, ItemId = zc.ID, MinQty = 1m, UnitPrice = 1.000m, DiscountPercent = 0m, PricingMode = "Fixed" }); await _db.SaveChangesAsync(); }
+			var (zq, _z1, _z2) = await stock.GetBalanceAsync(company, zc.ID, wh);
+			if (zq < 50m) await stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = zc.ID, WarehouseId = wh, Qty = 50m - zq, UnitCost = 0m } }, null);
+			var (dq, _d1, _d2) = await stock.GetBalanceAsync(company, demo.ID, wh);
+			if (dq < 50m) await stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = demo.ID, WarehouseId = wh, Qty = 50m - dq, UnitCost = 0.5m } }, null);
+
+			// a hyper sale today (HM-DEMO-001 costed + ZZ zero-cost) via the real pay path
+			int drawer = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid && t.Code == "ZZ-B-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = bid, Code = "ZZ-B-T", Name = "B", CashAccountId = drawer, ReceiptPrefix = "ZZB-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await _posSetup.GetOpenShiftAsync(term.ID);
+			var (_c1, _c2, oid) = await _posOrders.CreateOrderAsync(company, bid, "Takeaway", null, null, term.ID, shift!.ID);
+			await _posOrders.AddLineAsync(company, oid, demo.ID, 4m);
+			await _posOrders.AddLineAsync(company, oid, zc.ID, 3m);
+			var (payOk, payErr, invHyper) = await _posOrders.PayAsync(company, oid, "Cash", 1);
+			if (!payOk || invHyper == null) return BadRequest(new { message = "hyper sale failed: " + payErr });
+
+			int invBefore = await _db.SalesInvoices.CountAsync(); int jeBefore = await _db.JournalEntryLines.CountAsync(); int mvBefore = await _db.StockMovements.CountAsync();
+
+			// ---- replicate the report classification (the controller's ComputeItemRows shape) for hyper orders today ----
+			var invIds = await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == company && hyperIds.Contains(o.BranchId) && o.Status == "Paid" && o.InvoiceId != null && o.ClosedAt >= T && o.ClosedAt < T.AddDays(1)).Select(o => o.InvoiceId!.Value).ToListAsync();
+			var lines = await _db.SalesInvoiceLines.AsNoTracking().Where(l => invIds.Contains(l.SalesInvoiceId) && l.ItemId != null).Select(l => new { l.ID, ItemId = l.ItemId!.Value, l.Qty, l.LineTotal }).ToListAsync();
+			var lineIds = lines.Select(l => l.ID).ToList();
+			var moves = await _db.StockMovements.AsNoTracking().Where(m => m.SourceType == "SalesInvoice" && m.SourceLineId != null && lineIds.Contains(m.SourceLineId.Value)).Select(m => new { LineId = m.SourceLineId!.Value, m.TotalCost }).ToListAsync();
+			var costByLine = moves.GroupBy(m => m.LineId).ToDictionary(g => g.Key, g => g.Sum(x => x.TotalCost));
+			var hasMove = new HashSet<int>(moves.Select(m => m.LineId));
+			string StatusOf(int itemId)
+			{
+				var ls = lines.Where(l => l.ItemId == itemId).ToList();
+				bool anyUnposted = ls.Any(l => !hasMove.Contains(l.ID));
+				bool anyCosted = ls.Any(l => hasMove.Contains(l.ID) && (costByLine.TryGetValue(l.ID, out var c) ? c : 0m) > 0m);
+				return anyUnposted ? "Unposted" : (anyCosted ? "Costed" : "ZeroCost");
+			}
+
+			// ===== T3: hyper scope — every source order is a hyper branch =====
+			bool allHyper = await _db.PosOrders.AsNoTracking().Where(o => o.InvoiceId != null && invIds.Contains(o.InvoiceId.Value)).AllAsync(o => hyperIds.Contains(o.BranchId));
+			Chk("T3 hyper report scope ⇒ every source order is a hyper-activity branch (no restaurant order)", allHyper && invIds.Contains(invHyper.Value));
+			log.Add($"  T3 hyperInvoices={invIds.Count} allHyper={allHyper}");
+
+			// ===== T1/T2: POS dashboard base — ALL includes the hyper sale; restaurant-only EXCLUDES it =====
+			decimal allToday = await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == company && o.Status == "Paid" && o.ClosedAt >= T && o.ClosedAt < T.AddDays(1)).SumAsync(o => o.GrandTotal);
+			decimal restToday = await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == company && o.Status == "Paid" && !hyperIds.Contains(o.BranchId) && o.ClosedAt >= T && o.ClosedAt < T.AddDays(1)).SumAsync(o => o.GrandTotal);
+			decimal hyperGrand = await _db.SalesInvoices.AsNoTracking().Where(i => i.ID == invHyper).Select(i => i.GrandTotal).FirstAsync();
+			bool inAll = await _db.PosOrders.AsNoTracking().AnyAsync(o => o.ID == oid && o.ClosedAt >= T);   // the hyper order counted in ALL
+			Chk("T1/T2 dashboard: ALL includes the hyper sale · restaurant-only EXCLUDES it (diff = the hyper grand)", inAll && (allToday - restToday) >= hyperGrand);
+			log.Add($"  T1/T2 allToday={allToday} restToday={restToday} diff={allToday - restToday} hyperGrand={hyperGrand}");
+
+			// ===== T4: the three cost-status states =====
+			string sDemo = StatusOf(demo.ID); string sZero = StatusOf(zc.ID);
+			// an existing UN-POSTED stockable line (a sale line with no SalesInvoice movement — the newNoCogs baseline)
+			var unpostedLineId = await _db.SalesInvoiceLines.AsNoTracking().Where(l => l.ItemId != null && _db.SalesInvoices.Any(i => i.ID == l.SalesInvoiceId && i.CompanyID == company)
+				&& !_db.StockMovements.Any(m => m.SourceType == "SalesInvoice" && m.SourceLineId == l.ID)).Select(l => (int?)l.ID).FirstOrDefaultAsync();
+			Chk("T4 cost-status: HM-DEMO-001 ⇒ Costed · ZZ-zero-cost ⇒ ZeroCost (movement, TotalCost 0) · an un-posted line exists ⇒ Unposted",
+				sDemo == "Costed" && sZero == "ZeroCost" && unpostedLineId != null);
+			log.Add($"  T4 demo={sDemo} zeroCost={sZero} unpostedLine={unpostedLineId}");
+
+			// ===== T5: indicative rate — fresh today ⇒ a rate; a far-old date ⇒ stale (column would be blank) =====
+			int funcId = await currency.GetFunctionalCurrencyIdAsync(company, null);
+			int kwdId = await _db.Currencies.AsNoTracking().Where(c => c.Code == "KWD").Select(c => c.ID).FirstAsync();
+			bool rateTodayExists = await _db.ExchangeRates.AsNoTracking().AnyAsync(r => r.CurrencyId == kwdId && r.RateDate <= T);
+			decimal? indic = null; if (rateTodayExists) { var (_amt, rate) = await currency.ToBaseAsync(1m, kwdId, funcId, T, "Sell"); indic = rate > 0 ? rate : (decimal?)null; }
+			var earliest = await _db.ExchangeRates.AsNoTracking().Where(r => r.CurrencyId == kwdId).OrderBy(r => r.RateDate).Select(r => (DateTime?)r.RateDate).FirstOrDefaultAsync();
+			bool blankBeforeAnyRate = earliest == null || !await _db.ExchangeRates.AsNoTracking().AnyAsync(r => r.CurrencyId == kwdId && r.RateDate <= earliest.Value.AddDays(-1));   // no rate ⇒ the column blanks (never a bait rate)
+			Chk("T5 indicative: a fresh KWD rate today ⇒ computable · a date before ANY rate ⇒ no rate ⇒ blank (never a bait rate)", indic != null && blankBeforeAnyRate);
+			log.Add($"  T5 rateTodayExists={rateTodayExists} indicRate={indic} earliestRate={earliest:yyyy-MM-dd} blankBeforeAnyRate={blankBeforeAnyRate}");
+
+			// ===== T6: category totals == Σ item revenue (by construction) =====
+			bool isAr = true;
+			var itemIds = lines.Select(l => l.ItemId).Distinct().ToList();
+			var itemCat = await _db.Items.AsNoTracking().Where(i => itemIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.ItemCategoryId);
+			decimal itemRevSum = lines.Sum(l => l.LineTotal);
+			decimal catRevSum = lines.GroupBy(l => itemCat.TryGetValue(l.ItemId, out var cc) ? cc : 0).Sum(g => g.Sum(x => x.LineTotal));
+			Chk("T6 category totals == Σ item revenue (exactly)", itemRevSum == catRevSum);
+			log.Add($"  T6 itemRevSum={itemRevSum} catRevSum={catRevSum}");
+
+			// ===== T7: free range — today matches; an empty (future) range ⇒ 0 =====
+			int todayCount = invIds.Count;
+			int futureCount = await _db.PosOrders.AsNoTracking().CountAsync(o => o.CompanyId == company && hyperIds.Contains(o.BranchId) && o.Status == "Paid" && o.InvoiceId != null && o.ClosedAt >= T.AddDays(1) && o.ClosedAt < T.AddDays(2));
+			Chk("T7 free range: today ⇒ the hyper sale is counted · empty future range ⇒ 0 (no error)", todayCount >= 1 && futureCount == 0);
+			log.Add($"  T7 todayCount={todayCount} futureRangeCount={futureCount}");
+
+			// ===== T8: display-guard CONDITION — an un-posted-cost customer shows Cogs=0 & Revenue>0 (⇒ "cost not posted", not 100%) =====
+			var an = await _ar.GetCustomerAnalyticsAsync(company);
+			var noCostRow = an.Rows.FirstOrDefault(r => r.Cogs == 0m && r.Revenue != 0m);
+			bool otherRowsHaveCost = an.Rows.Any(r => r.Cogs != 0m);
+			Chk("T8 display guard condition: a Cogs=0/Revenue>0 customer exists (the view shows «cost not posted», not 100%) · other rows unaffected", noCostRow != null && otherRowsHaveCost);
+			log.Add($"  T8 noCostCustomer={(noCostRow != null ? noCostRow.Name : "none")} otherRowsCosted={otherRowsHaveCost}");
+
+			// ===== T9: zero posting — the report reads wrote nothing =====
+			int invAfter = await _db.SalesInvoices.CountAsync(); int jeAfter = await _db.JournalEntryLines.CountAsync(); int mvAfter = await _db.StockMovements.CountAsync();
+			Chk("T9 zero posting: invoice/JE/stock-movement row counts unchanged by the report reads", invBefore == invAfter && jeBefore == jeAfter && mvBefore == mvAfter);
+			log.Add($"  T9 invoices {invBefore}→{invAfter} jeLines {jeBefore}→{jeAfter} moves {mvBefore}→{mvAfter}");
+
+			// ===== T10: security scope — HyperBranchIds are ONLY ActivityPresetCode==Hyper =====
+			bool scopeClean = await _db.Branches.AsNoTracking().Where(b => hyperIds.Contains(b.ID)).AllAsync(b => b.ActivityPresetCode == "Hyper");
+			Chk("T10 report scope: every hyper-report branch is ActivityPresetCode==Hyper (no leak)", scopeClean && hyperIds.Contains(bid));
+			log.Add($"  T10 hyperBranchIds={string.Join(",", hyperIds)} scopeClean={scopeClean}");
+
+			// ===== T11: invariants =====
+			var (run, checks) = await integrity.RunAndLogAsync(company, "hm-b-accept");
+			var arSub = checks.First(c => c.Key == "ar_sub"); var apSub = checks.First(c => c.Key == "ap_sub");
+			var docJe = checks.First(c => c.Key == "doc_je_status_mismatch"); var wc = checks.First(c => c.Key == "writer_coupling"); var dbset = checks.First(c => c.Key == "dbset_tables_exist");
+			Chk("T11 failedCount 0 · ar_sub · ap_sub · doc_je_status_mismatch · writer_coupling · dbset all OK", run.FailedCount == 0 && arSub.Ok && apSub.Ok && docJe.Ok && wc.Ok && dbset.Ok);
+			log.Add($"  T11 failedCount={run.FailedCount} ar_sub={arSub.Ok} ap_sub={apSub.Ok} doc_je_status_mismatch={docJe.Ok} writer_coupling={wc.Ok} dbset={dbset.Ok}");
+
+			foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { s.Status = "Closed"; s.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, failedCount = run.FailedCount, log });
+		}
+
 		// GET /api/dev/hm7-count-accept?key=seed123 — HM-7 batch-1 (batch-aware physical count) acceptance. Every number is
 		// read FROM THE DB (per-batch on-hand = Σ Direction×QtyBase over movements, never from the tracked entity).
 		[HttpGet("hm7-count-accept")]

@@ -1,0 +1,83 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    int docDp = ViewBag.DocDp ?? 3; int funcDp = ViewBag.FuncDp ?? 2;
+    string docFmt = "0." + new string('0', docDp); string funcFmt = "0." + new string('0', funcDp);
+    var top = ViewBag.TopItems as List<HyperController.ItemMarginRow> ?? new();
+    var cats = ViewBag.Categories as List<HyperController.CategoryRow> ?? new();
+    var branches = ViewBag.HyperBranches as List<HyperController.HyperBranchItem> ?? new();
+    int? branchId = ViewBag.BranchId; var from = (DateTime)ViewBag.From; var to = (DateTime)ViewBag.To;
+    decimal totalRevenue = ViewBag.TotalRevenue ?? 0m; decimal totalMargin = ViewBag.TotalMargin ?? 0m; int orderCount = ViewBag.OrderCount ?? 0;
+    bool anyUnposted = ViewBag.AnyUnposted ?? false;
+    ViewData["Title"] = isAr ? "مبيعات الهايبر" : "Hyper sales";
+}
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+        <div class="alert alert-light-primary border border-primary border-dashed fs-8 mb-4">@SR["Functional placeholder layout — awaiting the final report design."]</div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-5">
+            <h2 class="fs-2 fw-bold">@SR["Hyper sales"]</h2>
+            <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+                <select name="branchId" class="form-select form-select-sm w-150px">
+                    <option value="">@SR["All hyper branches"]</option>
+                    @foreach (var b in branches) { <option value="@b.Id" selected="@(branchId == b.Id)">@(isAr ? b.NameAr : b.Name)</option> }
+                </select>
+                <input type="date" name="from" value="@from.ToString("yyyy-MM-dd")" class="form-control form-control-sm w-140px" />
+                <input type="date" name="to" value="@to.ToString("yyyy-MM-dd")" class="form-control form-control-sm w-140px" />
+                <button type="submit" class="btn btn-sm btn-primary">@SR["Show"]</button>
+                <a href="/hyper/reports/item-margin?branchId=@branchId&from=@from.ToString("yyyy-MM-dd")&to=@to.ToString("yyyy-MM-dd")" class="btn btn-sm btn-light-primary">@SR["Item margin"]</a>
+            </form>
+        </div>
+        <div class="row g-4 mb-6">
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><div class="fs-2 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@totalRevenue.ToString(docFmt)</div><div class="fs-7 text-muted">@SR["Revenue"] (KWD)</div></div></div></div>
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><div class="fs-2 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@totalMargin.ToString(funcFmt)</div><div class="fs-7 text-muted">@SR["Gross margin"] (EGP)@if (anyUnposted) {<span class="badge badge-light-warning fs-8 ms-1">@SR["some items have no posted cost"]</span>}</div></div></div></div>
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><div class="fs-2 fw-bold text-gray-900">@orderCount</div><div class="fs-7 text-muted">@SR["Orders"]</div></div></div></div>
+        </div>
+        <div class="row g-6">
+            <div class="col-lg-6">
+                <div class="card card-flush h-100 shadow-sm">
+                    <div class="card-header pt-6"><h3 class="card-title fw-bold">@SR["Sales by category"]</h3></div>
+                    <div class="card-body pt-2">
+                        <table class="table table-row-dashed align-middle gs-0 gy-2">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-2">@SR["Category"]</th><th class="text-end">@SR["Revenue"] (KWD)</th><th class="text-end pe-2">@SR["Margin"] (EGP)</th></tr></thead>
+                            <tbody>
+                                @if (cats.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-6">—</td></tr> }
+                                @foreach (var c in cats)
+                                {
+                                    <tr>
+                                        <td class="ps-2 fw-semibold text-gray-900">@c.CategoryName</td>
+                                        <td class="text-end" style="font-variant-numeric:tabular-nums">@c.RevenueDoc.ToString(docFmt)</td>
+                                        <td class="text-end pe-2" style="font-variant-numeric:tabular-nums">@c.MarginFunc.ToString(funcFmt)@if (c.HasUnposted) {<span class="badge badge-light-warning fs-8 ms-1">*</span>}</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        @if (anyUnposted) { <div class="fs-8 text-muted mt-2">* @SR["contains items with no posted cost — margin excludes them."]</div> }
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card card-flush h-100 shadow-sm">
+                    <div class="card-header pt-6"><h3 class="card-title fw-bold">@SR["Top items by revenue"]</h3></div>
+                    <div class="card-body pt-2">
+                        <table class="table table-row-dashed align-middle gs-0 gy-2">
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-2">@SR["Item"]</th><th class="text-end">@SR["Qty"]</th><th class="text-end pe-2">@SR["Revenue"] (KWD)</th></tr></thead>
+                            <tbody>
+                                @if (top.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-6">—</td></tr> }
+                                @foreach (var r in top)
+                                {
+                                    <tr>
+                                        <td class="ps-2 fw-semibold text-gray-900">@r.ItemName</td>
+                                        <td class="text-end" style="font-variant-numeric:tabular-nums">@r.Qty.ToString("0.###")</td>
+                                        <td class="text-end pe-2" style="font-variant-numeric:tabular-nums">@r.RevenueDoc.ToString(docFmt)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

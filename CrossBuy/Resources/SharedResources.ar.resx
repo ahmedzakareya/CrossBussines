@@ -3067,4 +3067,22 @@
   <data name="Reprint" xml:space="preserve">
     <value>إعادة طباعة</value>
   </data>
+  <data name="Cost not posted" xml:space="preserve"><value>تكلفة غير مُرحَّلة</value></data>
+  <data name="Item margin (hyper)" xml:space="preserve"><value>هامش الصنف (هايبر)</value></data>
+  <data name="Item margin" xml:space="preserve"><value>هامش الصنف</value></data>
+  <data name="Hyper sales" xml:space="preserve"><value>مبيعات الهايبر</value></data>
+  <data name="All hyper branches" xml:space="preserve"><value>كل فروع الهايبر</value></data>
+  <data name="Qty" xml:space="preserve"><value>الكمية</value></data>
+  <data name="COGS" xml:space="preserve"><value>التكلفة</value></data>
+  <data name="Margin" xml:space="preserve"><value>الهامش</value></data>
+  <data name="Orders" xml:space="preserve"><value>الطلبات</value></data>
+  <data name="Gross margin" xml:space="preserve"><value>مجمل الربح</value></data>
+  <data name="Sales by category" xml:space="preserve"><value>المبيعات بالفئة</value></data>
+  <data name="Top items by revenue" xml:space="preserve"><value>الأصناف الأعلى إيرادًا</value></data>
+  <data name="Functional placeholder layout — awaiting the final report design." xml:space="preserve"><value>تخطيط وظيفيّ مؤقّت — بانتظار تصميم التقرير النهائيّ.</value></data>
+  <data name="some items have no posted cost" xml:space="preserve"><value>بعض الأصناف بلا تكلفة مُرحَّلة</value></data>
+  <data name="contains items with no posted cost — margin excludes them." xml:space="preserve"><value>يحوي أصنافًا بلا تكلفة مُرحَّلة — الهامش يستثنيها.</value></data>
+  <data name="Revenue is document currency (KWD); COGS and margin are functional (EGP); the indicative column converts the margin at today's rate." xml:space="preserve"><value>الإيراد بعملة الوثيقة (KWD)؛ التكلفة والهامش بالعملة الوظيفيّة (EGP)؛ والعمود الإرشاديّ يحوّل الهامش بسعر اليوم.</value></data>
+  <data name="today's rate is unavailable, the indicative column is blank." xml:space="preserve"><value>سعر اليوم غير متاح، فالعمود الإرشاديّ فارغ.</value></data>
+  <data name="(KWD~) is indicative — converted at today's rate, not posted; blank when no current rate." xml:space="preserve"><value>\u200F(KWD~) إرشاديّ — محوَّل بسعر اليوم، غير مُقيَّد؛ ويُترَك فارغًا عند غياب سعر حاليّ.</value></data>
 </root>

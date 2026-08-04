@@ -1197,3 +1197,66 @@ fake invoice, order not paid; T8 failedCount 0 · ar_sub · ap_sub · doc_je_sta
 
 **HM-D61 recurred** (parallel `PermissionScopeStartupValidator` still breaks boot) — disabled temporarily to run acceptance,
 restored, never committed; `Program.cs` not in our commit.
+
+### Pinned rule (HM-10 slice A) — a pay-idempotency token MUST be an INSERT-keyed row, never a field on PosOrder.
+Do NOT re-propose `PosOrder.PayToken` (or any per-order field) for pay idempotency. A unique index arbitrates a race ONLY
+when the racing writers INSERT distinct rows for the same key; two CONCURRENT pays of the SAME order both UPDATE that one
+row to the SAME token value, producing no duplicate row and no violation — so both would post. Only an inserted row
+(`HyperPayTokens`, unique on (CompanyId, Token)) turns the loser into a transaction failure. This is why PosSyncLog is a
+table, not a column, and why HM-10 slice A used a table. The field was approved at design time and rejected at
+implementation on this evidence.
+
+## HM-10 slice B (built) — hyper reports: activity-mixing fix + per-item margin with a cost-status guard (read-only)
+The whole slice is READ-ONLY: no write, no GL, no stock, no schema, no front-end computation (the server computes, the view
+displays). Proven by acceptance T9 (invoice/JE/stock-movement counts unchanged: 440→440 · 6104→6104 · 1419→1419).
+
+**The bigger finding (recorded): the hyper lane had NO sales report at all** — its Reports menu was three "Soon" stubs pointing
+back at the diagnostic panel; a hyper owner could not see their own sales. The POS "Restaurant" dashboard
+(`PosController.Dashboard`) mixed restaurant + hyper only because its query filtered `CompanyId` alone; it is a
+restaurant-lane-only VIEW the hyper lane never linked.
+
+**b-1 activity mixing — optional filter (zero regression) + a standalone hyper view.**
+- `PosController.Dashboard` gained an OPTIONAL `activity` param. Default (null) = ALL company-1 orders — byte-identical to the
+  old behavior (acceptance T1). `activity=="restaurant"` excludes `Branch.ActivityPresetCode=="Hyper"` branches from the sales /
+  ByType / TopItems / open-orders / terminals so the restaurant dashboard shows restaurant-only and ByType becomes accurate
+  (T2). Single-hop filter `PosOrder.BranchId → Branch.ActivityPresetCode` (no schema).
+- New hyper reports on `HyperController` (Employee-gated back-office): `Sales` (overview + by-category + top items, NO ByType —
+  dine-in/takeaway/delivery is meaningless for a hypermarket checkout) and `ItemMargin`. Both filter to hyper-activity branches
+  (T3/T10) with a free date range (T7). The Reports menu now links them.
+- FINANCIAL reports (Accounting + Executive dashboards) are unchanged for mixing — they stay company-unified BY DESIGN (the
+  HM-0 decision). The slice fixes OPERATIONAL reporting only.
+
+**b-2 cost-status guard — the data distinguishes three states; the report shows them, never a misleading 100%.** Reusing the
+existing `cogs_impact` signal (a movement keyed by the `SalesInvoice` `SourceLineId`): **Costed** (movement with TotalCost>0),
+**ZeroCost** (movement present, TotalCost=0 — a free/sample), **Unposted** (NO cost-bearing movement at all — the un-posted-cost
+defect). An Unposted item's margin is shown as "—" (UNKNOWN — never 0, never 100). Proven T4 (HM-DEMO-001 Costed · a 0-cost ZZ
+item ZeroCost · an existing un-posted line Unposted). We FLAG the un-posted defect, we do NOT fix it (re-posting COGS is out of
+scope).
+
+**b-2 existing accounting reports — DISPLAY-ONLY guard.** Per the owner's constraint, `CustomerAnalytics` (per-customer row +
+per-segment) and the `Executive` dashboard render "cost not posted" IN PLACE OF a 100% when COGS is 0 (Revenue≠0 ⇒ Margin==Revenue).
+The stored and computed numbers are UNCHANGED — only the percentage cell's rendering changes. Proven T8 (a real Cogs=0/Revenue>0
+customer exists; other rows keep their cost). No computation in a financial report was altered.
+
+**Margin currency (owner's ruling) — dual column.** Revenue is DOCUMENT currency (KWD 3dp, what was rung). The AUTHORITATIVE
+margin + COGS are FUNCTIONAL (EGP 2dp) — no conversion, the governing number. A SECOND indicative margin column is the
+functional margin converted to the document currency at TODAY's rate, LABELLED indicative ("KWD~") in the column and footnote —
+a display conversion, never posted or stored. **If today's rate is missing it is left BLANK, never a bait/stale rate** (HM-D23):
+the indicative helper checks a rate EXISTS for today (ToBaseAsync would otherwise throw) and honors `RateStalenessAsync` when a
+max-age is configured. Margin% is on the functional figure, once. Proven T5 (a fresh KWD rate today ⇒ 163 EGP/KWD computable; a
+date before ANY rate ⇒ no rate ⇒ blank).
+
+**b-3 narrowest set:** item margin + by-category + free range (per the plan; hour, batch-aging, multi-shift cash deferred).
+Category totals == Σ of their items exactly (T6, by construction).
+
+**The report layouts are FUNCTIONAL PLACEHOLDERS** (a banner says so on each), like the shelf label / A4 invoice / cashier
+screen — awaiting the owner's design.
+
+### Acceptance — api/dev/hm-b-accept (11/11 PASS, allPass:true, failedCount=0, idempotent; cookie-jar)
+Read-only; replicates the report classification against DB truth. T1/T2 dashboard ALL 996.58 vs restaurant-only 456.00 (the
+hyper 6.00 sale is the difference); T3 hyper scope (97 invoices, all hyper); T4 the three cost states; T5 indicative rate 163
+fresh / blank before any rate; T6 category==Σ items (540.58); T7 today counted / future range 0; T8 display-guard condition;
+T9 zero posting; T10 hyper-only scope; T11 failedCount 0 + ar_sub/ap_sub/doc_je_status_mismatch/writer_coupling/dbset OK.
+
+**HM-D61 recurred** — parallel `PermissionScopeStartupValidator` disabled to run acceptance, restored, never committed;
+`Program.cs` not in our commit.

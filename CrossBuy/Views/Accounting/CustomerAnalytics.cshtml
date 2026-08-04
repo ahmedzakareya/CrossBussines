@@ -41,7 +41,8 @@
                         @foreach (var s in Model.Segments)
                         {
                             var mp = s.Revenue != 0 ? Math.Round(s.Margin / s.Revenue * 100, 1) : 0;
-                            <tr style="border-bottom:1px dashed #eef1f6;"><td class="ps-4">@if (string.IsNullOrEmpty(s.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@s.Segment</span> }</td><td class="text-center">@s.Customers</td><td class="text-end fw-bold">@s.Revenue.ToString("N2")</td><td class="text-end">@s.Margin.ToString("N2")</td><td class="text-end fw-bold" style="color:@(mp>=0?"#1f7d57":"#d92d20")">@mp%</td><td class="text-end text-muted pe-4">@s.Outstanding.ToString("N2")</td></tr>
+                            var segNoCost = s.Revenue != 0 && s.Margin == s.Revenue;   // HM-10 slice B: cogs=0 ⇒ show "cost not posted", not 100% (display only)
+                            <tr style="border-bottom:1px dashed #eef1f6;"><td class="ps-4">@if (string.IsNullOrEmpty(s.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@s.Segment</span> }</td><td class="text-center">@s.Customers</td><td class="text-end fw-bold">@s.Revenue.ToString("N2")</td><td class="text-end">@s.Margin.ToString("N2")</td><td class="text-end fw-bold" style="color:@(mp>=0?"#1f7d57":"#d92d20")">@if (segNoCost) { <span class="badge badge-light-warning fs-8">@SR["Cost not posted"]</span> } else { <span>@mp%</span> }</td><td class="text-end text-muted pe-4">@s.Outstanding.ToString("N2")</td></tr>
                         }
                         </tbody>
                     </table></div>
@@ -67,7 +68,9 @@
                         <td class="text-end fw-bold">@r.Revenue.ToString("N2")</td>
                         <td class="text-end text-muted">@r.Cogs.ToString("N2")</td>
                         <td class="text-end fw-bold" style="color:@(r.Margin>=0?"#1f7d57":"#d92d20")">@r.Margin.ToString("N2")</td>
-                        <td class="text-end" style="color:@(r.MarginPct>=0?"#1f7d57":"#d92d20")">@r.MarginPct%</td>
+                        @* HM-10 slice B: DISPLAY-only guard — a 0-COGS row shows "cost not posted" instead of a misleading 100%. Numbers unchanged. *@
+                        @if (r.Cogs == 0 && r.Revenue != 0) { <td class="text-end"><span class="badge badge-light-warning fs-8">@SR["Cost not posted"]</span></td> }
+                        else { <td class="text-end" style="color:@(r.MarginPct>=0?"#1f7d57":"#d92d20")">@r.MarginPct%</td> }
                         <td class="text-end text-muted">@r.Outstanding.ToString("N2")</td>
                         <td class="text-center">@r.InvoiceCount</td>
                         <td class="text-end text-muted">@r.AvgInvoice.ToString("N2")</td>
