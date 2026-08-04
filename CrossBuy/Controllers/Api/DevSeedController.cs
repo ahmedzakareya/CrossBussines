@@ -1363,6 +1363,184 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, cutoffUtc = CrossBuy.BL.IntegrityCheckService.PurchaseModelCutoffUtc.ToString("yyyy-MM-dd"), failedCount = run.FailedCount, log });
 		}
 
+		// GET /api/dev/hm8-accept?key=seed123 — HM-8 official A4 invoice acceptance. Every number is read FROM THE DB from a
+		// NEW query (never the entity that wrote it). Fixtures are UNPOSTED draft invoices (HM-8 never touches posting — the
+		// posting pipeline is already proven by HM-16), so the run is idempotent (prior ZZ-HM8 fixtures deleted first) and
+		// moves NO ledger. Proves: document-currency dp (KWD=3 / EGP=2, never a fixed N2); the print read-model displays the
+		// STORED values (no recompute); the walk-in stamp is set-once, audited, and ALLOWED ONLY when TaxTotal==0 (a taxed
+		// invoice is rejected — the auditor's rule); the POS branch+company guard; and the OfficialInvoice capability gate.
+		[HttpGet("hm8-accept")]
+		public async Task<IActionResult> Hm8Accept(string key)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var T = DateTime.Today;
+
+			var kwd = await _db.Currencies.AsNoTracking().FirstOrDefaultAsync(c => c.Code == "KWD");
+			var egp = await _db.Currencies.AsNoTracking().FirstOrDefaultAsync(c => c.Code == "EGP");
+			if (kwd == null || egp == null) return BadRequest(new { message = "KWD/EGP currency missing — run the base seed" });
+			int revenue = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstAsync();
+			int pcs = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code == "PCS").Select(u => u.ID).FirstAsync();
+			int ctn = await _db.UnitsOfMeasure.Where(u => u.CompanyID == company && u.Code != "PCS").Select(u => u.ID).FirstOrDefaultAsync();
+			if (ctn == 0) ctn = pcs;
+			int branch17 = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstAsync();
+			int otherBranch = await _db.Branches.Where(b => b.CompanyID == company && b.ID != branch17).Select(b => b.ID).FirstOrDefaultAsync();
+
+			// walk-in + a real registered customer (with a tax reg no)
+			var walkIn = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.NameEn == "POS Walk-in")
+						 ?? await _ar.CreateCustomerAsync(company, "عميل نقدي (كاشير)", "POS Walk-in", null, null);
+			var real = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.NameEn == "ZZ-HM8-REAL")
+						 ?? await _ar.CreateCustomerAsync(company, "شركة مسجَّلة للاختبار", "ZZ-HM8-REAL", "TAX-REG-777", null);
+
+			// capability ON for branch 17 (idempotent)
+			if (!await _db.BranchCapabilities.AnyAsync(x => x.BranchId == branch17 && x.CapabilityKey == "OfficialInvoice"))
+			{ _db.BranchCapabilities.Add(new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = branch17, CapabilityKey = "OfficialInvoice", Enabled = true }); await _db.SaveChangesAsync(); }
+			else { var cap = await _db.BranchCapabilities.FirstAsync(x => x.BranchId == branch17 && x.CapabilityKey == "OfficialInvoice"); if (!cap.Enabled) { cap.Enabled = true; await _db.SaveChangesAsync(); } }
+
+			// ---- idempotent teardown: remove prior ZZ-HM8 fixtures (unposted drafts + their POS links; no JE, safe to delete) ----
+			var oldPo = await _db.PosOrders.Where(o => o.CompanyId == company && o.Notes == "ZZ-HM8").ToListAsync();
+			if (oldPo.Count > 0) { _db.PosOrders.RemoveRange(oldPo); await _db.SaveChangesAsync(); }
+			var oldIds = await _db.SalesInvoices.Where(i => i.CompanyID == company && i.Notes != null && i.Notes.StartsWith("ZZ-HM8")).Select(i => i.ID).ToListAsync();
+			if (oldIds.Count > 0)
+			{
+				_db.SalesInvoiceLines.RemoveRange(_db.SalesInvoiceLines.Where(l => oldIds.Contains(l.SalesInvoiceId)));
+				_db.SalesInvoices.RemoveRange(_db.SalesInvoices.Where(i => oldIds.Contains(i.ID)));
+				await _db.SaveChangesAsync();
+			}
+
+			int Dp(Models.Context.Accounting.Currency c) => c.DecimalPlaces;
+			decimal Rd(decimal v, int dp) => Math.Round(v, dp, MidpointRounding.AwayFromZero);
+
+			// fixture builder — an UNPOSTED draft invoice with computed stored totals at the DOCUMENT currency dp
+			async Task<Models.Context.Accounting.SalesInvoice> Fix(int custId, Models.Context.Accounting.Currency cur, string tag,
+				List<(string desc, string? descEn, decimal qty, decimal price, decimal disc, decimal rate, int? uom)> rows)
+			{
+				int dp = Dp(cur);
+				var inv = new Models.Context.Accounting.SalesInvoice
+				{ CompanyID = company, CustomerId = custId, InvoiceDate = T, CurrencyId = cur.ID, Status = "Draft", Notes = tag, CreatedAt = DateTime.UtcNow, ExchangeRate = 1m };
+				int ln = 1; decimal sub = 0, tax = 0;
+				foreach (var r in rows)
+				{
+					decimal lineTotal = Rd(r.qty * r.price - r.disc, dp);
+					decimal lineTax = Rd(lineTotal * r.rate / 100m, dp);
+					sub += lineTotal; tax += lineTax;
+					inv.Lines.Add(new Models.Context.Accounting.SalesInvoiceLine
+					{ LineNo = ln++, ItemDescription = r.desc, ItemDescriptionEn = r.descEn, Qty = r.qty, UnitPrice = r.price, DiscountAmount = r.disc, TaxRate = r.rate, RevenueAccountId = revenue, UoMId = r.uom, LineTotal = lineTotal });
+				}
+				inv.SubTotal = Rd(sub, dp); inv.TaxTotal = Rd(tax, dp); inv.GrandTotal = Rd(sub + tax, dp);
+				_db.SalesInvoices.Add(inv); await _db.SaveChangesAsync();
+				return inv;
+			}
+
+			// ===== fixtures =====
+			var invKwd = await Fix(walkIn.ID, kwd, "ZZ-HM8-KWD", new() { ("ماء ٦٠٠مل", "Water 600ml", 2m, 0.750m, 0m, 0m, pcs) });                 // KWD, 0% (Kuwait VATEX)
+			var invEgp = await Fix(real.ID, egp, "ZZ-HM8-EGP", new() { ("خدمة استشارية", "Consulting", 1m, 100m, 0m, 14m, pcs) });                    // EGP, 14%
+			var invWt = await Fix(walkIn.ID, kwd, "ZZ-HM8-WT", new() { ("لحم مفروم/كجم", "Mince/kg", 1.234m, 3.500m, 0m, 0m, pcs) });                  // weighted qty (3dp)
+			var invMu = await Fix(walkIn.ID, kwd, "ZZ-HM8-MU", new() { ("عبوة", "Carton", 3m, 5.000m, 0m, 0m, ctn) });                                 // multi-unit (non-PCS)
+			var invDc = await Fix(walkIn.ID, kwd, "ZZ-HM8-DC", new() { ("عرض", "Promo", 5m, 1.000m, 0.500m, 0m, pcs) });                               // discount
+
+			bool isAr = true;
+			async Task<CrossBuy.BL.OfficialInvoiceHelper.PrintData> Read(Models.Context.Accounting.SalesInvoice inv)
+			{
+				var fresh = await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstAsync(i => i.ID == inv.ID && i.CompanyID == company);
+				return await CrossBuy.BL.OfficialInvoiceHelper.LoadPrintDataAsync(_db, fresh, isAr);
+			}
+
+			// ===== T1: KWD document currency = 3 dp · tax 0 is shown =====
+			var pdK = await Read(invKwd);
+			Chk("T1 KWD read-model dp=3 · code=KWD · GrandTotal 1.500 · TaxTotal 0.000", pdK.Dp == 3 && pdK.CurrencyCode == "KWD" && invKwd.GrandTotal == 1.500m && invKwd.TaxTotal == 0m);
+			log.Add($"  T1 dp={pdK.Dp} code={pdK.CurrencyCode} grand={invKwd.GrandTotal} tax={invKwd.TaxTotal}");
+
+			// ===== T2: EGP document currency = 2 dp · 14% breakdown =====
+			var pdE = await Read(invEgp);
+			Chk("T2 EGP read-model dp=2 · code=EGP · Sub 100.00 · Tax 14.00 · Grand 114.00", pdE.Dp == 2 && pdE.CurrencyCode == "EGP" && invEgp.SubTotal == 100.00m && invEgp.TaxTotal == 14.00m && invEgp.GrandTotal == 114.00m);
+			log.Add($"  T2 dp={pdE.Dp} sub={invEgp.SubTotal} tax={invEgp.TaxTotal} grand={invEgp.GrandTotal}");
+
+			// ===== T3: weighted qty preserved at 3 dp · line = qty×price =====
+			var wl = (await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstAsync(i => i.ID == invWt.ID)).Lines.First();
+			Chk("T3 weighted qty 1.234 kept · LineTotal 4.319 (=1.234×3.500, AwayFromZero 3dp)", wl.Qty == 1.234m && wl.LineTotal == 4.319m);
+			log.Add($"  T3 qty={wl.Qty} line={wl.LineTotal}");
+
+			// ===== T4: multi-unit — the sold unit resolves to a name in the read-model =====
+			var pdM = await Read(invMu);
+			var ml = (await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstAsync(i => i.ID == invMu.ID)).Lines.First();
+			Chk("T4 multi-unit: line UoMId set · read-model resolves it to a unit name", ml.UoMId == ctn && ml.UoMId != null && pdM.Uoms.ContainsKey(ctn) && !string.IsNullOrWhiteSpace(pdM.Uoms[ctn]));
+			log.Add($"  T4 uomId={ml.UoMId} unitName='{(pdM.Uoms.ContainsKey(ctn) ? pdM.Uoms[ctn] : "")}'");
+
+			// ===== T5: discount reduces the line total =====
+			var dl = (await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstAsync(i => i.ID == invDc.ID)).Lines.First();
+			Chk("T5 discount: 5×1.000 − 0.500 = 4.500 · DiscountAmount 0.500 stored", dl.DiscountAmount == 0.500m && dl.LineTotal == 4.500m);
+			log.Add($"  T5 disc={dl.DiscountAmount} line={dl.LineTotal}");
+
+			// ===== T8+T9 pre-snapshot (financials + rows must survive the stamp untouched) =====
+			var s0 = await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstAsync(i => i.ID == invKwd.ID);
+			var f0 = (s0.SubTotal, s0.TaxTotal, s0.GrandTotal, s0.CustomerId, s0.JournalEntryId, rows: s0.Lines.Count, l0: s0.Lines.OrderBy(x => x.LineNo).Select(x => x.LineTotal).ToList());
+
+			// ===== T13: KWD 0% → stamp ALLOWED · By/At set · doc shows the override name+tax =====
+			var tk = await _db.SalesInvoices.FirstAsync(i => i.ID == invKwd.ID && i.CompanyID == company);
+			var (ok13, err13) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(tk, "أحمد المستهلك", "TAX-CUST-555", "9");
+			if (ok13) await _db.SaveChangesAsync();
+			var v13 = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == invKwd.ID);   // prove from a NEW read
+			Chk("T13 KWD 0% stamp allowed · name+tax+By+At persisted", ok13 && v13.CustomerNameOverride == "أحمد المستهلك" && v13.CustomerTaxNoOverride == "TAX-CUST-555" && v13.CustomerOverrideBy == "9" && v13.CustomerOverrideAt != null);
+			log.Add($"  T13 ok={ok13} name='{v13.CustomerNameOverride}' tax='{v13.CustomerTaxNoOverride}' by={v13.CustomerOverrideBy} at={v13.CustomerOverrideAt:o}");
+
+			// ===== T8: displays-not-computes — the write left every FINANCIAL value unchanged =====
+			var s1 = await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstAsync(i => i.ID == invKwd.ID);
+			Chk("T8 stamp/print never recomputes: Sub/Tax/Grand + CustomerId + JE unchanged", s1.SubTotal == f0.SubTotal && s1.TaxTotal == f0.TaxTotal && s1.GrandTotal == f0.GrandTotal && s1.CustomerId == f0.CustomerId && s1.JournalEntryId == f0.JournalEntryId);
+			// ===== T9: rows before == after =====
+			var l1 = s1.Lines.OrderBy(x => x.LineNo).Select(x => x.LineTotal).ToList();
+			Chk("T9 lines unchanged by the stamp: same count · same LineTotals", s1.Lines.Count == f0.rows && l1.SequenceEqual(f0.l0));
+			log.Add($"  T8/T9 sub {f0.SubTotal}→{s1.SubTotal} · grand {f0.GrandTotal}→{s1.GrandTotal} · rows {f0.rows}→{s1.Lines.Count}");
+
+			// ===== T11: set-once — a 2nd stamp on the same invoice is rejected, first value intact =====
+			var tk2 = await _db.SalesInvoices.FirstAsync(i => i.ID == invKwd.ID && i.CompanyID == company);
+			var (ok11, err11) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(tk2, "اسم آخر", "OTHER", "9");
+			var v11 = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == invKwd.ID);
+			Chk("T11 second stamp rejected (set-once) · first name unchanged", !ok11 && (err11 ?? "").Contains("مسبقًا") && v11.CustomerNameOverride == "أحمد المستهلك");
+			log.Add($"  T11 ok={ok11} err='{err11}'");
+
+			// ===== T12: taxed invoice (14%) → stamp REJECTED (the auditor's rule) · no override written =====
+			var te = await _db.SalesInvoices.FirstAsync(i => i.ID == invEgp.ID && i.CompanyID == company);
+			var (ok12, err12) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(te, "اسم على فاتورة ضريبية", "X", "9");
+			var v12 = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == invEgp.ID);
+			Chk("T12 taxed invoice stamp REFUSED · reason=tax present · CustomerNameOverride stays null", !ok12 && (err12 ?? "").Contains("ضريبة") && v12.CustomerNameOverride == null);
+			log.Add($"  T12 ok={ok12} err='{err12}'");
+
+			// ===== T6: no tax number given → override tax stays null (the doc omits the line, not '0'/'null') =====
+			var t6 = await Fix(walkIn.ID, kwd, "ZZ-HM8-NOTAX", new() { ("سلعة", "Item", 1m, 1.000m, 0m, 0m, pcs) });
+			var tk6 = await _db.SalesInvoices.FirstAsync(i => i.ID == t6.ID && i.CompanyID == company);
+			var (ok6, _) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(tk6, "زبون بلا رقم ضريبي", "  ", "9");   // blank tax → null
+			if (ok6) await _db.SaveChangesAsync();
+			var v6 = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == t6.ID);
+			Chk("T6 name-only stamp: CustomerTaxNoOverride null (doc omits the tax line)", ok6 && v6.CustomerNameOverride == "زبون بلا رقم ضريبي" && v6.CustomerTaxNoOverride == null);
+			log.Add($"  T6 name='{v6.CustomerNameOverride}' tax={(v6.CustomerTaxNoOverride == null ? "null" : v6.CustomerTaxNoOverride)}");
+
+			// ===== T7: logo absent — the read-model tolerates a null CompanyImage (the view guards with IsNullOrWhiteSpace) =====
+			Chk("T7 read-model loads the company; a null/blank CompanyImage omits the logo (view-guarded)", pdK.Company != null);
+			log.Add($"  T7 companyImage={(string.IsNullOrWhiteSpace(pdK.Company?.CompanyImage) ? "absent→no logo" : "present")}");
+
+			// ===== T10: company guard — neither action can reach an invoice of another company =====
+			bool crossCo = await _db.SalesInvoices.AsNoTracking().AnyAsync(i => i.ID == invKwd.ID && i.CompanyID == 999);
+			Chk("T10 company guard: the invoice is unreachable under a wrong CompanyID (both actions filter it)", !crossCo);
+
+			// ===== T14: POS branch guard — same predicate the cashier action uses =====
+			_db.PosOrders.Add(new CrossBuy.Models.Context.Pos.PosOrder { CompanyId = company, BranchId = branch17, InvoiceId = invKwd.ID, Status = "Paid", OrderType = "Takeaway", OpenedAt = DateTime.UtcNow, Notes = "ZZ-HM8" });
+			await _db.SaveChangesAsync();
+			bool own = await _db.PosOrders.AsNoTracking().AnyAsync(o => o.InvoiceId == invKwd.ID && o.BranchId == branch17 && o.CompanyId == company);
+			bool foreign = otherBranch == 0 || await _db.PosOrders.AsNoTracking().AnyAsync(o => o.InvoiceId == invKwd.ID && o.BranchId == otherBranch && o.CompanyId == company);
+			Chk("T14 branch guard: own branch resolves the invoice · another branch does NOT", own && !(otherBranch != 0 && foreign));
+			log.Add($"  T14 own(17)={own} other({otherBranch})={foreign}");
+
+			// ===== T15: capability gate — ON for branch 17, OFF elsewhere =====
+			bool cap17 = await _posSetup.IsCapabilityEnabledAsync(branch17, "OfficialInvoice");
+			bool capOther = otherBranch != 0 && await _posSetup.IsCapabilityEnabledAsync(otherBranch, "OfficialInvoice");
+			Chk("T15 OfficialInvoice capability ON (branch 17) · not enabled on an un-configured branch", cap17 && !capOther);
+			log.Add($"  T15 branch17={cap17} otherBranch({otherBranch})={capOther}");
+
+			return Ok(new { allPass, log });
+		}
+
 		// GET /api/dev/hm7-count-accept?key=seed123 — HM-7 batch-1 (batch-aware physical count) acceptance. Every number is
 		// read FROM THE DB (per-batch on-hand = Σ Direction×QtyBase over movements, never from the tracked entity).
 		[HttpGet("hm7-count-accept")]

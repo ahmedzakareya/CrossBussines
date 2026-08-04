@@ -905,3 +905,46 @@ opening and would gate FEFO on the WO's component issue. Proven: all 12 manuf te
 SIDE EFFECT (a correction, not a regression): `unbatched_inbound_tracked` drops 25→19 — the 6 removed movements were
 MFGT-R1/R2's unbatched inbound while stray-TrackExpiry; repairing the flag removes them. failedCount stays 0. Baseline
 note updated: unbatched_inbound_tracked = 19 (was 25) after the MFGT repair.
+
+## HM-8 (built) — official A4 invoice + tax-integrity rule on the walk-in name override
+Scope = an official A4 invoice document ONLY. Regulatory/ETA/e-invoice/QR/gapless-numbering DEFERRED (aligns with the
+prior team's `EtaInvoiceServiceStub`, already deferred). No PDF library — a standalone Razor A4 view + `window.print()`
++ `@media print` (zero dependency). Two thin actions share ONE view: `AccountingController.PrintInvoice`/`StampInvoiceCustomer`
+(gate = `[SessionValidation]`, company guard = `DefaultCompanyId`) and `HyperPosController.PrintInvoice`/`StampInvoiceCustomer`
+(gate = HyperCtx + `OfficialInvoice` capability + branch guard: the invoice must be the pay result of a PosOrder on THIS
+branch/company — a cashier can never reach another branch's invoice). All amounts render at the DOCUMENT currency's
+`Currency.DecimalPlaces` (KWD=3 / EGP=2) — never a fixed N2. The view DISPLAYS stored values (`SubTotal/TaxTotal/GrandTotal`,
+line totals) — it never recomputes. **No new column for the logo:** `Companies.CompanyImage` (already nullable) IS the
+logo; the template reuses it (no duplication).
+
+**Walk-in beneficiary override (display-only, set-once, audited, TAX-ZERO ONLY).** A walk-in sale posts to the POS Walk-in
+customer (control account, JE, amounts UNTOUCHED). When such a customer asks for an invoice in their name, four nullable
+DISPLAY columns on `SalesInvoices` carry it — `CustomerNameOverride`, `CustomerTaxNoOverride`, `CustomerOverrideBy`,
+`CustomerOverrideAt` — set by `OfficialInvoiceHelper.StampCustomer` (pure; hardcoded Arabic per BL convention). NO financial
+field changes; the document shows the override, the ledger does not.
+
+**RULE (the auditor's, enforced in code): تجاوز اسم العميل على الوثيقة مسموح للفواتير معفاة الضريبة فقط.** The name/tax
+override is REFUSED when `TaxTotal > 0` — a taxed invoice's beneficiary must equal the ledger account holder (a real
+registered customer), so a name-on-the-document override on a taxed invoice is exactly the mismatch to prevent. Practical
+check: hyper (Kuwait, VATEX 0%) → allowed; an Egypt-taxed (14%) sale → rejected, and the operator must select a real
+registered customer via accounting. No practical blocker (raised for confirmation before build; confirmed). Two guards:
+set-once (a stamped beneficiary is never edited — like `GoodsReceipt.InvoiceId` in HM-16) and tax-zero.
+
+**SQL:** `deploy/sql/hm8_official_invoice.sql` — idempotent, additive, ALL nullable, ZERO financial impact (the 4 override
+columns only; logo reuses `CompanyImage`). Not a migration.
+
+**The A4 layout is a temporary functional placeholder** (like the shelf label) — correct data, minimal styling — pending
+the user's design.
+
+**Acceptance — `api/dev/hm8-accept` (15/15 PASS, `allPass:true`, idempotent over 3 consecutive runs).** Fixtures are
+UNPOSTED draft invoices (HM-8 never touches posting; the posting pipeline is proven by HM-16), so the run moves NO ledger
+and is re-runnable (prior `ZZ-HM8` fixtures deleted first). Every number is read from a NEW DB query, never the writing
+entity. Numbers: T1 KWD dp=3 · grand 1.500 · tax 0.000 · code KWD; T2 EGP dp=2 · sub 100.00 tax 14.00 grand 114.00; T3
+weighted qty 1.2340 → line 4.3190 (=1.234×3.500, AwayFromZero 3dp); T4 multi-unit sold-unit resolved (uomId 2 → 'كرتونة');
+T5 discount 0.500 → line 4.500; T6 name-only stamp → `CustomerTaxNoOverride` null (doc omits the tax line); T7 read-model
+loads the company, null/blank `CompanyImage` omits the logo (view-guarded — the sample company HAS an image, so the null
+branch is structural not data-exercised); T8 the stamp write leaves Sub/Tax/Grand + CustomerId + JE UNCHANGED
+(1.5000→1.5000); T9 lines unchanged (rows 1→1, same LineTotals); T11 second stamp REJECTED (set-once), first name intact;
+T12 taxed (14%) invoice → stamp REFUSED (reason=tax present), `CustomerNameOverride` stays null; T13 KWD 0% → stamp
+ALLOWED, name+tax+By(=9)+At persisted; T10 company guard (invoice unreachable under a wrong CompanyID); T14 branch guard
+own(17)=True / other(4)=False; T15 `OfficialInvoice` capability ON branch17=True / otherBranch(4)=False.

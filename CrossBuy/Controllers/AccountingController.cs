@@ -160,6 +160,33 @@ namespace CrossBuy.Controllers
 			return View(inv);
 		}
 
+		// HM-8: official A4 invoice — back-office (accountant) path. Gate = SessionValidation; guard = company (DefaultCompanyId).
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> PrintInvoice(int id)
+		{
+			var inv = await _context.SalesInvoices.AsNoTracking().Include(i => i.Lines)
+				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+			if (inv == null) return RedirectToAction(nameof(SalesInvoices));
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var pd = await CrossBuy.BL.OfficialInvoiceHelper.LoadPrintDataAsync(_context, inv, isAr);
+			ViewBag.Company = pd.Company; ViewBag.Customer = pd.Customer; ViewBag.Dp = pd.Dp;
+			ViewBag.CurrencyCode = pd.CurrencyCode; ViewBag.Uoms = pd.Uoms;
+			return View("SalesInvoicePrint", inv);
+		}
+
+		// HM-8: stamp a walk-in beneficiary onto the invoice's DISPLAY fields (set-once, tax-zero only). Financials untouched.
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> StampInvoiceCustomer(int id, string name, string? taxNo)
+		{
+			var inv = await _context.SalesInvoices.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+			if (inv == null) { TempData["AccErr"] = L["Sales invoice not found"].Value; return RedirectToAction(nameof(SalesInvoices)); }
+			var (ok, err) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(inv, name, taxNo, _access.CurrentEmployeeId().ToString());
+			if (!ok) { TempData["AccErr"] = err; return RedirectToAction(nameof(PrintInvoice), new { id }); }
+			await _context.SaveChangesAsync();
+			TempData["AccMsg"] = L["The invoice beneficiary was stamped"].Value;
+			return RedirectToAction(nameof(PrintInvoice), new { id });
+		}
+
 		// تفاصيل فاتورة شراء
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PurchaseInvoiceDetail(int id)

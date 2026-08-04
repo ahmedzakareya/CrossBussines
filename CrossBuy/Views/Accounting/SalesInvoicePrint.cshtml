@@ -1,0 +1,122 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.Models.Context.Admin
+@model SalesInvoice
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = null;   // standalone A4 document — no admin shell
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var co = ViewBag.Company as Companies;
+    var cust = ViewBag.Customer as Customer;
+    int dp = ViewBag.Dp ?? 2;                       // document-currency decimals (3 for KWD, 2 for EGP) — HM-2, NOT a fixed N2
+    var uoms = ViewBag.Uoms as Dictionary<int, string> ?? new Dictionary<int, string>();
+    string ccy = ViewBag.CurrencyCode as string ?? "";
+    string F(decimal v) => v.ToString("N" + dp, System.Globalization.CultureInfo.InvariantCulture);   // display, never compute
+    // beneficiary: the stored display override (walk-in) OR the real customer
+    string custName = !string.IsNullOrWhiteSpace(Model.CustomerNameOverride) ? Model.CustomerNameOverride
+                      : (cust == null ? "—" : (isAr ? cust.Name : (cust.NameEn ?? cust.Name)));
+    string custTax = !string.IsNullOrWhiteSpace(Model.CustomerTaxNoOverride) ? Model.CustomerTaxNoOverride : (cust?.TaxRegNo ?? "");
+    string coName = co == null ? "" : (isAr ? (co.ComoanyNameAr ?? co.CompanyName ?? "") : (co.CompanyName ?? ""));
+    bool exempt = Model.TaxTotal == 0m;
+}
+<!doctype html>
+<html lang="@(isAr ? "ar" : "en")" dir="@(isAr ? "rtl" : "ltr")">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>@Localizer["Invoice"] @Model.InvoiceNo</title>
+<style>
+    :root { --ink:#13433a; --muted:#667085; --line:#e4e7ec; }
+    * { box-sizing:border-box; } body { font-family:"Segoe UI",Tahoma,Arial,sans-serif; color:#101828; margin:0; background:#f2f4f7; }
+    .sheet { width:210mm; min-height:297mm; margin:10mm auto; background:#fff; padding:16mm 14mm; box-shadow:0 1px 6px rgba(0,0,0,.12); }
+    .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid var(--ink); padding-bottom:10px; }
+    .co-name { font-size:20px; font-weight:800; color:var(--ink); }
+    .co-meta { font-size:11px; color:var(--muted); line-height:1.7; margin-top:4px; }
+    .logo { max-height:64px; max-width:180px; object-fit:contain; }
+    .title { text-align:@(isAr ? "left" : "right"); }
+    .title h1 { font-size:22px; margin:0; color:var(--ink); letter-spacing:.5px; }
+    .title .no { font-weight:700; margin-top:4px; } .title .dt { font-size:11px; color:var(--muted); }
+    .parties { display:flex; gap:24px; margin:18px 0; }
+    .party { flex:1; } .party .lbl { font-size:10px; text-transform:uppercase; color:var(--muted); letter-spacing:.6px; }
+    .party .v { font-weight:700; font-size:14px; margin-top:2px; } .party .tx { font-size:11px; color:var(--muted); }
+    table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; margin-top:8px; }
+    thead th { background:var(--ink); color:#fff; font-size:10px; text-transform:uppercase; padding:8px 10px; text-align:@(isAr ? "right" : "left"); }
+    thead th.n, tbody td.n { text-align:@(isAr ? "left" : "right"); }
+    tbody td { padding:8px 10px; border-bottom:1px solid var(--line); font-size:12px; }
+    tfoot td { padding:6px 10px; font-size:13px; } tfoot .grand td { font-size:16px; font-weight:800; color:var(--ink); border-top:2px solid var(--ink); }
+    .totals { width:60%; margin-@(isAr ? "right" : "left"):auto; margin-top:12px; }
+    .footer { margin-top:24px; font-size:10px; color:var(--muted); text-align:center; border-top:1px solid var(--line); padding-top:8px; }
+    .exempt { display:inline-block; background:#eaf3ef; color:var(--ink); font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; }
+    .toolbar { text-align:center; margin:10mm auto; } .toolbar button { background:var(--ink); color:#fff; border:0; padding:10px 22px; border-radius:6px; font-size:14px; cursor:pointer; }
+    @@media print { body { background:#fff; } .sheet { margin:0; box-shadow:none; width:auto; min-height:auto; padding:12mm; } .toolbar { display:none; } }
+</style>
+</head>
+<body>
+<div class="toolbar"><button onclick="window.print()">@Localizer["Print"]</button></div>
+<div class="sheet">
+    <div class="head">
+        <div>
+            @if (co != null && !string.IsNullOrWhiteSpace(co.CompanyImage)) { <img class="logo" src="@co.CompanyImage" alt="" /> }
+            <div class="co-name">@coName</div>
+            <div class="co-meta">
+                @if (co != null) {
+                    @if (!string.IsNullOrWhiteSpace(co.Address)) { <div>@co.Address</div> }
+                    @if (!string.IsNullOrWhiteSpace(co.PhoneNumber)) { <div>@Localizer["Tel"]: @co.PhoneNumber</div> }
+                    @if (!string.IsNullOrWhiteSpace(co.TaxNumber)) { <div>@Localizer["Tax Reg. No"]: @co.TaxNumber</div> }
+                }
+            </div>
+        </div>
+        <div class="title">
+            <h1>@Localizer["TAX INVOICE"]</h1>
+            <div class="no">@Model.InvoiceNo</div>
+            <div class="dt">@Model.InvoiceDate.ToString("yyyy/MM/dd") · @ccy</div>
+        </div>
+    </div>
+
+    <div class="parties">
+        <div class="party">
+            <div class="lbl">@Localizer["Billed to"]</div>
+            <div class="v">@custName</div>
+            @if (!string.IsNullOrWhiteSpace(custTax)) { <div class="tx">@Localizer["Tax Reg. No"]: @custTax</div> }
+        </div>
+        <div class="party" style="text-align:@(isAr ? "left" : "right")">
+            <div class="lbl">@Localizer["Status"]</div>
+            <div class="v">@Model.Status</div>
+        </div>
+    </div>
+
+    <table>
+        <thead><tr>
+            <th style="width:34px">#</th><th>@Localizer["Description"]</th><th class="n" style="width:90px">@Localizer["Qty"]</th>
+            <th class="n" style="width:90px">@Localizer["Price"]</th><th class="n" style="width:80px">@Localizer["Disc"]</th>
+            <th class="n" style="width:60px">@Localizer["Tax%"]</th><th class="n" style="width:100px">@Localizer["Total"]</th>
+        </tr></thead>
+        <tbody>
+        @foreach (var l in Model.Lines.OrderBy(x => x.LineNo))
+        {
+            var unit = (l.UoMId != null && uoms.ContainsKey(l.UoMId.Value)) ? uoms[l.UoMId.Value] : "";
+            <tr>
+                <td>@l.LineNo</td>
+                <td>@(!isAr && !string.IsNullOrWhiteSpace(l.ItemDescriptionEn) ? l.ItemDescriptionEn : l.ItemDescription)</td>
+                <td class="n">@F(l.Qty) @unit</td>
+                <td class="n">@F(l.UnitPrice)</td>
+                <td class="n">@(l.DiscountAmount == 0m ? "—" : F(l.DiscountAmount))</td>
+                <td class="n">@l.TaxRate.ToString("0.##")%</td>
+                <td class="n">@F(l.LineTotal)</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+
+    <table class="totals"><tfoot>
+        <tr><td>@Localizer["Subtotal"]</td><td class="n">@F(Model.SubTotal) @ccy</td></tr>
+        <tr><td>@Localizer["Tax"] @(exempt ? Localizer["(0% VATEX — exempt)"].Value : "")</td><td class="n">@F(Model.TaxTotal) @ccy</td></tr>
+        <tr class="grand"><td>@Localizer["Grand Total"]</td><td class="n">@F(Model.GrandTotal) @ccy</td></tr>
+    </tfoot></table>
+
+    <div class="footer">
+        @if (exempt) { <span class="exempt">@Localizer["Tax-exempt supply (VATEX 0%)"]</span> }
+        <div style="margin-top:6px">@Localizer["This is a system-generated document."]</div>
+    </div>
+</div>
+</body>
+</html>

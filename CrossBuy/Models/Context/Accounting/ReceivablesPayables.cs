@@ -69,6 +69,13 @@ namespace CrossBuy.Models.Context.Accounting
 		public string? EtaStatus { get; set; }
 		public string? Notes { get; set; }
 		public DateTime? CreatedAt { get; set; }
+		// HM-8: DISPLAY-ONLY beneficiary for the official invoice of a walk-in sale (set-once, audited). The posting is
+		// UNTOUCHED — CustomerId/control account/JE/amounts unchanged. Allowed ONLY when TaxTotal == 0 (a taxed invoice's
+		// beneficiary must equal the ledger account holder). NO financial meaning; the document shows it, the ledger does not.
+		public string? CustomerNameOverride { get; set; }
+		public string? CustomerTaxNoOverride { get; set; }
+		public string? CustomerOverrideBy { get; set; }
+		public DateTime? CustomerOverrideAt { get; set; }
 		public ICollection<SalesInvoiceLine> Lines { get; set; } = new List<SalesInvoiceLine>();
 	}
 

@@ -302,6 +302,49 @@ namespace CrossBuy.Controllers
 			return RedirectToAction(nameof(Lane));
 		}
 
+		// ==================== HM-8: OFFICIAL A4 INVOICE (cashier path) ====================
+		// Gate = HyperCtx (controller guard). Capability = OfficialInvoice (branch-scoped). Branch+company guard: the
+		// invoice must be the pay result of a POS order on THIS cashier's branch — a cashier can never reach another
+		// branch's invoice. The view is the SHARED Accounting/SalesInvoicePrint (one template, two thin actions).
+		[HttpGet("invoice/print/{invoiceId:int}")]
+		public async Task<IActionResult> PrintInvoice(int invoiceId)
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "OfficialInvoice"))
+			{ TempData["PosErr"] = L["The official invoice is not enabled on this branch."].Value; return RedirectToAction(nameof(Lane)); }
+			if (!await BranchOwnsInvoiceAsync(c.BranchId, invoiceId))
+			{ TempData["PosErr"] = L["This invoice does not belong to your branch."].Value; return RedirectToAction(nameof(Lane)); }
+			var inv = await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines)
+				.FirstOrDefaultAsync(i => i.ID == invoiceId && i.CompanyID == PosCompanyId);
+			if (inv == null) { TempData["PosErr"] = L["Sales invoice not found"].Value; return RedirectToAction(nameof(Lane)); }
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			var pd = await OfficialInvoiceHelper.LoadPrintDataAsync(_db, inv, isAr);
+			ViewBag.Company = pd.Company; ViewBag.Customer = pd.Customer; ViewBag.Dp = pd.Dp;
+			ViewBag.CurrencyCode = pd.CurrencyCode; ViewBag.Uoms = pd.Uoms;
+			return View("~/Views/Accounting/SalesInvoicePrint.cshtml", inv);
+		}
+
+		// HM-8: stamp a walk-in beneficiary (set-once, tax-zero only). Same capability + branch guard; financials untouched.
+		[HttpPost("invoice/stamp")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> StampInvoiceCustomer(int invoiceId, string name, string? taxNo)
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "OfficialInvoice"))
+			{ TempData["PosErr"] = L["The official invoice is not enabled on this branch."].Value; return RedirectToAction(nameof(Lane)); }
+			if (!await BranchOwnsInvoiceAsync(c.BranchId, invoiceId))
+			{ TempData["PosErr"] = L["This invoice does not belong to your branch."].Value; return RedirectToAction(nameof(Lane)); }
+			var inv = await _db.SalesInvoices.FirstOrDefaultAsync(i => i.ID == invoiceId && i.CompanyID == PosCompanyId);
+			if (inv == null) { TempData["PosErr"] = L["Sales invoice not found"].Value; return RedirectToAction(nameof(Lane)); }
+			var (ok, err) = OfficialInvoiceHelper.StampCustomer(inv, name, taxNo, c.EmployeeId.ToString());
+			if (!ok) { TempData["PosErr"] = err; return RedirectToAction(nameof(PrintInvoice), new { invoiceId }); }
+			await _db.SaveChangesAsync();
+			return RedirectToAction(nameof(PrintInvoice), new { invoiceId });
+		}
+
+		// Branch guard: the invoice must be the pay result of an order on THIS branch (and this company).
+		private Task<bool> BranchOwnsInvoiceAsync(int branchId, int invoiceId) =>
+			_db.PosOrders.AsNoTracking().AnyAsync(o => o.InvoiceId == invoiceId && o.BranchId == branchId && o.CompanyId == PosCompanyId);
+
 		// ==================== HM-4: PRICE CHECK (read-only — no order, no cart, no shift) ====================
 		// Gated by the PriceCheck capability. Reuses the unified scan resolution (HM-2 fixed barcodes + HM-3 scale
 		// barcodes) but calls GetPriceAsync — NEVER AddLineAsync. Requires a cashier login (HyperCtx via the controller

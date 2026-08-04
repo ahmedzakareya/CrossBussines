@@ -3010,4 +3010,16 @@
   <data name="Pricing" xml:space="preserve"><value>التسعير</value></data>
   <data name="The discount reduces the price to zero or below — the line was rejected." xml:space="preserve"><value>الخصم يخفّض السعر إلى صفر أو أقلّ — رُفِض السطر.</value></data>
   <data name="The vendor invoice was matched to the goods receipt and GRNI was cleared" xml:space="preserve"><value>طُوبِقت فاتورة المورّد مع إذن الاستلام وأُقفِل حساب «بضاعة وردت ولم تُفوتَر»</value></data>
+  <data name="Sales invoice not found" xml:space="preserve">
+    <value>فاتورة البيع غير موجودة</value>
+  </data>
+  <data name="The invoice beneficiary was stamped" xml:space="preserve">
+    <value>تم ختم المستفيد على الفاتورة</value>
+  </data>
+  <data name="The official invoice is not enabled on this branch." xml:space="preserve">
+    <value>الفاتورة الرسمية غير مُفعَّلة على هذا الفرع.</value>
+  </data>
+  <data name="This invoice does not belong to your branch." xml:space="preserve">
+    <value>هذه الفاتورة لا تخصّ فرعك.</value>
+  </data>
 </root>
