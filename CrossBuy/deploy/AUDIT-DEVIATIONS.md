@@ -1099,3 +1099,101 @@ the ineligible ZZ category was given the eligible category's mapping so its item
 
 **HM-D61 recurred this slice** (parallel `PermissionScopeStartupValidator` still breaks boot) — disabled temporarily to run
 acceptance, restored, never committed; `Program.cs` not in our commit. Same declared handling as before.
+
+## HM-9 slice 3 (redemption) — DEFERRED by owner decision; ordered AFTER HM-10 (offline)
+Redemption is a real marketing feature; offline is an operating precondition (a 4-lane hypermarket on a flaky network =
+a stalled register with customers waiting, whereas the ABSENCE of loyalty never stops a sale). So HM-10 (offline) takes
+priority over slice 3. Because the `"Loyalty"` capability ships OFF (seed default), EARN is dormant in production — no
+customer is waiting on points — so carrying the redemption debt costs nothing operationally today. Slice 3 stays deferred
+and the `"Loyalty"` capability stays OFF until redemption is complete (no half-feature in production). It opens on the
+already-recorded **negative-balance policy** (return-after-redeem: allow negative · block return · cash-settle — decided
+BEFORE any redemption code) and builds the **liability-settlement** model (Dr points-liability / Cr cash; new `21xxxx`
+account; revenue + VAT untouched), NOT the discount model (which the single `DiscountAmount` scalar + promo comparator
+technically forbid). Recorded at the HM-10 decision.
+
+## HM-10 — strategy decided: GRACEFUL DEGRADATION (not offline-selling). Offline-selling DEFERRED for an architectural reason.
+The hyper lane's real disconnect failure is two-fold: (1) a mid-scan / pay-before-commit STALL (recoverable — the cart is a
+server-side Open order), and (2) a pay-AFTER-commit OPAQUE FAILURE (the sale committed, the response was lost, the cashier
+sees a browser error and no receipt, and a manual resubmit would DOUBLE-CHARGE — there is no idempotency token on hyper Pay).
+HM-10 core = graceful degradation + in-flight-sale safety, NOT offline selling.
+- **Offline-selling (queue/sync) is DEFERRED with an explicit characterization:** "constrained by the FEFO wall — it requires
+  solving cross-terminal OVERSELL (server-side reservation/allocation) or accepting the negative-stock risk. Deferred for an
+  ARCHITECTURAL reason, not for lack of time, and may not be worth it." A 4-lane hypermarket selling from a LIMITED, tracked
+  batch balance (unlike the restaurant, which sells from production) means two offline terminals selling the last units of a
+  batch = an oversell on physical stock + COGS that a memo reversal cannot fix; FEFO + the overselling guard both need a LIVE
+  SQL row lock (`UPDLOCK, HOLDLOCK`) no disconnected terminal can hold.
+- **`navigator.onLine` does NOT detect the opaque failure** (the network is up; the request committed and the response was
+  lost — timeout / IIS recycle / momentary drop after send). So INSIDE slice A the order is: idempotency + receipt-recovery
+  FIRST (they fix the financial harm and work in ALL cases with no detector), THEN the connectivity detector (it only improves
+  the message for the pre-submit "no network" case). The detector is NOT the protection.
+- Generalizing the restaurant offline engine was rejected: it is not a re-scope (different dataset — full barcode/scale catalog
+  vs the restaurant QuickMenu — and a barcode-aware local engine), and it builds on a layer that TRUSTS device 2dp prices
+  (HM-D24, `SyncPaidOrderAsync:1583-1590` overwrites server re-pricing with device UnitPrice/Discount/TaxRate), re-requires the
+  cancelled `(TerminalId,ReceiptNo)` unique index (HM-D5-b live collision source), and HAS NEVER RUN ON A REAL PATH (all offline
+  data is synthetic ZZ fixtures with no PosSyncLog provenance). **Review-by-eye item: a real offline session has never been
+  proven — it stays uncheckable until one runs.**
+
+## HM-10 slice A (built) — hyper pay idempotency + receipt recovery (graceful-degradation core)
+The hyper lane's opaque post-commit failure (the sale committed, the 302 was lost, the cashier sees a browser error and no
+receipt — and a manual resubmit would DOUBLE-CHARGE) is closed. Order INSIDE the slice, per the owner's correction:
+idempotency + recovery FIRST (they fix the financial harm and work in ALL cases with no connectivity detector), the
+detector LAST (message only).
+
+**Idempotency — DEVIATION from the approved "field on PosOrder" to a dedicated table, for a concurrency reason.** The
+design review approved `PosOrder.PayToken` + a unique filtered index. Implementation analysis showed the field CANNOT make
+the index arbitrate a CONCURRENT double-submit of the SAME order: both requests UPDATE the same order row to the same token,
+producing no duplicate ROW, so no unique violation — both would post (acceptance T3's exact case). Only an INSERT-keyed row
+converts the race into a transaction failure (the property PosSyncLog relies on and T3 asserts). So a dedicated table
+`HyperPayTokens (CompanyId, Token unique, OrderId, InvoiceId)` is used — the OTHER option the owner offered — NOT PosSyncLog
+(the restaurant lane's, untouched). This honors the design's intent ("the unique index decides") which the field could not
+deliver. Recorded as a deliberate, reasoned change from the approved shape.
+
+- The token is checked/stamped INSIDE PayAsync's transaction (lesson HM-1-أ 5b): the AUTHORITATIVE guard is the in-tx unique
+  INSERT of the token row before commit; a pre-tx read is only a fast-path for a sequential retry, never relied on for the
+  race. `PayAsync` gained an optional trailing `idempotencyToken = null` (restaurant callers pass null → unaffected — a
+  backward-compatible change to the shared method, chosen over duplicating the whole financial path in a separate hyper method).
+- **The catch swallows ONLY this index's violation** (`IsHyperPayTokenDuplicate`: SqlException 2601/2627 AND the message
+  contains `UX_HyperPayTokens_Token`) and returns the winner's invoice; any other save failure is RETHROWN — the anti-swallow
+  discipline of HM-1-أ. Proven by T11 (an over-long token → a truncation failure, number ≠ 2601/2627 → thrown, no fake invoice).
+- **The token vs the status guard (owner's split, documented):** the token guards a RESUBMIT of the same intent (opaque-failure
+  retry); the existing `Status != "Open"` guard handles a DIFFERENT intent on the same cart (two different tokens, or a lost
+  token). Together ⇒ exactly one invoice, with NO new code for the different-intent case (T4/T9/T10).
+
+**Hole (أ) — sessionStorage limitation, documented for the next reader.** The client token is stored in sessionStorage keyed
+by order id, so it survives F5/reload; but if the tab/browser is CLOSED (the common opaque-failure symptom) the token is lost
+and a fresh one is generated. In that case the protection is NOT the token but the ORDER-STATUS guard (the order is already
+Paid ⇒ the resubmit is rejected). **The token guards same-page/same-session resubmits; the status guard is the comprehensive
+protection. A future reader must NOT assume the token is complete protection.** Proven by T9 (lost token ⇒ status guard ⇒ one
+invoice).
+
+**Hole (ب) — POST-Redirect-Get was already in place.** `HyperPosController.Pay` already `RedirectToAction(nameof(Lane))` after
+a successful pay, so a normal F5 reloads Lane (GET) and never re-posts. The opaque failure is precisely the LOST-302 window
+(the redirect never reached the browser); a raw re-post there is caught by the status guard (T10). PRG is the first line; the
+token/status guard cover the lost-302.
+
+**Hole (ج) — the DbUpdateException catch is index-specific** (see IsHyperPayTokenDuplicate above), never a generic swallow (T11).
+
+**Receipt recovery (read-only):** `GET /hyper/pos/receipts` lists THIS terminal's recent paid orders (receipt no + total +
+time) with a Reprint link that REUSES HM-8 `PrintInvoice` (branch-guarded via `PosOrder.InvoiceId`). Terminal-scoped
+(`TerminalId == ctx.TerminalId` + branch + company) so a cashier sees only their own terminal's receipts (T6). Zero posting (T5).
+
+**Detector (message only, last):** a `navigator.onLine` pre-submit guard on the scan/pay forms shows a clear banner instead of
+the browser error, and NEVER cancels an in-flight server sale (the cart is a server-side Open order that survives a disconnect
+and resumes on reconnect — T7). It is explicitly not the protection (the owner's point: navigator.onLine cannot see the
+opaque failure, where the network is up and the response was lost).
+
+**SQL:** `deploy/sql/hm10_pay_idempotency.sql` — idempotent, additive: `HyperPayTokens` + the unique index. A brand-new table
+has zero rows, so the unique index can never be blocked by a pre-existing duplicate. Zero financial impact. Not a migration.
+
+### Acceptance — api/dev/hm10-accept (11/11 PASS, allPass:true, failedCount=0, idempotent over 3 runs; cookie-jar)
+Reuses the REAL POS pay path with a token; every number from a NEW DB query. T1 normal pay grand 1.500 · one token row;
+T2 resubmit same token ⇒ SAME invoice, one token, stock moves 1→1 + receipts 1→1 (no 2nd post); T3 UX_HyperPayTokens_Token
+exists AND a duplicate (CompanyId,Token) INSERT is rejected by the index; T4 two different tokens same cart ⇒ 2nd rejected
+("الطلب ليس مفتوحًا"), one invoice; T9 lost token ⇒ 2nd rejected by the status guard; T10 raw re-post (no token) ⇒ rejected
+by the status guard; T7 pre-commit disconnect ⇒ order was Open · pay after reconnect ⇒ one invoice; T5 recovery finds the
+receipt (ZZ-HM10-T1-000006, total 1.500) · reprint target exists · zero posting (invoice count 421→421); T6 recovery is
+terminal-scoped (T2's receipt not in T1's list); T11 over-long token (non-index save failure) ⇒ THROWN not swallowed, no
+fake invoice, order not paid; T8 failedCount 0 · ar_sub · ap_sub · doc_je_status_mismatch · writer_coupling · dbset all OK.
+
+**HM-D61 recurred** (parallel `PermissionScopeStartupValidator` still breaks boot) — disabled temporarily to run acceptance,
+restored, never committed; `Program.cs` not in our commit.

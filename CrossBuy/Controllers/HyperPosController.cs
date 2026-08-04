@@ -288,19 +288,41 @@ namespace CrossBuy.Controllers
 			return RedirectToAction(nameof(Lane));
 		}
 
+		// HM-10 slice A: the pay carries a client-generated idempotency token (payToken). A resubmit of the SAME intent
+		// (opaque post-commit failure) returns the FIRST invoice, never a second charge. The action already does
+		// Post-Redirect-Get (redirect to Lane) so a normal F5 never re-posts; the token covers the lost-302 window.
 		[HttpPost("pay")][ValidateAntiForgeryToken]
-		public async Task<IActionResult> Pay()
+		public async Task<IActionResult> Pay(string? payToken)
 		{
 			var c = Ctx(); if (c?.TerminalId == null) return RedirectToAction(nameof(Login));
 			// HM-1: an OPEN shift is required to take payment — hyper lane only (restaurant path untouched).
 			if (c.ShiftId == null || await _pos.GetOpenShiftAsync(c.TerminalId.Value) == null) { TempData["PosErr"] = L["Open a shift before taking payment."].Value; return RedirectToAction(nameof(Lane)); }
 			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Lane)); }
 			if (c.OrderId == null) { TempData["PosErr"] = L["The cart is empty."].Value; return RedirectToAction(nameof(Lane)); }
-			var (ok, err, invId) = await _posOrders.PayAsync(PosCompanyId, c.OrderId.Value, "Cash", null);
+			var (ok, err, invId) = await _posOrders.PayAsync(PosCompanyId, c.OrderId.Value, "Cash", null, idempotencyToken: string.IsNullOrWhiteSpace(payToken) ? null : payToken.Trim());
 			if (!ok) { TempData["PosErr"] = err; return RedirectToAction(nameof(Lane)); }
 			c.OrderId = null; SetCtx(c);
 			TempData["PosMsg"] = L["Paid — invoice #{0} created.", invId ?? 0].Value;
 			return RedirectToAction(nameof(Lane));
+		}
+
+		// HM-10 slice A: receipt recovery — after an opaque failure the cashier confirms whether the last sale(s) posted
+		// and can reprint. READ-ONLY (zero posting). Scoped to THIS terminal's own paid orders (company + branch + terminal).
+		[HttpGet("receipts")]
+		public async Task<IActionResult> Receipts()
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			if (c.TerminalId == null) return RedirectToAction(nameof(Start));
+			var rows = await _db.PosOrders.AsNoTracking()
+				.Where(o => o.CompanyId == PosCompanyId && o.BranchId == c.BranchId && o.TerminalId == c.TerminalId && o.Status == "Paid" && o.InvoiceId != null)
+				.OrderByDescending(o => o.ClosedAt)
+				.Select(o => new { o.InvoiceId, o.ReceiptNo, o.GrandTotal, o.ClosedAt })
+				.Take(10).ToListAsync();
+			int? ccyId = await _db.BranchPosSettings.AsNoTracking().Where(s => s.BranchId == c.BranchId).Select(s => s.DefaultCurrencyId).FirstOrDefaultAsync();
+			ViewBag.Ctx = c;
+			ViewBag.Rows = rows.Select(r => new object[] { r.InvoiceId!, r.ReceiptNo ?? "", r.GrandTotal, r.ClosedAt }).ToList();
+			ViewBag.Dp = await _rounding.DecimalsAsync(PosCompanyId, ccyId == 0 ? (int?)null : ccyId, c.BranchId);
+			return View("~/Views/Hyper/Receipts.cshtml");
 		}
 
 		// ==================== HM-8: OFFICIAL A4 INVOICE (cashier path) ====================
@@ -327,9 +349,28 @@ namespace CrossBuy.Controllers
 
 		// HM-8: stamp a walk-in beneficiary (set-once, tax-zero only). Same capability + branch guard; financials untouched.
 		[HttpPost("invoice/stamp")][ValidateAntiForgeryToken]
+		// STAGE 1 BATCH D1 WAVE 1 — HIGH (not Critical: it was already branch- and company-bounded).
+		//
+		// What was already right, and is PRESERVED unchanged: the `OfficialInvoice` capability gate, the
+		// branch-ownership check (`BranchOwnsInvoiceAsync` — the invoice must be the pay result of an order on
+		// THIS branch), and the company predicate on the invoice row. Those three are why this endpoint was
+		// re-classified down from the Critical rank the brief opened with: a caller could only ever reach
+		// invoices of their own branch and company.
+		//
+		// What was MISSING is a role check: every lane role could stamp — including `pos-waiter` and
+		// `pos-kitchen`, who have no business touching an issued invoice. `CanSell` (pos-cashier or pos-manager)
+		// is the minimum that is both real and compatible: stamping a walk-in beneficiary is part of the ordinary
+		// cashier printing flow, so requiring a manager would break a working counter workflow rather than
+		// securing anything.
+		//
+		// The lane identity comes from `HyperCtx` (session) and its roles from `BranchUserRoles` — the DOCUMENTED
+		// PERMANENT POS EXCEPTION. It is used here because this is the POS lane; it is deliberately NOT copied
+		// into the accounting twin of this action, which resolves a real BusinessContext instead.
 		public async Task<IActionResult> StampInvoiceCustomer(int invoiceId, string name, string? taxNo)
 		{
 			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			if (!_access.CanSell(c.Roles))
+			{ TempData["PosErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Lane)); }
 			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "OfficialInvoice"))
 			{ TempData["PosErr"] = L["The official invoice is not enabled on this branch."].Value; return RedirectToAction(nameof(Lane)); }
 			if (!await BranchOwnsInvoiceAsync(c.BranchId, invoiceId))

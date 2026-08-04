@@ -43,11 +43,16 @@
             <div class="card card-flush shadow-sm mb-6">
                 <div class="card-header pt-6">
                     <h3 class="card-title fw-bold text-gray-900">@(isAr ? "البيع" : "Sell")</h3>
-                    <div class="card-toolbar"><span class="badge badge-light-primary fs-7">@term?.Code · @(isAr ? "وردية" : "Shift") #@openShift.ID</span></div>
+                    <div class="card-toolbar">
+                        <a href="/hyper/pos/receipts" class="btn btn-sm btn-light-primary me-2"><i class="ki-outline ki-basket fs-6"></i>@(isAr ? "الإيصالات" : "Receipts")</a>
+                        <span class="badge badge-light-primary fs-7">@term?.Code · @(isAr ? "وردية" : "Shift") #@openShift.ID</span>
+                    </div>
                 </div>
                 <div class="card-body pt-2">
                     <!--scan box (autofocus)-->
-                    <form method="post" action="/hyper/pos/scan" class="d-flex gap-3 mb-5" autocomplete="off">
+                    @* HM-10 slice A: offline banner (message only) — populated by the connectivity detector at the bottom. *@
+                    <div id="cbOffline" class="alert alert-warning d-none d-flex align-items-center mb-4"><i class="ki-outline ki-wifi fs-2 me-3"></i>@(isAr ? "لا اتصال — انتظر عودة الشبكة قبل بدء بيعة." : "No connection — wait for the network before starting a sale.")</div>
+                    <form method="post" action="/hyper/pos/scan" class="d-flex gap-3 mb-5 cb-guard" autocomplete="off">
                         @Html.AntiForgeryToken()
                         <input type="text" name="barcode" autofocus class="form-control form-control-solid" placeholder="@(isAr ? "امسح الباركود..." : "Scan barcode...")" />
                         <button type="submit" class="btn btn-primary"><i class="ki-outline ki-plus fs-4"></i>@(isAr ? "إضافة" : "Add")</button>
@@ -104,8 +109,9 @@
                                 <span class="text-muted fs-6 me-2">@(isAr ? "الإجمالي" : "Total")</span>
                                 <span class="fs-2 fw-bold text-gray-900" style="font-variant-numeric:tabular-nums">@order.GrandTotal.ToString(fmt)</span>
                             </div>
-                            <form method="post" action="/hyper/pos/pay">
+                            <form method="post" action="/hyper/pos/pay" class="cb-guard" id="cbPayForm" data-order="@ctx?.OrderId">
                                 @Html.AntiForgeryToken()
+                                <input type="hidden" name="payToken" id="cbPayToken" />   @* HM-10 slice A: client idempotency token *@
                                 <button type="submit" class="btn btn-success btn-lg"><i class="ki-outline ki-dollar fs-3"></i>@(isAr ? "دفع نقدي" : "Pay cash")</button>
                             </form>
                         </div>
@@ -209,3 +215,28 @@
 
     </div>
 </div>
+
+@* HM-10 slice A: (1) idempotency token — one per cart, stable across F5/reload; (2) connectivity detector (MESSAGE only —
+   the real protection is the server idempotency + receipt recovery, which work with no detector). *@
+<script>
+    (function () {
+        var payForm = document.getElementById('cbPayForm');
+        if (payForm) {
+            var oid = payForm.getAttribute('data-order') || '0';
+            var key = 'hyperPayToken:' + oid;
+            var tok = sessionStorage.getItem(key);
+            if (!tok) { tok = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + '-' + Math.random().toString(16).slice(2)); sessionStorage.setItem(key, tok); }
+            var f = document.getElementById('cbPayToken'); if (f) f.value = tok;
+        }
+        var banner = document.getElementById('cbOffline');
+        function refresh() { if (banner) banner.classList.toggle('d-none', navigator.onLine); }
+        window.addEventListener('online', refresh); window.addEventListener('offline', refresh); refresh();
+        // Pre-submit guard: block STARTING a scan/pay when clearly offline. It never cancels an in-flight server sale — the
+        // cart is a server-side Open order that survives a disconnect and resumes on reconnect.
+        document.querySelectorAll('form.cb-guard').forEach(function (frm) {
+            frm.addEventListener('submit', function (e) {
+                if (!navigator.onLine) { e.preventDefault(); if (banner) { banner.classList.remove('d-none'); banner.scrollIntoView({ block: 'nearest' }); } }
+            });
+        });
+    })();
+</script>

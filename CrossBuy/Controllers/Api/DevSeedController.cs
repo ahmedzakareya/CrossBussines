@@ -1910,6 +1910,152 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, failedCount = run.FailedCount, log });
 		}
 
+		// GET /api/dev/hm10-accept?key=seed123 — HM-10 slice A (hyper pay idempotency + receipt recovery) acceptance.
+		// Reuses the REAL POS pay path with an idempotency token; every number read from a NEW DB query. Proves: a resubmit
+		// with the same token returns the FIRST invoice (no second post); the unique index rejects a duplicate token; two
+		// different tokens on one cart collapse to one invoice via the order-status guard; receipt recovery is read-only and
+		// terminal-scoped; a non-index save failure is RETHROWN not swallowed.
+		[HttpGet("hm10-accept")]
+		public async Task<IActionResult> Hm10Accept(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity, [FromServices] CrossBuy.BL.IStockService stock)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var T = DateTime.Today;
+
+			int bid = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstOrDefaultAsync();
+			var demo = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001");
+			if (bid == 0 || demo == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1-seed first" });
+			int drawer = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstOrDefaultAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			var (bq, _q1, _q2) = await stock.GetBalanceAsync(company, demo.ID, wh);
+			if (bq < 100m) await stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = demo.ID, WarehouseId = wh, Qty = 100m - bq, UnitCost = 0.5m } }, null);
+
+			// two terminals (T1 for the tests · T2 to prove the recovery terminal-scope) + open shifts
+			async Task<CrossBuy.Models.Context.Pos.PosTerminal> Term(string code)
+			{
+				var t = await _db.PosTerminals.FirstOrDefaultAsync(x => x.BranchId == bid && x.Code == code);
+				if (t == null) { t = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = bid, Code = code, Name = code, CashAccountId = drawer, ReceiptPrefix = code + "-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(t); await _db.SaveChangesAsync(); }
+				foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == t.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+				await _db.SaveChangesAsync();
+				await _posSetup.OpenShiftAsync(t.ID, "Morning", null, 0m);
+				return t;
+			}
+			var term1 = await Term("ZZ-HM10-T1"); var shift1 = await _posSetup.GetOpenShiftAsync(term1.ID);
+			var term2 = await Term("ZZ-HM10-T2"); var shift2 = await _posSetup.GetOpenShiftAsync(term2.ID);
+
+			async Task<int> NewOrder(int termId, int shiftId)
+			{
+				var (_o1, _o2, oid) = await _posOrders.CreateOrderAsync(company, bid, "Takeaway", null, null, termId, shiftId);
+				await _posOrders.AddLineAsync(company, oid, demo.ID, 2m);   // 2 × 0.750 = 1.500
+				return oid;
+			}
+			async Task<int> StockMoves(int invId) => await _db.StockMovements.AsNoTracking().CountAsync(m => m.SourceType == "SalesInvoice" && m.SourceId == invId);
+			async Task<int> Tokens(string tok) => await _db.HyperPayTokens.AsNoTracking().CountAsync(t => t.CompanyId == company && t.Token == tok);
+			string Tok() => "ZZ-HM10-" + Guid.NewGuid().ToString("N");
+
+			// ===== T1: normal pay ⇒ exact numbers (regression) =====
+			var o1 = await NewOrder(term1.ID, shift1!.ID); var tokA = Tok();
+			var (p1ok, _p1e, inv1) = await _posOrders.PayAsync(company, o1, "Cash", 1, idempotencyToken: tokA);
+			decimal g1 = inv1 != null ? await _db.SalesInvoices.AsNoTracking().Where(i => i.ID == inv1).Select(i => i.GrandTotal).FirstAsync() : -1m;
+			Chk("T1 normal pay ⇒ ok · grand 1.500 · one token row", p1ok && g1 == 1.500m && await Tokens(tokA) == 1);
+			log.Add($"  T1 ok={p1ok} inv={inv1} grand={g1}");
+
+			// ===== T2: resubmit SAME token ⇒ returns the FIRST invoice · one invoice/JE/stock/receipt (no second post) =====
+			int mv1 = await StockMoves(inv1!.Value);
+			int rcpt1 = await _db.PosPayments.AsNoTracking().CountAsync(pp => pp.OrderId == o1);
+			var (p2ok, _p2e, inv2) = await _posOrders.PayAsync(company, o1, "Cash", 1, idempotencyToken: tokA);
+			int mv2 = await StockMoves(inv1.Value);
+			int rcpt2 = await _db.PosPayments.AsNoTracking().CountAsync(pp => pp.OrderId == o1);
+			Chk("T2 resubmit same token ⇒ SAME invoice · one token · stock moves + receipts unchanged (no 2nd post)",
+				p2ok && inv2 == inv1 && await Tokens(tokA) == 1 && mv2 == mv1 && rcpt2 == rcpt1);
+			log.Add($"  T2 inv2={inv2}(inv1={inv1}) tokens={await Tokens(tokA)} stockMoves {mv1}→{mv2} receipts {rcpt1}→{rcpt2}");
+
+			// ===== T3: the unique index decides — (a) it exists · (b) a duplicate INSERT is rejected =====
+			int idxCount = await _db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS Value FROM sys.indexes WHERE name = 'UX_HyperPayTokens_Token'").FirstAsync();
+			var dupTok = Tok(); bool dupRejected = false;
+			_db.HyperPayTokens.Add(new CrossBuy.Models.Context.Pos.HyperPayToken { CompanyId = company, Token = dupTok, OrderId = 0, InvoiceId = null, CreatedAt = DateTime.UtcNow });
+			await _db.SaveChangesAsync();
+			var dup2 = new CrossBuy.Models.Context.Pos.HyperPayToken { CompanyId = company, Token = dupTok, OrderId = 0, InvoiceId = null, CreatedAt = DateTime.UtcNow };
+			_db.HyperPayTokens.Add(dup2);
+			try { await _db.SaveChangesAsync(); } catch (DbUpdateException) { dupRejected = true; _db.Entry(dup2).State = EntityState.Detached; }
+			Chk("T3 UX_HyperPayTokens_Token exists · a duplicate (CompanyId,Token) INSERT is rejected by the index", idxCount == 1 && dupRejected);
+			log.Add($"  T3 indexExists={idxCount == 1} dupRejected={dupRejected}");
+
+			// ===== T4: two DIFFERENT tokens on one cart ⇒ 2nd rejected by the order-status guard · one invoice =====
+			var o4 = await NewOrder(term1.ID, shift1.ID);
+			var (p4aok, _p4ae, inv4) = await _posOrders.PayAsync(company, o4, "Cash", 1, idempotencyToken: Tok());
+			var (p4bok, p4berr, inv4b) = await _posOrders.PayAsync(company, o4, "Cash", 1, idempotencyToken: Tok());   // different token, same (now Paid) order
+			Chk("T4 two different tokens, same cart ⇒ 2nd REJECTED (الطلب ليس مفتوحًا) · one invoice", p4aok && !p4bok && (p4berr ?? "").Contains("مفتوح") && inv4b == null);
+			log.Add($"  T4 first={inv4} secondOk={p4bok} err='{p4berr}'");
+
+			// ===== T9: token lost (new session ⇒ new token) after a successful pay ⇒ 2nd rejected by status guard · one invoice =====
+			var o9 = await NewOrder(term1.ID, shift1.ID);
+			var (p9aok, _p9ae, inv9) = await _posOrders.PayAsync(company, o9, "Cash", 1, idempotencyToken: Tok());
+			var (p9bok, p9berr, _inv9b) = await _posOrders.PayAsync(company, o9, "Cash", 1, idempotencyToken: Tok());   // the "lost" token replaced by a fresh one
+			Chk("T9 token lost (fresh token) ⇒ 2nd pay rejected by the status guard · one invoice", p9aok && !p9bok && (p9berr ?? "").Contains("مفتوح"));
+			log.Add($"  T9 first={inv9} secondOk={p9bok}");
+
+			// ===== T10: F5 re-post WITHOUT a token (server backstop for a raw resubmit) ⇒ rejected by status guard =====
+			var o10 = await NewOrder(term1.ID, shift1.ID);
+			var (p10aok, _p10ae, inv10) = await _posOrders.PayAsync(company, o10, "Cash", 1, idempotencyToken: Tok());
+			var (p10bok, p10berr, _i10b) = await _posOrders.PayAsync(company, o10, "Cash", 1, idempotencyToken: null);   // raw re-post, no token
+			Chk("T10 raw re-post (no token, PRG-lost) ⇒ rejected by the status guard · one invoice", p10aok && !p10bok && (p10berr ?? "").Contains("مفتوح"));
+			log.Add($"  T10 first={inv10} rePostOk={p10bok}");
+
+			// ===== T7: disconnect BEFORE commit ⇒ order stays Open on the server · pay after reconnect ⇒ one invoice =====
+			var o7 = await NewOrder(term1.ID, shift1.ID);
+			string o7status = await _db.PosOrders.AsNoTracking().Where(o => o.ID == o7).Select(o => o.Status).FirstAsync();   // still Open (never paid — the drop happened pre-commit)
+			var (p7ok, _p7e, inv7) = await _posOrders.PayAsync(company, o7, "Cash", 1, idempotencyToken: Tok());
+			Chk("T7 pre-commit disconnect ⇒ order was Open · pay after reconnect ⇒ one invoice", o7status == "Open" && p7ok && inv7 != null);
+			log.Add($"  T7 preStatus={o7status} paidOk={p7ok} inv={inv7}");
+
+			// ===== T5: receipt recovery ⇒ correct number+total · reprint target exists · zero posting =====
+			var o5 = await NewOrder(term1.ID, shift1.ID);
+			var (_p5ok, _p5e, inv5) = await _posOrders.PayAsync(company, o5, "Cash", 1, idempotencyToken: Tok());
+			int invBefore = await _db.SalesInvoices.AsNoTracking().CountAsync(i => i.CompanyID == company);
+			var rec = await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == company && o.BranchId == bid && o.TerminalId == term1.ID && o.Status == "Paid" && o.InvoiceId != null)
+				.OrderByDescending(o => o.ClosedAt).Select(o => new { o.InvoiceId, o.ReceiptNo, o.GrandTotal }).FirstAsync();
+			int invAfter = await _db.SalesInvoices.AsNoTracking().CountAsync(i => i.CompanyID == company);
+			bool reprintOk = await _db.SalesInvoices.AsNoTracking().AnyAsync(i => i.ID == inv5 && i.CompanyID == company);   // PrintInvoice target exists
+			Chk("T5 recovery ⇒ finds the receipt (no + total 1.500) · reprint target exists · zero posting (invoice count unchanged)",
+				rec.InvoiceId == inv5 && rec.GrandTotal == 1.500m && !string.IsNullOrEmpty(rec.ReceiptNo) && reprintOk && invBefore == invAfter);
+			log.Add($"  T5 recInv={rec.InvoiceId}(inv5={inv5}) receiptNo={rec.ReceiptNo} total={rec.GrandTotal} invCount {invBefore}→{invAfter}");
+
+			// ===== T6: recovery is TERMINAL-scoped ⇒ a T2 receipt does NOT appear in T1's list =====
+			var o6 = await NewOrder(term2.ID, shift2!.ID);
+			var (_p6ok, _p6e, inv6) = await _posOrders.PayAsync(company, o6, "Cash", 1, idempotencyToken: Tok());
+			bool t1HasT2 = await _db.PosOrders.AsNoTracking().AnyAsync(o => o.TerminalId == term1.ID && o.InvoiceId == inv6);
+			bool t2HasOwn = await _db.PosOrders.AsNoTracking().AnyAsync(o => o.TerminalId == term2.ID && o.InvoiceId == inv6);
+			Chk("T6 recovery terminal-scope ⇒ T2's receipt is NOT in T1's list (only in T2's)", !t1HasT2 && t2HasOwn);
+			log.Add($"  T6 t1HasT2={t1HasT2} t2HasOwn={t2HasOwn}");
+
+			// ===== T11: a NON-index save failure (token too long for NVARCHAR(64)) ⇒ RETHROWN, not swallowed into a fake success =====
+			var o11 = await NewOrder(term1.ID, shift1.ID);
+			bool threw = false; bool fakeSuccess = false;
+			try { var (ok11, _, inv11) = await _posOrders.PayAsync(company, o11, "Cash", 1, idempotencyToken: new string('X', 100)); fakeSuccess = ok11; }
+			catch (Exception) { threw = true; _db.ChangeTracker.Clear(); }
+			int? o11Inv = await _db.PosOrders.AsNoTracking().Where(o => o.ID == o11).Select(o => o.InvoiceId).FirstOrDefaultAsync();
+			bool o11Unpaid = o11Inv == null;   // the pay threw ⇒ whole tx rolled back ⇒ no invoice on the order
+			Chk("T11 non-index save failure (over-long token) ⇒ THROWN not swallowed · no fake invoice · order not paid", threw && !fakeSuccess && o11Unpaid);
+			log.Add($"  T11 threw={threw} fakeSuccess={fakeSuccess} orderUnpaid={o11Unpaid}");
+
+			// ===== T8: usual invariants + doc_je_status_mismatch = 0 =====
+			var (run, checks) = await integrity.RunAndLogAsync(company, "hm10-accept");
+			var arSub = checks.First(c => c.Key == "ar_sub"); var apSub = checks.First(c => c.Key == "ap_sub");
+			var docJe = checks.First(c => c.Key == "doc_je_status_mismatch"); var wc = checks.First(c => c.Key == "writer_coupling");
+			var dbset = checks.First(c => c.Key == "dbset_tables_exist"); var stockGl = checks.First(c => c.Key == "stock_gl");
+			Chk("T8 failedCount 0 · ar_sub · ap_sub · doc_je_status_mismatch · writer_coupling · dbset all OK",
+				run.FailedCount == 0 && arSub.Ok && apSub.Ok && docJe.Ok && wc.Ok && dbset.Ok);
+			log.Add($"  T8 failedCount={run.FailedCount} ar_sub={arSub.Ok} ap_sub={apSub.Ok} doc_je_status_mismatch={docJe.Ok} stock_gl={stockGl.Ok}(structural) writer_coupling={wc.Ok} dbset={dbset.Ok}");
+
+			foreach (var t in new[] { term1, term2 })
+				foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == t.ID && s.Status == "Open").ToListAsync()) { s.Status = "Closed"; s.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			return Ok(new { allPass, failedCount = run.FailedCount, log });
+		}
+
 		// GET /api/dev/hm7-count-accept?key=seed123 — HM-7 batch-1 (batch-aware physical count) acceptance. Every number is
 		// read FROM THE DB (per-batch on-hand = Σ Direction×QtyBase over movements, never from the tracked entity).
 		[HttpGet("hm7-count-accept")]

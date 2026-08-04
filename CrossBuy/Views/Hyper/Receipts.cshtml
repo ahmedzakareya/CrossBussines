@@ -1,0 +1,57 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutHyperPos.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var rows = ViewBag.Rows as List<object[]> ?? new List<object[]>();
+    int dp = ViewBag.Dp ?? 2;
+    var fmt = dp > 0 ? "0." + new string('0', dp) : "0";
+    ViewData["Title"] = isAr ? "الإيصالات" : "Receipts";
+}
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+        <div class="card card-flush mx-auto shadow-sm" style="max-width:760px;">
+            <div class="card-header pt-6">
+                <div class="card-title"><h2 class="fs-2 fw-bold">@SR["Recent receipts (this terminal)"]</h2></div>
+                <div class="card-toolbar"><a href="/hyper/pos/lane" class="btn btn-sm btn-light">@SR["Back to the lane"]</a></div>
+            </div>
+            <div class="card-body">
+                <div class="text-muted fs-7 mb-4">@SR["Confirm whether a sale went through, and reprint its receipt. Read-only."]</div>
+                @if (rows.Count == 0)
+                {
+                    <div class="text-muted fs-6 text-center py-8">—</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle gs-0 gy-3 mb-0">
+                            <thead>
+                                <tr class="fw-semibold text-muted fs-7 text-uppercase">
+                                    <th>@SR["Receipt no"]</th>
+                                    <th class="text-end">@SR["Total"]</th>
+                                    <th>@SR["Time"]</th>
+                                    <th class="w-100px"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in rows)
+                                {
+                                    var invId = (int)r[0];
+                                    var receiptNo = (string)r[1];
+                                    var total = (decimal)r[2];
+                                    var closedAt = (DateTime?)r[3];
+                                    <tr>
+                                        <td class="fw-semibold text-gray-900">@(string.IsNullOrEmpty(receiptNo) ? ("#" + invId) : receiptNo)</td>
+                                        <td class="text-end fw-bold" style="font-variant-numeric:tabular-nums">@total.ToString(fmt)</td>
+                                        <td class="text-muted fs-7">@(closedAt?.ToString("yyyy/MM/dd HH:mm"))</td>
+                                        <td><a href="/hyper/pos/invoice/print/@invId" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-printer fs-6"></i>@SR["Reprint"]</a></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -32,6 +32,21 @@ namespace CrossBuy.Models.Context.Pos
 	}
 
 	// POS settings per branch. DefaultPriceListId flows through the EXISTING PricingService (no new pricing logic).
+	// HM-10 slice A: the pay-idempotency key for the hyper lane. INSERT-keyed (one row per pay), NOT a field on PosOrder —
+	// only an inserted, uniquely-indexed row makes a CONCURRENT double-submit of the SAME order collapse to one invoice (two
+	// updates of the same order row to the same token produce no duplicate ROW, so no index arbitration). This is the same
+	// primitive as PosSyncLog but a SEPARATE table (PosSyncLog is the restaurant lane's, untouched). The unique index on
+	// (CompanyId, Token) is the race backstop: the losing concurrent pay fails the INSERT and returns the winner's invoice.
+	public class HyperPayToken
+	{
+		public int ID { get; set; }
+		public int CompanyId { get; set; }
+		public string Token { get; set; } = "";   // client-generated GUID, unique per pay intent
+		public int OrderId { get; set; }
+		public int? InvoiceId { get; set; }        // the invoice this pay produced (the idempotent result)
+		public DateTime CreatedAt { get; set; }
+	}
+
 	public class BranchPosSetting
 	{
 		public int ID { get; set; }

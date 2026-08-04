@@ -118,7 +118,7 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error, int orderId)> AddOrderOnTableAsync(int companyId, int branchId, int tableId, int? userId, int? terminalId = null, int? shiftId = null);
 		Task CollapseEmptyTableDuplicatesAsync(int companyId, int branchId, int tableId);
 		Task ParkOrphanWalkInsAsync(int companyId, int branchId);
-		Task<(bool ok, string? error, int? invoiceId)> PayAsync(int companyId, int orderId, string method, int? userId, int splitParts = 1, decimal tipAmount = 0, string? tipMethod = null);
+		Task<(bool ok, string? error, int? invoiceId)> PayAsync(int companyId, int orderId, string method, int? userId, int splitParts = 1, decimal tipAmount = 0, string? tipMethod = null, string? idempotencyToken = null);
 		Task<(bool ok, string? error, List<int> invoiceIds)> PaySplitByItemAsync(int companyId, int orderId, List<List<SplitAllocation>> bills, string method, int? userId, decimal tipAmount = 0, string? tipMethod = null);
 		Task<(bool ok, string? error)> VoidPaidOrderAsync(int companyId, int orderId, int? userId);   // RC-6c-1
 		Task<(bool ok, string? error, int? returnId)> ReturnOrderLinesAsync(int companyId, int orderId, List<SplitAllocation> allocations, int? userId);   // RC-6c-2
@@ -1079,10 +1079,19 @@ namespace CrossBuy.BL
 			};
 		}
 
-		public async Task<(bool ok, string? error, int? invoiceId)> PayAsync(int companyId, int orderId, string method, int? userId, int splitParts = 1, decimal tipAmount = 0, string? tipMethod = null)
+		public async Task<(bool ok, string? error, int? invoiceId)> PayAsync(int companyId, int orderId, string method, int? userId, int splitParts = 1, decimal tipAmount = 0, string? tipMethod = null, string? idempotencyToken = null)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
 			if (o == null) return (false, "الطلب غير موجود", null);
+			// HM-10 slice A: idempotent replay FAST-PATH — a sequential resubmit of the same pay intent returns the FIRST
+			// invoice instead of re-posting (and instead of the "not open" error below). This is only a fast path; the
+			// AUTHORITATIVE guard is the in-transaction UNIQUE INSERT of the token row before commit (mirrors PosSyncLog).
+			if (idempotencyToken != null)
+			{
+				var prior = await _db.HyperPayTokens.AsNoTracking().Where(t => t.CompanyId == companyId && t.Token == idempotencyToken)
+					.Select(t => t.InvoiceId).FirstOrDefaultAsync();
+				if (prior != null) return (true, null, prior);
+			}
 			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", null);
 			// RC-2: Cash only, on top of the flexible PosPayment structure. Other methods added later as types.
 			if (method != "Cash") return (false, "طريقة الدفع غير مدعومة بعد في هذه المرحلة (النقدي فقط)", null);
@@ -1168,11 +1177,35 @@ namespace CrossBuy.BL
 			// (minimises sequence gaps if an earlier step returned). Distinct from the accounting InvoiceNo.
 			if (terminal != null) o.ReceiptNo = await AllocateReceiptNoAsync(terminal.ID);
 			o.Status = "Paid"; o.InvoiceId = inv.ID; o.ReceiptId = receiptId; o.ClosedAt = DateTime.UtcNow; o.CashierUserId = userId;
-			await _db.SaveChangesAsync();
-			await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
-			await tx.CommitAsync();
+			// HM-10 slice A: the AUTHORITATIVE idempotency key — INSERT the token row INSIDE the transaction, before commit.
+			// The unique index (CompanyId, Token) turns a CONCURRENT same-token pay into an INSERT failure (never a silent
+			// double post). It is NOT a field on PosOrder — two updates of the same order row to the same token make no
+			// duplicate row, so the index could not arbitrate; only an inserted row can.
+			if (idempotencyToken != null) _db.HyperPayTokens.Add(new HyperPayToken { CompanyId = companyId, Token = idempotencyToken, OrderId = o.ID, InvoiceId = inv.ID, CreatedAt = DateTime.UtcNow });
+			try
+			{
+				await _db.SaveChangesAsync();
+				await CrossBuy.BL.LoyaltyPointsHelper.AccrueForInvoiceAsync(_db, companyId, o.BranchId, inv.ID, o.CustomerId ?? 0, userId);   // HM-9 s2: earn (guarded no-op)
+				await tx.CommitAsync();
+			}
+			catch (DbUpdateException ex) when (idempotencyToken != null && IsHyperPayTokenDuplicate(ex))
+			{
+				// a CONCURRENT pay with the same token WON the race (unique index). Our whole tx rolls back on dispose
+				// (invoice + JE + stock discarded); return the WINNER's invoice — the idempotent result. Only THIS index's
+				// violation is swallowed (2601/2627 + the index name) — any other save failure is rethrown (no swallowing).
+				var winner = await _db.HyperPayTokens.AsNoTracking().Where(t => t.CompanyId == companyId && t.Token == idempotencyToken)
+					.Select(t => t.InvoiceId).FirstOrDefaultAsync();
+				if (winner != null) return (true, null, winner);
+				throw;
+			}
 			return (true, null, inv.ID);
 		}
+
+		// HM-10 slice A: swallow ONLY the hyper pay-token unique violation (never a generic save failure — the HM-1-أ lesson).
+		private static bool IsHyperPayTokenDuplicate(DbUpdateException ex)
+			=> ex.InnerException is Microsoft.Data.SqlClient.SqlException sql
+			   && (sql.Number == 2601 || sql.Number == 2627)
+			   && sql.Message.Contains("UX_HyperPayTokens_Token");
 
 		// POS-7: MULTI-TENDER settlement — pay ONE order with one OR several payment methods (Cash + Card + Wallet…).
 		// Builds a single sales invoice (revenue/stock/tax once) then settles it with one receipt per tender to that
