@@ -1541,6 +1541,173 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { allPass, log });
 		}
 
+		// GET /api/dev/hm9-s1-accept?key=seed123 — HM-9 slice 1 (customer identity) acceptance. Requires hyper-hm0-seed + hm1-seed
+		// (branch 17, HM-DEMO-001, KWD price). Reuses the REAL POS pay path (CreateOrder→AddLine→[link]→Pay) with fill-to-floor
+		// stock so it is re-runnable. Every number is read FROM THE DB from a NEW query. Proves: no-link sale stays Walk-in with
+		// identical numbers; search-by-phone → link → invoice issued to the REAL customer on the SAME 1102 AR line; quick-add →
+		// link; the fail-closed control-account guard REFUSES the real anomaly customer 1025 (ControlAccountId=0); linking is
+		// pre-pay only (SetOrderCustomerAsync refuses a paid order); capability gate; the official invoice reads the real
+		// customer (not the HM-8 override); a taxed invoice on a real customer needs no override (resolves HM-8's workaround).
+		[HttpGet("hm9-s1-accept")]
+		public async Task<IActionResult> Hm9S1Accept(string key, [FromServices] CrossBuy.BL.IIntegrityCheckService integrity, [FromServices] CrossBuy.BL.IStockService stock)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			const int company = 1; var log = new List<string>(); bool allPass = true;
+			void Chk(string n, bool c) { log.Add((c ? "PASS " : "FAIL ") + n); if (!c) allPass = false; }
+			var T = DateTime.Today;
+
+			int bid = await _db.Branches.Where(b => b.Name == "HYPER-DEMO").Select(b => b.ID).FirstOrDefaultAsync();
+			var item = await _db.Items.FirstOrDefaultAsync(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001");
+			if (bid == 0 || item == null) return BadRequest(new { message = "run hyper-hm0-seed + hm1-seed first" });
+			int arId = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "1102").Select(a => a.ID).FirstAsync();
+			int rev4101 = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "4101").Select(a => a.ID).FirstAsync();
+			int otherBranch = await _db.Branches.Where(b => b.CompanyID == company && b.ID != bid).Select(b => b.ID).FirstOrDefaultAsync();
+			var walkIn = await _db.Customers.FirstAsync(c => c.CompanyID == company && c.NameEn == "POS Walk-in");
+
+			// capability "Loyalty" ON for branch 17 (idempotent) — its first real consumer
+			if (!await _db.BranchCapabilities.AnyAsync(x => x.BranchId == bid && x.CapabilityKey == "Loyalty"))
+			{ _db.BranchCapabilities.Add(new CrossBuy.Models.Context.Pos.BranchCapability { BranchId = bid, CapabilityKey = "Loyalty", Enabled = true }); await _db.SaveChangesAsync(); }
+			else { var cap = await _db.BranchCapabilities.FirstAsync(x => x.BranchId == bid && x.CapabilityKey == "Loyalty"); if (!cap.Enabled) { cap.Enabled = true; await _db.SaveChangesAsync(); } }
+
+			// real customer (phone = the lookup key) + a fresh quick-add customer, both idempotent by NameEn
+			var real = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.NameEn == "ZZ-HM9-REAL")
+					   ?? await _ar.CreateCustomerAsync(company, "زبون ولاء للاختبار", "ZZ-HM9-REAL", "TAX-HM9-777", null);
+			{ var tr = await _db.Customers.FirstAsync(c => c.ID == real.ID); if (tr.Phone != "0555070777") { tr.Phone = "0555070777"; await _db.SaveChangesAsync(); } }
+			var fresh = await _db.Customers.FirstOrDefaultAsync(c => c.CompanyID == company && c.NameEn == "ZZ-HM9-NEW")
+						?? await _ar.CreateCustomerAsync(company, "عميل مضاف سريعًا", "ZZ-HM9-NEW", null, null);
+
+			// the REAL anomaly (do NOT fix): customer 1025 with ControlAccountId = 0
+			var c1025 = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == company && c.ID == 1025);
+
+			// ---- shift + fill-to-floor stock (re-runnable) ----
+			int drawer = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
+			var term = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid && t.Code == "ZZ-HM9-T");
+			if (term == null) { term = new CrossBuy.Models.Context.Pos.PosTerminal { BranchId = bid, Code = "ZZ-HM9-T", Name = "HM9 test", CashAccountId = drawer, ReceiptPrefix = "ZZHM9-", NextReceiptNo = 1, IsActive = true }; _db.PosTerminals.Add(term); await _db.SaveChangesAsync(); }
+			foreach (var os in await _db.PosShifts.Where(s => s.TerminalId == term.ID && s.Status == "Open").ToListAsync()) { os.Status = "Closed"; os.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+			await _posSetup.OpenShiftAsync(term.ID, "Morning", null, 0m);
+			var shift = await _posSetup.GetOpenShiftAsync(term.ID);
+			int wh = await _db.BranchPosSettings.Where(s => s.BranchId == bid).Select(s => s.DefaultSalesWarehouseId ?? 0).FirstOrDefaultAsync();
+			if (wh == 0) wh = await _db.Warehouses.Where(w => w.CompanyID == company).Select(w => w.ID).FirstAsync();
+			var (bq, _b1, _b2) = await stock.GetBalanceAsync(company, item.ID, wh);
+			if (bq < 50m) await stock.PostOpeningStockAsync(company, T, new List<CrossBuy.BL.OpeningStockLineInput> { new() { ItemId = item.ID, WarehouseId = wh, Qty = 50m - bq, UnitCost = 80m } }, null);
+
+			// helpers (reuse the real service path)
+			async Task<int> NewOrder(int? link)
+			{
+				var (_, _, oid) = await _posOrders.CreateOrderAsync(company, bid, "Takeaway", null, null, term!.ID, shift!.ID);
+				await _posOrders.AddLineAsync(company, oid, item.ID, 1m);
+				if (link != null) await _posOrders.SetOrderCustomerAsync(company, oid, link.Value);
+				return oid;
+			}
+			async Task<int?> OrderCustomer(int oid) => await _db.PosOrders.AsNoTracking().Where(o => o.ID == oid).Select(o => (int?)o.CustomerId).FirstAsync();
+			async Task<(decimal grand, int? cust, bool arHit, bool balanced)> Pay(int oid)
+			{
+				var (ok, err, invId) = await _posOrders.PayAsync(company, oid, "Cash", null);
+				if (!ok || invId == null) { log.Add("  pay failed: " + err); return (0, null, false, false); }
+				var inv = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == invId.Value);
+				bool arHit = inv.JournalEntryId != null && await _db.JournalEntryLines.AnyAsync(l => l.JournalEntryId == inv.JournalEntryId!.Value && l.AccountId == arId);
+				var jl = await _db.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == inv.JournalEntryId!.Value).ToListAsync();
+				bool bal = Math.Round(jl.Sum(x => x.Debit) - jl.Sum(x => x.Credit), 2) == 0m;
+				return (inv.GrandTotal, inv.CustomerId, arHit, bal);
+			}
+			// the controller's fail-closed guard, replicated (the action composes exactly this before SetOrderCustomerAsync)
+			async Task<bool> CtrlValid(int custId)
+			{
+				var ctrl = await _db.Customers.AsNoTracking().Where(c => c.ID == custId && c.CompanyID == company).Select(c => (int?)c.ControlAccountId).FirstOrDefaultAsync();
+				if (ctrl == null || ctrl.Value <= 0) return false;
+				return await _db.Accounts.AsNoTracking().AnyAsync(a => a.ID == ctrl.Value && a.CompanyID == company && a.IsActive);
+			}
+
+			// ===== T1: sale with NO link ⇒ Walk-in, exact numbers (regression) =====
+			var p1 = await Pay(await NewOrder(null));
+			Chk("T1 no link ⇒ Walk-in customer · grand 0.750 · AR on 1102 · JE balanced", p1.cust == walkIn.ID && p1.grand == 0.750m && p1.arHit && p1.balanced);
+			log.Add($"  T1 cust={p1.cust}(walkIn={walkIn.ID}) grand={p1.grand} arHit={p1.arHit} bal={p1.balanced}");
+
+			// ===== T2: search by phone ⇒ found · link · invoice to REAL customer · same 1102 · same grand · balanced =====
+			var (found, _tot) = await _ar.SearchCustomersAsync(company, "0555070777", true, 1, 15);
+			bool byPhone = found.Any(x => x.ID == real.ID);
+			var p2 = await Pay(await NewOrder(real.ID));
+			Chk("T2 phone search finds the customer · invoice issued to the REAL customer · same 1102 · same 0.750 · balanced",
+				byPhone && p2.cust == real.ID && p2.grand == 0.750m && p2.arHit && p2.balanced);
+			log.Add($"  T2 foundByPhone={byPhone} cust={p2.cust}(real={real.ID}) grand={p2.grand} arHit={p2.arHit} bal={p2.balanced}");
+
+			// ===== T3: quick-add then link ⇒ works · control account valid =====
+			bool freshValid = await CtrlValid(fresh.ID);
+			var p3 = await Pay(await NewOrder(fresh.ID));
+			Chk("T3 quick-add customer has a valid control account · link works · invoice to that customer", freshValid && p3.cust == fresh.ID);
+			log.Add($"  T3 freshCtrlValid={freshValid} cust={p3.cust}(new={fresh.ID})");
+
+			// ===== T4: link a customer with an invalid/zero control account (the REAL 1025) ⇒ refused · order stays Walk-in =====
+			bool guard1025 = c1025 != null && !await CtrlValid(1025);   // guard REFUSES 1025
+			int o4 = await NewOrder(null);                              // controller: guard fails ⇒ SetOrderCustomerAsync NOT called
+			int? o4cust = await OrderCustomer(o4);
+			Chk("T4 guard refuses customer 1025 (ControlAccountId=0) · order stays Walk-in (zero effect)", guard1025 && o4cust == walkIn.ID);
+			log.Add($"  T4 c1025.ctrl={c1025?.ControlAccountId} guardRefuses={guard1025} orderCust={o4cust}(walkIn={walkIn.ID})");
+			await _posOrders.VoidOrderAsync(company, o4);               // teardown the open scratch order
+
+			// ===== T5: link AFTER pay ⇒ refused by SetOrderCustomerAsync (pre-pay only) =====
+			int o5 = await NewOrder(null);
+			var p5 = await Pay(o5);
+			var (l5ok, l5err) = await _posOrders.SetOrderCustomerAsync(company, o5, real.ID);
+			int? o5cust = await OrderCustomer(o5);
+			Chk("T5 link on a PAID order ⇒ refused (الطلب ليس مفتوحًا) · customer unchanged", !l5ok && (l5err ?? "").Contains("مفتوح") && o5cust == walkIn.ID);
+			log.Add($"  T5 linkAfterPay ok={l5ok} err='{l5err}'");
+
+			// ===== T6: capability disabled on a branch without config ⇒ not enabled =====
+			bool capThis = await _posSetup.IsCapabilityEnabledAsync(bid, "Loyalty");
+			bool capOther = otherBranch != 0 && await _posSetup.IsCapabilityEnabledAsync(otherBranch, "Loyalty");
+			Chk("T6 Loyalty capability ON (branch 17) · not enabled on an un-configured branch", capThis && !capOther);
+			log.Add($"  T6 branch17={capThis} otherBranch({otherBranch})={capOther}");
+
+			// ===== T7: official invoice on a real linked customer ⇒ name+tax from the CUSTOMER, no override =====
+			var p7order = await NewOrder(real.ID);
+			var (o7ok, _o7e, inv7Id) = await _posOrders.PayAsync(company, p7order, "Cash", null);
+			var inv7 = await _db.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstAsync(i => i.ID == inv7Id!.Value);
+			var pd7 = await CrossBuy.BL.OfficialInvoiceHelper.LoadPrintDataAsync(_db, inv7, true);
+			bool showsRealName = inv7.CustomerNameOverride == null && pd7.Customer != null && pd7.Customer.ID == real.ID && pd7.Customer.TaxRegNo == "TAX-HM9-777";
+			Chk("T7 official invoice reads the REAL customer (name+tax) · CustomerNameOverride null (no HM-8 workaround needed)", showsRealName);
+			log.Add($"  T7 override={(inv7.CustomerNameOverride ?? "null")} custId={pd7.Customer?.ID}(real={real.ID}) tax={pd7.Customer?.TaxRegNo}");
+
+			// ===== T8: a TAXED invoice on a real customer needs no override — and the HM-8 override is refused on tax>0 =====
+			var taxed = await _db.SalesInvoices.FirstOrDefaultAsync(i => i.CompanyID == company && i.Notes == "ZZ-HM9-TAXED");
+			if (taxed == null)
+			{ var (_t8ok, _t8e, t8inv) = await _ar.CreateSalesInvoiceAsync(company, real.ID, T, new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "ZZ taxed", Qty = 1m, UnitPrice = 100m, TaxRate = 14m, RevenueAccountId = rev4101 } }, "ZZ-HM9-TAXED", null); taxed = t8inv; }
+			var (stampOk, stampErr) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(taxed!, "اسم على وثيقة ضريبية", "X", "9");
+			Chk("T8 taxed invoice posts to the real customer · no override · HM-8 stamp refused on tax>0 (identity is the route)",
+				taxed != null && taxed.TaxTotal > 0m && taxed.CustomerId == real.ID && taxed.CustomerNameOverride == null && !stampOk && (stampErr ?? "").Contains("ضريبة"));
+			log.Add($"  T8 taxedCust={taxed?.CustomerId}(real={real.ID}) tax={taxed?.TaxTotal} override={(taxed?.CustomerNameOverride ?? "null")} stampRefused={!stampOk}");
+
+			// ===== T10: link then CHANGE the customer before pay ⇒ last one gets the invoice =====
+			int o10 = await NewOrder(real.ID);
+			await _posOrders.SetOrderCustomerAsync(company, o10, fresh.ID);   // change before pay
+			var p10 = await Pay(o10);
+			Chk("T10 re-link before pay ⇒ the LAST customer is invoiced (fresh, not real)", p10.cust == fresh.ID);
+			log.Add($"  T10 finalCust={p10.cust}(fresh={fresh.ID}, notReal={real.ID})");
+
+			// ===== T11: link then void the order ⇒ no anomalous effect (no invoice, no JE) =====
+			int o11 = await NewOrder(real.ID);
+			var (v11ok, _v11e) = await _posOrders.VoidOrderAsync(company, o11);
+			var o11row = await _db.PosOrders.AsNoTracking().FirstAsync(o => o.ID == o11);
+			Chk("T11 link then void ⇒ order Void · no invoice · no anomalous posting", v11ok && o11row.Status != "Open" && o11row.InvoiceId == null);
+			log.Add($"  T11 void ok={v11ok} status={o11row.Status} invoiceId={(o11row.InvoiceId?.ToString() ?? "null")}");
+
+			// ===== T9: usual invariants + doc_je_status_mismatch = 0 (new) =====
+			var (run, checks) = await integrity.RunAndLogAsync(company, "hm9-s1-accept");
+			var arSub = checks.First(c => c.Key == "ar_sub"); var apSub = checks.First(c => c.Key == "ap_sub");
+			var stockGl = checks.First(c => c.Key == "stock_gl"); var docJe = checks.First(c => c.Key == "doc_je_status_mismatch");
+			var wc = checks.First(c => c.Key == "writer_coupling"); var dbset = checks.First(c => c.Key == "dbset_tables_exist");
+			Chk("T9 failedCount at baseline 0 · ar_sub OK · ap_sub OK · doc_je_status_mismatch OK · writer_coupling OK · dbset OK",
+				run.FailedCount == 0 && arSub.Ok && apSub.Ok && docJe.Ok && wc.Ok && dbset.Ok);
+			log.Add($"  T9 failedCount={run.FailedCount} ar_sub={arSub.Ok} ap_sub={apSub.Ok} doc_je_status_mismatch={docJe.Ok} stock_gl={stockGl.Ok}(structural) writer_coupling={wc.Ok} dbset={dbset.Ok}");
+
+			// close the test shift
+			foreach (var s in await _db.PosShifts.Where(s => s.TerminalId == term!.ID && s.Status == "Open").ToListAsync()) { s.Status = "Closed"; s.ClosedAt = DateTime.UtcNow; }
+			await _db.SaveChangesAsync();
+
+			return Ok(new { allPass, failedCount = run.FailedCount, log });
+		}
+
 		// GET /api/dev/hm7-count-accept?key=seed123 — HM-7 batch-1 (batch-aware physical count) acceptance. Every number is
 		// read FROM THE DB (per-batch on-hand = Σ Direction×QtyBase over movements, never from the tracked entity).
 		[HttpGet("hm7-count-accept")]

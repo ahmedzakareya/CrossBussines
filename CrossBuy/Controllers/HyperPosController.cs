@@ -30,11 +30,12 @@ namespace CrossBuy.Controllers
 		private readonly IPosOrderService _posOrders;
 		private readonly CrossBuy.BL.ICurrencyRounding _rounding;
 		private readonly CrossBuy.BL.IPricingService _pricing;   // HM-4: price-check reads prices (never AddLine)
+		private readonly CrossBuy.BL.IReceivableService _ar;      // HM-9: REUSE the existing customer search/create (no new service)
 		private readonly CrossDbContext _db;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 		public HyperPosController(SignInManager<Users> signIn, UserManager<Users> users, IPosAccessService access,
-			IPosSetupService pos, IPosOrderService posOrders, CrossBuy.BL.ICurrencyRounding rounding, CrossBuy.BL.IPricingService pricing, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _posOrders = posOrders; _rounding = rounding; _pricing = pricing; _db = db; L = localizer; }
+			IPosSetupService pos, IPosOrderService posOrders, CrossBuy.BL.ICurrencyRounding rounding, CrossBuy.BL.IPricingService pricing, CrossBuy.BL.IReceivableService receivables, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
+		{ _signIn = signIn; _users = users; _access = access; _pos = pos; _posOrders = posOrders; _rounding = rounding; _pricing = pricing; _ar = receivables; _db = db; L = localizer; }
 
 		// ---- session context (own key, HyperCtx) ----
 		public class HyperCtx
@@ -344,6 +345,91 @@ namespace CrossBuy.Controllers
 		// Branch guard: the invoice must be the pay result of an order on THIS branch (and this company).
 		private Task<bool> BranchOwnsInvoiceAsync(int branchId, int invoiceId) =>
 			_db.PosOrders.AsNoTracking().AnyAsync(o => o.InvoiceId == invoiceId && o.BranchId == branchId && o.CompanyId == PosCompanyId);
+
+		// ==================== HM-9 slice 1: CUSTOMER IDENTITY (the loyalty prerequisite) ====================
+		// The hyper lane force-links every order to the Walk-in customer (PosOrderService.CreateOrderAsync). Loyalty needs a
+		// real, identifiable customer ON THE ORDER before pay. This slice REUSES the existing building blocks —
+		// _ar.SearchCustomersAsync, _ar.CreateCustomerAsync, _posOrders.SetOrderCustomerAsync — with NO new service and NO
+		// copy of the restaurant lane. Gated by the reserved "Loyalty" capability (its FIRST consumer). A fail-closed guard
+		// refuses to link a customer whose AR control account is missing/invalid. Linking is PRE-PAY only — SetOrderCustomerAsync
+		// itself refuses a non-Open order. Posting is untouched (every customer's AR control resolves to 1102 today, so the JE
+		// is byte-identical; if a customer legitimately had a different valid control account, the receivable posts there — the
+		// guard only blocks a MISSING/invalid account, never a different valid one).
+
+		// Fail-closed control-account guard: the customer's AR control account must EXIST and be an ACTIVE account in THIS
+		// company. It does NOT hard-code 1102 — a future customer with a different LEGITIMATE control account still passes;
+		// only a missing/zero/inactive account (a corruption, e.g. legacy customer 1025 with ControlAccountId=0) is refused.
+		// NOTE: we do NOT require IsPostable — the AR control account (1102) is intentionally a non-postable CONTROL account,
+		// yet it is exactly where the receivable posts. IsPostable governs the manual-JE leaf rule, not the AR control target.
+		private async Task<bool> CustomerControlAccountValidAsync(int customerId)
+		{
+			var ctrl = await _db.Customers.AsNoTracking().Where(c => c.ID == customerId && c.CompanyID == PosCompanyId)
+				.Select(c => (int?)c.ControlAccountId).FirstOrDefaultAsync();
+			if (ctrl == null || ctrl.Value <= 0) return false;
+			return await _db.Accounts.AsNoTracking().AnyAsync(a => a.ID == ctrl.Value && a.CompanyID == PosCompanyId && a.IsActive);
+		}
+
+		[HttpGet("customer")]
+		public async Task<IActionResult> Customer()
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			ViewBag.Ctx = c;
+			ViewBag.Enabled = await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty");
+			CrossBuy.Models.Context.Accounting.Customer? cur = null;
+			if (c.OrderId != null)
+			{
+				var oCustId = await _db.PosOrders.AsNoTracking().Where(o => o.ID == c.OrderId && o.CompanyId == PosCompanyId).Select(o => (int?)o.CustomerId).FirstOrDefaultAsync();
+				if (oCustId != null) cur = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.ID == oCustId.Value && x.CompanyID == PosCompanyId && x.NameEn != "POS Walk-in");
+			}
+			ViewBag.Current = cur;
+			return View("~/Views/Hyper/Customer.cshtml");
+		}
+
+		[HttpGet("customer/search")]
+		public async Task<IActionResult> CustomerSearch(string? q)
+		{
+			var c = Ctx(); if (c == null) return Json(new { ok = false });
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty"))
+				return Json(new { ok = false, error = L["Customer identification is not enabled on this branch."].Value });
+			var (rows, _) = await _ar.SearchCustomersAsync(PosCompanyId, q, true, 1, 15);
+			return Json(new { ok = true, items = rows.Where(x => x.NameEn != "POS Walk-in").Select(x => new { id = x.ID, name = x.Name, phone = x.Phone }) });
+		}
+
+		[HttpPost("customer/add")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> CustomerAdd(string name, string? phone)
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Customer)); }
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty"))
+			{ TempData["PosErr"] = L["Customer identification is not enabled on this branch."].Value; return RedirectToAction(nameof(Customer)); }
+			name = (name ?? "").Trim();
+			if (name.Length == 0) { TempData["PosErr"] = L["The customer name is required."].Value; return RedirectToAction(nameof(Customer)); }
+			var cust = await _ar.CreateCustomerAsync(PosCompanyId, name, null, null, null);   // assigns the AR control account (1102)
+			if (!string.IsNullOrWhiteSpace(phone))
+			{
+				var t = await _db.Customers.FirstAsync(x => x.ID == cust.ID);
+				t.Phone = phone.Trim(); await _db.SaveChangesAsync();   // persist the phone — the loyalty lookup key (decision ب)
+			}
+			return await AttachCustomer(cust.ID);
+		}
+
+		[HttpPost("customer/attach")][ValidateAntiForgeryToken]
+		public async Task<IActionResult> AttachCustomer(int customerId)
+		{
+			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
+			if (!_access.CanSell(c.Roles)) { TempData["PosErr"] = L["This role is not allowed to operate orders"].Value; return RedirectToAction(nameof(Customer)); }
+			if (!await _pos.IsCapabilityEnabledAsync(c.BranchId, "Loyalty"))
+			{ TempData["PosErr"] = L["Customer identification is not enabled on this branch."].Value; return RedirectToAction(nameof(Customer)); }
+			// fail-closed: never link a customer whose AR control account is missing/invalid
+			if (!await CustomerControlAccountValidAsync(customerId))
+			{ TempData["PosErr"] = L["This customer has no valid receivable control account and cannot be linked."].Value; return RedirectToAction(nameof(Customer)); }
+			var (ok, err, oid) = await EnsureOrderAsync(c);
+			if (!ok) { TempData["PosErr"] = err; return RedirectToAction(nameof(Lane)); }
+			var (sok, serr) = await _posOrders.SetOrderCustomerAsync(PosCompanyId, oid, customerId);   // refuses a non-Open order (pre-pay only)
+			if (!sok) { TempData["PosErr"] = serr; return RedirectToAction(nameof(Customer)); }
+			TempData["PosMsg"] = L["The customer was linked to the order."].Value;
+			return RedirectToAction(nameof(Customer));
+		}
 
 		// ==================== HM-4: PRICE CHECK (read-only — no order, no cart, no shift) ====================
 		// Gated by the PriceCheck capability. Reuses the unified scan resolution (HM-2 fixed barcodes + HM-3 scale

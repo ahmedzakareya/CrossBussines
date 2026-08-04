@@ -948,3 +948,86 @@ branch is structural not data-exercised); T8 the stamp write leaves Sub/Tax/Gran
 T12 taxed (14%) invoice → stamp REFUSED (reason=tax present), `CustomerNameOverride` stays null; T13 KWD 0% → stamp
 ALLOWED, name+tax+By(=9)+At persisted; T10 company guard (invoice unreachable under a wrong CompanyID); T14 branch guard
 own(17)=True / other(4)=False; T15 `OfficialInvoice` capability ON branch17=True / otherBranch(4)=False.
+
+## HM-9 slice 1 (built) — customer identity in the hyper lane (the loyalty prerequisite)
+The hyper lane force-links every order to the single POS Walk-in customer (`PosOrderService.CreateOrderAsync:438-442`).
+Loyalty needs a real, identifiable customer ON THE ORDER. Slice 1 REUSES the existing building blocks — `_ar.SearchCustomersAsync`,
+`_ar.CreateCustomerAsync`, `_posOrders.SetOrderCustomerAsync` — with NO new service and NO copy of the restaurant lane:
+new `HyperPosController` actions `Customer`/`CustomerSearch`/`CustomerAdd`/`AttachCustomer` + a minimal `Views/Hyper/Customer.cshtml`
+(PosLane idiom, phone search + quick-add + link). Gated by the reserved `"Loyalty"` capability (its FIRST real consumer;
+disabled → "تعريف العميل غير مُفعَّل على هذا الفرع"). `IReceivableService` injected into the controller (reuse, not a new service).
+
+**The architectural decision (confirmed): identity = a REAL customer on the order (model أ), NOT a parallel membership entity.**
+Swapping `PosOrder.CustomerId` pre-pay is GL-neutral — every customer's AR control resolves to `1102` (a control account,
+`IsPostable=0/IsActive=1`), so the JE is byte-identical; and `PayAsync` settles the cash sale so AR nets to zero. The points
+ledger (a later slice) will key off `CustomerId` WITHOUT touching the customer or the posting (the HM-8-override spirit applied
+to the POINTS, not the identity).
+
+**Fail-closed control-account guard (mandatory, decision addition 3).** `AttachCustomer` refuses to link a customer whose AR
+control account is MISSING/zero/inactive — BEFORE calling `SetOrderCustomerAsync` — so a link can never post a receivable to a
+non-existent account. It checks the account EXISTS + IsActive + same company; it does NOT hard-code 1102 and does NOT require
+IsPostable — a future customer with a different LEGITIMATE control account still passes. **The acceptance caught a real guard
+bug pre-commit:** the first guard required `IsPostable`, which wrongly rejected EVERY normal customer, because the AR control
+account `1102` is intentionally a non-postable CONTROL account (`IsPostable=0`) yet is exactly where receivables post (T3 failed
+`freshCtrlValid=False`; fixed to exists+active; T3 green). `IsPostable` governs the manual-JE leaf rule, not the AR control target.
+
+**Link is pre-pay only — PROVEN IN CODE, not design (decision addition 4).** `SetOrderCustomerAsync` (`PosOrderService.cs:752`)
+already refuses a non-Open order (`o.Status != "Open"` → "الطلب ليس مفتوحًا"); we did NOT modify that shared method, we PROVE it
+(T5: a link on a paid order is refused, customer unchanged).
+
+**HM-8 ↔ identity linkage (decision ج).** HM-8 had to add `CustomerNameOverride` precisely because the lane could not identify a
+customer. Slice 1 makes the invoice-requester a REAL customer, so the display-only override reverts to an EXCEPTION for the
+tax-exempt walk-in only. Proven: T7 (an official invoice on a linked real customer reads the customer's name+tax, override null),
+T8 (a taxed 14% invoice posts to a real customer with no override, and the HM-8 stamp is still refused on tax>0 — identity is the
+correct route for a taxed sale's customer, not the override).
+
+### Governing evidence carried from HM-9 a-3 (read-only, proven)
+- **Redemption-as-discount is rejected on a TECHNICAL ground, not only accounting.** The sale line carries a SINGLE `DiscountAmount`
+  scalar with no source discriminator (`PosOrderLine`/`SalesInvoiceLine`), and the promotion priority rule (specificity → Priority
+  → largest → ID) is hardcoded to the `Promotion` entity (`PricingService.cs:273-291`, best-one-wins `.First()`). A loyalty discount
+  would overwrite the promotion's `DiscountAmount` (last writer wins) and cannot enter the comparator. The liability-settlement model
+  bypasses the discount field entirely — a second reason (beyond revenue/VAT) to adopt it.
+- **Two rounding domains.** Points as a COUNT round by an explicit floor policy (a count, NOT routed through `ICurrencyRounding` —
+  as the retail fils-step is a separate commercial rounding); the points→money conversion at REDEMPTION routes through the single
+  source `ICurrencyRounding` at the DOCUMENT-currency dp, AwayFromZero.
+- **Offline does NOT advance HM-10 before earn.** The hyper lane is online-only today (every Scan/Pay is a synchronous server
+  round-trip; the offline+sync engine belongs to the restaurant lane, scope `/pos/`, not `/hyper/pos`), so the points balance is
+  server-authoritative and the double-spend risk arrives WITH HM-10, not before. **Constraint recorded for HM-10:** when offline is
+  added, the points balance must be server-authoritative-at-sync via a conditional claim `SET Balance = Balance - @pts WHERE Balance >= @pts`
+  (reusable primitives exist: `BusinessEvent.DedupKey`, the `BusinessEventDispatch` claim pattern). Slice 1 (identity) is
+  offline-irrelevant.
+- **Three earn models (named, none built).** (i) no entry until redemption; (ii) accrue a liability at earn time (Dr marketing
+  expense / Cr points liability); (iii) IFRS-15 — points are a separate performance obligation, deferring part of revenue at sale
+  (`2104 Advances from customers` is the functional stand-in). The choice depends on a materiality that is unknown before the
+  program runs; it is a documentation choice, not a code choice, today.
+
+### Logged items (read-only; not fixed here per scope)
+1. **Customer 1025 (ControlAccountId = 0)** — one of forty (the only anomaly; the rest are `1102`). NOT fixed. It is the REAL case
+   used to prove the fail-closed guard (T4: guard refuses 1025, the order stays Walk-in, zero effect). A one-off data anomaly, not a
+   systemic remediation item.
+2. **Phone-search index — a SCALE item with a threshold.** `Customers` has NO index on `Phone`/`Name`/`NameEn`/`TaxRegNo`;
+   `SearchCustomersAsync` is a `Contains` scan. At forty customers it is sub-millisecond. **Add a `Phone` index BEFORE loyalty
+   rollout OR before the customer base exceeds 1,000 rows, whichever comes first.** NOT built now (out of slice-1 scope).
+
+## HM-D61 (declared) — parallel WIP broke boot mid-slice; validator temporarily disabled to run acceptance, restored, never committed
+While building HM-9 slice 1, the parallel team's uncommitted `Program.cs` gained `AddHostedService<PermissionScopeStartupValidator>()`
+(line 295) — a singleton `IHostedService` that consumes a scoped `IEnumerable<IModuleAccessService>`, which fails
+`ValidateOnBuild` and CRASHES startup (`Program.<Main> BuildServiceProvider`). It is absent from HEAD (`git show HEAD:Program.cs`
+has zero hits) and present only in the working tree — pure parallel WIP that appeared on disk AFTER the green HM-8 run ("our base
+shifts invisibly", HM-D44; same shape as HM-D52). Per our rule we do NOT fix parallel code. To obtain a bootable binary for
+acceptance, that ONE registration line was temporarily commented in the working tree (marker `HM9-TEMP-DISABLED-PARALLEL-BREAK`),
+the app booted, acceptance ran, then the line was restored verbatim. `Program.cs` is NOT part of our commit (we never modified
+it for HM-9). Declared here as required by the build-freshness rule: the acceptance binary differed from the parallel tree ONLY by
+that disabled parallel diagnostic (a startup permission-scope check that touches no GL/stock/POS path), so no part of OUR slice-1
+surface was left unverified.
+
+### Acceptance — api/dev/hm9-s1-accept (11/11 PASS, allPass:true, failedCount=0, idempotent over 3 runs; cookie-jar)
+Reuses the REAL POS pay path (CreateOrder→AddLine→[link]→Pay) with fill-to-floor stock; every number read from a NEW DB query.
+Numbers: T1 no link → Walk-in (cust 23) · grand 0.750 · AR on 1102 · JE balanced; T2 phone "0555070777" finds the customer ·
+invoice issued to the REAL customer (9045) · same 1102 · same 0.750 · balanced; T3 quick-add (9046) control account VALID · link
+works; T4 guard REFUSES customer 1025 (ControlAccountId=0) · order stays Walk-in (23); T5 link on a PAID order refused
+("الطلب ليس مفتوحًا") · customer unchanged; T6 Loyalty capability ON branch17 / OFF otherBranch(4); T7 official invoice reads the
+real customer (9045, tax TAX-HM9-777) · override null; T8 taxed 14% invoice to the real customer · no override · HM-8 stamp refused
+on tax>0; T10 re-link before pay → the LAST customer (9046) is invoiced; T11 link then void → order Void · no invoice · no
+anomalous posting; T9 failedCount=0 · ar_sub · ap_sub · doc_je_status_mismatch · writer_coupling · dbset all OK (stock_gl is the
+structural baseline check, excluded from failedCount).

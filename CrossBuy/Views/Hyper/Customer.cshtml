@@ -1,0 +1,99 @@
+@using CrossBuy.Controllers
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutHyperPos.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var enabled = ViewBag.Enabled as bool? ?? false;
+    var cur = ViewBag.Current as CrossBuy.Models.Context.Accounting.Customer;
+    ViewData["Title"] = isAr ? "العميل" : "Customer";
+}
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-xxl">
+        <div class="card card-flush mx-auto" style="max-width:640px;">
+            <div class="card-header pt-6"><div class="card-title"><h2 class="fs-2 fw-bold">@SR["Customer"]</h2></div></div>
+            <div class="card-body">
+                @if (TempData["PosErr"] != null) { <div class="alert alert-danger">@TempData["PosErr"]</div> }
+                @if (TempData["PosMsg"] != null) { <div class="alert alert-success">@TempData["PosMsg"]</div> }
+
+                @if (!enabled)
+                {
+                    <div class="alert alert-warning d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@SR["Customer identification is not enabled on this branch."]</div>
+                }
+                else
+                {
+                    @if (cur != null)
+                    {
+                        <div class="d-flex align-items-center justify-content-between border border-success rounded p-4 mb-6 bg-light-success">
+                            <div>
+                                <div class="fs-4 fw-bold text-gray-900">@cur.Name</div>
+                                @if (!string.IsNullOrWhiteSpace(cur.Phone)) { <div class="fs-6 text-muted">@cur.Phone</div> }
+                            </div>
+                            <span class="badge badge-light-success fs-7">@SR["Linked to the order"]</span>
+                        </div>
+                    }
+
+                    <label class="fw-semibold fs-6 text-muted mb-2">@SR["Find a customer by phone"]</label>
+                    <div class="input-group input-group-lg mb-4">
+                        <span class="input-group-text"><i class="ki-outline ki-phone fs-1"></i></span>
+                        <input type="text" id="cbq" class="form-control form-control-solid fs-3" autofocus placeholder="—" />
+                        <button type="button" id="cbSearch" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-2"></i></button>
+                    </div>
+                    <div id="cbResults" class="mb-6"></div>
+
+                    <div class="separator separator-dashed my-6"></div>
+
+                    <form method="post" asp-action="CustomerAdd" autocomplete="off">
+                        @Html.AntiForgeryToken()
+                        <label class="fw-semibold fs-6 text-muted mb-2">@SR["Add a new customer"]</label>
+                        <div class="row g-3">
+                            <div class="col-7"><input type="text" name="name" class="form-control form-control-solid" placeholder="@SR["Name"]" required /></div>
+                            <div class="col-5"><input type="text" name="phone" class="form-control form-control-solid" placeholder="@SR["Phone"]" /></div>
+                        </div>
+                        <button type="submit" class="btn btn-light-primary mt-4 w-100">@SR["Add and link"]</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (enabled)
+{
+    <form id="cbAttach" method="post" asp-action="AttachCustomer" class="d-none">@Html.AntiForgeryToken()<input type="hidden" name="customerId" id="cbCid" /></form>
+    <script>
+        (function () {
+            var q = document.getElementById('cbq'), box = document.getElementById('cbResults'), btn = document.getElementById('cbSearch');
+            var searchUrl = '@Url.Action("CustomerSearch")';
+            var linkLbl = '@Html.Raw(SR["Link"].Value)';
+            function run() {
+                var term = (q.value || '').trim();
+                if (!term) { box.innerHTML = ''; return; }
+                fetch(searchUrl + '?q=' + encodeURIComponent(term), { headers: { 'X-Requested-With': 'fetch' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (!d.ok) { box.innerHTML = '<div class="alert alert-warning">' + (d.error || '') + '</div>'; return; }
+                        if (!d.items || !d.items.length) { box.innerHTML = '<div class="text-muted fs-6 py-2">—</div>'; return; }
+                        box.innerHTML = d.items.map(function (it) {
+                            return '<div class="d-flex align-items-center justify-content-between border-bottom py-3">' +
+                                '<div><div class="fw-semibold fs-5 text-gray-900"></div><div class="fs-7 text-muted"></div></div>' +
+                                '<button type="button" class="btn btn-sm btn-primary" data-id="' + it.id + '">' + linkLbl + '</button></div>';
+                        }).join('');
+                        var rows = box.children;
+                        for (var i = 0; i < d.items.length; i++) {
+                            rows[i].querySelector('.fw-semibold').textContent = d.items[i].name || '';
+                            rows[i].querySelector('.fs-7').textContent = d.items[i].phone || '';
+                        }
+                        box.querySelectorAll('button[data-id]').forEach(function (b) {
+                            b.addEventListener('click', function () {
+                                document.getElementById('cbCid').value = this.getAttribute('data-id');
+                                document.getElementById('cbAttach').submit();
+                            });
+                        });
+                    })
+                    .catch(function () { box.innerHTML = ''; });
+            }
+            btn.addEventListener('click', run);
+            q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+        })();
+    </script>
+}
