@@ -1,0 +1,31 @@
+{
+  "_purpose": "Recorded state of the visual authority and the modules measured against it. Drift is not automatically wrong - the owner may change their own module - but it MUST be surfaced, because silently re-baselining would make 'matches Inventory' unfalsifiable.",
+  "_recorded": "2026-08-09",
+  "_algorithm": "aggregate = sha256( concat( '<repo-relative-path>:<sha256-of-file>\\n' ) for files matching glob, sorted by ordinal path )",
+  "_reblessing": "Re-blessing is a deliberate act by the module owner, in a DEDICATED commit, never bundled with a feature change.",
+  "inventory-views": {
+    "glob": "CrossBuy/Views/Inventory/*.cshtml",
+    "aggregate": "498ffe3e0141a0e47ab4415ae70a369024d285db538b3cd5657528810fc90f53",
+    "note": "78 views. THE visual authority."
+  },
+  "inventory-shell": {
+    "glob": "CrossBuy/Views/Shared/_LayoutInventory.cshtml",
+    "aggregate": "bc0993a5db1e21ccc5e8e41253335e139a3dcc66c8f2dd9c44e557975e630a50",
+    "note": "The shell every governed module renders through."
+  },
+  "brand-stylesheet": {
+    "glob": "CrossBuy/wwwroot/Backend-assets/css/crossbuy-brand.css",
+    "aggregate": "c93debb290e6c212bfcf1717cbbb909c78aaccaf54fc560bad7b57c0bdfd142d",
+    "note": "Ledger green + gold. The one file allowed to define brand design tokens."
+  },
+  "tasks-views": {
+    "glob": "CrossBuy/Views/Tasks/*.cshtml",
+    "aggregate": "a121d1858bd9ffceda057950aef1386ed75090f489764442f1bc6b811bea01a6",
+    "note": "5 views, all on the authority shell at record time."
+  },
+  "calendar-views": {
+    "glob": "CrossBuy/Views/Calendar/*.cshtml",
+    "aggregate": "fec698637a16f32b1a18dd0af8fb9cde07c5f4ae9df2668a31c3b5acb5cfcb6f",
+    "note": "1 view, on the authority shell at record time. Carries a pinned inline-token divergence - see known-exceptions.json."
+  }
+}
