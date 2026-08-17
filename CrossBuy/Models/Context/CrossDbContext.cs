@@ -8,9 +8,40 @@ namespace CrossBuy.Models.Context
 {
     public class CrossDbContext:IdentityDbContext<Users>
     {
+        // Stage 1 Batch B / B2 — the holder the pilot global query filters read. See CompanyQueryFilters.
+        //
+        // It is a PUBLIC PROPERTY, not just a field, and the filters read it THROUGH this context instance
+        // (`CompanyQueryFilters.Apply(builder, this)`). That is not a style choice — it is the difference between
+        // a working filter and a cross-tenant leak:
+        //
+        // EF Core caches the model per context type, so OnModelCreating runs ONCE per process. A filter that
+        // closed over a holder object passed in as a plain argument would capture the FIRST context's holder and
+        // keep using it for every later request — every request in the process would then be filtered to the
+        // first request's company. EF re-evaluates filter expressions rooted at the executing DbContext instance,
+        // so routing them through this property is what makes the value per-request.
+        //
+        // Proven by Stage1QueryFilterTests.Two_contexts_sharing_the_cached_model_are_filtered_by_their_own_scope,
+        // which FAILED against the captured-argument version.
+        public CrossBuy.BL.Platform.ICompanyScopeHolder CompanyScope { get; }
+
+        // The constructor DI uses. AddDbContext resolves the constructor with the most resolvable parameters, and
+        // ICompanyScopeHolder is registered Scoped alongside this context, so every production instance gets one.
+        public CrossDbContext(
+            DbContextOptions<CrossDbContext> options,
+            CrossBuy.BL.Platform.ICompanyScopeHolder companyScope) : base(options)
+        {
+            CompanyScope = companyScope ?? throw new ArgumentNullException(nameof(companyScope));
+        }
+
+        // The pre-B2 constructor, kept so no caller breaks — and it FAILS CLOSED rather than unfiltered.
+        //
+        // It supplies a fresh, permanently UNRESOLVED holder, so the twelve pilot entities read NOTHING through a
+        // context built this way. The alternative (install no filters) would make `new CrossDbContext(options)` a
+        // quiet way to read every company's data, which is exactly the hole B2 exists to close. Production has no
+        // such call site today — verified — so this path costs nothing and guards the next one.
         public CrossDbContext(DbContextOptions<CrossDbContext> options) : base (options)
         {
-
+            CompanyScope = new CrossBuy.BL.Platform.CompanyScopeHolder();
         }
 
 		// HM-2 (Batch 4.5 / HM-D27): EF Core's DEFAULT decimal mapping is (18,2). With no precision declared on the
@@ -170,6 +201,117 @@ namespace CrossBuy.Models.Context
 					if (pin.TryGetValue(table + "." + col, out var pr)) { p.SetPrecision(pr.p); p.SetScale(pr.s); }
 				}
 			}
+
+			// ---- Platform Kernel slice 1: BusinessEvents + BusinessEventDispatch ----
+			// The real structure ships as an idempotent script (deploy/sql/platform_business_events.sql)
+			// because migrations are disabled in this project. This mapping exists so EF generates the same
+			// column names, keys and indexes the script creates — and so a test host can materialise the
+			// two tables from the model alone.
+			builder.Entity<Platform.BusinessEvent>(e =>
+			{
+				e.ToTable("BusinessEvents");
+				e.HasKey(x => x.EventId);
+				e.Property(x => x.EventId).ValueGeneratedOnAdd();
+				e.Property(x => x.EntityType).HasMaxLength(60).IsRequired();
+				e.Property(x => x.EventType).HasMaxLength(80).IsRequired();
+				e.Property(x => x.Visibility).HasMaxLength(40).IsRequired();
+				e.Property(x => x.DedupKey).HasMaxLength(120);
+				e.HasIndex(x => new { x.CompanyID, x.EntityType, x.EntityId, x.CreatedAt }).HasDatabaseName("IX_BusinessEvents_Entity");
+				e.HasIndex(x => x.EventUid).IsUnique().HasDatabaseName("UX_BusinessEvents_EventUid");
+				// Filtered unique index — idempotent recording per company (DedupKey).
+				e.HasIndex(x => new { x.CompanyID, x.DedupKey }).IsUnique()
+					.HasFilter("[DedupKey] IS NOT NULL").HasDatabaseName("UX_BusinessEvents_DedupKey");
+				e.HasIndex(x => x.CreatedAt).HasDatabaseName("IX_BusinessEvents_CreatedAt");
+			});
+
+			builder.Entity<Platform.BusinessEventDispatch>(e =>
+			{
+				e.ToTable("BusinessEventDispatch");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Consumer).HasMaxLength(40).IsRequired();
+				e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+				e.Property(x => x.Error).HasMaxLength(400);
+				e.HasIndex(x => new { x.EventId, x.Consumer }).IsUnique().HasDatabaseName("UX_BusinessEventDispatch_Event_Consumer");
+				e.HasIndex(x => new { x.Consumer, x.Status, x.UpdatedAt }).HasDatabaseName("IX_BusinessEventDispatch_Pending");
+				// No navigation property: the dispatch row is queue state, not part of the event aggregate.
+				e.HasOne<Platform.BusinessEvent>().WithMany()
+					.HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Restrict)
+					.HasConstraintName("FK_BusinessEventDispatch_Event");
+			});
+
+			// ---- Stage 1 Batch C: shared role assignments + project membership ----
+			// The real structure ships as idempotent SQL; this mapping exists so EF generates the same
+			// columns, keys and indexes the scripts create, and so a test host can materialise both tables
+			// from the model alone.
+			builder.Entity<Platform.PlatformRoleAssignment>(e =>
+			{
+				e.ToTable("PlatformRoleAssignments");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Scope).HasMaxLength(40).IsRequired();
+				e.Property(x => x.PrincipalType).HasMaxLength(20).IsRequired();
+				e.Property(x => x.Role).HasMaxLength(60).IsRequired();
+				// The duplicate guard is FILTERED on IsActive so a revoked grant may be re-granted without
+				// deleting the audit row — see the script for why that matters.
+				e.HasIndex(x => new { x.CompanyID, x.Scope, x.PrincipalType, x.PrincipalId, x.Role, x.ScopeBranchId })
+					.IsUnique().HasFilter("[IsActive] = 1").HasDatabaseName("UX_PlatformRoleAssignments_ActiveGrant");
+				e.HasIndex(x => new { x.CompanyID, x.Scope, x.PrincipalType, x.PrincipalId })
+					.HasDatabaseName("IX_PlatformRoleAssignments_Principal");
+				e.HasIndex(x => new { x.CompanyID, x.Scope }).HasDatabaseName("IX_PlatformRoleAssignments_ScopeConfigured");
+
+				// Stage 2A Batch A — slice 2 columns. Lengths mirror the script exactly; a model that disagreed
+				// with the DDL would truncate silently on one path and not the other.
+				e.Property(x => x.Reason).HasMaxLength(400);
+				e.Property(x => x.SourceSystem).HasMaxLength(40);
+				e.Property(x => x.IdempotencyKey).HasMaxLength(120);
+
+				// Idempotency is a DATABASE guarantee, per company. Filtered to non-null keys because the key is
+				// optional and SQL Server treats NULLs as equal in a unique index — unfiltered, exactly one
+				// keyless grant per company would be permitted in total.
+				e.HasIndex(x => new { x.CompanyID, x.IdempotencyKey })
+					.IsUnique().HasFilter("[IdempotencyKey] IS NOT NULL")
+					.HasDatabaseName("UX_PlatformRoleAssignments_Idempotency");
+			});
+
+			// Stage 2A Batch B — B2: the explicit bootstrap policy store. A SEPARATE table from the grant store,
+			// because a policy is not a grant and the coexistence rule is that sources are never unioned.
+			builder.Entity<Platform.BootstrapAccessPolicy>(e =>
+			{
+				e.ToTable("BootstrapAccessPolicies");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Scope).HasMaxLength(40).IsRequired();
+				e.Property(x => x.ActionCode).HasMaxLength(60).IsRequired();
+				e.Property(x => x.State).HasMaxLength(30).IsRequired();
+				e.Property(x => x.Reason).HasMaxLength(400);
+				e.Property(x => x.SourceSystem).HasMaxLength(40);
+
+				// ONE active policy per (company, scope, action). FILTERED on IsActive so superseded history
+				// survives — a company's record of what it used to permit is the audit trail, and a full unique
+				// key would force deleting it to change a policy.
+				e.HasIndex(x => new { x.CompanyID, x.Scope, x.ActionCode })
+					.IsUnique().HasFilter("[IsActive] = 1")
+					.HasDatabaseName("UX_BootstrapAccessPolicies_ActivePolicy");
+
+				// The reader's hot path: one company, one scope, active rows only.
+				e.HasIndex(x => new { x.CompanyID, x.Scope })
+					.HasDatabaseName("IX_BootstrapAccessPolicies_CompanyScope");
+
+				// Review and expiry sweeps (B12 warnings) scan by expiry across companies.
+				e.HasIndex(x => x.ExpiresAt).HasDatabaseName("IX_BootstrapAccessPolicies_Expiry");
+			});
+
+			// ---- Stage 1 Batch B / B2: the pilot company query filters ----
+			// LAST in OnModelCreating, deliberately: a HasQueryFilter call replaces any previous filter for that
+			// entity, so applying these after every other mapping means nothing above can silently drop one.
+			// The twelve entities, the ten deliberately-unfiltered ones, and the reasoning are in
+			// CompanyQueryFilters. BusinessEventDispatch — configured immediately above — is NOT filtered.
+			//
+			// `this` is passed, not the holder: see the CompanyScope property's comment. The model is cached, so a
+			// filter must read the scope through the EXECUTING context or it would serve every request from the
+			// first request's company.
+			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
 
         // (legacy empty/unused ItemCategory + ItemCategoryGroup scaffold removed — superseded by Inventory module)
@@ -221,6 +363,20 @@ namespace CrossBuy.Models.Context
         public DbSet<Chat.ChatMessage> ChatMessages { get; set; }
         public DbSet<Chat.ChatReaction> ChatReactions { get; set; }
         public DbSet<Admin.NotificationMute> NotificationMutes { get; set; }
+        // Platform Kernel slice 1 — the business event log + its per-consumer outbox state.
+        // Structure is deployed by deploy/sql/platform_business_events.sql (migrations are disabled).
+        public DbSet<Platform.BusinessEvent> BusinessEvents { get; set; }
+        public DbSet<Platform.BusinessEventDispatch> BusinessEventDispatches { get; set; }
+
+        // Stage 1 Batch C — the ONE shared module role-assignment table, and project membership.
+        // Structure ships in deploy/sql/platform_role_assignments.sql and deploy/sql/project_members.sql
+        // (migrations are disabled). Nothing but IPlatformRoleDirectory may query PlatformRoleAssignments.
+        public DbSet<Platform.PlatformRoleAssignment> PlatformRoleAssignments { get; set; }
+
+        // Stage 2A Batch B — B2. Only IBootstrapAccessPolicyReader may query this for a DECISION; the seed writes
+        // it. The same discipline as PlatformRoleAssignments: one reader, so the active/expiry/Never policy is
+        // written once and cannot drift between call sites.
+        public DbSet<Platform.BootstrapAccessPolicy> BootstrapAccessPolicies { get; set; }
         public DbSet<FinalSettlement> FinalSettlements { get; set; }
         public DbSet<LeaveCarryOver> LeaveCarryOvers { get; set; }
         public DbSet<LeaveApprovalStep> LeaveApprovalSteps { get; set; }

@@ -21,7 +21,8 @@ namespace CrossBuy.BL
 			string? bodyAr, string? bodyEn, string type, int? refId = null,
 			string? url = null, int? companyId = null, int? actorEmployeeId = null,
 			string? priority = null, string? category = null, string? dedupKey = null,
-			DateTime? expiresAt = null, string? icon = null)
+			DateTime? expiresAt = null, string? icon = null,
+			string? entityType = null, int? entityId = null)
 		{
 			// Dedup: if an unread notification with the same key already exists for this recipient, skip.
 			if (!string.IsNullOrEmpty(dedupKey) &&
@@ -49,6 +50,7 @@ namespace CrossBuy.BL
 				CompanyID = companyId, Url = url ?? NotificationTypes.UrlFor(type, refId), ActorEmployeeID = actorEmployeeId,
 				Priority = effPriority, Category = effCategory,
 				Icon = icon ?? meta.icon, DedupKey = dedupKey, ExpiresAt = expiresAt,
+				EntityType = entityType, EntityId = entityId,   // slice 2: canonical registry code + record id
 			};
 			_context.Notifications.Add(n);
 			await _context.SaveChangesAsync();

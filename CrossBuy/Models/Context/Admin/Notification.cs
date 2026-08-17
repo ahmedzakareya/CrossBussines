@@ -32,6 +32,15 @@ namespace CrossBuy.Models.Context.Admin
 		public DateTime? ReadAt { get; set; }           // when it was read
 		public string? Icon { get; set; }               // optional KI icon override
 
+		// ---- Platform Kernel slice 2 (additive, nullable) ----
+		// The canonical IEntityRegistry code + record id this notification is about. `Type`/`RefId` above are
+		// the pre-kernel pair: Type is a catalog key (a MEANING, e.g. "purchase_invoice") and RefId is
+		// untyped, so nothing could reliably answer "which entity is this notification about?". These two
+		// columns make a notification entity-addressable the same way BusinessEvents is, which is what lets
+		// NotificationProjection resolve the click-through URL through the registry.
+		public string? EntityType { get; set; }
+		public int? EntityId { get; set; }
+
 		[ForeignKey(nameof(RecipientEmployeeID))]
 		public Employee? Recipient { get; set; }
 	}
