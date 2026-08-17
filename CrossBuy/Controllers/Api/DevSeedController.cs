@@ -2348,7 +2348,9 @@ namespace CrossBuy.Controllers.Api
 			const decimal V = 200m, DELTA = 50m, SHARE = 30m;   // GRN 10@20 ⇒ V=200 · external concurrent +50 · freight share 30
 			async Task<(decimal finalTV, bool lok)> Run(bool bypass)
 			{
-				CrossBuy.BL.StockService._testBypassLandedLockRead = bypass;
+#if DEBUG
+				CrossBuy.BL.StockService._testBypassLandedLockRead = bypass;   // TEST-ONLY seam exists in Debug only
+#endif
 				await using var tx = await CrossBuy.BL.ScopedTx.BeginOrJoinAsync(_db);   // OWNER — rolled back (zero persistence)
 				var (gok, gerr, gr) = await proc.CreateReceiptAsync(company, ven!.ID, wh, null, T, "ZZ lc grn", new List<CrossBuy.BL.ReceiptLineInput> { new() { ItemId = itemId, Qty = 10m, UnitCost = 20m } }, null);   // bal V=200, tracked
 				// EXTERNAL write the identity map can't see (a concurrent receipt/sale on the same item): +DELTA on TotalValue
@@ -2356,7 +2358,9 @@ namespace CrossBuy.Controllers.Api
 				var (lok, lerr, _) = await _stock.PostLandedCostAsync(company, gr!.ID, T, "Value", new List<CrossBuy.BL.LandedChargeInput> { new() { Description = "freight", Amount = SHARE, AccountId = accFreight } }, "ZZ lc", null);
 				decimal finalTV = await _db.StockBalances.AsNoTracking().Where(b => b.ItemId == itemId && b.WarehouseId == wh).Select(b => b.TotalValue).FirstAsync();
 				await tx.RollbackAsync();
+#if DEBUG
 				CrossBuy.BL.StockService._testBypassLandedLockRead = false;
+#endif
 				return (finalTV, lok);
 			}
 
