@@ -1,0 +1,18 @@
+{
+  "name": "crossbusiness-ui-conformance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Rendered UI conformance verification for CrossBusiness: visual regression, responsive, RTL and accessibility. Verification only - it changes no application file.",
+  "scripts": {
+    "verify": "node ui-conformance.mjs",
+    "bless": "node ui-conformance.mjs --bless",
+    "install-browser": "playwright install chromium"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "pixelmatch": "^6.0.0",
+    "playwright": "^1.48.0",
+    "pngjs": "^7.0.0"
+  }
+}

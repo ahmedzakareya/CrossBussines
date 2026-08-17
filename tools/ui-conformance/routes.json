@@ -1,0 +1,73 @@
+{
+  "_purpose": "Every screen governed by the one-visual-language rule, plus the AUTHORITY itself as the control. Each run renders the control in the same session, so conformance is judged against a live Inventory render rather than against memory or a stale screenshot.",
+
+  "control": {
+    "id": "authority-inventory",
+    "path": "/Inventory/Index",
+    "module": "Inventory",
+    "note": "THE visual authority. Every other screen is compared to this one."
+  },
+
+  "viewports": [
+    { "id": "desktop", "width": 1440, "height": 900 },
+    { "id": "tablet",  "width": 992,  "height": 900 },
+    { "id": "mobile",  "width": 390,  "height": 844 }
+  ],
+
+  "cultures": [
+    { "id": "en", "dir": "ltr" },
+    { "id": "ar", "dir": "rtl" }
+  ],
+
+  "routes": [
+    { "id": "workspace-dashboard",     "path": "/Workspace",                      "module": "Workspace" },
+    { "id": "workspace-agenda",        "path": "/Workspace/Agenda",               "module": "Workspace" },
+    { "id": "workspace-reports",       "path": "/Workspace/Reports",              "module": "Workspace" },
+    { "id": "workspace-notifications", "path": "/Workspace/Notifications",        "module": "Workspace" },
+    { "id": "workspace-mentions",      "path": "/Workspace/Mentions",             "module": "Workspace",
+      "note": "Must render the UNAVAILABLE state, visibly different from empty." },
+
+    { "id": "reports-center",          "path": "/Reports",                        "module": "Reporting" },
+    { "id": "report-viewer",           "path": "/Reports/Viewer/Platform.BusinessEventLog", "module": "Reporting",
+      "note": "Checked separately from the centre: it renders report OUTPUT, the surface most likely to carry its own styling. CARRIES ITS REPORT CODE: the bare /Reports/Viewer took no id and answered 404, so this entry certified a not-found page. Platform.BusinessEventLog is the only registered ReportCode, and the Viewer grants it to Admin/SuperAdmin/Auditor." },
+
+    { "id": "business-event-monitor",  "path": "/BusinessEventMonitor",           "module": "BusinessEvents" },
+
+    { "id": "tasks",                   "path": "/Tasks",                          "module": "Tasks" },
+    { "id": "calendar",                "path": "/Calendar",                       "module": "Calendar" },
+
+    { "id": "tasks-all",               "path": "/Tasks/All",                      "module": "Tasks",
+      "note": "From here down: screens delivered after this matrix was first written. They were governed by the static gates but had NEVER been rendered, so responsive, RTL, accessibility and visual regressions on them were structurally invisible. Adding them widens the gate; nothing here relaxes it." },
+    { "id": "tasks-board",             "path": "/Tasks/Board",                    "module": "Tasks",
+      "note": "Column layout under a 390px viewport is the reason this one matters most." },
+    { "id": "tasks-templates",         "path": "/Tasks/Templates",                "module": "Tasks" },
+    { "id": "tasks-reports",           "path": "/Tasks/Reports",                  "module": "Tasks" },
+    { "id": "tasks-hours-report",      "path": "/Tasks/HoursReport",              "module": "Tasks" },
+    { "id": "tasks-auto-rules",        "path": "/Tasks/AutoRules",                "module": "Tasks" },
+    { "id": "tasks-match-suggestions", "path": "/Tasks/MatchSuggestions",         "module": "Tasks" },
+
+    { "id": "tasks-detail-long",       "path": "/Tasks/Detail?id=29217",          "module": "Tasks",
+      "note": "DENSE-DATA PROBE: the longest title in the dataset (167 characters). Chosen deliberately over a short one - a detail screen that survives a typical title tells you nothing about wrapping." },
+    { "id": "tasks-detail-typical",    "path": "/Tasks/Detail?id=29225",          "module": "Tasks",
+      "note": "A second, ordinary task, so the pair distinguishes 'long content wraps' from 'this screen renders at all'." },
+
+    { "id": "calendar-timeline",       "path": "/Calendar/Timeline",              "module": "Calendar",
+      "note": "A 13-column hour grid: the densest table in the product and the one most likely to overflow at 390px." },
+    { "id": "calendar-resource-view",  "path": "/Calendar/ResourceView",          "module": "Calendar",
+      "note": "Same grid keyed by resource. Carries the double-booking badge, so it also exercises badge collision." },
+
+    { "id": "communication-inbox",     "path": "/Comm",                           "module": "Communication",
+      "note": "Regression check only. No visual work was required or performed here." }
+  ],
+
+  "accessibility": {
+    "failOn": ["critical", "serious"],
+    "note": "Moderate/minor are reported but do not fail the gate, so the signal stays trustworthy."
+  },
+
+  "visual": {
+    "pixelThreshold": 0.1,
+    "maxDifferingRatio": 0.005,
+    "note": "0.5% of pixels may differ - enough to absorb antialiasing and live data, not enough to hide a restyle."
+  }
+}

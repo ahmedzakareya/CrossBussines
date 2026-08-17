@@ -1,0 +1,41 @@
+{
+  "_purpose": "Divergences from the one-visual-language rule that EXIST TODAY and are owned by a specific tab. Pinning them makes the gates usable: a NEW divergence fails the build, while a known one is tracked with an owner instead of switching the gate off.",
+  "_rule": "THIS LIST MAY ONLY SHRINK. Adding an entry requires the product owner's acceptance. An entry whose file no longer exists fails Pinned_exceptions_that_no_longer_occur_must_be_removed - so the list cannot rot into a permanent amnesty.",
+  "_severity": "Critical = second design language or functional regression | High = visible layout/RTL/a11y regression | Medium = orphaned reference or inconsistent component | Low = comment or dead attribute",
+
+  "legacy-design-language": [
+    {
+      "file": "CrossBuy/Views/Shared/_LayoutWorkspace.cshtml",
+      "reason": "25 live cbw-* class attributes. The file is ORPHANED - zero inbound references, no view renders it - so it affects no screen. It is the last carrier of the retired CrossBusiness Blue vocabulary and the last referrer of the retired stylesheet.",
+      "severity": "Medium",
+      "owner": "Workspace owner",
+      "review-item": "W-1",
+      "clears-when": "the orphaned layout is deleted in a dedicated cleanup commit"
+    }
+  ],
+
+  "inline-design-tokens": [
+    {
+      "file": "CrossBuy/Views/Inventory/ShelfLabels.cshtml",
+      "reason": "PRINT ARTIFACT, not a screen. Wrapped in '@media print' with '@page { size:A4; margin:10mm }'; the colours are printer greyscale (#000/#fff/#111/#555/#999/#d0d0d0) and the barcode uses monospace. The screen visual language does not govern ink on a physical shelf label, and Metronic tokens have no meaning there. Pinned individually rather than exempting all print views, so that a future print view must be justified too and nobody can dodge the gate by adding '@media print'.",
+      "severity": "Low",
+      "owner": "Inventory (visual authority)",
+      "clears-when": "n/a - accepted by design. Re-evaluate only if this becomes a screen."
+    }
+  ],
+
+  "unapproved-stylesheet": [],
+
+  "stylesheet-design-tokens": [
+    {
+      "file": "CrossBuy/wwwroot/Backend-assets/css/crossbusiness-workspace.css",
+      "reason": "The retired CrossBusiness Blue design system, kept as a TEMPORARY compatibility artifact under the LEGACY banner. Its only referrer is the orphaned _LayoutWorkspace.cshtml, so it reaches no live screen.",
+      "severity": "Medium",
+      "owner": "Workspace owner",
+      "review-item": "W-1 / W-3",
+      "clears-when": "no file references it and it is deleted in a dedicated cleanup commit"
+    }
+  ],
+
+  "bespoke-table": []
+}
