@@ -310,6 +310,10 @@ namespace CrossBuy.Models.Context
 			//
 			// `this` is passed, not the holder: see the CompanyScope property's comment. The model is cached, so a
 			// filter must read the scope through the EXECUTING context or it would serve every request from the
+			// Task ecosystem: checklist, dependency edges (unique per pair), templates.
+			CrossBuy.Models.Context.Tasks.TaskEcosystemModel.Configure(builder);
+			CrossBuy.Models.Context.Calendar.CalendarSchedulingModel.Configure(builder);
+
 			// first request's company.
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
@@ -377,6 +381,18 @@ namespace CrossBuy.Models.Context
         // it. The same discipline as PlatformRoleAssignments: one reader, so the active/expiry/Never policy is
         // written once and cannot drift between call sites.
         public DbSet<Platform.BootstrapAccessPolicy> BootstrapAccessPolicies { get; set; }
+        public DbSet<Calendar.CalendarEvent> CalendarEvents { get; set; }
+        public DbSet<Calendar.CalendarEventAttendee> CalendarEventAttendees { get; set; }
+        // Calendar scheduling satellites (recurrence / time zone / resources) — new tables, never
+        // columns on CalendarEvents, so an unapplied script cannot break the existing calendar.
+        public DbSet<Calendar.CalendarEventSchedule> CalendarEventSchedules { get; set; }
+        public DbSet<Calendar.CalendarResource> CalendarResources { get; set; }
+        public DbSet<Calendar.CalendarEventResource> CalendarEventResources { get; set; }
+        // ---- Task ecosystem (TAB 4) — all NEW tables; no existing Tasks table is altered ----
+        public DbSet<Tasks.TaskChecklistItem> TaskChecklistItems { get; set; }
+        public DbSet<Tasks.TaskDependency> TaskDependencies { get; set; }
+        public DbSet<Tasks.TaskTemplate> TaskTemplates { get; set; }
+        public DbSet<Tasks.TaskTemplateItem> TaskTemplateItems { get; set; }
         public DbSet<FinalSettlement> FinalSettlements { get; set; }
         public DbSet<LeaveCarryOver> LeaveCarryOvers { get; set; }
         public DbSet<LeaveApprovalStep> LeaveApprovalSteps { get; set; }

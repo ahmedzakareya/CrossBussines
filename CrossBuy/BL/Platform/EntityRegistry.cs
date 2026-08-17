@@ -419,24 +419,19 @@ namespace CrossBuy.BL.Platform
                     .OrderBy(i => i.Name).Take(SearchTake)
                     .Select(i => new ValueTuple<int, string>(i.ID, (i.ItemCode ?? "") + " — " + i.Name)).ToListAsync(cancellationToken),
 
-                // Tasks integration (TAB 4). Filters by company, so a search can never surface another
-                // tenant's row.
+                // Tasks & Calendar integration (TAB 4). Both filter by company, so a search can never
+                // surface another tenant's row. Calendar deliberately does NOT apply the per-employee
+                // visibility rule here: this is the link picker, and CalendarService.Visible() remains the
+                // only place that decides who may READ an event — see the note on ResolveAsync below.
                 Task => await _db.TaskItems.AsNoTracking()
                     .Where(t => t.CompanyId == companyId && (any || t.Title.Contains(term)))
                     .OrderByDescending(t => t.ID).Take(SearchTake)
                     .Select(t => new ValueTuple<int, string>(t.ID, t.Title)).ToListAsync(cancellationToken),
 
-                // HANDOFF TO CALENDAR OWNER — the CalendarEvent search arm belongs here and is deliberately
-                // absent. It read the Calendar module's DbSet, which does not exist until that module
-                // lands, and that single reference was the last thing preventing the Platform Kernel from
-                // compiling as a standalone commit. It is deferred to the Calendar-owned commit, NOT
-                // deleted, and NOT replaced by a kernel-side stub.
-                //
-                // Behaviour while absent is the `_` arm below: CalendarEvent resolves to NO results. That is
-                // the existing fail-closed answer, not a new fallback — the picker offers nothing rather
-                // than offering something it cannot verify. Calendar's own read rule is unaffected;
-                // CalendarService.Visible() was always the only thing deciding who may READ an event, and
-                // this arm never consulted it (by design — see the matching note on ResolveAsync below).
+                CalendarEvent => await _db.CalendarEvents.AsNoTracking()
+                    .Where(e => e.CompanyID == companyId && e.DeletedAt == null && (any || e.Title.Contains(term)))
+                    .OrderByDescending(e => e.StartAt).Take(SearchTake)
+                    .Select(e => new ValueTuple<int, string>(e.Id, e.Title)).ToListAsync(cancellationToken),
 
                 _ => new List<(int, string)>(),
             };
@@ -516,27 +511,23 @@ namespace CrossBuy.BL.Platform
                         .Select(o => o.ReceiptNo ?? ("#" + o.ID)).FirstOrDefaultAsync(cancellationToken);
                     break;
 
-                // ---- Tasks integration (TAB 4) ----
+                // ---- Tasks & Calendar integration (TAB 4) ----
                 case Task:
                     label = await _db.TaskItems.AsNoTracking()
                         .Where(t => t.ID == entityId && t.CompanyId == companyId)
                         .Select(t => t.Title).FirstOrDefaultAsync(cancellationToken);
                     break;
 
-                // HANDOFF TO CALENDAR OWNER — the CalendarEvent label arm belongs here and is deliberately
-                // absent, for the same reason as the search arm above: it read the Calendar module's
-                // DbSet, which does not exist until that module lands. Deferred to the Calendar-owned commit,
-                // not deleted, and not stubbed.
-                //
-                // Behaviour while absent: no case matches, `label` stays null, and `found` below is
-                // therefore false — the existing "unresolved" answer, unchanged. Nothing new was invented
-                // to fill the gap.
-                //
-                // When restoring it, keep the original note with it: this path returns a LABEL only, and
-                // resolving a title is not permission to OPEN the event. CalendarService.Visible()
-                // (organiser / company-scope / attendee) remains the read decision. A Personal event the
-                // caller may not see still resolves to its title here — which is why this code is not in
-                // the record picker, and why the agenda redacts rather than relying on this path.
+                // A LABEL only, and company-filtered. Resolving a title is not the same as being allowed to
+                // OPEN the event: CalendarService.Visible() (organiser / company-scope / attendee) remains the
+                // read decision, and nothing here bypasses it. A Personal event the caller may not see still
+                // resolves to its title here — which is why this code is not in the record picker, and why the
+                // agenda redacts rather than relying on this path.
+                case CalendarEvent:
+                    label = await _db.CalendarEvents.AsNoTracking()
+                        .Where(e => e.Id == entityId && e.CompanyID == companyId && e.DeletedAt == null)
+                        .Select(e => e.Title).FirstOrDefaultAsync(cancellationToken);
+                    break;
             }
 
             bool found = label != null;
