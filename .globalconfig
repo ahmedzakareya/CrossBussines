@@ -1,0 +1,47 @@
+# =====================================================================================================
+# Stage 2A Batch 00-A — authorization guardrail severities, GLOBAL scope.
+#
+# WHY THIS FILE EXISTS, AND WHY .editorconfig ALONE WAS NOT ENOUGH.
+#
+# A real build found it. Entry-gate PROOF C injected a stale baseline entry for a controller that does not
+# exist; CBA004 fired with the correct message and the build SUCCEEDED, because the diagnostic was reported
+# as `CSC : warning CBA004` with no file. A `[*.cs]` section in .editorconfig is matched by PATH, so it can
+# never apply a severity to a diagnostic that has no path — the configured `error` was silently ignored and
+# the default Warning stood.
+#
+# The analyzer now anchors CBA004 to the controller when one exists, which covers the two common cases (the
+# endpoint became protected; the action was deleted but its controller remains). A baseline entry naming a
+# controller that is entirely gone still has nothing to point at, and that is exactly the case a shrink-only
+# baseline must catch. A GLOBAL analyzer config applies compilation-wide, with or without a location, so it
+# closes the residual case.
+#
+# The analyzer unit tests could not have caught this: they override severity through
+# WithSpecificDiagnosticOptions, which is location-independent. Only a real build exercises this path — which
+# is why the entry gate demanded real builds rather than analyzer tests alone.
+#
+# HOW IT IS DISCOVERED — and the trap found while wiring it.
+#
+# The .NET SDK finds this file by walking up from the project directory, exactly as it does for .editorconfig.
+# Do NOT add an explicit <GlobalAnalyzerConfigFiles Include="..\.globalconfig" /> item: that produced a SECOND
+# entry for the same file under a different path, Roslyn treats two global configs that set the same key as a
+# CONFLICT and drops the option, and the explicit item therefore silently disabled the very severities it was
+# added to apply. CBA004 stayed a warning and the build passed. Removing the item made it an error.
+#
+# KEEP IN SYNC with .editorconfig. `SeverityConfigTests` asserts the two files declare identical CBA
+# severities and fails if they drift; a security severity that disagrees with itself is worse than either
+# value alone.
+# =====================================================================================================
+
+is_global = true
+
+# Enforced — zero occurrences today, so `error` blocks only NEW problems.
+dotnet_diagnostic.CBA001.severity = error
+dotnet_diagnostic.CBA004.severity = error
+dotnet_diagnostic.CBA006.severity = error
+
+# Warning — also zero today, but a false positive should not block a developer.
+dotnet_diagnostic.CBA003.severity = warning
+dotnet_diagnostic.CBA005.severity = warning
+
+# Suggestion — the one rule with a backlog (124 endpoints). Raised in rollout phase 3.
+dotnet_diagnostic.CBA002.severity = suggestion

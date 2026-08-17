@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Stage 2A Batch 00-A — analyzer tests.
+
+    A SEPARATE test project, not an addition to CrossBuy.Tests. Two reasons, both about honesty of evidence:
+
+      * CrossBuy.Tests is the frozen 781-test non-regression suite. Adding 30 tests to it would change the number
+        that every prior report cites as the baseline, and a moved baseline is exactly what the shrink-only
+        discipline exists to prevent. The two suites are run and reported separately.
+
+      * These tests need Roslyn in the test host. CrossBuy.Tests must not acquire a Roslyn dependency for
+        unrelated reasons.
+
+    The ProjectReference to CrossBuy is NOT so the tests exercise the app. It is so the RECONCILIATION test can
+    build a real semantic compilation of the app's own sources against the app's own reference set — see
+    RealSourceCompilation. CrossBuy.dll itself is excluded from that reference set, because the sources are
+    compiled from scratch and referencing the compiled form too would make every CrossBuy type ambiguous.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'TestRun'">
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    <Optimize>false</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CrossBuy.Analyzers\CrossBuy.Analyzers.csproj" />
+    <ProjectReference Include="..\CrossBuy\CrossBuy.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -6,6 +6,26 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- Stage 1 Batch B: the TestRun configuration is DECLARED, and defines DEBUG.
+
+       TestRun exists for one reason — Visual Studio and IIS Express hold a lock on bin\Debug, so a build for a test
+       run needs its own output folder. It was previously used as a bare `-c TestRun` with no declaration anywhere,
+       which meant MSBuild treated it as a non-Debug configuration and did NOT define DEBUG.
+
+       That silently compiled a DIFFERENT program than the one developers run. It broke the build the moment a
+       `#if DEBUG` member was referenced from unconditional code: StockService._testBypassLandedLockRead is declared
+       inside `#if DEBUG`, DevSeedController references it without one, so the TestRun build failed while Debug
+       succeeded. Before that reference existed, the difference was invisible — which is worse, because every
+       previous "-c TestRun" acceptance ran against code paths that Debug does not have.
+
+       Declaring it makes TestRun mean "Debug, in a different folder", which is what every use of it assumed. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'TestRun'">
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    <Optimize>false</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />

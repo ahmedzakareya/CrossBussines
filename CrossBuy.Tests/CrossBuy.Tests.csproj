@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Platform Kernel slice 1 test project.
+
+    The solution had NO test project before this slice, so one is introduced here rather than assumed.
+    It targets the same net8.0 as the web project and takes a FrameworkReference on the ASP.NET shared
+    framework because the types under test (IHttpContextAccessor, the BL services) live in a web project.
+
+    Storage: SQLite in a shared in-memory connection. It is the only in-process provider that supports real
+    transactions, which tests 3, 4 and 9 depend on — EF's InMemory provider silently ignores them and would
+    make those tests pass without proving anything.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!-- Stage 1 Batch B: TestRun must mean the same thing in both projects, or the test assembly and the assembly
+       under test would be compiled with different constants. See the matching block in CrossBuy.csproj. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'TestRun'">
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    <Optimize>false</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!--
+      Lets the SQL Server integration tests report SKIPPED (not passed) when no integration connection string
+      is configured. xUnit v2 can only skip statically via [Fact(Skip=...)]; without this the suite would have
+      to silently pass, which would hide the fact that the locking behaviour was never exercised.
+    -->
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CrossBuy\CrossBuy.csproj" />
+  </ItemGroup>
+
+</Project>

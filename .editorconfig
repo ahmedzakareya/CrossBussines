@@ -1,0 +1,50 @@
+# =====================================================================================================
+# Stage 2A Batch 00-A — authorization guardrail severities.
+#
+# The analyzer ships every rule at Warning (its dogfood default). Escalation lives HERE, not in the
+# analyzer, so a single build of it can warn in the IDE and fail the build. Proven by test:
+# `New_debt_can_be_escalated_to_a_build_ERROR_by_configuration` asserts CBA001 is reported with
+# Severity == Error while DefaultSeverity == Warning.
+#
+# THE PRINCIPLE behind the split: a rule that is at ZERO today is escalated immediately, because error
+# costs nothing and is the entire point of the guardrail. A rule with a BACKLOG is escalated after the
+# backlog is worked down, never before — escalating a 124-item rule first would train the team to ignore
+# CBA ids, which would then hide CBA001.
+#
+# Counts on the tree at the time of wiring (docs/architecture/evidence/Roslyn-Analyzer-Diagnostic-Profile.csv):
+#   CBA001 0 · CBA002 124 · CBA003 0 · CBA004 0 · CBA005 0 · CBA006 0
+# =====================================================================================================
+
+root = true
+
+[*.cs]
+
+# ---- ENFORCED: zero today, so an error blocks only NEW problems -------------------------------------
+
+# A new unprotected mutating endpoint that is not in the frozen baseline. The baseline may only shrink.
+dotnet_diagnostic.CBA001.severity = error
+
+# A baseline entry that no longer matches an unprotected endpoint — protected, deleted or renamed.
+# A rename costs both this and CBA001, so it cannot pass as pre-existing debt.
+dotnet_diagnostic.CBA004.severity = error
+
+# Any attempt to suppress an authorization diagnostic. There is no legitimate suppression: an accepted gap
+# belongs in authorization-baseline.json where it is reviewable, not behind a pragma with no reviewer.
+dotnet_diagnostic.CBA006.severity = error
+
+# ---- WARNING: also zero today, but a false positive here should not block a developer ---------------
+
+# An authorization-shaped call that resolves to no declared authority — normally a new access service that
+# nobody added to the declared surface.
+dotnet_diagnostic.CBA003.severity = warning
+
+# An anonymous mutating endpoint not classified AnonymousByDesign.
+dotnet_diagnostic.CBA005.severity = warning
+
+# ---- SUGGESTION: the one rule with a backlog -------------------------------------------------------
+
+# Authentication, anti-forgery or the POS lane guard present, and no authorization. 124 endpoints today,
+# against a build that already emits 303 warnings — escalating now would add 41% build noise without
+# removing one line of debt, and new unprotected actions are already blocked by CBA001.
+# Raised to warning in rollout phase 3, once Wave 2 has worked the count down.
+dotnet_diagnostic.CBA002.severity = suggestion
