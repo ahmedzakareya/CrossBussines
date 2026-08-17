@@ -1,0 +1,129 @@
+﻿@using CrossBuy.BL.TasksCalendar
+@model CalendarTimelinePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    @* GLOBAL UI RULE: the Inventory module is the only visual authority. This is a table, drawn with
+       Inventory's card and table treatment — not a second calendar widget. FullCalendar's own timeline
+       view is a PREMIUM plugin that is not in the Metronic bundle, and adding a paid dependency to get
+       a row-per-person grid would be a large cost for a layout the Inventory table already gives us.
+
+       The page takes a TYPED model. It used to read anonymous projections out of ViewBag as
+       `IEnumerable<dynamic>`; because an anonymous type is internal to CrossBuy.dll and this view is
+       compiled at runtime into a DIFFERENT assembly, `emp.ID` threw RuntimeBinderException and the
+       screen was a hard 500. A view may not depend on the visibility of a compiler-generated type. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+
+    var day = Model.Day;
+    ViewData["Title"] = T("الجدول الزمني", "Timeline");
+
+    // The working day the grid spans. Anything outside it still appears, clamped to the edge, so an
+    // early or late meeting is never invisible.
+    const int StartHour = 7, EndHour = 20;
+    var hours = Enumerable.Range(StartHour, EndHour - StartHour).ToList();
+}
+
+<!--begin::Toolbar-->
+@* RESPONSIVE TOOLBAR. `flex-wrap gap-3` is the pattern Tasks/AutoRules and Tasks/HoursReport already
+   use on this exact container — not a new one invented here.
+
+   The overflow was NOT the grid: the table has always been inside `.table-responsive`, which scrolls
+   itself. It was this action row. Five controls including a 150px date field measure ~482px (en) and
+   ~422px (ar), and a non-wrapping `d-flex` pushed the whole PAGE to that width at a 390px viewport.
+   Wrapping the row costs a second line on a phone and hides nothing. *@
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("الجدول الزمني", "Timeline")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@SR["Calendar"]</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@day.ToString("yyyy-MM-dd")</li>
+        </ul>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <a href="/Calendar/Timeline?day=@day.AddDays(-1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-light btn-icon"
+           aria-label="@T("اليوم السابق", "Previous day")"><i class="ki-outline ki-left fs-2" aria-hidden="true"></i></a>
+        <form method="get" asp-action="Timeline" class="d-flex align-items-center gap-2 m-0">
+            @* The date field is the only labelled-by-nothing control on this screen: it sits alone in a
+               toolbar with no adjacent text, so a screen reader announced an anonymous date box. *@
+            <input type="date" name="day" value="@day.ToString("yyyy-MM-dd")"
+                   aria-label="@T("اعرض اليوم", "Show day")"
+                   class="form-control form-control-sm form-control-solid w-150px" onchange="this.form.submit()" />
+        </form>
+        <a href="/Calendar/Timeline?day=@day.AddDays(1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-light btn-icon"
+           aria-label="@T("اليوم التالي", "Next day")"><i class="ki-outline ki-right fs-2" aria-hidden="true"></i></a>
+        <a href="/Calendar/ResourceView?day=@day.ToString("yyyy-MM-dd")" class="btn btn-sm btn-light"><i class="ki-outline ki-office-bag fs-2" aria-hidden="true"></i>@T("الموارد", "Resources")</a>
+        <a href="/Calendar/Index" class="btn btn-sm btn-light"><i class="ki-outline ki-calendar fs-2" aria-hidden="true"></i>@T("التقويم", "Calendar")</a>
+    </div>
+</div></div>
+<!--end::Toolbar-->
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    <div class="card card-flush">
+        <div class="card-header align-items-center py-4">
+            <h3 class="card-title fw-bold text-gray-900">@T("الموظفون", "People")</h3>
+            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@Model.OccurrenceCount @T("موعد", "bookings")</span></div>
+        </div>
+        <div class="card-body pt-0">
+            @* KEYBOARD-REACHABLE SCROLL REGION. `.table-responsive` scrolls horizontally, and a region
+               that scrolls but cannot be focused is unreachable to anyone not using a mouse — axe's
+               scrollable-region-focusable. `tabindex="0"` puts it in the tab order so arrow keys work;
+               role+aria-label give it a name once it is focusable, so it is announced as something
+               rather than as an unnamed group. No visual change. *@
+            <div class="table-responsive" tabindex="0" role="region"
+                 aria-label="@T("شبكة ساعات الموظفين", "Employee hour grid")">
+                <table class="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-2">
+                    <thead>
+                        <tr class="fw-bold text-muted fs-8">
+                            <th class="min-w-150px">@T("الموظف", "Employee")</th>
+                            @foreach (var h in hours)
+                            {
+                                <th class="text-center min-w-50px">@h.ToString("00")</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.People.Count == 0)
+                        {
+                            <tr><td colspan="@(hours.Count + 1)" class="text-center text-muted py-10">@T("لا موظفين", "No employees")</td></tr>
+                        }
+                        @foreach (var emp in Model.People)
+                        {
+                            @* The employee→occurrence join is done in the service. A view that rebuilds a
+                               relationship is a view that can get it wrong where no test can see it. *@
+                            var mine = emp.Occurrences;
+                            <tr>
+                                <td class="fw-semibold text-gray-900 fs-7">@emp.EmployeeName</td>
+                                @foreach (var h in hours)
+                                {
+                                    @* An occurrence covers this hour if it overlaps it — a 09:30–10:30
+                                       meeting is busy in both 09 and 10, not only where it starts. *@
+                                    var slotStart = day.AddHours(h).ToUniversalTime();
+                                    var slotEnd = slotStart.AddHours(1);
+                                    var hit = mine.FirstOrDefault(o => o.StartUtc < slotEnd && (o.EndUtc ?? o.StartUtc.AddMinutes(30)) > slotStart);
+                                    if (hit != null)
+                                    {
+                                        <td class="text-center p-1">
+                                            <span class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block" title="@hit.Title">
+                                                @hit.Title@(hit.IsRepeat ? " ↻" : "")
+                                            </span>
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td class="text-center p-1"><span class="text-muted fs-8">·</span></td>
+                                    }
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-muted fs-8 mt-3">
+                @T("↻ تعني موعدًا متكررًا. الساعات معروضة بالتوقيت المحلي للخادم.",
+                   "↻ marks a repeating occurrence. Hours are shown in the server's local time.")
+            </div>
+        </div>
+    </div>
+</div></div>

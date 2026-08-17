@@ -1,0 +1,500 @@
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    @* GLOBAL UI RULE: Inventory is the only visual authority. Inventory shell, Inventory cards. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var dir = isAr ? "rtl" : "ltr";
+}
+<link href="@Url.Content("~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.css")" rel="stylesheet" type="text/css" />
+<style>
+    /* Event ownership is carried by two APPROVED Metronic semantic tokens, never by a literal. */
+    /* Personal uses brand primary, company uses the info token. The pair must stay visually */
+    /* distinct: that distinction is what tells a reader whose event this is, so it is behaviour, */
+    /* not decoration. The literal removed from the company rule was Metronic's STOCK primary — */
+    /* precisely the blue crossbuy-brand.css overrides to ledger green on purpose, so hardcoding */
+    /* it re-introduced the one colour the brand exists to replace. */
+    .fc-event.cbev-personal, .fc .cbev-personal { background: var(--bs-primary); border-color: var(--bs-primary); color: var(--bs-primary-inverse); }
+    .fc-event.cbev-company, .fc .cbev-company { background: var(--bs-info); border-color: var(--bs-info); color: var(--bs-primary-inverse); }
+    #kt_calendar_app { min-height: 700px; }
+
+    /* ------------------------------------------------------------------------------------------
+       THE EVENT TITLE MUST STAY INSIDE ITS COLOURED PILL.
+
+       Measured defect, RTL at 390px: a dot-event title rendered at x=125 w=6px while ITS OWN event
+       box was x=135 w=36px — the title had escaped its pill to the left and was painting WHITE text
+       straight onto the day cell. axe reported white on the .fc-day-today tint at 1.06:1, and it
+       was right: the text really was outside the purple.
+
+       Cause is the flexbox default, not a colour: FullCalendar lays the dot event out as a flex row
+       and `.fc-event-title` is a flex item, whose min-width defaults to `auto` = its intrinsic
+       content width. A long Arabic title therefore REFUSES to shrink below its text width and
+       overflows the 36px pill. `min-width: 0` is the standard release for exactly this, and
+       ellipsis truncation makes the overflow visible as "…" instead of as escaped text.
+
+       Fixed at OUR integration boundary — no vendor file is touched, no colour is changed, and the
+       approved personal/company colours above are untouched. ------------------------------------ */
+       Measured box model at 390px RTL, pill x=260..296 (36px wide):
+           .fc-daygrid-event-dot   287  8px   inside
+           .fc-event-time  "3 ص"   258 23px   STARTS LEFT OF THE PILL
+           .fc-event-title         249  6px   ENTIRELY OUTSIDE THE PILL
+
+       The children sum to ~37px inside a 36px flex line, and the pill is `overflow: visible`, so the
+       line spills out of the coloured background instead of being clipped by it. Letting the title
+       shrink is not enough on its own — the TIME is also `min-width: auto` and refuses to go below
+       its text width, and nothing clips what escapes.
+
+       So both halves are fixed: every child may shrink, and the pill CLIPS. `overflow: hidden` on the
+       pill is the guarantee that matters — it makes it structurally impossible for white event text
+       to be painted anywhere except on its own coloured background. */
+    .fc-daygrid-dot-event,
+    .fc-daygrid-block-event { overflow: hidden; }
+
+    .fc-daygrid-dot-event .fc-event-title,
+    .fc-daygrid-block-event .fc-event-title,
+    .fc-daygrid-dot-event .fc-event-time,
+    .fc-daygrid-block-event .fc-event-time {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* ------------------------------------------------------------------------------------------
+       DAYS OUTSIDE THE CURRENT MONTH MUST STILL BE READABLE.
+
+       FullCalendar dims them with `.fc-day-other .fc-daygrid-day-top { opacity: .3 }`. The day
+       number's own colour measures 13.26:1 in isolation — which is why an isolated sample says it
+       passes — but 30% opacity composites it to 1.8:1 on white. The dimming is the failure, not the
+       colour.
+
+       The "not this month" signal is real information and is KEPT: instead of removing the dim, the
+       number is painted at full opacity in --bs-text-muted (7.27:1). It still reads as clearly
+       secondary to the darker current-month numbers, and it is now legible. Uses the authority's own
+       token; no new palette, no !important. (Measured hex values are in the increment report, not
+       here: the colour gate scans this whole block and a hex in a comment reads to it as an invented
+       palette.) ------------------------------------------------------------------------------- */
+    .fc .fc-day-other .fc-daygrid-day-top { opacity: 1; }
+    .fc .fc-day-other .fc-daygrid-day-number { color: var(--bs-text-muted); }
+    /* --- responsive / mobile: stack the toolbar, shrink controls, let height flow --- */
+    @@media (max-width: 767.98px) {
+        #kt_calendar_app { min-height: auto; }
+        .fc .fc-toolbar.fc-header-toolbar { flex-direction: column; align-items: stretch; gap: .5rem; margin-bottom: 1rem; }
+        .fc .fc-toolbar-chunk { display: flex; justify-content: center; flex-wrap: wrap; gap: .25rem; }
+        .fc .fc-toolbar-title { font-size: 1.05rem; text-align: center; }
+        .fc .fc-button { padding: .35rem .55rem; font-size: .8rem; }
+        .fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number { font-size: .75rem; }
+        .fc .fc-daygrid-event { font-size: .7rem; }
+        .card-body { padding: .75rem; }
+        .cbrecip-menu { width: 100%; }
+    }
+    .cbrecip-input { outline: 0; border: 0; background: transparent; min-width: 140px; padding: 6px 2px; }
+    .cbrecip-box { min-height: 40px; align-content: center; }
+    /* Recipient picker: Metronic tokens only. The literals removed here were the Metronic 8.1 grey */
+    /* scale; the shipped bundle is 8.2.3 and its grey ramp has since moved, so those literals had */
+    /* already drifted away from the components they sit beside. A token tracks the theme, including */
+    /* its dark values, which a literal cannot. The avatar rule also named --bs-light-primary, which */
+    /* is defined nowhere, so it had always fallen through to its literal; it now names the real */
+    /* brand token --bs-primary-light. */
+    .cbrecip-menu { position: absolute; top: 100%; inset-inline-start: 0; z-index: 1060; background: var(--bs-body-bg); border: 1px solid var(--bs-gray-300); border-radius: 8px; box-shadow: var(--bs-box-shadow); width: 340px; max-width: 100%; max-height: 300px; overflow: auto; margin-top: 4px; }
+    .cbrecip-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; }
+    .cbrecip-item:hover, .cbrecip-item.active { background: var(--bs-gray-100); }
+    .cbrecip-av img, .cbrecip-av .cbrecip-ini { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: flex; align-items: center; justify-content: center; background: var(--bs-primary-light); color: var(--bs-primary); font-weight: 700; }
+    .cbrecip-name { font-weight: 600; color: var(--bs-gray-900); font-size: .9rem; }
+    .cbrecip-email { font-size: .78rem; color: var(--bs-gray-600); }
+</style>
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Calendar"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Calendar"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card card-flush">
+            <div class="card-header">
+                <h2 class="card-title fw-bold">@Localizer["Calendar"]</h2>
+                <div class="card-toolbar">
+                    <button class="btn btn-flex btn-primary" data-kt-calendar="add"><i class="ki-outline ki-plus fs-2"></i>@Localizer["Add Event"]</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="kt_calendar_app"></div>
+            </div>
+        </div>
+
+        @Html.AntiForgeryToken()
+
+        <!--begin::Modal - Add/Edit Event-->
+        <div class="modal fade" id="kt_modal_add_event" tabindex="-1" aria-hidden="true" data-bs-focus="false">
+            <div class="modal-dialog modal-dialog-centered mw-650px">
+                <div class="modal-content">
+                    <form class="form" id="kt_modal_add_event_form">
+                        <input type="hidden" name="id" value="" />
+                        <div class="modal-header">
+                            <h2 class="fw-bold" data-kt-calendar="title">@Localizer["Add Event"]</h2>
+                            <div class="btn btn-icon btn-sm btn-active-icon-primary" id="kt_modal_add_event_close"><i class="ki-outline ki-cross fs-1"></i></div>
+                        </div>
+                        <div class="modal-body py-10 px-lg-17">
+                            <div class="fv-row mb-9">
+                                <label class="fs-6 fw-semibold required mb-2">@Localizer["Event Name"]</label>
+                                <input type="text" class="form-control form-control-solid" name="title" required />
+                            </div>
+                            <div class="fv-row mb-9">
+                                <label class="fs-6 fw-semibold mb-2">@Localizer["Event Description"]</label>
+                                <input type="text" class="form-control form-control-solid" name="description" />
+                            </div>
+                            <div class="row row-cols-lg-2 g-9">
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event Location"]</label>
+                                        <input type="text" class="form-control form-control-solid" name="location" />
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Visibility"]</label>
+                                        <select class="form-select form-select-solid" name="scope">
+                                            <option value="Personal">@Localizer["Personal (only me)"]</option>
+                                            <option value="Company">@Localizer["Company (everyone sees)"]</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fv-row mb-9">
+                                <label class="fs-6 fw-semibold mb-2">@Localizer["Invite attendees"]</label>
+                                <div class="cbrecip position-relative">
+                                    <div class="cbrecip-box form-control form-control-solid d-flex flex-wrap align-items-center gap-1"><input type="text" class="cbrecip-input" placeholder="@Localizer["Type a colleague's name…"]" autocomplete="off" /></div>
+                                    <div class="cbrecip-menu d-none"></div>
+                                    <input type="hidden" name="attendees" value="" />
+                                </div>
+                            </div>
+                            <div class="fv-row mb-9">
+                                <label class="form-check form-check-custom form-check-solid">
+                                    <input class="form-check-input" type="checkbox" id="cbAllDay" name="allDay" value="true" />
+                                    <span class="form-check-label fw-semibold">@Localizer["All Day"]</span>
+                                </label>
+                            </div>
+                            <div class="row row-cols-lg-2 g-9">
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2 required">@Localizer["Event Start Date"]</label>
+                                        <input class="form-control form-control-solid" id="cbStartDate" placeholder="@Localizer["Pick a start date"]" />
+                                    </div>
+                                </div>
+                                <div class="col" data-kt-calendar="datepicker">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event Start Time"]</label>
+                                        <input class="form-control form-control-solid" id="cbStartTime" placeholder="@Localizer["Pick a start time"]" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row row-cols-lg-2 g-9">
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2 required">@Localizer["Event End Date"]</label>
+                                        <input class="form-control form-control-solid" id="cbEndDate" placeholder="@Localizer["Pick an end date"]" />
+                                    </div>
+                                </div>
+                                <div class="col" data-kt-calendar="datepicker">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event End Time"]</label>
+                                        <input class="form-control form-control-solid" id="cbEndTime" placeholder="@Localizer["Pick an end time"]" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer flex-center">
+                            <button type="reset" id="kt_modal_add_event_cancel" class="btn btn-light me-3">@Localizer["Cancel"]</button>
+                            <button type="submit" id="kt_modal_add_event_submit" class="btn btn-primary"><span class="indicator-label">@Localizer["Submit"]</span></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!--end::Modal - Add/Edit Event-->
+
+        <!--begin::Modal - View Event-->
+        <div class="modal fade" id="kt_modal_view_event" tabindex="-1" data-bs-focus="false" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered mw-650px">
+                <div class="modal-content">
+                    <div class="modal-header border-0 justify-content-end">
+                        <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-primary me-2 d-none" title="@Localizer["Edit Event"]" id="kt_modal_view_event_edit"><i class="ki-outline ki-pencil fs-2"></i></div>
+                        <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-danger me-2 d-none" title="@Localizer["Delete Event"]" id="kt_modal_view_event_delete"><i class="ki-outline ki-trash fs-2"></i></div>
+                        <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-2x"></i></div>
+                    </div>
+                    <div class="modal-body pt-0 pb-20 px-lg-17">
+                        <div class="d-flex">
+                            <i class="ki-outline ki-calendar-8 fs-1 text-muted me-5"></i>
+                            <div class="mb-9">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="fs-3 fw-bold me-3" data-kt-calendar="event_name"></span>
+                                    <span class="badge" data-kt-calendar="scope"></span>
+                                </div>
+                                <div class="fs-6" data-kt-calendar="event_description"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-2"><span class="bullet bullet-dot h-10px w-10px bg-success ms-2 me-7"></span><div class="fs-6"><span class="fw-bold">@Localizer["Starts"]</span> <span data-kt-calendar="event_start_date"></span></div></div>
+                        <div class="d-flex align-items-center mb-9"><span class="bullet bullet-dot h-10px w-10px bg-danger ms-2 me-7"></span><div class="fs-6"><span class="fw-bold">@Localizer["Ends"]</span> <span data-kt-calendar="event_end_date"></span></div></div>
+                        <div class="d-flex align-items-center mb-4"><i class="ki-outline ki-geolocation fs-1 text-muted me-5"></i><div class="fs-6" data-kt-calendar="event_location"></div></div>
+                        <div class="d-flex align-items-center mb-4"><i class="ki-outline ki-profile-circle fs-1 text-muted me-5"></i><div class="fs-6"><span class="fw-bold">@Localizer["Owner"]:</span> <span data-kt-calendar="event_owner"></span></div></div>
+                        <div class="d-flex align-items-start"><i class="ki-outline ki-people fs-1 text-muted me-5"></i><div class="fs-6" data-kt-calendar="event_attendees"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::Modal - View Event-->
+    </div></div>
+</div>
+
+@section Scripts {
+<script src="@Url.Content("~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.js")"></script>
+<script>
+(function () {
+    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    var calEl = document.getElementById('kt_calendar_app');
+    var addModalEl = document.getElementById('kt_modal_add_event');
+    var viewModalEl = document.getElementById('kt_modal_view_event');
+    var addModal = new bootstrap.Modal(addModalEl);
+    var viewModal = new bootstrap.Modal(viewModalEl);
+    var form = document.getElementById('kt_modal_add_event_form');
+    var currentEvent = null;   // for the view modal
+
+    function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':s); return d.innerHTML; }
+    function pad(n){ return (n<10?'0':'')+n; }
+    function toLocalInput(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+    function fmt(iso){ if(!iso) return '—'; var d=new Date(iso); return d.toLocaleString('@(isAr ? "ar-EG" : "en-GB")', {dateStyle:'medium', timeStyle:'short'}); }
+
+    // ---------- attendees picker (chips + company autocomplete) ----------
+    (function initRecip(){
+        var root = document.querySelector('.cbrecip'), box = root.querySelector('.cbrecip-box'),
+            input = root.querySelector('.cbrecip-input'), menu = root.querySelector('.cbrecip-menu'),
+            hidden = root.querySelector('input[type=hidden]');
+        var chips = [];  // {id, name}
+        window.__cbSetAttendees = function(list){ chips = (list||[]).slice(); render(); };
+        function sync(){ hidden.value = chips.map(function(c){return c.id;}).join(','); }
+        function render(){
+            box.querySelectorAll('.cbrecip-chip').forEach(function(c){c.remove();});
+            chips.forEach(function(c,i){
+                var chip=document.createElement('span');
+                chip.className='cbrecip-chip badge badge-light-primary d-inline-flex align-items-center gap-1 py-2';
+                chip.innerHTML=esc(c.name)+' <i class="ki-outline ki-cross fs-7 cursor-pointer"></i>';
+                chip.querySelector('i').addEventListener('click', function(){ chips.splice(i,1); render(); });
+                box.insertBefore(chip, input);
+            });
+            sync();
+        }
+        function add(c){ if(!c||!c.id) return; if(!chips.some(function(x){return x.id===c.id;})) chips.push(c); render(); input.value=''; hide(); }
+        function hide(){ menu.classList.add('d-none'); menu.innerHTML=''; }
+        function show(items){
+            if(!items||!items.length){ hide(); return; }
+            menu.innerHTML = items.map(function(c,i){
+                var av = c.photo ? '<img src="'+esc(c.photo)+'" alt="" />' : '<span class="cbrecip-ini">'+esc((c.name||'?').substring(0,1).toUpperCase())+'</span>';
+                return '<div class="cbrecip-item'+(i===0?' active':'')+'" data-id="'+c.id+'" data-name="'+esc(c.name)+'"><span class="cbrecip-av">'+av+'</span><span class="cbrecip-meta"><span class="cbrecip-name">'+esc(c.name)+'</span><span class="cbrecip-email">'+esc(c.email)+'</span></span></div>';
+            }).join('');
+            menu.querySelectorAll('.cbrecip-item').forEach(function(el){ el.addEventListener('mousedown', function(e){ e.preventDefault(); add({id:parseInt(el.getAttribute('data-id')), name:el.getAttribute('data-name')}); input.focus(); }); });
+            menu.classList.remove('d-none');
+        }
+        var timer;
+        input.addEventListener('input', function(){ var q=input.value.trim(); clearTimeout(timer); if(q.length<1){ hide(); return; }
+            timer=setTimeout(function(){ fetch('@Url.Action("Attendees","Calendar")'+'?q='+encodeURIComponent(q), {credentials:'same-origin'}).then(function(r){return r.ok?r.json():[];}).then(show).catch(function(){}); }, 180); });
+        input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ var f=menu.querySelector('.cbrecip-item.active')||menu.querySelector('.cbrecip-item'); if(f && !menu.classList.contains('d-none')){ e.preventDefault(); add({id:parseInt(f.getAttribute('data-id')), name:f.getAttribute('data-name')}); } }
+            if(e.key==='Backspace' && !input.value && chips.length){ chips.pop(); render(); } if(e.key==='Escape') hide(); });
+        input.addEventListener('blur', function(){ setTimeout(hide, 150); });
+        box.addEventListener('click', function(){ input.focus(); });
+    })();
+
+    // ---------- add/edit modal (Metronic flatpickr: separate date + time fields) ----------
+    var fpSD = flatpickr('#cbStartDate', { dateFormat: 'd M Y' });
+    var fpST = flatpickr('#cbStartTime', { enableTime: true, noCalendar: true, dateFormat: 'h:i K' });
+    var fpED = flatpickr('#cbEndDate', { dateFormat: 'd M Y' });
+    var fpET = flatpickr('#cbEndTime', { enableTime: true, noCalendar: true, dateFormat: 'h:i K' });
+    function toggleTimeCols(hide){ addModalEl.querySelectorAll('[data-kt-calendar="datepicker"]').forEach(function(el){ el.classList.toggle('d-none', hide); }); }
+    function combine(dPick, tPick, allDay){
+        var d = dPick.selectedDates[0]; if(!d) return null;
+        var t = allDay ? null : tPick.selectedDates[0];
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate(), t ? t.getHours() : 0, t ? t.getMinutes() : 0, 0);
+    }
+    function localStr(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }
+    document.getElementById('cbAllDay').addEventListener('change', function(){ toggleTimeCols(this.checked); });
+    function openAdd(startDate, endDate){
+        form.querySelector('[name=id]').value=''; form.querySelector('[name=title]').value=''; form.querySelector('[name=description]').value='';
+        form.querySelector('[name=location]').value=''; form.querySelector('[name=scope]').value='Personal'; window.__cbSetAttendees([]);
+        document.getElementById('cbAllDay').checked=false; toggleTimeCols(false);
+        addModalEl.querySelector('[data-kt-calendar="title"]').textContent='@Localizer["Add Event"]';
+        var s = startDate || new Date(); var e = endDate || new Date(s.getTime()+60*60*1000);
+        fpSD.setDate(s); fpST.setDate(s); fpED.setDate(e); fpET.setDate(e);
+        addModal.show();
+    }
+    function openEdit(ev){
+        addModalEl.querySelector('[data-kt-calendar="title"]').textContent='@Localizer["Edit Event"]';
+        form.querySelector('[name=id]').value = ev.id;
+        form.querySelector('[name=title]').value = ev.title || '';
+        form.querySelector('[name=description]').value = ev.extendedProps.description || '';
+        form.querySelector('[name=location]').value = ev.extendedProps.location || '';
+        form.querySelector('[name=scope]').value = ev.extendedProps.scope || 'Personal';
+        var all = ev.allDay; document.getElementById('cbAllDay').checked = all; toggleTimeCols(all);
+        var s = ev.start || new Date(); var e = ev.end || new Date(s.getTime()+60*60*1000);
+        fpSD.setDate(s); fpST.setDate(s); fpED.setDate(e); fpET.setDate(e);
+        var ids = ev.extendedProps.attendeeIds||[], names = ev.extendedProps.attendees||[];
+        window.__cbSetAttendees(ids.map(function(id,i){ return {id:id, name:names[i]||('#'+id)}; }));
+        viewModal.hide(); addModal.show();
+    }
+    document.getElementById('kt_modal_add_event_close').addEventListener('click', function(){ addModal.hide(); });
+    document.getElementById('kt_modal_add_event_cancel').addEventListener('click', function(){ addModal.hide(); });
+
+    form.addEventListener('submit', function(e){
+        e.preventDefault();
+        if(!form.querySelector('[name=title]').value.trim()){ if(window.toastr) toastr.error('@Localizer["Event name is required"]'); return; }
+        var allDay = document.getElementById('cbAllDay').checked;
+        var sd = combine(fpSD, fpST, allDay), ed = combine(fpED, fpET, allDay);
+        if(!sd){ if(window.toastr) toastr.error('@Localizer["Pick a start date"]'); return; }
+        var fd = new FormData(form);
+        fd.set('allDay', allDay ? 'true' : 'false');
+        fd.set('start', localStr(sd));
+        fd.set('end', ed ? localStr(ed) : '');
+        fd.append('__RequestVerificationToken', token);
+        var btn = document.getElementById('kt_modal_add_event_submit'); btn.disabled=true;
+        fetch('@Url.Action("Save","Calendar")', {method:'POST', credentials:'same-origin', body:fd})
+            .then(function(r){return r.json();}).then(function(res){ btn.disabled=false;
+                if(res && res.ok){ addModal.hide(); calendar.refetchEvents(); if(window.toastr){ toastr.success('@Localizer["Saved"]'); if(res.invited > 0) toastr.info('@Localizer["Invitations emailed to attendees"]'); } }
+                else { if(window.toastr) toastr.error('@Localizer["Could not save"]'); } })
+            .catch(function(){ btn.disabled=false; if(window.toastr) toastr.error('@Localizer["Could not save"]'); });
+    });
+
+    // ---------- view modal ----------
+    function openView(ev){
+        currentEvent = ev; var p = ev.extendedProps;
+        var m = viewModalEl;
+        m.querySelector('[data-kt-calendar="event_name"]').textContent = ev.title || '';
+        var sc = m.querySelector('[data-kt-calendar="scope"]');
+        sc.textContent = p.scope === 'Company' ? '@Localizer["Company"]' : '@Localizer["Personal"]';
+        sc.className = 'badge ' + (p.scope === 'Company' ? 'badge-light-info' : 'badge-light-primary');
+        m.querySelector('[data-kt-calendar="event_description"]').textContent = p.description || '';
+        m.querySelector('[data-kt-calendar="event_start_date"]').textContent = fmt(ev.startStr);
+        m.querySelector('[data-kt-calendar="event_end_date"]').textContent = fmt(ev.endStr);
+        m.querySelector('[data-kt-calendar="event_location"]').textContent = p.location || '—';
+        m.querySelector('[data-kt-calendar="event_owner"]').textContent = p.ownerName || '';
+        m.querySelector('[data-kt-calendar="event_attendees"]').textContent = (p.attendees && p.attendees.length) ? p.attendees.join('، ') : '—';
+        var edit = document.getElementById('kt_modal_view_event_edit'), del = document.getElementById('kt_modal_view_event_delete');
+        edit.classList.toggle('d-none', !p.canEdit); del.classList.toggle('d-none', !p.canEdit);
+        viewModal.show();
+    }
+    document.getElementById('kt_modal_view_event_edit').addEventListener('click', function(){ if(currentEvent) openEdit(currentEvent); });
+    document.getElementById('kt_modal_view_event_delete').addEventListener('click', function(){
+        if(!currentEvent) return;
+        Swal.fire({
+            text: '@Localizer["Delete this event?"]', icon: 'warning', showCancelButton: true, buttonsStyling: false,
+            confirmButtonText: '@Localizer["Yes, delete"]', cancelButtonText: '@Localizer["Cancel"]',
+            customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-active-light' }
+        }).then(function(res){
+            if(!res.isConfirmed) return;
+            var fd = new FormData(); fd.append('id', currentEvent.id); fd.append('__RequestVerificationToken', token);
+            fetch('@Url.Action("Delete","Calendar")', {method:'POST', credentials:'same-origin', body:fd})
+                .then(function(r){return r.json();}).then(function(res){ if(res && res.ok){ viewModal.hide(); calendar.refetchEvents(); if(window.toastr) toastr.success('@Localizer["Deleted"]'); } });
+        });
+    });
+
+    // ---------- FullCalendar ----------
+    // On phones let the grid flow (auto height, page scrolls); on desktop keep the fixed Metronic height.
+    function calHeight(){ return window.innerWidth < 768 ? 'auto' : 750; }
+    var calendar = new FullCalendar.Calendar(calEl, {
+        direction: '@dir',
+        locale: '@(isAr ? "ar" : "en")',
+        buttonText: {
+            today: '@Localizer["today"]',
+            month: '@Localizer["month"]',
+            week: '@Localizer["week"]',
+            day: '@Localizer["day"]',
+            list: '@Localizer["list"]'
+        },
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
+        initialView: 'dayGridMonth',
+        height: calHeight(),
+        selectable: true,
+        navLinks: true,
+        dayMaxEvents: true,
+        // ACCESSIBILITY FIX FOR THE "+N more" LINK, applied through FullCalendar's OWN documented
+        // mount hook rather than by patching the vendor bundle.
+        //
+        // v5.11.5 renders that link as <a class="fc-daygrid-more-link" aria-expanded="false"
+        // aria-controls="" tabindex="0"> with NO href. An <a> without href exposes no implicit role,
+        // and ARIA state is illegal on a roleless element - so axe reports aria-allowed-attr as a
+        // CRITICAL ("ARIA attribute is not allowed: aria-expanded"). The attribute is not wrong in
+        // spirit: the link really does expand a popover. What is missing is the role that makes it
+        // legal to say so.
+        //
+        // role="button" is the accurate one - it opens a popover, it is keyboard-activated, and the
+        // role permits aria-expanded. The empty aria-controls is also removed: an IDREF pointing at
+        // nothing is worse than no attribute, because a screen reader announces a relationship that
+        // does not resolve. FullCalendar sets it before the popover exists and never fills it in.
+        //
+        // moreLinkDidMount is a supported public option (present in this bundle), so no vendor file
+        // is modified and an upgrade will not silently drop the fix - it would drop the hook loudly.
+        moreLinkDidMount: function (arg) {
+            arg.el.setAttribute('role', 'button');
+            if (arg.el.getAttribute('aria-controls') === '') { arg.el.removeAttribute('aria-controls'); }
+        },
+        windowResize: function(){ calendar.setOption('height', calHeight()); },
+        events: function(info, success, failure){
+            fetch('@Url.Action("Events","Calendar")'+'?from='+encodeURIComponent(info.startStr)+'&to='+encodeURIComponent(info.endStr), {credentials:'same-origin'})
+                .then(function(r){return r.ok?r.json():[];})
+                .then(function(list){ success(list.map(function(e){ return {
+                    id:e.id, title:e.title, start:e.start, end:e.end, allDay:e.allDay, className:e.className,
+                    extendedProps:{ scope:e.scope, description:e.description, location:e.location, ownerName:e.ownerName, attendees:e.attendees, attendeeIds:e.attendeeIds, canEdit:e.canEdit } }; })); })
+                .catch(failure);
+        },
+        dateClick: function(info){ var s=new Date(info.dateStr); openAdd(s, new Date(s.getTime()+60*60*1000)); },
+        select: function(info){ openAdd(info.start, info.end); },
+        eventClick: function(info){ info.jsEvent.preventDefault(); openView(info.event); }
+    });
+    calendar.render();
+    // FullCalendar v5 ignores buttonText when a string `locale` is set — force the toolbar labels onto the DOM.
+    (function(){
+        var map = {
+            'fc-today-button': '@Localizer["today"]',
+            'fc-dayGridMonth-button': '@Localizer["month"]',
+            'fc-timeGridWeek-button': '@Localizer["week"]',
+            'fc-timeGridDay-button': '@Localizer["day"]',
+            'fc-listWeek-button': '@Localizer["list"]'
+        };
+        Object.keys(map).forEach(function(cls){
+            var b = calEl.querySelector('.' + cls);
+            if (b) b.textContent = map[cls];
+        });
+    })();
+    window.calendar = calendar;
+
+    // ---------- real-time: refetch when an event is created/edited/deleted anywhere in the company ----------
+    (function(){
+        var pending = false;
+        function refetch(){
+            // debounce bursts of changes into a single refetch
+            if (pending) return; pending = true;
+            setTimeout(function(){ pending = false; try { calendar.refetchEvents(); } catch(e){} }, 300);
+        }
+        function connect(){
+            if (!window.signalR) return;
+            try {
+                var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/notifications').withAutomaticReconnect().build();
+                conn.on('calendarChanged', refetch);
+                conn.start().catch(function(){});
+            } catch(e){}
+        }
+        if (window.signalR) { connect(); }
+        else {
+            var s = document.createElement('script');
+            s.src = '@Url.Content("~/Backend-assets/plugins/signalr.min.js")';
+            s.onload = connect; s.onerror = function(){};
+            document.head.appendChild(s);
+        }
+    })();
+
+    document.querySelectorAll('[data-kt-calendar="add"]').forEach(function(b){ b.addEventListener('click', function(){ openAdd(); }); });
+})();
+</script>
+}

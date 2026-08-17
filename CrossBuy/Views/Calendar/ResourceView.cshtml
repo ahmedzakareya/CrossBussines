@@ -1,0 +1,134 @@
+﻿@using CrossBuy.BL.TasksCalendar
+@model CalendarResourcePage
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    @* GLOBAL UI RULE: the Inventory module is the only visual authority. Same Inventory card and table
+       as the people timeline — a room is just another row.
+
+       Typed model, for the same reason the timeline has one: `bookings` was an anonymous projection
+       read back as `IEnumerable<dynamic>`, and `b.ResourceId` threw RuntimeBinderException across the
+       runtime-compiled view assembly. This screen only ever returned 200 because CalendarResources was
+       empty, so the loop that binds it never ran — the first room a company registered would have
+       turned it into a 500. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+
+    var day = Model.Day;
+    ViewData["Title"] = T("عرض الموارد", "Resource view");
+
+    const int StartHour = 7, EndHour = 20;
+    var hours = Enumerable.Range(StartHour, EndHour - StartHour).ToList();
+}
+
+<!--begin::Toolbar-->
+@* Same responsive toolbar and same accessible names as Timeline — these two screens are one pattern
+   and must not drift apart. See Timeline.cshtml for why the row wraps. *@
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("عرض الموارد", "Resource view")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@SR["Calendar"]</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@day.ToString("yyyy-MM-dd")</li>
+        </ul>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <a href="/Calendar/ResourceView?day=@day.AddDays(-1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-light btn-icon"
+           aria-label="@T("اليوم السابق", "Previous day")"><i class="ki-outline ki-left fs-2" aria-hidden="true"></i></a>
+        <form method="get" asp-action="ResourceView" class="d-flex align-items-center gap-2 m-0">
+            <input type="date" name="day" value="@day.ToString("yyyy-MM-dd")"
+                   aria-label="@T("اعرض اليوم", "Show day")"
+                   class="form-control form-control-sm form-control-solid w-150px" onchange="this.form.submit()" />
+        </form>
+        <a href="/Calendar/ResourceView?day=@day.AddDays(1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-light btn-icon"
+           aria-label="@T("اليوم التالي", "Next day")"><i class="ki-outline ki-right fs-2" aria-hidden="true"></i></a>
+        <a href="/Calendar/Timeline?day=@day.ToString("yyyy-MM-dd")" class="btn btn-sm btn-light"><i class="ki-outline ki-people fs-2" aria-hidden="true"></i>@T("الموظفون", "People")</a>
+    </div>
+</div></div>
+<!--end::Toolbar-->
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    <div class="card card-flush">
+        <div class="card-header align-items-center py-4">
+            <h3 class="card-title fw-bold text-gray-900">@T("الموارد", "Resources")</h3>
+            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@Model.Resources.Count</span></div>
+        </div>
+        <div class="card-body pt-0">
+            @if (Model.Resources.Count == 0)
+            {
+                <div class="alert alert-primary d-flex align-items-center py-3">
+                    <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+                    <span class="fs-7">@T("لا توجد موارد مسجّلة بعد (قاعات، مركبات، معدات).",
+                                          "No resources are registered yet (rooms, vehicles, equipment).")</span>
+                </div>
+            }
+            else
+            {
+                @* Focusable scroll region — see Timeline.cshtml. Same grid, same rule. *@
+                <div class="table-responsive" tabindex="0" role="region"
+                     aria-label="@T("شبكة ساعات الموارد", "Resource hour grid")">
+                    <table class="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-2">
+                        <thead>
+                            <tr class="fw-bold text-muted fs-8">
+                                <th class="min-w-150px">@T("المورد", "Resource")</th>
+                                @foreach (var h in hours)
+                                {
+                                    <th class="text-center min-w-50px">@h.ToString("00")</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model.Resources)
+                            {
+                                @* The resource→occurrence join is done in the service, for the same
+                                   reason the timeline's is. *@
+                                var mine = r.Occurrences;
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold text-gray-900 fs-7">@r.Name</span>
+                                        <div class="text-muted fs-8">@r.Kind@(r.Capacity.HasValue ? $" · {r.Capacity}" : "")</div>
+                                    </td>
+                                    @foreach (var h in hours)
+                                    {
+                                        var slotStart = day.AddHours(h).ToUniversalTime();
+                                        var slotEnd = slotStart.AddHours(1);
+                                        var hits = mine.Where(o => o.StartUtc < slotEnd && (o.EndUtc ?? o.StartUtc.AddMinutes(30)) > slotStart).ToList();
+                                        if (hits.Count > 1)
+                                        {
+                                            @* A room booked twice in the same hour is the thing this view
+                                               exists to make visible. It is shown, not hidden behind the
+                                               first booking. *@
+                                            <td class="text-center p-1">
+                                                <span class="badge badge-light-danger fs-8 w-100 text-truncate d-inline-block"
+                                                      title="@string.Join(" / ", hits.Select(x => x.Title))">
+                                                    @hits.Count ⚠
+                                                </span>
+                                            </td>
+                                        }
+                                        else if (hits.Count == 1)
+                                        {
+                                            <td class="text-center p-1">
+                                                <span class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block" title="@hits[0].Title">
+                                                    @hits[0].Title@(hits[0].IsRepeat ? " ↻" : "")
+                                                </span>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="text-center p-1"><span class="text-muted fs-8">·</span></td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted fs-8 mt-3">
+                    @T("⚠ تعني حجزًا مزدوجًا لنفس المورد في نفس الساعة. ↻ تعني موعدًا متكررًا.",
+                       "⚠ marks a double booking of the same resource in the same hour. ↻ marks a repeating occurrence.")
+                </div>
+            }
+        </div>
+    </div>
+</div></div>
