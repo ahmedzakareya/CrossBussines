@@ -1,0 +1,351 @@
+﻿@using CrossBuy.BL.TasksCalendar
+@using CrossBuy.Models.Context.Tasks
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    @* GLOBAL UI RULE: the Inventory module is the only visual authority. Inventory shell, Inventory
+       card, Metronic nav-tabs and badges. No view-local stylesheet, no invented colour.
+
+       The Activity tab reads the PLATFORM timeline (/PlatformTimeline/List). The Comments tab reads the
+       Comm platform, which is the store that owns attachments — DocComments has no attachment table, so
+       attaching there would mean inventing a second attachment system. Task is registered with SupportsTimeline and
+       SupportsComments, so those answer already — this screen surfaces them, it does not
+       reimplement them. A task-only comment store would be a second truth. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+
+    var t = ViewBag.Task as TaskItem;
+    var checklist = ViewBag.Checklist as List<TaskChecklistItem> ?? new();
+    var deps = ViewBag.Dependencies as List<TaskDependencyView> ?? new();
+    var blocking = ViewBag.Blocking as TaskBlockingState;
+    ViewData["Title"] = t?.Title ?? T("مهمة", "Task");
+
+    Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "info" };
+    Func<string, string> pl = p => p switch { "Low" => T("منخفضة", "Low"), "High" => T("عالية", "High"), "Urgent" => T("عاجلة", "Urgent"), _ => T("متوسطة", "Medium") };
+    Func<string, string> sc = s => s switch { "InProgress" => "info", "Done" => "success", _ => "primary" };
+    Func<string, string> sl = s => s switch { "InProgress" => T("جارية", "In progress"), "Done" => T("مكتملة", "Done"), _ => T("جديدة", "New") };
+
+    int doneCount = checklist.Count(c => c.IsDone);
+    int pct = checklist.Count == 0 ? 0 : (int)Math.Round(doneCount * 100.0 / checklist.Count);
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@t?.Title</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@SR["Tasks"]</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">#@t?.ID</li>
+        </ul>
+    </div>
+    <a href="/Tasks/Board" class="btn btn-sm btn-light"><i class="ki-outline ki-element-11 fs-2"></i>@T("اللوحة", "Board")</a>
+</div></div>
+<!--end::Toolbar-->
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    <input type="hidden" id="cbTaskId" value="@t?.ID" />
+    @Html.AntiForgeryToken()
+
+    @if (blocking != null && blocking.IsBlocked)
+    {
+        <div class="alert alert-danger d-flex align-items-center py-3 mb-5">
+            <i class="ki-outline ki-lock-2 fs-2 text-danger me-3"></i>
+            <span>@T("هذه المهمة محجوبة حتى تنتهي:", "This task is blocked until these finish:")
+                <span class="fw-semibold">@string.Join("، ", blocking.BlockedByTitles)</span></span>
+        </div>
+    }
+
+    <div class="row g-5">
+        <div class="col-lg-4">
+            <div class="card card-flush mb-5">
+                <div class="card-header py-4"><h3 class="card-title fw-bold text-gray-900">@T("التفاصيل", "Details")</h3></div>
+                <div class="card-body pt-0">
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-300">
+                        <span class="text-muted fs-7">@T("الحالة", "Status")</span>
+                        <span class="badge badge-light-@sc(t?.Status ?? "New") fs-8">@sl(t?.Status ?? "New")</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-300">
+                        <span class="text-muted fs-7">@T("الأولوية", "Priority")</span>
+                        <span class="badge badge-light-@pc(t?.Priority ?? "Normal") fs-8">@pl(t?.Priority ?? "Normal")</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-300">
+                        <span class="text-muted fs-7">@T("تاريخ الاستحقاق", "Due date")</span>
+                        <span class="fs-7 fw-semibold">@(t?.DueDate?.ToString("yyyy-MM-dd") ?? "—")</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2">
+                        <span class="text-muted fs-7">@T("قائمة التحقق", "Checklist")</span>
+                        <span class="fs-7 fw-semibold" id="cbClProgress">@doneCount / @checklist.Count (@pct%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card card-flush">
+                <div class="card-header py-4">
+                    <ul class="nav nav-tabs nav-line-tabs fs-7 fw-semibold border-0" role="tablist">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#cbTabChecklist">@T("قائمة التحقق", "Checklist")</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cbTabDeps">@T("الاعتماديات", "Dependencies")</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cbTabComments" onclick="cbLoadComments()">@T("التعليقات", "Comments")</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cbTabActivity" onclick="cbLoadActivity()">@T("السجل", "Activity")</a></li>
+                    </ul>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="tab-content">
+
+                        <div class="tab-pane fade show active" id="cbTabChecklist">
+                            <div class="d-flex gap-2 mb-4">
+                                <input type="text" id="cbClNew" class="form-control form-control-sm form-control-solid" placeholder="@T("بند جديد", "New item")" />
+                                <button type="button" class="btn btn-sm btn-primary" onclick="cbClAdd()"><i class="ki-outline ki-plus fs-4"></i>@T("إضافة", "Add")</button>
+                            </div>
+                            <div id="cbClList">
+                                @foreach (var c in checklist)
+                                {
+                                    <div class="d-flex align-items-center py-2 border-bottom border-gray-300" data-cb-cl="@c.ID">
+                                        <div class="form-check form-check-custom form-check-sm me-3">
+                                            <input class="form-check-input" type="checkbox" @(c.IsDone ? "checked" : "")
+                                                   onchange="cbClToggle(@c.ID, this.checked)" />
+                                        </div>
+                                        <span class="flex-grow-1 fs-7 @(c.IsDone ? "text-muted text-decoration-line-through" : "text-gray-900")">@c.Title</span>
+                                        <button type="button" class="btn btn-icon btn-sm btn-light-danger" onclick="cbClRemove(@c.ID)">
+                                            <i class="ki-outline ki-trash fs-5"></i>
+                                        </button>
+                                    </div>
+                                }
+                                @if (checklist.Count == 0)
+                                {
+                                    <div class="text-muted text-center fs-7 py-8">@T("لا بنود بعد", "No items yet")</div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="cbTabDeps">
+                            <div class="row g-2 mb-4">
+                                <div class="col-md-6">
+                                    <input type="number" id="cbDepOther" class="form-control form-control-sm form-control-solid" placeholder="@T("رقم المهمة", "Task number")" />
+                                </div>
+                                <div class="col-md-3">
+                                    <select id="cbDepDir" class="form-select form-select-sm form-select-solid">
+                                        <option value="pred">@T("تنتظر تلك المهمة", "Waits for that task")</option>
+                                        <option value="succ">@T("تلك المهمة تنتظرها", "That task waits for this")</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="cbDepAdd()">@T("ربط", "Link")</button>
+                                </div>
+                            </div>
+                            <div id="cbDepError" class="alert alert-danger py-3 d-none fs-7"></div>
+                            <div id="cbDepList">
+                                @foreach (var d in deps)
+                                {
+                                    var otherIsPredecessor = d.SuccessorTaskId == t!.ID;
+                                    <div class="d-flex align-items-center py-2 border-bottom border-gray-300">
+                                        <i class="ki-outline @(otherIsPredecessor ? "ki-arrow-left" : "ki-arrow-right") fs-4 text-muted me-2"></i>
+                                        <span class="flex-grow-1 fs-7">
+                                            <span class="text-muted">@(otherIsPredecessor ? T("تنتظر", "waits for") : T("يعتمد عليها", "is needed by"))</span>
+                                            <a href="/Tasks/Detail?id=@(otherIsPredecessor ? d.PredecessorTaskId : d.SuccessorTaskId)" class="fw-semibold ms-1">
+                                                @(otherIsPredecessor ? d.PredecessorTitle : d.SuccessorTitle)
+                                            </a>
+                                        </span>
+                                        @if (d.IsBlocking)
+                                        {
+                                            <span class="badge badge-light-danger fs-8 me-2">@T("حاجبة", "Blocking")</span>
+                                        }
+                                        <button type="button" class="btn btn-icon btn-sm btn-light-danger" onclick="cbDepRemove(@d.Id)">
+                                            <i class="ki-outline ki-trash fs-5"></i>
+                                        </button>
+                                    </div>
+                                }
+                                @if (deps.Count == 0)
+                                {
+                                    <div class="text-muted text-center fs-7 py-8">@T("لا اعتماديات", "No dependencies")</div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="cbTabComments">
+                            <div class="d-flex gap-2 mb-2">
+                                <input type="text" id="cbCommentBody" class="form-control form-control-sm form-control-solid" placeholder="@T("اكتب تعليقًا", "Write a comment")" />
+                                <button type="button" id="cbCommentSend" class="btn btn-sm btn-primary" onclick="cbCommentAdd()">@T("إرسال", "Send")</button>
+                            </div>
+                            @* Attachments are part of the comment, not a separate upload: they share the
+                               comment's transaction, so a file never survives a comment that failed. *@
+                            <div class="d-flex align-items-center gap-2 mb-4">
+                                <input type="file" id="cbCommentFiles" multiple class="form-control form-control-sm form-control-solid" />
+                                <span class="text-muted fs-8 text-nowrap">@T("مرفقات (اختياري)", "Attachments (optional)")</span>
+                            </div>
+                            <div id="cbCommentList"><div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div></div>
+                        </div>
+
+                        <div class="tab-pane fade" id="cbTabActivity">
+                            <div id="cbActivityList"><div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div></div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div></div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var taskId = document.getElementById('cbTaskId').value;
+
+            function tok() {
+                var el = document.querySelector('input[name="__RequestVerificationToken"]');
+                return el ? el.value : '';
+            }
+            function post(url, fields) {
+                var body = new FormData();
+                for (var k in fields) { if (fields.hasOwnProperty(k)) { body.append(k, fields[k]); } }
+                body.append('__RequestVerificationToken', tok());
+                return fetch(url, { method: 'POST', body: body }).then(function (r) { return r.json(); });
+            }
+            function esc(s) {
+                var d = document.createElement('div');
+                d.textContent = (s === null || s === undefined) ? '' : s;
+                return d.innerHTML;
+            }
+
+            // ---- checklist ---------------------------------------------------------------------
+            window.cbClAdd = function () {
+                var input = document.getElementById('cbClNew');
+                var title = input.value.trim();
+                if (!title) { return; }
+                post('/Tasks/ChecklistAdd', { taskId: taskId, title: title })
+                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+            };
+            window.cbClToggle = function (id, done) {
+                post('/Tasks/ChecklistToggle', { id: id, done: done })
+                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+            };
+            window.cbClRemove = function (id) {
+                post('/Tasks/ChecklistRemove', { id: id })
+                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+            };
+
+            // ---- dependencies ------------------------------------------------------------------
+            window.cbDepAdd = function () {
+                var other = parseInt(document.getElementById('cbDepOther').value || '0', 10);
+                var err = document.getElementById('cbDepError');
+                err.classList.add('d-none');
+                if (!other) { return; }
+
+                var waitsForOther = document.getElementById('cbDepDir').value === 'pred';
+                post('/Tasks/DependencyAdd', {
+                    predecessorTaskId: waitsForOther ? other : taskId,
+                    successorTaskId: waitsForOther ? taskId : other,
+                    kind: 'FinishToStart', lagDays: 0
+                }).then(function (r) {
+                    if (r.ok) { location.reload(); }
+                    else {
+                        // The cycle refusal names the offending chain. Show it as written — a generic
+                        // "could not link" would leave the user with no way to fix the graph.
+                        err.textContent = r.error; err.classList.remove('d-none');
+                    }
+                });
+            };
+            window.cbDepRemove = function (id) {
+                post('/Tasks/DependencyRemove', { id: id })
+                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+            };
+
+            // ---- comments: the PLATFORM endpoint, entityType=Task -------------------------------
+            // The Communication Platform is OPTIONAL. When it is not activated the endpoint answers 503 with
+            // code "communication_unavailable" — a state of its own, not an empty list and not an error. It is
+            // said plainly and the composer is disabled, because a comment box that silently discards what you
+            // type is worse than one that tells you it is switched off.
+            function cbCommentsUnavailable(message) {
+                var box = document.getElementById('cbCommentList');
+                box.innerHTML = '<div class="text-center py-8">' +
+                    '<i class="ki-outline ki-information-5 fs-2x text-muted mb-2 d-block"></i>' +
+                    '<div class="text-muted fs-7">' + esc(message) + '</div></div>';
+                var input = document.getElementById('cbCommentBody');
+                var filesEl = document.getElementById('cbCommentFiles');
+                var btn = document.getElementById('cbCommentSend');
+                if (input) { input.disabled = true; input.placeholder = '@T("غير متاحة", "Unavailable")'; }
+                if (filesEl) { filesEl.disabled = true; }
+                if (btn) { btn.disabled = true; }
+            }
+
+            window.cbLoadComments = function () {
+                var box = document.getElementById('cbCommentList');
+                fetch('/Tasks/TaskComments?taskId=' + taskId)
+                    .then(function (r) {
+                        if (r.status === 503) {
+                            return r.json().then(function (u) {
+                                cbCommentsUnavailable((u && u.error) || '@T("غير متاحة", "Unavailable")');
+                                return null;   // handled — not an empty discussion
+                            });
+                        }
+                        return r.ok ? r.json() : [];
+                    })
+                    .then(function (rows) {
+                        if (rows === null) { return; }
+                        if (!rows || rows.length === 0) {
+                            box.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا تعليقات", "No comments")</div>';
+                            return;
+                        }
+                        box.innerHTML = rows.map(function (c) {
+                            var files = (c.attachments || []).map(function (a) {
+                                return '<a class="badge badge-light-primary fs-8 me-1 mb-1 d-inline-block" href="' +
+                                    encodeURI(a.url) + '" download><i class="ki-outline ki-paper-clip fs-8 me-1"></i>' +
+                                    esc(a.fileName) + '</a>';
+                            }).join('');
+                            return '<div class="d-flex flex-column py-3 border-bottom border-gray-300">' +
+                                '<div class="d-flex flex-stack"><span class="fw-semibold fs-7 text-gray-900">' + esc(c.author) + '</span>' +
+                                '<span class="text-muted fs-8">' + esc(c.createdAt) + (c.editedAt ? ' · @T("مُعدّل", "edited")' : '') + '</span></div>' +
+                                (c.body ? '<span class="fs-7 text-gray-800 mt-1">' + esc(c.body) + '</span>' : '') +
+                                (files ? '<div class="mt-2">' + files + '</div>' : '') +
+                                '</div>';
+                        }).join('');
+                    })
+                    .catch(function () { box.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل التعليقات", "Could not load comments")</div>'; });
+            };
+            window.cbCommentAdd = function () {
+                var input = document.getElementById('cbCommentBody');
+                var filesEl = document.getElementById('cbCommentFiles');
+                var body = new FormData();
+                body.append('taskId', taskId);
+                body.append('body', input.value.trim());
+                for (var i = 0; i < filesEl.files.length; i++) { body.append('files', filesEl.files[i]); }
+                body.append('__RequestVerificationToken', tok());
+
+                fetch('/Tasks/TaskCommentAdd', { method: 'POST', body: body })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        // Same 503 contract as the loader: an inactive platform disables the composer rather
+                        // than reporting a failure the user could retry their way out of.
+                        if (res && res.unavailable) { cbCommentsUnavailable(res.error); return; }
+                        if (res && res.ok) { input.value = ''; filesEl.value = ''; cbLoadComments(); }
+                        else { alert((res && res.error) || '@T("تعذّر إضافة التعليق", "Could not add the comment")'); }
+                    })
+                    .catch(function () { alert('@T("تعذّر الاتصال بالخادم", "Could not reach the server")'); });
+            };
+
+            // ---- activity: the PLATFORM timeline, entityType=Task -------------------------------
+            window.cbLoadActivity = function () {
+                var box = document.getElementById('cbActivityList');
+                fetch('/PlatformTimeline/List?entityType=Task&entityId=' + taskId + '&take=50')
+                    .then(function (r) { return r.ok ? r.json() : []; })
+                    .then(function (rows) {
+                        if (!rows || rows.length === 0) {
+                            box.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا سجل بعد", "No activity yet")</div>';
+                            return;
+                        }
+                        box.innerHTML = rows.map(function (i) {
+                            return '<div class="d-flex align-items-start py-3 border-bottom border-gray-300">' +
+                                '<i class="ki-outline ki-abstract-26 fs-4 text-muted me-3 mt-1"></i>' +
+                                '<div class="flex-grow-1"><div class="fs-7 fw-semibold text-gray-900">' + esc(i.title) + '</div>' +
+                                (i.description ? '<div class="fs-8 text-muted">' + esc(i.description) + '</div>' : '') +
+                                '<div class="fs-8 text-muted">' + esc(i.actorName) + ' · ' + esc(i.createdAt) + '</div></div></div>';
+                        }).join('');
+                    })
+                    .catch(function () { box.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل السجل", "Could not load the activity")</div>'; });
+            };
+        })();
+    </script>
+}

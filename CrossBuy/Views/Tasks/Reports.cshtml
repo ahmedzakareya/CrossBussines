@@ -1,24 +1,24 @@
-@using CrossBuy.BL
+﻿@using CrossBuy.BL
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
-    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    @* GLOBAL UI RULE: Inventory is the only visual authority. Inventory shell, Inventory cards. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     Func<string, string, string> T = (ar, en) => isAr ? ar : en;
     var r = (string)(ViewBag.R ?? "summary");
     var from = ((DateTime)ViewBag.From).ToString("yyyy-MM-dd");
     var to = ((DateTime)ViewBag.To).ToString("yyyy-MM-dd");
     ViewData["Title"] = T("تقارير المهام", "Task reports");
-    Func<string,string,string,string> pill = (key,ar,en) => $"<a href=\"{Url.Action("Reports","Tasks",new{r=key})}\" class=\"nav-link {(r==key?"active":"")}\">{(isAr?ar:en)}</a>";
+    @* Each pill is a LIST ITEM wrapping its link. Bootstrap's own nav markup is <li class="nav-item">
+       <a class="nav-link">, and axe's `list` rule (WCAG 2 A) fails a <ul> whose direct children are
+       anything but <li>/<script>/<template>. Emitting the bare <a> made the whole selector one
+       malformed list to a screen reader. `nav-item` carries no visual style of its own, so the pills
+       look and behave exactly as before. *@
+    Func<string,string,string,string> pill = (key,ar,en) => $"<li class=\"nav-item\"><a href=\"{Url.Action("Reports","Tasks",new{r=key})}\" class=\"nav-link {(r==key?"active":"")}\">{(isAr?ar:en)}</a></li>";
     Func<string, string> pl = p => p switch { "Low" => T("منخفضة","Low"), "High" => T("عالية","High"), "Urgent" => T("عاجلة","Urgent"), _ => T("عادية","Normal") };
     Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "primary" };
 }
-<style>
-    /* brand-green visual identity for the Task-reports tabs + money accents */
-    .nav-pill-custom .nav-link { color: #1f6253; font-weight: 600; border: 1px solid transparent; }
-    .nav-pill-custom .nav-link:hover { background: #eaf3ef; color: #13433a; }
-    .nav-pill-custom .nav-link.active { background: #13433a !important; color: #fff !important; }
-    .rep-amount { color: #13433a !important; }
-</style>
+
 <!--begin::Toolbar-->
 <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
     <div class="page-title d-flex flex-column justify-content-center gap-1">
@@ -29,13 +29,13 @@
             <li class="breadcrumb-item text-muted">@SR["Reports"]</li>
         </ul>
     </div>
-    <button type="button" class="btn btn-sm" style="background:#eaf3ef;color:#13433a;" onclick="window.print()"><i class="ki-outline ki-printer fs-4"></i>@T("طباعة","Print")</button>
+    <button type="button" class="btn btn-sm btn-light-primary" onclick="window.print()"><i class="ki-outline ki-printer fs-4"></i>@T("طباعة","Print")</button>
 </div></div>
 <!--end::Toolbar-->
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
     <!--begin::Report selector-->
     <div class="card card-flush mb-5"><div class="card-body py-4">
-        <ul class="nav nav-pills nav-pill-custom flex-wrap gap-2">
+        <ul class="nav nav-pills flex-wrap gap-2">
             @Html.Raw(pill("summary","ملخّص المهام","Summary"))
             @Html.Raw(pill("overdue","المتأخرة","Overdue"))
             @Html.Raw(pill("productivity","إنتاجية الموظفين","Productivity"))
@@ -43,7 +43,7 @@
             @Html.Raw(pill("cost-wo","تكلفة أوامر التشغيل","WO cost"))
             @Html.Raw(pill("billable","الساعات القابلة للفوترة","Billable per customer"))
             @Html.Raw(pill("auto","المهام المولّدة تلقائيًّا","Auto-generated"))
-            <a href="@Url.Action("HoursReport","Tasks")" class="nav-link">@T("تقرير الساعات (المرتبات)","Hours (payroll)")</a>
+            <li class="nav-item"><a href="@Url.Action("HoursReport","Tasks")" class="nav-link">@T("تقرير الساعات (المرتبات)","Hours (payroll)")</a></li>
         </ul>
     </div></div>
     <!--end::Report selector-->
@@ -73,7 +73,7 @@
     }
     else
     {
-        <div class="card"><div class="card-body pt-6">
+        <div class="card card-flush"><div class="card-body pt-6">
         @if (r == "overdue")
         {
             var rows = ViewBag.Data as List<OverdueTaskRow> ?? new();
@@ -94,17 +94,19 @@
             <form method="get" asp-action="Reports" class="d-flex align-items-end gap-3 mb-5"><input type="hidden" name="r" value="productivity" />
                 <div><label class="form-label fs-8 text-muted mb-1">@T("من","From")</label>
                     <div class="position-relative">
-                        <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3" style="color:#13433a !important;"></i>
+                        <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3 text-primary"></i>
                         <input type="text" name="from" id="rep_from" value="@from" class="form-control form-control-solid ps-10 w-160px" autocomplete="off" />
                     </div>
                 </div>
                 <div><label class="form-label fs-8 text-muted mb-1">@T("إلى","To")</label>
                     <div class="position-relative">
-                        <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3" style="color:#13433a !important;"></i>
+                        <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3 text-primary"></i>
                         <input type="text" name="to" id="rep_to" value="@to" class="form-control form-control-solid ps-10 w-160px" autocomplete="off" />
                     </div>
                 </div>
-                <button type="submit" class="btn" style="background:#13433a;color:#fff;"><i class="ki-outline ki-magnifier fs-5" style="color:#fff !important;"></i>@T("عرض","Show")</button>
+                @* btn-primary already IS the brand green with its inverse foreground — the literals
+                   this replaces were a hand-rolled copy of the component. *@
+                <button type="submit" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-5"></i>@T("عرض","Show")</button>
             </form>
             <table class="table table-row-bordered align-middle gy-3 fs-7">
                 <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("الموظف","Employee")</th><th class="w-150px text-end">@T("الساعات","Hours")</th><th class="w-150px text-end">@T("مهام مكتملة","Completed")</th><th class="w-150px text-end">@T("مهام مفتوحة","Open")</th></tr></thead>

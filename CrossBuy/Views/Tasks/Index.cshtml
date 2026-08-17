@@ -1,7 +1,10 @@
-@using CrossBuy.BL
+﻿@using CrossBuy.BL
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
-    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    @* GLOBAL UI RULE: the Inventory module is the only visual authority. This page lives in the
+       Inventory shell and reuses Inventory's cards, filters, toolbar and table — no second design
+       language, no bespoke CSS. Reference: Views/Inventory/Items.cshtml. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     Func<string, string, string> T = (ar, en) => isAr ? ar : en;
     var tasks = ViewBag.Tasks as List<TaskRowDto> ?? new();
@@ -24,9 +27,11 @@
     string SortMark(string col)
     {
         bool asc = curSort == col; bool desc = curSort == col + "_desc";
-        var up = "<i class='ki-solid ki-up" + (asc ? " on" : "") + "'></i>";
-        var dn = "<i class='ki-solid ki-down" + (desc ? " on" : "") + "'></i>";
-        return "<span class='sort-ico'>" + up + dn + "</span>";
+        // Inventory language: a single Metronic chevron tinted with a Metronic text utility.
+        // No bespoke .sort-ico class, no invented colour.
+        if (asc) { return "<i class='ki-outline ki-arrow-up fs-8 text-primary ms-1'></i>"; }
+        if (desc) { return "<i class='ki-outline ki-arrow-down fs-8 text-primary ms-1'></i>"; }
+        return "<i class='ki-outline ki-arrow-up-down fs-8 text-muted ms-1'></i>";
     }
     var pageNums = new List<int>();   // -1 = ellipsis
     if (pages > 1)
@@ -52,7 +57,9 @@
     Func<string, string> sc = s => s switch { "InProgress" => "info", "Done" => "success", _ => "primary" };
     Func<string, string> si = s => s switch { "InProgress" => "ki-timer", "Done" => "ki-check-circle", _ => "ki-abstract-26" };
     Func<int, string> progColor = pct => pct >= 100 ? "success" : pct >= 60 ? "primary" : pct >= 30 ? "info" : pct > 0 ? "warning" : "secondary";
-    Func<int, string> progHex = pct => pct >= 100 ? "#17c653" : pct >= 60 ? "#3e97ff" : pct >= 30 ? "#00a3ff" : pct > 0 ? "#f79009" : "#e4e6ef";
+    // Metronic design tokens, not invented hex: the ring inherits whatever the brand stylesheet
+    // defines for these semantic roles, so it can never drift from the Inventory palette.
+    Func<int, string> progHex = pct => pct >= 100 ? "var(--bs-success)" : pct >= 60 ? "var(--bs-primary)" : pct >= 30 ? "var(--bs-info)" : pct > 0 ? "var(--bs-warning)" : "var(--bs-gray-300)";
     Func<DateTime, string> tfmt = d => isAr ? d.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("ar")) : d.ToString("hh:mm tt");
     (string text, string color) Rem(CrossBuy.BL.TaskRowDto x)
     {
@@ -61,7 +68,15 @@
         string HourTxt(int n) => n == 1 ? "ساعة" : n == 2 ? "ساعتان" : $"{n} " + ((n >= 3 && n <= 10) ? "ساعات" : "ساعة");
         if (x.Status == "Done") return (T("منتهي", "Finished"), "danger");
         if (!x.DueDate.HasValue) return ("—", "muted");
-        var now2 = DateTime.Now; var due = x.DueDate.Value;
+        @* The "x hours late / in y days" label is RELATIVE TO NOW, so it changes as wall-clock time
+           passes and made this screen the last non-deterministic capture in the certification matrix
+           (tasks.ar.desktop drifted 0.77% -> 0.80% between two otherwise identical runs).
+
+           Same fix, and the same reasoning, as the Workspace views already use: the reference instant
+           comes from ConformanceClock, which returns DateTime.Now in production and the frozen
+           certification instant only on a Development host running with UI_CONFORMANCE=1. The label
+           itself is untouched — no dynamic information is removed from the product. *@
+        var now2 = CrossBuy.BL.Platform.ConformanceClock.Now; var due = x.DueDate.Value;
         if (due < now2)
         {
             var late = now2 - due;
@@ -77,66 +92,19 @@
     Func<string, string> photoSrc = p => string.IsNullOrWhiteSpace(p) ? Url.Content("~/Backend-assets/media/svg/avatars/blank.svg") : Url.Content("~" + p.Replace("\\", "/"));
 
     // KPI cards, listed end→start (RTL) so «الإجمالي» sits far-left and «مكتملة» sits next to the search — matches the mockup.
+    // Inventory language: Metronic SEMANTIC colours (success/info/warning/danger/primary) via
+    // bg-light-* / text-* utilities. No invented hex, no bespoke .kpi-* classes.
     var kpiCards = new[] {
-        (key: "done",       cls: "kpi-done",    label: T("مكتملة", "Done"),         val: kpis.Done,       icon: "ki-check-circle"),
-        (key: "inprogress", cls: "kpi-prog",    label: T("جارية", "In progress"),   val: kpis.InProgress, icon: "ki-timer"),
-        (key: "overdue",    cls: "kpi-overdue", label: T("متأخرة", "Overdue"),      val: kpis.Overdue,    icon: "ki-time"),
-        (key: "urgent",     cls: "kpi-urgent",  label: T("عاجلة", "Urgent"),        val: kpis.Urgent,     icon: "ki-information-5"),
-        (key: "all",        cls: "kpi-total",   label: T("إجمالي المهام", "Total"), val: kpis.Total,      icon: "ki-calendar"),
+        (key: "done",       cls: "success", label: T("مكتملة", "Done"),         val: kpis.Done,       icon: "ki-check-circle"),
+        (key: "inprogress", cls: "info",    label: T("جارية", "In progress"),   val: kpis.InProgress, icon: "ki-timer"),
+        (key: "overdue",    cls: "warning", label: T("متأخرة", "Overdue"),      val: kpis.Overdue,    icon: "ki-time"),
+        (key: "urgent",     cls: "danger",  label: T("عاجلة", "Urgent"),        val: kpis.Urgent,     icon: "ki-information-5"),
+        (key: "all",        cls: "primary", label: T("إجمالي المهام", "Total"), val: kpis.Total,      icon: "ki-calendar"),
     };
     Func<CrossBuy.BL.TaskRowDto, string> dotColor = x => (x.IsOverdue && x.Status != "Done") ? "danger" : x.Status == "Done" ? "success" : x.Status == "InProgress" ? "info" : "primary";
 }
 
-<style>
-    /* KPI cards — matched to the approved mockup (colored number+label, subtle tint, rounded) */
-    .kpi-card { border-radius: 16px; border: 1.5px solid transparent; min-width: 165px; transition: box-shadow .15s ease, transform .15s ease; }
-    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.06); }
-    .kpi-card .kpi-num { font-size: 2rem; font-weight: 800; line-height: 1; }
-    .kpi-card .kpi-lbl { font-size: .9rem; font-weight: 600; margin-top: .35rem; }
-    .kpi-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
-    .kpi-icon i { font-size: 1.6rem; line-height: 1; }
-    /* Total: white card, blue number+label, bare blue icon (no filled box) */
-    .kpi-total { background: #ffffff; border-color: #e4e6ef; }
-    .kpi-total .kpi-num, .kpi-total .kpi-lbl { color: #2f6fb0; }
-    .kpi-total .kpi-icon { background: transparent; }
-    .kpi-total .kpi-icon i { color: #2f6fb0; }
-    .kpi-total.active { border-color: #a1a5b7; }
-    /* Urgent — red */
-    .kpi-urgent { background: #fff5f8; }
-    .kpi-urgent .kpi-num, .kpi-urgent .kpi-lbl { color: #f1416c; }
-    .kpi-urgent .kpi-icon { background: #f1416c; } .kpi-urgent .kpi-icon i { color: #fff; }
-    .kpi-urgent.active { border-color: #f1416c; }
-    /* Overdue — orange */
-    .kpi-overdue { background: #fff8ec; }
-    .kpi-overdue .kpi-num, .kpi-overdue .kpi-lbl { color: #f79009; }
-    .kpi-overdue .kpi-icon { background: #f79009; } .kpi-overdue .kpi-icon i { color: #fff; }
-    .kpi-overdue.active { border-color: #f79009; }
-    /* In progress — blue */
-    .kpi-prog { background: #eef6ff; }
-    .kpi-prog .kpi-num, .kpi-prog .kpi-lbl { color: #3e97ff; }
-    .kpi-prog .kpi-icon { background: #3e97ff; } .kpi-prog .kpi-icon i { color: #fff; }
-    .kpi-prog.active { border-color: #3e97ff; }
-    /* Done — green */
-    .kpi-done { background: #effaf3; }
-    .kpi-done .kpi-num, .kpi-done .kpi-lbl { color: #17c653; }
-    .kpi-done .kpi-icon { background: #17c653; } .kpi-done .kpi-icon i { color: #fff; }
-    .kpi-done.active { border-color: #17c653; }
-    /* Tabs — active is blue like the mockup (not the brand green) */
-    .task-tabs .nav-link { color: #7e8299; }
-    .task-tabs .nav-link:hover { color: #3e97ff; }
-    .task-tabs .nav-link.active { color: #3e97ff !important; border-bottom-color: #3e97ff !important; }
-    /* Column sort indicator — stacked double chevron (⇕) like the mockup */
-    .sort-ico { display: inline-flex; flex-direction: column; line-height: .48; vertical-align: middle; margin-right: 4px; color: #b5b7c8; }
-    .sort-ico i { display: block; font-size: .58rem; }
-    .sort-ico i.on { color: #3e97ff; }
-    /* premium polish: soft card, comfy rows, subtle hover */
-    .tasks-card { border: 1px solid #eef0f4; border-radius: 16px; box-shadow: 0 6px 24px rgba(24,28,50,.05); }
-    .tasks-card thead th { padding-bottom: 14px; }
-    .tasks-card tbody tr { transition: background .12s ease; }
-    .tasks-card tbody tr:hover { background: #f8fafd; }
-    .tasks-card tbody td { border-bottom-color: #f2f3f7 !important; }
-    .tasks-card td, .tasks-card th { padding-left: 4px !important; padding-right: 4px !important; }
-</style>
+
 
 <!--begin::Toolbar-->
 <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
@@ -187,12 +155,14 @@
             <div class="d-flex flex-wrap gap-3 order-2">
                 @foreach (var k in kpiCards)
                 {
-                    <a href="@ViewHref(k.key)" class="kpi-card @k.cls @(view == k.key ? "active" : "") d-flex align-items-center justify-content-between px-4 py-3 text-decoration-none">
-                        <span class="kpi-icon"><i class="ki-outline @k.icon"></i></span>
-                        <span class="d-flex flex-column text-end">
-                            <span class="kpi-num">@k.val</span>
-                            <span class="kpi-lbl">@k.label</span>
-                        </span>
+                    <a href="@ViewHref(k.key)" class="card card-flush text-decoration-none @(view == k.key ? "border border-2 border-" + k.cls : "")" style="min-width:165px">
+                        <div class="card-body d-flex align-items-center justify-content-between py-3 px-4">
+                            <span class="symbol symbol-40px me-3"><span class="symbol-label bg-light-@k.cls"><i class="ki-outline @k.icon fs-2 text-@k.cls"></i></span></span>
+                            <span class="d-flex flex-column text-end">
+                                <span class="fs-2 fw-bold text-gray-900">@k.val</span>
+                                <span class="fs-7 fw-semibold text-muted">@k.label</span>
+                            </span>
+                        </div>
                     </a>
                 }
             </div>
@@ -202,7 +172,7 @@
         <!--begin::Filter dropdowns + tabs row-->
         <div class="d-flex flex-stack flex-wrap gap-3 mb-4">
             <!--tabs (right in RTL)-->
-            <ul class="task-tabs nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-semibold flex-nowrap order-1">
+            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-semibold flex-nowrap order-1">
                 <li class="nav-item"><a class="nav-link @(view == "all" ? "active" : "") text-nowrap px-4" href="@ViewHref("all")">@T("الكل", "All")</a></li>
                 <li class="nav-item"><a class="nav-link @(view == "urgent" ? "active" : "") text-nowrap px-4" href="@ViewHref("urgent")">@T("عاجلة", "Urgent")</a></li>
                 <li class="nav-item"><a class="nav-link @(view == "overdue" ? "active" : "") text-nowrap px-4" href="@ViewHref("overdue")">@T("متأخرة", "Overdue")</a></li>
@@ -211,26 +181,35 @@
             </ul>
             <!--dropdowns + advanced (left in RTL)-->
             <div class="d-flex flex-wrap align-items-center gap-2 order-2">
-                <select name="assignee" onchange="this.form.submit()" class="form-select form-select-sm w-175px text-gray-700 bg-white">
-                    <option value="">@T("كل المسؤولين", "All assignees")</option>
-                    @foreach (var e in employees)
-                    {
-                        <option value="@e.Id" selected="@(curAssignee == e.Id)">@e.Name</option>
-                    }
-                </select>
-                <select name="status" onchange="this.form.submit()" class="form-select form-select-sm w-150px text-gray-700 bg-white">
-                    <option value="">@T("كل الحالات", "All statuses")</option>
-                    <option value="New" selected="@(curStatus == "New")">@sl("New")</option>
-                    <option value="InProgress" selected="@(curStatus == "InProgress")">@sl("InProgress")</option>
-                    <option value="Done" selected="@(curStatus == "Done")">@sl("Done")</option>
-                </select>
-                <select name="priority" onchange="this.form.submit()" class="form-select form-select-sm w-150px text-gray-700 bg-white">
-                    <option value="">@T("كل الأولويات", "All priorities")</option>
-                    <option value="Urgent" selected="@(curPriority == "Urgent")">@pl("Urgent")</option>
-                    <option value="High" selected="@(curPriority == "High")">@pl("High")</option>
-                    <option value="Normal" selected="@(curPriority == "Normal")">@pl("Normal")</option>
-                    <option value="Low" selected="@(curPriority == "Low")">@pl("Low")</option>
-                </select>
+                @* Each select sits in a fixed-width box: the Inventory shell auto-applies select2, which renders at
+                   width:100% and would otherwise stack these filters vertically (overlapping the KPI cards). The
+                   wrapper pins the width so they stay on one row. *@
+                <div class="w-160px">
+                    <select name="assignee" onchange="this.form.submit()" class="form-select form-select-sm text-gray-700 bg-white">
+                        <option value="">@T("كل المسؤولين", "All assignees")</option>
+                        @foreach (var e in employees)
+                        {
+                            <option value="@e.Id" selected="@(curAssignee == e.Id)">@e.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="w-140px">
+                    <select name="status" onchange="this.form.submit()" class="form-select form-select-sm text-gray-700 bg-white">
+                        <option value="">@T("كل الحالات", "All statuses")</option>
+                        <option value="New" selected="@(curStatus == "New")">@sl("New")</option>
+                        <option value="InProgress" selected="@(curStatus == "InProgress")">@sl("InProgress")</option>
+                        <option value="Done" selected="@(curStatus == "Done")">@sl("Done")</option>
+                    </select>
+                </div>
+                <div class="w-140px">
+                    <select name="priority" onchange="this.form.submit()" class="form-select form-select-sm text-gray-700 bg-white">
+                        <option value="">@T("كل الأولويات", "All priorities")</option>
+                        <option value="Urgent" selected="@(curPriority == "Urgent")">@pl("Urgent")</option>
+                        <option value="High" selected="@(curPriority == "High")">@pl("High")</option>
+                        <option value="Normal" selected="@(curPriority == "Normal")">@pl("Normal")</option>
+                        <option value="Low" selected="@(curPriority == "Low")">@pl("Low")</option>
+                    </select>
+                </div>
                 <a asp-action="@listAction" class="btn btn-sm bg-white border text-gray-700 d-flex align-items-center text-nowrap"><i class="ki-outline ki-setting-4 fs-4 me-1"></i>@T("تصفية متقدمة", "Advanced")</a>
             </div>
         </div>
@@ -238,12 +217,18 @@
     </form>
 
     <!--begin::Results card-->
-    <div class="card tasks-card">
-        <div class="card-body py-4 px-4">
+    <div class="card card-flush">
+        <div class="card-header align-items-center py-4">
+            <div class="card-title"><span class="text-muted fs-7">@total</span></div>
+            <div class="card-toolbar"></div>
+        </div>
+        <div class="card-body pt-0">
             <div class="table-responsive">
-                <table class="table align-middle table-row-bordered table-row-gray-100 fs-7 gy-4 gs-0 mb-0">
+                <table class="table align-middle table-row-dashed fs-6 gy-4">
                     <thead>
-                        <tr class="text-start text-gray-600 fw-semibold fs-7 gs-0 text-nowrap">
+                        @* border-primary is Metronic's own primary border colour, so this rule needs
+                           no literal and no inline style at all. *@
+                        <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0 text-nowrap border-bottom border-2 border-primary">
                             <th class="min-w-100px ps-3">@T("المسؤول", "Assignee")</th>
                             <th class="min-w-100px">@T("المهمة", "Task")</th>
                             <th class="min-w-70px"><a href="@SortHref("priority")" class="text-gray-600 text-hover-primary text-nowrap">@T("الأولوية", "Priority") @Html.Raw(SortMark("priority"))</a></th>
@@ -284,7 +269,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center mb-2">
-                                        <span class="bullet bullet-dot h-8px w-8px me-2 flex-shrink-0" style="background:#3e97ff;"></span>
+                                        <span class="bullet bullet-dot h-8px w-8px me-2 flex-shrink-0 bg-primary"></span>
                                         <a href="javascript:;" class="text-gray-900 fw-bold text-hover-primary fs-7 text-truncate d-inline-block align-middle" style="max-width:105px;">@t.Title</a>
                                     </div>
                                     <div class="d-flex align-items-center flex-wrap gap-2 ms-4">
@@ -321,9 +306,9 @@
                                     }
                                     <div class="d-flex align-items-center justify-content-center">
                                         <svg width="44" height="44" viewBox="0 0 44 44">
-                                            <circle cx="22" cy="22" r="19" fill="none" stroke="#eaecf3" stroke-width="5"></circle>
+                                            <circle cx="22" cy="22" r="19" fill="none" stroke="var(--bs-gray-200)" stroke-width="5"></circle>
                                             <circle cx="22" cy="22" r="19" fill="none" stroke="@progHex(t.ProgressPct)" stroke-width="5" stroke-linecap="round" stroke-dasharray="@_circS" stroke-dashoffset="@_offS" transform="rotate(-90 22 22)"></circle>
-                                            <text x="22" y="22" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="800" fill="#181c32">@(t.ProgressPct)%</text>
+                                            <text x="22" y="22" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="800" fill="var(--bs-gray-900)">@(t.ProgressPct)%</text>
                                         </svg>
                                     </div>
                                 </td>
@@ -343,8 +328,21 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <!--begin::Actions kebab-->
-                                    <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary border" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                                        <i class="ki-outline ki-dots-vertical fs-2"></i>
+                                    @* ACCESSIBLE NAME, NAMED BY ROW. The trigger is icon-only, so it had no
+                                       accessible name at all — a screen reader announced "button" twenty-five
+                                       times per page. `@SR["Actions"]` is the EXISTING shared vocabulary
+                                       (ar "الإجراءات", en "Actions", fr "Actions"), not a new string, and the
+                                       task title is appended so the twenty-five triggers are distinguishable
+                                       from one another rather than being twenty-five identical "Actions".
+                                       aria-haspopup states what the control actually does — it opens a menu —
+                                       which is true of the Metronic trigger already; it changes no behaviour.
+                                       The glyph is decorative and is hidden from the accessibility tree so it
+                                       cannot be read out as stray characters. No visible text added. *@
+                                    <button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary border"
+                                            data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end"
+                                            aria-haspopup="true"
+                                            aria-label="@SR["Actions"] — @t.Title">
+                                        <i class="ki-outline ki-dots-vertical fs-2" aria-hidden="true"></i>
                                     </button>
                                     <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-700 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-3" data-kt-menu="true">
                                         <form asp-action="ChangeStatus" method="post">
@@ -394,15 +392,34 @@
                 <div class="fs-7 text-muted">@T("صفحة", "Page") @pg / @pages · @total @T("مهمة", "task(s)")</div>
                 @if (pages > 1)
                 {
+                    @* PAGINATION ACCESSIBLE NAMES. Both arrows were glyph-only anchors, so their entire
+                       accessible name was empty. `@SR["Previous"]`/`@SR["Next"]` are the EXISTING shared
+                       vocabulary (ar "السابق"/"التالي", en, fr) — no new strings.
+
+                       The ARROW DIRECTION FLIPS in RTL and the NAME MUST NOT: in Arabic "previous" is the
+                       right-pointing glyph, so naming by glyph would tell an Arabic screen-reader user the
+                       opposite of what the link does. The name is bound to the ACTION (pg-1 / pg+1), which
+                       is direction-independent; only the icon mirrors.
+
+                       The "…" gap is a real anchor with visible text but no destination — it is marked
+                       aria-hidden and removed from the tab order so it is not offered as a link that goes
+                       nowhere. href, classes, disabled state and behaviour are untouched. *@
                     <ul class="pagination">
-                        <li class="page-item @(pg == 1 ? "disabled" : "")"><a class="page-link" href="@PageHref(pg - 1)"><i class="ki-outline ki-@(isAr ? "right" : "left")"></i></a></li>
+                        <li class="page-item @(pg == 1 ? "disabled" : "")"><a class="page-link" href="@PageHref(pg - 1)" aria-label="@SR["Previous"]"><i class="ki-outline ki-@(isAr ? "right" : "left")" aria-hidden="true"></i></a></li>
                         @foreach (var n in pageNums)
                         {
                             <li class="page-item @(n == pg ? "active" : "") @(n == -1 ? "disabled" : "")">
-                                <a class="page-link" href="@(n == -1 ? "#" : PageHref(n))">@(n == -1 ? "…" : n.ToString())</a>
+                                @if (n == -1)
+                                {
+                                    <a class="page-link" href="#" aria-hidden="true" tabindex="-1">…</a>
+                                }
+                                else
+                                {
+                                    <a class="page-link" href="@PageHref(n)" aria-label="@T($"صفحة {n}", $"Page {n}")" aria-current="@(n == pg ? "page" : null)">@n</a>
+                                }
                             </li>
                         }
-                        <li class="page-item @(pg == pages ? "disabled" : "")"><a class="page-link" href="@PageHref(pg + 1)"><i class="ki-outline ki-@(isAr ? "left" : "right")"></i></a></li>
+                        <li class="page-item @(pg == pages ? "disabled" : "")"><a class="page-link" href="@PageHref(pg + 1)" aria-label="@SR["Next"]"><i class="ki-outline ki-@(isAr ? "left" : "right")" aria-hidden="true"></i></a></li>
                     </ul>
                 }
             </div>

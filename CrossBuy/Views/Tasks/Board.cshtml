@@ -1,0 +1,253 @@
+﻿@using CrossBuy.BL
+@using CrossBuy.BL.TasksCalendar
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    @* GLOBAL UI RULE: the Inventory module is the only visual authority. This board is the Inventory
+       shell, the Inventory card (`card card-flush`), the Inventory toolbar and Metronic badges — a
+       column of cards, not a new design system. No view-local stylesheet, no invented colour.
+       Reference: Views/Inventory/Items.cshtml. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+
+    var tasks = ViewBag.Tasks as List<TaskRowDto> ?? new();
+    var employees = ViewBag.Employees as List<(int Id, string Name)> ?? new();
+    var blocking = ViewBag.Blocking as Dictionary<int, TaskBlockingState> ?? new();
+    var checklists = ViewBag.Checklists as Dictionary<int, ChecklistProgress> ?? new();
+    var scope = (string)(ViewBag.Scope ?? "mine");
+    string q = ViewBag.Q as string; string curPriority = ViewBag.Priority as string;
+    int? curAssignee = ViewBag.Assignee as int?;
+    bool capped = (bool)(ViewBag.Capped ?? false);
+    int boardCap = (int)(ViewBag.BoardCap ?? 500);
+    ViewData["Title"] = T("لوحة المهام", "Task board");
+
+    Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "info" };
+    Func<string, string> pl = p => p switch { "Low" => T("منخفضة", "Low"), "High" => T("عالية", "High"), "Urgent" => T("عاجلة", "Urgent"), _ => T("متوسطة", "Medium") };
+
+    // The three columns are the three statuses TaskService already accepts. The board does not invent
+    // a status — a column that could not be saved would be a column a card can never rest in.
+    var columns = new[]
+    {
+        (Key: "New",        Label: T("جديدة", "New"),         Colour: "primary", Icon: "ki-abstract-26"),
+        (Key: "InProgress", Label: T("جارية", "In progress"), Colour: "info",    Icon: "ki-timer"),
+        (Key: "Done",       Label: T("مكتملة", "Done"),        Colour: "success", Icon: "ki-check-circle"),
+    };
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("لوحة المهام", "Task board")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@SR["Tasks"]</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@T("لوحة", "Board")</li>
+        </ul>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="/Tasks/@(scope == "all" ? "All" : "Index")" class="btn btn-sm btn-light">
+            <i class="ki-outline ki-row-horizontal fs-2"></i>@T("عرض القائمة", "List view")
+        </a>
+        <a href="/Tasks/Templates" class="btn btn-sm btn-light">
+            <i class="ki-outline ki-copy fs-2"></i>@T("القوالب", "Templates")
+        </a>
+    </div>
+</div></div>
+<!--end::Toolbar-->
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    @* Filters: the same controls the Inventory screens use — solid inputs, a solid select, one submit. *@
+    <form method="get" asp-action="Board" class="card card-flush mb-5">
+        <div class="card-body py-4">
+            <div class="row g-3 align-items-end">
+                <input type="hidden" name="scope" value="@scope" />
+                <div class="col-md-4">
+                    <label class="form-label fs-7 text-muted">@T("بحث", "Search")</label>
+                    <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid" placeholder="@T("عنوان المهمة", "Task title")" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fs-7 text-muted">@T("المسؤول", "Assignee")</label>
+                    <select name="assignee" class="form-select form-select-sm form-select-solid">
+                        <option value="">@T("الكل", "All")</option>
+                        @foreach (var e in employees)
+                        {
+                            <option value="@e.Id" selected="@(curAssignee == e.Id)">@e.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fs-7 text-muted">@T("الأولوية", "Priority")</label>
+                    <select name="priority" class="form-select form-select-sm form-select-solid">
+                        <option value="">@T("الكل", "All")</option>
+                        @foreach (var p in new[] { "Urgent", "High", "Normal", "Low" })
+                        {
+                            <option value="@p" selected="@(curPriority == p)">@pl(p)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary flex-grow-1"><i class="ki-outline ki-filter fs-3"></i>@T("تصفية", "Filter")</button>
+                    <a href="/Tasks/Board?scope=@scope" class="btn btn-sm btn-light">@T("مسح", "Clear")</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    @if (capped)
+    {
+        @* Say the cap out loud. A board that silently dropped cards would read as an empty column. *@
+        <div class="alert alert-warning d-flex align-items-center py-3 mb-5">
+            <i class="ki-outline ki-information-5 fs-2 text-warning me-3"></i>
+            <span>@T($"تُعرض أول {boardCap} مهمة فقط. استخدم التصفية لتضييق النتائج.", $"Only the first {boardCap} tasks are shown. Use the filters to narrow the board.")</span>
+        </div>
+    }
+
+    <div class="row g-5" id="cbBoard">
+        @foreach (var col in columns)
+        {
+            var cards = tasks.Where(t => t.Status == col.Key).ToList();
+            <div class="col-md-4">
+                <div class="card card-flush h-100" data-cb-col="@col.Key">
+                    <div class="card-header align-items-center py-4">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900 d-flex align-items-center">
+                                <i class="ki-outline @col.Icon fs-3 text-@col.Colour me-2"></i>@col.Label
+                            </span>
+                        </h3>
+                        <div class="card-toolbar">
+                            <span class="badge badge-light-@col.Colour fs-7 fw-bold" data-cb-count="@col.Key">@cards.Count</span>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0 min-h-100px" data-cb-drop="@col.Key">
+                        @if (cards.Count == 0)
+                        {
+                            <div class="text-center text-muted fs-7 py-10" data-cb-empty="@col.Key">@T("لا مهام", "No tasks")</div>
+                        }
+                        @foreach (var t in cards)
+                        {
+                            var isBlocked = blocking.TryGetValue(t.Id, out var b) && b.IsBlocked;
+                            var hasList = checklists.TryGetValue(t.Id, out var cl) && cl.Total > 0;
+                            <div class="card card-flush mb-3 border border-gray-300" draggable="true"
+                                 data-cb-card="@t.Id" data-cb-status="@t.Status"
+                                 data-cb-blocked="@(isBlocked ? "1" : "0")">
+                                <div class="card-body p-4">
+                                    <div class="d-flex flex-stack mb-2">
+                                        <a href="/Tasks/Detail?id=@t.Id" class="fw-semibold text-gray-900">@t.Title</a>
+                                        <span class="badge badge-light-@pc(t.Priority) fs-8">@pl(t.Priority)</span>
+                                    </div>
+
+                                    @if (isBlocked)
+                                    {
+                                        @* A blocked card says WHAT blocks it. "Blocked" on its own is a dead end. *@
+                                        <div class="d-flex align-items-center text-danger fs-8 mb-2">
+                                            <i class="ki-outline ki-lock-2 fs-7 me-1"></i>
+                                            <span>@T("محجوبة بـ:", "Blocked by:") @string.Join("، ", b!.BlockedByTitles)</span>
+                                        </div>
+                                    }
+
+                                    @if (hasList)
+                                    {
+                                        <div class="d-flex align-items-center fs-8 text-muted mb-2">
+                                            <i class="ki-outline ki-check-square fs-7 me-1"></i>
+                                            <span class="me-2">@cl!.Done / @cl.Total</span>
+                                            <div class="progress h-4px flex-grow-1 bg-light">
+                                                <div class="progress-bar bg-@(cl.Percent >= 100 ? "success" : "primary")" role="progressbar"
+                                                     style="width:@(cl.Percent)%" aria-valuenow="@cl.Percent" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <div class="d-flex flex-stack fs-8 text-muted">
+                                        <span class="text-truncate">@t.AssigneeName</span>
+                                        @if (t.DueDate.HasValue)
+                                        {
+                                            <span class="@(t.IsOverdue ? "text-danger fw-semibold" : "")">
+                                                <i class="ki-outline ki-calendar fs-8 me-1"></i>@t.DueDate.Value.ToString("yyyy-MM-dd")
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div></div>
+
+@section Scripts {
+    <script>
+        // Drag a card to another column = a status change through the SAME endpoint the list view uses.
+        // Native HTML5 drag and drop: no new library, and nothing to keep in step with a second one.
+        (function () {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]');
+            var dragged = null;
+
+            document.querySelectorAll('[data-cb-card]').forEach(function (card) {
+                card.addEventListener('dragstart', function (e) {
+                    dragged = card;
+                    card.classList.add('opacity-50');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                card.addEventListener('dragend', function () { card.classList.remove('opacity-50'); dragged = null; });
+            });
+
+            function recount() {
+                document.querySelectorAll('[data-cb-drop]').forEach(function (zone) {
+                    var key = zone.getAttribute('data-cb-drop');
+                    var n = zone.querySelectorAll('[data-cb-card]').length;
+                    var badge = document.querySelector('[data-cb-count="' + key + '"]');
+                    if (badge) { badge.textContent = n; }
+                    var empty = zone.querySelector('[data-cb-empty]');
+                    if (empty) { empty.classList.toggle('d-none', n > 0); }
+                });
+            }
+
+            document.querySelectorAll('[data-cb-drop]').forEach(function (zone) {
+                zone.addEventListener('dragover', function (e) { e.preventDefault(); zone.classList.add('bg-light'); });
+                zone.addEventListener('dragleave', function () { zone.classList.remove('bg-light'); });
+                zone.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    zone.classList.remove('bg-light');
+                    if (!dragged) { return; }
+
+                    var target = zone.getAttribute('data-cb-drop');
+                    var from = dragged.getAttribute('data-cb-status');
+                    if (target === from) { return; }
+
+                    var card = dragged;
+                    var origin = card.parentElement;
+                    // Move optimistically so the drag feels immediate, then put it back if the server
+                    // refuses — a card that snapped back without explanation would look like a bug.
+                    zone.appendChild(card);
+                    recount();
+
+                    var body = new FormData();
+                    body.append('id', card.getAttribute('data-cb-card'));
+                    body.append('status', target);
+                    if (token) { body.append('__RequestVerificationToken', token.value); }
+
+                    fetch('/Tasks/BoardMove', { method: 'POST', body: body })
+                        .then(function (r) { return r.json(); })
+                        .then(function (res) {
+                            if (res && res.ok) {
+                                card.setAttribute('data-cb-status', target);
+                            } else {
+                                origin.appendChild(card);
+                                recount();
+                                alert((res && res.error) || '@T("تعذّر تغيير الحالة", "Could not change the status")');
+                            }
+                        })
+                        .catch(function () {
+                            origin.appendChild(card);
+                            recount();
+                            alert('@T("تعذّر الاتصال بالخادم", "Could not reach the server")');
+                        });
+                });
+            });
+        })();
+    </script>
+    @Html.AntiForgeryToken()
+}

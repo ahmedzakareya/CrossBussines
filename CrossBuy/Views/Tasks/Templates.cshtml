@@ -1,0 +1,291 @@
+﻿@using CrossBuy.Models.Context.Tasks
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    @* GLOBAL UI RULE: the Inventory module is the only visual authority. Inventory shell, Inventory
+       card, Inventory table treatment, Metronic modal. No view-local stylesheet, no invented colour. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+
+    var templates = ViewBag.Templates as List<TaskTemplate> ?? new();
+    var employees = ViewBag.Employees as List<(int Id, string Name)> ?? new();
+    ViewData["Title"] = T("قوالب المهام", "Task templates");
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("قوالب المهام", "Task templates")</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@SR["Tasks"]</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@T("القوالب", "Templates")</li>
+        </ul>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="/Tasks/Board" class="btn btn-sm btn-light"><i class="ki-outline ki-element-11 fs-2"></i>@T("اللوحة", "Board")</a>
+        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#cbTemplateModal" onclick="cbTemplateNew()">
+            <i class="ki-outline ki-plus fs-2"></i>@T("قالب جديد", "New template")
+        </button>
+    </div>
+</div></div>
+<!--end::Toolbar-->
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    <div class="alert alert-primary d-flex align-items-center py-3 mb-5">
+        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
+        <span class="fs-7">
+            @T("مواعيد بنود القالب نسبية (عدد أيام من تاريخ البدء)، وتتحوّل إلى تواريخ حقيقية عند التطبيق.",
+               "Template due dates are relative — a number of days from the start date you choose — and become real dates when the template is applied.")
+        </span>
+    </div>
+
+    <div class="card card-flush">
+        <div class="card-header align-items-center py-4">
+            <h3 class="card-title fw-bold text-gray-900">@T("القوالب", "Templates")</h3>
+            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@templates.Count</span></div>
+        </div>
+        <div class="card-body pt-0">
+            <div class="table-responsive">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3">
+                    <thead>
+                        <tr class="fw-bold text-muted fs-7 text-uppercase">
+                            <th class="min-w-200px">@T("الاسم", "Name")</th>
+                            <th class="min-w-80px text-center">@T("البنود", "Items")</th>
+                            <th class="min-w-90px text-center">@T("الحالة", "Status")</th>
+                            <th class="min-w-250px text-end">@T("إجراءات", "Actions")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (templates.Count == 0)
+                        {
+                            <tr><td colspan="4" class="text-center text-muted py-10">@T("لا توجد قوالب بعد", "No templates yet")</td></tr>
+                        }
+                        @foreach (var tpl in templates)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold text-gray-900">@tpl.Name</span>
+                                    @if (!string.IsNullOrWhiteSpace(tpl.Description))
+                                    {
+                                        <div class="text-muted fs-8">@tpl.Description</div>
+                                    }
+                                </td>
+                                <td class="text-center"><span class="badge badge-light-info fs-8">@tpl.Items.Count</span></td>
+                                <td class="text-center">
+                                    <span class="badge badge-light-@(tpl.IsActive ? "success" : "secondary") fs-8">
+                                        @(tpl.IsActive ? T("نشط", "Active") : T("موقوف", "Inactive"))
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <form asp-action="TemplateApply" method="post" class="d-inline-flex align-items-center gap-2">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@tpl.ID" />
+                                        @* ACCESSIBLE NAMES, not visible labels. This is a compact per-row
+                                           apply form: a <label> above each control would break the inline
+                                           layout, and the same visible word would repeat on every row
+                                           anyway. aria-label NAMES THE ROW as well as the field, so a
+                                           screen-reader user hears "start date for <template>" rather than
+                                           the fifth identical "start date" on the page. Appearance is
+                                           unchanged — aria-label renders nothing. *@
+                                        <input type="date" name="anchorDate" required
+                                               value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                               aria-label="@T($"تاريخ البدء للقالب {tpl.Name}", $"Start date for template {tpl.Name}")"
+                                               class="form-control form-control-sm form-control-solid w-140px" />
+                                        <select name="assigneeOverride" class="form-select form-select-sm form-select-solid w-160px"
+                                                aria-label="@T($"المسؤول للقالب {tpl.Name}", $"Assignee for template {tpl.Name}")">
+                                            <option value="">@T("المسؤول الافتراضي", "Default assignee")</option>
+                                            @foreach (var e in employees)
+                                            {
+                                                <option value="@e.Id">@e.Name</option>
+                                            }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-primary" @(tpl.IsActive ? "" : "disabled")>
+                                            <i class="ki-outline ki-rocket fs-4"></i>@T("تطبيق", "Apply")
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-light ms-1" onclick="cbTemplateToggle(@tpl.ID, @(tpl.IsActive ? "false" : "true"))">
+                                        @(tpl.IsActive ? T("إيقاف", "Deactivate") : T("تنشيط", "Activate"))
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div></div>
+
+<div class="modal fade" id="cbTemplateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h5 class="modal-title fw-bold">@T("قالب جديد", "New template")</h5>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal">
+                    <i class="ki-outline ki-cross fs-2"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-4">
+                    @* `for` ATTRIBUTES ADDED. These labels already looked right and were associated with
+                       nothing: a label that neither wraps its control nor names it by id is decoration.
+                       axe did not report them only because the modal is display:none while closed and
+                       hidden nodes are skipped — the defect was real the moment a user opened it. *@
+                    <div class="col-md-6">
+                        <label for="cbTplName" class="form-label required fs-7">@T("اسم القالب", "Template name")</label>
+                        <input type="text" id="cbTplName" class="form-control form-control-sm form-control-solid" />
+                    </div>
+                    <div class="col-md-6">
+                        <label for="cbTplDesc" class="form-label fs-7">@T("الوصف", "Description")</label>
+                        <input type="text" id="cbTplDesc" class="form-control form-control-sm form-control-solid" />
+                    </div>
+                </div>
+
+                <div class="d-flex flex-stack mb-2">
+                    <span class="fw-semibold text-gray-900 fs-7">@T("بنود القالب", "Template items")</span>
+                    <button type="button" class="btn btn-sm btn-light-primary" onclick="cbTplAddRow()">
+                        <i class="ki-outline ki-plus fs-4"></i>@T("إضافة بند", "Add item")
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-2">
+                        <thead>
+                            <tr class="fw-bold text-muted fs-8 text-uppercase">
+                                <th class="w-40px">#</th>
+                                <th class="min-w-180px">@T("العنوان", "Title")</th>
+                                <th class="w-110px">@T("أيام", "Days")</th>
+                                <th class="w-120px">@T("الأولوية", "Priority")</th>
+                                <th class="w-110px">@T("يعتمد على", "Depends on")</th>
+                                <th class="min-w-140px">@T("قائمة تحقق", "Checklist")</th>
+                                <th class="w-40px"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cbTplRows"></tbody>
+                    </table>
+                </div>
+                <div class="text-muted fs-8 mt-2">
+                    @T("«يعتمد على» يشير إلى رقم بند آخر في نفس القالب. الحلقات المغلقة مرفوضة.",
+                       "\"Depends on\" points at another item number in this same template. Closed loops are refused.")
+                </div>
+                <div id="cbTplError" class="alert alert-danger py-3 mt-3 d-none fs-7"></div>
+            </div>
+            <div class="modal-footer py-3">
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@T("إلغاء", "Cancel")</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="cbTemplateSave()">@T("حفظ", "Save")</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        var cbTplSeq = 0;
+
+        function cbTplToken() {
+            var t = document.querySelector('input[name="__RequestVerificationToken"]');
+            return t ? t.value : '';
+        }
+
+        function cbTemplateNew() {
+            document.getElementById('cbTplName').value = '';
+            document.getElementById('cbTplDesc').value = '';
+            document.getElementById('cbTplRows').innerHTML = '';
+            document.getElementById('cbTplError').classList.add('d-none');
+            cbTplSeq = 0;
+            cbTplAddRow();
+        }
+
+        function cbTplAddRow() {
+            cbTplSeq++;
+            var n = document.getElementById('cbTplRows').children.length + 1;
+            var tr = document.createElement('tr');
+            tr.setAttribute('data-cb-row', '1');
+            tr.innerHTML =
+                // Each generated control is NAMED, and named with its row number, because the visible
+                // column header is not associated with a cell's input and every row would otherwise be
+                // an identical anonymous textbox. Rows are built here rather than in Razor, so axe never
+                // saw them on a static page load - they were unlabelled all the same.
+                '<td class="fw-bold text-muted" data-cb-num>' + n + '</td>' +
+                '<td><input type="text" class="form-control form-control-sm form-control-solid" data-cb-title aria-label="@T("عنوان البند", "Item title") ' + n + '" /></td>' +
+                '<td><input type="number" class="form-control form-control-sm form-control-solid" data-cb-days value="0" aria-label="@T("أيام الإزاحة للبند", "Offset days for item") ' + n + '" /></td>' +
+                '<td><select class="form-select form-select-sm form-select-solid" data-cb-prio aria-label="@T("أولوية البند", "Priority for item") ' + n + '">' +
+                    '<option value="Urgent">@T("عاجلة", "Urgent")</option>' +
+                    '<option value="High">@T("عالية", "High")</option>' +
+                    '<option value="Normal" selected>@T("متوسطة", "Medium")</option>' +
+                    '<option value="Low">@T("منخفضة", "Low")</option>' +
+                '</select></td>' +
+                '<td><input type="number" class="form-control form-control-sm form-control-solid" data-cb-pred placeholder="—" aria-label="@T("يعتمد على البند", "Depends on item") ' + n + '" /></td>' +
+                '<td><input type="text" class="form-control form-control-sm form-control-solid" data-cb-check placeholder="@T("افصل بفاصلة", "comma separated")" aria-label="@T("قائمة تحقّق البند", "Checklist for item") ' + n + '" /></td>' +
+                // An icon-only button has no text node, so it has no accessible name at all - a screen
+                // reader announces "button". The icon is decorative and stays exactly as it is.
+                '<td><button type="button" class="btn btn-icon btn-sm btn-light-danger" onclick="cbTplDelRow(this)" aria-label="@T("حذف البند", "Delete item") ' + n + '"><i class="ki-outline ki-trash fs-5" aria-hidden="true"></i></button></td>';
+            document.getElementById('cbTplRows').appendChild(tr);
+        }
+
+        function cbTplDelRow(btn) {
+            btn.closest('tr').remove();
+            // Renumber, because "depends on" points at the number the user can SEE. A stale number
+            // would silently link the wrong pair.
+            var rows = document.querySelectorAll('#cbTplRows tr[data-cb-row]');
+            for (var i = 0; i < rows.length; i++) { rows[i].querySelector('[data-cb-num]').textContent = (i + 1); }
+        }
+
+        function cbTemplateSave() {
+            var err = document.getElementById('cbTplError');
+            err.classList.add('d-none');
+
+            var items = [];
+            var rows = document.querySelectorAll('#cbTplRows tr[data-cb-row]');
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var title = r.querySelector('[data-cb-title]').value.trim();
+                if (!title) { continue; }
+                var pred = r.querySelector('[data-cb-pred]').value.trim();
+                var check = r.querySelector('[data-cb-check]').value.trim();
+                items.push({
+                    Title: title,
+                    SortOrder: i + 1,
+                    DueOffsetDays: parseInt(r.querySelector('[data-cb-days]').value || '0', 10),
+                    Priority: r.querySelector('[data-cb-prio]').value,
+                    PredecessorSortOrder: pred === '' ? null : parseInt(pred, 10),
+                    // The service expects one line per checklist entry; the user types them comma-separated.
+                    ChecklistLines: check === '' ? null : check.split(',').map(function (s) { return s.trim(); })
+                                                               .filter(function (s) { return s.length > 0; }).join('\n')
+                });
+            }
+
+            var payload = JSON.stringify({
+                Name: document.getElementById('cbTplName').value.trim(),
+                Description: document.getElementById('cbTplDesc').value.trim(),
+                IsActive: true,
+                Items: items
+            });
+
+            var body = new FormData();
+            body.append('payload', payload);
+            body.append('__RequestVerificationToken', cbTplToken());
+
+            fetch('/Tasks/TemplateSave', { method: 'POST', body: body })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res && res.ok) { location.reload(); }
+                    else { err.textContent = (res && res.error) || '@T("تعذّر الحفظ", "Could not save")'; err.classList.remove('d-none'); }
+                })
+                .catch(function () { err.textContent = '@T("تعذّر الاتصال بالخادم", "Could not reach the server")'; err.classList.remove('d-none'); });
+        }
+
+        function cbTemplateToggle(id, active) {
+            var body = new FormData();
+            body.append('id', id);
+            body.append('active', active);
+            body.append('__RequestVerificationToken', cbTplToken());
+            fetch('/Tasks/TemplateSetActive', { method: 'POST', body: body })
+                .then(function (r) { return r.json(); })
+                .then(function () { location.reload(); });
+        }
+    </script>
+}

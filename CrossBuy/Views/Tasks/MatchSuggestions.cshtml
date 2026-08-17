@@ -1,6 +1,7 @@
-@using CrossBuy.BL
+﻿@using CrossBuy.BL
 @{
-    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    @* GLOBAL UI RULE: Inventory is the only visual authority. Inventory shell, Inventory cards. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     Func<string, string, string> T = (ar, en) => isAr ? ar : en;
     var groups = ViewBag.Groups as List<SuggestionGroupDto> ?? new();
@@ -31,7 +32,7 @@
 
     @if (!groups.Any())
     {
-        <div class="card"><div class="card-body text-center text-muted py-15">
+        <div class="card card-flush"><div class="card-body text-center text-muted py-15">
             <i class="ki-outline ki-check-circle fs-3x text-primary mb-3 d-block"></i>
             @T("لا مطابقات مقترحة حاليًا.", "No pending match suggestions.")
         </div></div>
@@ -40,7 +41,7 @@
     {
         foreach (var g in groups)
         {
-            <div class="card mb-5">
+            <div class="card card-flush mb-5">
                 <div class="card-header border-0 pt-6 align-items-center">
                     <div class="card-title d-flex flex-column">
                         <span class="fs-4 fw-bold text-gray-900">@g.TaskTitle</span>
@@ -55,7 +56,21 @@
                 <div class="card-body pt-2">
                     <div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
-                            <thead><tr class="text-start text-gray-400 fw-semibold fs-7 text-uppercase">
+                            @* `text-gray-400` is the DECORATIVE tier (1.63:1 on white) — a
+                               separator/placeholder colour, not a readable-text colour. The visual
+                               authority deliberately left gray-400 alone when it repaired the text
+                               tokens, precisely because it is not meant to carry text.
+
+                               This was the only table header in Tasks using it. Every sibling
+                               (Reports uses text-gray-500, Templates uses text-muted) and the
+                               AUTHORITY'S OWN table header (Views/Inventory/Items.cshtml) use
+                               text-muted — now 7.27:1. Adopting it is alignment with the authority,
+                               not a Tasks-specific colour, and the header still reads as secondary
+                               against the body text. (Exact values are in the increment report; hex
+                               literals are deliberately kept OUT of this file, because the colour
+                               gate scans the whole view and a measurement written in a comment would
+                               read to it as an invented palette.) *@
+                            <thead><tr class="text-start text-muted fw-semibold fs-7 text-uppercase">
                                 <th class="min-w-150px">@T("الحركة المرشّحة", "Candidate movement")</th>
                                 <th class="text-end min-w-200px pe-4">@T("إجراء", "Action")</th>
                             </tr></thead>

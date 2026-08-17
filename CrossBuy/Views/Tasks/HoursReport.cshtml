@@ -1,6 +1,8 @@
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @using CrossBuy.BL
 @{
-    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    @* GLOBAL UI RULE: Inventory is the only visual authority. Inventory shell, Inventory cards. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     Func<string, string, string> T = (ar, en) => isAr ? ar : en;
     var rep = ViewBag.Report as HoursReportDto ?? new HoursReportDto();
@@ -14,7 +16,8 @@
 <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
     <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
         <div class="page-title d-flex flex-column justify-content-center gap-1">
-            <h1 class="page-heading fw-bold fs-3 m-0">@T("تقرير ساعات العمل", "Work hours report")</h1>
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@T("تقرير ساعات العمل", "Work hours report")</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="/Tasks/Index" class="text-muted text-hover-primary">@SR["Tasks"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@T("تقرير ساعات العمل", "Work hours report")</li></ul>
             <span class="text-muted fs-7">@T("إجمالي ساعات كل موظف ضمن فترة — لاستخدام HR في المرتبات. قراءة فقط، لا أثر محاسبي.", "Each employee's hours within a period — for HR payroll. Read-only, no accounting effect.")</span>
         </div>
         <button type="button" class="btn btn-sm btn-light-primary" onclick="window.print()"><i class="ki-outline ki-printer fs-4"></i>@T("طباعة", "Print")</button>
@@ -23,18 +26,18 @@
 <!--end::Toolbar-->
 <div id="kt_app_content" class="app-content flex-column-fluid">
     <div class="app-container container-fluid">
-        <div class="card">
+        <div class="card card-flush">
             <div class="card-header border-0 pt-6">
                 <form method="get" asp-action="HoursReport" class="d-flex flex-wrap align-items-end gap-3 w-100">
                     <div><label class="form-label fs-8 text-muted mb-1">@T("من", "From")</label>
                         <div class="position-relative">
-                            <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3" style="color:#13433a !important;"></i>
+                            <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3 text-primary"></i>
                             <input type="text" name="from" id="hr_from" value="@from" class="form-control form-control-solid ps-10 w-160px" autocomplete="off" placeholder="@T("من", "From")" />
                         </div>
                     </div>
                     <div><label class="form-label fs-8 text-muted mb-1">@T("إلى", "To")</label>
                         <div class="position-relative">
-                            <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3" style="color:#13433a !important;"></i>
+                            <i class="ki-outline ki-calendar-8 fs-3 position-absolute top-50 translate-middle-y ms-3 text-primary"></i>
                             <input type="text" name="to" id="hr_to" value="@to" class="form-control form-control-solid ps-10 w-160px" autocomplete="off" placeholder="@T("إلى", "To")" />
                         </div>
                     </div>
@@ -48,17 +51,21 @@
                             }
                         </select>
                     </div>
-                    <button type="submit" class="btn" style="background:#13433a;color:#fff;"><i class="ki-outline ki-magnifier fs-5" style="color:#fff !important;"></i>@T("عرض", "Show")</button>
+                    @* btn-primary already IS the brand green with its inverse foreground — the literals
+                       this replaces were a hand-rolled copy of the component. *@
+                    <button type="submit" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-5"></i>@T("عرض", "Show")</button>
                 </form>
             </div>
             <div class="card-body pt-4">
-                <div class="notice d-flex align-items-center rounded border border-dashed p-6 mb-6" style="background:#eaf3ef;border-color:#13433a !important;">
+                <div class="notice d-flex align-items-center rounded border border-dashed border-primary bg-light-primary p-6 mb-6">
                     <span class="symbol symbol-45px me-4">
-                        <span class="symbol-label" style="background:#13433a;"><i class="ki-outline ki-time fs-2 text-white"></i></span>
+                        <span class="symbol-label bg-primary"><i class="ki-outline ki-time fs-2 text-white"></i></span>
                     </span>
                     <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-2">
                         <div>
-                            <h4 class="fw-bold mb-1" style="color:#1f6253;">@T("إجمالي الساعات", "Total hours"): @rep.GrandTotal.ToString("0.##")</h4>
+                            @* --bs-primary-active has no Metronic utility class, so the token is named
+                               inline. Same value the literal held, now sourced from the brand file. *@
+                            <h4 class="fw-bold mb-1" style="color:var(--bs-primary-active);">@T("إجمالي الساعات", "Total hours"): @rep.GrandTotal.ToString("0.##")</h4>
                             <div class="fs-7 text-gray-700">@T("الفترة", "Period"): @from → @to</div>
                         </div>
                     </div>
@@ -94,14 +101,14 @@
                                             }
                                             else
                                             {
-                                                <span class="symbol-label fs-2x fw-bold" style="background:#eaf3ef;color:#13433a;">@init</span>
+                                                <span class="symbol-label fs-2x fw-bold bg-light-primary text-primary">@init</span>
                                             }
                                         </div>
                                         <span class="fs-4 text-gray-800 fw-bold mb-0">@name</span>
                                         <div class="fw-semibold text-muted mb-6">@tasks @T("مهمة", "tasks") · @days @T("يوم", "days")</div>
                                         <div class="d-flex flex-center flex-wrap mb-5">
                                             <div class="border border-gray-300 border-dashed rounded min-w-90px py-3 px-4 mx-2 mb-3 text-center">
-                                                <div class="fs-3 fw-bold" style="color:#13433a;">@emp.TotalHours.ToString("0.##")</div>
+                                                <div class="fs-3 fw-bold text-primary">@emp.TotalHours.ToString("0.##")</div>
                                                 <div class="fw-semibold text-muted fs-8">@T("ساعة", "Hours")</div>
                                             </div>
                                             <div class="border border-gray-300 border-dashed rounded min-w-90px py-3 px-4 mx-2 mb-3 text-center">
@@ -109,7 +116,7 @@
                                                 <div class="fw-semibold text-muted fs-8">@T("حركة", "entries")</div>
                                             </div>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-flex btn-center" data-bs-toggle="modal" data-bs-target="#emp_@emp.EmployeeId" style="background:#eaf3ef;color:#13433a;">
+                                        <button type="button" class="btn btn-sm btn-flex btn-center btn-light-primary" data-bs-toggle="modal" data-bs-target="#emp_@emp.EmployeeId">
                                             <i class="ki-outline ki-eye fs-5"></i>@T("التفاصيل", "Details")
                                         </button>
                                     </div>
@@ -137,12 +144,12 @@
                                                 }
                                                 else
                                                 {
-                                                    <span class="symbol-label fs-2x fw-bold" style="background:#eaf3ef;color:#13433a;">@(string.IsNullOrWhiteSpace(mName) ? "?" : mName.Trim().Substring(0, 1))</span>
+                                                    <span class="symbol-label fs-2x fw-bold bg-light-primary text-primary">@(string.IsNullOrWhiteSpace(mName) ? "?" : mName.Trim().Substring(0, 1))</span>
                                                 }
                                             </div>
                                             <h1 class="mb-3">@mName</h1>
                                             <div class="text-muted fw-semibold fs-5">
-                                                <span class="fw-bold" style="color:#13433a;">@emp.TotalHours.ToString("0.##")</span> @T("ساعة", "hours") · @mTasks @T("مهمة", "tasks") · @mDays @T("يوم", "days")
+                                                <span class="fw-bold text-primary">@emp.TotalHours.ToString("0.##")</span> @T("ساعة", "hours") · @mTasks @T("مهمة", "tasks") · @mDays @T("يوم", "days")
                                             </div>
                                         </div>
                                         <div class="mh-450px scroll-y me-n7 pe-7">
@@ -151,7 +158,7 @@
                                                 <div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
                                                     <div class="d-flex align-items-center">
                                                         <div class="symbol symbol-40px me-4">
-                                                            <span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-abstract-26 fs-4" style="color:#13433a;"></i></span>
+                                                            <span class="symbol-label bg-light-primary"><i class="ki-outline ki-abstract-26 fs-4 text-primary"></i></span>
                                                         </div>
                                                         <div>
                                                             <span class="fs-6 fw-bold text-gray-900">@l.TaskTitle</span>
@@ -159,7 +166,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="text-end">
-                                                        <div class="fs-5 fw-bold" style="color:#13433a;">@l.Hours.ToString("0.##")</div>
+                                                        <div class="fs-5 fw-bold text-primary">@l.Hours.ToString("0.##")</div>
                                                         <div class="fs-8 text-muted">@T("ساعة", "Hours")</div>
                                                     </div>
                                                 </div>
