@@ -38,6 +38,8 @@ namespace CrossBuy.Controllers
 		private readonly IClosingService _closing;
 		private readonly CrossDbContext _context;
 		private readonly IAccountingAccessService _access;
+		// D1/CORRECTION-005: the validated company source for remediated actions. See RequestCompanyResolver.
+		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
 		private readonly IAiInsightsService _insights;
 		private readonly IExecutiveDashboardService _executive;
 		private readonly ICurrencyService _currency;
@@ -47,9 +49,9 @@ namespace CrossBuy.Controllers
 			IGeneralLedgerService gl, ICostCenterService costCenters, IFiscalPeriodService periods,
 			IAccountingPostingService posting, IReceivableService ar, IPayableService ap,
 			IAccountingDashboardService dashboard, IBankService banks, IFixedAssetService assets,
-			ITaxService tax, IEtaInvoiceService eta, IFinancialStatementService statements, IClosingService closing, CrossDbContext context, IAccountingAccessService access, IAiInsightsService insights, IExecutiveDashboardService executive, ICurrencyService currency, IPricingService pricing, IStringLocalizer<CrossBuy.SharedResources> localizer)
+			ITaxService tax, IEtaInvoiceService eta, IFinancialStatementService statements, IClosingService closing, CrossDbContext context, IAccountingAccessService access, IAiInsightsService insights, IExecutiveDashboardService executive, ICurrencyService currency, IPricingService pricing, IStringLocalizer<CrossBuy.SharedResources> localizer, CrossBuy.BL.Platform.IRequestCompanyResolver company)
 		{
-			_coa = coa; _journals = journals; _gl = gl; _costCenters = costCenters; _periods = periods; _posting = posting; _ar = ar; _ap = ap; _dashboard = dashboard; _banks = banks; _assets = assets; _tax = tax; _eta = eta; _statements = statements; _closing = closing; _context = context; _access = access; _insights = insights; _executive = executive; _currency = currency; _pricing = pricing; L = localizer;
+			_coa = coa; _journals = journals; _gl = gl; _costCenters = costCenters; _periods = periods; _posting = posting; _ar = ar; _ap = ap; _dashboard = dashboard; _banks = banks; _assets = assets; _tax = tax; _eta = eta; _statements = statements; _closing = closing; _context = context; _access = access; _insights = insights; _executive = executive; _currency = currency; _pricing = pricing; L = localizer; _company = company;
 		}
 
 		// Multi-Currency helpers shared by the create-document screens
@@ -59,17 +61,46 @@ namespace CrossBuy.Controllers
 
 		// رؤى ذكية — AI insights (anomaly + cash-flow + inventory), all from the local
 		// ML service (no LLM / no API key). Server-rendered; the AI only surfaces findings.
+		//
+		// SECURITY REMEDIATION — this action used to pass `DefaultCompanyId` (the literal 1) to all three
+		// insight calls. Because it is [SessionValidation] and nothing more, ANY authenticated user of ANY
+		// company reached it, and six of the tables the service reads carry no Stage-1 global company
+		// filter (Account, Vendor, Receipt, Payment, StockBalance, StockMovement) — so for those the
+		// constant was the ONLY company control, and company 1's rows were read into this request.
+		//
+		// Measured, so the severity is not overstated: the OUTBOUND payload did not in fact contain that
+		// data, because each payload is assembled by joining against globally-filtered entities (Items,
+		// Customers) which return nothing for a mismatched scope. So this was a cross-company READ and a
+		// functional break — every non-company-1 user got empty insights — rather than a proven
+		// exfiltration. It was one refactor away from becoming one, which is why it is fixed here.
+		//
+		// The company now comes from IRequestCompanyResolver, the same trusted source the other remediated
+		// actions in this controller use, and an unresolved company refuses BEFORE any data is gathered or
+		// sent (see AiInsightsService.RequireCompany for the second line of defence).
 		[SessionValidation]
 		[HttpGet]
 		public async Task<IActionResult> AiInsights()
 		{
+			// Resolved, never assumed. The resolver takes no request-supplied company here at all: this
+			// action has no company parameter, so there is nothing a caller could offer to be validated.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				// The established refusal pattern for a view-returning action in this controller — the same
+				// TempData + redirect the other CORRECTION-005 remediated actions use. The resolver's own
+				// reason is deliberately NOT rendered: it names companies, and "your company is 2, the
+				// record is company 1" tells a caller that a record exists somewhere they cannot see.
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
 			var vm = new AiInsightsVm();
 			var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 			try
 			{
-				var a = await _insights.ScanJournalAnomaliesAsync(DefaultCompanyId);
-				var c = await _insights.ForecastCashflowAsync(DefaultCompanyId, 90);
-				var i = await _insights.AnalyzeInventoryAsync(DefaultCompanyId, 90);
+				var a = await _insights.ScanJournalAnomaliesAsync(scope.CompanyId);
+				var c = await _insights.ForecastCashflowAsync(scope.CompanyId, 90);
+				var i = await _insights.AnalyzeInventoryAsync(scope.CompanyId, 90);
 				if (a.Status == 200) vm.Anomaly = JsonSerializer.Deserialize<AnomalyResult>(a.Json, opts);
 				if (c.Status == 200) vm.Cashflow = JsonSerializer.Deserialize<CashflowResult>(c.Json, opts);
 				if (i.Status == 200) vm.Inventory = JsonSerializer.Deserialize<InventoryResult>(i.Json, opts);
@@ -175,12 +206,46 @@ namespace CrossBuy.Controllers
 		}
 
 		// HM-8: stamp a walk-in beneficiary onto the invoice's DISPLAY fields (set-once, tax-zero only). Financials untouched.
-		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		//
+		// STAGE 1 BATCH D1 WAVE 1 — CRITICAL. What this action could do before remediation: ANY signed-in
+		// employee could rewrite the legal beneficiary NAME and TAX NUMBER on any posted sales invoice in
+		// company 1. `SessionValidation` proves a session exists and `ValidateAntiForgeryToken` proves the form
+		// came from our page — neither is authorization, and the company came from the compile-time constant
+		// `DefaultCompanyId`, not from the caller. The result is alteration of a printed statutory tax document.
+		//
+		// Two things were added, and deliberately only two:
+		//
+		//   1. AccPerm("post") — the SAME right that already governs journals and sales/purchase invoices in
+		//      AccountingAccessService. Stamping the beneficiary of an issued invoice is an invoice mutation, so
+		//      it takes the invoice-mutation right rather than a new vocabulary invented for one action.
+		//   2. The company from the resolved BusinessContext (CORRECTION-005), replacing DefaultCompanyId.
+		//
+		// The statutory POLICY was already correct and is untouched: OfficialInvoiceHelper.StampCustomer refuses
+		// a second stamp (SET-ONCE — a printed document's beneficiary cannot change once issued) and refuses any
+		// invoice carrying tax (TAX-ZERO ONLY — a taxed invoice's beneficiary must be the ledger account holder).
+		// It also already records the ACTOR and the timestamp. So no correction workflow was invented here; the
+		// missing controls were authorization and company, and those are what changed.
+		//
+		// NOT SUPPORTED BY THE MODEL, reported rather than invented: SalesInvoice has no "reason" column for a
+		// beneficiary change, so the brief's "record the reason" cannot be satisfied without a schema change.
+		// Declared in the Wave 1 report as a gap, not silently skipped.
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("post")]
 		public async Task<IActionResult> StampInvoiceCustomer(int id, string name, string? taxNo)
 		{
-			var inv = await _context.SalesInvoices.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+			// The company is resolved, never assumed. An unresolved identity writes nothing.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(SalesInvoices));
+			}
+
+			// Company comes from the RESOLVED scope, and the invoice row is the ownership authority. An invoice
+			// in another company answers exactly like one that does not exist — the id cannot be probed.
+			var inv = await _context.SalesInvoices.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == scope.CompanyId);
 			if (inv == null) { TempData["AccErr"] = L["Sales invoice not found"].Value; return RedirectToAction(nameof(SalesInvoices)); }
-			var (ok, err) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(inv, name, taxNo, _access.CurrentEmployeeId().ToString());
+			// The actor recorded is the RESOLVED employee, not the session-parsed one.
+			var (ok, err) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(inv, name, taxNo, scope.EmployeeId?.ToString());
 			if (!ok) { TempData["AccErr"] = err; return RedirectToAction(nameof(PrintInvoice), new { id }); }
 			await _context.SaveChangesAsync();
 			TempData["AccMsg"] = L["The invoice beneficiary was stamped"].Value;
@@ -916,11 +981,19 @@ namespace CrossBuy.Controllers
 		}
 
 		// Inline "quick add" from any document screen's Vendor dropdown → returns {ok,id,name} to append+select.
+		// D1 WAVE 1 — CRITICAL (financial master data). A vendor is the payable side of the ledger: creating one
+		// silently is how an unauthorized payee enters the system. The right is DERIVED, not invented — `SaveVendor`
+		// in this same controller already carries AccPerm("post"), and this creates the same entity, so it takes the
+		// same right. ApiPerm, not AccPerm, because this action returns JSON to an inline dropdown: AccPerm would
+		// answer a fetch() caller with 302 -> an HTML login page.
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, "post")]
 		public async Task<IActionResult> VendorQuickAdd(string name, string? nameEn, string? taxRegNo)
 		{
 			if (string.IsNullOrWhiteSpace(name)) return Json(new { ok = false, error = L["Name is required"].Value });
-			var v = await _ap.CreateVendorAsync(DefaultCompanyId, name.Trim(),
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return Json(new { ok = false, error = L["You do not have permission to perform this action"].Value });
+			var v = await _ap.CreateVendorAsync(scope.CompanyId, name.Trim(),
 				string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(),
 				string.IsNullOrWhiteSpace(taxRegNo) ? null : taxRegNo.Trim());
 			var isAr = (HttpContext.Items["Culture"]?.ToString() == "ar");
@@ -928,11 +1001,17 @@ namespace CrossBuy.Controllers
 		}
 
 		// Inline "quick add" for the Customer dropdown on sales document screens → {ok,id,name}.
+		// D1 WAVE 1 — CRITICAL (financial master data). Same reasoning as VendorQuickAdd: `SaveCustomer` in this
+		// controller carries AccPerm("post") and this creates the same entity. A customer carries a control account
+		// and a credit limit, so an unauthorized one is a receivable nobody approved.
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, "post")]
 		public async Task<IActionResult> CustomerQuickAdd(string name, string? nameEn, string? taxRegNo)
 		{
 			if (string.IsNullOrWhiteSpace(name)) return Json(new { ok = false, error = L["Name is required"].Value });
-			var c = await _ar.CreateCustomerAsync(DefaultCompanyId, name.Trim(),
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return Json(new { ok = false, error = L["You do not have permission to perform this action"].Value });
+			var c = await _ar.CreateCustomerAsync(scope.CompanyId, name.Trim(),
 				string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(),
 				string.IsNullOrWhiteSpace(taxRegNo) ? null : taxRegNo.Trim(), null);
 			var isAr = (HttpContext.Items["Culture"]?.ToString() == "ar");

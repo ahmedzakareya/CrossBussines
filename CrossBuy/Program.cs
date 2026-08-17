@@ -101,7 +101,29 @@ builder.Services.AddScoped<IRecruitmentService, RecruitmentService>();   // Recr
 builder.Services.AddScoped<IFinalSettlementService, FinalSettlementService>();
 builder.Services.AddScoped<IHolidayService, HolidayService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
-builder.Services.AddScoped<IAccountingAccessService, AccountingAccessService>();
+// ---- Accounting authorization composition (Phase 3B). The MINIMUM registration chain the two
+//      Accounting controllers need to resolve at runtime — nothing broader. Deliberately NOT the
+//      full Platform Kernel composition, AI, certification-runtime or module DI, which stay deferred.
+builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyScopeHolder, CrossBuy.BL.Platform.CompanyScopeHolder>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessContextFactory, CrossBuy.BL.Platform.BusinessContextFactory>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessContextAccessor, CrossBuy.BL.Platform.BusinessContextAccessor>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IRequestCompanyResolver, CrossBuy.BL.Platform.RequestCompanyResolver>();   // D1/CORRECTION-005: validated company source
+builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformRoleDirectory, CrossBuy.BL.Platform.PlatformRoleDirectory>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IOrgHierarchy, CrossBuy.BL.Platform.OrgHierarchy>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBootstrapAccessPolicyReader, CrossBuy.BL.Platform.BootstrapAccessPolicyReader>();
+
+// Each access service behind the concrete type, its module interface, and IModuleAccessService — the
+// last is what AccountingApiAuthorization resolves by scope, and what ApiPermAttribute asks for HR.
+builder.Services.AddScoped<AccountingAccessService>();
+builder.Services.AddScoped<IAccountingAccessService>(sp => sp.GetRequiredService<AccountingAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<AccountingAccessService>());
+builder.Services.AddScoped<HrAccessService>();
+builder.Services.AddScoped<IHrAccessService>(sp => sp.GetRequiredService<HrAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<HrAccessService>());
+
+// The accounting API gate. It resolves the accounting module out of IEnumerable<IModuleAccessService>
+// by scope, so it adds no permission rule of its own and cannot drift from the MVC screens decisions.
+builder.Services.AddScoped<IAccountingApiAuthorization, AccountingApiAuthorization>();
 builder.Services.AddScoped<ILeaveWorkflowService, LeaveWorkflowService>();
 builder.Services.AddScoped<IEmployeeRequestService, EmployeeRequestService>();
 builder.Services.AddScoped<IAppraisalService, AppraisalService>();
