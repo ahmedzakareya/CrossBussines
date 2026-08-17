@@ -1,4 +1,4 @@
-@using CrossBuy.Models.Context.Inventory
+﻿@using CrossBuy.Models.Context.Inventory
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
@@ -15,6 +15,19 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (TempData["InvErr"] != null) { <div class="alert alert-danger">@TempData["InvErr"]</div> }
         <div class="card"><div class="card-body">
+            @* Stage 0: the POST target carries [InvPerm("doc")]; do not render a form that would be rejected. *@
+            @if (ViewBag.CanDoc != null && !(bool)ViewBag.CanDoc)
+            {
+                <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-6">
+                    <i class="ki-outline ki-shield-cross fs-2tx text-warning me-4"></i>
+                    <div class="d-flex flex-stack flex-grow-1"><div class="fw-semibold">
+                        <h4 class="text-gray-900 fw-bold">@SR["You do not have permission to perform this action"]</h4>
+                        <div class="fs-6 text-gray-700">@Localizer["Creating a work order requires an inventory document permission."]</div>
+                    </div></div>
+                </div>
+            }
+            else
+            {
             <form asp-action="CreateWorkOrder" method="post" class="row g-5">@Html.AntiForgeryToken()
                 <div class="col-md-6"><label class="required fw-semibold fs-7 text-muted mb-1">@Localizer["Manufactured item (has a BOM)"]</label>
                     <select id="wo_item" name="itemId" class="form-select form-select-solid" style="width:100%" required></select>
@@ -29,6 +42,7 @@
                 <div class="col-12"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Notes"]</label><textarea name="notes" class="form-control form-control-solid" rows="2"></textarea></div>
                 <div class="col-12 d-flex justify-content-end"><button class="btn btn-primary"><i class="ki-outline ki-check fs-2"></i>@Localizer["Create work order"]</button></div>
             </form>
+            }
         </div></div>
         <div class="text-muted fs-8 mt-3">@Localizer["After creating: BOM components are pulled automatically; release then complete to consume materials, produce the item and post the JE (materials + labor + overhead via the WIP account)."]</div>
     </div></div>

@@ -60,7 +60,13 @@
                     <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background:linear-gradient(135deg,#1f6253 0%,#13433a 100%)">
                         <div class="card-header pt-5">
                             <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@Localizer["Inventory Value"]</span></h3>
-                            <div class="card-toolbar"><a href="@Url.Action("StockBalances","Inventory")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a></div>
+                            @* Accessible name (axe link-name). This is a real control with a real destination —
+                               InventoryController.StockBalances — but its only content was the ki-black-right glyph,
+                               so it exposed no name at all. The name states the destination rather than the gesture
+                               ("Stock balances", not "arrow"/"more"), and reuses the SharedResources key that already
+                               labels that screen in ar/en/fr, so no new string is introduced. The chevron is
+                               decorative once the link is named, hence aria-hidden. href is unchanged. *@
+                            <div class="card-toolbar"><a href="@Url.Action("StockBalances","Inventory")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px" aria-label="@SR["Stock balances"]"><i class="ki-outline ki-black-right fs-5" aria-hidden="true"></i></a></div>
                         </div>
                         <div class="card-body d-flex justify-content-between flex-column pt-1 px-0 pb-0">
                             <div class="d-flex flex-wrap px-9 mb-4">
@@ -127,7 +133,17 @@
                             <div class="card-toolbar"><a href="@Url.Action("StockMovements","Inventory")" class="btn btn-sm btn-light">@Localizer["View all"]</a></div>
                         </div>
                         <div class="card-body pt-2">
-                            <div class="table-responsive">
+                            @* scrollable-region-focusable (5 findings: en/ar x desktop/tablet/mobile).
+                               .table-responsive scrolls horizontally once the five columns exceed the card,
+                               which they do at every audited width — so a keyboard-only user can see the
+                               overflow but never reach it, the scroll container taking no focus.
+                               This is the pattern already accepted on Calendar/Timeline.cshtml and
+                               Calendar/ResourceView.cshtml: make the container focusable, give it a region role
+                               so it is announced as a landmark rather than an unnamed group, and name it after
+                               the data it holds. Added here because this region IS genuinely scrollable — not
+                               applied blanket to every table wrapper. No visual change. *@
+                            <div class="table-responsive" tabindex="0" role="region"
+                                 aria-label="@Localizer["Recent movements"]">
                             <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                 <thead><tr class="fw-bold fs-7 text-uppercase text-muted">
                                     <th>@SR["Item"]</th><th>@SR["Date"]</th><th class="text-center">@SR["Type"]</th>

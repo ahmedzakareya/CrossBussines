@@ -1,4 +1,4 @@
-@using CrossBuy.Models.Context.Inventory
+﻿@using CrossBuy.Models.Context.Inventory
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @model ManufWorkOrder
@@ -16,6 +16,9 @@
     int functionalCcy = ViewBag.FunctionalCurrencyId ?? 0;
     var cashAccounts = ViewBag.CashAccounts as System.Collections.IEnumerable;
     string stCls(string s) => s switch { "Released" => "info", "InProgress" => "primary", "Completed" => "success", "Cancelled" => "danger", _ => "secondary" };
+    // Stage 0: mirrors the server's [InvPerm("doc")] on every lifecycle action below. The server is the
+    // authority; this only avoids showing a button whose POST would be rejected.
+    bool canDoc = ViewBag.CanDoc == null || (bool)ViewBag.CanDoc;
     bool isDraft = Model.Status == "Draft";
     bool isReleased = Model.Status == "Released" || Model.Status == "InProgress";
     bool isDone = Model.Status == "Completed" || Model.Status == "Closed";
@@ -29,13 +32,13 @@
         <div class="d-flex gap-2 flex-wrap">
             <a href="@Url.Action("WorkOrders","Inventory")" class="btn btn-light"><i class="ki-outline ki-arrow-left fs-2"></i>@SR["Back"]</a>
             <a href="@Url.Action("Routing","Inventory", new { itemId = Model.ItemId })" class="btn btn-light-primary"><i class="ki-outline ki-route fs-2"></i>@Localizer["Routing"]</a>
-            @if (isDraft)
+            @if (isDraft && canDoc)
             {
                 <form asp-action="ReleaseWorkOrder" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Release? Materials will be issued to WIP."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-info"><i class="ki-outline ki-entrance-right fs-2"></i>@Localizer["Release (issue to WIP)"]</button></form>
                 <form asp-action="CompleteWorkOrder" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Complete directly? Issue materials, produce the item and post the JE in one step."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-success"><i class="ki-outline ki-check-circle fs-2"></i>@Localizer["Complete directly"]</button></form>
                 <form asp-action="CancelWorkOrder" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Cancel this work order?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-light-danger">@Localizer["Cancel WO"]</button></form>
             }
-            @if (isReleased)
+            @if (isReleased && canDoc)
             {
                 <form asp-action="CompleteWorkOrder" method="post" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Complete? Materials will be consumed, the item produced and the JE posted."]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-success"><i class="ki-outline ki-check-circle fs-2"></i>@Localizer["Complete production"]</button></form>
                 <form asp-action="CancelWorkOrder" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Cancel this work order?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" /><button class="btn btn-light-danger">@Localizer["Cancel WO"]</button></form>
@@ -61,7 +64,7 @@
             <div class="col-lg-7">
                 <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Work order"]</div></div>
                     <div class="card-body">
-                        @if (isDraft)
+                        @if (isDraft && canDoc)
                         {
                             <form asp-action="SaveWorkOrder" method="post" class="row g-4" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Save changes?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" />
                                 <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Qty"]</label><input type="number" step="0.01" min="0.01" name="qty" class="form-control form-control-solid" value="@Model.Qty" /></div>
@@ -196,6 +199,16 @@
                 </div>
             </div>
         </div>
+
+        @{
+            // Platform Kernel slice 2 — work-order lifecycle timeline (created → released → produced →
+            // completed / cancelled). This is the pilot entity with a genuine multi-state lifecycle, and its
+            // legacy adapter reconstructs pre-kernel history from the order's own ReleasedAt / CompletedAt /
+            // ClosedAt stamps.
+            ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.ManufWorkOrder;
+            ViewBag.TimelineEntityId = Model.ID;
+        }
+        @await Html.PartialAsync("_DocEventTimeline")
     </div></div>
 </div>
 @section Scripts {

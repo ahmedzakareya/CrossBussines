@@ -209,3 +209,264 @@
 .form-select, .form-select.form-select-solid {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2313433a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
 }
+
+/* ============================================================
+   WCAG AA text contrast — shared visual authority (TAB-1)
+   ------------------------------------------------------------
+   Metronic's light theme resolves its muted/secondary TEXT ramp to values that
+   fail WCAG AA for normal text. Measured against the real painted background
+   (#ffffff card / #f9f9f9 page) from a live render, not from token names:
+
+       --bs-text-muted     #99A1B7   2.58:1   FAIL  (needs 4.5:1)
+       --bs-text-gray-500  #99A1B7   2.58:1   FAIL
+       --bs-text-gray-600  #78829D   3.83:1   FAIL
+       --bs-text-gray-700  #4B5675   7.27:1   PASS  <- already in the palette
+
+   The failure is systemic: .text-muted alone appears ~3057 times across the views,
+   so it is fixed here, once, at the authority — never per module or per view.
+
+   The three failing steps are mapped onto #4B5675, which is Metronic's OWN
+   gray-700. No new colour is introduced. The ramp still carries a clear
+   hierarchy, because primary body text is a different, much darker value:
+
+       body / gray-900  #071437  18.04:1     <- primary text, untouched
+       gray-800         #252F4A  13.26:1     <- untouched
+       muted/500/600    #4B5675   7.27:1     <- secondary text, now compliant
+       gray-400         #C4CADA   1.64:1     <- decorative only, untouched
+
+   Only the TEXT tokens move. --bs-gray-500/600 themselves are deliberately NOT
+   touched, so bg-gray-*, border-gray-* and the breadcrumb bullets keep their
+   existing appearance — a text-legibility fix, not a repaint.
+
+   Scoped to the light theme only. Dark mode keeps --bs-text-muted #636674,
+   which is correct against its own #15171C background; the :not() guard stops
+   this block from leaking into it.
+   ============================================================ */
+:root:not([data-bs-theme="dark"]),
+[data-bs-theme="light"] {
+    --bs-text-muted: #4B5675;
+    --bs-text-gray-500: #4B5675;
+    --bs-text-gray-600: #4B5675;
+}
+/* ------------------------------------------------------------
+   Semantic TEXT — WCAG AA without repainting the semantic palette.
+   Metronic ships SEPARATE text tokens (--bs-text-success/warning/danger) from the
+   component tokens (--bs-success/...), so the readable-text problem can be fixed
+   without touching a single button, background or border.
+
+   The replacement values are NOT invented: they are Bootstrap 5.3's own
+   *-text-emphasis members, already defined in style.bundle.css for this theme and
+   intended for exactly this purpose (semantic text on light ground). Measured:
+
+       text-success   #17C653 -> #094f21   on #ffffff  2.27 -> 9.76
+       text-warning   #F6C000 -> #624d00   on #ffffff  1.69 -> 8.14
+       text-danger    #F8285A -> #631024   on #ffffff  3.86 -> 12.88
+
+   Hue is preserved (green stays green, amber stays amber, red stays red) so the
+   success/warning/danger reading is unchanged; only luminance moves. The -active
+   steps were measured first and rejected: they rescue danger (5.05) but leave
+   success at 2.76 and warning at 2.08, so they do not solve the rule.
+   ------------------------------------------------------------ */
+:root:not([data-bs-theme="dark"]),
+[data-bs-theme="light"] {
+    --bs-text-success: #094f21;
+    --bs-text-warning: #624d00;
+    --bs-text-danger: #631024;
+}
+
+/* Light badges keep their semantic tint as BACKGROUND and take the matching
+   text-emphasis as foreground. The tint is what encodes the status, so the badge
+   still reads as success/warning/danger at a glance. Measured on their own tint:
+       badge-light-success  #17C653 -> #094f21  on #DFFFEA   2.12 -> 9.12
+       badge-light-warning  #F6C000 -> #624d00  on #FFF8DD   1.58 -> 7.64
+       badge-light-danger   #F8285A -> #631024  on #FFEEF3   3.45 -> 11.52
+   Specificity (0,2,0) is used to win the cascade rather than !important. */
+.badge.badge-light-success { color: var(--bs-success-text-emphasis); }
+.badge.badge-light-warning { color: var(--bs-warning-text-emphasis); }
+.badge.badge-light-danger { color: var(--bs-danger-text-emphasis); }
+
+/* Components that paint TEXT from the palette grays (--bs-gray-500/600) instead of
+   the text tokens, so the block above cannot reach them. This list is derived from a
+   live render — the elements that were still measured at #99A1B7 / #78829D — not from
+   grepping the 63 candidate rules in the bundle. --bs-gray-500/600 themselves stay
+   untouched, so the bg-gray and border-gray utilities are unaffected. All move to
+   #4B5675 (7.27:1). */
+.form-check-label,
+.nav-line-tabs .nav-item .nav-link {
+    color: #4B5675;
+}
+
+/* select2 and FullCalendar paint their own text from the same failing grays, and their
+   rules are more specific than a bare class, so these mirror the vendor selectors exactly
+   and win on source order rather than on !important. The disabled-state select2 rule is
+   deliberately left alone: WCAG exempts disabled controls from the contrast minimum. */
+.select2-container--bootstrap5 .select2-selection--single .select2-selection__placeholder,
+.select2-container--bootstrap5 .select2-selection--single.form-select-solid .select2-selection__placeholder,
+.select2-container--bootstrap5 .select2-selection--multiple .select2-selection__placeholder {
+    color: #4B5675;
+}
+
+.fc .fc-button-primary,
+.fc .fc-button-primary:not(:disabled),
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):hover,
+.fc .fc-button-primary:not(:disabled):focus,
+.fc .fc-button-primary:not(:disabled):active {
+    color: #4B5675;
+}
+
+/* The toolbar's two special cases outrank the block above: the "today" button is
+   :disabled while today is already in view, and the current view button carries
+   .fc-button-active. Both sit on the #F1F1F4 toolbar ground, where #4B5675 measures
+   6.45:1. (WCAG exempts disabled controls, but there is no reason to leave it
+   unreadable when the same value serves both states.) */
+.fc .fc-toolbar .fc-button-primary:disabled,
+.fc .fc-toolbar .fc-button-group .fc-button-primary.fc-button-active,
+.fc .fc-toolbar .fc-button-primary.fc-button-active {
+    color: #4B5675;
+}
+/* ------------------------------------------------------------
+   Active nav-pill — brand token gap, not a module bug.
+   Metronic hardcodes  .nav-pills { --bs-nav-pills-link-active-bg: #1B84FF }  and this
+   brand sheet never rebranded it, so every active pill in the product still painted
+   Metronic blue while the rest of the app is CrossBuy green. Its white label measured
+   3.63:1 on that blue — below AA — which is why it surfaced as a contrast finding on
+   the Tasks report pills even though no Tasks view sets a colour.
+
+       white on #1B84FF (Metronic blue)      3.63:1  FAIL
+       white on #13433A (--bs-primary)      11.10:1  PASS
+
+   Pointing the token at the existing brand primary fixes the contrast and removes a
+   stray blue from the palette at the same time. No new colour is introduced.
+   ------------------------------------------------------------ */
+.nav-pills {
+    --bs-nav-pills-link-active-bg: var(--bs-primary);
+}
+
+/* ============================================================
+   Semantic BUTTON families — WCAG AA (TAB-1, visual authority)
+   ------------------------------------------------------------
+   Metronic builds every semantic button from two foreground tokens:
+
+       solid  .btn-{sem}        rest  color: var(--bs-{sem}-inverse)   bg: var(--bs-{sem})
+                                hover color: var(--bs-{sem}-inverse)   bg: var(--bs-{sem}-active)
+       light  .btn-light-{sem}  rest  color: var(--bs-{sem})           bg: var(--bs-{sem}-light)
+                                hover color: var(--bs-{sem}-inverse)   bg: var(--bs-{sem})
+
+   --bs-{sem}-inverse is #ffffff for every family, and on the brighter fills white is
+   nowhere near AA. Measured from a live render, not from token names:
+
+       btn-success        #FFFFFF on #17C653   2.27  FAIL
+       btn-light-success  #17C653 on #DFFFEA   2.12  FAIL
+       btn-warning        #FFFFFF on #F6C000   1.69  FAIL
+       btn-light-warning  #F6C000 on #FFF8DD   1.58  FAIL
+       btn-danger         #FFFFFF on #F8285A   3.86  FAIL
+       btn-light-danger   #F8285A on #FFEEF3   3.45  FAIL
+       btn-primary        #FFFFFF on #13433A  11.10  pass (already brand green)
+       btn-light-primary  #13433A on #E9F1EE   9.66  pass
+       btn-info           #FFFFFF on #7239EA   6.02  pass
+       btn-light-info     #7239EA on #F8F5FF   5.59  pass
+
+   The fill is never changed for success/warning: the green stays #17C653 and the amber
+   stays #F6C000, so the semantic reading is untouched. Only the LABEL flips from white to
+   #071437 — which is gray-900, the body text colour, already in the palette. This is also
+   Bootstrap's own convention: it ships --bs-btn-color:#000 for .btn-warning/.btn-info/
+   .btn-light precisely because white fails on bright fills. Metronic overrode that to white.
+
+       btn-success        #071437 on #17C653   7.94  PASS   (hover on #04B440  6.53)
+       btn-warning        #071437 on #F6C000  10.70  PASS   (hover on #DEAD00  8.66)
+
+   Scoped to the button families rather than redefining --bs-{sem}-inverse globally, so no
+   badge, alert or icon that consumes the same token is repainted by this change.
+   ============================================================ */
+.btn.btn-success,
+.btn-check:checked + .btn.btn-success, .btn-check:active + .btn.btn-success,
+.btn.btn-success:focus:not(.btn-active), .btn.btn-success:hover:not(.btn-active),
+.btn.btn-success:active:not(.btn-active),
+.btn.btn-success.active, .btn.btn-success.show, .show > .btn.btn-success,
+.btn-check:checked + .btn.btn-light-success, .btn-check:active + .btn.btn-light-success,
+.btn.btn-light-success:focus:not(.btn-active), .btn.btn-light-success:hover:not(.btn-active),
+.btn.btn-light-success:active:not(.btn-active),
+.btn.btn-light-success.active, .btn.btn-light-success.show, .show > .btn.btn-light-success,
+.btn.btn-warning,
+.btn-check:checked + .btn.btn-warning, .btn-check:active + .btn.btn-warning,
+.btn.btn-warning:focus:not(.btn-active), .btn.btn-warning:hover:not(.btn-active),
+.btn.btn-warning:active:not(.btn-active),
+.btn.btn-warning.active, .btn.btn-warning.show, .show > .btn.btn-warning,
+.btn-check:checked + .btn.btn-light-warning, .btn-check:active + .btn.btn-light-warning,
+.btn.btn-light-warning:focus:not(.btn-active), .btn.btn-light-warning:hover:not(.btn-active),
+.btn.btn-light-warning:active:not(.btn-active),
+.btn.btn-light-warning.active, .btn.btn-light-warning.show, .show > .btn.btn-light-warning {
+    color: #071437;
+}
+
+/* Light buttons at rest keep their tint as background — the tint is what encodes the
+   status — and take the matching *-text-emphasis as label. Same tokens already used for
+   the light badges, so badge and button read identically for the same state.
+       btn-light-success  #17C653 -> #094f21 on #DFFFEA   2.12 -> 9.12
+       btn-light-warning  #F6C000 -> #624d00 on #FFF8DD   1.58 -> 7.64
+       btn-light-danger   #F8285A -> #631024 on #FFEEF3   3.45 -> 11.52  */
+.btn.btn-light-success { color: var(--bs-success-text-emphasis); }
+.btn.btn-light-warning { color: var(--bs-warning-text-emphasis); }
+.btn.btn-light-danger { color: var(--bs-danger-text-emphasis); }
+
+/* Danger is the one family where the dark-label move does NOT work: #071437 on #F8285A is
+   4.67 at rest but only 3.57 on the #D81A48 hover fill, so the state would fail. Red also
+   conventionally carries a white label. So danger keeps white and the FILL moves one step
+   down its own existing ramp instead:
+       rest   white on --bs-danger-active        #D81A48   3.86 -> 5.05  PASS
+       hover  white on --bs-danger-text-emphasis #631024   5.05 -> 12.88 PASS
+   Both values already exist in the theme, the hue is unchanged, and rest/hover stay
+   visually distinct. !important here only matches the vendor's own !important on the
+   hover background — it is not used to force a checker to pass. */
+.btn.btn-danger {
+    border-color: var(--bs-danger-active);
+    background-color: var(--bs-danger-active);
+}
+.btn-check:checked + .btn.btn-danger, .btn-check:active + .btn.btn-danger,
+.btn.btn-danger:focus:not(.btn-active), .btn.btn-danger:hover:not(.btn-active),
+.btn.btn-danger:active:not(.btn-active),
+.btn.btn-danger.active, .btn.btn-danger.show, .show > .btn.btn-danger {
+    border-color: var(--bs-danger-text-emphasis);
+    background-color: var(--bs-danger-text-emphasis) !important;
+}
+
+/* .btn-light-danger hover flips to the solid danger fill with a white label (3.86). Move
+   that fill to the same --bs-danger-active step used above: white on #D81A48 = 5.05. */
+.btn-check:checked + .btn.btn-light-danger, .btn-check:active + .btn.btn-light-danger,
+.btn.btn-light-danger:focus:not(.btn-active), .btn.btn-light-danger:hover:not(.btn-active),
+.btn.btn-light-danger:active:not(.btn-active),
+.btn.btn-light-danger.active, .btn.btn-light-danger.show, .show > .btn.btn-light-danger {
+    border-color: var(--bs-danger-active);
+    background-color: var(--bs-danger-active) !important;
+}
+
+/* ============================================================================================
+   SEMANTIC ALERTS — the third member of the same family, completing badge and button.
+
+   WHY IT SURFACED LAST. The announcement banner (Views/Shared/_AnnouncementsBanner.cshtml) is
+   injected into FOUR layouts and renders on every governed route, but it draws itself from
+   /Announcements/Active. With no active announcement in the dataset the banner renders EMPTY,
+   so the whole rendered matrix reported zero findings while these three variants were broken.
+   Measured only after seeding an active announcement — an unexercised surface is not a passing
+   surface.
+
+   Measured on the alert's own tint, which is the same tint the light badges and buttons use, so
+   these are the same numbers already recorded above:
+       alert-success  #17C653 -> #094f21  on #DFFFEA   2.12 -> 9.12   PASS
+       alert-warning  #F6C000 -> #624d00  on #FFF8DD   1.58 -> 7.64   PASS
+       alert-danger   #F8285A -> #631024  on #FFEEF3   3.45 -> 11.52  PASS
+
+   The TINT STAYS THE BACKGROUND — the tint is what encodes the status — and only the label moves
+   to the matching *-text-emphasis. Success still reads as success, warning as warning, danger as
+   danger; an announcement's priority is still legible at a glance from its colour alone.
+
+   alert-primary (9.66) and alert-info (5.59) ALREADY PASS and are deliberately left untouched;
+   restating them here would be churn, not a rule.
+
+   Same tokens, same pattern and same specificity (0,2,0) as the badge and button rules above, so
+   a status reads identically whichever component carries it. No !important, no new palette.
+   ============================================================================================ */
+.alert.alert-success { color: var(--bs-success-text-emphasis); }
+.alert.alert-warning { color: var(--bs-warning-text-emphasis); }
+.alert.alert-danger { color: var(--bs-danger-text-emphasis); }

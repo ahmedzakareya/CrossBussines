@@ -1,0 +1,7 @@
+# Visual-authority source. authority-baseline.json hashes these files BYTE-FOR-BYTE,
+# so git must not rewrite their line endings on checkout — a CRLF round-trip changes
+# the bytes and therefore the aggregate, which would fail the certification gate on
+# every fresh clone while the working tree still looked correct.
+CrossBuy/Views/Inventory/*.cshtml               -text
+CrossBuy/Views/Shared/_LayoutInventory.cshtml   -text
+CrossBuy/wwwroot/Backend-assets/css/crossbuy-brand.css -text
