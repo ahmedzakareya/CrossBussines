@@ -87,6 +87,7 @@ builder.Services.AddIdentity<Users, IdentityRole>()
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IFileManagerService, FileManagerService>();  // Company document library (Metronic file-manager)
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IJobTitles, JobTitleService>();
 builder.Services.AddScoped<IAdministrativeBodiesCompanyService, AdministrativeBodiesCompanyService>();
@@ -380,6 +381,10 @@ var staticContentTypes = new Microsoft.AspNetCore.StaticFiles.FileExtensionConte
 staticContentTypes.Mappings[".avif"] = "image/avif";
 staticContentTypes.Mappings[".webp"] = "image/webp";
 staticContentTypes.Mappings[".webmanifest"] = "application/manifest+json";   // POS-9a: PWA manifest
+// PrivateFileGate must sit immediately BEFORE UseStaticFiles: StaticFileMiddleware short-circuits and
+// writes the response itself, so a gate placed after it never runs. Without this line every file the
+// FileManager uploads under wwwroot/uploads/library is served anonymously to anyone with the URL.
+CrossBuy.BL.Platform.PrivateFileGateExtensions.UsePrivateFileGate(app);
 app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
 {
     ContentTypeProvider = staticContentTypes,

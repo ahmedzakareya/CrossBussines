@@ -398,6 +398,9 @@ namespace CrossBuy.Models.Context
         // written once and cannot drift between call sites.
         public DbSet<Platform.BootstrapAccessPolicy> BootstrapAccessPolicies { get; set; }
         public DbSet<Accounting.ProjectMember> ProjectMembers { get; set; }
+        // Company document library (FileManager). No fluent configuration: LibraryItem carries its own
+        // conventions and no index is declared for it in the working tree, so the DbSet is the whole mapping.
+        public DbSet<Library.LibraryItem> LibraryItems { get; set; }
         public DbSet<Calendar.CalendarEvent> CalendarEvents { get; set; }
         public DbSet<Calendar.CalendarEventAttendee> CalendarEventAttendees { get; set; }
         // Calendar scheduling satellites (recurrence / time zone / resources) — new tables, never
