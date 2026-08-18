@@ -1,10 +1,12 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using CrossBuy.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using CrossBuy.Models.Platform;
+using CrossBuy.BL;
 
 namespace CrossBuy.Controllers
 {
@@ -19,11 +21,20 @@ namespace CrossBuy.Controllers
 		private readonly CrossBuy.BL.IEmployeeRequestService _requests;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 
+		private readonly CrossBuy.BL.IHrAccessService _hrAccess;
+		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _businessContexts;
+
 		public PeopleController(CrossDbContext context, CrossBuy.BL.INotificationService notifications,
 			CrossBuy.BL.ILeaveDashboardService dashboard, CrossBuy.BL.ILeaveWorkflowService workflow,
 			CrossBuy.BL.IEmployeeRequestService requests,
+			// Stage 1 Batch C — the HR access service and the session-free context accessor, for the
+			// leave-approval proof endpoint.
+			CrossBuy.BL.IHrAccessService hrAccess,
+			CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts,
 			IStringLocalizer<CrossBuy.SharedResources> localizer)
 		{
+			_hrAccess = hrAccess;
+			_businessContexts = businessContexts;
 			_context = context;
 			_notifications = notifications;
 			_dashboard = dashboard;
@@ -244,6 +255,33 @@ namespace CrossBuy.Controllers
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
+
+			// ===== Stage 1 Batch C proof endpoint (HR) =====
+			// Before this batch, ANY signed-in employee could post a decision on ANY leave request: the only
+			// guard was the session. The workflow service checked whether the id was the CURRENT step, not
+			// whether this caller was entitled to decide it.
+			//
+			// `leave-approve` is record-level by nature: it is not a role grant at all. HrAccessService requires
+			// the caller to be a manager of the SUBJECT through the company-intersected hierarchy — the same
+			// relationship LeaveWorkflowService builds its approver chain from.
+			var hrContext = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			if (hrContext == null) { TempData["LeaveErr"] = L["You are not allowed to perform this action"].Value; return RedirectToAction(nameof(Leaves)); }
+
+			// The SUBJECT comes from the request row, never from the request body — a posted employee id is
+			// only ever a lookup key.
+			int? subjectEmployeeId = await _context.LeaveRequests.AsNoTracking()
+				.Where(r => r.ID == id).Select(r => (int?)r.EmployeeID).FirstOrDefaultAsync(HttpContext.RequestAborted);
+			if (subjectEmployeeId == null) { TempData["LeaveErr"] = L["Request not found"].Value; return RedirectToAction(nameof(Leaves)); }
+
+			bool mayDecide = await _hrAccess.CanAsync(
+				hrContext, HrActions.LeaveApprove,
+				PermissionTarget.ForSubjectEmployee(subjectEmployeeId.Value, hrContext.CompanyId),
+				HttpContext.RequestAborted);
+			if (!mayDecide)
+			{
+				TempData["LeaveErr"] = L["You are not allowed to perform this action"].Value;
+				return RedirectToAction(nameof(Leaves));
+			}
 
 			var (ok, error) = await _workflow.DecideAsync(id, emp.ID, approve, note);
 			if (!ok) TempData["LeaveErr"] = error;

@@ -33,10 +33,12 @@ namespace CrossBuy.Controllers
 		private readonly IManufService _manuf;
 		private readonly IShelfLabelService _labels;                    // HM-4: EAN-13 SVG for shelf labels
 		private readonly ICurrencyRounding _rounding;                   // HM-4: currency decimals for label/price display
+		// D1 Wave 1 / CORRECTION-005: validated company source for the remediated WarehouseQuickAdd.
+		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
-		public InventoryController(IItemService items, IWarehouseService warehouses, IChartOfAccountsService coa, CrossDbContext context, IWebHostEnvironment env, IStockService stock, IProcurementService proc, ISellingService sell, IInventoryAccessService access, IInventoryApprovalService approvals, IOpeningBalanceService opening, IIntegrityCheckService integrity, IPricingService pricing, IThreeWayMatchService match, ICurrencyService currency, IAccountingAccessService accAccess, IManufService manuf, IShelfLabelService labels, ICurrencyRounding rounding, IStringLocalizer<CrossBuy.SharedResources> localizer)
+		public InventoryController(IItemService items, IWarehouseService warehouses, IChartOfAccountsService coa, CrossDbContext context, IWebHostEnvironment env, IStockService stock, IProcurementService proc, ISellingService sell, IInventoryAccessService access, IInventoryApprovalService approvals, IOpeningBalanceService opening, IIntegrityCheckService integrity, IPricingService pricing, IThreeWayMatchService match, ICurrencyService currency, IAccountingAccessService accAccess, IManufService manuf, IShelfLabelService labels, ICurrencyRounding rounding, CrossBuy.BL.Platform.IRequestCompanyResolver company, IStringLocalizer<CrossBuy.SharedResources> localizer)
 		{
-			_items = items; _warehouses = warehouses; _coa = coa; _context = context; _env = env; _stock = stock; _proc = proc; _sell = sell; _access = access; _approvals = approvals; _opening = opening; _integrity = integrity; _pricing = pricing; _match = match; _currency = currency; _accAccess = accAccess; _manuf = manuf; _labels = labels; _rounding = rounding; L = localizer;
+			_items = items; _warehouses = warehouses; _coa = coa; _context = context; _env = env; _stock = stock; _proc = proc; _sell = sell; _access = access; _approvals = approvals; _opening = opening; _integrity = integrity; _pricing = pricing; _match = match; _currency = currency; _accAccess = accAccess; _manuf = manuf; _labels = labels; _rounding = rounding; L = localizer; _company = company;
 		}
 
 		// saves an uploaded item image to wwwroot/uploads/items and returns the public path (null if no file)
@@ -370,16 +372,23 @@ namespace CrossBuy.Controllers
 		}
 
 		// Inline "quick add" for the Warehouse dropdown on document screens → {ok,id,name}.
+		// D1 WAVE 1 — CRITICAL (stock structure). A warehouse is WHERE STOCK LIVES: creating one unauthorized
+		// creates a location that stock can be moved into and out of, outside any approved setup. The right is
+		// derived from the neighbouring full warehouse maintenance action, which carries InvPerm("manage").
+		// ApiPerm because this returns JSON to an inline dropdown.
 		[HttpPost][ValidateAntiForgeryToken]
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Inventory, "manage")]
 		public async Task<IActionResult> WarehouseQuickAdd(string code, string name, string? nameEn)
 		{
 			if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name)) return Json(new { ok = false, error = L["Code and name are required"].Value });
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return Json(new { ok = false, error = L["You do not have permission to perform this action"].Value });
 			// NameEn is a required (NOT NULL) column — when the English name is left blank fall back to the Arabic name
 			// (never null, else the INSERT fails). Trim once.
 			var arName = name.Trim();
 			var enName = string.IsNullOrWhiteSpace(nameEn) ? arName : nameEn.Trim();
 			var w = new Warehouse { Code = code.Trim(), Name = arName, NameEn = enName };
-			var (ok, err) = await _warehouses.CreateWarehouseAsync(DefaultCompanyId, w, null);
+			var (ok, err) = await _warehouses.CreateWarehouseAsync(scope.CompanyId, w, null);
 			if (!ok) return Json(new { ok = false, error = err });
 			// return the SAME "Code — Name" label the server-rendered options use, so the appended option is consistent
 			var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
