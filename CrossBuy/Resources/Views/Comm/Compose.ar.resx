@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Email" xml:space="preserve">
+    <value>البريد</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>الرئيسية</value>
+  </data>
+  <data name="Communications" xml:space="preserve">
+    <value>التواصل</value>
+  </data>
+  <data name="New Message" xml:space="preserve">
+    <value>رسالة جديدة</value>
+  </data>
+  <data name="New message" xml:space="preserve">
+    <value>رسالة جديدة</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>الكل</value>
+  </data>
+  <data name="Starred" xml:space="preserve">
+    <value>المميّزة</value>
+  </data>
+  <data name="Outbox" xml:space="preserve">
+    <value>الصادر</value>
+  </data>
+  <data name="Sent" xml:space="preserve">
+    <value>المُرسَل</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>فشل</value>
+  </data>
+  <data name="Trash" xml:space="preserve">
+    <value>المهملات</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>في الانتظار</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>تحديث</value>
+  </data>
+  <data name="Search inbox" xml:space="preserve">
+    <value>ابحث في البريد</value>
+  </data>
+  <data name="No messages yet" xml:space="preserve">
+    <value>لا رسائل بعد</value>
+  </data>
+  <data name="Forward" xml:space="preserve">
+    <value>تحويل</value>
+  </data>
+  <data name="Reply" xml:space="preserve">
+    <value>رد</value>
+  </data>
+  <data name="Reply all" xml:space="preserve">
+    <value>رد على الكل</value>
+  </data>
+  <data name="Star" xml:space="preserve">
+    <value>تمييز بنجمة</value>
+  </data>
+  <data name="Discard" xml:space="preserve">
+    <value>تجاهل</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>إرسال</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>إعادة المحاولة</value>
+  </data>
+  <data name="Delete this message?" xml:space="preserve">
+    <value>حذف هذه الرسالة؟</value>
+  </data>
+  <data name="SMTP not set — messages are queued and sent once configured." xml:space="preserve">
+    <value>لم يُضبَط SMTP — تُحفَظ الرسائل في الانتظار وتُرسَل تلقائيًا عند الضبط.</value>
+  </data>
+  <data name="Email sent" xml:space="preserve">
+    <value>تم إرسال البريد</value>
+  </data>
+  <data name="Message added to Outbox (SMTP not configured — it will be sent automatically once set)." xml:space="preserve">
+    <value>تمت إضافة الرسالة إلى الصادر (SMTP غير مضبوط — ستُرسَل تلقائيًا بمجرد ضبطه).</value>
+  </data>
+  <data name="Send failed" xml:space="preserve">
+    <value>فشل الإرسال</value>
+  </data>
+  <data name="Recipient and subject are required" xml:space="preserve">
+    <value>المستلِم والموضوع مطلوبان</value>
+  </data>
+</root>

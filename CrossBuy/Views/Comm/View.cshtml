@@ -1,0 +1,107 @@
+@using CrossBuy.BL
+@model MailFull
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    int cAll = ViewBag.CountAll ?? 0, cSent = ViewBag.CountSent ?? 0, cOut = ViewBag.CountOutbox ?? 0, cFail = ViewBag.CountFailed ?? 0;
+    var initial = string.IsNullOrEmpty(Model.ToAddress) ? "?" : Model.ToAddress.Substring(0, 1).ToUpper();
+    string sBadge = Model.Status switch { "Sent" => "badge-light-success", "Failed" => "badge-light-danger", _ => "badge-light-warning" };
+    string sLabel = Model.Status switch { "Sent" => Localizer["Sent"].Value, "Failed" => Localizer["Failed"].Value, _ => Localizer["Queued"].Value };
+    string human(long n) => n < 1024 ? $"{n} B" : n < 1048576 ? $"{n / 1024} KB" : $"{n / 1048576.0:0.#} MB";
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Email"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Comm")" class="text-muted">@Localizer["Email"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted text-truncate mw-300px">@Model.Subject</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="d-flex flex-column flex-lg-row">
+            <!--begin::Sidebar-->
+            <div class="flex-column flex-lg-row-auto w-100 w-lg-275px mb-6 mb-lg-0">
+                <div class="card card-flush mb-0"><div class="card-body">
+                    <a href="@Url.Action("Compose","Comm")" class="btn btn-primary fw-bold w-100 mb-8">@Localizer["New Message"]</a>
+                    <div class="menu menu-column menu-rounded menu-state-bg menu-state-title-primary menu-state-icon-primary">
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "All" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary">@cAll</span></a></div>
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Outbox" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span>@if (cOut > 0){<span class="badge badge-light-warning">@cOut</span>}</a></div>
+                        <div class="menu-item mb-2"><a href="@Url.Action("Index","Comm", new { folder = "Sent" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span>@if (cSent > 0){<span class="badge badge-light-success">@cSent</span>}</a></div>
+                        <div class="menu-item"><a href="@Url.Action("Index","Comm", new { folder = "Failed" })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-cross-circle fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Failed"]</span>@if (cFail > 0){<span class="badge badge-light-danger">@cFail</span>}</a></div>
+                    </div>
+                </div></div>
+            </div>
+            <!--end::Sidebar-->
+            <!--begin::Message-->
+            <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10">
+                <div class="card">
+                    <div class="card-header align-items-center py-4 gap-2 flex-wrap">
+                        <a href="@Url.Action("Index","Comm")" class="btn btn-sm btn-icon btn-light" title="@SR["Back"]"><i class="ki-outline ki-arrow-left fs-2"></i></a>
+                        <h2 class="fw-bold fs-4 m-0 flex-grow-1 text-truncate">@Model.Subject</h2>
+                        <div class="d-flex gap-2">
+                            <a href="@Url.Action("Compose","Comm", new { parentId = Model.Id, kind = "Reply" })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-arrow-left fs-5"></i>@Localizer["Reply"]</a>
+                            <a href="@Url.Action("Compose","Comm", new { parentId = Model.Id, kind = "ReplyAll" })" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-mix fs-5"></i>@Localizer["Reply all"]</a>
+                            <a href="@Url.Action("Compose","Comm", new { parentId = Model.Id, kind = "Forward" })" class="btn btn-sm btn-light"><i class="ki-outline ki-arrow-right fs-5"></i>@Localizer["Forward"]</a>
+                            @if (Model.Status != "Sent")
+                            {
+                                <form method="post" asp-action="Resend" asp-controller="Comm" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.Id" /><button class="btn btn-sm btn-light-warning"><i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Retry"]</button></form>
+                            }
+                            <form method="post" asp-action="Trash" asp-controller="Comm" class="d-inline" onsubmit="return confirm('@Localizer["Delete this message?"]');">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.Id" />@* Every sibling here (Reply / Reply all / Forward / Retry) carries visible text; this one was
+   icon-only with no accessible name at all, which is an axe button-name violation — a screen
+   reader announced "button" for the DESTRUCTIVE control in the row. The name comes from the
+   existing SharedResources "Delete" key, the same idiom as the Back control above. *@<button class="btn btn-sm btn-light-danger" title="@SR["Delete"]" aria-label="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-6">
+                            <div class="symbol symbol-45px me-4"><div class="symbol-label bg-light-primary text-primary fw-bold fs-3">@initial</div></div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-gray-900 fs-5"><span class="text-muted fw-semibold fs-7">@SR["To"]:</span> @Model.ToAddress</div>
+                                @if (!string.IsNullOrWhiteSpace(Model.Cc)) { <div class="fs-8 text-muted">@SR["Cc"]: @Model.Cc</div> }
+                                <div class="fs-8 text-muted">@(Model.SentAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm") ?? Model.CreatedAt?.ToLocalTime().ToString("yyyy/MM/dd HH:mm"))</div>
+                            </div>
+                            <span class="badge @sBadge fs-7">@sLabel</span>
+                        </div>
+                        @if (Model.Status == "Failed" && !string.IsNullOrEmpty(Model.Error))
+                        {
+                            <div class="alert alert-danger d-flex align-items-center py-3 mb-6"><i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i><div class="fs-7">@Model.Error</div></div>
+                        }
+                        <div class="separator mb-6"></div>
+                        @{ var cbFullDoc = "<!doctype html><html dir=\"auto\"><head><meta charset=\"utf-8\"><style>body{font-family:Inter,Helvetica,Arial,sans-serif;font-size:15px;color:#181c32;margin:0;padding:6px;word-wrap:break-word}img{max-width:100%}table{max-width:100%}</style></head><body>" + (Model.Body ?? "") + "</body></html>"; }
+                        <!-- email HTML body: rendered server-side into the sandboxed iframe's srcdoc (Razor attribute-encodes it). No inline-script embedding → nothing can break out. sandbox has no allow-scripts → stored-XSS-safe. -->
+                        <iframe id="cbMailBody" class="w-100 border-0" style="min-height:200px" sandbox="allow-same-origin" srcdoc="@cbFullDoc"></iframe>
+                        @if (Model.Attachments.Any())
+                        {
+                            <div class="separator my-6"></div>
+                            <div class="d-flex flex-wrap gap-3">
+                                @foreach (var a in Model.Attachments)
+                                {
+                                    <a href="@a.FilePath" target="_blank" class="d-flex align-items-center border border-dashed rounded p-3 text-gray-800">
+                                        <i class="ki-outline ki-paper-clip fs-2 text-primary me-3"></i>
+                                        <div><div class="fw-semibold">@a.FileName</div><div class="fs-8 text-muted">@human(a.Size)</div></div>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!--end::Message-->
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+    // resize-only: the body is already in the iframe's srcdoc (server-side). No body embedded here → nothing can break out.
+    (function () {
+        var f = document.getElementById('cbMailBody'); if (!f) return;
+        f.addEventListener('load', function () { try { var h = f.contentWindow.document.body.scrollHeight; if (h) f.style.height = (h + 24) + 'px'; } catch (e) { } });
+    })();
+</script>
+}

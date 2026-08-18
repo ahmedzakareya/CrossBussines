@@ -88,6 +88,7 @@ builder.Services.AddIdentity<Users, IdentityRole>()
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IFileManagerService, FileManagerService>();  // Company document library (Metronic file-manager)
+builder.Services.AddScoped<ICommService, CommService>();          // Comm Hub — email (Metronic inbox)
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>(); // Comm Hub P5 — announcements
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IJobTitles, JobTitleService>();
@@ -410,6 +411,17 @@ app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
 });
 app.UseRouting();
 app.UseCors("MobileCors");
+// "Comm" is an ACTIVE feature - MainMenu registers an Email entry (Controller = "Comm", Action =
+// "Index") and _LayoutInventory carries an Email button - but every one of those links is built by
+// Url.Action, which emits "/Comm/Index". The bare "/Comm" was reached only by a hand-typed,
+// bookmarked or shared URL, and by the UI conformance matrix, which is what reported it:
+// authenticated "/Comm" resolved to CommController.Login, an action that does not exist, and
+// returned an EMPTY 404 while "/Comm/Index" returned the real inbox. Unauthenticated it 302'd to
+// sign-in, so the defect was invisible until a signed-in request asked for it. This maps the bare
+// URL to the EXISTING Index action - no second screen, no redirect hop, no duplicated view.
+app.MapControllerRoute(name: "comm-home", pattern: "Comm",
+    defaults: new { controller = "Comm", action = "Index" });
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");

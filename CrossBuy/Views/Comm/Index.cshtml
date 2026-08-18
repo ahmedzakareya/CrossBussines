@@ -1,0 +1,189 @@
+@using CrossBuy.BL
+@model List<MailListItem>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var folder = (ViewBag.Folder as string) ?? "All";
+    var q = ViewBag.Q as string;
+    var configured = ViewBag.Configured is bool b && b;
+    int cAll = ViewBag.CountAll ?? 0, cSent = ViewBag.CountSent ?? 0, cOut = ViewBag.CountOutbox ?? 0, cFail = ViewBag.CountFailed ?? 0, cTrash = ViewBag.CountTrash ?? 0, cStar = ViewBag.CountStarred ?? 0;
+    string act(string f) => f == folder ? "active" : "";
+    string url(string f) => Url.Action("Index", "Comm", new { folder = f, q })!;
+    string sBadge(string s) => s switch { "Sent" => "badge-light-success", "Failed" => "badge-light-danger", _ => "badge-light-warning" };
+    string sLabel(string s) => s switch { "Sent" => Localizer["Sent"].Value, "Failed" => Localizer["Failed"].Value, _ => Localizer["Queued"].Value };
+    var avatarBg = new[] { "bg-light-primary text-primary", "bg-light-danger text-danger", "bg-light-warning text-warning", "bg-light-info text-info", "bg-light-success text-success" };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Email"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Communications"]</li>
+            </ul>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @{ var sent = TempData["MailSent"] as string; var sentErr = TempData["MailSentError"] as string; }
+        @if (sent == "Sent")
+        {
+            <div class="alert alert-success d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-check-circle fs-2 text-success me-3"></i><div class="fs-7">@Localizer["Email sent"]</div></div>
+        }
+        else if (sent == "Queued")
+        {
+            <div class="alert alert-primary d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-send fs-2 text-primary me-3"></i><div class="fs-7">@Localizer["Message added to Outbox (SMTP not configured — it will be sent automatically once set)."]</div></div>
+        }
+        else if (sent == "Failed")
+        {
+            <div class="alert alert-danger d-flex align-items-center py-3 mb-5"><i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i><div class="fs-7">@Localizer["Send failed"]@(string.IsNullOrEmpty(sentErr) ? "" : " — " + sentErr)</div></div>
+        }
+        <div class="d-flex flex-column flex-lg-row">
+            <!--begin::Sidebar-->
+            <div class="flex-column flex-lg-row-auto w-100 w-lg-275px mb-6 mb-lg-0">
+                <div class="card card-flush mb-0">
+                    <div class="card-body">
+                        <a href="@Url.Action("Compose","Comm")" class="btn btn-primary fw-bold w-100 mb-8">@Localizer["New Message"]</a>
+                        <div class="menu menu-column menu-rounded menu-state-bg menu-state-title-primary menu-state-icon-primary menu-state-bullet-primary mb-6">
+                            <div class="menu-item mb-2"><a href="@url("All")" class="menu-link @act("All")"><span class="menu-icon"><i class="ki-outline ki-sms fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["All"]</span><span class="badge badge-light-primary">@cAll</span></a></div>
+                            <div class="menu-item mb-2"><a href="@url("Starred")" class="menu-link @act("Starred")"><span class="menu-icon"><i class="ki-outline ki-star fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Starred"]</span>@if (cStar > 0){<span class="badge badge-light-warning">@cStar</span>}</a></div>
+                            <div class="menu-item mb-2"><a href="@url("Outbox")" class="menu-link @act("Outbox")"><span class="menu-icon"><i class="ki-outline ki-time fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Outbox"]</span>@if (cOut > 0){<span class="badge badge-light-warning">@cOut</span>}</a></div>
+                            <div class="menu-item mb-2"><a href="@url("Sent")" class="menu-link @act("Sent")"><span class="menu-icon"><i class="ki-outline ki-send fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Sent"]</span>@if (cSent > 0){<span class="badge badge-light-success">@cSent</span>}</a></div>
+                            <div class="menu-item mb-2"><a href="@url("Failed")" class="menu-link @act("Failed")"><span class="menu-icon"><i class="ki-outline ki-cross-circle fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Failed"]</span>@if (cFail > 0){<span class="badge badge-light-danger">@cFail</span>}</a></div>
+                            <div class="menu-item"><a href="@url("Trash")" class="menu-link @act("Trash")"><span class="menu-icon"><i class="ki-outline ki-trash fs-2 me-3"></i></span><span class="menu-title fw-bold">@Localizer["Trash"]</span>@if (cTrash > 0){<span class="badge badge-light">@cTrash</span>}</a></div>
+                        </div>
+                        @{ var libFolders = ViewBag.LibFolders as List<CrossBuy.BL.LibItemDto>; }
+                        <!--begin::Document library (SharePoint) — folders link straight into the library-->
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted fw-bold fs-8 text-uppercase">@Localizer["Documents"]</span>
+                            <a href="@Url.Action("Index","FileManager")" class="text-primary fw-semibold fs-8">@Localizer["Open library"]</a>
+                        </div>
+                        <div class="menu menu-column menu-rounded menu-state-bg menu-state-title-primary menu-state-icon-primary mb-6">
+                            @if (libFolders != null && libFolders.Count > 0)
+                            {
+                                foreach (var f in libFolders)
+                                {
+                                    <div class="menu-item mb-1"><a href="@Url.Action("Index","FileManager", new { folderId = f.id })" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-folder fs-2 me-3 text-primary"></i></span><span class="menu-title fw-semibold text-truncate">@f.name</span></a></div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="menu-item"><a href="@Url.Action("Index","FileManager")" class="menu-link"><span class="menu-icon"><i class="ki-outline ki-folder fs-2 me-3 text-primary"></i></span><span class="menu-title fw-semibold text-muted">@Localizer["Open library"]</span></a></div>
+                            }
+                        </div>
+                        @if (!configured)
+                        {
+                            <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-4">
+                                <i class="ki-outline ki-information-5 fs-2 text-warning me-3"></i>
+                                <div class="fs-8 text-gray-700">@Localizer["SMTP not set — messages are queued and sent once configured."]</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!--end::Sidebar-->
+            <!--begin::Content-->
+            <div class="flex-lg-row-fluid ms-lg-7 ms-xl-10">
+                <div class="card">
+                    <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold fs-4 text-gray-900 me-2">@(folder == "All" ? Localizer["All"].Value : (folder == "Outbox" ? Localizer["Outbox"].Value : (folder == "Trash" ? Localizer["Trash"].Value : (folder == "Starred" ? Localizer["Starred"].Value : sLabel(folder)))))</span>
+                            <span class="badge badge-light-primary">@Model.Count</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="@url(folder)" class="btn btn-sm btn-icon btn-light btn-active-light-primary" title="@Localizer["Refresh"]"><i class="ki-outline ki-arrows-circle fs-2"></i></a>
+                            <form method="get" class="d-flex align-items-center position-relative">
+                                <input type="hidden" name="folder" value="@folder" />
+                                <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                                <input type="text" name="q" value="@q" class="form-control form-control-sm form-control-solid w-200px ps-11" placeholder="@Localizer["Search inbox"]" />
+                            </form>
+                        </div>
+                    </div>
+                    @* THE 992px HORIZONTAL OVERFLOW, fixed at its source.
+                       Measured, not guessed: at a 992px viewport this table is display:table with
+                       min-width:0, an intrinsic content width of 771px, and a left edge at x=614 (it sits
+                       beside the folder sidebar in a flex-lg-row). Its right edge therefore landed at
+                       1385px and dragged documentElement.scrollWidth to 1385 vs clientWidth 992 — the exact
+                       numbers the matrix reported, in en and ar alike (ar 1338).
+                       A table cannot shrink below its content, so the containment belongs AROUND it:
+                       .table-responsive is Bootstrap/Metronic's own wrapper and gives the table its own
+                       horizontal scroll. It is NOT overflow-x:hidden on the page — nothing is clipped and
+                       no row becomes unreachable; the tabular content scrolls within its card while the
+                       DOCUMENT stops scrolling sideways. Same containment Reports/Viewer already uses. *@
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                        <table class="table table-hover table-row-dashed fs-6 gy-4 my-0">
+                            <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr><td class="text-center text-muted py-15">@Localizer["No messages yet"]</td></tr>
+                            }
+                            @foreach (var m in Model)
+                            {
+                                var initial = string.IsNullOrEmpty(m.ToAddress) ? "?" : m.ToAddress.Substring(0, 1).ToUpper();
+                                var col = avatarBg[Math.Abs(m.ToAddress.GetHashCode()) % avatarBg.Length];
+
+                                @* The row-selection checkbox had NO accessible name of any kind — no id, no
+                                   <label>, no aria-label — so axe reported `label` (Critical) once per row: 14
+                                   rows × 6 matrix cells = 84 nodes. A screen reader announced fourteen
+                                   identical unlabelled checkboxes.
+
+                                   There is no VISIBLE label to associate, so this is the brief's third case:
+                                   a localized aria-label for an intentionally label-less control. The name
+                                   carries the RECIPIENT and SUBJECT because fourteen controls all called
+                                   "Select message" would satisfy axe while leaving the list unusable — the
+                                   reader still could not tell which message they were selecting. *@
+                                var selectLabel = string.Format("{0} — {1}: {2}",
+                                    Localizer["Select message"].Value,
+                                    string.IsNullOrWhiteSpace(m.ToAddress) ? Localizer["Unknown recipient"].Value : m.ToAddress,
+                                    string.IsNullOrWhiteSpace(m.Subject) ? Localizer["No subject"].Value : m.Subject);
+                                <tr>
+                                    <td class="ps-9 w-40px"><div class="form-check form-check-sm form-check-custom form-check-solid mt-2"><input class="form-check-input" type="checkbox" value="@m.Id" aria-label="@selectLabel" /></div></td>
+                                    <td class="w-40px">
+                                        <a href="#" class="btn btn-icon btn-color-gray-500 btn-active-color-primary w-30px h-30px cb-star" data-id="@m.Id" title="@Localizer["Star"]"><i class="ki-@(m.Starred ? "solid" : "outline") ki-star fs-3 @(m.Starred ? "text-warning" : "")"></i></a>
+                                    </td>
+                                    <td class="w-150px w-md-200px">
+                                        <a href="@Url.Action("View","Comm", new { id = m.Id })" class="d-flex align-items-center text-gray-900">
+                                            <div class="symbol symbol-35px me-3"><div class="symbol-label @col"><span>@initial</span></div></div>
+                                            <span class="fw-semibold text-truncate">@m.ToAddress</span>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("View","Comm", new { id = m.Id })" class="text-gray-900">
+                                            <span class="fw-bold">@m.Subject</span>
+                                            @if (!string.IsNullOrWhiteSpace(m.Preview)) { <span class="fw-bold d-none d-md-inline">-</span> <span class="d-none d-md-inline text-muted">@m.Preview</span> }
+                                        </a>
+                                        @if (m.HasAttachment) { <i class="ki-outline ki-paper-clip fs-6 text-muted ms-1"></i> }
+                                        @if (m.Kind == "Forward") { <span class="badge badge-light-warning ms-1 fs-9">@Localizer["Forward"]</span> }
+                                        else if (m.Kind is "Reply" or "ReplyAll") { <span class="badge badge-light-info ms-1 fs-9">@Localizer["Reply"]</span> }
+                                    </td>
+                                    <td class="w-90px text-end"><span class="badge @sBadge(m.Status)">@sLabel(m.Status)</span></td>
+                                    <td class="w-110px text-end fs-7 pe-9 text-muted">@(m.At?.ToLocalTime().ToString("MM/dd HH:mm"))</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Content-->
+        </div>
+    </div></div>
+</div>
+
+@section Scripts {
+<script>
+    document.querySelectorAll('.cb-star').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            e.preventDefault(); var fd = new FormData(); fd.append('id', a.getAttribute('data-id'));
+            fetch('@Url.Action("Star","Comm")', { method: 'POST', credentials: 'same-origin', body: fd })
+                .then(function (r) { return r.json(); }).then(function (res) {
+                    if (res && res.ok) { var i = a.querySelector('i'); var on = i.classList.contains('ki-solid'); i.classList.toggle('ki-solid', !on); i.classList.toggle('ki-outline', on); i.classList.toggle('text-warning', !on); }
+                });
+        });
+    });
+</script>
+}
