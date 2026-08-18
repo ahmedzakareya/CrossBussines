@@ -157,6 +157,22 @@ builder.Services.AddScoped<IPosOrderService, PosOrderService>();
 builder.Services.AddScoped<PosAccessService>();
 builder.Services.AddScoped<IPosAccessService>(sp => sp.GetRequiredService<PosAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<PosAccessService>());
+
+// Tasks authorization (Phase 3C-4). TasksAccessService asks the platform permission provider for
+// the linked-entity check, so the provider and the entity registry it reads come with it.
+builder.Services.AddScoped<CrossBuy.BL.Platform.IEntityRegistry, CrossBuy.BL.Platform.EntityRegistry>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformPermissionProvider, CrossBuy.BL.Platform.PlatformPermissionProvider>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.Platform.DefaultPermissionAdapter>();
+
+// Func<>, NOT the provider itself: the provider's adapters depend on IEnumerable<IModuleAccessService>,
+// which contains this very service — a cycle that hung startup with no exception. The Func defers
+// resolution past construction.
+builder.Services.AddScoped<Func<CrossBuy.BL.Platform.IPlatformPermissionProvider>>(
+    sp => () => sp.GetRequiredService<CrossBuy.BL.Platform.IPlatformPermissionProvider>());
+
+builder.Services.AddScoped<CrossBuy.BL.TasksAccessService>();
+builder.Services.AddScoped<CrossBuy.BL.ITasksAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.TasksAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.TasksAccessService>());
 builder.Services.AddScoped<ITaskService, TaskService>();   // TM-1: task management
 builder.Services.AddScoped<ITaskLinkResolver, TaskLinkResolver>();   // TM-2: polymorphic record link
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();   // TM-3: timesheet
