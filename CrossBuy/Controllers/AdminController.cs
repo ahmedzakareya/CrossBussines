@@ -121,12 +121,75 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostFinalSettlement(int employeeId, DateTime terminationDate, string? reason, decimal gratuity, decimal otherEarnings, decimal deductions, int payFromGlAccountId)
 		{
-			var (ok, err) = await SettleSvc.PostAsync(HrCompanyId, employeeId, terminationDate, reason, gratuity, otherEarnings, deductions, payFromGlAccountId, null);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.PayrollManage, subjectEmployeeId: employeeId, requireAccountingPost: true);
+			if (!gate.Ok) return HrDenied(nameof(FinalSettlement), new { employeeId });
+
+			var (ok, err) = await SettleSvc.PostAsync(gate.CompanyId, employeeId, terminationDate, reason, gratuity, otherEarnings, deductions, payFromGlAccountId, null);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Final settlement posted and employee terminated"].Value : err;
 			return RedirectToAction(nameof(FinalSettlement), new { employeeId });
 		}
 
 		// ===== Employee contracts & document vault (HR-5) =====
+
+		// =====================================================================================
+		// STAGE 1 BATCH D1 WAVE 1 — THE HR PAYROLL GATE
+		//
+		// Before this wave these five actions carried [HttpPost][ValidateAntiForgeryToken] and NOTHING else, with
+		// the company taken from the compile-time constant `HrCompanyId`. So any signed-in employee could post a
+		// FINAL SETTLEMENT and a LEAVE PROVISION (both payroll journals), disburse cash for accrued leave, rewrite
+		// every employee's leave balance via carry-over, and change the SALARY POLICY payroll is calculated from.
+		//
+		// No new authorization model was built: `HrAccessService` and its vocabulary already existed from Batch C,
+		// and every action below maps onto a DOCUMENTED action rather than a new one —
+		//   `leave-manage`   is defined as "leave types/policies/ENCASHMENT/PROVISION"
+		//   `payroll-manage` is defined as "SALARY POLICIES, payroll runs"
+		// Services are resolved through RequestServices because that is this controller's existing convention
+		// (SettleSvc, AccrualSvc and DocSvc are all resolved the same way); adding five parameters to an already
+		// very long constructor would be the larger change, not the smaller one.
+		private CrossBuy.BL.IHrAccessService HrAccess =>
+			(HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IHrAccessService)) as CrossBuy.BL.IHrAccessService)!;
+		private CrossBuy.BL.Platform.IRequestCompanyResolver CompanyResolver =>
+			(HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.Platform.IRequestCompanyResolver)) as CrossBuy.BL.Platform.IRequestCompanyResolver)!;
+		private CrossBuy.BL.Platform.IBusinessContextAccessor BusinessContexts =>
+			(HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.Platform.IBusinessContextAccessor)) as CrossBuy.BL.Platform.IBusinessContextAccessor)!;
+		private CrossBuy.BL.AccountingAccessService AccountingAccess =>
+			(HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.AccountingAccessService)) as CrossBuy.BL.AccountingAccessService)!;
+
+		private sealed class HrGate { public bool Ok; public int CompanyId; public int? EmployeeId; }
+
+		// `subjectEmployeeId` is the employee the operation is ABOUT, when there is one. It is passed as a
+		// PermissionTarget so HrAccessService applies its own record rule (self / company-intersected manager /
+		// role) against the EMPLOYEE ROW's company — the posted id never establishes authorization by itself.
+		private async Task<HrGate> HrGateAsync(
+			string action, int? subjectEmployeeId = null, bool requireAccountingPost = false)
+		{
+			var scope = await CompanyResolver.ResolveAsync();
+			if (!scope.Ok) return new HrGate();
+
+			var ctx = await BusinessContexts.TryGetCurrentAsync();
+			if (ctx == null) return new HrGate();
+
+			var target = subjectEmployeeId is > 0
+				? CrossBuy.Models.Platform.PermissionTarget.ForSubjectEmployee(subjectEmployeeId.Value)
+				: null;
+
+			if (!await HrAccess.CanAsync(ctx, action, target)) return new HrGate();
+
+			// Posting a payroll journal is an accounting act performed from an HR screen. The HR right says who may
+			// run payroll; the accounting right says who may post to the ledger at all.
+			if (requireAccountingPost && !await AccountingAccess.CanAsync(ctx, "post")) return new HrGate();
+
+			return new HrGate { Ok = true, CompanyId = scope.CompanyId, EmployeeId = scope.EmployeeId };
+		}
+
+		private IActionResult HrDenied(string redirectAction, object? routeValues = null)
+		{
+			// One message for every refusal reason, so a missing right, a foreign employee and a non-existent one
+			// are indistinguishable.
+			TempData["HrErr"] = L["You do not have permission to perform this action"].Value;
+			return RedirectToAction(redirectAction, routeValues);
+		}
+
 		private CrossBuy.BL.IHrDocumentService DocSvc => (HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IHrDocumentService)) as CrossBuy.BL.IHrDocumentService)!;
 		private string? WebRoot => (HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Hosting.IWebHostEnvironment)) as Microsoft.AspNetCore.Hosting.IWebHostEnvironment)?.WebRootPath;
 
@@ -255,7 +318,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Encash(int employeeId, int leaveTypeId, int days, int payFromGlAccountId, DateTime encashDate)
 		{
-			var (ok, err) = await AccrualSvc.EncashAsync(HrCompanyId, employeeId, leaveTypeId, days, payFromGlAccountId, encashDate, null);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage, subjectEmployeeId: employeeId, requireAccountingPost: true);
+			if (!gate.Ok) return HrDenied(nameof(LeaveAccrual), new { employeeId });
+
+			var (ok, err) = await AccrualSvc.EncashAsync(gate.CompanyId, employeeId, leaveTypeId, days, payFromGlAccountId, encashDate, null);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Leave allowance disbursed"].Value : err;
 			return RedirectToAction(nameof(LeaveAccrual), new { employeeId });
 		}
@@ -274,7 +340,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> RunLeaveCarryOver(int fromYear)
 		{
-			var (ok, err, rows) = await AccrualSvc.RunCarryOverAsync(HrCompanyId, fromYear);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
+			if (!gate.Ok) return HrDenied(nameof(LeaveCarryOver), new { fromYear });
+
+			var (ok, err, rows) = await AccrualSvc.RunCarryOverAsync(gate.CompanyId, fromYear);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? string.Format(L["Carried over {0} record(s) to year {1}"].Value, rows, fromYear + 1) : err;
 			return RedirectToAction(nameof(LeaveCarryOver), new { fromYear });
 		}
@@ -283,7 +352,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostLeaveProvision(DateTime asOf)
 		{
-			var (ok, err) = await AccrualSvc.PostProvisionAsync(HrCompanyId, asOf, null);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage, requireAccountingPost: true);
+			if (!gate.Ok) return HrDenied(nameof(LeaveAccrual), new { asOf });
+
+			var (ok, err) = await AccrualSvc.PostProvisionAsync(gate.CompanyId, asOf, null);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Leave provision settlement posted"].Value : err;
 			return RedirectToAction(nameof(LeaveAccrual), new { asOf });
 		}
@@ -690,6 +762,10 @@ namespace CrossBuy.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        // D1 WAVE 1 — CRITICAL. The salary policy is the BASIS every payroll calculation reads, so changing it
+        // silently changes future payroll for everyone it applies to. `payroll-manage` is HrActions' documented
+        // action for "salary policies, payroll runs" — derived, not invented. ApiPerm because this returns JSON.
+        [CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Hr, CrossBuy.BL.HrActions.PayrollManage)]
         public async Task<IActionResult> SaveSalaryPolicy([FromBody] SalaryPoliciesDto model)
         {
             try
