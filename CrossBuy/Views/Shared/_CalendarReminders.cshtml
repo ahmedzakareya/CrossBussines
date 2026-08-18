@@ -1,0 +1,93 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    var crIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<!--begin::Calendar reminder (app-wide) — approaching toast + forced modal at start time-->
+<div class="modal fade" id="cbEventNowModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-500px">
+        <div class="modal-content">
+            @* Brand token, not a literal: this partial is injected into _LayoutInventory and therefore
+               renders on EVERY governed screen, so a hardcoded colour here is the widest possible
+               divergence. --bs-primary-active is the brand's own hover/active green and is what the
+               removed literal was a copy of. The remaining inline property is geometry, not colour. *@
+            <div class="modal-header" style="background:var(--bs-primary-active);border-radius:.475rem .475rem 0 0;">
+                <h2 class="fw-bold text-white d-flex align-items-center m-0"><i class="ki-outline ki-notification-status fs-1 text-white me-3"></i>@SR["Event starting now"]</h2>
+            </div>
+            <div class="modal-body py-8 px-lg-10">
+                <div class="fs-2 fw-bold text-gray-900 mb-5" id="cbEvTitle"></div>
+                <div class="d-flex align-items-center mb-3"><i class="ki-outline ki-time fs-2 text-primary me-3"></i><span class="fs-5" id="cbEvTime"></span></div>
+                <div class="d-flex align-items-center mb-3 d-none" id="cbEvLocWrap"><i class="ki-outline ki-geolocation fs-2 text-primary me-3"></i><span class="fs-5" id="cbEvLoc"></span></div>
+                <div class="d-flex align-items-start mb-3 d-none" id="cbEvDescWrap"><i class="ki-outline ki-notepad fs-2 text-primary me-3"></i><span class="fs-6 text-gray-700" id="cbEvDesc"></span></div>
+                <div class="d-flex align-items-center d-none" id="cbEvOwnerWrap"><i class="ki-outline ki-profile-circle fs-2 text-primary me-3"></i><span class="fs-6 text-gray-700" id="cbEvOwner"></span></div>
+            </div>
+            <div class="modal-footer flex-center">
+                <a href="/Calendar/Index" class="btn btn-light-primary me-3">@SR["Open calendar"]</a>
+                <button type="button" class="btn btn-primary" id="cbEvAck">@SR["Got it"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Calendar reminder-->
+<script>
+(function () {
+    if (window.__cbCalRem) return; window.__cbCalRem = true;
+    var LEAD_MIN = 15;                 // remind this many minutes before the event
+    var MAXMS = 26 * 3600000;          // don't set timers further out than ~a day
+    var isAr = @(crIsAr ? "true" : "false");
+    var scheduled = {};                // event id -> timers already set this session
+
+    function boot() {
+        var modalEl = document.getElementById('cbEventNowModal'); if (!modalEl || !window.bootstrap) return;
+        var modal = new bootstrap.Modal(modalEl);
+        var ack = document.getElementById('cbEvAck'); if (ack) ack.addEventListener('click', function () { modal.hide(); });
+
+        function dayKey() { return new Date().toDateString(); }
+        function fired(k) { try { return localStorage.getItem(k) === dayKey(); } catch (e) { return false; } }
+        function mark(k) { try { localStorage.setItem(k, dayKey()); } catch (e) { } }
+        function fmt(iso) { try { return new Date(iso).toLocaleTimeString(isAr ? 'ar-EG' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+
+        function reminderToast(ev) {
+            if (!window.toastr) return;
+            var pos = (window.innerWidth < 768) ? 'toast-bottom-center' : (isAr ? 'toast-top-left' : 'toast-top-right');
+            toastr.info('@SR["starts soon"]' + ' · ' + fmt(ev.start), '🔔 ' + ev.title, { timeOut: 20000, closeButton: true, escapeHtml: true, positionClass: pos });
+        }
+        function showNow(ev) {
+            document.getElementById('cbEvTitle').textContent = ev.title || '';
+            document.getElementById('cbEvTime').textContent = fmt(ev.start) + (ev.end ? (' — ' + fmt(ev.end)) : '');
+            toggle('cbEvLocWrap', 'cbEvLoc', ev.location);
+            toggle('cbEvDescWrap', 'cbEvDesc', ev.description);
+            toggle('cbEvOwnerWrap', 'cbEvOwner', ev.ownerName);
+            modal.show();
+        }
+        function toggle(wrapId, spanId, val) {
+            var w = document.getElementById(wrapId);
+            if (val) { document.getElementById(spanId).textContent = val; w.classList.remove('d-none'); }
+            else w.classList.add('d-none');
+        }
+
+        function schedule(ev) {
+            if (scheduled[ev.id]) return; scheduled[ev.id] = true;
+            var start = new Date(ev.start).getTime(), now = Date.now();
+            var remKey = 'cbRem:' + ev.id, startKey = 'cbStart:' + ev.id;
+            var remAt = start - LEAD_MIN * 60000;
+            if (!fired(remKey)) {
+                if (remAt > now && remAt - now < MAXMS) setTimeout(function () { mark(remKey); reminderToast(ev); }, remAt - now);
+                else if (remAt <= now && start > now) { mark(remKey); reminderToast(ev); }   // already inside the lead window
+            }
+            if (!fired(startKey)) {
+                if (start > now && start - now < MAXMS) setTimeout(function () { mark(startKey); showNow(ev); }, start - now);
+                else if (start <= now && now - start < 30 * 60000) { mark(startKey); showNow(ev); } // started in the last 30 min → show on login
+            }
+        }
+        function load() {
+            fetch('/Calendar/Upcoming', { credentials: 'same-origin' })
+                .then(function (r) { return r.ok ? r.json() : []; })
+                .then(function (list) { (list || []).forEach(schedule); })
+                .catch(function () { });
+        }
+        load();
+        setInterval(load, 180000);      // re-check every 3 min for new/updated events
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>

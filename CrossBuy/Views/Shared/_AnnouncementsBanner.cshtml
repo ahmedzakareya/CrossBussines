@@ -1,0 +1,37 @@
+@{
+    // Communication Hub P5 — dismissible announcement banner. Fetches active announcements for the current
+    // employee and shows them at the top of the page; dismiss persists per-user.
+}
+<div id="cbAnnBanner" class="app-container container-fluid"></div>
+<script>
+(function () {
+    if (window.__cbAnnInit) return; window.__cbAnnInit = true;
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    function cls(p) { return p === 'Critical' ? 'alert-danger' : p === 'High' ? 'alert-warning' : 'alert-primary'; }
+    function ico(p) { return p === 'Critical' ? 'ki-information-5' : p === 'High' ? 'ki-notification-bing' : 'ki-notification-status'; }
+    function render(list) {
+        var host = document.getElementById('cbAnnBanner'); if (!host) return;
+        // only reserve top padding when there is actually something to show (empty banner must not leave a gap)
+        if (!list || !list.length) { host.innerHTML = ''; host.classList.remove('pt-4'); return; }
+        host.classList.add('pt-4');
+        host.innerHTML = list.map(function (a) {
+            return '<div class="alert ' + cls(a.priority) + ' d-flex align-items-start p-4 mb-3" data-id="' + a.id + '">' +
+                '<i class="ki-outline ' + ico(a.priority) + ' fs-2 me-3 mt-1"></i>' +
+                '<div class="flex-grow-1"><div class="fw-bold fs-6">' + esc(a.title) + '</div><div class="fs-7">' + esc(a.body).replace(/\n/g, '<br>') + '</div></div>' +
+                '<button type="button" class="btn btn-icon btn-sm cb-ann-x" title="Dismiss"><i class="ki-outline ki-cross fs-2"></i></button></div>';
+        }).join('');
+        host.querySelectorAll('.cb-ann-x').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var card = b.closest('[data-id]'); var id = card.getAttribute('data-id');
+                var fd = new FormData(); fd.append('id', id);
+                fetch('/Announcements/Dismiss', { method: 'POST', credentials: 'same-origin', body: fd }).catch(function () {});
+                card.remove();
+            });
+        });
+    }
+    fetch('/Announcements/Active', { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (list) { if (list) render(list); })
+        .catch(function () {});
+})();
+</script>
