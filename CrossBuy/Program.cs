@@ -151,7 +151,12 @@ builder.Services.AddScoped<IEquipmentDepreciationService, EquipmentDepreciationS
 builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 builder.Services.AddScoped<IPosSetupService, PosSetupService>();
 builder.Services.AddScoped<IPosOrderService, PosOrderService>();
-builder.Services.AddScoped<IPosAccessService, PosAccessService>();
+// POS authorization (Phase 3C-2). Three registrations, not one: the concrete type, the module
+// interface used by POS screens, and IModuleAccessService — the last is how the platform finds
+// POS by scope, and without it the service resolves fine while authorizing nothing.
+builder.Services.AddScoped<PosAccessService>();
+builder.Services.AddScoped<IPosAccessService>(sp => sp.GetRequiredService<PosAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<PosAccessService>());
 builder.Services.AddScoped<ITaskService, TaskService>();   // TM-1: task management
 builder.Services.AddScoped<ITaskLinkResolver, TaskLinkResolver>();   // TM-2: polymorphic record link
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();   // TM-3: timesheet

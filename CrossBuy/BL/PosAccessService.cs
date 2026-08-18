@@ -1,4 +1,6 @@
+using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context;
+using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL
@@ -13,8 +15,33 @@ namespace CrossBuy.BL
 		public string? EmployeePhoto { get; set; }
 		public int BranchId { get; set; }
 		public string BranchName { get; set; } = "";
-		public int CompanyId { get; set; } = 1;   // catalog/accounts company (branches sit under 65–79; POS data under 1)
+
+		// The POS catalog/accounts company. HM-1: POS catalog and cash accounts live under company 1 while
+		// branches sit under companies 65–79, so this is NOT the branch's own company and must not be
+		// "corrected" to it — doing so would change POS accounting, which Stage 1 explicitly does not touch.
+		//
+		// STAGE 1 BATCH A: the value is no longer a silent field default. ResolveByUserIdAsync now sets it
+		// EXPLICITLY from PosCompanyPolicy.CatalogCompanyId, so the constant has one named home with the
+		// reason attached instead of appearing as `= 1` on a DTO. Classified as a deliberate single-company
+		// compatibility setting, not a defect.
+		public int CompanyId { get; set; } = PosCompanyPolicy.CatalogCompanyId;
+
+		// The company the BRANCH belongs to. Added in Stage 1 because it is the honest tenancy answer for a
+		// POS session, and it is what the session blob and the BusinessContext need — as distinct from the
+		// catalog company above. Null when the branch has no company row.
+		public int? BranchCompanyId { get; set; }
+
 		public List<string> Roles { get; set; } = new();
+	}
+
+	// The one place the POS catalog-company constant is stated, with its justification.
+	public static class PosCompanyPolicy
+	{
+		// HM-1 / PosSetupService: POS catalog items and cash/GL accounts are maintained under company 1,
+		// while operating branches belong to companies 65–79. Changing this changes POS accounting.
+		// Stage 1 contains it; it does not remove it. Removal requires the POS catalog to be made
+		// per-company, which is a business change with GL consequences.
+		public const int CatalogCompanyId = 1;
 	}
 
 	public interface IPosAccessService
@@ -30,10 +57,54 @@ namespace CrossBuy.BL
 		(bool allowed, bool noActivity) IsActivityAllowedForLane(string? activityPresetCode, string lane);
 	}
 
-	public class PosAccessService : IPosAccessService
+	public class PosAccessService : IPosAccessService, IModuleAccessService
 	{
 		private readonly CrossDbContext _db;
 		public PosAccessService(CrossDbContext db) { _db = db; }
+
+		public string Scope => EntityRegistry.ScopePos;
+
+		// The POS vocabulary is PREDICATES over assigned roles, not an action table like the other three
+		// modules. It is exposed here in the canonical form so the same names are usable from a workflow step
+		// or an AI retrieval, without pretending POS has read/post/pay/manage semantics it does not have.
+		public IReadOnlyCollection<string> Actions { get; } = new[] { "view", "sell", "order", "kitchen", "manage" };
+
+		// ---------------------------------------------------------------------------------------------
+		// Canonical, session-free. POS was ALREADY session-free — it takes a userId — so this method is a
+		// re-expression of the existing predicates in the shared contract, not a change of policy.
+		// ---------------------------------------------------------------------------------------------
+		public async Task<bool> CanAsync(
+			BusinessContext context, string action, PermissionTarget? target = null, CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(context);
+			if (string.IsNullOrWhiteSpace(action) || !Actions.Contains(action)) return false;
+			if (string.IsNullOrEmpty(context.UserId)) return false;   // POS identity is the AspNetUser id
+
+			var pos = await ResolveByUserIdAsync(context.UserId);
+			if (pos == null) return false;                            // no POS role assigned ⇒ no access
+
+			// Branch isolation: a cashier's rights exist at their OWN branch. When the caller names a branch,
+			// it must be that branch.
+			if (target?.BranchId is > 0 && target.BranchId.Value != pos.BranchId) return false;
+
+			return action switch
+			{
+				"view" => true,                        // holding any POS role is enough to view
+				"sell" => CanSell(pos.Roles),
+				"order" => CanOrder(pos.Roles),
+				"kitchen" => IsKitchen(pos.Roles),
+				"manage" => IsManager(pos.Roles),
+				_ => false,
+			};
+		}
+
+		public async Task<IReadOnlyList<string>> RolesAsync(BusinessContext context, CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(context);
+			if (string.IsNullOrEmpty(context.UserId)) return Array.Empty<string>();
+			var pos = await ResolveByUserIdAsync(context.UserId);
+			return pos?.Roles ?? (IReadOnlyList<string>)Array.Empty<string>();
+		}
 
 		public async Task<PosLoginContext?> ResolveByUserIdAsync(string userId)
 		{
@@ -45,8 +116,22 @@ namespace CrossBuy.BL
 				.Where(r => r.BranchId == branchId && r.EmployeeId == emp.ID && r.IsActive)
 				.Select(r => r.PosRole).Distinct().ToListAsync();
 			if (roles.Count == 0) return null;   // assigned no POS role → no access
-			var branchName = await _db.Branches.AsNoTracking().Where(b => b.ID == branchId).Select(b => b.Name).FirstOrDefaultAsync() ?? branchId.ToString();
-			return new PosLoginContext { EmployeeId = emp.ID, EmployeeName = emp.FullName ?? ("#" + emp.ID), EmployeeNameEn = emp.FullNameEn, EmployeePhoto = string.IsNullOrWhiteSpace(emp.ProfileImage) ? null : emp.ProfileImage, BranchId = branchId, BranchName = branchName, Roles = roles };
+			var branch = await _db.Branches.AsNoTracking().Where(b => b.ID == branchId)
+				.Select(b => new { b.Name, b.CompanyID }).FirstOrDefaultAsync();
+			return new PosLoginContext
+			{
+				EmployeeId = emp.ID,
+				EmployeeName = emp.FullName ?? ("#" + emp.ID),
+				EmployeeNameEn = emp.FullNameEn,
+				EmployeePhoto = string.IsNullOrWhiteSpace(emp.ProfileImage) ? null : emp.ProfileImage,
+				BranchId = branchId,
+				BranchName = branch?.Name ?? branchId.ToString(),
+				// Explicit, with the policy named — see PosCompanyPolicy.
+				CompanyId = PosCompanyPolicy.CatalogCompanyId,
+				// The branch's real company, so a POS session can state its tenancy honestly.
+				BranchCompanyId = branch?.CompanyID,
+				Roles = roles,
+			};
 		}
 
 		public bool CanSell(IEnumerable<string> roles) => roles.Contains("pos-cashier") || roles.Contains("pos-manager");

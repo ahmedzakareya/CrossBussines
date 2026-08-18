@@ -19,9 +19,58 @@ namespace CrossBuy.Controllers
 		private readonly CrossDbContext _context;
 		private readonly IPosOrderService _orders;       // POS-A: shared floor builder (reused from the cashier)
 		private readonly IReceivableService _receivables; // POS-A: shared customer search/add (reused from the cashier POS-4e)
+		// D1 Wave 1: the REAL POS role check (over BranchUserRoles — the documented POS exception) and the
+		// validated company source (CORRECTION-005). PosLaneActivityGuard is a lane guard and is NOT authorization.
+		private readonly PosAccessService _posAccess;
+		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
+		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _businessContexts;
+		private readonly AccountingAccessService _accounting;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
-		public PosController(IPosSetupService pos, IWarehouseService warehouses, CrossDbContext context, IPosOrderService orders, IReceivableService receivables, IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _pos = pos; _warehouses = warehouses; _context = context; _orders = orders; _receivables = receivables; L = localizer; }
+		public PosController(IPosSetupService pos, IWarehouseService warehouses, CrossDbContext context, IPosOrderService orders, IReceivableService receivables,
+			PosAccessService posAccess, CrossBuy.BL.Platform.IRequestCompanyResolver company,
+			CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts, AccountingAccessService accounting,
+			IStringLocalizer<CrossBuy.SharedResources> localizer)
+		{ _pos = pos; _warehouses = warehouses; _context = context; _orders = orders; _receivables = receivables; L = localizer; _posAccess = posAccess; _company = company; _businessContexts = businessContexts; _accounting = accounting; }
+		// =====================================================================================
+		// STAGE 1 BATCH D1 WAVE 1 — THE POS ADMIN GATE
+		//
+		// This is the POS SETUP/ADMIN controller, not the cashier lane. Before this wave its shift, production and
+		// customer actions carried [HttpPost][ValidateAntiForgeryToken] and nothing else, with the company from the
+		// `DefaultCompanyId` constant. So any signed-in employee could open and close shifts (closing posts a cash
+		// VARIANCE journal), run branch production (which MOVES STOCK), and create customers.
+		//
+		// It asks `IPosAccessService.CanAsync`, which reads the assigned `BranchUserRoles` — the DOCUMENTED PERMANENT
+		// POS EXCEPTION, preserved rather than replaced. `PosLaneActivityGuard` is not consulted as authorization,
+		// because it checks a branch's lane activity and no role.
+		//
+		// `branchId` arrives on the request, so it is NOT trusted: it is passed as the PermissionTarget's branch and
+		// the POS service decides whether this employee holds a role AT THAT BRANCH. A branch the caller has no role
+		// at therefore denies, which is the cross-branch case.
+		private sealed class PosGate { public bool Ok; public int CompanyId; public int? EmployeeId; }
+
+		private async Task<PosGate> PosGateAsync(string action, int branchId, bool requireAccountingPost = false)
+		{
+			if (branchId <= 0) return new PosGate();
+
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return new PosGate();
+
+			var ctx = await _businessContexts.TryGetCurrentAsync();
+			if (ctx == null) return new PosGate();
+
+			if (!await _posAccess.CanAsync(ctx, action, new CrossBuy.Models.Platform.PermissionTarget { BranchId = branchId })) return new PosGate();
+
+			if (requireAccountingPost && !await _accounting.CanAsync(ctx, "post")) return new PosGate();
+
+			return new PosGate { Ok = true, CompanyId = scope.CompanyId, EmployeeId = scope.EmployeeId };
+		}
+
+		private IActionResult PosDenied(string redirectAction, object? routeValues = null)
+		{
+			TempData["PosErr"] = L["You do not have permission to perform this action"].Value;
+			return RedirectToAction(redirectAction, routeValues);
+		}
+
 
 		// POS-A2: every restaurant-setup screen shows the unified "Restaurant" sidebar (not the generic Admin menu).
 		public override void OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
@@ -324,7 +373,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PrepareFinished(int branchId, int itemId, decimal qty)
 		{
-			var (ok, err, _) = await _orders.ReplenishFinishedFromBranchAsync(DefaultCompanyId, branchId, itemId, qty, DateTime.Today, null);
+			var gate = await PosGateAsync("manage", branchId, requireAccountingPost: true);
+			if (!gate.Ok) return PosDenied(nameof(ItemSourcing), new { branchId });
+
+			var (ok, err, _) = await _orders.ReplenishFinishedFromBranchAsync(gate.CompanyId, branchId, itemId, qty, DateTime.Today, null);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Stock transferred from the source branch"].Value : err;
 			return RedirectToAction(nameof(ItemSourcing), new { branchId });
 		}
@@ -333,7 +385,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PrepareSemi(int branchId, int itemId, decimal qty, decimal labor = 0, decimal overhead = 0)
 		{
-			var (ok, err, _) = await _orders.PrepareSemiFinishedAsync(DefaultCompanyId, branchId, itemId, qty, labor, overhead, DateTime.Today, null);
+			var gate = await PosGateAsync("manage", branchId, requireAccountingPost: true);
+			if (!gate.Ok) return PosDenied(nameof(ItemSourcing), new { branchId });
+
+			var (ok, err, _) = await _orders.PrepareSemiFinishedAsync(gate.CompanyId, branchId, itemId, qty, labor, overhead, DateTime.Today, null);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Semi transferred and finished produced"].Value : err;
 			return RedirectToAction(nameof(ItemSourcing), new { branchId });
 		}
@@ -407,10 +462,19 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
+		// D1 WAVE 1 — CRITICAL (financial master data). A Customer carries a control account and a credit limit, so
+		// an unauthorized one is a receivable nobody approved. The right is the SAME one that governs the identical
+		// entity elsewhere: AccountingController.SaveCustomer / CustomerQuickAdd both require accounting "post", so
+		// the accounting module governs the entity regardless of which screen creates it. ApiPerm because this
+		// returns JSON — an MVC redirect would hand a fetch() caller an HTML login page as a 200.
+		[CrossBuy.Models.ApiPerm(CrossBuy.Models.ApiPermAttribute.Accounting, "post")]
 		public async Task<IActionResult> CustomerQuickAdd(string name, string? phone)
 		{
 			if (string.IsNullOrWhiteSpace(name)) return Json(new { ok = false, error = L["Enter the customer name"].Value });
-			var cust = await _receivables.CreateCustomerAsync(DefaultCompanyId, name.Trim(), null, null, null);
+			// CORRECTION-005: the company is resolved, never the constant.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return Json(new { ok = false, error = L["You do not have permission to perform this action"].Value });
+			var cust = await _receivables.CreateCustomerAsync(scope.CompanyId, name.Trim(), null, null, null);
 			if (!string.IsNullOrWhiteSpace(phone)) { cust.Phone = phone.Trim(); await _context.SaveChangesAsync(); }
 			return Json(new { ok = true, customer = new { id = cust.ID, name = cust.Name, phone = cust.Phone } });
 		}
@@ -722,6 +786,9 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> OpenShift(int branchId, int terminalId, string shiftType, int? employeeId, decimal openingFloat)
 		{
+			var gate = await PosGateAsync("manage", branchId);
+			if (!gate.Ok) return PosDenied(nameof(Terminals), new { branchId });
+
 			var (ok, err) = await _pos.OpenShiftAsync(terminalId, shiftType, employeeId, openingFloat);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Shift opened"].Value : err;
 			return RedirectToAction(nameof(Terminals), new { branchId });
@@ -730,14 +797,17 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> CloseShift(int branchId, int terminalId, int shiftId, decimal? closingFloat = null)
 		{
+			var gate = await PosGateAsync("manage", branchId, requireAccountingPost: true);
+			if (!gate.Ok) return PosDenied(nameof(Terminals), new { branchId });
+
 			// admin close: if no counted cash is provided, close at expected (variance 0 → no JE)
 			decimal cf = closingFloat ?? 0m;
 			if (closingFloat == null)
 			{
 				var sh = await _context.PosShifts.AsNoTracking().FirstOrDefaultAsync(x => x.ID == shiftId && x.TerminalId == terminalId);
-				if (sh != null) cf = await _pos.ExpectedCashAsync(DefaultCompanyId, sh);
+				if (sh != null) cf = await _pos.ExpectedCashAsync(gate.CompanyId, sh);
 			}
-			var (ok, err) = await _pos.CloseShiftAsync(DefaultCompanyId, terminalId, shiftId, cf, null, DateTime.Today, null);
+			var (ok, err) = await _pos.CloseShiftAsync(gate.CompanyId, terminalId, shiftId, cf, null, DateTime.Today, null);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Shift closed"].Value : err;
 			return RedirectToAction(nameof(Terminals), new { branchId });
 		}
