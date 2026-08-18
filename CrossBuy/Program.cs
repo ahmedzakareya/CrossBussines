@@ -124,6 +124,12 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 // The accounting API gate. It resolves the accounting module out of IEnumerable<IModuleAccessService>
 // by scope, so it adds no permission rule of its own and cannot drift from the MVC screens decisions.
 builder.Services.AddScoped<IAccountingApiAuthorization, AccountingApiAuthorization>();
+
+// Projects authorization (Phase 3C-1). ProjectsAccessService needs the role directory and the
+// accounting service, both already registered above, so this adds only the Projects surface.
+builder.Services.AddScoped<ProjectsAccessService>();
+builder.Services.AddScoped<IProjectsAccessService>(sp => sp.GetRequiredService<ProjectsAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<ProjectsAccessService>());
 builder.Services.AddScoped<ILeaveWorkflowService, LeaveWorkflowService>();
 builder.Services.AddScoped<IEmployeeRequestService, EmployeeRequestService>();
 builder.Services.AddScoped<IAppraisalService, AppraisalService>();

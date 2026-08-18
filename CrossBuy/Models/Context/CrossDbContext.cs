@@ -315,6 +315,22 @@ namespace CrossBuy.Models.Context
 			CrossBuy.Models.Context.Calendar.CalendarSchedulingModel.Configure(builder);
 
 			// first request's company.
+			// Project membership (Phase 3C-1). ProjectsAccessService reads this to decide whether the
+			// caller is a member of the project, so the mapping lands with the authorization that needs it.
+			builder.Entity<Accounting.ProjectMember>(e =>
+			{
+				e.ToTable("ProjectMembers");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.RoleOnProject).HasMaxLength(20).IsRequired();
+				e.Property(x => x.AllocationPct).HasPrecision(5, 2);
+				e.HasIndex(x => new { x.ProjectId, x.EmployeeId })
+					.IsUnique().HasFilter("[IsActive] = 1").HasDatabaseName("UX_ProjectMembers_ActiveMembership");
+				e.HasIndex(x => new { x.CompanyID, x.EmployeeId, x.ProjectId }).HasDatabaseName("IX_ProjectMembers_Access");
+				// No navigation properties: membership is read by id through the access service, and a
+				// navigation would invite an Include() that loads a project the caller may not access.
+			});
+
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
 
@@ -381,6 +397,7 @@ namespace CrossBuy.Models.Context
         // it. The same discipline as PlatformRoleAssignments: one reader, so the active/expiry/Never policy is
         // written once and cannot drift between call sites.
         public DbSet<Platform.BootstrapAccessPolicy> BootstrapAccessPolicies { get; set; }
+        public DbSet<Accounting.ProjectMember> ProjectMembers { get; set; }
         public DbSet<Calendar.CalendarEvent> CalendarEvents { get; set; }
         public DbSet<Calendar.CalendarEventAttendee> CalendarEventAttendees { get; set; }
         // Calendar scheduling satellites (recurrence / time zone / resources) — new tables, never

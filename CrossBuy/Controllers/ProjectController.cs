@@ -1,4 +1,4 @@
-using CrossBuy.BL;
+﻿using CrossBuy.BL;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using CrossBuy.Models.Platform;
 
 namespace CrossBuy.Controllers
 {
@@ -31,8 +32,21 @@ namespace CrossBuy.Controllers
 		private readonly ICostCenterService _costCenters;
 		private readonly CrossDbContext _db;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
-		public ProjectController(IProjectService projects, IBoqService boq, IContractService contract, IProgressService progress, IProgressBillingService billing, IProjectMaterialIssueService material, IProjectLaborService labor, IProjectBudgetService budget, ISubcontractBillingService subcontract, IVariationOrderService variation, IEquipmentDepreciationService equipDep, ICostCenterService costCenters, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _projects = projects; _boq = boq; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; }
+		private readonly IProjectsAccessService _projectsAccess;
+		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _businessContexts;
+		// D1 Wave 1: the validated company source (CORRECTION-005) and the accounting right that GL-posting needs.
+		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
+		// Concrete, not the interface: the interface exposes only the legacy session-based CanAsync(string).
+		// Batch C set this precedent (ProjectsAccessService -> AccountingAccessService) when the interface-collection
+		// form turned out to be a DI cycle.
+		private readonly AccountingAccessService _accounting;
+
+		public ProjectController(IProjectService projects, IBoqService boq, IContractService contract, IProgressService progress, IProgressBillingService billing, IProjectMaterialIssueService material, IProjectLaborService labor, IProjectBudgetService budget, ISubcontractBillingService subcontract, IVariationOrderService variation, IEquipmentDepreciationService equipDep, ICostCenterService costCenters, CrossDbContext db,
+			// Stage 1 Batch C — projects access service + session-free context, for the BOQ proof endpoint.
+			IProjectsAccessService projectsAccess, CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts,
+			CrossBuy.BL.Platform.IRequestCompanyResolver company, AccountingAccessService accounting,
+			IStringLocalizer<CrossBuy.SharedResources> localizer)
+		{ _projectsAccess = projectsAccess; _businessContexts = businessContexts; _projects = projects; _boq = boq; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; _company = company; _accounting = accounting; }
 
 		// Projects & Contracting is its OWN system → show its sidebar (not Accounting/Admin).
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -40,6 +54,60 @@ namespace CrossBuy.Controllers
 			ViewData["SidebarMenu"] = MainMenu.Projects();
 			base.OnActionExecuting(context);
 		}
+
+		// =====================================================================================
+		// STAGE 1 BATCH D1 WAVE 1 — THE PROJECT FINANCIAL GATE
+		//
+		// Before this wave, all 23 mutating project financial actions carried `[SessionValidation]` and nothing
+		// else, and every one of them passed the compile-time constant `DefaultCompanyId` into its service. So any
+		// signed-in employee could post progress billing and subcontractor billing to the general ledger, issue
+		// project material (a STOCK movement), post equipment depreciation, receive advances and release retention.
+		//
+		// This helper is NOT an authorization rule. It RESOLVES the company (CORRECTION-005) and ASKS the two
+		// approved access services; every predicate stays inside them, which is what keeps this from becoming the
+		// "authorization copied into a controller" the brief forbids. `ProjectsAccessService` is what loads the
+		// PROJECT ROW and compares ITS CompanyID — so the project, not the request and not a membership row, is
+		// the ownership authority.
+		//
+		// `requireAccountingPost` is the second half of the rule for actions that reach the GL: a project right
+		// alone must not let someone post a journal. Those actions need BOTH the project action AND accounting
+		// "post" — derived from the existing vocabulary, not invented.
+		private sealed class ProjectGate
+		{
+			public bool Ok;
+			public int CompanyId;
+			public IActionResult? Denied;
+		}
+
+		private async Task<ProjectGate> GateAsync(string action, int projectId, bool requireAccountingPost = false)
+		{
+			IActionResult Deny()
+			{
+				// One message for every refusal reason. An unresolved identity, a missing right, a foreign
+				// project and a non-existent project must be indistinguishable, or the response becomes a probe.
+				TempData["PrjErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Projects));
+			}
+
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return new ProjectGate { Denied = Deny() };
+
+			var ctx = await _businessContexts.TryGetCurrentAsync();
+			if (ctx == null) return new ProjectGate { Denied = Deny() };
+
+			if (projectId <= 0) return new ProjectGate { Denied = Deny() };
+
+			if (!await _projectsAccess.CanAsync(ctx, action, PermissionTarget.ForProject(projectId)))
+				return new ProjectGate { Denied = Deny() };
+
+			// Posting to the ledger is an accounting act performed from a project screen. The project right says
+			// WHICH project; the accounting right says whether this person may post at all.
+			if (requireAccountingPost && !await _accounting.CanAsync(ctx, "post"))
+				return new ProjectGate { Denied = Deny() };
+
+			return new ProjectGate { Ok = true, CompanyId = scope.CompanyId };
+		}
+
 
 		// dropdown data for the project form
 		private async Task PopulateFormListsAsync()
@@ -147,6 +215,20 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Boq(int id)
 		{
+			// ===== Stage 1 Batch C proof endpoint (Projects) =====
+			// Before this batch there was no project record-level access AT ALL — `Project` had no member,
+			// manager or owner column, so any signed-in employee could open any project's BOQ. ProjectMembers
+			// is the relationship that makes this decidable; the project's company comes from the PROJECT ROW.
+			var prjContext = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			if (prjContext == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
+
+			bool mayRead = await _projectsAccess.CanAsync(
+				prjContext, ProjectsActions.Read,
+				PermissionTarget.ForProject(id, prjContext.CompanyId),
+				HttpContext.RequestAborted);
+			// Refused and absent answer IDENTICALLY, so project ids cannot be enumerated by probing.
+			if (!mayRead) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
+
 			var prj = await _projects.GetAsync(DefaultCompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
@@ -157,10 +239,13 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveBoq(int projectId, string rowsJson)
 		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
 			List<BoqRowInput> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<BoqRowInput>>(rowsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
 			catch { rows = new(); }
-			var (ok, err, count) = await _boq.ReplaceAllAsync(DefaultCompanyId, projectId, rows);
+			var (ok, err, count) = await _boq.ReplaceAllAsync(gate.CompanyId, projectId, rows);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? string.Format(L["BOQ saved ({0} items)"].Value, count) : err;
 			return RedirectToAction(nameof(Boq), new { id = projectId });
 		}
@@ -187,10 +272,13 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ReceiveAdvance(int projectId, string amount, int cashAccountId, DateTime date)
 		{
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
 			// <input type=number> always posts a dot-decimal value; parse invariantly so the ar request culture
 			// (whose decimal separator is "٫") doesn't silently bind it to 0.
 			decimal.TryParse(amount, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amt);
-			var (ok, err, _) = await _contract.ReceiveAdvanceAsync(DefaultCompanyId, projectId, amt, cashAccountId, date, null);
+			var (ok, err, _) = await _contract.ReceiveAdvanceAsync(gate.CompanyId, projectId, amt, cashAccountId, date, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Advance received & posted"].Value : err;
 			return RedirectToAction(nameof(Advance), new { projectId });
 		}
@@ -217,8 +305,11 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ReleaseRetention(int projectId, string amount, int cashAccountId, DateTime date)
 		{
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
 			decimal.TryParse(amount, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amt);
-			var (ok, err, _) = await _contract.ReleaseRetentionAsync(DefaultCompanyId, projectId, amt, cashAccountId, date, null);
+			var (ok, err, _) = await _contract.ReleaseRetentionAsync(gate.CompanyId, projectId, amt, cashAccountId, date, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Retention released & posted"].Value : err;
 			return RedirectToAction(nameof(RetentionRelease), new { projectId });
 		}
@@ -245,8 +336,11 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ReleaseSubRetention(int projectId, string amount, int cashAccountId, DateTime date)
 		{
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
 			decimal.TryParse(amount, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amt);
-			var (ok, err, _) = await _contract.ReleaseSubRetentionAsync(DefaultCompanyId, projectId, amt, cashAccountId, date, null);
+			var (ok, err, _) = await _contract.ReleaseSubRetentionAsync(gate.CompanyId, projectId, amt, cashAccountId, date, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Subcontractor retention released & posted"].Value : err;
 			return RedirectToAction(nameof(SubRetentionRelease), new { projectId });
 		}
@@ -306,7 +400,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveBilling(int projectId, int billingId, int progressId, DateTime billingDate, decimal taxRate, string? note)
 		{
-			var (ok, err, sid) = await _billing.SaveDraftAsync(DefaultCompanyId, projectId, billingId, progressId, billingDate, taxRate, note, null);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err, sid) = await _billing.SaveDraftAsync(gate.CompanyId, projectId, billingId, progressId, billingDate, taxRate, note, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing saved"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId, b = ok ? sid : billingId, m = progressId });
 		}
@@ -314,7 +411,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ApproveBilling(int id, int projectId)
 		{
-			var (ok, err) = await _billing.ApproveAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _billing.ApproveAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing approved"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId, b = id });
 		}
@@ -322,7 +422,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostBilling(int id, int projectId)
 		{
-			var (ok, err) = await _billing.PostAsync(DefaultCompanyId, id, null);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _billing.PostAsync(gate.CompanyId, id, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing posted"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId, b = id });
 		}
@@ -330,7 +433,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteBilling(int id, int projectId)
 		{
-			var (ok, err) = await _billing.DeleteAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _billing.DeleteAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing deleted"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId });
 		}
@@ -359,10 +465,13 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveMaterialIssue(int projectId, int issueId, int warehouseId, DateTime issueDate, string? note, string rowsJson)
 		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
 			List<MaterialLineInput> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<MaterialLineInput>>(rowsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
 			catch { rows = new(); }
-			var (ok, err, sid) = await _material.SaveDraftAsync(DefaultCompanyId, projectId, issueId, issueDate, warehouseId, note, rows, null);
+			var (ok, err, sid) = await _material.SaveDraftAsync(gate.CompanyId, projectId, issueId, issueDate, warehouseId, note, rows, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Material issue saved"].Value : err;
 			return RedirectToAction(nameof(MaterialIssues), new { id = projectId, b = ok ? sid : issueId, w = warehouseId });
 		}
@@ -370,7 +479,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostMaterialIssue(int id, int projectId)
 		{
-			var (ok, err) = await _material.PostAsync(DefaultCompanyId, id, null);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _material.PostAsync(gate.CompanyId, id, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Material issue posted"].Value : err;
 			return RedirectToAction(nameof(MaterialIssues), new { id = projectId });
 		}
@@ -378,7 +490,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteMaterialIssue(int id, int projectId)
 		{
-			var (ok, err) = await _material.DeleteAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _material.DeleteAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Material issue deleted"].Value : err;
 			return RedirectToAction(nameof(MaterialIssues), new { id = projectId });
 		}
@@ -396,7 +511,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostLabor(int id, int projectId)
 		{
-			var (ok, err) = await _labor.PostTaskLaborAsync(DefaultCompanyId, id, null);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _labor.PostTaskLaborAsync(gate.CompanyId, id, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Labor posted"].Value : err;
 			return RedirectToAction(nameof(Labor), new { id = projectId });
 		}
@@ -431,7 +549,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveSubcontract(int projectId, int subcontractId, int vendorId, string? description, decimal? contractValue, decimal? retentionPercent)
 		{
-			var (ok, err, sid) = await _subcontract.SaveSubcontractAsync(DefaultCompanyId, projectId, subcontractId, vendorId, description, contractValue, retentionPercent, null);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err, sid) = await _subcontract.SaveSubcontractAsync(gate.CompanyId, projectId, subcontractId, vendorId, description, contractValue, retentionPercent, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Subcontract saved"].Value : err;
 			return RedirectToAction(nameof(Subcontracts), new { id = projectId, sc = ok ? sid : subcontractId });
 		}
@@ -439,7 +560,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveSubBilling(int projectId, int subcontractId, int billingId, DateTime billingDate, decimal cumulativeWork, decimal taxRate, string? note)
 		{
-			var (ok, err, bid) = await _subcontract.SaveBillingDraftAsync(DefaultCompanyId, subcontractId, billingId, billingDate, cumulativeWork, taxRate, note, null);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err, bid) = await _subcontract.SaveBillingDraftAsync(gate.CompanyId, subcontractId, billingId, billingDate, cumulativeWork, taxRate, note, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing saved"].Value : err;
 			return RedirectToAction(nameof(Subcontracts), new { id = projectId, sc = subcontractId, b = ok ? bid : billingId });
 		}
@@ -447,7 +571,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ApproveSubBilling(int id, int projectId, int subcontractId)
 		{
-			var (ok, err) = await _subcontract.ApproveBillingAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _subcontract.ApproveBillingAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing approved"].Value : err;
 			return RedirectToAction(nameof(Subcontracts), new { id = projectId, sc = subcontractId, b = id });
 		}
@@ -455,7 +582,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostSubBilling(int id, int projectId, int subcontractId)
 		{
-			var (ok, err) = await _subcontract.PostBillingAsync(DefaultCompanyId, id, null);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _subcontract.PostBillingAsync(gate.CompanyId, id, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing posted"].Value : err;
 			return RedirectToAction(nameof(Subcontracts), new { id = projectId, sc = subcontractId, b = id });
 		}
@@ -463,7 +593,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteSubBilling(int id, int projectId, int subcontractId)
 		{
-			var (ok, err) = await _subcontract.DeleteBillingAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _subcontract.DeleteBillingAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing deleted"].Value : err;
 			return RedirectToAction(nameof(Subcontracts), new { id = projectId, sc = subcontractId });
 		}
@@ -485,10 +618,13 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveVariationOrder(int projectId, int voId, string? description, string? descriptionEn, string? reason, string rowsJson)
 		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
 			List<VoLineInput> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<VoLineInput>>(rowsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
 			catch { rows = new(); }
-			var (ok, err, sid) = await _variation.SaveDraftAsync(DefaultCompanyId, projectId, voId, description, descriptionEn, reason, rows, null);
+			var (ok, err, sid) = await _variation.SaveDraftAsync(gate.CompanyId, projectId, voId, description, descriptionEn, reason, rows, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Variation order saved"].Value : err;
 			return RedirectToAction(nameof(VariationOrders), new { id = projectId, vo = ok ? sid : voId });
 		}
@@ -496,7 +632,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ApproveVariationOrder(int id, int projectId)
 		{
-			var (ok, err) = await _variation.ApproveAsync(DefaultCompanyId, id, null);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _variation.ApproveAsync(gate.CompanyId, id, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Variation order approved"].Value : err;
 			return RedirectToAction(nameof(VariationOrders), new { id = projectId, vo = id });
 		}
@@ -504,7 +643,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteVariationOrder(int id, int projectId)
 		{
-			var (ok, err) = await _variation.DeleteAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _variation.DeleteAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Variation order deleted"].Value : err;
 			return RedirectToAction(nameof(VariationOrders), new { id = projectId });
 		}
@@ -525,8 +667,11 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveEquipmentDepreciation(int projectId, int allocId, int fixedAssetId, DateTime periodDate, decimal? hours, decimal? rate, decimal amount, string? note)
 		{
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
 			var input = new EquipmentAllocInput { FixedAssetId = fixedAssetId, PeriodDate = periodDate, Hours = hours, Rate = rate, Amount = amount, Note = note };
-			var (ok, err, sid) = await _equipDep.SaveDraftAsync(DefaultCompanyId, projectId, allocId, input, null);
+			var (ok, err, sid) = await _equipDep.SaveDraftAsync(gate.CompanyId, projectId, allocId, input, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Depreciation allocation saved"].Value : err;
 			return RedirectToAction(nameof(EquipmentDepreciation), new { id = projectId, a = ok ? sid : allocId });
 		}
@@ -534,7 +679,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostEquipmentDepreciation(int id, int projectId)
 		{
-			var (ok, err) = await _equipDep.PostAsync(DefaultCompanyId, id, null);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _equipDep.PostAsync(gate.CompanyId, id, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Depreciation allocation posted"].Value : err;
 			return RedirectToAction(nameof(EquipmentDepreciation), new { id = projectId });
 		}
@@ -542,7 +690,10 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteEquipmentDepreciation(int id, int projectId)
 		{
-			var (ok, err) = await _equipDep.DeleteAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetManage, projectId, requireAccountingPost: true);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _equipDep.DeleteAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Depreciation allocation deleted"].Value : err;
 			return RedirectToAction(nameof(EquipmentDepreciation), new { id = projectId });
 		}
