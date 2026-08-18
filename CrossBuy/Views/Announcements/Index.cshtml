@@ -1,0 +1,134 @@
+@using CrossBuy.BL
+@model List<AnnouncementDto>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var branches = ViewBag.Branches as Dictionary<int, string>;
+    string Badge(string p) => p switch { "Critical" => "background:#fdeceb;color:#b42318;", "High" => "background:#fff6e5;color:#b54708;", _ => "background:#eaf3ef;color:#13433a;" };
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Announcements"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Communications"]</li>
+            </ul>
+        </div>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#annModal"><i class="ki-outline ki-plus fs-3"></i>@Localizer["New announcement"]</button>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <div class="card">
+            <div class="card-body pt-6">
+                <div class="table-responsive">
+                    <table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
+                        <thead>
+                            <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                <th class="ps-4">@SR["Title"]</th><th>@Localizer["Priority"]</th><th>@Localizer["Scope"]</th>
+                                <th>@Localizer["Window"]</th><th>@SR["Status"]</th><th>@Localizer["By"]</th><th class="text-end pe-4"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-10">@Localizer["No announcements yet"]</td></tr> }
+                        @foreach (var a in Model)
+                        {
+                            <tr>
+                                <td class="ps-4"><div class="fw-bold text-gray-900">@a.Title</div><div class="text-muted fs-8 text-truncate mw-350px">@a.Body</div></td>
+                                <td><span class="badge fw-bold" style="@Badge(a.Priority)">@Localizer[a.Priority]</span></td>
+                                <td class="text-muted fs-7">@(a.Scope == "Branch" ? Localizer["Branch"].Value : Localizer["Whole company"].Value)</td>
+                                <td class="text-muted fs-8">@(a.StartsAt?.ToLocalTime().ToString("yyyy/MM/dd") ?? "—") → @(a.ExpiresAt?.ToLocalTime().ToString("yyyy/MM/dd") ?? "∞")</td>
+                                <td>@if (a.IsActive) { <span class="badge badge-light-success">@Localizer["Active"]</span> } else { <span class="badge badge-light">@Localizer["Inactive"]</span> }</td>
+                                <td class="text-muted fs-7">@a.AuthorName</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light cb-toggle" data-id="@a.Id" data-active="@(a.IsActive ? "false" : "true")">@(a.IsActive ? Localizer["Deactivate"].Value : Localizer["Activate"].Value)</button>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<!--begin::New announcement modal-->
+<div class="modal fade" id="annModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content">
+    <div class="modal-header py-4"><h2 class="fs-4 m-0">@Localizer["New announcement"]</h2><div class="btn btn-icon btn-sm btn-active-light-danger" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
+    <div class="modal-body">
+        <div class="row g-3">
+            <div class="col-12"><label class="fw-semibold fs-7 mb-1 required">@SR["Title"]</label><input id="annTitle" class="form-control form-control-solid" /></div>
+            <div class="col-12"><label class="fw-semibold fs-7 mb-1 required">@SR["Message"]</label><textarea id="annBody" class="form-control form-control-solid" rows="5"></textarea></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Priority"]</label>
+                <select id="annPriority" class="form-select form-select-solid" data-hide-search="true"><option value="Normal">@Localizer["Normal"]</option><option value="High">@Localizer["High"]</option><option value="Critical">@Localizer["Critical"]</option></select></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Scope"]</label>
+                <select id="annScope" class="form-select form-select-solid" data-hide-search="true"><option value="Company">@Localizer["Whole company"]</option><option value="Branch">@Localizer["Branch"]</option></select></div>
+            <div class="col-md-6 d-none" id="annBranchWrap"><label class="fw-semibold fs-7 mb-1">@Localizer["Branch"]</label>
+                <select id="annBranch" class="form-select form-select-solid">@if (branches != null) { foreach (var b in branches) { <option value="@b.Key">@b.Value</option> } }</select></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Starts at"]</label><input id="annStarts" type="text" data-no-flatpickr class="form-control form-control-solid" placeholder="@Localizer["Starts at"]" autocomplete="off" /></div>
+            <div class="col-md-6"><label class="fw-semibold fs-7 mb-1">@Localizer["Expires at"]</label><input id="annExpires" type="text" data-no-flatpickr class="form-control form-control-solid" placeholder="@Localizer["Expires at"]" autocomplete="off" /></div>
+        </div>
+    </div>
+    <div class="modal-footer py-3"><button class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary" id="annSave"><i class="ki-outline ki-send fs-4"></i>@Localizer["Publish"]</button></div>
+</div></div></div>
+<!--end::New announcement modal-->
+
+@section Scripts {
+<script>
+    // Metronic dropdowns (select2) — dropdownParent = the modal so the list renders above it
+    (function () {
+        if (!window.jQuery || !jQuery.fn.select2) return;
+        var $m = jQuery('#annModal');
+        jQuery('#annPriority, #annScope').select2({ dropdownParent: $m, minimumResultsForSearch: Infinity, width: '100%' });
+        jQuery('#annBranch').select2({ dropdownParent: $m, placeholder: '@Localizer["Branch"]', width: '100%' });
+    })();
+    // Metronic date pickers (flatpickr) — full-width, matching the selects
+    (function () {
+        if (!window.flatpickr) return;
+        flatpickr('#annStarts', { dateFormat: 'Y-m-d', allowInput: true, disableMobile: true });
+        flatpickr('#annExpires', { dateFormat: 'Y-m-d', allowInput: true, disableMobile: true });
+    })();
+    // select2 fires a jQuery change → bind via jQuery so the branch field toggles
+    jQuery(function ($) {
+        $('#annScope').on('change', function () {
+            $('#annBranchWrap').toggleClass('d-none', this.value !== 'Branch');
+        });
+    });
+    document.getElementById('annSave').addEventListener('click', function () {
+        var title = document.getElementById('annTitle').value.trim(), body = document.getElementById('annBody').value.trim();
+        if (!title || !body) { if (window.toastr) toastr.error('@Localizer["Title and message are required"]'); return; }
+        var fd = new FormData();
+        fd.append('title', title); fd.append('body', body);
+        fd.append('priority', document.getElementById('annPriority').value);
+        fd.append('scope', document.getElementById('annScope').value);
+        fd.append('branchId', document.getElementById('annBranch').value || '');
+        fd.append('startsAt', document.getElementById('annStarts').value || '');
+        fd.append('expiresAt', document.getElementById('annExpires').value || '');
+        this.disabled = true;
+        fetch('@Url.Action("Create","Announcements")', { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function () { if (window.toastr) toastr.success('@Localizer["Published"]'); setTimeout(function () { location.reload(); }, 700); })
+            .catch(function (e) { if (window.toastr) toastr.error('@SR["Send failed"]' + ' (' + e.message + ')'); this && (this.disabled = false); }.bind(this));
+    });
+    document.querySelectorAll('.cb-toggle').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var toActive = b.getAttribute('data-active') === 'true';
+            Swal.fire({
+                text: toActive ? '@Localizer["Activate this announcement?"]' : '@Localizer["Deactivate this announcement?"]',
+                icon: 'warning', showCancelButton: true, buttonsStyling: false,
+                confirmButtonText: toActive ? '@Localizer["Activate"]' : '@Localizer["Deactivate"]',
+                cancelButtonText: '@SR["Cancel"]',
+                customClass: { confirmButton: 'btn btn-' + (toActive ? 'primary' : 'danger'), cancelButton: 'btn btn-active-light' }
+            }).then(function (res) {
+                if (!res.isConfirmed) return;
+                var fd = new FormData(); fd.append('id', b.getAttribute('data-id')); fd.append('active', b.getAttribute('data-active'));
+                fetch('@Url.Action("Toggle","Announcements")', { method: 'POST', credentials: 'same-origin', body: fd })
+                    .then(function () { if (window.toastr) toastr.success('@Localizer["Updated"]'); setTimeout(function () { location.reload(); }, 700); });
+            });
+        });
+    });
+</script>
+}

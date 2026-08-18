@@ -382,6 +382,8 @@ namespace CrossBuy.Models.Context
         public DbSet<Chat.ConversationMember> ConversationMembers { get; set; }
         public DbSet<Chat.ChatMessage> ChatMessages { get; set; }
         public DbSet<Chat.ChatReaction> ChatReactions { get; set; }
+        public DbSet<Comm.Announcement> Announcements { get; set; }
+        public DbSet<Comm.AnnouncementRead> AnnouncementReads { get; set; }
         public DbSet<Admin.NotificationMute> NotificationMutes { get; set; }
         // Platform Kernel slice 1 — the business event log + its per-consumer outbox state.
         // Structure is deployed by deploy/sql/platform_business_events.sql (migrations are disabled).

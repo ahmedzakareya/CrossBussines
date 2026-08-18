@@ -31,6 +31,8 @@ namespace CrossBuy.BL
         public const string ChatMention = "chat_mention";
         public const string ChatAdded = "chat_added";
         public const string ChatRemoved = "chat_removed";
+        // ----- Hub P5 -----
+        public const string Announcement = "announcement";
         // ----- Manufacturing (Platform Kernel slice 2) — first notifications this module has ever had -----
         public const string WorkOrderReleased = "work_order_released";
         public const string WorkOrderCompleted = "work_order_completed";
@@ -54,6 +56,7 @@ namespace CrossBuy.BL
             "opportunity_won" or "crm_reminder" or "crm-reminder" or "crm_automation" or "crm_assigned" or "crm_ticket" => ("CRM", "ki-notification-status", nameof(Prio.Normal)),
             "chat_message" or "chat_mention" => ("Chat", "ki-message-text-2", nameof(Prio.Normal)),
             "chat_added" or "chat_removed" => ("Chat", "ki-people", nameof(Prio.Normal)),
+            "announcement" => ("Announcement", "ki-notification-bing", nameof(Prio.High)),
             "work_order_released" => ("Manufacturing", "ki-rocket", nameof(Prio.Normal)),
             "work_order_completed" => ("Manufacturing", "ki-check-circle", nameof(Prio.Normal)),
             _ => ("General", "ki-notification-status", nameof(Prio.Normal)),
@@ -81,6 +84,7 @@ namespace CrossBuy.BL
             "inventory_approval" or "InventoryApproval" => "/Inventory/Approvals",
             "chat_message" or "chat_mention" or "chat_added" => refId.HasValue ? $"/Chat?c={refId.Value}" : "/Chat",
             "chat_removed" => "/Chat",
+            "announcement" => "/Announcements",
             // Slice 2: NotificationProjection always supplies a per-record deep link through
             // IEntityRegistry.BuildUrl, so these are only the fallback for a caller that supplies none.
             "work_order_released" or "work_order_completed" => refId.HasValue ? $"/Inventory/WorkOrderDetails?id={refId.Value}" : "/Inventory/WorkOrders",
