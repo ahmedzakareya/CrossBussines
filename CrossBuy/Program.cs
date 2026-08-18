@@ -313,6 +313,15 @@ builder.Services.AddHttpClient<IAiService, AiService>((sp, c) =>
     c.DefaultRequestHeaders.Add("X-AI-Secret", cfg["AiService:Secret"] ?? "");
     c.Timeout = TimeSpan.FromSeconds(120);
 });
+// AI GOVERNANCE RUNTIME (integration hotfix). Committed HEAD registered IAiInsightsService while
+// its IAiEgressPolicy dependency had no registration, so ValidateOnBuild threw before startup and
+// the application could not boot at all. These are the only two the graph actually needs.
+//
+// Neither enables anything. AiProviderAuthority approves NOTHING by construction — it returns
+// UnderAssessment or OwnerDecisionRequired, both of which deny — and AiEgressPolicy is the gate that
+// asks it. Registering them restores the refusal path; without them there is no path at all.
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiProviderAuthority, CrossBuy.BL.Platform.Ai.AiProviderAuthority>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiEgressPolicy, CrossBuy.BL.Platform.Ai.AiEgressPolicy>();
 builder.Services.AddScoped<IAiInsightsService, AiInsightsService>();
 
 // Swagger / OpenAPI — only documents the mobile/web REST API (the /api/* controllers)
