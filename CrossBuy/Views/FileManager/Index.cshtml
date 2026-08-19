@@ -1,0 +1,463 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var sep = isAr ? "،" : ",";
+}
+<style>
+    #kt_file_manager_list .fm-name a { cursor: pointer; }
+    .fm-ic { width: 32px; height: 32px; object-fit: contain; }
+    .fm-crumb { cursor: pointer; }
+    .fm-file-row .fm-fname { cursor: pointer; }
+    .fm-chip { display: inline-flex; align-items: center; gap: 6px; }
+    /* spreadsheet preview: keep cells on one line so the table overflows → horizontal scroll appears */
+    #fmSheetScroll { max-height: 72vh; overflow: auto; }
+    #fmSheetScroll table { border-collapse: collapse; width: auto; }
+    #fmSheetScroll td, #fmSheetScroll th { white-space: nowrap; padding: 5px 10px; border: 1px solid var(--bs-border-color, #e1e3ea); font-size: .8rem; text-align: start; }
+    #fmSheetScroll th { background: var(--bs-light, #f9f9f9); font-weight: 600; }
+    @@media (max-width: 767.98px) {
+        .card-toolbar { width: 100%; }
+        #fmSearchWrap input { width: 100% !important; }
+    }
+</style>
+
+<div class="d-flex flex-column flex-column-fluid">
+    <!--begin::Toolbar-->
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["File Manager"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["File Manager"]</li>
+            </ul>
+        </div>
+    </div></div>
+    <!--end::Toolbar-->
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        <!--begin::Card-->
+        <div class="card card-flush">
+            <!--begin::Card header-->
+            <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+                <div class="card-title">
+                    <div id="fmSearchWrap" class="d-flex align-items-center position-relative my-1">
+                        <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                        <input type="text" id="fmSearch" class="form-control form-control-solid w-250px ps-12" placeholder="@Localizer["Search Files & Folders"]" />
+                    </div>
+                </div>
+                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                    <!--begin::Base toolbar-->
+                    <div class="d-flex gap-2 flex-wrap" id="fmBaseToolbar">
+                        <button type="button" class="btn btn-flex btn-light-primary" id="fmNewFolder">
+                            <i class="ki-outline ki-add-folder fs-2"></i>@Localizer["New Folder"]
+                        </button>
+                        <button type="button" class="btn btn-flex btn-primary" id="fmUploadBtn">
+                            <i class="ki-outline ki-folder-up fs-2"></i>@Localizer["Upload Files"]
+                        </button>
+                    </div>
+                    <!--end::Base toolbar-->
+                    <!--begin::Selected toolbar-->
+                    <div class="d-none align-items-center" id="fmSelectedToolbar">
+                        <div class="fw-bold me-3"><span class="me-2" id="fmSelCount">0</span>@Localizer["Selected"]</div>
+                        <button type="button" class="btn btn-danger" id="fmDeleteSelected">@Localizer["Delete Selected"]</button>
+                    </div>
+                    <!--end::Selected toolbar-->
+                </div>
+            </div>
+            <!--end::Card header-->
+            <!--begin::Card body-->
+            <div class="card-body">
+                <!--begin::Table header (breadcrumb + stats)-->
+                <div class="d-flex flex-stack flex-wrap gap-2 mb-4">
+                    <div class="badge badge-lg badge-light-primary">
+                        <div class="d-flex align-items-center flex-wrap" id="fmPath"></div>
+                    </div>
+                    <div class="badge badge-lg badge-primary"><span id="fmCounter">0 @Localizer["items"]</span></div>
+                </div>
+                <!--end::Table header-->
+                <div class="table-responsive">
+                    <table id="kt_file_manager_list" class="table align-middle table-row-dashed fs-6 gy-5">
+                        <thead>
+                            <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                                <th class="w-10px pe-2 ps-4">
+                                    <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                        <input class="form-check-input" type="checkbox" id="fmCheckAll" value="1" />
+                                    </div>
+                                </th>
+                                <th class="min-w-250px">@Localizer["Name"]</th>
+                                <th class="min-w-100px">@Localizer["Size"]</th>
+                                <th class="min-w-125px">@Localizer["Last Modified"]</th>
+                                <th class="min-w-100px">@Localizer["Owner"]</th>
+                                <th class="w-125px text-end"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="fw-semibold text-gray-600" id="fmRows"></tbody>
+                    </table>
+                </div>
+                <div id="fmEmpty" class="text-center text-muted py-10 d-none">@Localizer["This folder is empty"]</div>
+            </div>
+            <!--end::Card body-->
+        </div>
+        <!--end::Card-->
+
+        @Html.AntiForgeryToken()
+
+        <!--begin::Hidden upload input (picker opens directly; the chosen file previews in the modal below)-->
+        <input type="file" id="fmFiles" class="d-none" multiple />
+        <!--end::Hidden upload input-->
+
+        <!--begin::Modal - Move to folder-->
+        <div class="modal fade" id="fmMoveModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered mw-500px">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="fw-bold">@Localizer["Move to folder"]</h2>
+                        <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+                    </div>
+                    <div class="modal-body py-10 px-lg-17">
+                        <label class="fs-6 fw-semibold mb-2">@Localizer["Destination folder"]</label>
+                        <select class="form-select form-select-solid" id="fmMoveTarget"></select>
+                    </div>
+                    <div class="modal-footer flex-center">
+                        <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
+                        <button type="button" class="btn btn-primary" id="fmMoveSubmit">@Localizer["Move"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::Modal - Move to folder-->
+
+        <!--begin::Modal - File preview-->
+        <div class="modal fade" id="fmPreviewModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered mw-800px">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="fw-bold text-truncate pe-3" id="fmPrevTitle"></h2>
+                        <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+                    </div>
+                    <div class="px-lg-10 pt-2 pb-1 d-none" id="fmUploadNameWrap">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="fs-7 fw-semibold mb-1">@Localizer["Name (Arabic)"]</label>
+                                <input type="text" class="form-control form-control-solid" id="fmUploadName" autocomplete="off" dir="rtl" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fs-7 fw-semibold mb-1">@Localizer["Name (English)"]</label>
+                                <input type="text" class="form-control form-control-solid" id="fmUploadNameEn" autocomplete="off" dir="ltr" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div id="fmPrevBody" class="text-center"></div>
+                    </div>
+                    <div class="modal-footer flex-center">
+                        <a class="btn btn-light-primary me-3" id="fmPrevOpen" target="_blank" rel="noopener"><i class="ki-outline ki-exit-right-corner fs-3"></i>@Localizer["Open in new tab"]</a>
+                        <a class="btn btn-primary" id="fmPrevDownload"><i class="ki-outline ki-file-down fs-3"></i>@Localizer["Download"]</a>
+                        <button type="button" class="btn btn-primary d-none" id="fmPrevUpload"><i class="ki-outline ki-cloud-add fs-3"></i>@Localizer["Upload"]</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end::Modal - File preview-->
+    </div></div>
+</div>
+
+@section Scripts {
+<script src="@Url.Content("~/Backend-assets/plugins/custom/sheetjs/xlsx.full.min.js")"></script>
+<script src="@Url.Content("~/Backend-assets/plugins/custom/mammoth/mammoth.browser.min.js")"></script>
+<script>
+(function () {
+    var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    var svgBase = '@Url.Content("~/Backend-assets/media/svg/files/")';
+    var rootName = '@Localizer["Library"]';
+    var itemsWord = '@Localizer["items"]';
+    var curFolder = null;   // null = root
+    var q = '';
+    var moving = [];        // ids being moved
+    var pendingFiles = null; // files chosen for upload, awaiting confirm in the preview modal
+    var moveModal = new bootstrap.Modal(document.getElementById('fmMoveModal'));
+
+    function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':s); return d.innerHTML; }
+    function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
+    // two-field name dialog (Arabic + English) — the display shows the English twin when the UI is English
+    function nameDialog(title, arVal, enVal){
+        return Swal.fire({
+            title: title, focusConfirm: false,
+            html: '<input id="sw_ar" dir="rtl" class="form-control form-control-solid mb-3" placeholder="@Localizer["Name (Arabic)"]" value="'+escAttr(arVal||'')+'">' +
+                  '<input id="sw_en" dir="ltr" class="form-control form-control-solid" placeholder="@Localizer["Name (English)"]" value="'+escAttr(enVal||'')+'">',
+            showCancelButton: true, buttonsStyling: false,
+            confirmButtonText: '@Localizer["Save"]', cancelButtonText: '@Localizer["Cancel"]',
+            customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-active-light' },
+            preConfirm: function(){ return { ar: (document.getElementById('sw_ar').value||'').trim(), en: (document.getElementById('sw_en').value||'').trim() }; }
+        });
+    }
+    var SVGMAP = { pdf:'pdf', doc:'doc', docx:'doc', css:'css', xml:'xml', sql:'sql', ai:'ai', tif:'tif', tiff:'tif',
+                   png:'blank-image', jpg:'blank-image', jpeg:'blank-image', gif:'blank-image', webp:'blank-image', bmp:'blank-image', svg:'blank-image' };
+    function iconHtml(it){
+        if (it.isFolder) return '<i class="ki-outline ki-folder fs-2x text-primary me-4"></i>';
+        var svg = SVGMAP[(it.ext||'').toLowerCase()];
+        if (svg) return '<img src="'+svgBase+svg+'.svg" class="fm-ic me-4" alt="" />';
+        return '<i class="ki-outline ki-document fs-2x text-primary me-4"></i>';
+    }
+
+    function renderPath(path){
+        var el = document.getElementById('fmPath');
+        var html = '<i class="ki-outline ki-abstract-32 fs-2 text-primary me-2"></i>' +
+                   '<a class="fm-crumb" data-fid="">'+esc(rootName)+'</a>';
+        (path||[]).forEach(function(c){
+            html += '<i class="ki-outline ki-right fs-3 text-primary mx-1"></i>' +
+                    '<a class="fm-crumb" data-fid="'+c.id+'">'+esc(c.name)+'</a>';
+        });
+        el.innerHTML = html;
+        el.querySelectorAll('.fm-crumb').forEach(function(a){
+            a.addEventListener('click', function(){ var f=a.getAttribute('data-fid'); load(f?parseInt(f):null); });
+        });
+    }
+
+    function rowHtml(it){
+        var nameCell = it.isFolder
+            ? '<a class="text-gray-800 text-hover-primary fm-open" data-fid="'+it.id+'">'+esc(it.name)+'</a>'
+            : '<a class="text-gray-800 text-hover-primary fm-fname" data-id="'+it.id+'" data-name="'+esc(it.name)+'" data-url="'+esc(it.url||'')+'" data-ext="'+esc(it.ext||'')+'">'+esc(it.name)+'</a>';
+        var viewItem = it.isFolder ? '' :
+            '<div class="menu-item px-3"><a class="menu-link px-3 fm-act" data-act="view" data-id="'+it.id+'" data-url="'+esc(it.url||'')+'">@Localizer["View"]</a></div>' +
+            '<div class="menu-item px-3"><a class="menu-link px-3 fm-act" data-act="download" data-id="'+it.id+'">@Localizer["Download"]</a></div>';
+        return '<tr class="'+(it.isFolder?'fm-folder-row':'fm-file-row')+'">' +
+            '<td><div class="form-check form-check-sm form-check-custom form-check-solid">' +
+                '<input class="form-check-input fm-check" type="checkbox" value="'+it.id+'" /></div></td>' +
+            '<td class="fm-name"><div class="d-flex align-items-center"><span class="icon-wrapper">'+iconHtml(it)+'</span>'+nameCell+'</div></td>' +
+            '<td>'+esc(it.sizeText)+'</td>' +
+            '<td>'+esc(it.modified)+'</td>' +
+            '<td>'+esc(it.ownerName)+'</td>' +
+            '<td class="text-end">' +
+                '<button type="button" class="btn btn-sm btn-icon btn-light btn-active-light-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end"><i class="ki-outline ki-dots-square fs-5 m-0"></i></button>' +
+                '<div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-150px py-4" data-kt-menu="true">' +
+                    viewItem +
+                    '<div class="menu-item px-3"><a class="menu-link px-3 fm-act" data-act="rename" data-id="'+it.id+'" data-namear="'+escAttr(it.nameAr)+'" data-nameen="'+escAttr(it.nameEn||'')+'">@Localizer["Rename"]</a></div>' +
+                    '<div class="menu-item px-3"><a class="menu-link px-3 fm-act" data-act="move" data-id="'+it.id+'">@Localizer["Move to folder"]</a></div>' +
+                    '<div class="menu-item px-3"><a class="menu-link text-danger px-3 fm-act" data-act="delete" data-id="'+it.id+'">@Localizer["Delete"]</a></div>' +
+                '</div>' +
+            '</td></tr>';
+    }
+
+    function updateSelectedBar(){
+        var checks = document.querySelectorAll('.fm-check:checked');
+        var base = document.getElementById('fmBaseToolbar'), sel = document.getElementById('fmSelectedToolbar');
+        if (checks.length > 0){
+            document.getElementById('fmSelCount').textContent = checks.length;
+            base.classList.add('d-none'); sel.classList.remove('d-none'); sel.classList.add('d-flex');
+        } else { sel.classList.add('d-none'); sel.classList.remove('d-flex'); base.classList.remove('d-none'); }
+    }
+    function selectedIds(){ return Array.prototype.map.call(document.querySelectorAll('.fm-check:checked'), function(c){ return c.value; }); }
+
+    function load(folderId){
+        curFolder = (folderId===undefined?curFolder:folderId);
+        var url = '@Url.Action("List","FileManager")' + '?q=' + encodeURIComponent(q) + (curFolder!=null ? '&folderId='+curFolder : '');
+        fetch(url, {credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){
+            renderPath(d.path);
+            var body = document.getElementById('fmRows');
+            body.innerHTML = (d.items||[]).map(rowHtml).join('');
+            document.getElementById('fmEmpty').classList.toggle('d-none', (d.items||[]).length>0);
+            var count = (d.folderCount||0)+(d.fileCount||0);
+            document.getElementById('fmCounter').textContent = count + ' ' + itemsWord;
+            document.getElementById('fmCheckAll').checked = false;
+            bindRows();
+            updateSelectedBar();
+            if (window.KTMenu) KTMenu.createInstances('#fmRows [data-kt-menu="true"]');
+        }).catch(function(){});
+    }
+
+    function bindRows(){
+        document.querySelectorAll('.fm-open').forEach(function(a){ a.addEventListener('click', function(){ load(parseInt(a.getAttribute('data-fid'))); }); });
+        document.querySelectorAll('.fm-fname').forEach(function(a){ a.style.cursor='pointer'; a.addEventListener('click', function(e){ e.preventDefault();
+            openPreview({ id:a.getAttribute('data-id'), name:a.getAttribute('data-name'), url:a.getAttribute('data-url'), ext:a.getAttribute('data-ext') }); }); });
+        document.querySelectorAll('.fm-check').forEach(function(c){ c.addEventListener('change', updateSelectedBar); });
+        document.querySelectorAll('.fm-act').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); doAction(a); }); });
+    }
+
+    // ---------- File preview modal (choose: open in new tab / download) ----------
+    var previewModal = new bootstrap.Modal(document.getElementById('fmPreviewModal'));
+    var IMG_EXT = ['png','jpg','jpeg','gif','webp','bmp','svg'];
+    // types the browser renders INLINE in an iframe.
+    var FRAME_EXT = ['pdf','txt','htm','html','csv','json','xml','log','md'];
+    // spreadsheets → rendered client-side to an HTML table via SheetJS (the browser can't preview them, and an
+    // iframe would force a DOWNLOAD). Works for both a local File (upload) and a stored file (fetched same-origin).
+    var SHEET_EXT = ['xlsx','xls','xlsm','xlsb','ods','csv'];
+    function placeholderHtml(name){
+        return '<div class="py-15"><i class="ki-outline ki-document fs-5x text-primary mb-4 d-block"></i>' +
+            '<div class="fw-semibold text-gray-800 fs-5 mb-1">'+esc(name)+'</div>' +
+            '<div class="text-muted fs-7">@Localizer["No inline preview for this file type — use the buttons below."]</div></div>';
+    }
+    function showPreview(name, url, ext){
+        document.getElementById('fmPrevTitle').textContent = name || '';
+        var body = document.getElementById('fmPrevBody');
+        ext = (ext || '').toLowerCase();
+        document.getElementById('fmPrevOpen').href = url;
+        if (IMG_EXT.indexOf(ext) >= 0)
+            body.innerHTML = '<img src="'+esc(url)+'" style="max-width:100%;max-height:72vh" alt="" />';
+        else if (SHEET_EXT.indexOf(ext) >= 0)
+            renderSheet(body, url, ext, name);
+        else if (ext === 'docx')
+            renderDocx(body, url, name);
+        else if (FRAME_EXT.indexOf(ext) >= 0)
+            body.innerHTML = '<iframe src="'+esc(url)+'" style="width:100%;height:72vh;border:0" referrerpolicy="no-referrer"></iframe>';
+        else
+            body.innerHTML = placeholderHtml(name);
+    }
+    // Word .docx → HTML via mammoth (client-side). NOTE: old binary .doc is NOT supported by any browser lib → placeholder.
+    function renderDocx(body, url, name){
+        if (typeof mammoth === 'undefined'){ body.innerHTML = placeholderHtml(name); return; }
+        body.innerHTML = '<div class="d-flex justify-content-center py-15"><span class="spinner-border text-primary"></span></div>';
+        fetch(url, {credentials:'same-origin'}).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
+            return mammoth.convertToHtml({ arrayBuffer: buf });
+        }).then(function(res){
+            body.innerHTML = '<div class="text-start p-5" style="max-height:72vh;overflow:auto">'+(res.value||'')+'</div>';
+        }).catch(function(){ body.innerHTML = placeholderHtml(name); });
+    }
+    // fetch the spreadsheet bytes → SheetJS → HTML table(s), styled like a Metronic table
+    function renderSheet(body, url, ext, name){
+        if (typeof XLSX === 'undefined'){ body.innerHTML = placeholderHtml(name); return; }
+        body.innerHTML = '<div class="d-flex justify-content-center py-15"><span class="spinner-border text-primary"></span></div>';
+        fetch(url, {credentials:'same-origin'}).then(function(r){ return r.arrayBuffer(); }).then(function(buf){
+            var wb = XLSX.read(new Uint8Array(buf), { type:'array' });
+            var html = '';
+            wb.SheetNames.slice(0, 5).forEach(function(sn){
+                var t = XLSX.utils.sheet_to_html(wb.Sheets[sn], { editable:false });
+                if (wb.SheetNames.length > 1) html += '<div class="fw-bold text-gray-700 text-start mt-4 mb-2">'+esc(sn)+'</div>';
+                html += t;
+            });
+            if (wb.SheetNames.length > 5) html += '<div class="text-muted fs-8 mt-2">+'+(wb.SheetNames.length-5)+'</div>';
+            // single scroll container → both vertical AND horizontal scroll (cells are nowrap via CSS)
+            body.innerHTML = '<div id="fmSheetScroll">'+html+'</div>';
+        }).catch(function(){ body.innerHTML = placeholderHtml(name); });
+    }
+    // existing library file → Open in new tab + Download
+    function openPreview(it){
+        pendingFiles = null;
+        document.getElementById('fmUploadNameWrap').classList.add('d-none');
+        showPreview(it.name, it.url || '', it.ext);
+        var dl = document.getElementById('fmPrevDownload'); dl.href = '@Url.Action("Download","FileManager")?id=' + it.id; dl.classList.remove('d-none');
+        document.getElementById('fmPrevUpload').classList.add('d-none');
+        previewModal.show();
+    }
+    // just-chosen file (not uploaded yet) → preview immediately + name it + Upload button confirms
+    function openUploadPreview(files){
+        pendingFiles = files;
+        var f = files[0];
+        showPreview(f.name + (files.length > 1 ? ' (+' + (files.length - 1) + ')' : ''), URL.createObjectURL(f), jsExt(f.name));
+        document.getElementById('fmPrevDownload').classList.add('d-none');
+        document.getElementById('fmPrevUpload').classList.remove('d-none');
+        // name fields (Arabic + English): only when a single file is chosen (Arabic prefilled with its filename)
+        var wrap = document.getElementById('fmUploadNameWrap');
+        if (files.length === 1){
+            document.getElementById('fmUploadName').value = f.name;
+            document.getElementById('fmUploadNameEn').value = '';
+            wrap.classList.remove('d-none');
+        } else { wrap.classList.add('d-none'); }
+        previewModal.show();
+    }
+
+    function post(url, data){
+        var fd = new FormData(); Object.keys(data).forEach(function(k){ if(data[k]!=null) fd.append(k, data[k]); });
+        fd.append('__RequestVerificationToken', token);
+        return fetch(url, {method:'POST', credentials:'same-origin', body:fd}).then(function(r){return r.json();});
+    }
+
+    function doAction(a){
+        var act = a.getAttribute('data-act'), id = a.getAttribute('data-id');
+        if (act==='view'){ var u=a.getAttribute('data-url'); if(u) window.open(u,'_blank'); }
+        else if (act==='download'){ window.location.href='@Url.Action("Download","FileManager")?id='+id; }
+        else if (act==='rename'){ renameItem(id, a.getAttribute('data-namear'), a.getAttribute('data-nameen')); }
+        else if (act==='move'){ openMove([id]); }
+        else if (act==='delete'){ confirmDelete([id]); }
+    }
+
+    // ---------- New folder ----------
+    document.getElementById('fmNewFolder').addEventListener('click', function(){
+        nameDialog('@Localizer["New Folder"]', '', '').then(function(res){
+            if(!res.isConfirmed) return;
+            var v = res.value || {}; if(!v.ar){ if(window.toastr) toastr.error('@Localizer["Name is required"]'); return; }
+            post('@Url.Action("CreateFolder","FileManager")', { parentId: curFolder, name: v.ar, nameEn: v.en || null }).then(function(r){
+                if(r&&r.ok){ if(window.toastr) toastr.success('@Localizer["Folder created"]'); load(); }
+            });
+        });
+    });
+
+    function renameItem(id, nameAr, nameEn){
+        nameDialog('@Localizer["Rename"]', nameAr, nameEn).then(function(res){
+            if(!res.isConfirmed) return;
+            var v = res.value || {}; if(!v.ar){ if(window.toastr) toastr.error('@Localizer["Name is required"]'); return; }
+            post('@Url.Action("Rename","FileManager")', { id: id, name: v.ar, nameEn: v.en || null }).then(function(r){
+                if(r&&r.ok){ if(window.toastr) toastr.success('@Localizer["Renamed"]'); load(); }
+            });
+        });
+    }
+
+    // ---------- Delete ----------
+    document.getElementById('fmDeleteSelected').addEventListener('click', function(){ var ids=selectedIds(); if(ids.length) confirmDelete(ids); });
+    function confirmDelete(ids){
+        Swal.fire({
+            text: '@Localizer["Delete the selected item(s)? Folders are deleted with their contents."]', icon: 'warning',
+            showCancelButton: true, buttonsStyling: false,
+            confirmButtonText: '@Localizer["Yes, delete"]', cancelButtonText: '@Localizer["Cancel"]',
+            customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-active-light' }
+        }).then(function(res){
+            if(!res.isConfirmed) return;
+            post('@Url.Action("Delete","FileManager")', { ids: ids.join(',') }).then(function(r){
+                if(r&&r.ok){ if(window.toastr) toastr.success('@Localizer["Deleted"]'); load(); }
+            });
+        });
+    }
+
+    // ---------- Move ----------
+    function openMove(ids){
+        moving = ids.slice();
+        fetch('@Url.Action("FolderTree","FileManager")', {credentials:'same-origin'}).then(function(r){return r.json();}).then(function(list){
+            var sel = document.getElementById('fmMoveTarget');
+            var opts = '<option value="">'+esc(rootName)+'</option>';
+            (list||[]).forEach(function(f){ opts += '<option value="'+f.id+'">'+'&nbsp;'.repeat(f.depth*3)+esc(f.name)+'</option>'; });
+            sel.innerHTML = opts;
+            moveModal.show();
+        });
+    }
+    document.getElementById('fmMoveSubmit').addEventListener('click', function(){
+        var t = document.getElementById('fmMoveTarget').value;
+        post('@Url.Action("Move","FileManager")', { ids: moving.join(','), targetFolderId: t||null }).then(function(r){
+            moveModal.hide();
+            if(r&&r.ok){ if(window.toastr) toastr.success('@Localizer["Moved"]'); load(); }
+        });
+    });
+
+    // ---------- Upload: pick file → it previews in the modal immediately → confirm with Upload ----------
+    function jsExt(name){ var i=name.lastIndexOf('.'); return i>=0? name.slice(i+1).toLowerCase():''; }
+    document.getElementById('fmUploadBtn').addEventListener('click', function(){ var i=document.getElementById('fmFiles'); i.value=''; i.click(); });
+    document.getElementById('fmFiles').addEventListener('change', function(){ if(this.files && this.files.length) openUploadPreview(this.files); });
+    document.getElementById('fmPrevUpload').addEventListener('click', function(){
+        if(!pendingFiles || !pendingFiles.length) return;
+        var fd=new FormData(); Array.prototype.forEach.call(pendingFiles, function(f){ fd.append('files', f); });
+        if(curFolder!=null) fd.append('parentId', curFolder);
+        // single file → user may have renamed it (Arabic + optional English)
+        if(pendingFiles.length===1){
+            var cn = document.getElementById('fmUploadName').value.trim();
+            var cne = document.getElementById('fmUploadNameEn').value.trim();
+            if(cn) fd.append('customName', cn);
+            if(cne) fd.append('customNameEn', cne);
+        }
+        fd.append('__RequestVerificationToken', token);
+        var btn=this; btn.disabled=true;
+        fetch('@Url.Action("Upload","FileManager")', {method:'POST', credentials:'same-origin', body:fd})
+            .then(function(r){return r.json();}).then(function(r){ btn.disabled=false; previewModal.hide(); pendingFiles=null;
+                if(r&&r.ok){ if(window.toastr) toastr.success('@Localizer["Uploaded"]'); load(); }
+                else { if(window.toastr) toastr.error('@Localizer["Could not upload"]'); } })
+            .catch(function(){ btn.disabled=false; if(window.toastr) toastr.error('@Localizer["Could not upload"]'); });
+    });
+
+    // ---------- Search + select-all ----------
+    var timer;
+    document.getElementById('fmSearch').addEventListener('input', function(){ var v=this.value; clearTimeout(timer); timer=setTimeout(function(){ q=v.trim(); load(); }, 300); });
+    document.getElementById('fmCheckAll').addEventListener('change', function(){ var c=this.checked; document.querySelectorAll('.fm-check').forEach(function(x){ x.checked=c; }); updateSelectedBar(); });
+
+    load(@(ViewBag.InitialFolder != null ? ViewBag.InitialFolder.ToString() : "null"));
+})();
+</script>
+}

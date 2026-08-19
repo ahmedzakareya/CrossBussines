@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="File Manager" xml:space="preserve"><value>إدارة الملفات</value></data>
+  <data name="Home" xml:space="preserve"><value>الرئيسية</value></data>
+  <data name="Library" xml:space="preserve"><value>المكتبة</value></data>
+  <data name="Search Files &amp; Folders" xml:space="preserve"><value>ابحث في الملفات والمجلدات</value></data>
+  <data name="New Folder" xml:space="preserve"><value>مجلد جديد</value></data>
+  <data name="Upload Files" xml:space="preserve"><value>رفع ملفات</value></data>
+  <data name="Selected" xml:space="preserve"><value>محدد</value></data>
+  <data name="Delete Selected" xml:space="preserve"><value>حذف المحدد</value></data>
+  <data name="items" xml:space="preserve"><value>عنصر</value></data>
+  <data name="Name" xml:space="preserve"><value>الاسم</value></data>
+  <data name="Size" xml:space="preserve"><value>الحجم</value></data>
+  <data name="Last Modified" xml:space="preserve"><value>آخر تعديل</value></data>
+  <data name="Owner" xml:space="preserve"><value>المالك</value></data>
+  <data name="This folder is empty" xml:space="preserve"><value>هذا المجلد فارغ</value></data>
+  <data name="Upload files" xml:space="preserve"><value>رفع ملفات</value></data>
+  <data name="Choose files" xml:space="preserve"><value>اختر الملفات</value></data>
+  <data name="You can upload multiple files at once." xml:space="preserve"><value>يمكنك رفع عدة ملفات دفعة واحدة.</value></data>
+  <data name="Upload" xml:space="preserve"><value>رفع</value></data>
+  <data name="Cancel" xml:space="preserve"><value>إلغاء</value></data>
+  <data name="Move to folder" xml:space="preserve"><value>نقل إلى مجلد</value></data>
+  <data name="Destination folder" xml:space="preserve"><value>المجلد الوجهة</value></data>
+  <data name="Move" xml:space="preserve"><value>نقل</value></data>
+  <data name="View" xml:space="preserve"><value>عرض</value></data>
+  <data name="Download" xml:space="preserve"><value>تنزيل</value></data>
+  <data name="Open in new tab" xml:space="preserve"><value>فتح في تبويب جديد</value></data>
+  <data name="Preview not available" xml:space="preserve"><value>لا تتوفر معاينة</value></data>
+  <data name="Click to preview" xml:space="preserve"><value>اضغط للمعاينة</value></data>
+  <data name="No inline preview for this file type — use the buttons below." xml:space="preserve"><value>لا يمكن معاينة هذا النوع مباشرةً — استخدم الأزرار بالأسفل.</value></data>
+  <data name="Rename" xml:space="preserve"><value>إعادة تسمية</value></data>
+  <data name="Delete" xml:space="preserve"><value>حذف</value></data>
+  <data name="Folder name" xml:space="preserve"><value>اسم المجلد</value></data>
+  <data name="File name" xml:space="preserve"><value>اسم الملف</value></data>
+  <data name="Name (Arabic)" xml:space="preserve"><value>الاسم (عربي)</value></data>
+  <data name="Name (English)" xml:space="preserve"><value>الاسم (إنجليزي)</value></data>
+  <data name="Create" xml:space="preserve"><value>إنشاء</value></data>
+  <data name="Save" xml:space="preserve"><value>حفظ</value></data>
+  <data name="Name is required" xml:space="preserve"><value>الاسم مطلوب</value></data>
+  <data name="Folder created" xml:space="preserve"><value>تم إنشاء المجلد</value></data>
+  <data name="Renamed" xml:space="preserve"><value>تمت إعادة التسمية</value></data>
+  <data name="Moved" xml:space="preserve"><value>تم النقل</value></data>
+  <data name="Uploaded" xml:space="preserve"><value>تم الرفع</value></data>
+  <data name="Could not upload" xml:space="preserve"><value>تعذّر الرفع</value></data>
+  <data name="Deleted" xml:space="preserve"><value>تم الحذف</value></data>
+  <data name="Yes, delete" xml:space="preserve"><value>نعم، احذف</value></data>
+  <data name="Delete the selected item(s)? Folders are deleted with their contents." xml:space="preserve"><value>حذف العناصر المحددة؟ المجلدات تُحذف بكل محتوياتها.</value></data>
+</root>
