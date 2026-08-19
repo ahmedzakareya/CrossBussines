@@ -91,6 +91,8 @@ builder.Services.AddScoped<IFileManagerService, FileManagerService>();  // Compa
 builder.Services.AddScoped<ICommService, CommService>();          // Comm Hub — email (Metronic inbox)
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>(); // Comm Hub P5 — announcements
 builder.Services.AddScoped<IDocCommentService, DocCommentService>();     // Comm Hub P5 — document comments/timeline
+builder.Services.AddScoped<ICalendarService, CalendarService>();  // Company calendar (Metronic FullCalendar)
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ICalendarSchedulingService, CrossBuy.BL.TasksCalendar.CalendarSchedulingService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IJobTitles, JobTitleService>();
 builder.Services.AddScoped<IAdministrativeBodiesCompanyService, AdministrativeBodiesCompanyService>();
@@ -177,6 +179,10 @@ builder.Services.AddScoped<Func<CrossBuy.BL.Platform.IPlatformPermissionProvider
 builder.Services.AddScoped<CrossBuy.BL.TasksAccessService>();
 builder.Services.AddScoped<CrossBuy.BL.ITasksAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.TasksAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.TasksAccessService>());
+
+builder.Services.AddScoped<CrossBuy.BL.CalendarAccessService>();
+builder.Services.AddScoped<CrossBuy.BL.ICalendarAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CalendarAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CalendarAccessService>());
 builder.Services.AddScoped<ITaskService, TaskService>();   // TM-1: task management
 builder.Services.AddScoped<ITaskLinkResolver, TaskLinkResolver>();   // TM-2: polymorphic record link
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();   // TM-3: timesheet
@@ -422,6 +428,9 @@ app.UseCors("MobileCors");
 // URL to the EXISTING Index action - no second screen, no redirect hop, no duplicated view.
 app.MapControllerRoute(name: "comm-home", pattern: "Comm",
     defaults: new { controller = "Comm", action = "Index" });
+
+app.MapControllerRoute(name: "calendar-home", pattern: "Calendar",
+    defaults: new { controller = "Calendar", action = "Index" });
 
 app.MapControllerRoute(
     name: "default",

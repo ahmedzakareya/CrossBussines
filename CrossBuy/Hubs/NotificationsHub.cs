@@ -20,6 +20,10 @@ namespace CrossBuy.Hubs
 		}
 
 		public static string GroupFor(int employeeId) => $"emp-{employeeId}";
+		// Company-wide group — used for real-time broadcasts that every employee in the tenant should react to
+		// (e.g. a company calendar event changing → all open calendars refetch). Visibility is still enforced
+		// server-side by the data endpoint, so broadcasting the *signal* company-wide is safe.
+		public static string CompanyGroupFor(int companyId) => $"co-{companyId}";
 
 		public override async Task OnConnectedAsync()
 		{
@@ -28,7 +32,12 @@ namespace CrossBuy.Hubs
 			{
 				var emp = await _employeeService.GetEmployeeByUserIdAsync(userId);
 				if (emp != null)
+				{
 					await Groups.AddToGroupAsync(Context.ConnectionId, GroupFor(emp.ID));
+					var cid = emp.EmpCompanyID.GetValueOrDefault();
+					if (cid > 0)
+						await Groups.AddToGroupAsync(Context.ConnectionId, CompanyGroupFor(cid));
+				}
 			}
 			await base.OnConnectedAsync();
 		}

@@ -308,6 +308,25 @@ namespace CrossBuy.Models.Menu
 			}},
 		};
 
+		// ===== Calendar =====
+		//
+		// Calendar previously had NO menu of its own — it was a single link in Admin > General, so the two
+		// scheduling screens rendered _LayoutInventory's DEFAULT sidebar (Inventory's own menu). That is the
+		// defect this fixes: a Calendar screen showing the Inventory menu is not a navigation preference,
+		// it is the wrong menu.
+		//
+		// Agenda is deliberately ABSENT here: MainMenu.Platform() already lists Workspace > Agenda and is
+		// prepended to every sidebar, so adding it would show the same destination twice on this one screen.
+		public static List<MenuCategory> Calendar() => new()
+		{
+			new() { LabelAr = "التقويم", LabelEn = "Calendar", Icon = "ki-outline ki-calendar", Items = new()
+			{
+				new() { LabelAr = "التقويم", LabelEn = "Calendar", Action = "Index", Controller = "Calendar" },
+				new() { LabelAr = "الجدول الزمني", LabelEn = "Timeline", Action = "Timeline", Controller = "Calendar" },
+				new() { LabelAr = "عرض الموارد", LabelEn = "Resource view", Action = "ResourceView", Controller = "Calendar" },
+			}},
+		};
+
 		// ===== Administration & HR (Admin + Service controllers — the back-office setup area) =====
 		public static List<MenuCategory> Admin() => new()
 		{
