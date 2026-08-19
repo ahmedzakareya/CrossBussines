@@ -140,6 +140,8 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
 builder.Services.AddCrossBusinessWorkspace();
 
 builder.Services.AddScoped<ICalendarService, CalendarService>();  // Company calendar (Metronic FullCalendar)
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.IWorkspaceAgendaService, CrossBuy.BL.TasksCalendar.WorkspaceAgendaService>();
+builder.Services.AddScoped<CrossBuy.BL.Uat.IUatDatasetSeeder, CrossBuy.BL.Uat.UatDatasetSeeder>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskChecklistService, CrossBuy.BL.TasksCalendar.TaskChecklistService>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskDependencyService, CrossBuy.BL.TasksCalendar.TaskDependencyService>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskTemplateService, CrossBuy.BL.TasksCalendar.TaskTemplateService>();
