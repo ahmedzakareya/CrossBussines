@@ -1,0 +1,155 @@
+@using CrossBuy.BL.Workspace
+@using System.Globalization
+@model WorkspacePanel<WorkspaceMention>
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    // Inventory shell = THE visual authority. Its module menu is NOT this screen's navigation:
+    // _MainMenu prepends the Platform category, so an empty list yields a Platform-only sidebar.
+    ViewBag.SidebarMenu = new List<CrossBuy.Models.Menu.MenuCategory>();
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = arabic ? "الإشارات إليّ" : "Mentions";
+
+    string Ago(DateTime? at)
+    {
+        if (at is null) return "";
+        var span = CrossBuy.BL.Platform.ConformanceClock.Now - at.Value;
+        if (span.TotalMinutes < 1) return arabic ? "الآن" : "now";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d";
+        return at.Value.ToString("yyyy-MM-dd");
+    }
+
+    // How the caller was reached. A team or department mention is a materially different thing from being
+    // named personally - it tells the reader why this landed in front of them.
+    string ViaLabel(string? via) => via switch
+    {
+        "Team" => arabic ? "عبر الفريق" : "via team",
+        "Department" => arabic ? "عبر الإدارة" : "via department",
+        "Role" => arabic ? "عبر الدور" : "via role",
+        _ => arabic ? "مباشرة" : "direct",
+    };
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+    <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">
+                @(arabic ? "الإشارات إليّ" : "Mentions")
+            </h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-gray-700">
+                    <a href="@Url.Action("Index","Workspace")" class="text-gray-700 text-hover-primary">@(arabic ? "مساحة العمل" : "Workspace")</a>
+                </li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-gray-700">
+                    @(arabic ? "أين ذُكرت — مباشرة أو عبر فريقك أو إدارتك." : "Where you were mentioned — directly, or through your team or department.")
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<!--end::Toolbar-->
+
+<!--begin::Content-->
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-fluid">
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-900">
+                        <i class="ki-outline ki-messages fs-3 text-primary me-2"></i>@(arabic ? "الإشارات" : "Mentions")
+                    </span>
+                </h3>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.HasItems)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                            <thead>
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                    <th>@(arabic ? "الإشارة" : "Mention")</th>
+                                    <th class="w-150px">@(arabic ? "الكيان" : "Entity")</th>
+                                    <th class="w-125px">@(arabic ? "الطريقة" : "Via")</th>
+                                    <th class="text-end w-100px">@(arabic ? "متى" : "When")</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var m in Model.Items)
+                                {
+                                    <tr>
+                                        <td class="min-w-250px">
+                                            <div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px me-3">
+                                                    <span class="symbol-label bg-light-primary">
+                                                        <i class="ki-outline ki-message-text-2 fs-5 text-primary"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex flex-column">
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(m.Url ?? "#")">@(m.Excerpt ?? m.EntityLabel)</a>
+                                                    @if (!string.IsNullOrWhiteSpace(m.MentionedBy))
+                                                    {
+                                                        <span class="text-gray-700 fs-7">@m.MentionedBy</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-light-primary fs-8">@m.EntityLabel</span></td>
+                                        <td><span class="badge badge-light fs-8">@ViaLabel(m.ViaKind)</span></td>
+                                        <td class="text-end text-gray-700 fw-semibold">@Ago(m.At)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (Model.State is WorkspacePanelState.Ready or WorkspacePanelState.Empty)
+                {
+                    <div class="d-flex flex-column align-items-center text-center py-15">
+                        <i class="ki-outline ki-messages fs-3x text-gray-400 mb-3"></i>
+                        <span class="text-gray-700 fw-semibold fs-6">
+                            @(arabic ? "لم يشر إليك أحد بعد" : "No one has mentioned you yet")
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    @* When the Communication Platform is not registered this renders the UNAVAILABLE state with
+                       its reason - not an empty list. The distinction matters here more than anywhere else in
+                       the product: "nobody mentioned you" and "mentions are not switched on" would otherwise
+                       look identical. *@
+                    var colour = Model.State switch
+                    {
+                        WorkspacePanelState.Unavailable => "secondary",
+                        WorkspacePanelState.AccessDenied => "dark",
+                        WorkspacePanelState.TemporaryFailure => "warning",
+                        _ => "info",
+                    };
+                    var icon = Model.State switch
+                    {
+                        WorkspacePanelState.AccessDenied => "ki-lock-2",
+                        WorkspacePanelState.TemporaryFailure => "ki-abstract-26",
+                        _ => "ki-information-5",
+                    };
+                    var title = Model.State switch
+                    {
+                        WorkspacePanelState.Unavailable => arabic ? "غير متاح في هذه البيئة" : "Not available in this environment",
+                        WorkspacePanelState.AccessDenied => arabic ? "لا تملك صلاحية عرض هذا" : "You don't have access to this",
+                        WorkspacePanelState.TemporaryFailure => arabic ? "تعذّر التحميل مؤقتًا" : "Could not load right now",
+                        _ => arabic ? "بيانات جزئية" : "Partial data",
+                    };
+                    <div class="alert alert-@colour d-flex align-items-center p-5 mb-0 text-gray-800">
+                        <i class="ki-outline @icon fs-2hx me-4"></i>
+                        <div class="d-flex flex-column">
+                            <h5 class="mb-1">@title</h5>
+                            <span>@Model.Reason</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Content-->

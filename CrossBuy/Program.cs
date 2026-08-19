@@ -1,5 +1,6 @@
 ﻿using CrossBuy.BL;
 using CrossBuy.BL.Reporting;   // ADR-037: AddCrossBusinessReporting()
+using CrossBuy.BL.Workspace;   // CrossBusiness Workspace: AddCrossBusinessWorkspace()
 using CrossBuy.Hubs;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
@@ -126,6 +127,17 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.View, "Admin", "SuperAdmin", "Auditor")
     .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.Confidential, "Admin", "SuperAdmin")
     .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.Restricted, "SuperAdmin"));
+
+// ---- CrossBusiness Workspace (R1–R3) ----
+//
+// ONE line, same reasoning as the Reporting block above: this file is edited by several tabs at once and a
+// multi-line block collides on every merge.
+//
+// The Workspace is a READ MODEL over services registered elsewhere in this file — it owns no table, no writer
+// and no business rule, and it registers no hosted service. Its two extension points
+// (IWorkspaceFavoritesSource / IWorkspaceActivitySource) let a module contribute rows by registering AFTER
+// this call, without the Workspace learning about that module.
+builder.Services.AddCrossBusinessWorkspace();
 
 builder.Services.AddScoped<ICalendarService, CalendarService>();  // Company calendar (Metronic FullCalendar)
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ICalendarSchedulingService, CrossBuy.BL.TasksCalendar.CalendarSchedulingService>();
@@ -470,6 +482,9 @@ app.MapControllerRoute(name: "calendar-home", pattern: "Calendar",
 
 app.MapControllerRoute(name: "reports-home", pattern: "Reports",
     defaults: new { controller = "Reports", action = "Index" });
+
+app.MapControllerRoute(name: "workspace-home", pattern: "Workspace",
+    defaults: new { controller = "Workspace", action = "Index" });
 
 app.MapControllerRoute(
     name: "default",

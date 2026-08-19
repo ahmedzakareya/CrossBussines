@@ -1,5 +1,9 @@
 @using CrossBuy.Models.Menu
 @using CrossBuy.BL
+@* GetService<T>() — the OPTIONAL resolution below. This partial renders on every page in the product, so it
+   asks the container for the Reporting module rather than declaring @inject and taking the whole shell down
+   with it if that module is ever absent. *@
+@using Microsoft.Extensions.DependencyInjection
 @model List<MenuCategory>
 @inject IInventoryAccessService InvAccess
 @inject IAccountingAccessService AccAccess
@@ -14,21 +18,106 @@
     try { canManage = await InvAccess.CanAsync("manage"); } catch { canManage = true; }
     try { canAccManage = await AccAccess.CanAsync("manage"); } catch { canAccManage = true; }
     try { canCrmManage = await CrmAccess.CanAsync("manage"); } catch { canCrmManage = true; }
-    bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, _ => true };
+    // "report" — a row that opens ONE named report. The Reports Center lists every report in the catalogue,
+    // but opening one is a separate, fail-closed decision: a report whose permission key is unmapped is
+    // refused with 404 to avoid handing out a catalogue oracle (ReportsController.Viewer). So a menu row for
+    // a specific report must ask the SAME question the screen will ask, or it becomes a link that always
+    // 404s — Platform.BusinessEventLog is exactly that today, because its key "reporting.businessevents.view"
+    // is deliberately unmapped until an owner grants it.
+    //
+    // Resolved OPTIONALLY: this partial renders on every page in the product, and a hard dependency on the
+    // Reporting module would take the whole shell down with it. Same reasoning as TasksController and the
+    // Communication Platform.
+    var reportsForMenu = Context.RequestServices.GetService<CrossBuy.BL.Reporting.IReportService>();
+    async Task<bool> CanOpenReportAsync(MenuItem i)
+    {
+        var code = i.RouteValues is not null && i.RouteValues.TryGetValue("id", out var c) ? c : null;
+        if (string.IsNullOrWhiteSpace(code) || reportsForMenu is null) { return false; }
+        // Fail CLOSED, unlike the module hooks above. Those hide a screen the user could still reach another
+        // way; this one would show a row whose only possible outcome is a 404.
+        try { return await reportsForMenu.DescribeAsync(code) is not null; } catch { return false; }
+    }
+    var openableReports = new HashSet<MenuItem>();
+    foreach (var candidate in MainMenu.Platform().SelectMany(c => c.Items).Where(x => x.Perm == "report"))
+    {
+        if (await CanOpenReportAsync(candidate)) { openableReports.Add(candidate); }
+    }
+    bool ReportVisible(MenuItem i) => openableReports.Any(o =>
+        o.Controller == i.Controller && o.Action == i.Action
+        && o.RouteValues is not null && i.RouteValues is not null
+        && o.RouteValues.TryGetValue("id", out var a) && i.RouteValues.TryGetValue("id", out var b) && a == b);
+
+    bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, "report" => ReportVisible(i), _ => true };
+
+    // The URL a menu row points at. Route values go through Url.Action so the ROUTE decides whether each one
+    // lands in the path (Reports/Viewer/{id}) or the query (Reports?favorites=true) - a URL assembled by hand
+    // in Razor gets that wrong the first time a route changes, and gets it wrong silently.
+    string Href(MenuItem i)
+    {
+        if (i.RouteValues is null || i.RouteValues.Count == 0)
+        {
+            return Url.Action(i.Action, i.Controller) ?? "#";
+        }
+        var values = new Microsoft.AspNetCore.Routing.RouteValueDictionary();
+        foreach (var kv in i.RouteValues) { values[kv.Key] = kv.Value; }
+        return Url.Action(i.Action, i.Controller, values) ?? "#";
+    }
+
+    // Path AND query, because two rows can share an action and differ only by argument
+    // (Reports vs Reports?favorites=true). Comparing paths alone would light both at once.
+    //
+    // "/X" and "/X/Index" are the SAME screen and must compare equal. This is not cosmetic: once a bare
+    // module route exists, Url.Action("Index","Tasks") generates the SHORTER "/Tasks", so a user who arrives
+    // at "/Tasks/Index" from a breadcrumb or a bookmark would find nothing highlighted at all. Adding those
+    // routes silently broke the active state on two modules, and only clicking through caught it.
+    string Canonical(string pathOnly)
+    {
+        var p = pathOnly.TrimEnd('/').ToLowerInvariant();
+        return p.EndsWith("/index", StringComparison.Ordinal) ? p[..^"/index".Length] : p;
+    }
+    string Normalise(string url)
+    {
+        var q = url.IndexOf('?');
+        var p = Canonical(q < 0 ? url : url[..q]);
+        return q < 0 ? p : p + url[q..].ToLowerInvariant();
+    }
+    var currentUrl = Normalise(path + (Context.Request.QueryString.Value ?? ""));
+    var currentPath = Canonical(path);
+
+    // Platform surfaces (Workspace, Reporting, Business Event Monitor) span every module, so they are
+    // prepended here ONCE rather than copied into each module's menu. Defined in MainMenu.Platform().
+    var menu = MainMenu.Platform().Concat(Model ?? new List<MenuCategory>()).ToList();
+
+    // Does some row claim this exact URL, arguments included? If so it OWNS the highlight, and the plainer
+    // row it shares an action with must stand down. Without this, opening a specific report would light both
+    // "Reports center" and "Business event report", and the sidebar would be telling the user two things.
+    var exactClaimExists = menu.SelectMany(c => c.Items)
+        .Any(i => !i.Soon && i.RouteValues is { Count: > 0 } && Normalise(Href(i)) == currentUrl);
+
     bool IsActive(MenuItem i)
     {
         if (i.Soon) { return false; }   // coming-soon placeholders share the dashboard URL — never let them steal the active state
-        var href = (Url.Action(i.Action, i.Controller) ?? "").TrimEnd('/').ToLowerInvariant();
-        if (href.Length > 0 && path == href) { return true; }
+
+        // A row with arguments matches only its exact URL - never the bare action.
+        if (i.RouteValues is { Count: > 0 })
+        {
+            return Normalise(Href(i)) == currentUrl;
+        }
+
+        // Everything else keeps the original rule EXACTLY - path only, aliases included - except that it
+        // yields when a more specific row has claimed this URL.
+        if (exactClaimExists) { return false; }
+
+        var href = Canonical(Url.Action(i.Action, i.Controller) ?? "");
+        if (href.Length > 0 && currentPath == href) { return true; }
         // a hub link also lights up on its drill-down screens (same controller, aliased actions)
         foreach (var a in i.Aliases)
         {
-            var ah = (Url.Action(a, i.Controller) ?? "").TrimEnd('/').ToLowerInvariant();
-            if (ah.Length > 0 && path == ah) { return true; }
+            var ah = Canonical(Url.Action(a, i.Controller) ?? "");
+            if (ah.Length > 0 && currentPath == ah) { return true; }
         }
         return false;
     }
-    var menu = Model ?? new List<MenuCategory>();
 }
 <!--begin::Menu search-->
 <div class="menu-item px-3 mb-2">
@@ -52,7 +141,7 @@
             @foreach (var it in items)
             {
                 <div class="menu-item">
-                    <a class="menu-link @(IsActive(it) ? "active" : "")" href="@Url.Action(it.Action, it.Controller)">
+                    <a class="menu-link @(IsActive(it) ? "active" : "")" href="@Href(it)">
                         <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                         <span class="menu-title @(it.Soon ? "text-muted" : "")">@SR[it.LabelEn]</span>
                         @if (it.Soon)

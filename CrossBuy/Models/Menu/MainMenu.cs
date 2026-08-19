@@ -10,6 +10,15 @@ namespace CrossBuy.Models.Menu
 		// extra actions (same Controller) that should ALSO highlight this item — e.g. a Reports hub whose
 		// drill-down screens (ValuationReport, ReorderReport…) are their own actions but belong to this link.
 		public List<string> Aliases { get; set; } = new();
+		// Route values for screens that are the SAME action with a different argument — a specific report
+		// (Reports/Viewer/Platform.BusinessEventLog) or a filtered view the user thinks of as its own screen
+		// (Reports?favorites=true). The URL is built through Url.Action so the value is escaped and the route
+		// decides whether it lands in the path or the query — never a string concatenated in Razor, which is
+		// how a link survives a routing change on paper and breaks in the browser.
+		//
+		// An item WITHOUT route values behaves exactly as before: same href, same active-state rule. Only an
+		// item that declares them takes the exact-match path (see _MainMenu.cshtml).
+		public Dictionary<string, string>? RouteValues { get; set; }
 		// A not-yet-built placeholder that navigates to a fallback screen (e.g. the module dashboard) but must NEVER
 		// show as the active/selected item — otherwise several placeholders sharing that fallback URL all light up at once.
 		public bool Soon { get; set; }
@@ -28,6 +37,72 @@ namespace CrossBuy.Models.Menu
 	// module's category list a layout passes it. Add a module's links here once.
 	public static class MainMenu
 	{
+		// ===== Platform surfaces (cross-module) =====
+		//
+		// These are NOT module screens: the Workspace and the Reports Center span every module, and the
+		// Business Event Monitor is a platform operations tool. They therefore cannot live inside any one
+		// module's menu without either being duplicated across all of them or being unreachable from most.
+		//
+		// _MainMenu.cshtml prepends this ONE category ahead of whichever module menu a layout passes, so the
+		// links exist exactly once in the codebase and appear on every screen that renders the sidebar.
+		//
+		// Business event monitor was MOVED here from Admin() rather than copied - it was previously reachable
+		// only from the backend layout, and leaving it in both places would duplicate the entry.
+		public static List<MenuCategory> Platform() => new()
+		{
+			new() { LabelAr = "المنصّة", LabelEn = "Platform", Icon = "ki-outline ki-abstract-26", Items = new()
+			{
+				new() { LabelAr = "مساحة العمل", LabelEn = "Workspace", Action = "Index", Controller = "Workspace" },
+				// The four Workspace surfaces are now menu entries in their own right rather than aliases of
+				// the dashboard. They were DELIBERATELY removed from the Aliases list above: an alias makes the
+				// PARENT light up on a drill-down, so leaving them there while also listing them here would
+				// highlight two items at once on the same URL.
+				//
+				// Same model, same builder, same styling as every other item - only Action differs, which is
+				// how Inventory lists its own screens.
+				new() { LabelAr = "الأجندة", LabelEn = "Agenda", Action = "Agenda", Controller = "Workspace" },
+				new() { LabelAr = "الإشعارات", LabelEn = "Notifications", Action = "Notifications", Controller = "Workspace" },
+				new() { LabelAr = "الإشارات إليّ", LabelEn = "Mentions", Action = "Mentions", Controller = "Workspace" },
+				new() { LabelAr = "تقاريري", LabelEn = "My reports", Action = "Reports", Controller = "Workspace" },
+				// DEFERRED: the Business event monitor row and its "platform-ops" predicate belong to the
+				// BusinessEventMonitorController ownership phase - the row would render a link to a
+				// controller that does not exist yet, and an admin would meet a 404. Restore together:
+				//   new() { LabelAr = "مراقب أحداث المنصّة", LabelEn = "Business event monitor",
+				//       Action = "Index", Controller = "BusinessEventMonitor", Perm = "platform-ops" },
+			}},
+
+			// ===== Reporting =====
+			//
+			// A SECOND CATEGORY, not a third menu level. The product's sidebar is two levels deep everywhere
+			// (category -> items) and Inventory - the visual authority - groups its own screens the same way.
+			// Nesting "Reporting" under "Platform" would have introduced a level that exists nowhere else.
+			//
+			// Only screens that EXIST are listed. Saved Reports and Report History are panels inside the
+			// Reports Center, not screens, so they get no entry: a menu row that scrolls a panel into view is
+			// a promise the click cannot keep.
+			new() { LabelAr = "التقارير", LabelEn = "Reporting", Icon = "ki-outline ki-chart-simple", Items = new()
+			{
+				// The hub. Its alias covers every OTHER report opened from a card - the drill-down pattern
+				// Inventory already uses for its own reports.
+				new() { LabelAr = "مركز التقارير", LabelEn = "Reports center", Action = "Index", Controller = "Reports",
+					Aliases = new() { "Viewer" } },
+				// A specific report, addressed by its registered code (BusinessEventsDataset.ReportCode). It is
+				// the same Viewer action as the alias above - the route VALUE is what makes it a different
+				// screen to the user, and what makes only this row light up when it is open.
+				// Perm "report" asks the Reporting module whether THIS user can open THIS report, with the
+				// same fail-closed rule the Viewer applies. Without it the row would be permanently dead:
+				// the report's permission key is unmapped by design until an owner grants it, and the Viewer
+				// answers 404 rather than reveal that the report exists.
+				new() { LabelAr = "تقرير أحداث المنصّة", LabelEn = "Business event report", Action = "Viewer",
+					Controller = "Reports", Perm = "report",
+					RouteValues = new() { ["id"] = "Platform.BusinessEventLog" } },
+				// Reports/Index already accepts `favorites`. This is that filter as its own entry, because the
+				// owner asks for "my favourites" as a destination, not as a checkbox to remember to tick.
+				new() { LabelAr = "التقارير المفضّلة", LabelEn = "Favourite reports", Action = "Index",
+					Controller = "Reports", RouteValues = new() { ["favorites"] = "true" } },
+			}},
+		};
+
 		// ===== Inventory & Supply (InventoryController only) =====
 		public static List<MenuCategory> Inventory() => new()
 		{
@@ -280,6 +355,7 @@ namespace CrossBuy.Models.Menu
 			{
 				new() { LabelAr = "مهامي", LabelEn = "My tasks", Action = "Index", Controller = "Tasks" },
 				new() { LabelAr = "كل المهام", LabelEn = "All tasks", Action = "All", Controller = "Tasks" },
+				new() { LabelAr = "اللوحة", LabelEn = "Board", Action = "Board", Controller = "Tasks", Aliases = new() { "Detail" } },
 			}},
 			new() { LabelAr = "التقارير", LabelEn = "Reports", Icon = "ki-outline ki-chart-simple", Items = new()
 			{
@@ -290,21 +366,7 @@ namespace CrossBuy.Models.Menu
 			{
 				new() { LabelAr = "قواعد التوليد التلقائي", LabelEn = "Auto-task rules", Action = "AutoRules", Controller = "Tasks" },
 					new() { LabelAr = "مطابقات مقترحة", LabelEn = "Match suggestions", Action = "MatchSuggestions", Controller = "Tasks" },
-			}},
-		};
-
-		// ===== Projects & Contracting (ProjectController — its OWN system, not under Accounting) =====
-		public static List<MenuCategory> Projects() => new()
-		{
-			new() { LabelAr = "المشاريع والمقاولات", LabelEn = "Projects & Contracting", Icon = "ki-outline ki-briefcase", Items = new()
-			{
-				new() { LabelAr = "لوحة المشاريع", LabelEn = "Projects dashboard", Action = "Dashboard", Controller = "Project" },
-				new() { LabelAr = "المشاريع", LabelEn = "Projects", Action = "Projects", Controller = "Project" },
-				new() { LabelAr = "استلام دفعة مقدمة", LabelEn = "Receive advance", Action = "Advance", Controller = "Project" },
-				new() { LabelAr = "رد المحتجز", LabelEn = "Release retention", Action = "RetentionRelease", Controller = "Project" },
-				new() { LabelAr = "رد محتجز الباطن", LabelEn = "Release subcontractor retention", Action = "SubRetentionRelease", Controller = "Project" },
-				new() { LabelAr = "أنواع نشاط المشاريع", LabelEn = "Project activity types", Action = "ActivityTypes", Controller = "Project" },
-				new() { LabelAr = "ربحية المشاريع", LabelEn = "Project profitability", Action = "Profitability", Controller = "Project" },
+					new() { LabelAr = "قوالب المهام", LabelEn = "Task templates", Action = "Templates", Controller = "Tasks" },
 			}},
 		};
 
@@ -327,6 +389,21 @@ namespace CrossBuy.Models.Menu
 			}},
 		};
 
+		// ===== Projects & Contracting (ProjectController — its OWN system, not under Accounting) =====
+		public static List<MenuCategory> Projects() => new()
+		{
+			new() { LabelAr = "المشاريع والمقاولات", LabelEn = "Projects & Contracting", Icon = "ki-outline ki-briefcase", Items = new()
+			{
+				new() { LabelAr = "لوحة المشاريع", LabelEn = "Projects dashboard", Action = "Dashboard", Controller = "Project" },
+				new() { LabelAr = "المشاريع", LabelEn = "Projects", Action = "Projects", Controller = "Project" },
+				new() { LabelAr = "استلام دفعة مقدمة", LabelEn = "Receive advance", Action = "Advance", Controller = "Project" },
+				new() { LabelAr = "رد المحتجز", LabelEn = "Release retention", Action = "RetentionRelease", Controller = "Project" },
+				new() { LabelAr = "رد محتجز الباطن", LabelEn = "Release subcontractor retention", Action = "SubRetentionRelease", Controller = "Project" },
+				new() { LabelAr = "أنواع نشاط المشاريع", LabelEn = "Project activity types", Action = "ActivityTypes", Controller = "Project" },
+				new() { LabelAr = "ربحية المشاريع", LabelEn = "Project profitability", Action = "Profitability", Controller = "Project" },
+			}},
+		};
+
 		// ===== Administration & HR (Admin + Service controllers — the back-office setup area) =====
 		public static List<MenuCategory> Admin() => new()
 		{
@@ -336,6 +413,10 @@ namespace CrossBuy.Models.Menu
 				new() { LabelAr = "المحادثات", LabelEn = "Chat", Action = "Index", Controller = "Chat" },
 				new() { LabelAr = "الإشعارات", LabelEn = "Notifications", Action = "Index", Controller = "Notifications" },
 				new() { LabelAr = "موافقاتي", LabelEn = "My approvals", Action = "Index", Controller = "Approvals" },
+					new() { LabelAr = "البريد", LabelEn = "Email", Action = "Index", Controller = "Comm" },
+					new() { LabelAr = "التقويم", LabelEn = "Calendar", Action = "Index", Controller = "Calendar" },
+					new() { LabelAr = "إدارة الملفات", LabelEn = "File Manager", Action = "Index", Controller = "FileManager" },
+					new() { LabelAr = "الإعلانات", LabelEn = "Announcements", Action = "Index", Controller = "Announcements" },
 			}},
 			new() { LabelAr = "الموظفون والهيكل", LabelEn = "Employees & structure", Icon = "ki-outline ki-people", Items = new()
 			{
@@ -365,6 +446,8 @@ namespace CrossBuy.Models.Menu
 				new() { LabelAr = "الشركات", LabelEn = "Companies", Action = "CompaniesList", Controller = "Service" },
 				new() { LabelAr = "الفروع", LabelEn = "Branches", Action = "BranchesList", Controller = "Service" },
 				new() { LabelAr = "العلامات التجارية", LabelEn = "Brands", Action = "Brands", Controller = "Brand" },
+					// Business event monitor MOVED to MainMenu.Platform() so it is reachable from every layout,
+					// not only the backend one, and so it appears exactly once. Do not re-add it here.
 				// POS-A2: restaurant setup moved OUT to its own "Restaurant" system (MainMenu.Restaurant()); no longer scattered here.
 			}},
 		};

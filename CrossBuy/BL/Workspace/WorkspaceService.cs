@@ -1,0 +1,733 @@
+using CrossBuy.BL.Communication;
+using CrossBuy.BL.Platform;
+using CrossBuy.BL.Reporting;
+using CrossBuy.BL.TasksCalendar;
+using CrossBuy.Models.Communication;
+using CrossBuy.Models.Platform;
+
+namespace CrossBuy.BL.Workspace
+{
+    // ============================================================================================
+    // CrossBusiness Workspace — THE READ MODEL
+    //
+    // NOTE WHAT IS ABSENT FROM THIS CLASS: there is no CrossDbContext. Every fact arrives through a contract —
+    // ITaskService, IWorkspaceAgendaService, IWorkspaceNotificationSource, ICommMentionService,
+    // IWorkspaceReportSource, IWorkspaceFavoritesSource, IWorkspaceActivitySource, IWorkspaceIdentityResolver.
+    // That is what makes "the Workspace performs no direct database read" a structural fact rather than a
+    // promise: the type it would need is not injected.
+    //
+    // EVERY PANEL IS INDEPENDENTLY GUARDED. A workspace is the first screen a user sees; one undeployed
+    // service must produce one dark panel, never a 500 that hides five working ones. So each source is awaited
+    // separately and a failure becomes a typed state with a reason.
+    //
+    // THE STATE A PANEL REPORTS IS PART OF THE CONTRACT, not a UI detail:
+    //     Unavailable       — not registered/deployed. Permanent until a deployment changes.
+    //     AccessDenied      — authenticated but not permitted. No deployment will change it.
+    //     TemporaryFailure  — the source threw. May succeed next request.
+    //     Empty             — answered, nothing to show.
+    // Collapsing any of these into Empty is how a broken deployment looks like a quiet week.
+    // ============================================================================================
+    public class WorkspaceService : IWorkspaceService
+    {
+        private const int WorkItemsShown = 8;
+        private const int NotificationsShown = 8;
+        private const int MentionsShown = 6;
+        private const int ActivityShown = 10;
+        private const int FavoritesShown = 8;
+        private const int AgendaShown = 8;
+        private const int ReportsShown = 8;
+
+        // ------------------------------------------------------------------------------------------------
+        // THE AGENDA OVERDUE POLICY — the Workspace-owned half of the UAT defect.
+        //
+        // THE DEFECT. The agenda range opened at `from = today`, so a task whose due date had already passed
+        // was never REQUESTED. The one screen a person opens to find late work was the one place late work
+        // could not appear — plainly visible against the populated CrossBuyDev UAT dataset, which seeds a
+        // month of overdue tasks on purpose.
+        //
+        // WHAT IS OWNED HERE, AND WHAT IS NOT. Gathering late work is TAB 5's contract
+        // (WorkspaceAgendaQuery.IncludeOverdue / OverdueLookbackDays): it pulls overdue tasks in ABOVE the
+        // window, keeps their real due dates, excludes anything already inside the window so nothing arrives
+        // twice, and leaves Calendar alone because a meeting that has happened is history rather than late
+        // work. None of that is re-implemented here. The Workspace decides only WHETHER to ask for late work
+        // and HOW FAR BACK — the request policy — and then how to present three bands in one summary.
+        //
+        // THE HORIZON IS TAB 5'S, DELIBERATELY. The brief's rule is to use an overdue horizon the repository
+        // already defines, and it now defines exactly one: WorkspaceAgendaService.DefaultOverdueLookbackDays.
+        // It is referenced as a symbol rather than copied as a literal, because a second number maintained in
+        // the Workspace would be a second horizon, and the two would disagree the first time either moved.
+        // The Workspace's decision is to STATE it rather than inherit it silently, so that reading this call
+        // tells you how much history the screen asks for without opening another tab's file.
+        //
+        // IT IS NOT SCALED BY `days`. /Workspace/Agenda?days=1 means "today", and late work must not vanish
+        // because the reader narrowed the FORWARD range — that would reintroduce the same defect by a
+        // different door. TAB 5 anchors the floor to the window START for the same reason.
+        //
+        // WHAT THIS IS NOT: no due date is rewritten, nothing is re-dated to today, no unbounded history is
+        // requested, and the task service's own company/employee scope is the only scope in play.
+        // ------------------------------------------------------------------------------------------------
+        // PUBLIC because it is a stated product policy, not an implementation detail: the regression tests
+        // assert the request carries THIS number, and a reader asking "how far back does my agenda reach?"
+        // should be able to find the answer without reading another tab's internals. It is initialised FROM
+        // TAB 5's constant rather than copied, so the two cannot drift apart.
+        public const int AgendaOverdueLookbackDays = WorkspaceAgendaService.DefaultOverdueLookbackDays;
+
+        // The contract's own maximum page. Asking for it means the widened window is not silently trimmed by
+        // a second, tighter cap invented here; anything beyond it is still reported through the panel's Total
+        // and through the service's own DegradedSources note.
+        private const int AgendaPageSize = 200;
+
+        // Slots the dashboard's 8-row agenda summary reserves for the past. Without a reserve, a head-of-list
+        // cap on a chronological list fills every slot with the OLDEST late work and pushes today and
+        // tomorrow off the panel entirely. Fewer than half keeps the summary forward-looking while making it
+        // impossible for late work to be invisible; unused slots are handed back to either side, so neither
+        // band can starve the other.
+        private const int AgendaOverdueShown = 3;
+
+        private readonly IBusinessContextAccessor _contexts;
+        private readonly IServiceProvider _services;
+        private readonly IWorkspaceNotificationSource _notifications;
+        private readonly IWorkspaceIdentityResolver _identity;
+        private readonly IEnumerable<IWorkspaceFavoritesSource> _favoriteSources;
+        private readonly IEnumerable<IWorkspaceActivitySource> _activitySources;
+        private readonly IEnumerable<IWorkspaceReportSource> _reportSources;
+        private readonly ILogger<WorkspaceService> _log;
+
+        public WorkspaceService(
+            IBusinessContextAccessor contexts,
+            IServiceProvider services,
+            IWorkspaceNotificationSource notifications,
+            IWorkspaceIdentityResolver identity,
+            IEnumerable<IWorkspaceFavoritesSource> favoriteSources,
+            IEnumerable<IWorkspaceActivitySource> activitySources,
+            IEnumerable<IWorkspaceReportSource> reportSources,
+            ILogger<WorkspaceService> log)
+        {
+            _contexts = contexts;
+            _services = services;
+            _notifications = notifications;
+            _identity = identity;
+            _favoriteSources = favoriteSources;
+            _activitySources = activitySources;
+            _reportSources = reportSources;
+            _log = log;
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        public async Task<WorkspaceCapabilities> GetCapabilitiesAsync(CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context == null || context.CompanyId <= 0) return WorkspaceCapabilities.None;
+
+            // A capability is "the contract resolves AND the caller can be identified". Tasks needs an employee
+            // id because every task query is scoped to a person; a session without one cannot show My Work and
+            // the nav entry is hidden rather than shown leading to an empty screen.
+            return new WorkspaceCapabilities
+            {
+                Tasks = _services.GetService<ITaskService>() != null && context.EmployeeId is > 0,
+                Calendar = _services.GetService<ICalendarService>() != null && context.EmployeeId is > 0,
+                Reporting = _reportSources.Any(s => s.IsAvailable),
+                Communication = _services.GetService<ICommMentionService>() != null,
+                Notifications = _notifications.IsAvailable && context.EmployeeId is > 0,
+            };
+        }
+
+        public async Task<WorkspaceDashboard> GetDashboardAsync(CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context == null || context.CompanyId <= 0)
+                return new WorkspaceDashboard { EmployeeName = "", IsUnresolved = true };
+
+            var capabilities = await GetCapabilitiesAsync(cancellationToken);
+            var (employeeName, companyName) = await SafeIdentityAsync(context, cancellationToken);
+
+            var work = await SafeAsync("My Work", () => GetMyWorkAsync(context, cancellationToken));
+
+            // The agenda's own service already returns a typed panel with all five states, so it is passed
+            // through rather than re-wrapped — re-wrapping would flatten PartiallyAvailable into Ready.
+            //
+            // TrimAgenda, not Trim: the range now opens BEFORE today, and a plain head-of-list cap on a
+            // chronological list would fill all eight summary slots with the oldest overdue rows and push
+            // today and tomorrow off the dashboard entirely.
+            var agenda = TrimAgenda(await SafeAsync("Agenda", () => LoadAgendaAsync(context, 7, cancellationToken)),
+                AgendaShown);
+
+            var notifications = await SafeAsync("Notifications",
+                () => LoadNotificationsAsync(context, false, NotificationsShown, cancellationToken));
+            var mentions = await SafeAsync("Mentions", () => LoadMentionsAsync(context, MentionsShown, cancellationToken));
+            var favorites = await SafeAsync("Favorites", () => LoadFavoritesAsync(context, cancellationToken));
+            var reports = Trim(await SafeAsync("Reports", () => LoadReportsAsync(context, cancellationToken)), ReportsShown);
+            var activity = await SafeAsync("Recent Activity", () => LoadActivityAsync(context, cancellationToken));
+
+            var unreadNotifications = await SafeCountAsync(() => _notifications.CountUnreadAsync(context, cancellationToken));
+            var unreadMentions = await SafeCountAsync(() => CountUnreadMentionsAsync(context, cancellationToken));
+
+            var metrics = await SafeMetricsAsync(context, unreadNotifications, unreadMentions, cancellationToken);
+
+            // Only genuinely BLOCKED panels are reported in the diagnostics strip. A partially-available agenda
+            // already explains itself on the panel and does not belong in a "these are dark" list.
+            var dark = new (WorkspacePanelState State, string Name)[]
+                {
+                    (work.State, "My Work"), (agenda.State, "Agenda"),
+                    (notifications.State, "Notifications"), (mentions.State, "Mentions"),
+                    (favorites.State, "Favorites"), (reports.State, "Reports"),
+                    (activity.State, "Recent Activity"),
+                }
+                .Where(p => p.State == WorkspacePanelState.Unavailable)
+                .Select(p => p.Name)
+                .ToList();
+
+            return new WorkspaceDashboard
+            {
+                EmployeeName = employeeName,
+                EmployeeId = context.EmployeeId ?? 0,
+                CompanyId = context.CompanyId,
+                CompanyName = companyName,
+                Capabilities = capabilities,
+                Metrics = metrics,
+                MyWork = work,
+                Agenda = agenda,
+                Notifications = notifications,
+                Mentions = mentions,
+                Favorites = favorites,
+                Reports = reports,
+                Activity = activity,
+                QuickActions = WorkspaceNavigation.QuickActions(capabilities),
+                UnreadNotifications = unreadNotifications,
+                UnreadMentions = unreadMentions,
+                UnavailablePanels = dark,
+            };
+        }
+
+        public async Task<WorkspacePanel<WorkspaceNotification>> GetNotificationsAsync(
+            bool unreadOnly = false, int take = 20, CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context == null || context.CompanyId <= 0)
+                return WorkspacePanel<WorkspaceNotification>.AccessDenied(
+                    "No company is resolved for this session.");
+
+            return await SafeAsync("Notifications",
+                () => LoadNotificationsAsync(context, unreadOnly, take, cancellationToken));
+        }
+
+        public async Task<WorkspacePanel<WorkspaceMention>> GetMentionsAsync(
+            int take = 20, CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context == null || context.CompanyId <= 0)
+                return WorkspacePanel<WorkspaceMention>.AccessDenied("No company is resolved for this session.");
+
+            return await SafeAsync("Mentions", () => LoadMentionsAsync(context, take, cancellationToken));
+        }
+
+        public async Task<WorkspacePanel<WorkspaceAgendaRow>> GetAgendaAsync(
+            int days = 7, CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context == null || context.CompanyId <= 0)
+                return WorkspacePanel<WorkspaceAgendaRow>.AccessDenied("No company is resolved for this session.");
+
+            return await SafeAsync("Agenda", () => LoadAgendaAsync(context, days, cancellationToken));
+        }
+
+        // ================================================================================================
+        // AGENDA — Phase 3. CONSUMES TAB 4's IWorkspaceAgendaService and renders its result.
+        //
+        // The Workspace composes NOTHING here: it does not read tasks, does not read calendar events, does not
+        // merge, does not sort and does not decide overdue. All of that is TAB 4's service, which already
+        // unions the two sources over ITaskService + ICalendarService. This method builds a display projection
+        // and nothing else.
+        // ================================================================================================
+        private async Task<WorkspacePanel<WorkspaceAgendaRow>> LoadAgendaAsync(
+            BusinessContext context, int days, CancellationToken cancellationToken)
+        {
+            var agenda = _services.GetService<IWorkspaceAgendaService>();
+            if (agenda == null)
+                return WorkspacePanel<WorkspaceAgendaRow>.Unavailable(
+                    "The Tasks & Calendar agenda service is not registered in this environment.");
+
+            if (context.EmployeeId is not > 0)
+                return WorkspacePanel<WorkspaceAgendaRow>.AccessDenied(
+                    "An agenda is always somebody's agenda, and this session has no employee.");
+
+            var from = DateOnly.FromDateTime(DateTime.Now.Date);
+            var to = from.AddDays(Math.Clamp(days, 1, 60));
+
+            WorkspaceAgendaResult result;
+            try
+            {
+                result = await agenda.GetAgendaAsync(new WorkspaceAgendaQuery
+                {
+                    CompanyId = context.CompanyId,
+                    EmployeeId = context.EmployeeId!.Value,
+                    FromLocalDate = from,
+                    ToLocalDate = to,
+
+                    // The service REFUSES an unresolved zone rather than falling back to server-local — that is
+                    // its owner's decision, and the Workspace honours it by supplying the zone explicitly.
+                    TimeZoneId = TimeZoneInfo.Local.Id,
+
+                    // The window still STARTS today — `from` is unchanged. Late work is pulled in above it by
+                    // the agenda service, keeping its real due date, so overdue / today / upcoming stay three
+                    // distinguishable things. The flag is opt-in on the contract precisely so a caller wanting
+                    // a literal date range is not given extra rows; the Workspace wants them, because a
+                    // dashboard that hides what is already late is the one thing it must not do.
+                    IncludeOverdue = true,
+
+                    // Stated, not inherited. See AgendaOverdueLookbackDays for why the number is TAB 5's.
+                    OverdueLookbackDays = AgendaOverdueLookbackDays,
+
+                    PageSize = AgendaPageSize,
+                }, cancellationToken);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                // Includes the service's own refusals (unresolved company/employee/zone). Surfaced as a
+                // temporary failure with its message rather than swallowed into an empty agenda.
+                _log.LogWarning(ex, "Workspace agenda could not be composed.");
+                return WorkspacePanel<WorkspaceAgendaRow>.TemporaryFailure(ex.Message);
+            }
+
+            var arabic = WorkspaceCulture.IsArabic();
+
+            // The band is computed HERE, once, from the local date the service already resolved — not in the
+            // view and not per panel. Three readers (the day grouping, the dashboard's cap, and any business
+            // rule that follows) then agree by construction instead of each re-deriving a date comparison.
+            var todayLocal = DateTime.Now.Date;
+
+            var rows = result.Items.Select(i => new WorkspaceAgendaRow
+            {
+                // A redacted row keeps its SLOT but loses its title: "busy at 14:00" is the useful half and is
+                // not private. That rule is the service's; the Workspace only renders it.
+                Title = i.IsRedacted
+                    ? (arabic ? "مشغول" : "Busy")
+                    : i.Title,
+                TypeLabelAr = i.ItemType == AgendaItemType.Task ? "مهمة" : "موعد",
+                TypeLabelEn = i.ItemType == AgendaItemType.Task ? "Task" : "Event",
+                LocalAt = LocalOf(i.Start),
+                LocalEndsAt = i.End is null ? null : LocalOf(i.End),
+                AllDay = i.IsAllDay,
+                Overdue = i.IsOverdue,
+                Completed = i.IsCompleted,
+                Redacted = i.IsRedacted,
+                Band = BandOf(LocalOf(i.Start), todayLocal),
+                SourceModule = i.SourceModule,
+                DeepLink = i.DeepLink,
+                Tone = i.IsCompleted ? WorkspaceTone.Ok
+                     : i.IsOverdue ? WorkspaceTone.Critical
+                     : i.ItemType == AgendaItemType.Task ? WorkspaceTone.Info
+                     : WorkspaceTone.Neutral,
+            }).ToList();
+
+            // DegradedSources is the service's own partial-availability signal. Mapped straight onto the
+            // panel's PartiallyAvailable state rather than being flattened away — "showing the agenda without
+            // Calendar" is a different promise from "here is your agenda".
+            if (result.DegradedSources.Count > 0)
+                return WorkspacePanel<WorkspaceAgendaRow>.Partial(rows, result.DegradedSources,
+                    $"Showing the agenda without {string.Join(", ", result.DegradedSources)} — those entries " +
+                    "are missing from this list.");
+
+            return WorkspacePanel<WorkspaceAgendaRow>.From(rows, result.TotalMatched);
+        }
+
+        // OVERDUE / TODAY / UPCOMING, by the row's own LOCAL DATE.
+        //
+        // It reads the date the service already resolved and compares nothing else — in particular it does
+        // NOT re-derive "is this late", which is the service's IsOverdue and a different question (a task due
+        // 09:00 today, read at 14:00, is Band = Today and Overdue = true; both are correct and both are kept).
+        private static WorkspaceAgendaBand BandOf(DateTime localAt, DateTime today) =>
+            localAt.Date < today ? WorkspaceAgendaBand.Overdue
+            : localAt.Date == today ? WorkspaceAgendaBand.Today
+            : WorkspaceAgendaBand.Upcoming;
+
+        // An AgendaInstant is EITHER a UTC instant carrying the viewer's offset, OR a bare all-day local date
+        // that has no zone and must never be shifted. Reading the right one is the whole point of the type.
+        private static DateTime LocalOf(AgendaInstant instant) =>
+            instant.Kind == AgendaTimeKind.AllDayDate && instant.Date.HasValue
+                ? instant.Date.Value.ToDateTime(TimeOnly.MinValue)
+                : (instant.Local?.DateTime ?? instant.Utc ?? DateTime.MinValue);
+
+        public async Task<WorkspacePanel<WorkspaceReportLink>> GetReportsAsync(
+            CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context == null || context.CompanyId <= 0)
+                return WorkspacePanel<WorkspaceReportLink>.AccessDenied("No company is resolved for this session.");
+
+            return await SafeAsync("Reports", () => LoadReportsAsync(context, cancellationToken));
+        }
+
+        // ================================================================================================
+        // MY WORK — consumes ITaskService.
+        // ================================================================================================
+        private async Task<WorkspacePanel<WorkspaceWorkItem>> GetMyWorkAsync(
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            var tasks = _services.GetService<ITaskService>();
+            if (tasks == null)
+                return WorkspacePanel<WorkspaceWorkItem>.Unavailable(
+                    "The Tasks module is not registered in this environment.");
+
+            if (context.EmployeeId is not > 0)
+                return WorkspacePanel<WorkspaceWorkItem>.AccessDenied(
+                    "This session has no employee, so personal work cannot be resolved.");
+
+            var rows = await tasks.GetTasksAsync(
+                context.CompanyId, scope: "mine", currentEmployeeId: context.EmployeeId!.Value,
+                status: null, priority: null, q: null, page: 1, pageSize: WorkItemsShown, sort: "due");
+
+            var now = DateTime.Now;
+            var items = rows.Select(r => new WorkspaceWorkItem
+            {
+                Id = r.Id,
+                Title = r.Title,
+                Status = r.Status,
+                Priority = r.Priority,
+                Due = r.DueDate,
+                Assignee = r.AssigneeName,
+                Url = $"/Tasks/Index?open={r.Id}",
+                Tone = ToneForTask(r.Status, r.Priority, r.DueDate, now),
+                DueHint = DueHint(r.DueDate, now),
+            }).ToList();
+
+            return WorkspacePanel<WorkspaceWorkItem>.From(items);
+        }
+
+        // The ONE place a task's state becomes a colour. Overdue beats priority: a late task needs attention
+        // regardless of how it was originally ranked.
+        private static WorkspaceTone ToneForTask(string? status, string? priority, DateTime? due, DateTime now)
+        {
+            if (string.Equals(status, "Done", StringComparison.OrdinalIgnoreCase)) return WorkspaceTone.Ok;
+            if (due.HasValue && due.Value.Date < now.Date) return WorkspaceTone.Critical;
+            if (string.Equals(priority, "Urgent", StringComparison.OrdinalIgnoreCase)) return WorkspaceTone.Warn;
+            if (due.HasValue && due.Value.Date == now.Date) return WorkspaceTone.Warn;
+            return WorkspaceTone.Neutral;
+        }
+
+        private static string? DueHint(DateTime? due, DateTime now)
+        {
+            if (!due.HasValue) return null;
+            var days = (due.Value.Date - now.Date).Days;
+            return days switch
+            {
+                < 0 => $"{-days}d late",
+                0 => "today",
+                1 => "tomorrow",
+                <= 7 => $"in {days}d",
+                _ => due.Value.ToString("yyyy-MM-dd"),
+            };
+        }
+
+        // ================================================================================================
+        // NOTIFICATIONS + MENTIONS — Phase 5. Consumption-only; neither activates anything.
+        // ================================================================================================
+        private async Task<WorkspacePanel<WorkspaceNotification>> LoadNotificationsAsync(
+            BusinessContext context, bool unreadOnly, int take, CancellationToken cancellationToken)
+        {
+            if (!_notifications.IsAvailable)
+                return WorkspacePanel<WorkspaceNotification>.Unavailable(
+                    "The notification store is not available in this environment.");
+
+            if (context.EmployeeId is not > 0)
+                return WorkspacePanel<WorkspaceNotification>.AccessDenied(
+                    "This session has no employee, so personal notifications cannot be resolved.");
+
+            var rows = await _notifications.GetAsync(context, unreadOnly, take, cancellationToken);
+            return WorkspacePanel<WorkspaceNotification>.From(rows);
+        }
+
+        // MENTIONS — the platform is resolved OPTIONALLY and is never activated as a side effect of rendering
+        // a screen. Activation is the Communication tab's gated decision.
+        private async Task<WorkspacePanel<WorkspaceMention>> LoadMentionsAsync(
+            BusinessContext context, int take, CancellationToken cancellationToken)
+        {
+            var mentions = _services.GetService<ICommMentionService>();
+            if (mentions == null)
+                return WorkspacePanel<WorkspaceMention>.Unavailable(
+                    "The Communication Platform is not activated in this environment. Mentions appear once " +
+                    "AddCommunicationPlatform is registered and communication_platform_slice_001.sql is applied.");
+
+            if (context.EmployeeId is not > 0)
+                return WorkspacePanel<WorkspaceMention>.AccessDenied(
+                    "This session has no employee, so mentions cannot be resolved.");
+
+            var page = await mentions.GetHistoryAsync(context,
+                new CommPageRequest { PageSize = Math.Clamp(take, 1, 50) }, cancellationToken);
+
+            var items = page.Items.Select(m => new WorkspaceMention
+            {
+                MentionId = m.MentionId,
+                EntityLabel = m.Entity.Key,
+                Excerpt = m.Excerpt,
+                MentionedBy = m.MentionedBy?.Display(WorkspaceCulture.IsArabic()),
+                ViaKind = m.ViaKind,
+                At = m.CreatedAt,
+                Url = null,
+            }).ToList();
+
+            return WorkspacePanel<WorkspaceMention>.From(items);
+        }
+
+        private async Task<int> CountUnreadMentionsAsync(BusinessContext context, CancellationToken ct)
+        {
+            var mentions = _services.GetService<ICommMentionService>();
+            if (mentions == null) return 0;
+            return await mentions.GetUnreadCountAsync(context, ct);
+        }
+
+        // ================================================================================================
+        // REPORTS — Phase 4. Extension sources only; no data source, renderer or engine is touched.
+        // ================================================================================================
+        private async Task<WorkspacePanel<WorkspaceReportLink>> LoadReportsAsync(
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            var available = _reportSources.Where(s => s.IsAvailable).ToList();
+
+            if (available.Count == 0)
+                return WorkspacePanel<WorkspaceReportLink>.Unavailable(
+                    "The Reporting platform is not registered in this environment, so report shortcuts cannot " +
+                    "be listed.");
+
+            var links = new List<WorkspaceReportLink>();
+            var failed = new List<string>();
+
+            foreach (var source in available)
+            {
+                try
+                {
+                    links.AddRange(await source.GetAsync(context, cancellationToken));
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Workspace report source {Source} failed and was skipped.", source.SourceName);
+                    failed.Add(source.SourceName);
+                }
+            }
+
+            if (failed.Count == available.Count)
+                return WorkspacePanel<WorkspaceReportLink>.TemporaryFailure(
+                    $"Report shortcuts could not be loaded ({string.Join(", ", failed)}).");
+
+            // Favourites first, then shortcuts: a pinned report is a stronger signal of intent than a
+            // catalogue entry the caller merely has permission to open.
+            var ordered = links.OrderBy(l => (int)l.Kind).ThenBy(l => l.Label, StringComparer.CurrentCulture).ToList();
+
+            return failed.Count > 0
+                ? WorkspacePanel<WorkspaceReportLink>.Partial(ordered, failed,
+                    $"Showing report shortcuts without {string.Join(", ", failed)}.")
+                : WorkspacePanel<WorkspaceReportLink>.From(ordered);
+        }
+
+        // ================================================================================================
+        // FAVOURITES + ACTIVITY
+        // ================================================================================================
+        private async Task<WorkspacePanel<WorkspaceFavorite>> LoadFavoritesAsync(
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            var all = new List<WorkspaceFavorite>();
+            var failed = new List<string>();
+
+            foreach (var source in _favoriteSources)
+            {
+                try { all.AddRange(await source.GetAsync(context, cancellationToken)); }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Workspace favourites source {Source} failed.", source.SourceName);
+                    failed.Add(source.SourceName);
+                }
+            }
+
+            var items = all.Take(FavoritesShown).ToList();
+            return failed.Count > 0 && items.Count > 0
+                ? WorkspacePanel<WorkspaceFavorite>.Partial(items, failed,
+                    $"Showing favourites without {string.Join(", ", failed)}.")
+                : WorkspacePanel<WorkspaceFavorite>.From(items, all.Count);
+        }
+
+        private async Task<WorkspacePanel<WorkspaceActivityItem>> LoadActivityAsync(
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            var all = new List<WorkspaceActivityItem>();
+            var failed = new List<string>();
+
+            foreach (var source in _activitySources)
+            {
+                try { all.AddRange(await source.GetAsync(context, ActivityShown, cancellationToken)); }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Workspace activity source {Source} failed.", source.SourceName);
+                    failed.Add(source.SourceName);
+                }
+            }
+
+            // Merged newest-first ACROSS sources — sorted here, because the merged stream is what the user reads.
+            var items = all.OrderByDescending(a => a.At ?? DateTime.MinValue).Take(ActivityShown).ToList();
+
+            return failed.Count > 0 && items.Count > 0
+                ? WorkspacePanel<WorkspaceActivityItem>.Partial(items, failed,
+                    $"Showing activity without {string.Join(", ", failed)}.")
+                : WorkspacePanel<WorkspaceActivityItem>.From(items);
+        }
+
+        // ================================================================================================
+        // METRICS
+        // ================================================================================================
+        private async Task<IReadOnlyList<WorkspaceMetric>> SafeMetricsAsync(
+            BusinessContext context, int unreadNotifications, int unreadMentions, CancellationToken ct)
+        {
+            var metrics = new List<WorkspaceMetric>();
+            var tasks = _services.GetService<ITaskService>();
+
+            if (tasks != null && context.EmployeeId is > 0)
+            {
+                try
+                {
+                    var kpi = await tasks.GetKpisAsync(context.CompanyId, "mine", context.EmployeeId!.Value);
+
+                    metrics.Add(new WorkspaceMetric
+                    {
+                        LabelAr = "مهامي المفتوحة", LabelEn = "My open work",
+                        Value = (kpi.Total - kpi.Done).ToString("N0"),
+                        HintAr = $"{kpi.InProgress:N0} قيد التنفيذ", HintEn = $"{kpi.InProgress:N0} in progress",
+                        Tone = WorkspaceTone.Info, Url = "/Workspace/Index#my-work",
+                    });
+
+                    metrics.Add(new WorkspaceMetric
+                    {
+                        LabelAr = "متأخرة", LabelEn = "Overdue",
+                        Value = kpi.Overdue.ToString("N0"),
+                        HintAr = "تحتاج انتباهك", HintEn = "needs attention",
+                        // Zero overdue is a GOOD state, not a neutral one — the tile reads green, not grey.
+                        Tone = kpi.Overdue > 0 ? WorkspaceTone.Critical : WorkspaceTone.Ok,
+                        Url = "/Workspace/Index#my-work",
+                    });
+
+                    metrics.Add(new WorkspaceMetric
+                    {
+                        LabelAr = "عاجلة", LabelEn = "Urgent",
+                        Value = kpi.Urgent.ToString("N0"),
+                        Tone = kpi.Urgent > 0 ? WorkspaceTone.Warn : WorkspaceTone.Neutral,
+                        Url = "/Workspace/Index#my-work",
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "Workspace task metrics unavailable.");
+                }
+            }
+
+            metrics.Add(new WorkspaceMetric
+            {
+                LabelAr = "إشعارات غير مقروءة", LabelEn = "Unread notifications",
+                Value = unreadNotifications.ToString("N0"),
+                Tone = unreadNotifications > 0 ? WorkspaceTone.Warn : WorkspaceTone.Ok,
+                Url = "/Workspace/Notifications",
+            });
+
+            if (unreadMentions > 0)
+                metrics.Add(new WorkspaceMetric
+                {
+                    LabelAr = "إشارات إليّ", LabelEn = "Mentions",
+                    Value = unreadMentions.ToString("N0"),
+                    Tone = WorkspaceTone.Warn, Url = "/Workspace/Mentions",
+                });
+
+            return metrics;
+        }
+
+        // ================================================================================================
+        // helpers
+        // ================================================================================================
+
+        // A source that throws produces ONE panel in TemporaryFailure with a reason — never a failed page, and
+        // never an Empty panel that would misreport a fault as "nothing to show".
+        private async Task<WorkspacePanel<T>> SafeAsync<T>(string panel, Func<Task<WorkspacePanel<T>>> load)
+        {
+            try
+            {
+                return await load();
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "Workspace panel {Panel} could not be loaded.", panel);
+                return WorkspacePanel<T>.TemporaryFailure(
+                    $"{panel} could not be loaded. This is usually temporary — try again.");
+            }
+        }
+
+        private async Task<int> SafeCountAsync(Func<Task<int>> count)
+        {
+            try { return await count(); }
+            catch (Exception ex) { _log.LogWarning(ex, "Workspace count unavailable."); return 0; }
+        }
+
+        private async Task<(string, string?)> SafeIdentityAsync(BusinessContext context, CancellationToken ct)
+        {
+            try { return await _identity.ResolveAsync(context, ct); }
+            catch (Exception ex) { _log.LogWarning(ex, "Workspace identity unavailable."); return ("", null); }
+        }
+
+        // Caps the dashboard's agenda summary so that BOTH SIDES OF TODAY survive the cap.
+        //
+        // Trim would be wrong here now. The agenda list is chronological and it starts in the past, so taking
+        // its first eight rows means taking the eight OLDEST late items — and the dashboard would answer "what
+        // is on today?" with a month-old backlog and nothing else. That is not a hypothetical: the dense UAT
+        // employee has nine overdue tasks, which is more than the eight slots on offer.
+        //
+        // So the past gets a RESERVE rather than the whole panel: at most AgendaOverdueShown rows, and the
+        // ones NEAREST TODAY rather than the oldest, because a task that slipped yesterday is the actionable
+        // one and a task that slipped seven weeks ago is the least actionable thing that could occupy a
+        // summary slot. Whatever the other band does not use is handed back, so a person with no upcoming
+        // work still fills the panel with their backlog and vice versa.
+        //
+        // Both slices are taken from an already-ordered list and re-joined in the same order, so the view's
+        // day-header grouping still walks a sorted sequence. Total keeps the true match count: the panel is
+        // capped, and it does not pretend otherwise.
+        private static WorkspacePanel<WorkspaceAgendaRow> TrimAgenda(
+            WorkspacePanel<WorkspaceAgendaRow> panel, int take)
+        {
+            if (panel.Items.Count <= take) return panel;
+
+            var overdue = panel.Items.Where(r => r.Band == WorkspaceAgendaBand.Overdue).ToList();
+            var ahead = panel.Items.Where(r => r.Band != WorkspaceAgendaBand.Overdue).ToList();
+
+            int overdueSlots = Math.Min(AgendaOverdueShown, overdue.Count);
+
+            // Hand back what the other band cannot use — in both directions.
+            overdueSlots = Math.Min(overdue.Count, Math.Max(overdueSlots, take - ahead.Count));
+
+            var items = overdue.Skip(overdue.Count - overdueSlots)      // the tail = nearest to today
+                .Concat(ahead.Take(take - overdueSlots))
+                .ToList();
+
+            return new WorkspacePanel<WorkspaceAgendaRow>
+            {
+                State = panel.State,
+                Items = items,
+                Reason = panel.Reason,
+                Total = panel.Total ?? panel.Items.Count,
+                MissingSources = panel.MissingSources,
+            };
+        }
+
+        // Caps a panel for the dashboard while PRESERVING its state — a truncated PartiallyAvailable panel is
+        // still partially available, and flattening it to Ready would silently upgrade the promise.
+        private static WorkspacePanel<T> Trim<T>(WorkspacePanel<T> panel, int take) =>
+            panel.Items.Count <= take
+                ? panel
+                : new WorkspacePanel<T>
+                {
+                    State = panel.State,
+                    Items = panel.Items.Take(take).ToList(),
+                    Reason = panel.Reason,
+                    Total = panel.Total ?? panel.Items.Count,
+                    MissingSources = panel.MissingSources,
+                };
+    }
+}

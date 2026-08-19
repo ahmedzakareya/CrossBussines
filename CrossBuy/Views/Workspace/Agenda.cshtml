@@ -1,0 +1,233 @@
+@using CrossBuy.BL.Workspace
+@using System.Globalization
+@model WorkspacePanel<WorkspaceAgendaRow>
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    // Inventory shell = THE visual authority. Its module menu is NOT this screen's navigation:
+    // _MainMenu prepends the Platform category, so an empty list yields a Platform-only sidebar.
+    ViewBag.SidebarMenu = new List<CrossBuy.Models.Menu.MenuCategory>();
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = arabic ? "الأجندة" : "Agenda";
+
+    var days = (int?)ViewBag.Days ?? 7;
+    @* The agenda groups its rows relative to "today", so an unfrozen clock would roll the grouping over
+       at midnight mid-matrix. ConformanceClock returns DateTime.Now in production and the frozen
+       certification instant only on a Development host with UI_CONFORMANCE=1 — the agenda itself is
+       unchanged. Caught by the same sweep that found Tasks/Index. *@
+    var today = CrossBuy.BL.Platform.ConformanceClock.Now.Date;
+
+    // Metronic vocabulary only - same as Accounting. No cbw-* classes, no custom stylesheet.
+    string ToneColor(WorkspaceTone t) => t switch
+    {
+        WorkspaceTone.Ok => "success",
+        WorkspaceTone.Warn => "warning",
+        WorkspaceTone.Critical => "danger",
+        _ => "primary",
+    };
+
+    string DayLabel(DateTime d) =>
+        d.Date == today ? (arabic ? "اليوم" : "Today")
+        : d.Date == today.AddDays(1) ? (arabic ? "غدًا" : "Tomorrow")
+        : d.ToString("dddd, d MMM", CultureInfo.CurrentUICulture);
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+    <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">
+                @(arabic ? "الأجندة" : "Agenda")
+            </h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-gray-700">
+                    <a href="@Url.Action("Index","Workspace")" class="text-gray-700 text-hover-primary">@(arabic ? "مساحة العمل" : "Workspace")</a>
+                </li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-gray-700">
+                    @(arabic ? "مهامك ومواعيدك في قائمة واحدة — مقروءة فقط." : "Your tasks and appointments in one list — read-only.")
+                </li>
+            </ul>
+        </div>
+        @* Range as links, not JavaScript: the state lives in the URL, so it is bookmarkable,
+           back-button-correct and works before any script loads. *@
+        <div class="d-flex align-items-center gap-2">
+            @foreach (var option in new[] { 1, 7, 30 })
+            {
+                var active = days == option;
+                <a href="@Url.Action("Agenda", "Workspace", new { days = option })"
+                   class="btn btn-sm btn-flex fw-semibold @(active ? "btn-primary" : "btn-light")">
+                    <i class="ki-outline ki-calendar fs-6"></i>
+                    @(option == 1 ? (arabic ? "اليوم" : "Today")
+                    : option == 7 ? (arabic ? "٧ أيام" : "7 days")
+                    : (arabic ? "٣٠ يومًا" : "30 days"))
+                </a>
+            }
+        </div>
+    </div>
+</div>
+<!--end::Toolbar-->
+
+<!--begin::Content-->
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-fluid">
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-900">
+                        <i class="ki-outline ki-calendar fs-3 text-primary me-2"></i>@(arabic ? "المواعيد والمهام" : "Appointments and tasks")
+                    </span>
+                    @* The range label names the OVERDUE band as well, because the list no longer starts today:
+                       late work is carried in above the window keeping its own due date. Saying only
+                       "next N days" over a list whose first rows are last month's would be the kind of
+                       quietly-wrong label that makes a reader distrust the whole screen. *@
+                    <span class="text-gray-700 fw-semibold fs-7 mt-1">
+                        @(arabic ? $"المتأخر + خلال {days} يومًا" : $"Overdue + next {days} day(s)")
+                    </span>
+                </h3>
+            </div>
+            <div class="card-body pt-2">
+
+                @* PARTIAL is rendered ABOVE the rows, never instead of them: the rows are real and the
+                   list is incomplete, and the reader needs both facts at once. *@
+                @if (Model.State == WorkspacePanelState.PartiallyAvailable)
+                {
+                    <div class="alert alert-info d-flex align-items-center p-4 mb-4 text-gray-800">
+                        <i class="ki-outline ki-information-5 fs-2hx me-3"></i>
+                        <div class="d-flex flex-column">
+                            <span class="fw-bold">@(arabic ? "بيانات جزئية" : "Partial data")</span>
+                            <span class="fs-7">@Model.Reason</span>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.HasItems)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                            <thead>
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                    <th class="w-125px">@(arabic ? "الوقت" : "Time")</th>
+                                    <th>@(arabic ? "العنصر" : "Item")</th>
+                                    <th class="text-end w-200px">@(arabic ? "النوع" : "Type")</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    DateTime? renderedDay = null;
+                                }
+                                @foreach (var item in Model.Items)
+                                {
+                                    @* Day headers are emitted inline while walking an already-ordered list. The
+                                       ORDER is the agenda service's (it exposes a deterministic sort key precisely
+                                       so a caller cannot invent a different one); this view only groups. *@
+                                    if (renderedDay != item.LocalAt.Date)
+                                    {
+                                        renderedDay = item.LocalAt.Date;
+                                        <tr class="bg-light">
+                                            <td colspan="3" class="fw-bold text-gray-700 fs-7 text-uppercase py-2">
+                                                @DayLabel(renderedDay.Value)
+                                                @if (renderedDay == today)
+                                                {
+                                                    <span class="badge badge-primary fs-8 ms-2">@(arabic ? "اليوم" : "Today")</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+
+                                    <tr class="@(item.Completed ? "text-decoration-line-through" : "")">
+                                        <td class="text-gray-700 fw-semibold">
+                                            @if (item.AllDay)
+                                            {
+                                                <span class="badge badge-light fs-8">@(arabic ? "طوال اليوم" : "All day")</span>
+                                            }
+                                            else
+                                            {
+                                                @item.LocalAt.ToString("HH:mm")
+                                                @if (item.LocalEndsAt.HasValue)
+                                                {
+                                                    <text>–@item.LocalEndsAt.Value.ToString("HH:mm")</text>
+                                                }
+                                            }
+                                        </td>
+                                        <td class="min-w-200px">
+                                            <div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px me-3">
+                                                    <span class="symbol-label bg-light-@ToneColor(item.Tone)">
+                                                        <i class="@(item.TypeLabelEn == "Task" ? "ki-outline ki-check-square" : "ki-outline ki-calendar-8") fs-5 text-@ToneColor(item.Tone)"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex flex-column">
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(item.DeepLink ?? "#")">@item.Title</a>
+                                                    <span class="text-gray-700 fs-7">@item.SourceModule</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge badge-light fs-8">@item.TypeLabel(arabic)</span>
+                                            @if (item.Overdue)
+                                            {
+                                                <span class="badge badge-light-danger fs-8 ms-1 text-gray-800">@(arabic ? "متأخر" : "overdue")</span>
+                                            }
+                                            @if (item.Completed)
+                                            {
+                                                <span class="badge badge-light-success fs-8 ms-1 text-gray-800">@(arabic ? "مكتمل" : "done")</span>
+                                            }
+                                            @if (item.Redacted)
+                                            {
+                                                @* The slot is shown, the detail is not. "Busy at 14:00" is the useful
+                                                   half and is not private - that rule belongs to the agenda service. *@
+                                                <span class="badge badge-light-warning fs-8 ms-1 text-gray-800">@(arabic ? "تفاصيل مخفية" : "details hidden")</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (Model.State is WorkspacePanelState.Ready or WorkspacePanelState.Empty)
+                {
+                    <div class="d-flex flex-column align-items-center text-center py-15">
+                        <i class="ki-outline ki-calendar fs-3x text-gray-400 mb-3"></i>
+                        <span class="text-gray-700 fw-semibold fs-6">
+                            @(arabic ? "لا يوجد شيء في هذه الفترة" : "Nothing scheduled in this range")
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    @* The five non-data states stay visually DISTINCT: collapsing "unavailable" into
+                       "empty" is how a broken deployment looks like a quiet week. *@
+                    var colour = Model.State switch
+                    {
+                        WorkspacePanelState.Unavailable => "secondary",
+                        WorkspacePanelState.AccessDenied => "dark",
+                        WorkspacePanelState.TemporaryFailure => "warning",
+                        _ => "secondary",
+                    };
+                    var icon = Model.State switch
+                    {
+                        WorkspacePanelState.AccessDenied => "ki-lock-2",
+                        WorkspacePanelState.TemporaryFailure => "ki-abstract-26",
+                        _ => "ki-information-5",
+                    };
+                    var title = Model.State switch
+                    {
+                        WorkspacePanelState.Unavailable => arabic ? "غير متاح في هذه البيئة" : "Not available in this environment",
+                        WorkspacePanelState.AccessDenied => arabic ? "لا تملك صلاحية عرض هذا" : "You don't have access to this",
+                        WorkspacePanelState.TemporaryFailure => arabic ? "تعذّر التحميل مؤقتًا" : "Could not load right now",
+                        _ => "",
+                    };
+                    <div class="alert alert-@colour d-flex align-items-center p-5 mb-0 text-gray-800">
+                        <i class="ki-outline @icon fs-2hx me-4"></i>
+                        <div class="d-flex flex-column">
+                            <h5 class="mb-1">@title</h5>
+                            <span>@Model.Reason</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Content-->

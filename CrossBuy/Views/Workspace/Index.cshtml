@@ -1,0 +1,625 @@
+@using CrossBuy.BL.Workspace
+@using System.Globalization
+@using Microsoft.AspNetCore.Mvc.Localization
+@using Microsoft.AspNetCore.Html
+@inject IViewLocalizer Localizer
+@model WorkspaceDashboard
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    // Inventory shell = THE visual authority. Its module menu is NOT this screen's navigation:
+    // _MainMenu prepends the Platform category, so an empty list yields a Platform-only sidebar.
+    ViewBag.SidebarMenu = new List<CrossBuy.Models.Menu.MenuCategory>();
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = Localizer["Workspace"];
+
+    ViewBag.UnreadNotifications = Model.UnreadNotifications;
+    ViewBag.UnreadMentions = Model.UnreadMentions;
+    ViewBag.OpenWork = Model.MyWork.Items.Count;
+    ViewBag.CompanyName = Model.CompanyName;
+    ViewBag.Capabilities = Model.Capabilities;
+
+    // ---------------------------------------------------------------------------------------------
+    // This screen is built from Metronic components only - the same vocabulary Accounting/Index uses:
+    // app-toolbar, card card-flush, card-header/card-title/card-toolbar, row g-5, symbol, badge,
+    // btn btn-sm btn-light, table table-row-dashed, ki-outline icons, alert alert-*.
+    //
+    // The previous cbw-* design and its stylesheet are NOT used here. The data, the panels and the
+    // five panel states are unchanged - only the markup that presents them.
+    // ---------------------------------------------------------------------------------------------
+
+    string MetricColor(WorkspaceTone tone) => tone switch
+    {
+        WorkspaceTone.Ok => "success",
+        WorkspaceTone.Warn => "warning",
+        WorkspaceTone.Critical => "danger",
+        _ => "primary",
+    };
+
+    string MetricIcon(WorkspaceTone tone) => tone switch
+    {
+        WorkspaceTone.Ok => "ki-check-circle",
+        WorkspaceTone.Warn => "ki-information-5",
+        WorkspaceTone.Critical => "ki-shield-cross",
+        _ => "ki-abstract-26",
+    };
+
+    string Ago(DateTime? at)
+    {
+        if (at is null) return "";
+        var span = CrossBuy.BL.Platform.ConformanceClock.Now - at.Value;
+        if (span.TotalMinutes < 1) return Localizer["Now"].Value;
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}m";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}h";
+        if (span.TotalDays < 7) return $"{(int)span.TotalDays}d";
+        return at.Value.ToString("MMM d", CultureInfo.CurrentCulture);
+    }
+
+    var favouriteReports = Model.Reports.Items
+        .Where(report => report.Kind == WorkspaceReportKind.Favorite)
+        .ToList();
+    var recentReports = Model.Reports.Items
+        .Where(report => report.Kind == WorkspaceReportKind.Recent)
+        .ToList();
+
+    // Metric tile width is derived from the COUNT so the row always fills. A fixed col-xl-2 assumes
+    // six tiles (6x2=12); the dashboard emits as few as four, which left a third of the row blank.
+    var metricCol = Model.Metrics.Count switch
+    {
+        1 => "col-xl-12", 2 => "col-xl-6", 3 => "col-xl-4",
+        4 => "col-xl-3", 5 => "col-xl-4", _ => "col-xl-2",
+    };
+}
+
+@*
+    The five non-data states stay visually DISTINCT, as they were - collapsing "unavailable" into
+    "empty" is how a broken deployment looks like a quiet week. Here each maps onto a Metronic alert
+    variant instead of a bespoke cbw-state stripe.
+*@
+@functions {
+    private (string Colour, string Icon, string Title) StateChrome(WorkspacePanelState state, bool ar) => state switch
+    {
+        WorkspacePanelState.Unavailable      => ("secondary", "ki-information-5", ar ? "غير متاح في هذه البيئة" : "Not available in this environment"),
+        WorkspacePanelState.AccessDenied     => ("dark",      "ki-lock-2",        ar ? "لا تملك صلاحية عرض هذا" : "You don't have access to this"),
+        WorkspacePanelState.TemporaryFailure => ("warning",   "ki-abstract-26",   ar ? "تعذّر التحميل مؤقتًا"   : "Could not load right now"),
+        WorkspacePanelState.PartiallyAvailable => ("info",    "ki-information-5", ar ? "بيانات جزئية"          : "Partial data"),
+        _                                    => ("light",     "ki-check-circle",  ""),
+    };
+}
+
+@{
+    Func<WorkspacePanelState, string, string, IHtmlContent> PanelNotice = (state, emptyText, emptyIcon) =>
+    {
+        var (colour, icon, title) = StateChrome(state, arabic);
+        var sb = new System.Text.StringBuilder();
+        if (state == WorkspacePanelState.Empty || state == WorkspacePanelState.Ready)
+        {
+            sb.Append($@"<div class=""d-flex flex-column align-items-center text-center py-10"">
+                            <i class=""{System.Net.WebUtility.HtmlEncode(emptyIcon)} fs-3x text-gray-400 mb-3""></i>
+                            <span class=""text-gray-700 fw-semibold fs-6"">{System.Net.WebUtility.HtmlEncode(emptyText)}</span>
+                         </div>");
+        }
+        else
+        {
+            sb.Append($@"<div class=""alert alert-{colour} d-flex align-items-center p-4 mb-0 text-gray-800"">
+                            <i class=""ki-outline {icon} fs-2hx me-3""></i>
+                            <div class=""d-flex flex-column"">
+                                <span class=""fw-bold"">{System.Net.WebUtility.HtmlEncode(title)}</span>
+                            </div>
+                         </div>");
+        }
+        return new Microsoft.AspNetCore.Html.HtmlString(sb.ToString());
+    };
+}
+
+@if (Model.IsUnresolved)
+{
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+            <div class="card card-flush">
+                <div class="card-body">
+                    <div class="alert alert-dark d-flex align-items-center p-5 text-gray-800">
+                        <i class="ki-outline ki-lock-2 fs-2hx text-dark me-4"></i>
+                        <div class="d-flex flex-column">
+                            <h4 class="mb-1 text-dark">@Localizer["Session not resolved"]</h4>
+                            <span>@Localizer["No company is resolved for this session, so the workspace cannot be shown."]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    return;
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+    <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Workspace"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-gray-700">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-gray-700">@Localizer["Workspace Home"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyName))
+            {
+                <span class="badge badge-light-primary fs-7 py-2 px-3">
+                    <i class="ki-outline ki-briefcase fs-6 me-1"></i>@Model.CompanyName
+                </span>
+            }
+            @if (Model.Capabilities.Reporting)
+            {
+                <a href="@Url.Action("Index","Reports")" class="btn btn-sm btn-flex btn-light fw-bold">@Localizer["Reports center"]</a>
+            }
+            @if (Model.Capabilities.Agenda)
+            {
+                <a href="@Url.Action("Agenda","Workspace")" class="btn btn-sm btn-flex btn-primary fw-bold">
+                    <i class="ki-outline ki-calendar fs-6"></i>@Localizer["Unified Agenda"]
+                </a>
+            }
+        </div>
+    </div>
+</div>
+<!--end::Toolbar-->
+
+<!--begin::Content-->
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-fluid">
+
+        @if (Model.UnavailablePanels.Count > 0)
+        {
+            <div class="alert alert-secondary d-flex align-items-center p-5 mb-5 text-gray-800">
+                <i class="ki-outline ki-information-5 fs-2hx text-gray-700 me-4"></i>
+                <div class="d-flex flex-column">
+                    <h5 class="mb-1">@Localizer["Panels unavailable"]</h5>
+                    <span class="text-gray-700">@string.Join(" · ", Model.UnavailablePanels.Select(p => Localizer[p].Value))</span>
+                </div>
+            </div>
+        }
+
+        @if (Model.Metrics.Count > 0)
+        {
+            <!--begin::Metrics-->
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                @foreach (var metric in Model.Metrics)
+                {
+                    var metricColor = MetricColor(metric.Tone);
+                    <div class="col-6 col-md-4 @metricCol">
+                        <a href="@(metric.Url ?? Url.Action("Index", "Workspace"))" class="card h-100 text-decoration-none">
+                            <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                                <div class="d-flex flex-stack w-100 mb-4">
+                                    <div class="symbol symbol-40px">
+                                        <span class="symbol-label bg-light-@metricColor">
+                                            <i class="ki-outline @MetricIcon(metric.Tone) fs-2x text-@metricColor"></i>
+                                        </span>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(metric.Hint(arabic)))
+                                    {
+                                        <span class="badge badge-light-@metricColor fs-8 fw-bold text-gray-800">@metric.Hint(arabic)</span>
+                                    }
+                                </div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2">@metric.Value</span>
+                                <span class="fw-semibold fs-7 text-gray-700 mt-2">@metric.Label(arabic)</span>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+            <!--end::Metrics-->
+        }
+
+        @if (Model.QuickActions.Count > 0)
+        {
+            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+                <div class="col-12">
+                    <div class="card card-flush" id="quick-actions" aria-busy="false">
+                        <div class="card-header pt-7">
+                            <h3 class="card-title align-items-start flex-column">
+                                <span class="card-label fw-bold text-gray-900">@Localizer["Quick Actions"]</span>
+                            </h3>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="row g-3">
+                                @foreach (var action in Model.QuickActions)
+                                {
+                                    <div class="col-6 col-md-4 col-xl-3">
+                                        <a href="@action.Url" class="d-flex flex-column flex-center bg-hover-light rounded h-100 py-5 border border-gray-200 text-decoration-none">
+                                            <i class="@action.Icon fs-2x text-primary mb-2"></i>
+                                            <span class="fs-8 fw-semibold text-gray-800 text-center px-1">@action.Label(arabic)</span>
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+
+            <!--begin::Primary column-->
+            <main class="col-xl-8" aria-label="My workspace">
+
+                <!--begin::My Work-->
+                <div class="card card-flush mb-5 mb-xl-10" id="my-work" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-check-square fs-3 text-primary me-2"></i>@Localizer["My Work"]
+                            </span>
+                        </h3>
+                        @if (Model.Capabilities.Tasks)
+                        {
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Index", "Tasks")" class="btn btn-sm btn-light">@Localizer["View all"]</a>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.MyWork.State == WorkspacePanelState.PartiallyAvailable)
+                        {
+                            <div class="mb-4">@PanelNotice(WorkspacePanelState.PartiallyAvailable, "", "")</div>
+                        }
+                        @if (Model.MyWork.HasItems)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <thead>
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                            <th>@Localizer["Work item"]</th>
+                                            <th>@Localizer["Status"]</th>
+                                            <th class="text-end">@Localizer["Due"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var work in Model.MyWork.Items)
+                                        {
+                                            <tr>
+                                                <td class="min-w-200px">
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(work.Url ?? Url.Action("Index", "Tasks"))">@work.Title</a>
+                                                    @if (!string.IsNullOrWhiteSpace(work.Priority) && work.Priority != "Normal")
+                                                    {
+                                                        <span class="badge badge-light-@MetricColor(work.Tone) fs-8 ms-2 text-gray-800">@work.Priority</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrWhiteSpace(work.Status))
+                                                    {
+                                                        <span class="badge badge-light fs-8">@work.Status</span>
+                                                    }
+                                                </td>
+                                                <td class="text-end text-gray-700 fw-semibold">@work.DueHint</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(Model.MyWork.State, Localizer["No open work"].Value, "ki-outline ki-check-circle")
+                        }
+                    </div>
+                </div>
+                <!--end::My Work-->
+
+                <!--begin::Agenda-->
+                <div class="card card-flush mb-5 mb-xl-10" id="agenda" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-calendar fs-3 text-primary me-2"></i>@Localizer["Unified Agenda"]
+                            </span>
+                        </h3>
+                        @if (Model.Capabilities.Agenda)
+                        {
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Agenda", "Workspace")" class="btn btn-sm btn-light">@Localizer["View all"]</a>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Agenda.State == WorkspacePanelState.PartiallyAvailable)
+                        {
+                            <div class="mb-4">@PanelNotice(WorkspacePanelState.PartiallyAvailable, "", "")</div>
+                        }
+                        @if (Model.Agenda.HasItems)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <thead>
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                            <th>@Localizer["Agenda item"]</th>
+                                            <th>@Localizer["Type"]</th>
+                                            <th class="text-end">@Localizer["When"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Model.Agenda.Items)
+                                        {
+                                            <tr class="@(item.Completed ? "text-decoration-line-through" : "")">
+                                                <td class="min-w-200px">
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(item.DeepLink ?? Url.Action("Agenda", "Workspace"))">@item.Title</a>
+                                                    @if (item.Overdue)
+                                                    {
+                                                        <span class="badge badge-light-danger fs-8 ms-2 text-gray-800">@Localizer["Overdue"]</span>
+                                                    }
+                                                </td>
+                                                <td><span class="badge badge-light fs-8">@item.TypeLabel(arabic)</span></td>
+                                                <td class="text-end text-gray-700 fw-semibold">
+                                                    @(item.AllDay ? Localizer["All day"].Value : item.LocalAt.ToString("MMM d · HH:mm", CultureInfo.CurrentCulture))
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(Model.Agenda.State, Localizer["Nothing in the next few days"].Value, "ki-outline ki-calendar")
+                        }
+                    </div>
+                </div>
+                <!--end::Agenda-->
+
+                <!--begin::Recent Activity-->
+                <div class="card card-flush" id="activity" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-time fs-3 text-primary me-2"></i>@Localizer["Recent Activity"]
+                            </span>
+                        </h3>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Activity.State == WorkspacePanelState.PartiallyAvailable)
+                        {
+                            <div class="mb-4">@PanelNotice(WorkspacePanelState.PartiallyAvailable, "", "")</div>
+                        }
+                        @if (Model.Activity.HasItems)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <thead>
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                            <th>@Localizer["Activity"]</th>
+                                            <th>@Localizer["Details"]</th>
+                                            <th class="text-end">@Localizer["When"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var activity in Model.Activity.Items)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(activity.Url ?? Url.Action("Index", "Workspace"))">
+                                                        <i class="@activity.Icon text-@MetricColor(activity.Tone) me-2"></i>@activity.Title
+                                                    </a>
+                                                </td>
+                                                <td class="text-gray-700 fw-semibold">@activity.Detail</td>
+                                                <td class="text-end text-gray-700 fw-semibold">@Ago(activity.At)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(Model.Activity.State, Localizer["No activity yet"].Value, "ki-outline ki-time")
+                        }
+                    </div>
+                </div>
+                <!--end::Recent Activity-->
+
+            </main>
+            <!--end::Primary column-->
+
+            <!--begin::Side column-->
+            <aside class="col-xl-4" aria-label="Updates and reports">
+
+                <!--begin::Notifications-->
+                <div class="card card-flush mb-5 mb-xl-10" id="notifications" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-notification-bing fs-3 text-primary me-2"></i>@Localizer["Notifications"]
+                                @if (Model.UnreadNotifications > 0)
+                                {
+                                    <span class="badge badge-light-danger fs-8 ms-2 text-gray-800">@Model.UnreadNotifications</span>
+                                }
+                            </span>
+                        </h3>
+                        @if (Model.Capabilities.Notifications)
+                        {
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Notifications", "Workspace")" class="btn btn-sm btn-light">@Localizer["View all"]</a>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Notifications.HasItems)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <tbody>
+                                        @foreach (var notification in Model.Notifications.Items)
+                                        {
+                                            <tr class="@(notification.IsRead ? "" : "fw-bold")">
+                                                <td>
+                                                    <a class="text-gray-900 text-hover-primary" href="@(notification.Url ?? Url.Action("Notifications", "Workspace"))">@notification.Title</a>
+                                                    @if (!string.IsNullOrWhiteSpace(notification.Category))
+                                                    {
+                                                        <span class="badge badge-light fs-8 ms-2">@notification.Category</span>
+                                                    }
+                                                </td>
+                                                <td class="text-end text-gray-700 fw-semibold">@Ago(notification.At)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(Model.Notifications.State, Localizer["No notifications"].Value, "ki-outline ki-notification-bing")
+                        }
+                    </div>
+                </div>
+                <!--end::Notifications-->
+
+                <!--begin::Mentions-->
+                <div class="card card-flush mb-5 mb-xl-10" id="mentions" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-messages fs-3 text-primary me-2"></i>@Localizer["Mentions"]
+                                @if (Model.UnreadMentions > 0)
+                                {
+                                    <span class="badge badge-light-danger fs-8 ms-2 text-gray-800">@Model.UnreadMentions</span>
+                                }
+                            </span>
+                        </h3>
+                        @if (Model.Capabilities.Communication)
+                        {
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Mentions", "Workspace")" class="btn btn-sm btn-light">@Localizer["View all"]</a>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Mentions.HasItems)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <tbody>
+                                        @foreach (var mention in Model.Mentions.Items)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(mention.Url ?? Url.Action("Mentions", "Workspace"))">@(mention.Excerpt ?? mention.EntityLabel)</a>
+                                                    <div class="text-gray-700 fs-7">@mention.MentionedBy · <span class="badge badge-light-primary fs-8">@mention.EntityLabel</span></div>
+                                                </td>
+                                                <td class="text-end text-gray-700 fw-semibold">@Ago(mention.At)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(Model.Mentions.State, Localizer["No mentions"].Value, "ki-outline ki-messages")
+                        }
+                    </div>
+                </div>
+                <!--end::Mentions-->
+
+                <!--begin::Favourite Reports-->
+                <div class="card card-flush mb-5 mb-xl-10" id="favourite-reports" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-star fs-3 text-warning me-2"></i>@Localizer["Favourite Reports"]
+                            </span>
+                        </h3>
+                        @if (Model.Capabilities.Reporting)
+                        {
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Reports", "Workspace")" class="btn btn-sm btn-light">@Localizer["View all"]</a>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Reports.State is not WorkspacePanelState.Ready and not WorkspacePanelState.Empty)
+                        {
+                            @PanelNotice(Model.Reports.State, "", "")
+                        }
+                        else if (favouriteReports.Count > 0)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <tbody>
+                                        @foreach (var report in favouriteReports)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(report.Url ?? Url.Action("Reports", "Workspace"))">
+                                                        <i class="@report.Icon text-warning me-2"></i>@report.Label
+                                                    </a>
+                                                    @if (!string.IsNullOrWhiteSpace(report.Sub))
+                                                    {
+                                                        <div class="text-gray-700 fs-7">@report.Sub</div>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(WorkspacePanelState.Empty, Localizer["No favourite reports yet"].Value, "ki-outline ki-star")
+                        }
+                    </div>
+                </div>
+                <!--end::Favourite Reports-->
+
+                <!--begin::Recent Reports-->
+                <div class="card card-flush" id="recent-reports" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-chart-simple fs-3 text-primary me-2"></i>@Localizer["Recent Reports"]
+                            </span>
+                        </h3>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Reports.State is not WorkspacePanelState.Ready and not WorkspacePanelState.Empty)
+                        {
+                            @PanelNotice(Model.Reports.State, "", "")
+                        }
+                        else if (recentReports.Count > 0)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <tbody>
+                                        @foreach (var report in recentReports)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(report.Url ?? Url.Action("Reports", "Workspace"))">
+                                                        <i class="@report.Icon text-primary me-2"></i>@report.Label
+                                                    </a>
+                                                    @if (!string.IsNullOrWhiteSpace(report.Sub))
+                                                    {
+                                                        <div class="text-gray-700 fs-7">@report.Sub</div>
+                                                    }
+                                                </td>
+                                                <td class="text-end text-gray-700 fw-semibold">@Ago(report.At)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(WorkspacePanelState.Empty, Localizer["No recent reports yet"].Value, "ki-outline ki-chart-simple")
+                        }
+                    </div>
+                </div>
+                <!--end::Recent Reports-->
+
+            </aside>
+            <!--end::Side column-->
+
+        </div>
+    </div>
+</div>
+<!--end::Content-->

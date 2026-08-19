@@ -1,0 +1,180 @@
+@using CrossBuy.BL.Workspace
+@using System.Globalization
+@model WorkspacePanel<WorkspaceReportLink>
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    // Inventory shell = THE visual authority. Its module menu is NOT this screen's navigation:
+    // _MainMenu prepends the Platform category, so an empty list yields a Platform-only sidebar.
+    ViewBag.SidebarMenu = new List<CrossBuy.Models.Menu.MenuCategory>();
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = arabic ? "التقارير" : "Reports";
+
+    string KindLabel(WorkspaceReportKind k) => k switch
+    {
+        WorkspaceReportKind.Favorite => arabic ? "المفضلة" : "Favourites",
+        WorkspaceReportKind.Recent => arabic ? "الأخيرة" : "Recent",
+        WorkspaceReportKind.Saved => arabic ? "المحفوظة" : "Saved",
+        _ => arabic ? "تقارير متاحة لك" : "Available to you",
+    };
+}
+
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+    <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">
+                @(arabic ? "التقارير" : "Reports")
+            </h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-gray-700">
+                    <a href="@Url.Action("Index","Workspace")" class="text-gray-700 text-hover-primary">@(arabic ? "مساحة العمل" : "Workspace")</a>
+                </li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-gray-700">
+                    @(arabic ? "اختصارات لتقاريرك — التشغيل يتم داخل منصّة التقارير." : "Shortcuts to your reports — running them happens inside the Reporting product.")
+                </li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="@Url.Action("Index","Reports")" class="btn btn-sm btn-flex btn-primary fw-bold">
+                <i class="ki-outline ki-chart-simple fs-6"></i>@(arabic ? "مركز التقارير" : "Reports center")
+            </a>
+        </div>
+    </div>
+</div>
+<!--end::Toolbar-->
+
+@* The Workspace lists shortcuts and hands off. It does not generate, render, export or schedule a report:
+   those are Reporting internals and belong to that product. This screen consumes an extension source and
+   nothing else - no report data source, no renderer, no engine, no report table. *@
+
+<!--begin::Content-->
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div class="app-container container-fluid">
+        <div class="card card-flush">
+            <div class="card-header pt-5">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-900">
+                        <i class="ki-outline ki-chart-simple fs-3 text-primary me-2"></i>@(arabic ? "اختصارات التقارير" : "Report shortcuts")
+                    </span>
+                </h3>
+            </div>
+            <div class="card-body pt-2">
+
+                @if (Model.State == WorkspacePanelState.PartiallyAvailable)
+                {
+                    <div class="alert alert-info d-flex align-items-center p-4 mb-4 text-gray-800">
+                        <i class="ki-outline ki-information-5 fs-2hx me-3"></i>
+                        <div class="d-flex flex-column">
+                            <span class="fw-bold">@(arabic ? "بيانات جزئية" : "Partial data")</span>
+                            <span class="fs-7">@Model.Reason</span>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.HasItems)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                            <thead>
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                    <th>@(arabic ? "التقرير" : "Report")</th>
+                                    <th class="text-end w-150px">@(arabic ? "آخر تشغيل" : "Last run")</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    // Grouped by kind so favourites read as favourites rather than as an
+                                    // undifferentiated list. The ORDER within the model is already
+                                    // favourites-first; this only inserts the headers.
+                                    WorkspaceReportKind? renderedKind = null;
+                                }
+                                @foreach (var link in Model.Items)
+                                {
+                                    if (renderedKind != link.Kind)
+                                    {
+                                        renderedKind = link.Kind;
+                                        <tr class="bg-light">
+                                            <td colspan="2" class="fw-bold text-gray-700 fs-7 text-uppercase py-2">@KindLabel(link.Kind)</td>
+                                        </tr>
+                                    }
+
+                                    <tr>
+                                        <td class="min-w-250px">
+                                            <div class="d-flex align-items-center">
+                                                <div class="symbol symbol-35px me-3">
+                                                    <span class="symbol-label bg-light-@(link.Kind == WorkspaceReportKind.Favorite ? "warning" : "primary")">
+                                                        <i class="@link.Icon fs-5 text-@(link.Kind == WorkspaceReportKind.Favorite ? "warning" : "primary")"></i>
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex flex-column">
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(link.Url ?? "#")">@link.Label</a>
+                                                    <span class="text-gray-700 fs-7">
+                                                        @if (!string.IsNullOrWhiteSpace(link.Sub))
+                                                        {
+                                                            @link.Sub
+                                                        }
+                                                        @if (link.IsStale)
+                                                        {
+                                                            @* A pinned report whose definition no longer resolves is SHOWN
+                                                               and flagged, never hidden - otherwise the user cannot unpin
+                                                               what they cannot see. *@
+                                                            <span class="badge badge-light-warning fs-8 ms-1 text-gray-800">@(arabic ? "غير متاح" : "stale")</span>
+                                                        }
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-end text-gray-700 fw-semibold">
+                                            @(link.At.HasValue ? link.At.Value.ToString("yyyy-MM-dd") : "")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (Model.State is WorkspacePanelState.Ready or WorkspacePanelState.Empty)
+                {
+                    <div class="d-flex flex-column align-items-center text-center py-15">
+                        <i class="ki-outline ki-chart-simple fs-3x text-gray-400 mb-3"></i>
+                        <span class="text-gray-700 fw-semibold fs-6">
+                            @(arabic ? "لا توجد تقارير متاحة لك بعد" : "No reports available to you yet")
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    var colour = Model.State switch
+                    {
+                        WorkspacePanelState.Unavailable => "secondary",
+                        WorkspacePanelState.AccessDenied => "dark",
+                        WorkspacePanelState.TemporaryFailure => "warning",
+                        _ => "info",
+                    };
+                    var icon = Model.State switch
+                    {
+                        WorkspacePanelState.AccessDenied => "ki-lock-2",
+                        WorkspacePanelState.TemporaryFailure => "ki-abstract-26",
+                        _ => "ki-information-5",
+                    };
+                    var title = Model.State switch
+                    {
+                        WorkspacePanelState.Unavailable => arabic ? "غير متاح في هذه البيئة" : "Not available in this environment",
+                        WorkspacePanelState.AccessDenied => arabic ? "لا تملك صلاحية عرض هذا" : "You don't have access to this",
+                        WorkspacePanelState.TemporaryFailure => arabic ? "تعذّر التحميل مؤقتًا" : "Could not load right now",
+                        _ => arabic ? "بيانات جزئية" : "Partial data",
+                    };
+                    <div class="alert alert-@colour d-flex align-items-center p-5 mb-0 text-gray-800">
+                        <i class="ki-outline @icon fs-2hx me-4"></i>
+                        <div class="d-flex flex-column">
+                            <h5 class="mb-1">@title</h5>
+                            <span>@Model.Reason</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Content-->

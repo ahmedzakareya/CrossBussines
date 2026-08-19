@@ -144,19 +144,16 @@ namespace CrossBuy.BL.Reporting
             // services, which hold CrossDbContext.
             services.AddScoped<IReportsCenterPresenter, ReportsCenterPresenter>();
 
-            // ---- R3 Phase 5: the Workspace extension point --------------------------------------------
+            // ---- R3 Phase 5: the Workspace extension point ------------------------------------------------
             //
-            // DEFERRED, NOT DROPPED. Reporting CONTRIBUTES to the Workspace through
-            // IWorkspaceReportSource, implemented by ReportingWorkspaceSource. That adapter and the
-            // contract it implements (CrossBuy.BL.Workspace) are NOT committed yet, and an adapter
-            // cannot land before the interface it implements. Both the adapter and this one
-            // registration belong to the Workspace ownership phase:
+            // Reporting CONTRIBUTES to the Workspace; the Workspace does not reach into Reporting. This is the
+            // only place the two products meet, and it is one registration of one adapter against an interface
+            // the Workspace publishes for exactly this purpose (IWorkspaceReportSource).
             //
-            //     services.AddScoped<CrossBuy.BL.Workspace.IWorkspaceReportSource, ReportingWorkspaceSource>();
-            //
-            // Until then the Workspace simply has no Reporting contributor, which is the exact
-            // degradation the original comment describes: the panel reports "unavailable" honestly
-            // rather than failing to resolve a service.
+            // Registered HERE rather than in the Workspace's own AddCrossBusinessWorkspace() so that a
+            // deployment which has not activated Reporting simply has no contributor — the Workspace panel
+            // reports "unavailable" honestly instead of failing to resolve a service.
+            services.AddScoped<CrossBuy.BL.Workspace.IWorkspaceReportSource, ReportingWorkspaceSource>();
 
             return services;
         }
