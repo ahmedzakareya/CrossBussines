@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Entity" xml:space="preserve">
+    <value>الكيان</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>فتح</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>الشركة</value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>الفرع</value>
+  </data>
+  <data name="Actor" xml:space="preserve">
+    <value>المنفّذ</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>النظام</value>
+  </data>
+  <data name="Visibility" xml:space="preserve">
+    <value>مستوى الظهور</value>
+  </data>
+  <data name="Created" xml:space="preserve">
+    <value>تاريخ الإنشاء</value>
+  </data>
+  <data name="Event completed (all consumers)" xml:space="preserve">
+    <value>اكتمال الحدث (جميع المستهلكين)</value>
+  </data>
+  <data name="Payload size" xml:space="preserve">
+    <value>حجم الحمولة</value>
+  </data>
+  <data name="bytes" xml:space="preserve">
+    <value>بايت</value>
+  </data>
+  <data name="Consumers" xml:space="preserve">
+    <value>المستهلكون</value>
+  </data>
+  <data name="Consumer" xml:space="preserve">
+    <value>المستهلك</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Attempts" xml:space="preserve">
+    <value>المحاولات</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>آخر تحديث</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>الخطأ</value>
+  </data>
+  <data name="Retry (override)" xml:space="preserve">
+    <value>إعادة المحاولة (تجاوز)</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>إعادة المحاولة</value>
+  </data>
+  <data name="Payload" xml:space="preserve">
+    <value>الحمولة</value>
+  </data>
+  <data name="This event carries no payload." xml:space="preserve">
+    <value>هذا الحدث بلا حمولة.</value>
+  </data>
+  <data name="Payload truncated for display." xml:space="preserve">
+    <value>تم اقتطاع الحمولة للعرض.</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>توسيع</value>
+  </data>
+  <data name="Last error (full)" xml:space="preserve">
+    <value>آخر خطأ (كامل)</value>
+  </data>
+  <data name="Copy EventUid" xml:space="preserve">
+    <value>نسخ معرّف الحدث</value>
+  </data>
+</root>

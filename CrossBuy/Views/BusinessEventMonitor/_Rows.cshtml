@@ -1,0 +1,116 @@
+@using CrossBuy.Models.Platform
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model BusinessEventMonitorPage
+@{
+    // Stage 0 Batch B — server-rendered rows. Paging and filtering happen in the service; this partial only
+    // renders what it is given, so nothing here can widen the result set.
+    string statusBadge(string? s) => s switch
+    {
+        "Done" => "success",
+        "Failed" => "danger",
+        "Claimed" => "warning",
+        "Pending" => "secondary",   // neutral waiting state — gray, not off-brand blue
+        _ => "secondary",
+    };
+    string visBadge(string v) => v switch
+    {
+        "Confidential" => "warning",
+        "Restricted" => "danger",
+        "System" => "dark",
+        _ => "light-primary",
+    };
+}
+@functions {
+    // localized display for a coded value via SharedResources (SR); falls back to the raw code when unmapped
+    string Disp(string prefix, string? val)
+    {
+        if (string.IsNullOrEmpty(val)) return "";
+        var t = SR[prefix + val];
+        return t.IsResourceNotFound ? val! : t.Value;
+    }
+}
+@if (Model.Rows.Count == 0)
+{
+    <tr>
+        <td colspan="9" class="text-center py-10">
+            <i class="ki-outline ki-magnifier fs-3x text-muted mb-3 d-block"></i>
+            <div class="text-muted fs-6">@Localizer["No business events match these filters."]</div>
+        </td>
+    </tr>
+}
+else
+{
+    @foreach (var r in Model.Rows)
+    {
+        <tr data-dispatch-id="@r.DispatchId" data-event-id="@r.EventId">
+            <td class="ps-4">
+                <a href="#" class="fw-bold text-gray-900 text-hover-primary cb-evt-details" data-id="@r.EventId">@Disp("evt_type_", r.EventType)</a>
+                <div class="text-muted fs-8 d-flex align-items-center font-monospace">
+                    <span>@r.EventUid.ToString("D")</span>
+                    <a href="#" class="cb-copy ms-2 text-gray-500 text-hover-primary" data-copy="@r.EventUid.ToString("D")" title="@Localizer["Copy EventUid"]"><i class="ki-outline ki-copy fs-6"></i></a>
+                </div>
+            </td>
+            <td>
+                <span class="fw-semibold text-gray-800">@r.EntityLabel</span>
+                <div class="fs-8">
+                    @if (!string.IsNullOrEmpty(r.EntityUrl))
+                    {
+                        <a href="@r.EntityUrl" class="text-primary text-hover-primary fw-semibold">#@r.EntityId</a>
+                    }
+                    else
+                    {
+                        <span class="text-muted">#@r.EntityId</span>
+                    }
+                </div>
+            </td>
+            <td class="text-center">
+                <span class="badge badge-light fs-8">@r.CompanyId</span>
+                @if (r.BranchId.HasValue) { <span class="badge badge-light fs-8 ms-1">B@(r.BranchId)</span> }
+            </td>
+            <td>
+                <span class="text-gray-700 fs-7">@(r.ActorName ?? Localizer["System"].Value)</span>
+                <div class="text-muted fs-8">@r.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div>
+            </td>
+            <td><span class="badge badge-@visBadge(r.Visibility) fs-8">@Disp("evt_vis_", r.Visibility)</span></td>
+            <td><span class="fw-semibold fs-7">@Disp("evt_consumer_", r.Consumer)</span></td>
+            <td class="text-center">
+                @if (r.DispatchStatus == "Done")
+                {
+                    <span class="badge badge-light-primary fw-bold fs-8">@Disp("evt_status_", r.DispatchStatus)</span>
+                }
+                else
+                {
+                    <span class="badge badge-light-@statusBadge(r.DispatchStatus) fs-8">@Disp("evt_status_", r.DispatchStatus)</span>
+                }
+                @* Event completion (ALL consumers done) is visually distinct from this consumer's own status. *@
+                @if (r.CompletedAt.HasValue)
+                {
+                    <div class="fs-9 mt-1" class="text-primary" title="@Localizer["All consumers completed"]"><i class="ki-outline ki-double-check fs-8"></i> @Localizer["event done"]</div>
+                }
+            </td>
+            <td class="text-center">
+                <span class="fw-bold @(r.Attempts > 1 ? "text-warning" : "text-gray-700")">@r.Attempts</span>
+                @if (r.UpdatedAt.HasValue) { <div class="text-muted fs-9">@r.UpdatedAt.Value.ToString("HH:mm:ss")</div> }
+            </td>
+            <td class="pe-4 text-end">
+                <div class="d-flex justify-content-end flex-shrink-0">
+                    <a href="#" class="btn btn-icon btn-light-primary btn-sm me-2 cb-evt-details" data-id="@r.EventId" title="@Localizer["Details"]"><i class="ki-outline ki-eye fs-4"></i></a>
+                    @if (r.CanRetry && r.DispatchId.HasValue)
+                    {
+                        <button type="button"
+                                class="btn btn-icon btn-sm @(r.RetryNeedsOverride ? "btn-light-danger" : "btn-light-warning") cb-evt-retry"
+                                data-dispatch-id="@r.DispatchId"
+                                data-consumer="@r.Consumer"
+                                data-needs-override="@(r.RetryNeedsOverride ? "1" : "0")"
+                                title="@(r.RetryNeedsOverride ? Localizer["Retry (override)"] : Localizer["Retry"])"><i class="ki-outline ki-arrows-circle fs-4"></i></button>
+                    }
+                </div>
+                @if (r.HasError)
+                {
+                    <div class="text-danger fs-8 mt-2 cb-platform-error-summary">@r.ErrorSummary</div>
+                }
+            </td>
+        </tr>
+    }
+}

@@ -47,7 +47,12 @@
         && o.RouteValues is not null && i.RouteValues is not null
         && o.RouteValues.TryGetValue("id", out var a) && i.RouteValues.TryGetValue("id", out var b) && a == b);
 
-    bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, "report" => ReportVisible(i), _ => true };
+    // "platform-ops" must mirror PlatformOpsAttribute EXACTLY, not approximate it: admin role, or the
+    // accounting management tier. Hiding a link the user could open is as wrong as showing one they cannot,
+    // and a nav predicate that drifts from the filter produces both over time.
+    bool canPlatformOps = CrossBuy.Models.PlatformOpsAttribute.IsAdmin(Context) || canAccManage;
+
+    bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, "platform-ops" => canPlatformOps, "report" => ReportVisible(i), _ => true };
 
     // The URL a menu row points at. Route values go through Url.Action so the ROUTE decides whether each one
     // lands in the path (Reports/Viewer/{id}) or the query (Reports?favorites=true) - a URL assembled by hand

@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Business Event Monitor" xml:space="preserve">
+    <value>Business Event Monitor</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Platform operations" xml:space="preserve">
+    <value>Platform operations</value>
+  </data>
+  <data name="You are viewing events across all companies." xml:space="preserve">
+    <value>You are viewing events across all companies.</value>
+  </data>
+  <data name="Elevated" xml:space="preserve">
+    <value>Elevated</value>
+  </data>
+  <data name="You see only your own company's events." xml:space="preserve">
+    <value>You see only your own company's events.</value>
+  </data>
+  <data name="Company-scoped" xml:space="preserve">
+    <value>Company-scoped</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Claimed" xml:space="preserve">
+    <value>Claimed</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Exhausted" xml:space="preserve">
+    <value>Exhausted</value>
+  </data>
+  <data name="Events" xml:space="preserve">
+    <value>Events</value>
+  </data>
+  <data name="Entity type" xml:space="preserve">
+    <value>Entity type</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Entity #" xml:space="preserve">
+    <value>Entity #</value>
+  </data>
+  <data name="Event type" xml:space="preserve">
+    <value>Event type</value>
+  </data>
+  <data name="Consumer" xml:space="preserve">
+    <value>Consumer</value>
+  </data>
+  <data name="Dispatch status" xml:space="preserve">
+    <value>Dispatch status</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Min attempts" xml:space="preserve">
+    <value>Min attempts</value>
+  </data>
+  <data name="Correlation id" xml:space="preserve">
+    <value>Correlation id</value>
+  </data>
+  <data name="Event uid" xml:space="preserve">
+    <value>Event uid</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Errors only" xml:space="preserve">
+    <value>Errors only</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Event" xml:space="preserve">
+    <value>Event</value>
+  </data>
+  <data name="Entity" xml:space="preserve">
+    <value>Entity</value>
+  </data>
+  <data name="Co." xml:space="preserve">
+    <value>Co.</value>
+  </data>
+  <data name="Actor" xml:space="preserve">
+    <value>Actor</value>
+  </data>
+  <data name="Visibility" xml:space="preserve">
+    <value>Visibility</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Attempts" xml:space="preserve">
+    <value>Attempts</value>
+  </data>
+  <data name="Error / actions" xml:space="preserve">
+    <value>Error / actions</value>
+  </data>
+  <data name="dispatch rows" xml:space="preserve">
+    <value>dispatch rows</value>
+  </data>
+  <data name="page" xml:space="preserve">
+    <value>page</value>
+  </data>
+  <data name="Re-queue dispatch" xml:space="preserve">
+    <value>Re-queue dispatch</value>
+  </data>
+  <data name="This re-queues one consumer's dispatch row. It does not modify the event, its payload, or any other consumer." xml:space="preserve">
+    <value>This re-queues one consumer's dispatch row. It does not modify the event, its payload, or any other consumer.</value>
+  </data>
+  <data name="Attempts are exhausted" xml:space="preserve">
+    <value>Attempts are exhausted</value>
+  </data>
+  <data name="Re-queueing requires an elevated override. Attempts are not reset — the ceiling is raised by one." xml:space="preserve">
+    <value>Re-queueing requires an elevated override. Attempts are not reset — the ceiling is raised by one.</value>
+  </data>
+  <data name="I confirm the elevated override" xml:space="preserve">
+    <value>I confirm the elevated override</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Why is this being re-queued?" xml:space="preserve">
+    <value>Why is this being re-queued?</value>
+  </data>
+  <data name="Re-queue" xml:space="preserve">
+    <value>Re-queue</value>
+  </data>
+  <data name="Please wait" xml:space="preserve">
+    <value>Please wait</value>
+  </data>
+  <data name="You are no longer authorised to view this screen." xml:space="preserve">
+    <value>You are no longer authorised to view this screen.</value>
+  </data>
+  <data name="Could not load business events." xml:space="preserve">
+    <value>Could not load business events.</value>
+  </data>
+  <data name="This event is not available." xml:space="preserve">
+    <value>This event is not available.</value>
+  </data>
+  <data name="A reason is required." xml:space="preserve">
+    <value>A reason is required.</value>
+  </data>
+  <data name="Confirm the elevated override to continue." xml:space="preserve">
+    <value>Confirm the elevated override to continue.</value>
+  </data>
+  <data name="You are no longer authorised to perform this action." xml:space="preserve">
+    <value>You are no longer authorised to perform this action.</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>Expand</value>
+  </data>
+  <data name="Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="Dispatcher" xml:space="preserve">
+    <value>Dispatcher</value>
+  </data>
+  <data name="Instance" xml:space="preserve">
+    <value>Instance</value>
+  </data>
+  <data name="PID" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="Started" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="UTC" xml:space="preserve">
+    <value>UTC</value>
+  </data>
+  <data name="Background work is running in a different process. Pending rows here are being drained there, not by this instance." xml:space="preserve">
+    <value>Background work is running in a different process. Pending rows here are being drained there, not by this instance.</value>
+  </data>
+  <data name="Details (JSON)" xml:space="preserve">
+    <value>Details (JSON)</value>
+  </data>
+  <data name="Click to filter by this" xml:space="preserve">
+    <value>Click to filter by this</value>
+  </data>
+  <data name="Click to clear this filter" xml:space="preserve">
+    <value>Click to clear this filter</value>
+  </data>
+</root>

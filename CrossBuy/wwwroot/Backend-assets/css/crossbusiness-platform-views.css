@@ -1,0 +1,23 @@
+/* Presentation-only adapters for platform operations screens hosted by the Accounting shell. */
+.cb-evt-card { cursor: pointer; }
+.cb-platform-error-summary {
+    max-width: 17.5rem;
+    overflow-wrap: anywhere;
+    margin-inline-start: auto;
+}
+.cb-platform-detail-error {
+    max-width: 20rem;
+    overflow-wrap: anywhere;
+}
+.cb-platform-payload,
+.cb-platform-full-error {
+    overflow: auto;
+    font-size: .8rem;
+    direction: ltr;
+    text-align: left;
+}
+.cb-platform-payload { max-height: 20rem; }
+.cb-platform-full-error { max-height: 12.5rem; }
+@media (prefers-reduced-motion: reduce) {
+    .cb-evt-card { transition: none !important; }
+}

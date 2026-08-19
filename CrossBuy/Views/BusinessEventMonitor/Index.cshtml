@@ -1,0 +1,565 @@
+@using CrossBuy.Models.Platform
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model BusinessEventMonitorPage
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    // Inventory shell = THE visual authority. Its module menu is not this screen's
+    // navigation: _MainMenu prepends the Platform category, so this yields a Platform-only sidebar.
+    ViewBag.SidebarMenu = new List<CrossBuy.Models.Menu.MenuCategory>();
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var f = ViewBag.Filter as BusinessEventMonitorFilter ?? new BusinessEventMonitorFilter();
+    bool crossCompany = ViewBag.CrossCompany is bool cc && cc;
+    var entityTypes = ViewBag.EntityTypes as IReadOnlyList<string> ?? new List<string>();
+    var consumers = ViewBag.Consumers as IReadOnlyList<string> ?? new List<string>();
+    var statuses = ViewBag.Statuses as IReadOnlyList<string> ?? new List<string>();
+    var s = Model.Summary;
+    string d(DateTime? v) => v?.ToString("yyyy-MM-dd") ?? "";
+}
+@section Styles {
+    <link href="~/Backend-assets/css/crossbusiness-platform-views.css" rel="stylesheet" type="text/css" />
+}
+@functions {
+    // localized display for a coded value via SharedResources (SR); falls back to the raw code when unmapped
+    string Disp(string prefix, string? val)
+    {
+        if (string.IsNullOrEmpty(val)) return "";
+        var t = SR[prefix + val];
+        return t.IsResourceNotFound ? val! : t.Value;
+    }
+}
+
+<div class="cbw d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Business Event Monitor"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted">@Localizer["Home"]</li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Platform operations"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            @if (crossCompany)
+            {
+                <span class="badge badge-light-danger fs-8 fw-bold" title="@Localizer["You are viewing events across all companies."]"><i class="ki-outline ki-shield-tick fs-7 me-1"></i>@Localizer["Elevated"]</span>
+            }
+            else
+            {
+                <span class="badge badge-light fs-8 fw-bold" title="@Localizer["You see only your own company's events."]"><i class="ki-outline ki-lock-2 fs-7 me-1"></i>@Localizer["Company-scoped"]</span>
+            }
+            <button type="button" id="cbEvtRefresh" class="btn btn-sm btn-light fw-bold"><i class="ki-outline ki-arrows-circle fs-4"></i>@Localizer["Refresh"]</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+        @{
+            var rt = ViewBag.Runtime as CrossBuy.BL.Platform.IRuntimeInstanceInfo;
+        }
+        @if (rt != null)
+        {
+            <!--begin::Runtime banner. A backlog of Pending rows means something different depending on whether any
+                 process is actually dispatching, so the worker role belongs on this screen, not only in a log file.-->
+            var unsafeWorkers = !string.IsNullOrEmpty(rt.WorkerSafetyWarning);
+            var idleWorkers = rt.WorkerRole == CrossBuy.BL.Platform.WorkerRole.Standby;
+            <div class="notice d-flex align-items-center rounded border border-dashed p-4 mb-6 @(unsafeWorkers ? "bg-light-danger border-danger" : idleWorkers ? "bg-light-warning border-warning" : "bg-light-secondary border-gray-300")">
+                <i class="ki-outline @(unsafeWorkers ? "ki-shield-cross text-danger" : idleWorkers ? "ki-time text-warning" : "ki-shield-tick text-success") fs-2x me-4"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold fs-7 text-gray-900">
+                        @Localizer["Dispatcher"]: @Disp("evt_role_", rt.WorkerRole.ToString())
+                    </div>
+                    <div class="text-muted fs-8">
+                        @Localizer["Instance"] <span class="fw-semibold">@rt.InstanceName</span> ·
+                        @Localizer["PID"] @rt.ProcessId ·
+                        @Localizer["Started"] @rt.StartedAtUtc.ToString("yyyy-MM-dd HH:mm") @Localizer["UTC"] ·
+                        v@rt.ApplicationVersion · @rt.EnvironmentName
+                    </div>
+                    @if (unsafeWorkers)
+                    {
+                        <div class="text-danger fw-semibold fs-8 mt-2">@rt.WorkerSafetyWarning</div>
+                    }
+                    else if (idleWorkers)
+                    {
+                        <div class="text-warning fw-semibold fs-8 mt-2">
+                            @Localizer["Background work is running in a different process. Pending rows here are being drained there, not by this instance."]
+                        </div>
+                    }
+                </div>
+                <a href="@Url.Action("Runtime")" target="_blank" class="btn btn-sm btn-light fs-8">@Localizer["Details (JSON)"]</a>
+            </div>
+            <!--end::Runtime banner-->
+        }
+
+        <!--begin::Summary cards. Counts come from the SAME filtered query as the grid, so they always agree with it.-->
+        <div class="row g-5 g-xl-10 mb-5 mb-xl-10" id="cbEvtSummary">
+            @{
+                var cards = new (string Label, int Value, string Colour, string Icon, string? Status, string Key)[]
+                {
+                    (Localizer["Pending"].Value,   s.Pending,     "info",      "ki-time", "Pending", "pending"),
+                    (Localizer["Claimed"].Value,   s.Claimed,     "warning",   "ki-loading", "Claimed", "claimed"),
+                    (Localizer["Failed"].Value,    s.Failed,      "danger",    "ki-cross-circle", "Failed", "failed"),
+                    (Localizer["Done"].Value,      s.Done,        "success",   "ki-check-circle", "Done", "done"),
+                    (Localizer["Exhausted"].Value, s.Exhausted,   "dark",      "ki-shield-cross", null, "exhausted"),
+                    (Localizer["Events"].Value,    s.TotalEvents, "primary",   "ki-abstract-26", null, "totalEvents"),
+                };
+            }
+            @foreach (var c in cards)
+            {
+                @* Each card is a FILTER, not a label. Clicking it applies its slice; clicking the active one
+                   clears it. "Exhausted" is Failed + MinAttempts, and "Events" clears the status filter. *@
+                bool active = (c.Key == "exhausted")
+                    ? (f.DispatchStatus == "Failed" && f.MinAttempts is > 0)
+                    : (c.Status != null && f.DispatchStatus == c.Status);
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div role="button" tabindex="0"
+                         class="card card-flush h-100 cb-evt-card cursor-pointer @(active ? "border border-2 border-" + c.Colour : "")"
+                         data-card="@c.Key" data-status="@c.Status" data-active="@(active ? "1" : "0")"
+                         title="@(active ? Localizer["Click to clear this filter"].Value : Localizer["Click to filter by this"].Value)">
+                        <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                            <div class="d-flex flex-stack w-100 mb-4">
+                                <div class="symbol symbol-40px"><span class="symbol-label bg-light-@c.Colour"><i class="ki-outline @c.Icon fs-2x text-@c.Colour"></i></span></div>
+                                @if (active) { <span class="badge badge-light-@c.Colour fs-8 fw-bold">@Localizer["Filtered"]</span> }
+                            </div>
+                            <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2" data-sum="@c.Key" data-kt-countup="true" data-kt-countup-value="@c.Value">@c.Value</span>
+                            <span class="text-gray-500 fw-semibold fs-7 mt-2">@c.Label</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <!--end::Summary cards-->
+
+        <div class="card card-flush">
+            <div class="card-header border-0 pt-6">
+                <!--begin::Filters. A plain GET form: every filter is a query-string value the server re-validates,
+                     so a hand-edited URL cannot widen the result set beyond what the service allows.-->
+                @* Uniform 4-per-row grid (xl) with labels above each field, then a separated action bar — a consistent,
+                   professional filter panel instead of ragged mixed-width columns. *@
+                <form method="get" id="cbEvtFilters" class="row g-4 w-100">
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_EntityType" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Entity type"]</label>
+                        <select id="cbEvt_EntityType" name="EntityType" class="form-select form-select-sm form-select-solid" data-control="select2" data-placeholder="@Localizer["All"]">
+                            <option value="">@Localizer["All"]</option>
+                            @foreach (var t in entityTypes) { <option value="@t" selected="@(f.EntityType == t)">@Disp("evt_entity_", t)</option> }
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_EntityId" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Entity #"]</label>
+                        <input id="cbEvt_EntityId" type="number" name="EntityId" value="@(f.EntityId?.ToString())" class="form-control form-control-sm form-control-solid" min="1" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_EventType" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Event type"]</label>
+                        <input id="cbEvt_EventType" type="text" name="EventType" value="@f.EventType" class="form-control form-control-sm form-control-solid" placeholder="SalesInvoice.Posted" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_Consumer" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Consumer"]</label>
+                        <select id="cbEvt_Consumer" name="Consumer" class="form-select form-select-sm form-select-solid" data-control="select2" data-placeholder="@Localizer["All"]">
+                            <option value="">@Localizer["All"]</option>
+                            @foreach (var c in consumers) { <option value="@c" selected="@(f.Consumer == c)">@Disp("evt_consumer_", c)</option> }
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_DispatchStatus" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Dispatch status"]</label>
+                        <select id="cbEvt_DispatchStatus" name="DispatchStatus" class="form-select form-select-sm form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="@Localizer["All"]">
+                            <option value="">@Localizer["All"]</option>
+                            @foreach (var st in statuses) { <option value="@st" selected="@(f.DispatchStatus == st)">@Disp("evt_status_", st)</option> }
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_DateFrom" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["From"]</label>
+                        <input id="cbEvt_DateFrom" type="date" name="DateFrom" value="@d(f.DateFrom)" class="form-control form-control-sm form-control-solid" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_DateTo" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["To"]</label>
+                        <input id="cbEvt_DateTo" type="date" name="DateTo" value="@d(f.DateTo)" class="form-control form-control-sm form-control-solid" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_MinAttempts" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Min attempts"]</label>
+                        <input id="cbEvt_MinAttempts" type="number" name="MinAttempts" value="@(f.MinAttempts?.ToString())" class="form-control form-control-sm form-control-solid" min="0" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_CorrelationId" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Correlation id"]</label>
+                        <input id="cbEvt_CorrelationId" type="text" name="CorrelationId" value="@(f.CorrelationId?.ToString())" class="form-control form-control-sm form-control-solid text-start" dir="ltr" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_EventUid" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Event uid"]</label>
+                        <input id="cbEvt_EventUid" type="text" name="EventUid" value="@(f.EventUid?.ToString())" class="form-control form-control-sm form-control-solid text-start" dir="ltr" />
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <label for="cbEvt_BranchId" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Branch"]</label>
+                        <input id="cbEvt_BranchId" type="number" name="BranchId" value="@(f.BranchId?.ToString())" class="form-control form-control-sm form-control-solid" min="1" />
+                    </div>
+                    @if (crossCompany)
+                    {
+                        @* The company filter is only rendered for elevated operators. For everyone else the service
+                           ignores it entirely, so hiding it here matches the server rule rather than masking it. *@
+                        <div class="col-6 col-md-4 col-xl-3">
+                            <label for="cbEvt_CompanyId" class="form-label fs-8 fw-semibold text-muted mb-1">@Localizer["Company"]</label>
+                            <input id="cbEvt_CompanyId" type="number" name="CompanyId" value="@(f.CompanyId?.ToString())" class="form-control form-control-sm form-control-solid" min="1" />
+                        </div>
+                    }
+                    <!--begin::Action bar — full width, separated from the fields-->
+                    <div class="col-12 d-flex flex-stack flex-wrap gap-3 border-top border-gray-200 pt-4 mt-1">
+                        <label class="form-check form-check-custom form-check-solid">
+                            <input class="form-check-input" type="checkbox" name="HasError" value="true" checked="@(f.HasError == true)" onchange="this.form.requestSubmit();" />
+                            <span class="form-check-label fw-semibold fs-7 ms-2 text-nowrap">@Localizer["Errors only"]</span>
+                        </label>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted fs-8 text-nowrap">@Localizer["page"]</span>
+                            <select name="PageSize" class="form-select form-select-sm form-select-solid w-125px" data-control="select2" data-hide-search="true">
+                                @foreach (var ps in new[] { 25, 50, 100 }) { <option value="@ps" selected="@(f.PageSize == ps)">@ps</option> }
+                            </select>
+                            <a href="@Url.Action("Index")" class="btn btn-sm btn-light text-nowrap">@Localizer["Reset"]</a>
+                            <button type="submit" class="btn btn-sm btn-primary text-nowrap"><i class="ki-outline ki-filter fs-5"></i>@Localizer["Apply"]</button>
+                        </div>
+                    </div>
+                    <!--end::Action bar-->
+                </form>
+                <!--end::Filters-->
+            </div>
+
+            <div class="card-body pt-0 position-relative">
+                <div id="cbEvtLoading" class="d-none position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-body bg-opacity-75 z-index-5">
+                    <span class="spinner-border text-primary"></span>
+                </div>
+                <div id="cbEvtError" class="d-none alert alert-danger d-flex align-items-center mt-4">
+                    <i class="ki-outline ki-information-5 fs-2x text-danger me-3"></i>
+                    <span id="cbEvtErrorText" class="fw-semibold fs-7"></span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-row-bordered align-middle gy-3 mb-0">
+                        <thead>
+                            <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" class="border-bottom border-2 border-primary">
+                                <th class="ps-4 min-w-200px">@Localizer["Event"]</th>
+                                <th class="min-w-125px">@Localizer["Entity"]</th>
+                                <th class="text-center">@Localizer["Co."]</th>
+                                <th class="min-w-125px">@Localizer["Actor"]</th>
+                                <th>@Localizer["Visibility"]</th>
+                                <th class="min-w-100px">@Localizer["Consumer"]</th>
+                                <th class="text-center">@Localizer["Status"]</th>
+                                <th class="text-center">@Localizer["Attempts"]</th>
+                                <th class="pe-4 min-w-200px">@Localizer["Error / actions"]</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cbEvtRows">
+                            @await Html.PartialAsync("_Rows", Model)
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer d-flex flex-stack flex-wrap gap-2 py-4">
+                <span class="text-muted fs-7" id="cbEvtCount">
+                    @Model.Total @Localizer["dispatch rows"] · @Localizer["page"] @Model.Page / @Model.Pages
+                </span>
+                <ul class="pagination mb-0" id="cbEvtPager"></ul>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<!--begin::Details modal-->
+<div class="modal fade" id="cbEvtModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content" id="cbEvtModalContent"></div>
+    </div>
+</div>
+<!--end::Details modal-->
+
+<!--begin::Retry modal — the reason is mandatory, matching the server contract (ReasonRequired).-->
+<div class="modal fade" id="cbEvtRetryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h3 class="modal-title fs-4 m-0">@Localizer["Re-queue dispatch"]</h3>
+                <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-2x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-muted fs-7 mb-4">
+                    @Localizer["This re-queues one consumer's dispatch row. It does not modify the event, its payload, or any other consumer."]
+                </div>
+                <div class="mb-4">
+                    <span class="text-muted fs-8">@Localizer["Consumer"]</span>
+                    <div class="fw-bold fs-6" id="cbEvtRetryConsumer"></div>
+                </div>
+                <div id="cbEvtOverrideBox" class="d-none notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 mb-4">
+                    <i class="ki-outline ki-shield-cross fs-2x text-danger me-3"></i>
+                    <div>
+                        <div class="fw-bold fs-7 mb-1">@Localizer["Attempts are exhausted"]</div>
+                        <div class="fs-8">@Localizer["Re-queueing requires an elevated override. Attempts are not reset — the ceiling is raised by one."]</div>
+                        <label class="form-check form-check-sm form-check-custom form-check-solid mt-3">
+                            <input class="form-check-input" type="checkbox" id="cbEvtOverride" />
+                            <span class="form-check-label fw-semibold fs-8 ms-2">@Localizer["I confirm the elevated override"]</span>
+                        </label>
+                    </div>
+                </div>
+                <label class="form-label required fs-7">@Localizer["Reason"]</label>
+                <textarea id="cbEvtReason" class="form-control form-control-solid" rows="3" maxlength="400" placeholder="@Localizer["Why is this being re-queued?"]"></textarea>
+                <div id="cbEvtRetryErr" class="text-danger fs-8 mt-2 d-none"></div>
+            </div>
+            <div class="modal-footer py-3">
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+                <button type="button" class="btn btn-sm btn-primary" id="cbEvtRetryConfirm">
+                    <span class="indicator-label">@Localizer["Re-queue"]</span>
+                    <span class="indicator-progress">@Localizer["Please wait"] <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Retry modal-->
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+(function () {
+    var isAr = @(isAr ? "true" : "false");
+    var rowsUrl = '@Url.Action("Rows")';
+    var detailsUrl = '@Url.Action("Details")';
+    var retryUrl = '@Url.Action("Retry")';
+    var form = document.getElementById('cbEvtFilters');
+    var tbody = document.getElementById('cbEvtRows');
+    var loading = document.getElementById('cbEvtLoading');
+    var errBox = document.getElementById('cbEvtError');
+    var errText = document.getElementById('cbEvtErrorText');
+    var pager = document.getElementById('cbEvtPager');
+    var countEl = document.getElementById('cbEvtCount');
+    var state = { page: @Model.Page, pages: @Model.Pages, total: @Model.Total };
+
+    // Retry outcomes are localised from SharedResources by their STABLE CODE (DispatchRetryOutcome), not from
+    // the English sentence the store composes. The server message remains the fallback for an unmapped code.
+    var outcomeText = {
+        Requeued:          '@Disp("evt_outcome_", "Requeued")',
+        NotFound:          '@Disp("evt_outcome_", "NotFound")',
+        AlreadyDone:       '@Disp("evt_outcome_", "AlreadyDone")',
+        AlreadyPending:    '@Disp("evt_outcome_", "AlreadyPending")',
+        HeldByWorker:      '@Disp("evt_outcome_", "HeldByWorker")',
+        AttemptsExhausted: '@Disp("evt_outcome_", "AttemptsExhausted")',
+        ReasonRequired:    '@Disp("evt_outcome_", "ReasonRequired")',
+        NotAuthorized:     '@Disp("evt_outcome_", "NotAuthorized")',
+        RaceLost:          '@Disp("evt_outcome_", "RaceLost")'
+    };
+    function outcomeMessage(res) { return outcomeText[res.outcome] || res.message || res.outcome; }
+
+    function token() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+    function qs(page) {
+        var fd = new FormData(form), p = new URLSearchParams();
+        fd.forEach(function (v, k) { if (v !== '') p.append(k, v); });
+        p.set('Page', page);
+        return p.toString();
+    }
+    function applySummary(raw) {
+        if (!raw) return;
+        var sum;
+        try { sum = JSON.parse(raw); } catch (e) { return; }
+        Object.keys(sum).forEach(function (k) {
+            var el = document.querySelector('[data-sum="' + k + '"]');
+            if (el) el.textContent = sum[k];
+        });
+    }
+    function showError(msg) { errText.textContent = msg; errBox.classList.remove('d-none'); }
+    function clearError() { errBox.classList.add('d-none'); }
+
+    function renderPager() {
+        pager.innerHTML = '';
+        if (state.pages <= 1) return;
+        var prevIcon = isAr ? 'right' : 'left', nextIcon = isAr ? 'left' : 'right';
+        // Accessible name (axe link-name). The numbered links carry their own digit as text, but the
+        // prev/next links contained ONLY a ki-outline glyph, so they exposed no name. The name is
+        // supplied explicitly and the glyph is marked decorative; the arrow direction still flips for
+        // RTL, but the NAME must not — "Previous" is previous in both directions.
+        function li(label, page, disabled, active, aria) {
+            var el = document.createElement('li');
+            el.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+            var a = document.createElement('a');
+            a.className = 'page-link'; a.href = '#'; a.innerHTML = label;
+            if (aria) a.setAttribute('aria-label', aria);
+            if (!disabled && !active) a.addEventListener('click', function (e) { e.preventDefault(); load(page); });
+            el.appendChild(a); pager.appendChild(el);
+        }
+        li('<i class="ki-outline ki-' + prevIcon + ' fs-4" aria-hidden="true"></i>', state.page - 1, state.page <= 1, false, '@SR["Previous"]');
+        for (var p = Math.max(1, state.page - 2); p <= Math.min(state.pages, state.page + 2); p++) li(String(p), p, false, p === state.page);
+        li('<i class="ki-outline ki-' + nextIcon + ' fs-4" aria-hidden="true"></i>', state.page + 1, state.page >= state.pages, false, '@SR["Next"]');
+    }
+
+    function load(page) {
+        clearError();
+        loading.classList.remove('d-none');
+        fetch(rowsUrl + '?' + qs(page), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                if (r.status === 403 || r.status === 401) throw new Error('@Localizer["You are no longer authorised to view this screen."]');
+                if (!r.ok) throw new Error('@Localizer["Could not load business events."]');
+                state.page = parseInt(r.headers.get('X-Page') || page, 10);
+                state.pages = parseInt(r.headers.get('X-Pages') || '1', 10);
+                state.total = parseInt(r.headers.get('X-Total') || '0', 10);
+                // The cards are recomputed from the same filtered query as the rows, so they must move together —
+                // otherwise a filtered grid would sit under whole-range counts and read as a data bug.
+                applySummary(r.headers.get('X-Summary'));
+                return r.text();
+            })
+            .then(function (html) {
+                tbody.innerHTML = html;
+                countEl.textContent = state.total + ' @Localizer["dispatch rows"] · @Localizer["page"] ' + state.page + ' / ' + state.pages;
+                renderPager();
+                bindRows();
+            })
+            .catch(function (e) { showError(e.message); })
+            .finally(function () { loading.classList.add('d-none'); });
+    }
+
+    // ---- details ----
+    var modalEl = document.getElementById('cbEvtModal');
+    var modal = new bootstrap.Modal(modalEl);
+    function openDetails(id) {
+        clearError();
+        document.getElementById('cbEvtModalContent').innerHTML =
+            '<div class="p-10 text-center"><span class="spinner-border text-primary"></span></div>';
+        modal.show();
+        fetch(detailsUrl + '?id=' + encodeURIComponent(id), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                if (!r.ok) throw new Error('@Localizer["This event is not available."]');
+                return r.text();
+            })
+            .then(function (html) { document.getElementById('cbEvtModalContent').innerHTML = html; bindDetails(); })
+            .catch(function (e) {
+                document.getElementById('cbEvtModalContent').innerHTML =
+                    '<div class="p-10 text-center text-danger fw-semibold">' + e.message + '</div>';
+            });
+    }
+
+    // ---- retry ----
+    var retryEl = document.getElementById('cbEvtRetryModal');
+    var retryModal = new bootstrap.Modal(retryEl);
+    var pending = null;
+    function askRetry(dispatchId, consumer, needsOverride) {
+        pending = { id: dispatchId, needsOverride: needsOverride };
+        document.getElementById('cbEvtRetryConsumer').textContent = consumer || '';
+        document.getElementById('cbEvtReason').value = '';
+        document.getElementById('cbEvtOverride').checked = false;
+        document.getElementById('cbEvtRetryErr').classList.add('d-none');
+        document.getElementById('cbEvtOverrideBox').classList.toggle('d-none', !needsOverride);
+        retryModal.show();
+    }
+    document.getElementById('cbEvtRetryConfirm').addEventListener('click', function () {
+        if (!pending) return;
+        var btn = this;
+        var reason = document.getElementById('cbEvtReason').value.trim();
+        var errEl = document.getElementById('cbEvtRetryErr');
+        var override = pending.needsOverride && document.getElementById('cbEvtOverride').checked;
+        if (!reason) {
+            errEl.textContent = '@Localizer["A reason is required."]';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        if (pending.needsOverride && !override) {
+            errEl.textContent = '@Localizer["Confirm the elevated override to continue."]';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        errEl.classList.add('d-none');
+        btn.setAttribute('data-kt-indicator', 'on'); btn.disabled = true;
+        var fd = new FormData();
+        fd.append('dispatchId', pending.id);
+        fd.append('reason', reason);
+        fd.append('elevatedOverride', override ? 'true' : 'false');
+        fd.append('__RequestVerificationToken', token());
+        fetch(retryUrl, { method: 'POST', credentials: 'same-origin', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                if (r.status === 403 || r.status === 401) throw new Error('@Localizer["You are no longer authorised to perform this action."]');
+                return r.json();
+            })
+            .then(function (res) {
+                if (!res.ok) {
+                    errEl.textContent = outcomeMessage(res);
+                    errEl.classList.remove('d-none');
+                    return;
+                }
+                retryModal.hide();
+                if (modalEl.classList.contains('show')) modal.hide();
+                load(state.page);
+            })
+            .catch(function (e) { errEl.textContent = e.message; errEl.classList.remove('d-none'); })
+            .finally(function () { btn.removeAttribute('data-kt-indicator'); btn.disabled = false; });
+    });
+
+    function copyText(t) {
+        if (navigator.clipboard) { navigator.clipboard.writeText(t); return; }
+        var ta = document.createElement('textarea');
+        ta.value = t; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) { }
+        document.body.removeChild(ta);
+    }
+    function bindCommon(root) {
+        root.querySelectorAll('.cb-copy').forEach(function (el) {
+            el.addEventListener('click', function (e) { e.preventDefault(); copyText(el.getAttribute('data-copy') || ''); });
+        });
+        root.querySelectorAll('.cb-evt-retry').forEach(function (el) {
+            el.addEventListener('click', function (e) {
+                e.preventDefault();
+                askRetry(el.getAttribute('data-dispatch-id'), el.getAttribute('data-consumer'), el.getAttribute('data-needs-override') === '1');
+            });
+        });
+    }
+    function bindRows() {
+        bindCommon(tbody);
+        tbody.querySelectorAll('.cb-evt-details').forEach(function (el) {
+            el.addEventListener('click', function (e) { e.preventDefault(); openDetails(el.getAttribute('data-id')); });
+        });
+    }
+    function bindDetails() {
+        var root = document.getElementById('cbEvtModalContent');
+        bindCommon(root);
+        var toggle = root.querySelector('.cb-payload-toggle');
+        var pre = root.querySelector('#cbEvtPayload');
+        if (toggle && pre) toggle.addEventListener('click', function () {
+            var expanded = toggle.getAttribute('data-expanded') === '1';
+            pre.style.maxHeight = expanded ? '320px' : 'none';
+            toggle.setAttribute('data-expanded', expanded ? '0' : '1');
+            toggle.textContent = expanded ? '@Localizer["Expand"]' : '@Localizer["Collapse"]';
+        });
+    }
+
+    // Summary cards act as filters. Before this they were display-only: the highlight existed but there was
+    // no way to SET the filter from the card it highlighted.
+    function setField(name, value) {
+        var el = form.querySelector('[name="' + name + '"]');
+        if (!el) return;
+        if (el.type === 'checkbox') { el.checked = !!value; return; }
+        el.value = value == null ? '' : value;
+    }
+    document.querySelectorAll('.cb-evt-card').forEach(function (card) {
+        function apply() {
+            var key = card.getAttribute('data-card');
+            var status = card.getAttribute('data-status');
+            var wasActive = card.getAttribute('data-active') === '1';
+
+            if (key === 'totalEvents') {            // "Events" is the clear-all-status card
+                setField('DispatchStatus', '');
+                setField('MinAttempts', '');
+            } else if (key === 'exhausted') {        // Failed AND attempts at the ceiling
+                setField('DispatchStatus', wasActive ? '' : 'Failed');
+                setField('MinAttempts', wasActive ? '' : '@Model.MaxAttempts');
+            } else {
+                setField('DispatchStatus', wasActive ? '' : status);
+                setField('MinAttempts', '');
+            }
+            load(1);
+        }
+        card.addEventListener('click', apply);
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); apply(); }
+        });
+    });
+
+    form.addEventListener('submit', function (e) { e.preventDefault(); load(1); });
+    document.getElementById('cbEvtRefresh').addEventListener('click', function () { load(state.page); });
+    renderPager();
+    bindRows();
+})();
+</script>
+}

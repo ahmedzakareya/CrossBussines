@@ -161,6 +161,25 @@ builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyScopeHolder, CrossBuy.BL.Platform.CompanyScopeHolder>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessContextFactory, CrossBuy.BL.Platform.BusinessContextFactory>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessContextAccessor, CrossBuy.BL.Platform.BusinessContextAccessor>();
+// this branch at all — AssertSafe above has already refused a certification database on a
+// non-certification host, so this can only ever be true for the certification dataset.
+var certificationRuntime = CrossBuy.BL.Platform.CertificationDataContract.IsCertificationRuntime(
+    builder.Environment.IsDevelopment(),
+    Environment.GetEnvironmentVariable(CrossBuy.BL.Platform.CertificationDataContract.EnableEnvironmentVariable),
+    builder.Configuration.GetConnectionString("DefaultConnection"));
+
+// The SAME decision the registrations below use is carried to /BusinessEventMonitor/Runtime, which the
+// determinism gate reads to choose its contract. Registering the resolved value (rather than letting the
+// endpoint re-evaluate it) is what guarantees "certification mode" and "writers suppressed" always
+// describe this one process.
+builder.Services.AddSingleton(new CrossBuy.BL.Platform.CertificationRuntimeState(certificationRuntime));
+
+builder.Services.AddSingleton<CrossBuy.BL.Platform.ICompanyBypassAudit, CrossBuy.BL.Platform.LoggingCompanyBypassAudit>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.ICompanyBypassPolicy, CrossBuy.BL.Platform.CompanyBypassPolicy>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IRuntimeInstanceInfo, CrossBuy.BL.Platform.RuntimeInstanceInfo>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyIsolationBypass, CrossBuy.BL.Platform.CompanyIsolationBypass>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IEventDispatchStore, CrossBuy.BL.Platform.SqlEventDispatchStore>();            // ADR-003: per-consumer outbox state
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventMonitorService, CrossBuy.BL.Platform.BusinessEventMonitorService>(); // Stage 0 Batch B: operator read model + guarded retry
 builder.Services.AddScoped<CrossBuy.BL.Platform.IRequestCompanyResolver, CrossBuy.BL.Platform.RequestCompanyResolver>();   // D1/CORRECTION-005: validated company source
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformRoleDirectory, CrossBuy.BL.Platform.PlatformRoleDirectory>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IOrgHierarchy, CrossBuy.BL.Platform.OrgHierarchy>();
@@ -485,6 +504,9 @@ app.MapControllerRoute(name: "reports-home", pattern: "Reports",
 
 app.MapControllerRoute(name: "workspace-home", pattern: "Workspace",
     defaults: new { controller = "Workspace", action = "Index" });
+
+app.MapControllerRoute(name: "business-event-monitor-home", pattern: "BusinessEventMonitor",
+    defaults: new { controller = "BusinessEventMonitor", action = "Index" });
 
 app.MapControllerRoute(
     name: "default",

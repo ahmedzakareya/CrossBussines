@@ -64,11 +64,10 @@ namespace CrossBuy.Models.Menu
 				new() { LabelAr = "الإشعارات", LabelEn = "Notifications", Action = "Notifications", Controller = "Workspace" },
 				new() { LabelAr = "الإشارات إليّ", LabelEn = "Mentions", Action = "Mentions", Controller = "Workspace" },
 				new() { LabelAr = "تقاريري", LabelEn = "My reports", Action = "Reports", Controller = "Workspace" },
-				// DEFERRED: the Business event monitor row and its "platform-ops" predicate belong to the
-				// BusinessEventMonitorController ownership phase - the row would render a link to a
-				// controller that does not exist yet, and an admin would meet a 404. Restore together:
-				//   new() { LabelAr = "مراقب أحداث المنصّة", LabelEn = "Business event monitor",
-				//       Action = "Index", Controller = "BusinessEventMonitor", Perm = "platform-ops" },
+				// Perm "platform-ops" is evaluated in _MainMenu.cshtml with the SAME predicate the
+				// [PlatformOps] filter uses, so the link is hidden exactly when the screen would refuse.
+				new() { LabelAr = "مراقب أحداث المنصّة", LabelEn = "Business event monitor", Action = "Index",
+					Controller = "BusinessEventMonitor", Perm = "platform-ops" },
 			}},
 
 			// ===== Reporting =====

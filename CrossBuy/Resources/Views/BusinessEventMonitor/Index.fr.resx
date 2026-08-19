@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Business Event Monitor" xml:space="preserve">
+    <value>Moniteur d'événements métier</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Platform operations" xml:space="preserve">
+    <value>Exploitation de la plateforme</value>
+  </data>
+  <data name="You are viewing events across all companies." xml:space="preserve">
+    <value>Vous consultez les événements de toutes les sociétés.</value>
+  </data>
+  <data name="Elevated" xml:space="preserve">
+    <value>Élevé</value>
+  </data>
+  <data name="You see only your own company's events." xml:space="preserve">
+    <value>Vous ne voyez que les événements de votre société.</value>
+  </data>
+  <data name="Company-scoped" xml:space="preserve">
+    <value>Limité à la société</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>En attente</value>
+  </data>
+  <data name="Claimed" xml:space="preserve">
+    <value>En cours</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Échoué</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Exhausted" xml:space="preserve">
+    <value>Tentatives épuisées</value>
+  </data>
+  <data name="Events" xml:space="preserve">
+    <value>Événements</value>
+  </data>
+  <data name="Entity type" xml:space="preserve">
+    <value>Type d'entité</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>Tous</value>
+  </data>
+  <data name="Entity #" xml:space="preserve">
+    <value>N° d'entité</value>
+  </data>
+  <data name="Event type" xml:space="preserve">
+    <value>Type d'événement</value>
+  </data>
+  <data name="Consumer" xml:space="preserve">
+    <value>Consommateur</value>
+  </data>
+  <data name="Dispatch status" xml:space="preserve">
+    <value>Statut d'envoi</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>Du</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>Au</value>
+  </data>
+  <data name="Min attempts" xml:space="preserve">
+    <value>Tentatives min.</value>
+  </data>
+  <data name="Correlation id" xml:space="preserve">
+    <value>Id de corrélation</value>
+  </data>
+  <data name="Event uid" xml:space="preserve">
+    <value>Uid d'événement</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Société</value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>Succursale</value>
+  </data>
+  <data name="Errors only" xml:space="preserve">
+    <value>Erreurs uniquement</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Appliquer</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Réinitialiser</value>
+  </data>
+  <data name="Event" xml:space="preserve">
+    <value>Événement</value>
+  </data>
+  <data name="Entity" xml:space="preserve">
+    <value>Entité</value>
+  </data>
+  <data name="Co." xml:space="preserve">
+    <value>Sté</value>
+  </data>
+  <data name="Actor" xml:space="preserve">
+    <value>Auteur</value>
+  </data>
+  <data name="Visibility" xml:space="preserve">
+    <value>Visibilité</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Statut</value>
+  </data>
+  <data name="Attempts" xml:space="preserve">
+    <value>Tentatives</value>
+  </data>
+  <data name="Error / actions" xml:space="preserve">
+    <value>Erreur / actions</value>
+  </data>
+  <data name="dispatch rows" xml:space="preserve">
+    <value>lignes d'envoi</value>
+  </data>
+  <data name="page" xml:space="preserve">
+    <value>page</value>
+  </data>
+  <data name="Re-queue dispatch" xml:space="preserve">
+    <value>Remettre l'envoi en file</value>
+  </data>
+  <data name="This re-queues one consumer's dispatch row. It does not modify the event, its payload, or any other consumer." xml:space="preserve">
+    <value>Ceci remet en file la ligne d'envoi d'un seul consommateur. L'événement, sa charge utile et les autres consommateurs ne sont pas modifiés.</value>
+  </data>
+  <data name="Attempts are exhausted" xml:space="preserve">
+    <value>Tentatives épuisées</value>
+  </data>
+  <data name="Re-queueing requires an elevated override. Attempts are not reset — the ceiling is raised by one." xml:space="preserve">
+    <value>La remise en file exige une dérogation élevée. Le compteur n'est pas remis à zéro — le plafond est relevé de un.</value>
+  </data>
+  <data name="I confirm the elevated override" xml:space="preserve">
+    <value>Je confirme la dérogation élevée</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Motif</value>
+  </data>
+  <data name="Why is this being re-queued?" xml:space="preserve">
+    <value>Pourquoi cette remise en file ?</value>
+  </data>
+  <data name="Re-queue" xml:space="preserve">
+    <value>Remettre en file</value>
+  </data>
+  <data name="Please wait" xml:space="preserve">
+    <value>Veuillez patienter</value>
+  </data>
+  <data name="You are no longer authorised to view this screen." xml:space="preserve">
+    <value>Vous n'êtes plus autorisé à consulter cet écran.</value>
+  </data>
+  <data name="Could not load business events." xml:space="preserve">
+    <value>Impossible de charger les événements métier.</value>
+  </data>
+  <data name="This event is not available." xml:space="preserve">
+    <value>Cet événement n'est pas disponible.</value>
+  </data>
+  <data name="A reason is required." xml:space="preserve">
+    <value>Un motif est obligatoire.</value>
+  </data>
+  <data name="Confirm the elevated override to continue." xml:space="preserve">
+    <value>Confirmez la dérogation élevée pour continuer.</value>
+  </data>
+  <data name="You are no longer authorised to perform this action." xml:space="preserve">
+    <value>Vous n'êtes plus autorisé à effectuer cette action.</value>
+  </data>
+  <data name="Expand" xml:space="preserve">
+    <value>Développer</value>
+  </data>
+  <data name="Collapse" xml:space="preserve">
+    <value>Réduire</value>
+  </data>
+  <data name="Dispatcher" xml:space="preserve">
+    <value>Répartiteur</value>
+  </data>
+  <data name="Instance" xml:space="preserve">
+    <value>Instance</value>
+  </data>
+  <data name="PID" xml:space="preserve">
+    <value>PID</value>
+  </data>
+  <data name="Started" xml:space="preserve">
+    <value>Démarré</value>
+  </data>
+  <data name="UTC" xml:space="preserve">
+    <value>UTC</value>
+  </data>
+  <data name="Background work is running in a different process. Pending rows here are being drained there, not by this instance." xml:space="preserve">
+    <value>Les tâches de fond s'exécutent dans un autre processus. Les lignes en attente ici y sont traitées, pas par cette instance.</value>
+  </data>
+  <data name="Details (JSON)" xml:space="preserve">
+    <value>Détails (JSON)</value>
+  </data>
+  <data name="Click to filter by this" xml:space="preserve">
+    <value>Cliquer pour filtrer</value>
+  </data>
+  <data name="Click to clear this filter" xml:space="preserve">
+    <value>Cliquer pour effacer</value>
+  </data>
+</root>
