@@ -179,6 +179,15 @@ builder.Services.AddSingleton<CrossBuy.BL.Platform.ICompanyBypassPolicy, CrossBu
 builder.Services.AddSingleton<CrossBuy.BL.Platform.IRuntimeInstanceInfo, CrossBuy.BL.Platform.RuntimeInstanceInfo>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyIsolationBypass, CrossBuy.BL.Platform.CompanyIsolationBypass>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEventDispatchStore, CrossBuy.BL.Platform.SqlEventDispatchStore>();            // ADR-003: per-consumer outbox state
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventService, CrossBuy.BL.Platform.BusinessEventService>();           // ADR-001: in-transaction event recording
+builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformAdminIdentity, CrossBuy.BL.Platform.IdentityPlatformAdminIdentity>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IPlatformPermissionVocabularyRegistry, CrossBuy.BL.Platform.PlatformPermissionVocabularyRegistry>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformGrantWriter, CrossBuy.BL.Platform.PlatformGrantWriter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.ITimelineProjectionService, CrossBuy.BL.Platform.TimelineProjectionService>(); // the ONLY timeline read path
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.SalesInvoiceLegacyTimelineAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.CustomerLegacyTimelineAdapter>();               // slice 2
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.PurchaseInvoiceLegacyTimelineAdapter>();       // slice 2
+builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.ManufWorkOrderLegacyTimelineAdapter>();        // slice 2
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventMonitorService, CrossBuy.BL.Platform.BusinessEventMonitorService>(); // Stage 0 Batch B: operator read model + guarded retry
 builder.Services.AddScoped<CrossBuy.BL.Platform.IRequestCompanyResolver, CrossBuy.BL.Platform.RequestCompanyResolver>();   // D1/CORRECTION-005: validated company source
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformRoleDirectory, CrossBuy.BL.Platform.PlatformRoleDirectory>();
