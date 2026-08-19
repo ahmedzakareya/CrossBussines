@@ -140,6 +140,11 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
 builder.Services.AddCrossBusinessWorkspace();
 
 builder.Services.AddScoped<ICalendarService, CalendarService>();  // Company calendar (Metronic FullCalendar)
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskChecklistService, CrossBuy.BL.TasksCalendar.TaskChecklistService>();
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskDependencyService, CrossBuy.BL.TasksCalendar.TaskDependencyService>();
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskTemplateService, CrossBuy.BL.TasksCalendar.TaskTemplateService>();
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher, CrossBuy.BL.TasksCalendar.TaskCalendarEventPublisher>();
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskNotificationService, CrossBuy.BL.TasksCalendar.TaskNotificationService>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ICalendarSchedulingService, CrossBuy.BL.TasksCalendar.CalendarSchedulingService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IJobTitles, JobTitleService>();
@@ -516,6 +521,9 @@ app.MapControllerRoute(name: "workspace-home", pattern: "Workspace",
 
 app.MapControllerRoute(name: "business-event-monitor-home", pattern: "BusinessEventMonitor",
     defaults: new { controller = "BusinessEventMonitor", action = "Index" });
+
+app.MapControllerRoute(name: "tasks-home", pattern: "Tasks",
+    defaults: new { controller = "Tasks", action = "Index" });
 
 app.MapControllerRoute(
     name: "default",

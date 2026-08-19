@@ -78,13 +78,26 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error, int id)> SaveAsync(int companyId, TaskSaveInput input, int currentEmployeeId);
 		Task<(bool ok, string? error)> ChangeStatusAsync(int companyId, int id, string status, int currentEmployeeId);
 		Task<(bool ok, string? error)> DeleteAsync(int companyId, int id);
-		Task<List<(int Id, string Name)>> ActiveEmployeesAsync();
+		/// The assignee picker. `companyId` is REQUIRED and is filtered in the query — see the
+		/// implementation for why this may not be done in the view.
+		Task<List<(int Id, string Name)>> ActiveEmployeesAsync(int companyId);
 	}
 
 	public class TaskService : ITaskService
 	{
 		private readonly CrossDbContext _db;
-		public TaskService(CrossDbContext db) { _db = db; }
+		// Tasks & Calendar integration (TAB 4). Both are REQUIRED, not optional: a transition that silently
+		// skipped its event or its notification because a dependency was missing would be the worst of both
+		// worlds — the behaviour would look wired and would not be.
+		private readonly CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher _events;
+		private readonly CrossBuy.BL.TasksCalendar.ITaskNotificationService _notify;
+
+		public TaskService(CrossDbContext db,
+			CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher events,
+			CrossBuy.BL.TasksCalendar.ITaskNotificationService notify)
+		{
+			_db = db; _events = events; _notify = notify;
+		}
 
 		private static readonly string[] Priorities = { "Low", "Normal", "High", "Urgent" };
 		private static readonly string[] Statuses = { "New", "InProgress", "Done" };
@@ -231,6 +244,12 @@ namespace CrossBuy.BL
 			{
 				var t = await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == input.Id && x.CompanyId == companyId);
 				if (t == null) return (false, "المهمة غير موجودة", 0);
+
+				// Capture BEFORE mutating: an event and a notification both need the previous value, and
+				// after the assignment below it is gone.
+				int previousAssignee = t.AssigneeEmployeeId;
+				DateTime? previousDue = t.DueDate;
+
 				t.Title = input.Title.Trim(); t.Description = input.Description;
 				t.AssigneeEmployeeId = input.AssigneeEmployeeId; t.Priority = priority;
 				t.DueDate = input.DueDate; t.EstimatedHours = input.EstimatedHours;
@@ -241,7 +260,43 @@ namespace CrossBuy.BL
 				// TM-9: update scheduled criteria (never touch MatchedAt here — only the TM-9-ب matcher sets it)
 				t.IsScheduled = scheduled; t.ExpectedEntityType = expType; t.ExpectedPartyType = expPartyType;
 				t.ExpectedPartyId = expPartyId; t.ExpectedFrom = expFrom; t.ExpectedTo = expTo;
-				await _db.SaveChangesAsync();
+
+				bool assigneeChanged = previousAssignee != t.AssigneeEmployeeId;
+				bool dueChanged = previousDue != t.DueDate;
+				var correlation = Guid.NewGuid();
+
+				// The state change and its events are ONE commit. RecordAsync runs inside this transaction,
+				// so a failure anywhere below rolls the events back with the change — there is no path that
+				// leaves an event describing something that did not happen.
+				await using (var tx = await ScopedTx.BeginOrJoinAsync(_db))
+				{
+					await _db.SaveChangesAsync();
+
+					if (assigneeChanged)
+					{
+						if (previousAssignee > 0)
+							await _events.TaskReassignedAsync(t, previousAssignee, currentEmployeeId, correlation);
+						else
+							await _events.TaskAssignedAsync(t, currentEmployeeId, correlation);
+					}
+					if (dueChanged)
+						await _events.TaskDueDateChangedAsync(t, previousDue, currentEmployeeId, correlation);
+
+					await tx.CommitAsync();
+				}
+
+				// POST-COMMIT. A notification is a message about something that has happened; sending it
+				// inside the transaction would announce a change that could still roll back.
+				if (assigneeChanged)
+				{
+					if (previousAssignee > 0)
+						await _notify.TaskReassignedAsync(t.ID, previousAssignee, currentEmployeeId, correlation);
+					else
+						await _notify.TaskAssignedAsync(t.ID, currentEmployeeId, correlation);
+				}
+				if (dueChanged)
+					await _notify.TaskDueDateChangedAsync(t.ID, previousDue, currentEmployeeId, correlation);
+
 				return (true, null, t.ID);
 			}
 			var nt = new TaskItem
@@ -258,7 +313,23 @@ namespace CrossBuy.BL
 				Status = "New", ActualHours = 0m, CreatedAt = DateTime.UtcNow
 			};
 			_db.TaskItems.Add(nt);
-			await _db.SaveChangesAsync();
+
+			var newCorrelation = Guid.NewGuid();
+			await using (var tx = await ScopedTx.BeginOrJoinAsync(_db))
+			{
+				// Saved first so the event carries a real EntityId rather than 0.
+				await _db.SaveChangesAsync();
+				await _events.TaskCreatedAsync(nt, currentEmployeeId, newCorrelation);
+				if (nt.AssigneeEmployeeId > 0)
+					await _events.TaskAssignedAsync(nt, currentEmployeeId, newCorrelation);
+				await tx.CommitAsync();
+			}
+
+			// Post-commit. Task.Created notifies nobody by design — creating a task is a timeline fact, and
+			// notifying on it would bury the assignment that actually needs someone's attention.
+			if (nt.AssigneeEmployeeId > 0)
+				await _notify.TaskAssignedAsync(nt.ID, currentEmployeeId, newCorrelation);
+
 			return (true, null, nt.ID);
 		}
 
@@ -268,12 +339,38 @@ namespace CrossBuy.BL
 			var t = await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == companyId);
 			if (t == null) return (false, "المهمة غير موجودة");
 			if (t.Status == status) return (true, null);
+			// A REFUSED transition returns before anything is written, so no event and no notification is
+			// produced for a change that did not happen. Same for the unchanged-status early return above.
 			if (!Transitions.TryGetValue(t.Status, out var allowed) || !allowed.Contains(status))
 				return (false, $"انتقال غير مسموح: {t.Status} → {status}");
+
+			string previousStatus = t.Status;
 			t.Status = status;
 			t.CompletedAt = status == "Done" ? DateTime.UtcNow : (DateTime?)null;
 			if (status == "Done") t.ProgressPct = 100;
-			await _db.SaveChangesAsync();
+
+			bool completed = status == "Done";
+			bool reopened = previousStatus == "Done" && status != "Done";
+			var correlation = Guid.NewGuid();
+
+			await using (var tx = await ScopedTx.BeginOrJoinAsync(_db))
+			{
+				await _db.SaveChangesAsync();
+
+				// StatusChanged is always recorded; Completed/Reopened are the transitions people act on, so
+				// they are recorded in addition rather than instead — a consumer that only cares about
+				// completion should not have to parse a status pair to find it.
+				await _events.TaskStatusChangedAsync(t, previousStatus, currentEmployeeId, correlation);
+				if (completed) await _events.TaskCompletedAsync(t, previousStatus, currentEmployeeId, correlation);
+				if (reopened) await _events.TaskReopenedAsync(t, previousStatus, currentEmployeeId, correlation);
+
+				await tx.CommitAsync();
+			}
+
+			// Post-commit. StatusChanged notifies nobody by design (timeline only).
+			if (completed) await _notify.TaskCompletedAsync(t.ID, currentEmployeeId, correlation);
+			if (reopened) await _notify.TaskReopenedAsync(t.ID, currentEmployeeId, correlation);
+
 			return (true, null);
 		}
 
@@ -286,11 +383,24 @@ namespace CrossBuy.BL
 			return (true, null);
 		}
 
-		public async Task<List<(int Id, string Name)>> ActiveEmployeesAsync()
+		// THE COMPANY IS A PARAMETER, NOT AN ASSUMPTION.
+		//
+		// This read had NO company filter at all: it returned every Employee row in the database, so the
+		// assignee picker on every Tasks screen listed other companies' staff by name. A company-65 user
+		// saw all 23 employees; company 65 has one. That is a cross-company disclosure of personal data
+		// through a dropdown, and it cannot be fixed in the view — hiding a name that was already sent to
+		// the browser is not isolation. The filter belongs here, in the query.
+		//
+		// It fails CLOSED: an unresolved company lists nobody rather than everybody. The empty list is the
+		// safe answer, because a picker with no options blocks an assignment while a picker with every
+		// company's staff invites a cross-company one.
+		public async Task<List<(int Id, string Name)>> ActiveEmployeesAsync(int companyId)
 		{
+			if (companyId <= 0) return new List<(int, string)>();
+
 			var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
 			var list = await _db.Employee.AsNoTracking()
-				.Where(e => e.FullName != null && e.FullName != "")
+				.Where(e => e.EmpCompanyID == companyId && e.FullName != null && e.FullName != "")
 				.Select(e => new { e.ID, e.FullName, e.FullNameEn })
 				.ToListAsync();
 			return list
