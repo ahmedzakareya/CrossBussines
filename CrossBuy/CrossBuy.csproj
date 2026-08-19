@@ -52,6 +52,51 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.23" />
   </ItemGroup>
 
+  <!-- ===========================================================================================================
+       Stage 2A Batch 00-A — the authorization guardrail runs in the build.
+
+       OutputItemType="Analyzer" is what makes the compiler LOAD it; ReferenceOutputAssembly="false" keeps
+       CrossBuy.dll from taking a compile-time reference on it. Omitting either is the classic mistake: without the
+       first the analyzer is a silent no-op, without the second it becomes a runtime dependency of the application.
+
+       No PackageReference changes: the analyzer's two Roslyn packages are PrivateAssets="all", so nothing flows here.
+       =========================================================================================================== -->
+  <ItemGroup>
+    <ProjectReference Include="..\CrossBuy.Analyzers\CrossBuy.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- The frozen debt baseline is a DECLARED INPUT. An analyzer may not open files — the compiler sandboxes it so a
+       build stays reproducible from its declared inputs — so the baseline is passed in as an AdditionalFile. Without
+       this line CBA001 and CBA004 degrade to silent by design, and the guardrail would measure without enforcing. -->
+  <ItemGroup>
+    <AdditionalFiles Include="..\engineering\authorization-baseline.json" />
+  </ItemGroup>
+
+  <!-- DOCUMENTED ADJUSTMENT, forced by entry-gate PROOF C.
+       CBA004 (stale baseline entry) can have NO source location — a baseline entry naming a controller that no longer
+       exists points at nothing. `.editorconfig` sections are matched by PATH, so they cannot apply a severity to a
+       location-less diagnostic: the configured `error` was ignored, CBA004 stayed a Warning, and the build PASSED with
+       a stale allowance. A global analyzer config applies compilation-wide, location or not. -->
+  <!-- No explicit GlobalAnalyzerConfigFiles item: the SDK already discovers the repository-root .globalconfig by
+       walking up from the project directory, exactly as it does for .editorconfig. Adding one produced a DUPLICATE
+       entry (the same file by two paths), and Roslyn treats two global configs that set the same key as a conflict and
+       drops the option — so the explicit item silently disabled the very severities it was added to apply. -->
+
+
+  <!-- DOCUMENTED ADJUSTMENT to the reviewed plan, and the reason for it.
+       A missing AdditionalFiles glob does not fail an MSBuild build — it silently matches nothing. Combined with the
+       analyzer's deliberate "no baseline -> CBA001/CBA004 stay silent" degradation, a checkout without
+       engineering/authorization-baseline.json would build GREEN while enforcing nothing. That is the one failure mode
+       of this integration that looks identical to success, so it is made loud here instead. -->
+  <Target Name="CrossBuyVerifyAuthorizationBaseline" BeforeTargets="CoreCompile">
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)..\engineering\authorization-baseline.json')"
+           Code="CBA000"
+           Text="engineering/authorization-baseline.json is missing, so the authorization analyzer would build green while enforcing nothing (CBA001 and CBA004 degrade to silent without a baseline). Restore the file, or remove the AdditionalFiles entry deliberately." />
+  </Target>
+
   <ItemGroup>
     <Compile Update="Resources\SharedResources.Designer.cs">
       <DesignTime>True</DesignTime>
