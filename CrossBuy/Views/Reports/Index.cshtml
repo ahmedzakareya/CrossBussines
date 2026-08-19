@@ -1,0 +1,419 @@
+@using CrossBuy.BL.Reporting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model ReportsCenterModel
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    ViewData["Title"] = Localizer["Reports Center"].Value;
+    var q = Model.Query;
+}
+@*
+    ============================================================================================
+    THE REPORTS CENTER.
+
+    VISUAL AUTHORITY: THE INVENTORY MODULE. Built from Inventory's own components and nothing else —
+    no bespoke stylesheet, no bespoke layout, no new class, no second design language. Component for
+    component, this screen is Inventory:
+
+      shell + sidebar   _LayoutInventory.cshtml, unchanged. It hardcodes MainMenu.Inventory(), so the
+                        rail is the real Inventory menu — the user has not left the module.
+                        (ViewBag.SidebarMenu is NOT read by this layout; setting it here would be dead
+                        code that implies an override which does not exist.)
+      page wrapper      Inventory/Index.cshtml — d-flex flex-column flex-column-fluid
+      toolbar           Inventory/Reports.cshtml — page-heading + breadcrumb-separatorless + bullet
+      KPI tiles         Inventory/Index.cshtml row 2 — col-6 col-md-4 col-xl-2 stat cards, verbatim
+      filter card       Inventory/Items.cshtml — card-flush + row g-4 align-items-end, labelled
+                        form-control-solid / form-select-solid + select2, ki-arrows-circle reset
+      report cards      Inventory/Reports.cshtml — symbol-50px card (see _ReportCard.cshtml)
+      tables            Inventory/Items.cshtml — table-row-dashed + the 2px #13433a header rule
+      empty state       Inventory — text-center text-muted py-10
+      buttons / badges  Metronic btn-* and badge-light-*, exactly as Inventory uses them
+
+    _LayoutInventory declares NO `Styles` section, so a custom stylesheet cannot be loaded from here
+    even by accident. That is a guardrail, not a convention.
+
+    A DUMB VIEW, on purpose. Every decision about what may appear was taken in ReportsCenterPresenter,
+    where ReportingUiSafetyTests asserts it. Nothing here filters or authorizes.
+
+    NOT ON THIS PAGE: internal columns · SystemSupplied parameters · dataset field names or
+    sensitivities · engine and renderer names (a user picks a FORMAT, never a renderer).
+    ============================================================================================
+*@
+@functions {
+    string Reason(string? code) => code is null ? "" : Localizer[code].Value;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Reports Center"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Reports Center"]</li>
+            </ul>
+        </div>
+        <div class="d-flex align-items-center gap-2 gap-lg-3">
+            <a href="@Url.Action("Reports","Inventory")" class="btn btn-sm btn-flex btn-light fw-bold">@Localizer["Inventory reports"]</a>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    @if (!Model.IsResolved)
+    {
+        <div class="alert alert-light-warning d-flex align-items-center p-5">
+            <i class="ki-outline ki-lock-2 fs-2hx text-warning me-4"></i>
+            <div class="d-flex flex-column">
+                <h4 class="mb-1 text-gray-900">@Localizer["No company is resolved for this session."]</h4>
+                <span class="text-gray-600">@Localizer["Sign in again to use reports. No company-scoped data is read without one."]</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!--begin::Row 1 — stat cards (Inventory/Index.cshtml row 2, same classes)-->
+        <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+            @{
+                var stats = new (string label, string value, string icon, string color, string href, string badge, string badgeColor)[] {
+                    (Localizer["Reports"].Value, Model.TotalReports.ToString(), "ki-chart-simple", "primary",
+                        Url.Action("Index","Reports"), Localizer["available"].Value, "primary"),
+                    (Localizer["Favourites"].Value, Model.Favorites.Items.Count.ToString(), "ki-star", "warning",
+                        Url.Action("Index","Reports", new { favorites = true }), Localizer["pinned"].Value, "warning"),
+                    (Localizer["Saved layouts"].Value, Model.Saved.Items.Count.ToString(), "ki-questionnaire-tablet", "info",
+                        Url.Action("Index","Reports"), Localizer["saved"].Value, "info"),
+                    (Localizer["Recent runs"].Value, Model.Recent.Items.Count.ToString(), "ki-time", "success",
+                        Url.Action("Index","Reports"), Localizer["runs"].Value, "success"),
+                    (Localizer["Archived"].Value, Model.Archive.Items.Count.ToString(), "ki-archive", "dark",
+                        Url.Action("Index","Reports"), Localizer["files"].Value, "dark"),
+                    (Localizer["Data sets"].Value, Model.Datasets.Items.Count.ToString(), "ki-data",
+                        Model.Datasets.HasItems ? "success" : "danger", Url.Action("Index","Reports"),
+                        Model.Datasets.HasItems ? Localizer["ok"].Value : Localizer["none"].Value,
+                        Model.Datasets.HasItems ? "success" : "danger"),
+                };
+            }
+            @foreach (var s in stats)
+            {
+                <div class="col-6 col-md-4 col-xl-2">
+                    <a href="@s.href" class="card h-100 text-decoration-none">
+                        <div class="card-body d-flex justify-content-between align-items-start flex-column p-5">
+                            <div class="d-flex flex-stack w-100 mb-4">
+                                <div class="symbol symbol-40px"><span class="symbol-label bg-light-@s.color"><i class="ki-outline @s.icon fs-2x text-@s.color"></i></span></div>
+                                <span class="badge badge-light-@s.badgeColor fs-8 fw-bold">@s.badge</span>
+                            </div>
+                            <span class="fw-bold fs-2x text-gray-900 lh-1 ls-n2">@s.value</span>
+                            <div class="m-0 mt-2"><span class="fw-semibold fs-7 text-gray-500">@s.label</span></div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+        <!--end::Row 1-->
+
+        <!--begin::Advanced search (Inventory/Items.cshtml, same classes)
+             A GET form, so a filtered catalog is a URL somebody can bookmark and send to a colleague.-->
+        <form method="get" asp-controller="Reports" asp-action="Index">
+        <div class="card card-flush mb-5"><div class="card-body py-5">
+            <div class="row g-4 align-items-end">
+                <div class="col-md-4">
+                    <label class="fw-semibold fs-7 text-muted mb-1" for="f_q"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Search reports"]</label>
+                    <input type="search" id="f_q" name="search" value="@q.Search" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Code, title or description…"]" />
+                </div>
+                <div class="col-md-3">
+                    <label class="fw-semibold fs-7 text-muted mb-1" for="f_cat">@Localizer["Category"]</label>
+                    <select id="f_cat" name="category" class="form-select form-select-solid" data-control="select2" data-placeholder="@SR["All"]">
+                        <option value="">@SR["All"]</option>
+                        @foreach (var category in Model.Categories.Items)
+                        {
+                            <option value="@category.Key" selected="@(category.Key == q.CategoryKey)">@category.Title</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="fw-semibold fs-7 text-muted mb-1" for="f_tag">@Localizer["Tag"]</label>
+                    <select id="f_tag" name="tag" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                        <option value="">@SR["All"]</option>
+                        @foreach (var tag in Model.Tags.Items)
+                        {
+                            <option value="@tag.Name" selected="@(tag.Name == q.Tag)">@tag.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="fw-semibold fs-7 text-muted mb-1" for="f_fav">@Localizer["Favourites"]</label>
+                    <select id="f_fav" name="favorites" class="form-select form-select-solid" data-control="select2" data-hide-search="true">
+                        <option value="false">@SR["All"]</option>
+                        <option value="true" selected="@q.FavoritesOnly">@Localizer["Favourites only"]</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100" title="@SR["Search"]"><i class="ki-outline ki-magnifier fs-3"></i></button>
+                    <a href="@Url.Action("Index","Reports")" class="btn btn-light w-100" title="@SR["Reset"]"><i class="ki-outline ki-arrows-circle fs-3"></i></a>
+                </div>
+            </div>
+        </div></div>
+        </form>
+        <!--end::Advanced search-->
+
+        <!--begin::Catalog-->
+        @switch (Model.Catalog.State)
+        {
+            case ReportPanelState.Ready:
+                foreach (var group in Model.Catalog.Items)
+                {
+                    <div class="card card-flush mb-5">
+                        <div class="card-header align-items-center py-4">
+                            <div class="card-title">
+                                <h3 class="fw-bold text-gray-900 fs-4 m-0">
+                                    @if (!string.IsNullOrEmpty(group.Icon)) { <i class="@group.Icon fs-3 me-2 text-primary"></i> }
+                                    @(string.IsNullOrEmpty(group.Title) ? Localizer["Uncategorised"].Value : group.Title)
+                                </h3>
+                            </div>
+                            <div class="card-toolbar"><span class="text-muted fs-7">@group.Reports.Count</span></div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div class="row g-5 g-xl-8">
+                                @foreach (var report in group.Reports)
+                                {
+                                    @await Html.PartialAsync("_ReportCard", report)
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+                break;
+
+            case ReportPanelState.Empty:
+                <div class="card card-flush mb-5"><div class="card-body">
+                    <div class="text-center text-muted py-10">
+                        <i class="ki-outline ki-file-deleted fs-3x d-block mb-3 text-gray-400"></i>
+                        <div class="fw-bold text-gray-700">@Localizer["No matching results"]</div>
+                        <div class="fs-7">@Localizer["Clear the filters, or ask an administrator for access to a module's reports."]</div>
+                    </div>
+                </div></div>
+                break;
+
+            default:
+                <div class="alert alert-light-danger d-flex align-items-center p-5 mb-5">
+                    <i class="ki-outline ki-information-5 fs-2hx text-danger me-4"></i>
+                    <div class="d-flex flex-column"><span class="text-gray-700">@Reason(Model.Catalog.ReasonCode)</span></div>
+                </div>
+                break;
+        }
+        <!--end::Catalog-->
+
+        <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+
+            <!--begin::Saved reports-->
+            <div class="col-xl-6">
+                <div class="card card-flush h-lg-100">
+                    <div class="card-header align-items-center py-4">
+                        <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Saved reports"]</h3></div>
+                        <div class="card-toolbar"><span class="text-muted fs-7">@Model.Saved.Items.Count</span></div>
+                    </div>
+                    <div class="card-body pt-0">
+                        @* KEYBOARD ACCESS FOR A SCROLLING TABLE (axe scrollable-region-focusable).
+                           A .table-responsive scrolls horizontally on a narrow viewport, and a region that
+                           scrolls by mouse but cannot be reached by Tab is unusable to a keyboard-only user:
+                           the columns past the fold become unreachable, not merely awkward. tabindex="0" makes
+                           it focusable and arrow-scrollable; role="region" + aria-label give that stop a NAME,
+                           because an unnamed region is announced as just "region" and does not say which of the
+                           four tables on this screen the user landed in. The label reuses the card's own heading
+                           resource, so it stays localized and cannot drift from the visible title. Applied to
+                           EVERY scrolling table here, not only the one the 390px run flagged — the others scroll
+                           just as soon as their data is wider. *@
+                        <div class="table-responsive" tabindex="0" role="region" aria-label="@Localizer["Saved reports"]">
+                        <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                                <th class="ps-4">@SR["Name"]</th><th>@Localizer["Report"]</th><th>@Localizer["Scope"]</th><th class="text-end pe-4">@Localizer["Updated"]</th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-600">
+                                @if (!Model.Saved.HasItems)
+                                {
+                                    <tr><td colspan="4" class="text-center text-muted py-10">@Localizer["No saved layout yet."]</td></tr>
+                                }
+                                @foreach (var saved in Model.Saved.Items)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <a class="fw-bold text-gray-900 text-hover-primary" asp-controller="Reports" asp-action="Viewer"
+                                               asp-route-id="@saved.ReportCode" asp-route-templateId="@saved.Id">@saved.Name</a>
+                                            @if (saved.IsDefault) { <span class="badge badge-light-primary fs-8 ms-2">@Localizer["Default"]</span> }
+                                        </td>
+                                        <td class="text-muted">@saved.ReportTitle</td>
+                                        <td><span class="badge badge-light fs-8">@Localizer[saved.Scope.ToString()]</span></td>
+                                        <td class="text-end text-muted pe-4">@saved.UpdatedAt?.ToString("yyyy/MM/dd")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Saved reports-->
+
+            <!--begin::Recent runs-->
+            <div class="col-xl-6">
+                <div class="card card-flush h-lg-100">
+                    <div class="card-header align-items-center py-4">
+                        <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Recent runs"]</h3></div>
+                        <div class="card-toolbar"><span class="text-muted fs-7">@Localizer["Run history"]</span></div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-responsive" tabindex="0" role="region" aria-label="@Localizer["Recent runs"]">
+                        <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                                <th class="ps-4">@Localizer["Report"]</th><th class="text-center">@SR["Status"]</th><th class="text-end">@Localizer["Rows"]</th><th class="text-end pe-4">@SR["Date"]</th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-600">
+                                @if (!Model.Recent.HasItems)
+                                {
+                                    <tr><td colspan="4" class="text-center text-muted py-10">@Localizer["You have not run a report yet."]</td></tr>
+                                }
+                                @* A run whose report the caller can no longer open still appears — it is their own
+                                   history — but the re-run link is withdrawn rather than offering a 404. *@
+                                @foreach (var run in Model.Recent.Items)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            @if (run.CanRerun)
+                                            {
+                                                <a class="fw-bold text-gray-900 text-hover-primary" asp-controller="Reports" asp-action="Rerun"
+                                                   asp-route-id="@run.Id" title="@Localizer["Run again"]">@run.ReportTitle</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-bold text-gray-900">@run.ReportTitle</span>
+                                                <i class="ki-outline ki-lock-2 fs-6 text-muted ms-1" title="@Localizer["You no longer hold the permission this report requires."]"></i>
+                                            }
+                                            <span class="d-block fs-8 text-muted">@run.Format · @run.DurationMs ms</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-light-@(run.Failed ? "danger" : "success") fs-8">
+                                                @(run.Failed ? Localizer["Failed"] : Localizer["Done"])
+                                            </span>
+                                        </td>
+                                        <td class="text-end">@(run.Failed ? "—" : run.RowCount.ToString("N0"))</td>
+                                        <td class="text-end text-muted pe-4">@run.StartedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Recent runs-->
+        </div>
+
+        <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+
+            <!--begin::Archive-->
+            <div class="col-xl-6">
+                <div class="card card-flush h-lg-100">
+                    <div class="card-header align-items-center py-4">
+                        <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Archive"]</h3></div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-responsive" tabindex="0" role="region" aria-label="@Localizer["Archive"]">
+                        <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                                <th class="ps-4">@Localizer["Report"]</th><th class="text-end">@Localizer["Size"]</th><th class="text-end pe-4">@SR["Actions"]</th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-600">
+                                @if (!Model.Archive.HasItems)
+                                {
+                                    <tr><td colspan="3" class="text-center text-muted py-10">@Localizer["Nothing archived."]</td></tr>
+                                }
+                                @foreach (var entry in Model.Archive.Items)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <span class="fw-bold text-gray-900 d-block">@entry.ReportTitle</span>
+                                            <span class="fs-8 text-muted">@entry.FileName@(entry.RetainUntil.HasValue ? $" · {Localizer["kept until"].Value} {entry.RetainUntil.Value:yyyy/MM/dd}" : "")</span>
+                                        </td>
+                                        <td class="text-end text-muted">@((entry.Length / 1024).ToString("N0")) KB</td>
+                                        <td class="text-end pe-4">
+                                            @* THREE outcomes, not two. Retrieval re-checks the report permission, so an
+                                               archived artifact is not a permanent grant — and a swept file is a
+                                               different problem from a revoked permission. Naming which one sends
+                                               the user to the right administrator. *@
+                                            @if (entry.CanDownload)
+                                            {
+                                                <a class="btn btn-sm btn-light-primary" asp-controller="Reports" asp-action="Download" asp-route-id="@entry.Id">
+                                                    <i class="ki-outline ki-file-down fs-4"></i>@Localizer["Download"]
+                                                </a>
+                                            }
+                                            else if (!entry.BytesPresent)
+                                            {
+                                                <span class="badge badge-light-warning fs-8" title="@Localizer["The stored file is no longer available."]">@Localizer["File swept"]</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-light-warning fs-8" title="@Localizer["You no longer hold the permission this report requires."]">@Localizer["No longer permitted"]</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Archive-->
+
+            <!--begin::Data availability-->
+            <div class="col-xl-6">
+                <div class="card card-flush h-lg-100">
+                    <div class="card-header align-items-center py-4">
+                        <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Data availability"]</h3></div>
+                    </div>
+                    <div class="card-body pt-0">
+                        @if (Model.Datasets.State == ReportPanelState.Ready)
+                        {
+                            <div class="table-responsive" tabindex="0" role="region" aria-label="@Localizer["Data availability"]">
+                            <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                                    <th class="ps-4">@Localizer["Data set"]</th><th class="text-end">@Localizer["Fields"]</th><th class="text-end">@Localizer["Row cap"]</th><th class="text-end pe-4">@SR["Status"]</th>
+                                </tr></thead>
+                                <tbody class="fw-semibold text-gray-600">
+                                    @foreach (var dataset in Model.Datasets.Items)
+                                    {
+                                        <tr>
+                                            <td class="ps-4">
+                                                <span class="fw-bold text-gray-900 d-block">@dataset.Title</span>
+                                                <span class="fs-8 text-muted">@dataset.Module · v@dataset.Version</span>
+                                            </td>
+                                            <td class="text-end">@dataset.FieldCount</td>
+                                            <td class="text-end text-muted">@dataset.MaxRows.ToString("N0")</td>
+                                            <td class="text-end pe-4">
+                                                @if (dataset.HasReport)
+                                                {
+                                                    <span class="badge badge-light-success fs-8">@Localizer["Ready"]</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-light-warning fs-8" title="@Localizer["Registered, but no report is published over it yet."]">@Localizer["No report"]</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-10">@Reason(Model.Datasets.ReasonCode)</div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!--end::Data availability-->
+        </div>
+    }
+
+    </div></div>
+</div>

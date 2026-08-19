@@ -1,4 +1,5 @@
 ﻿using CrossBuy.BL;
+using CrossBuy.BL.Reporting;   // ADR-037: AddCrossBusinessReporting()
 using CrossBuy.Hubs;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
@@ -91,6 +92,41 @@ builder.Services.AddScoped<IFileManagerService, FileManagerService>();  // Compa
 builder.Services.AddScoped<ICommService, CommService>();          // Comm Hub — email (Metronic inbox)
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>(); // Comm Hub P5 — announcements
 builder.Services.AddScoped<IDocCommentService, DocCommentService>();     // Comm Hub P5 — document comments/timeline
+// ---- Reporting Platform (ADR-037) ----
+//
+// ONE line by design: the whole platform's registration and lifetime story lives in
+// ReportingServiceCollectionExtensions, so this shared file does not grow a 40-line block that collides on every
+// merge. No hosted service is registered (see ReportScheduleService.cs), and no existing registration changes —
+// this is purely additive.
+builder.Services.AddCrossBusinessReporting(reporting => reporting
+    // The archive keeps its bytes beside the product's other uploads. WebRootPath is null when wwwroot is absent
+    // (some test hosts), so ContentRootPath is the fallback rather than letting the archive land in the binary dir.
+    .UseArchiveRoot(Path.Combine(
+        builder.Environment.WebRootPath ?? builder.Environment.ContentRootPath, "uploads", "reports"))
+    // Report permissions are FAIL-CLOSED: a permission key with no role mapping is denied. Module report keys are
+    // mapped when those modules add their data sources. See IReportPermissionEvaluator — replacing the role-map
+    // evaluator with one backed by the platform permission provider stays deferred until the first tab completes
+    // B6, by owner decision.
+    .MapPermission(CrossBuy.BL.Reporting.ReportPermissions.Administer, "Admin", "SuperAdmin")
+
+    // ---- R1 ACTIVATION: the Business Event log ----
+    //
+    // THREE TIERS, MAPPED SEPARATELY AND DELIBERATELY NARROWLY.
+    //
+    // Holding `view` lets a caller see WHICH records changed and WHEN across the whole company, WITHOUT the
+    // per-record permission check the kernel's own timeline applies per row (a cross-entity report cannot do
+    // 25 000 per-row permission evaluations — the reasoning is in BusinessEventsDataset's header). It is
+    // therefore an AUDIT right, and it is mapped to administrators only, never to an ordinary module role.
+    //
+    // `confidential` additionally reveals Confidential rows and the Payload column — a payload is a summary, but
+    // a summary of a sales invoice still carries its total.
+    // `restricted` additionally reveals Restricted and System rows.
+    //
+    // Narrow these further, or widen them, by editing THIS line — nothing in the platform changes.
+    .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.View, "Admin", "SuperAdmin", "Auditor")
+    .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.Confidential, "Admin", "SuperAdmin")
+    .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.Restricted, "SuperAdmin"));
+
 builder.Services.AddScoped<ICalendarService, CalendarService>();  // Company calendar (Metronic FullCalendar)
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ICalendarSchedulingService, CrossBuy.BL.TasksCalendar.CalendarSchedulingService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
@@ -431,6 +467,9 @@ app.MapControllerRoute(name: "comm-home", pattern: "Comm",
 
 app.MapControllerRoute(name: "calendar-home", pattern: "Calendar",
     defaults: new { controller = "Calendar", action = "Index" });
+
+app.MapControllerRoute(name: "reports-home", pattern: "Reports",
+    defaults: new { controller = "Reports", action = "Index" });
 
 app.MapControllerRoute(
     name: "default",

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Archive" xml:space="preserve">
+    <value>الأرشيف</value>
+  </data>
+  <data name="Archived" xml:space="preserve">
+    <value>مؤرشف</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>التصنيف</value>
+  </data>
+  <data name="Clear the filters, or ask an administrator for access to a module's reports." xml:space="preserve">
+    <value>امسح عوامل التصفية، أو اطلب من المسؤول صلاحية الوصول إلى تقارير الوحدة.</value>
+  </data>
+  <data name="Code, title or description…" xml:space="preserve">
+    <value>الرمز أو العنوان أو الوصف…</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>الشركة</value>
+  </data>
+  <data name="Data availability" xml:space="preserve">
+    <value>توفّر البيانات</value>
+  </data>
+  <data name="Data set" xml:space="preserve">
+    <value>مجموعة البيانات</value>
+  </data>
+  <data name="Data sets" xml:space="preserve">
+    <value>مجموعات البيانات</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>افتراضي</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>تم</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>تنزيل</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>فشل</value>
+  </data>
+  <data name="Favourites" xml:space="preserve">
+    <value>المفضّلة</value>
+  </data>
+  <data name="Favourites only" xml:space="preserve">
+    <value>المفضّلة فقط</value>
+  </data>
+  <data name="Fields" xml:space="preserve">
+    <value>الحقول</value>
+  </data>
+  <data name="File swept" xml:space="preserve">
+    <value>تم حذف الملف</value>
+  </data>
+  <data name="Inventory reports" xml:space="preserve">
+    <value>تقارير المخزون</value>
+  </data>
+  <data name="No company is resolved for this session." xml:space="preserve">
+    <value>لم يتم تحديد شركة لهذه الجلسة.</value>
+  </data>
+  <data name="No longer permitted" xml:space="preserve">
+    <value>لم تعد مصرّحًا</value>
+  </data>
+  <data name="No matching results" xml:space="preserve">
+    <value>لا توجد نتائج مطابقة</value>
+  </data>
+  <data name="No report" xml:space="preserve">
+    <value>لا يوجد تقرير</value>
+  </data>
+  <data name="No saved layout yet." xml:space="preserve">
+    <value>لا يوجد تنسيق محفوظ بعد.</value>
+  </data>
+  <data name="Nothing archived." xml:space="preserve">
+    <value>لا يوجد شيء مؤرشف.</value>
+  </data>
+  <data name="Personal" xml:space="preserve">
+    <value>شخصي</value>
+  </data>
+  <data name="Platform" xml:space="preserve">
+    <value>المنصّة</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>جاهز</value>
+  </data>
+  <data name="Recent runs" xml:space="preserve">
+    <value>عمليات التشغيل الأخيرة</value>
+  </data>
+  <data name="Registered, but no report is published over it yet." xml:space="preserve">
+    <value>مُسجَّل، لكن لم يُنشر عليه أي تقرير بعد.</value>
+  </data>
+  <data name="Report" xml:space="preserve">
+    <value>التقرير</value>
+  </data>
+  <data name="Reports" xml:space="preserve">
+    <value>التقارير</value>
+  </data>
+  <data name="Reports Center" xml:space="preserve">
+    <value>مركز التقارير</value>
+  </data>
+  <data name="Row cap" xml:space="preserve">
+    <value>حد الصفوف</value>
+  </data>
+  <data name="Rows" xml:space="preserve">
+    <value>الصفوف</value>
+  </data>
+  <data name="Run again" xml:space="preserve">
+    <value>إعادة التشغيل</value>
+  </data>
+  <data name="Run history" xml:space="preserve">
+    <value>سجل التشغيل</value>
+  </data>
+  <data name="Saved layouts" xml:space="preserve">
+    <value>التنسيقات المحفوظة</value>
+  </data>
+  <data name="Saved reports" xml:space="preserve">
+    <value>التقارير المحفوظة</value>
+  </data>
+  <data name="Scope" xml:space="preserve">
+    <value>النطاق</value>
+  </data>
+  <data name="Search reports" xml:space="preserve">
+    <value>ابحث في التقارير</value>
+  </data>
+  <data name="Sign in again to use reports. No company-scoped data is read without one." xml:space="preserve">
+    <value>سجّل الدخول مجددًا لاستخدام التقارير. لا تُقرأ أي بيانات خاصة بشركة بدون ذلك.</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>الحجم</value>
+  </data>
+  <data name="Tag" xml:space="preserve">
+    <value>الوسم</value>
+  </data>
+  <data name="Team" xml:space="preserve">
+    <value>الفريق</value>
+  </data>
+  <data name="The stored file is no longer available." xml:space="preserve">
+    <value>الملف المخزَّن لم يعد متاحًا.</value>
+  </data>
+  <data name="Uncategorised" xml:space="preserve">
+    <value>بدون تصنيف</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>آخر تحديث</value>
+  </data>
+  <data name="You have not run a report yet." xml:space="preserve">
+    <value>لم تقم بتشغيل أي تقرير بعد.</value>
+  </data>
+  <data name="You no longer hold the permission this report requires." xml:space="preserve">
+    <value>لم تعد تملك الصلاحية التي يتطلّبها هذا التقرير.</value>
+  </data>
+  <data name="available" xml:space="preserve">
+    <value>متاح</value>
+  </data>
+  <data name="files" xml:space="preserve">
+    <value>ملف</value>
+  </data>
+  <data name="kept until" xml:space="preserve">
+    <value>محفوظ حتى</value>
+  </data>
+  <data name="none" xml:space="preserve">
+    <value>لا شيء</value>
+  </data>
+  <data name="ok" xml:space="preserve">
+    <value>سليم</value>
+  </data>
+  <data name="pinned" xml:space="preserve">
+    <value>مثبّت</value>
+  </data>
+  <data name="reporting.panel.no_company" xml:space="preserve">
+    <value>لم يتم تحديد شركة لهذه الجلسة.</value>
+  </data>
+  <data name="reporting.panel.not_permitted" xml:space="preserve">
+    <value>غير مصرّح لك بالاطّلاع على هذا.</value>
+  </data>
+  <data name="reporting.panel.nothing_registered" xml:space="preserve">
+    <value>لا توجد أي مجموعة بيانات مُسجَّلة في هذا النظام بعد.</value>
+  </data>
+  <data name="reporting.panel.schema_missing" xml:space="preserve">
+    <value>جداول التقارير غير منشورة في قاعدة البيانات هذه.</value>
+  </data>
+  <data name="reporting.panel.source_failed" xml:space="preserve">
+    <value>تعذّر تحميل هذه اللوحة. حاول مرة أخرى.</value>
+  </data>
+  <data name="reporting.panel.writes_unavailable" xml:space="preserve">
+    <value>الحفظ والنسخ والإضافة إلى المفضّلة غير متاحة بعد: نقاط الكتابة في التقارير بانتظار اعتماد صلاحيات.</value>
+  </data>
+  <data name="runs" xml:space="preserve">
+    <value>تشغيل</value>
+  </data>
+  <data name="saved" xml:space="preserve">
+    <value>محفوظ</value>
+  </data>
+</root>

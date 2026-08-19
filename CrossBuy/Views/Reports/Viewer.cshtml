@@ -1,0 +1,484 @@
+@using CrossBuy.BL.Reporting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model ReportViewerModel
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    ViewData["Title"] = Model.Title;
+    var preview = Model.Preview;
+    var exportFailed = TempData["ReportExportFailed"] as string;
+}
+@*
+    ============================================================================================
+    THE REPORT VIEWER.
+
+    VISUAL AUTHORITY: THE INVENTORY MODULE — specifically Inventory/ValuationReport.cshtml, which is
+    Inventory's own report screen. Same structure, same classes, same order:
+
+      shell + sidebar   _LayoutInventory.cshtml, unchanged. It hardcodes MainMenu.Inventory(), so the
+                        rail is the real Inventory menu — the user has not left the module.
+                        (ViewBag.SidebarMenu is NOT read by this layout; setting it would be dead code
+                        implying an override that does not exist.)
+      page wrapper      d-flex flex-column flex-column-fluid
+      toolbar           page-heading + breadcrumb-separatorless + bullet + Print button
+      filter card       card-flush + card-body py-5 + row g-4 align-items-end, labelled
+                        form-control-solid / form-select-solid, with the summary block last — exactly
+                        where Valuation puts its grand total, in the same sizes and the same green
+      result card       card-flush + card-body pt-6 + table-responsive
+      tables            table-row-dashed + the 2px #13433a header rule
+      empty state       text-center text-muted py-10
+      buttons           btn-sm btn-flex btn-light / btn-primary / btn-sm btn-light-primary
+
+    NO `@@section Styles` — _LayoutInventory declares no Styles section, so one would throw at run time
+    ("section has been defined but has not been rendered"). No stylesheet can be introduced here, which
+    is the guardrail that keeps a second design language out.
+
+    The report body is the RENDERER's markup and is left alone: the preview must predict the exported
+    artifact, so restyling it would break that promise. It is only wrapped in table-responsive, the
+    same containment Inventory gives its own report tables.
+
+    NO PDF BUTTON unless the deployment can produce one — Model.Formats is the definition's permitted
+    formats intersected with the renderers registered now. Playwright is deferred by owner decision,
+    so today that is HTML / CSV / Excel. No Stimulsoft, no designer.
+    ============================================================================================
+*@
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">
+                <i class="@Model.Icon fs-2 me-2 text-primary"></i>@Model.Title
+                @if (Model.IsFavorite) { <i class="ki-outline ki-star fs-4 text-warning ms-1"></i> }
+            </h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Reports")" class="text-muted text-hover-primary">@Localizer["Reports Center"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Model.Module</li>
+            </ul>
+        </div>
+
+        @* ---- WRITE AFFORDANCES ------------------------------------------------------------------
+           Rendered and DISABLED, never hidden. The seven write endpoints are held back by the
+           authorization analyzer pending TAB 1's surface addition — the feature is waiting on an
+           approval, not missing, and a hidden control would misrepresent that as "not built".
+           Metronic's own `disabled` class, as Inventory/Items.cshtml uses on its Add Product button. *@
+        @* flex-wrap IS THE 390px FIX, and it is the real cause rather than a symptom mask.
+           This group holds up to four buttons (favourite · save · fork · print). Its PARENT already wraps
+           (flex-stack flex-wrap gap-3), so the title and the action bar stack correctly on a phone — but the
+           action bar itself was a non-wrapping d-flex, so its four buttons stayed on one 414px line inside a
+           390px viewport and pushed the DOCUMENT into horizontal scroll. Nothing is hidden, clipped or removed:
+           the buttons simply wrap onto a second line, which is what the parent's own flex-wrap already assumes.
+           overflow:hidden would have removed the scrollbar and the Print button with it. *@
+        <div class="d-flex align-items-center flex-wrap gap-2 gap-lg-3">
+            @if (Model.WritesEnabled)
+            {
+                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold" data-report-action="favorite">
+                    <i class="ki-outline ki-star fs-3"></i>@(Model.IsFavorite ? Localizer["Unfavourite"] : Localizer["Favourite"])
+                </button>
+                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold" data-report-action="save">
+                    <i class="ki-outline ki-check fs-3"></i>@Localizer["Save configuration"]
+                </button>
+                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold" data-report-action="fork">
+                    <i class="ki-outline ki-copy fs-3"></i>@Localizer["Fork template"]
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold disabled" disabled title="@Localizer[Model.WritesBlockedReasonCode]">
+                    <i class="ki-outline ki-star fs-3"></i>@Localizer["Favourite"]
+                </button>
+                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold disabled" disabled title="@Localizer[Model.WritesBlockedReasonCode]">
+                    <i class="ki-outline ki-check fs-3"></i>@Localizer["Save configuration"]
+                </button>
+                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold disabled" disabled title="@Localizer[Model.WritesBlockedReasonCode]">
+                    <i class="ki-outline ki-copy fs-3"></i>@Localizer["Fork template"]
+                </button>
+            }
+            <button onclick="window.print()" class="btn btn-sm btn-flex btn-light fw-bold"><i class="ki-outline ki-printer fs-3"></i>@SR["Print"]</button>
+        </div>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    @if (Model.IsUnavailable)
+    {
+        @* NOT DEPLOYED. Distinct from "not permitted" (which 404s) and from "no rows". Nothing the user
+           can do will change it, so the screen says so plainly instead of returning a stack trace —
+           which is what it did until a real-database check caught it. *@
+        <div class="alert alert-light-danger d-flex align-items-center p-5">
+            <i class="ki-outline ki-information-5 fs-2hx text-danger me-4"></i>
+            <div class="d-flex flex-column">
+                <h4 class="mb-1 text-gray-900">@Localizer[Model.UnavailableReasonCode!]</h4>
+                <span class="text-gray-600">@Localizer["Ask an administrator if you believe this is wrong."]</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <div class="text-gray-500 fw-semibold fs-7 mb-4">@Model.Description</div>
+        }
+
+        @if (!Model.WritesEnabled)
+        {
+            <div class="alert alert-light-primary d-flex align-items-center p-5 mb-5" role="status">
+                <i class="ki-outline ki-information-5 fs-2hx text-primary me-4"></i>
+                <div class="d-flex flex-column"><span class="text-gray-700">@Localizer[Model.WritesBlockedReasonCode]</span></div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(exportFailed))
+        {
+            <div class="alert alert-light-danger d-flex align-items-center p-5 mb-5" role="alert">
+                <i class="ki-outline ki-information-5 fs-2hx text-danger me-4"></i>
+                <div class="d-flex flex-column">
+                    <h4 class="mb-1 text-gray-900">@Localizer["The export could not be produced."]</h4>
+                    <span class="text-gray-600">@exportFailed</span>
+                </div>
+            </div>
+        }
+
+        <!--begin::Parameters (Inventory/ValuationReport.cshtml filter card, same classes)
+             Running is a GET, so the URL after a run IS the report: bookmarkable and shareable — and
+             not a shared grant, because the destination authorizes on arrival.-->
+        <form method="get" asp-controller="Reports" asp-action="Viewer">
+        <input type="hidden" name="id" value="@Model.Code" />
+        @if (Model.TemplateId.HasValue) { <input type="hidden" name="templateId" value="@Model.TemplateId" /> }
+        <input type="hidden" name="run" value="true" />
+
+        <div class="card card-flush mb-5"><div class="card-body py-5">
+            <div class="row g-4 align-items-end">
+
+                @if (Model.Parameters.Count == 0)
+                {
+                    <div class="col-12"><span class="text-muted fs-7">@Localizer["This report takes no parameters."]</span></div>
+                }
+
+                @foreach (var parameter in Model.Parameters)
+                {
+                    <div class="col-md-3">
+                        <label class="fw-semibold fs-7 text-muted mb-1" for="p_@parameter.Key">
+                            @parameter.Title
+                            @if (parameter.Required) { <span class="text-danger">*</span> }
+                        </label>
+
+                        @if (parameter.Options.Count > 0)
+                        {
+                            <select class="form-select form-select-solid @(parameter.HasError ? "is-invalid" : "")"
+                                    id="p_@parameter.Key" name="@parameter.Key" data-control="select2"
+                                    multiple="@parameter.AllowMultiple">
+                                @if (!parameter.Required && !parameter.AllowMultiple)
+                                {
+                                    <option value="">@SR["All"]</option>
+                                }
+                                @foreach (var option in parameter.Options)
+                                {
+                                    <option value="@option.Value" selected="@(option.Value == parameter.Value)">@option.Label</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            @* The input TYPE comes from the declared parameter type, so a date parameter gets a
+                               date picker and a number gets a number field — the browser then rejects locally
+                               what the engine's binder would reject on the server. *@
+                            <input class="form-control form-control-solid @(parameter.HasError ? "is-invalid" : "")"
+                                   id="p_@parameter.Key" name="@parameter.Key" value="@parameter.Value"
+                                   autocomplete="off"
+                                   type="@(parameter.Type switch {
+                                             "Date" => "date",
+                                             "DateTime" => "datetime-local",
+                                             "Integer" or "Decimal" or "Currency" or "EntityRef" => "number",
+                                             _ => "text" })"
+                                   min="@parameter.MinValue" max="@parameter.MaxValue"
+                                   required="@parameter.Required" />
+                        }
+
+                        @if (parameter.HasError)
+                        {
+                            @* The engine's own complaint, against the input that caused it. A banner listing
+                               "From is required" above eight inputs makes the user hunt. *@
+                            <div class="text-danger fs-8 fw-semibold mt-1">@parameter.ValidationMessage</div>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(parameter.HelpText))
+                        {
+                            <div class="text-muted fs-8 mt-1">@parameter.HelpText</div>
+                        }
+                    </div>
+                }
+
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ki-outline ki-magnifier fs-3"></i>@Localizer["Run report"]
+                    </button>
+                </div>
+
+                @if (preview is not null && preview.Succeeded)
+                {
+                    @* The run summary sits where Valuation puts its grand total, in the same type sizes and
+                       the same ledger green. *@
+                    <div class="col-md-3 text-md-end ms-md-auto">
+                        <div class="fs-8 fw-bold text-muted text-uppercase">@Localizer["Rows"]</div>
+                        <div class="fs-2 fw-bolder" style="color:#13433a;">
+                            @preview.RowCount.ToString("N0")@(preview.Truncated ? "+" : "")
+                        </div>
+                        <div class="fs-8 text-muted">@preview.DurationMs ms</div>
+                    </div>
+                }
+            </div>
+        </div></div>
+        </form>
+        <!--end::Parameters-->
+
+        @if (Model.Saved.HasItems)
+        {
+            <div class="card card-flush mb-5"><div class="card-body py-4 d-flex flex-wrap align-items-center gap-2">
+                <span class="fw-semibold fs-7 text-muted me-2">@Localizer["Saved layouts"]</span>
+                @foreach (var saved in Model.Saved.Items)
+                {
+                    <a class="btn btn-sm btn-flex fw-semibold @(saved.Id == Model.TemplateId ? "btn-primary" : "btn-light")"
+                       asp-controller="Reports" asp-action="Viewer" asp-route-id="@Model.Code" asp-route-templateId="@saved.Id">
+                        @saved.Name
+                        <span class="badge badge-light fs-8 ms-1">@Localizer[saved.Scope.ToString()]</span>
+                    </a>
+                }
+            </div></div>
+        }
+
+        @* ================= RESULT ================= *@
+        @if (preview is null)
+        {
+            <div class="card card-flush mb-5"><div class="card-body">
+                <div class="text-center text-muted py-10">
+                    <i class="ki-outline ki-chart-simple fs-3x d-block mb-3 text-gray-400"></i>
+                    <div class="fw-bold text-gray-700">@Localizer["Set the parameters and run the report."]</div>
+                    <div class="fs-7">@Localizer["Nothing is queried until you do."]</div>
+                </div>
+            </div></div>
+        }
+        else if (preview.Denied)
+        {
+            @* A refusal, stated as a refusal. The engine's reason CODE is not shown: it names the gate
+               that stopped the caller, which is exactly what an unauthorized prober would want. *@
+            <div class="alert alert-light-warning d-flex align-items-center p-5 mb-5" role="alert">
+                <i class="ki-outline ki-lock-2 fs-2hx text-warning me-4"></i>
+                <div class="d-flex flex-column">
+                    <h4 class="mb-1 text-gray-900">@Localizer["You are not permitted to run this report."]</h4>
+                    <span class="text-gray-600">@Localizer["Ask an administrator if you believe this is wrong."]</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            @* ---- TRUNCATION — FIRST, ABOVE THE DATA ----------------------------------------------
+               Above the table, not below it and not in a footer. A partial answer that announces
+               itself after the reader has already drawn a conclusion has announced nothing. *@
+            @if (preview.Truncated)
+            {
+                <div class="alert alert-light-warning d-flex align-items-center p-5 mb-5" role="alert">
+                    <i class="ki-outline ki-information-5 fs-2hx text-warning me-4"></i>
+                    <div class="d-flex flex-column">
+                        <h4 class="mb-1 text-gray-900">@Localizer["This is a partial result."]</h4>
+                        <span class="text-gray-600">
+                            @Localizer["The row limit was reached, so rows are missing. Narrow the date range or add a filter."]
+                            (@Localizer["limit"] @Model.MaxRows.ToString("N0"))
+                        </span>
+                    </div>
+                </div>
+            }
+
+            @foreach (var warning in preview.Warnings)
+            {
+                <div class="alert alert-light-warning d-flex align-items-center p-5 mb-5" role="status">
+                    <i class="ki-outline ki-information-5 fs-2hx text-warning me-4"></i>
+                    <div class="d-flex flex-column"><span class="text-gray-700">@warning</span></div>
+                </div>
+            }
+
+            @foreach (var error in preview.Errors)
+            {
+                <div class="alert alert-light-danger d-flex align-items-center p-5 mb-5" role="alert">
+                    <i class="ki-outline ki-information-5 fs-2hx text-danger me-4"></i>
+                    <div class="d-flex flex-column"><span class="text-gray-700">@error</span></div>
+                </div>
+            }
+
+            @if (preview.Succeeded)
+            {
+                <div class="card card-flush mb-5">
+                    <div class="card-header align-items-center py-4">
+                        <div class="card-title">
+                            <span class="text-muted fs-7">
+                                @preview.RowCount.ToString("N0") @Localizer["Rows"]
+                                @if (preview.ArchiveEntryId.HasValue)
+                                {
+                                    <span class="badge badge-light-info fs-8 ms-2">@Localizer["Archived"]</span>
+                                }
+                            </span>
+                        </div>
+                        @* ---- EXPORTS ----
+                           Every button carries the SAME query string the run used, so the file is the result
+                           on screen. One request builder serves both paths (ReportsCenterPresenter.BuildRequest). *@
+                        <div class="card-toolbar">
+                            <div class="d-flex align-items-center gap-2">
+                                @foreach (var format in Model.Formats)
+                                {
+                                    <a class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0"
+                                       href="@Url.Action("Export", "Reports", new { id = Model.Code, format, templateId = Model.TemplateId })@(Context.Request.QueryString.HasValue ? "&" + Context.Request.QueryString.Value!.TrimStart('?') : "")">
+                                        <i class="ki-outline ki-file-down fs-4"></i>@Localizer[format.ToString()]
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-6">
+                        @* The renderer's own markup, CONFINED but not restyled: the preview must predict the
+                           exported artifact. Html.Raw is safe because HtmlReportRenderer encodes every cell
+                           through WebUtility.HtmlEncode — asserted by
+                           A_cell_containing_markup_is_encoded_by_the_renderer_the_viewer_injects. *@
+                        @* Focusable + named, like every scrolling table on this screen (axe
+                           scrollable-region-focusable). This one matters most: a rendered report is the widest
+                           thing the product puts on a page, so it is the region a keyboard user is most likely
+                           to need to scroll and least able to reach without tabindex. Named for the report
+                           itself rather than a generic "preview" — that is what is being scrolled. *@
+                        <div class="table-responsive" style="font-variant-numeric:tabular-nums;"
+                             tabindex="0" role="region" aria-label="@Model.Title">
+                            @Html.Raw(preview.Html)
+                        </div>
+                    </div>
+                </div>
+            }
+            else if (preview.Errors.Count == 0)
+            {
+                <div class="card card-flush mb-5"><div class="card-body">
+                    <div class="text-center text-muted py-10">@SR["NoData"]</div>
+                </div></div>
+            }
+        }
+
+        <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+
+            <!--begin::Run history-->
+            <div class="col-xl-6">
+                <div class="card card-flush h-lg-100">
+                    <div class="card-header align-items-center py-4">
+                        <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Run history"]</h3></div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-responsive" tabindex="0" role="region" aria-label="@Localizer["Run history"]">
+                        <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                                <th class="ps-4">@SR["Status"]</th><th class="text-end">@Localizer["Rows"]</th><th>@Localizer["By"]</th><th class="text-end pe-4">@SR["Date"]</th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-600">
+                                @if (!Model.History.HasItems)
+                                {
+                                    <tr><td colspan="4" class="text-center text-muted py-10">@Localizer["No run recorded."]</td></tr>
+                                }
+                                @foreach (var run in Model.History.Items)
+                                {
+                                    <tr>
+                                        <td class="ps-4">
+                                            <a class="badge badge-light-@(run.Failed ? "danger" : "success") fs-8"
+                                               asp-controller="Reports" asp-action="Rerun" asp-route-id="@run.Id"
+                                               title="@Localizer["Run again"]">
+                                                @(run.Failed ? Localizer["Failed"] : Localizer["Done"])
+                                            </a>
+                                            <span class="d-block fs-8 text-muted">@run.Format</span>
+                                        </td>
+                                        <td class="text-end">@(run.Failed ? "—" : run.RowCount.ToString("N0"))</td>
+                                        <td class="text-muted">@run.EmployeeName</td>
+                                        <td class="text-end text-muted pe-4">@run.StartedAt.ToString("yyyy/MM/dd HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Run history-->
+
+            <!--begin::Archive-->
+            <div class="col-xl-6">
+                <div class="card card-flush h-lg-100">
+                    <div class="card-header align-items-center py-4">
+                        <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Archive"]</h3></div>
+                        @if (!Model.AllowArchive)
+                        {
+                            <div class="card-toolbar"><span class="badge badge-light fs-8">@Localizer["Not archivable"]</span></div>
+                        }
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-responsive" tabindex="0" role="region" aria-label="@Localizer["Archive"]">
+                        <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                                <th class="ps-4">@SR["Name"]</th><th class="text-end">@SR["Date"]</th><th class="text-end pe-4">@SR["Actions"]</th>
+                            </tr></thead>
+                            <tbody class="fw-semibold text-gray-600">
+                                @if (!Model.Archive.HasItems)
+                                {
+                                    <tr><td colspan="3" class="text-center text-muted py-10">@Localizer["Nothing archived."]</td></tr>
+                                }
+                                @foreach (var entry in Model.Archive.Items)
+                                {
+                                    <tr>
+                                        <td class="ps-4 text-gray-900 fw-bold">@entry.FileName</td>
+                                        <td class="text-end text-muted">@entry.CreatedAt?.ToString("yyyy/MM/dd HH:mm")</td>
+                                        <td class="text-end pe-4">
+                                            @* THREE outcomes, not two. Retrieval re-checks the report permission, so
+                                               an archived artifact is not a permanent grant — and a swept file is a
+                                               different problem from a revoked permission. *@
+                                            @if (entry.CanDownload)
+                                            {
+                                                <a class="btn btn-sm btn-light-primary" asp-controller="Reports" asp-action="Download" asp-route-id="@entry.Id">
+                                                    <i class="ki-outline ki-file-down fs-4"></i>@Localizer["Download"]
+                                                </a>
+                                            }
+                                            else if (!entry.BytesPresent)
+                                            {
+                                                <span class="badge badge-light-warning fs-8" title="@Localizer["The stored file is no longer available."]">@Localizer["File swept"]</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-light-warning fs-8" title="@Localizer["You no longer hold the permission this report requires."]">@Localizer["No longer permitted"]</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Archive-->
+        </div>
+
+        @* ---- COLUMNS ----
+           Internal columns are absent from this list because the presenter never puts them in the
+           model — not because this loop skips them. *@
+        @if (Model.Columns.Count > 0)
+        {
+            <div class="card card-flush mb-5">
+                <div class="card-header align-items-center py-4">
+                    <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Columns"]</h3></div>
+                    <div class="card-toolbar"><span class="text-muted fs-7">@Model.Columns.Count</span></div>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var column in Model.Columns)
+                        {
+                            <span class="badge badge-light-@(column.VisibleByDefault ? "primary" : "secondary") fs-8">@column.Title</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+    </div></div>
+</div>

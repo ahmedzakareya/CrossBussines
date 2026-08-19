@@ -1,0 +1,52 @@
+@using CrossBuy.BL.Reporting
+@model ReportCardModel
+@*
+    One catalog card.
+
+    THIS IS Inventory/Reports.cshtml's card, verbatim: col-md-4 → a.card.card-flush.h-100 →
+    card-body.d-flex.flex-column.p-7 → symbol-50px + fs-3 title + fs-7 muted description. Same
+    classes, same order, same sizes. A user moving between Inventory reports and the Reports Center
+    sees one component, not two that resemble each other.
+
+    Only two things are added, and both use components already on that page's siblings: a
+    badge-light star for a favourite, and badge-light tag chips (Inventory/Items.cshtml uses the same
+    badge-light for its own row chips).
+
+    A partial rather than a loop body because the catalog renders it per category group — a card that
+    drifted between two groups would be the sort of difference nobody notices until a tag stops
+    showing in one of them.
+
+    The whole card is ONE link to the Viewer, with `run` absent: opening a report does not execute it.
+*@
+<div class="col-md-4">
+    <a href="@Url.Action("Viewer","Reports", new { id = Model.Code })" class="card card-flush h-100 text-decoration-none">
+        <div class="card-body d-flex flex-column p-7">
+            <div class="d-flex flex-stack mb-5">
+                <div class="symbol symbol-50px">
+                    <span class="symbol-label bg-light-@Model.Color"><i class="ki-outline @Model.Icon fs-2x text-@Model.Color"></i></span>
+                </div>
+                @if (Model.IsFavorite)
+                {
+                    <i class="ki-outline ki-star fs-2 text-warning"></i>
+                }
+            </div>
+
+            <span class="fs-3 fw-bold text-gray-900">@Model.Title</span>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <span class="text-gray-500 fw-semibold fs-7 mt-2">@Model.Description</span>
+            }
+
+            @if (Model.Tags.Count > 0)
+            {
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    @foreach (var tag in Model.Tags)
+                    {
+                        <span class="badge badge-light fs-8">@tag</span>
+                    }
+                </div>
+            }
+        </div>
+    </a>
+</div>

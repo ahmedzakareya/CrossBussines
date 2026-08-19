@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Archive" xml:space="preserve">
+    <value>Archives</value>
+  </data>
+  <data name="Archived" xml:space="preserve">
+    <value>Archivé</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Catégorie</value>
+  </data>
+  <data name="Clear the filters, or ask an administrator for access to a module's reports." xml:space="preserve">
+    <value>Effacez les filtres ou demandez l'accès aux rapports d'un module.</value>
+  </data>
+  <data name="Code, title or description…" xml:space="preserve">
+    <value>Code, titre ou description…</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Société</value>
+  </data>
+  <data name="Data availability" xml:space="preserve">
+    <value>Disponibilité des données</value>
+  </data>
+  <data name="Data set" xml:space="preserve">
+    <value>Jeu de données</value>
+  </data>
+  <data name="Data sets" xml:space="preserve">
+    <value>Jeux de données</value>
+  </data>
+  <data name="Default" xml:space="preserve">
+    <value>Par défaut</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Échec</value>
+  </data>
+  <data name="Favourites" xml:space="preserve">
+    <value>Favoris</value>
+  </data>
+  <data name="Favourites only" xml:space="preserve">
+    <value>Favoris uniquement</value>
+  </data>
+  <data name="Fields" xml:space="preserve">
+    <value>Champs</value>
+  </data>
+  <data name="File swept" xml:space="preserve">
+    <value>Fichier supprimé</value>
+  </data>
+  <data name="Inventory reports" xml:space="preserve">
+    <value>Rapports d'inventaire</value>
+  </data>
+  <data name="No company is resolved for this session." xml:space="preserve">
+    <value>Aucune société résolue pour cette session.</value>
+  </data>
+  <data name="No longer permitted" xml:space="preserve">
+    <value>Non autorisé</value>
+  </data>
+  <data name="No matching results" xml:space="preserve">
+    <value>Aucun résultat</value>
+  </data>
+  <data name="No report" xml:space="preserve">
+    <value>Aucun rapport</value>
+  </data>
+  <data name="No saved layout yet." xml:space="preserve">
+    <value>Aucune mise en page enregistrée.</value>
+  </data>
+  <data name="Nothing archived." xml:space="preserve">
+    <value>Rien d'archivé.</value>
+  </data>
+  <data name="Personal" xml:space="preserve">
+    <value>Personnel</value>
+  </data>
+  <data name="Platform" xml:space="preserve">
+    <value>Plateforme</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Prêt</value>
+  </data>
+  <data name="Recent runs" xml:space="preserve">
+    <value>Exécutions récentes</value>
+  </data>
+  <data name="Registered, but no report is published over it yet." xml:space="preserve">
+    <value>Enregistré, mais aucun rapport n'est encore publié dessus.</value>
+  </data>
+  <data name="Report" xml:space="preserve">
+    <value>Rapport</value>
+  </data>
+  <data name="Reports" xml:space="preserve">
+    <value>Rapports</value>
+  </data>
+  <data name="Reports Center" xml:space="preserve">
+    <value>Centre de rapports</value>
+  </data>
+  <data name="Row cap" xml:space="preserve">
+    <value>Limite de lignes</value>
+  </data>
+  <data name="Rows" xml:space="preserve">
+    <value>Lignes</value>
+  </data>
+  <data name="Run again" xml:space="preserve">
+    <value>Réexécuter</value>
+  </data>
+  <data name="Run history" xml:space="preserve">
+    <value>Historique d'exécution</value>
+  </data>
+  <data name="Saved layouts" xml:space="preserve">
+    <value>Mises en page enregistrées</value>
+  </data>
+  <data name="Saved reports" xml:space="preserve">
+    <value>Rapports enregistrés</value>
+  </data>
+  <data name="Scope" xml:space="preserve">
+    <value>Portée</value>
+  </data>
+  <data name="Search reports" xml:space="preserve">
+    <value>Rechercher des rapports</value>
+  </data>
+  <data name="Sign in again to use reports. No company-scoped data is read without one." xml:space="preserve">
+    <value>Reconnectez-vous. Aucune donnée de société n'est lue sans cela.</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Taille</value>
+  </data>
+  <data name="Tag" xml:space="preserve">
+    <value>Étiquette</value>
+  </data>
+  <data name="Team" xml:space="preserve">
+    <value>Équipe</value>
+  </data>
+  <data name="The stored file is no longer available." xml:space="preserve">
+    <value>Le fichier stocké n'est plus disponible.</value>
+  </data>
+  <data name="Uncategorised" xml:space="preserve">
+    <value>Sans catégorie</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>Mis à jour</value>
+  </data>
+  <data name="You have not run a report yet." xml:space="preserve">
+    <value>Vous n'avez encore exécuté aucun rapport.</value>
+  </data>
+  <data name="You no longer hold the permission this report requires." xml:space="preserve">
+    <value>Vous ne détenez plus l'autorisation requise par ce rapport.</value>
+  </data>
+  <data name="available" xml:space="preserve">
+    <value>disponibles</value>
+  </data>
+  <data name="files" xml:space="preserve">
+    <value>fichiers</value>
+  </data>
+  <data name="kept until" xml:space="preserve">
+    <value>conservé jusqu'au</value>
+  </data>
+  <data name="none" xml:space="preserve">
+    <value>aucun</value>
+  </data>
+  <data name="ok" xml:space="preserve">
+    <value>ok</value>
+  </data>
+  <data name="pinned" xml:space="preserve">
+    <value>épinglés</value>
+  </data>
+  <data name="reporting.panel.no_company" xml:space="preserve">
+    <value>Aucune société résolue.</value>
+  </data>
+  <data name="reporting.panel.not_permitted" xml:space="preserve">
+    <value>Vous n'y êtes pas autorisé.</value>
+  </data>
+  <data name="reporting.panel.nothing_registered" xml:space="preserve">
+    <value>Aucun jeu de données enregistré.</value>
+  </data>
+  <data name="reporting.panel.schema_missing" xml:space="preserve">
+    <value>Les tables de rapports ne sont pas déployées.</value>
+  </data>
+  <data name="reporting.panel.source_failed" xml:space="preserve">
+    <value>Ce panneau n'a pas pu être chargé.</value>
+  </data>
+  <data name="reporting.panel.writes_unavailable" xml:space="preserve">
+    <value>L'enregistrement, la duplication et les favoris ne sont pas encore disponibles : en attente d'approbation.</value>
+  </data>
+  <data name="runs" xml:space="preserve">
+    <value>exécutions</value>
+  </data>
+  <data name="saved" xml:space="preserve">
+    <value>enregistrées</value>
+  </data>
+</root>

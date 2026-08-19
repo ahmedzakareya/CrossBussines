@@ -382,6 +382,18 @@ namespace CrossBuy.Models.Context
         public DbSet<Chat.ConversationMember> ConversationMembers { get; set; }
         public DbSet<Chat.ChatMessage> ChatMessages { get; set; }
         public DbSet<Chat.ChatReaction> ChatReactions { get; set; }
+        public DbSet<Reporting.ReportTemplate> ReportTemplates { get; set; }
+        public DbSet<Reporting.ReportTemplateVersion> ReportTemplateVersions { get; set; }
+        public DbSet<Reporting.ReportCategory> ReportCategories { get; set; }
+        public DbSet<Reporting.ReportTag> ReportTags { get; set; }
+        public DbSet<Reporting.ReportTagLink> ReportTagLinks { get; set; }
+        public DbSet<Reporting.ReportFavorite> ReportFavorites { get; set; }
+        public DbSet<Reporting.ReportShare> ReportShares { get; set; }
+        public DbSet<Reporting.ReportRun> ReportRuns { get; set; }
+        public DbSet<Reporting.ReportArchiveEntry> ReportArchiveEntries { get; set; }
+        public DbSet<Reporting.ReportSchedule> ReportSchedules { get; set; }
+        public DbSet<Reporting.ReportScheduleRecipient> ReportScheduleRecipients { get; set; }
+        public DbSet<Reporting.ReportDeliveryAttempt> ReportDeliveryAttempts { get; set; }
         public DbSet<Comm.CommMessage> CommMessages { get; set; }
         public DbSet<Comm.CommAttachment> CommAttachments { get; set; }
         public DbSet<Comm.Announcement> Announcements { get; set; }
