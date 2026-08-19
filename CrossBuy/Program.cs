@@ -90,6 +90,7 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IFileManagerService, FileManagerService>();  // Company document library (Metronic file-manager)
 builder.Services.AddScoped<ICommService, CommService>();          // Comm Hub — email (Metronic inbox)
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>(); // Comm Hub P5 — announcements
+builder.Services.AddScoped<IDocCommentService, DocCommentService>();     // Comm Hub P5 — document comments/timeline
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IJobTitles, JobTitleService>();
 builder.Services.AddScoped<IAdministrativeBodiesCompanyService, AdministrativeBodiesCompanyService>();

@@ -33,6 +33,7 @@ namespace CrossBuy.BL
         public const string ChatRemoved = "chat_removed";
         // ----- Hub P5 -----
         public const string Announcement = "announcement";
+        public const string DocComment = "doc_comment";
         // ----- Manufacturing (Platform Kernel slice 2) — first notifications this module has ever had -----
         public const string WorkOrderReleased = "work_order_released";
         public const string WorkOrderCompleted = "work_order_completed";
@@ -57,6 +58,7 @@ namespace CrossBuy.BL
             "chat_message" or "chat_mention" => ("Chat", "ki-message-text-2", nameof(Prio.Normal)),
             "chat_added" or "chat_removed" => ("Chat", "ki-people", nameof(Prio.Normal)),
             "announcement" => ("Announcement", "ki-notification-bing", nameof(Prio.High)),
+            "doc_comment" => ("Comments", "ki-message-text", nameof(Prio.Normal)),
             "work_order_released" => ("Manufacturing", "ki-rocket", nameof(Prio.Normal)),
             "work_order_completed" => ("Manufacturing", "ki-check-circle", nameof(Prio.Normal)),
             _ => ("General", "ki-notification-status", nameof(Prio.Normal)),
