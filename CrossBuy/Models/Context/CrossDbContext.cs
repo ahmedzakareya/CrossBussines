@@ -331,6 +331,15 @@ namespace CrossBuy.Models.Context
 				// navigation would invite an Include() that loads a project the caller may not access.
 			});
 
+			// ---- Communication Platform (ADR-030 §5) — the platform's ENTIRE EF mapping, in ONE line ----
+			// Fourteen tables, their keys, lengths and indexes all live in
+			// Models/Context/Communication/CommunicationModel.cs, which that work stream owns outright. This file
+			// is shared with two other active work streams, so the footprint here is deliberately one call and no
+			// DbSet properties — services reach the entities through db.Set<T>() (see BL/Communication/CommDb).
+			// Structure ships in deploy/sql/communication_platform_slice_001.sql; this mapping exists so EF
+			// generates the same names and so a test host can materialise the platform from the model alone.
+			Communication.CommunicationModel.Configure(builder);
+
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
 
