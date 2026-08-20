@@ -1,0 +1,17 @@
+# Generated runtime state for the authorization probe. NONE of this is reviewable and one part of
+# it is actively dangerous to commit.
+#
+# chrome-profile/ is a real Chromium user-data directory created by launchPersistentContext. It has
+# contained "Login Data" and "Login Data For Account" — the browser's credential store — plus session
+# cookies for a signed-in admin. Committing it would put working authentication material into Git
+# history, where deleting the file later does not remove it. It is ~11 MB and 200+ files.
+#
+# shots-authz/ holds screenshots and responses.json from a run: evidence for the run that produced
+# them, not for any later one, and it goes stale the moment the app changes.
+chrome-profile/
+shots-authz/
+
+# Nothing else in this directory is generated: authz-probe.mjs, run.sh and README.md are reviewed
+# source and must stay tracked. The ignore list is deliberately narrow for that reason — a broad
+# pattern here would quietly hide the probe's own logic, which is exactly what has to be reviewable
+# for its results to mean anything.
