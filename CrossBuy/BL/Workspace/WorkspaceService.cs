@@ -374,9 +374,33 @@ namespace CrossBuy.BL.Workspace
                 return WorkspacePanel<WorkspaceWorkItem>.AccessDenied(
                     "This session has no employee, so personal work cannot be resolved.");
 
+            // OPEN WORK ONLY, AND THE FILTER IS THE TASKS MODULE'S OWN.
+            //
+            // This asked for `status: null`, so a DONE task competed for one of the eight rows. With
+            // `sort: "due"` — which orders by `DueDate ?? MaxValue` ascending — long-finished work carrying an
+            // early due date sorts to the TOP, so a panel whose whole job is "what is still on me" could be
+            // filled with work that is already closed. Same defect class as the agenda window: the panel could
+            // not show the thing it exists to show.
+            //
+            // `view: "inprogress"` is NOT a UI tab name being borrowed. It is TaskService's own open-work
+            // predicate — `Status == "InProgress" || Status == "New"` — and New ∪ InProgress is exactly
+            // "not Done", because Done is the only terminal status TaskItem has (TaskOverdueSweepService says
+            // so explicitly, and pins the day a Cancelled status is added). Re-deriving "open" here with a
+            // client-side `!= "Done"` would be a second copy of a rule the Tasks module already owns, and the
+            // copy is what drifts the day Cancelled lands.
+            const string OpenWork = "inprogress";
+
             var rows = await tasks.GetTasksAsync(
                 context.CompanyId, scope: "mine", currentEmployeeId: context.EmployeeId!.Value,
-                status: null, priority: null, q: null, page: 1, pageSize: WorkItemsShown, sort: "due");
+                status: null, priority: null, q: null, page: 1, pageSize: WorkItemsShown,
+                view: OpenWork, assignee: null, sort: "due");
+
+            // The SAME filters the rows were fetched with, so the count and the list cannot disagree —
+            // TaskService shares one WHERE builder between list and count for precisely this reason. Without
+            // it the panel shows eight rows and silently implies that is all of them.
+            var total = await SafeCountAsync(() => tasks.CountTasksAsync(
+                context.CompanyId, scope: "mine", currentEmployeeId: context.EmployeeId!.Value,
+                status: null, priority: null, q: null, view: OpenWork, assignee: null));
 
             var now = DateTime.Now;
             var items = rows.Select(r => new WorkspaceWorkItem
@@ -387,13 +411,35 @@ namespace CrossBuy.BL.Workspace
                 Priority = r.Priority,
                 Due = r.DueDate,
                 Assignee = r.AssigneeName,
-                Url = $"/Tasks/Index?open={r.Id}",
+
+                // THE TASKS MODULE OWNS ITS OWN DEEP LINK. This used to emit "/Tasks/Index?open={id}", a shape
+                // invented here and used by nothing else in the product: TasksController.Index binds
+                // status/priority/q/page/pageSize/view/assignee/sort and has never bound `open`. The module's
+                // own producer is TaskNotificationService.DeepLink, which is what its notifications and TAB 5's
+                // agenda already emit — so the same task now resolves to the same URL from every surface
+                // instead of My Work pointing somewhere the module does not answer.
+                Url = TaskNotificationService.DeepLink(r.Id),
+
                 Tone = ToneForTask(r.Status, r.Priority, r.DueDate, now),
                 DueHint = DueHint(r.DueDate, now),
             }).ToList();
 
-            return WorkspacePanel<WorkspaceWorkItem>.From(items);
+            return WorkspacePanel<WorkspaceWorkItem>.From(items, total);
         }
+
+        // WHERE A TASK TILE ACTUALLY GOES.
+        //
+        // Every task metric used to link to "/Workspace/Index#my-work" — the page the reader is already on.
+        // Clicking "Overdue: 12" scrolled you down eight rows and answered nothing, because My Work is capped
+        // and unfiltered. The Tasks module already implements these exact three questions as first-class list
+        // views (TaskService.Filter: "overdue" -> due < now && not Done, "urgent" -> Urgent && not Done,
+        // "inprogress" -> New | InProgress), so the tile now hands the reader to the module's own answer.
+        //
+        // The list route is spelled here rather than resolved because no navigation resolver owns module LIST
+        // views — TaskLinkResolver resolves a task's linked ENTITY, and TaskNotificationService.DeepLink
+        // resolves a single record. Both of those are used where they apply; this is the remaining gap, and it
+        // is centralised in one method so a future resolver replaces one line.
+        private static string TasksView(string view) => $"/Tasks/Index?view={view}";
 
         // The ONE place a task's state becomes a colour. Overdue beats priority: a late task needs attention
         // regardless of how it was originally ranked.
@@ -594,7 +640,7 @@ namespace CrossBuy.BL.Workspace
                         LabelAr = "مهامي المفتوحة", LabelEn = "My open work",
                         Value = (kpi.Total - kpi.Done).ToString("N0"),
                         HintAr = $"{kpi.InProgress:N0} قيد التنفيذ", HintEn = $"{kpi.InProgress:N0} in progress",
-                        Tone = WorkspaceTone.Info, Url = "/Workspace/Index#my-work",
+                        Tone = WorkspaceTone.Info, Url = TasksView("inprogress"),
                     });
 
                     metrics.Add(new WorkspaceMetric
@@ -604,7 +650,7 @@ namespace CrossBuy.BL.Workspace
                         HintAr = "تحتاج انتباهك", HintEn = "needs attention",
                         // Zero overdue is a GOOD state, not a neutral one — the tile reads green, not grey.
                         Tone = kpi.Overdue > 0 ? WorkspaceTone.Critical : WorkspaceTone.Ok,
-                        Url = "/Workspace/Index#my-work",
+                        Url = TasksView("overdue"),
                     });
 
                     metrics.Add(new WorkspaceMetric
@@ -612,7 +658,7 @@ namespace CrossBuy.BL.Workspace
                         LabelAr = "عاجلة", LabelEn = "Urgent",
                         Value = kpi.Urgent.ToString("N0"),
                         Tone = kpi.Urgent > 0 ? WorkspaceTone.Warn : WorkspaceTone.Neutral,
-                        Url = "/Workspace/Index#my-work",
+                        Url = TasksView("urgent"),
                     });
                 }
                 catch (Exception ex)
