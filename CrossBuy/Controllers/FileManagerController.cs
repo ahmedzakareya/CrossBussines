@@ -142,7 +142,13 @@ namespace CrossBuy.Controllers
             var me = await MeAsync(); if (me == null) return Unauthorized();
             var file = await _fm.GetFileAsync(me.Value.companyId, id);
             if (file == null || string.IsNullOrEmpty(file.StoredPath)) return NotFound();
-            var phys = System.IO.Path.Combine(_env.WebRootPath, file.StoredPath.TrimStart('/', '\\').Replace('/', System.IO.Path.DirectorySeparatorChar));
+            // Containment BEFORE touching the filesystem: prove the stored path resolves inside the
+            // document library. Traversal and rooted stored paths are refused rather than trimmed —
+            // see CrossBuy.BL.FileManagerPaths. A refusal is NotFound, so no physical path is leaked.
+            if (!CrossBuy.BL.FileManagerPaths.TryResolveLibraryFile(_env.WebRootPath, file.StoredPath, out var phys))
+            {
+                return NotFound();
+            }
             if (!System.IO.File.Exists(phys)) return NotFound();
             return PhysicalFile(phys, file.ContentType ?? "application/octet-stream", file.Name);
         }
