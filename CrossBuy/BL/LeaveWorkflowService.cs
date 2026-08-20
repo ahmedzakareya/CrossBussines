@@ -17,6 +17,12 @@ namespace CrossBuy.BL
 		/// distinction, because "no approver above me" and "my chain is broken" must not act alike.
 		Task<ApproverChain> ApproverChainAsync(int employeeId);
 
+		/// Pending leave approvals awaiting this approver, in the context's company. READ ONLY - it is the
+		/// approval inbox's module reader (SHF-14), not part of the workflow.
+		Task<IReadOnlyList<CrossBuy.BL.Approvals.PendingApprovalRow>> PendingForApproverAsync(
+			CrossBuy.Models.Platform.BusinessContext context, int approverEmployeeId,
+			CancellationToken cancellationToken = default);
+
 		/// Create a leave request, build its approval chain, notify the first approver
 		/// (or auto-approve when the requester is at/above the top of the chain).
 		Task<(bool ok, string? error, LeaveRequest? req)> CreateAsync(
@@ -170,6 +176,61 @@ namespace CrossBuy.BL
 				current = mgr.Value;
 			}
 			return new ApproverChain(chain, defect, dropped);
+		}
+
+		// =============================================================================================
+		// THE APPROVAL INBOX'S LEAVE READER (SHF-14 narrow read handoff).
+		//
+		// This is a READ. It adds nothing to the workflow and changes none of it: the approver chain,
+		// CreateAsync, DecideAsync, the step writes, the notifications and the escalation are untouched.
+		//
+		// THE COMPANY BOUNDARY IS THE REQUESTER'S OWN ROW. LeaveRequest has no CompanyID column and none is
+		// invented here; a request belongs to this inbox only when its REQUESTER belongs to the resolved
+		// company. That is the same predicate ApprovalsController has applied since 96cb210, moved to the
+		// module that owns the rows so a second consumer cannot get it wrong by re-implementing it.
+		//
+		// It stays a read-side defence in its own right. 87ec8fa closed the assignment path that could graft
+		// a foreign approver onto a request, but rows written BEFORE that fix are still in the database, and
+		// this predicate is what keeps them off a foreign approver's screen.
+		//
+		// FAIL CLOSED: no company or no approver yields an empty list, never an unfiltered read.
+		// =============================================================================================
+		public async Task<IReadOnlyList<CrossBuy.BL.Approvals.PendingApprovalRow>> PendingForApproverAsync(
+			CrossBuy.Models.Platform.BusinessContext context, int approverEmployeeId,
+			CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(context);
+
+			var empty = Array.Empty<CrossBuy.BL.Approvals.PendingApprovalRow>();
+			if (context.CompanyId <= 0 || approverEmployeeId <= 0) return empty;
+
+			var rows = await _context.LeaveRequests.AsNoTracking()
+				.Include(r => r.Employee).Include(r => r.LeaveType)
+				.Where(r => r.Status == 0
+					&& r.CurrentApproverEmployeeID == approverEmployeeId
+					&& r.Employee != null && r.Employee.EmpCompanyID == context.CompanyId)
+				.OrderByDescending(r => r.ID)
+				.ToListAsync(cancellationToken);
+
+			return rows.Select(r => new CrossBuy.BL.Approvals.PendingApprovalRow
+			{
+				Silo = CrossBuy.BL.Approvals.ApprovalSilos.Leave,
+				EntityId = r.ID,
+				ApprovalType = r.LeaveTypeID.ToString(),
+				TitleAr = r.LeaveType?.NameAr,
+				TitleEn = r.LeaveType?.NameEn,
+				RequesterEmployeeId = r.EmployeeID,
+				RequesterNameAr = r.Employee?.FullName,
+				RequesterNameEn = r.Employee?.FullNameEn,
+				// The inbox has always dated a leave row by CreatedAt, falling back to the period start for
+				// rows predating that column. Preserved exactly, or the ordering would change.
+				SubmittedAt = r.CreatedAt ?? r.StartDate,
+				Status = "Pending",
+				PeriodStart = r.StartDate,
+				PeriodEnd = r.EndDate,
+				Days = r.Days,
+				Navigation = new CrossBuy.BL.Approvals.ApprovalNavigationTarget("People", "Leaves"),
+			}).ToList();
 		}
 
 		public async Task<(bool ok, string? error, LeaveRequest? req)> CreateAsync(

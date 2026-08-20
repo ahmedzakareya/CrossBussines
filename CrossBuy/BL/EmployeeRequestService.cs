@@ -12,6 +12,12 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note);
 		/// Latest payslip figures for the salary certificate (net/gross/base), or null if none posted yet.
 		Task<Payslip?> LatestPayslipAsync(int employeeId);
+
+		/// Pending employee requests awaiting this approver, in the context's company. READ ONLY - the
+		/// approval inbox's module reader (SHF-15), not part of the workflow.
+		Task<IReadOnlyList<CrossBuy.BL.Approvals.PendingApprovalRow>> PendingForApproverAsync(
+			CrossBuy.Models.Platform.BusinessContext context, int approverEmployeeId,
+			CancellationToken cancellationToken = default);
 	}
 
 	public class EmployeeRequestService : IEmployeeRequestService
@@ -31,6 +37,53 @@ namespace CrossBuy.BL
 		{
 			if (r.RequestType == "Permission") return ar ? "إذن" : "permission";
 			return ar ? "خطاب" : "letter";
+		}
+
+		// =============================================================================================
+		// THE APPROVAL INBOX'S EMPLOYEE-REQUEST READER (SHF-15 narrow read handoff).
+		//
+		// A READ. CreateAsync, DecideAsync, the workflow transitions, the approval writes and the
+		// notification logic are all untouched.
+		//
+		// EmployeeRequest DOES carry CompanyID - written from the requester's own Employee.EmpCompanyID - so
+		// the boundary is stated directly on the row rather than inferred through a join. The approver match
+		// alone would not be isolation: Employee.ID is a global primary key, so it rules out an id COLLISION
+		// across companies but holds only as long as approver assignment is correct.
+		//
+		// FAIL CLOSED: no company or no approver yields an empty list.
+		// =============================================================================================
+		public async Task<IReadOnlyList<CrossBuy.BL.Approvals.PendingApprovalRow>> PendingForApproverAsync(
+			CrossBuy.Models.Platform.BusinessContext context, int approverEmployeeId,
+			CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(context);
+
+			var empty = Array.Empty<CrossBuy.BL.Approvals.PendingApprovalRow>();
+			if (context.CompanyId <= 0 || approverEmployeeId <= 0) return empty;
+
+			var rows = await _context.EmployeeRequests.AsNoTracking()
+				.Where(r => r.Status == 0
+					&& r.CurrentApproverEmployeeID == approverEmployeeId
+					&& r.CompanyID == context.CompanyId)
+				.OrderByDescending(r => r.ID)
+				.ToListAsync(cancellationToken);
+
+			return rows.Select(r => new CrossBuy.BL.Approvals.PendingApprovalRow
+			{
+				Silo = CrossBuy.BL.Approvals.ApprovalSilos.Request,
+				EntityId = r.ID,
+				ApprovalType = r.RequestType,
+				// The title is the request KIND, which the inbox localizes ("Letter" / "Permission"). The
+				// discriminator travels in ApprovalType; no rendered string is invented here.
+				RequesterEmployeeId = r.EmployeeID,
+				SubmittedAt = r.CreatedAt,
+				Status = "Pending",
+				OnDate = r.PermissionDate,
+				FromTime = r.FromTime,
+				ToTime = r.ToTime,
+				TitleEn = r.LetterType,
+				Navigation = new CrossBuy.BL.Approvals.ApprovalNavigationTarget("People", "Requests"),
+			}).ToList();
 		}
 
 		public async Task<(bool ok, string? error, EmployeeRequest? req)> CreateAsync(EmployeeRequest draft)
