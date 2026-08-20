@@ -16,6 +16,15 @@ namespace CrossBuy.BL
 		Task<bool> RequiresApprovalAsync(decimal amount);
 		Task<int> SubmitAsync(string docType, decimal amount, object payload, int? requestedBy);
 		Task<List<InventoryApproval>> PendingAsync();
+
+		// The approval INBOX read. Deliberately separate from PendingAsync(): that one answers "what is
+		// pending in the current company", this one answers "what may THIS approver ACT ON, in the company the
+		// server resolved for them". It returns the visibility gate alongside the rows because the caller needs
+		// to distinguish "not an inventory approver here" from "an approver with an empty queue", and deciding
+		// that twice invites the two answers to disagree.
+		Task<(bool isInventoryManager, List<InventoryApproval> pending)> ApprovalInboxAsync(
+			CrossBuy.Models.Platform.BusinessContext context, int approverEmployeeId,
+			CancellationToken cancellationToken = default);
 		Task<List<InventoryApproval>> RecentAsync(int take = 50);
 		Task<(bool ok, string? error)> ApproveAsync(int id, int approverEmp, string? note);
 		Task<(bool ok, string? error)> RejectAsync(int id, int approverEmp, string? note);
@@ -60,6 +69,61 @@ namespace CrossBuy.BL
 
 		public Task<List<InventoryApproval>> PendingAsync() =>
 			_db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == CompanyId && a.Status == "Pending").OrderBy(a => a.ID).ToListAsync();
+
+		// =============================================================================================
+		// APPROVAL INBOX — the company-isolated read that ApprovalsController.Index consumes.
+		//
+		// WHAT WAS WRONG. ApprovalsController queried the tables directly, and NEITHER query named a company:
+		//
+		//     _db.InventoryUserRoles .AnyAsync(r => r.EmployeeId == empId && r.Role == "InventoryManager")
+		//     _db.InventoryApprovals .Where (a => a.Status == "Pending" && a.RequestedByEmployeeId != empId)
+		//
+		// So an inventory manager saw EVERY company's pending approvals — requester name, document type and
+		// amount — and the role that unlocked that view could have been granted in a DIFFERENT company
+		// entirely: holding InventoryManager anywhere authorized the inbox everywhere. Two defects, one
+		// missing predicate each: a data leak and an authorization widening.
+		//
+		// WHY THE COMPANY IS A PARAMETER. It comes from BusinessContext, which BusinessContextFactory derives
+		// from the signed-in employee's own Employee.EmpCompanyID — never from a query string, form field,
+		// route value or session blob, and with no company-1 fallback to land on. Taking it as an argument
+		// rather than resolving it here keeps this method callable from a worker or a test with an explicit
+		// company, and keeps it independent of the legacy company constant the write paths in this class still
+		// carry.
+		//
+		// FAIL CLOSED. An unresolved company or an unresolved employee yields "not an approver, no rows" —
+		// never an unfiltered read. Nothing here widens on missing input.
+		// =============================================================================================
+		public async Task<(bool isInventoryManager, List<InventoryApproval> pending)> ApprovalInboxAsync(
+			CrossBuy.Models.Platform.BusinessContext context, int approverEmployeeId,
+			CancellationToken cancellationToken = default)
+		{
+			ArgumentNullException.ThrowIfNull(context);
+
+			var empty = new List<InventoryApproval>();
+
+			// No company and no identity both mean "cannot authorize", so both answer with nothing.
+			if (context.CompanyId <= 0 || approverEmployeeId <= 0) return (false, empty);
+
+			// The InventoryManager gate, scoped to the RESOLVED company. An identical role row held in another
+			// company must not open this company's queue — that is the widening being removed.
+			bool isInventoryManager = await _db.InventoryUserRoles.AsNoTracking()
+				.AnyAsync(r => r.CompanyID == context.CompanyId
+					&& r.EmployeeId == approverEmployeeId
+					&& r.Role == "InventoryManager", cancellationToken);
+			if (!isInventoryManager) return (false, empty);
+
+			// Separation of duties, preserved exactly as the inbox already applied it: a manager never reviews
+			// their own submission. Kept as the same `!=` comparison, so a row with no recorded requester
+			// continues to appear rather than silently vanishing.
+			var pending = await _db.InventoryApprovals.AsNoTracking()
+				.Where(a => a.CompanyID == context.CompanyId
+					&& a.Status == "Pending"
+					&& a.RequestedByEmployeeId != approverEmployeeId)
+				.OrderByDescending(a => a.ID)
+				.ToListAsync(cancellationToken);
+
+			return (true, pending);
+		}
 
 		public Task<List<InventoryApproval>> RecentAsync(int take = 50) =>
 			_db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == CompanyId).OrderByDescending(a => a.ID).Take(take).ToListAsync();

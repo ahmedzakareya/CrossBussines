@@ -17,8 +17,17 @@ namespace CrossBuy.Controllers
         private readonly IEmployeeService _employees;
         private readonly CrossDbContext _db;
         private readonly IStringLocalizer<CrossBuy.SharedResources> L;
-        public ApprovalsController(IEmployeeService employees, CrossDbContext db, IStringLocalizer<CrossBuy.SharedResources> localizer)
-        { _employees = employees; _db = db; L = localizer; }
+
+        // The company-isolated Inventory approval owner service, and the server-side company resolver.
+        // Both replace inline queries that named no company at all — see Index.
+        private readonly IInventoryApprovalService _inventoryApprovals;
+        private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _context;
+
+        public ApprovalsController(IEmployeeService employees, CrossDbContext db,
+            IStringLocalizer<CrossBuy.SharedResources> localizer,
+            IInventoryApprovalService inventoryApprovals,
+            CrossBuy.BL.Platform.IBusinessContextAccessor context)
+        { _employees = employees; _db = db; L = localizer; _inventoryApprovals = inventoryApprovals; _context = context; }
 
         private async Task<int?> CurrentEmployeeIdAsync()
         {
@@ -33,15 +42,40 @@ namespace CrossBuy.Controllers
         {
             var empId = await CurrentEmployeeIdAsync();
             if (empId == null) return RedirectToAction("Login", "Account");
+
+            // ---------------------------------------------------------------------------------------------
+            // COMPANY ISOLATION. All three silos below are company-sensitive, so the company is resolved
+            // ONCE, server-side: BusinessContextFactory reads the signed-in employee's own
+            // Employee.EmpCompanyID, and a session value that disagrees is logged and loses. It is never
+            // taken from a query string, form field, route value or session blob, and there is no company-1
+            // fallback left to land on.
+            //
+            // FAIL CLOSED: if no company resolves, no approval can be attributed to one, so the inbox is
+            // NOT rendered unfiltered — the request goes back to sign-in.
+            // ---------------------------------------------------------------------------------------------
+            var context = await _context.TryGetCurrentAsync();
+            if (context == null || context.CompanyId <= 0) return RedirectToAction("Login", "Account");
+            int companyId = context.CompanyId;
+
             bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
             string nm(string? a, string? b) => (isAr ? (a ?? b) : (b ?? a)) ?? "-";
 
             var rows = new List<ApprovalInboxRow>();
 
             // ----- Silo 1: leave requests pending on me -----
+            // LeaveRequests carries no CompanyID column and none is invented here. The boundary comes from
+            // the REQUESTER's own Employee row instead: a leave request reaches this inbox only if its
+            // requester belongs to the approver's resolved company.
+            //
+            // This is a READ-side defence, deliberately independent of how the approver was assigned.
+            // LeaveWorkflowService's upward climb walks `Hierarchical`, which has no CompanyID, so it can
+            // still graft a foreign manager onto a request; that ASSIGNMENT defect is reported separately and
+            // not fixed here. Filtering the read means such a request never reaches a foreign approver's
+            // screen even while the assignment path stays open.
             var leaves = await _db.LeaveRequests.AsNoTracking()
                 .Include(r => r.Employee).Include(r => r.LeaveType)
-                .Where(r => r.Status == 0 && r.CurrentApproverEmployeeID == empId.Value)
+                .Where(r => r.Status == 0 && r.CurrentApproverEmployeeID == empId.Value
+                    && r.Employee != null && r.Employee.EmpCompanyID == companyId)
                 .OrderByDescending(r => r.ID).ToListAsync();
             foreach (var r in leaves)
                 rows.Add(new ApprovalInboxRow
@@ -55,19 +89,25 @@ namespace CrossBuy.Controllers
                 });
 
             // ----- Silo 2: employee requests (letters / permissions) pending on me -----
+            // EmployeeRequests DOES carry CompanyID — written from the requester's own Employee.EmpCompanyID —
+            // so the isolation predicate is stated explicitly. Employee.ID being a global primary key means
+            // the approver match already rules out an id COLLISION across companies, but that is
+            // identity-bound filtering, not isolation: it holds only as long as approver assignment is
+            // correct. Stated explicitly, a row belonging to another company cannot surface here even if a
+            // cross-company approver assignment exists.
             var reqs = await _db.EmployeeRequests.AsNoTracking()
-                .Where(r => r.Status == 0 && r.CurrentApproverEmployeeID == empId.Value)
+                .Where(r => r.Status == 0 && r.CurrentApproverEmployeeID == empId.Value
+                    && r.CompanyID == companyId)
                 .OrderByDescending(r => r.ID).ToListAsync();
             var reqEmpIds = reqs.Select(r => r.EmployeeID).Distinct().ToList();
 
-            // ----- Silo 3: inventory approvals — only if I'm an InventoryManager, and not my own requests -----
-            var isInvMgr = await _db.InventoryUserRoles.AsNoTracking()
-                .AnyAsync(r => r.EmployeeId == empId.Value && r.Role == "InventoryManager");
-            List<Models.Context.Inventory.InventoryApproval> invs = new();
-            if (isInvMgr)
-                invs = await _db.InventoryApprovals.AsNoTracking()
-                    .Where(a => a.Status == "Pending" && a.RequestedByEmployeeId != empId.Value)
-                    .OrderByDescending(a => a.ID).ToListAsync();
+            // ----- Silo 3: inventory approvals -----
+            // DELEGATED to the owner service. This block used to query _db.InventoryUserRoles and
+            // _db.InventoryApprovals inline with no company predicate on either, so any inventory manager saw
+            // every company's pending approvals, and a role granted in one company unlocked the inbox in all
+            // of them. The service now answers the gate and the rows together, company-scoped, from the
+            // server-resolved context. This controller no longer touches either table.
+            var (isInvMgr, invs) = await _inventoryApprovals.ApprovalInboxAsync(context, empId.Value);
 
             // resolve names for the request + inventory rows in one lookup
             var nameIds = reqEmpIds.Concat(invs.Select(a => a.RequestedByEmployeeId).Where(x => x.HasValue).Select(x => x!.Value)).Distinct().ToList();
