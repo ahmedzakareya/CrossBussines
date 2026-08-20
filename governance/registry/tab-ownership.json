@@ -1,0 +1,167 @@
+{
+  "$comment": "Generated from docs/roadmap-v2/_generator. Do not hand-edit; re-run the generator.",
+  "tabs": [
+    {
+      "tabId": "TAB-0",
+      "tab": "Integration Owner",
+      "scope": "Shared files, integration branch, SQL slice registry, ADR registry, release gates. R1 delivered by TAB-1 acting in this role until appointed.",
+      "ownedPaths": [
+        "CrossBuy/Program.cs",
+        "CrossBuy/Models/Context/CrossDbContext.cs",
+        "CrossBuy/CrossBuy.csproj",
+        "CrossBuy.sln",
+        "CrossBuy/Resources/**",
+        "CrossBuy/Views/Shared/**",
+        "CrossBuy/deploy/**",
+        "deploy/**",
+        "governance/**",
+        ".github/workflows/**",
+        "docs/platform/ADR-*",
+        "docs/deployment/**",
+        "CrossBuy/BL/Platform/**",
+        "CrossBuy/Models/Platform/**",
+        "CrossBuy/Models/Context/Platform/**",
+        "CrossBuy/Hubs/**"
+      ],
+      "mayNotTouch": "Module-owned trees",
+      "status": "TO BE APPOINTED - R1 action"
+    },
+    {
+      "tabId": "TAB-1",
+      "tab": "First Tab - Core Security and Platform Governance",
+      "scope": "Authorization, bootstrap policy, grants, analyzer, security console.",
+      "ownedPaths": [
+        "CrossBuy.Analyzers/**",
+        "CrossBuy.Analyzers.Tests/**",
+        "CrossBuy/BL/Platform/Bootstrap*",
+        "CrossBuy/BL/Platform/PlatformGrant*",
+        "CrossBuy/BL/*AccessService.cs",
+        "CrossBuy/Models/Platform/Bootstrap*",
+        "CrossBuy/Models/Platform/PlatformGrant*",
+        "CrossBuy/Models/Context/Platform/BootstrapAccessPolicy.cs",
+        "CrossBuy/Models/Context/Platform/PlatformRoleAssignment.cs",
+        "CrossBuy/Controllers/Api/PlatformGrantsApiController.cs",
+        "engineering/**",
+        "docs/platform/Stage-002A-*",
+        "docs/roadmap-v2/**"
+      ],
+      "mayNotTouch": "Reporting, Communication, Construction trees",
+      "status": "Active - B6 closed"
+    },
+    {
+      "tabId": "TAB-2",
+      "tab": "Second Tab - Reporting Platform",
+      "scope": "Reporting engine, datasets, exporters, Report Center and Studio.",
+      "ownedPaths": [
+        "CrossBuy/BL/Reporting/**",
+        "CrossBuy/Models/Context/Reporting/**",
+        "CrossBuy/Controllers/Api/ReportsCenterApiController.cs",
+        "CrossBuy/Views/Reports*/**",
+        "CrossBuy/deploy/sql/reporting_platform.sql",
+        "docs/platform/ADR-037*"
+      ],
+      "mayNotTouch": "Security, Communication, Construction trees",
+      "status": "Active - foundation complete, activation in R2"
+    },
+    {
+      "tabId": "TAB-3",
+      "tab": "Third Tab - Communication and Collaboration",
+      "scope": "Comm platform, threads, mentions, notifications, timeline.",
+      "ownedPaths": [
+        "CrossBuy/BL/Communication/**",
+        "CrossBuy/BL/Comm/**",
+        "CrossBuy/Models/Context/Communication/**",
+        "CrossBuy/Models/Context/Comm/**",
+        "CrossBuy/Models/Communication/**",
+        "CrossBuy/deploy/sql/communication_platform_slice_001.sql",
+        "CrossBuy/deploy/sql/comm_*",
+        "docs/platform/ADR-03[0-6]*"
+      ],
+      "mayNotTouch": "Security, Reporting, Construction trees",
+      "status": "Active - foundation complete, activation in R2"
+    },
+    {
+      "tabId": "TAB-4",
+      "tab": "Fourth Tab - Construction and Contracting",
+      "scope": "BOQ, subcontracts, commercial revisions, construction C2-C8.",
+      "ownedPaths": [
+        "CrossBuy/BL/Construction/**",
+        "CrossBuy/BL/BoqService.cs",
+        "CrossBuy/BL/SubcontractBillingService.cs",
+        "CrossBuy/BL/VariationOrderService.cs",
+        "CrossBuy/Models/Context/Construction/**",
+        "deploy/sql/construction_c1_*",
+        "docs/construction/**"
+      ],
+      "mayNotTouch": "Security, Reporting, Communication trees",
+      "status": "Active - C1 verified, DDL applied nowhere"
+    },
+    {
+      "tabId": "TAB-5",
+      "tab": "Tasks and Calendar - UNASSIGNED",
+      "scope": "Task state and rules; calendar events and unified presentation.",
+      "ownedPaths": [
+        "CrossBuy/BL/TaskService.cs",
+        "CrossBuy/BL/TasksAccessService.cs",
+        "CrossBuy/BL/TaskGeneratorHostedService.cs",
+        "CrossBuy/BL/TaskScheduleMatchHostedService.cs",
+        "CrossBuy/BL/CalendarService.cs",
+        "CrossBuy/Controllers/TasksController.cs",
+        "CrossBuy/Controllers/CalendarController.cs",
+        "CrossBuy/BL/TasksCalendar/**",
+        "CrossBuy/Views/Tasks/**",
+        "CrossBuy/Views/Calendar/**",
+        "CrossBuy/deploy/sql/tasks_*",
+        "CrossBuy/deploy/sql/calendar.sql"
+      ],
+      "mayNotTouch": "Other tabs' trees",
+      "status": "UNASSIGNED - 2 live hosted services with no owner (R1 action)"
+    },
+    {
+      "tabId": "TAB-6",
+      "tab": "CrossBusiness Workspace",
+      "scope": "Workspace shell, My Work, approvals, mentions and activity surfaces (R3). APPOINTED NARROWLY for the read-only cross-silo approval inbox: aggregation, read DTOs, navigation metadata and Workspace consumption. Approval WRITES (approve/reject/post/release/confirm/escalate) stay with the module services.",
+      "ownedPaths": [
+        "CrossBuy/BL/Workspace/**",
+        "CrossBuy/Controllers/WorkspaceController.cs",
+        "CrossBuy/Views/Workspace/**",
+        "CrossBuy/BL/Approvals/**",
+        "CrossBuy/Controllers/ApprovalsController.cs",
+        "CrossBuy/Views/Approvals/**",
+        "CrossBuy/BL/ApprovalInboxDto.cs"
+      ],
+      "mayNotTouch": "Other tabs' trees; approval WRITE paths in module services",
+      "status": "APPOINTED for read-only approval inbox (owner ruling); wider Workspace R3 scope still unassigned"
+    },
+    {
+      "tabId": "TAB-7",
+      "tab": "Legacy Business Modules - UNASSIGNED",
+      "scope": "Accounting, Inventory, Purchasing, POS, Manufacturing, Projects, HR, CRM and Support - working modules with no active tab.",
+      "ownedPaths": [
+        "CrossBuy/Views/Accounting/**",
+        "CrossBuy/Views/Inventory/**",
+        "CrossBuy/Views/Crm/**",
+        "CrossBuy/Views/Pos/**",
+        "CrossBuy/Views/PosApp/**",
+        "CrossBuy/Views/Hyper/**",
+        "CrossBuy/Views/Project/**",
+        "CrossBuy/Views/People/**",
+        "CrossBuy/Views/Admin/**",
+        "CrossBuy/Views/Service/**",
+        "CrossBuy/Views/Currency/**",
+        "CrossBuy/Views/Store/**",
+        "CrossBuy/Views/Portal/**",
+        "CrossBuy/BL/*.cs",
+        "CrossBuy/Controllers/*.cs",
+        "CrossBuy/Models/Context/*.cs",
+        "CrossBuy/Models/Context/Accounting/**",
+        "CrossBuy/Models/Context/Inventory/**",
+        "CrossBuy/Models/Context/Crm/**",
+        "CrossBuy/Models/Context/Admin/**",
+        "CrossBuy/Models/Context/Pos/**"
+      ],
+      "mayNotTouch": "Other tabs' trees",
+      "status": "UNASSIGNED - legacy modules carry most of the 143 authorization debt"
+    }
+  ]
+}
