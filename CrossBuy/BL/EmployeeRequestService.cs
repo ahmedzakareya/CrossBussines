@@ -48,7 +48,16 @@ namespace CrossBuy.BL
 				if (string.IsNullOrWhiteSpace(draft.LetterType)) return (false, "نوع الخطاب مطلوب", null);
 			}
 
-			var chain = await _chain.ManagerChainAsync(draft.EmployeeID);
+			// Approver selection is SHARED with LeaveWorkflowService, so the company boundary that Batch C.1
+			// added to the hierarchy climb applies here too — and so does its trap. `chain.Count == 0` below
+			// means "the requester is at the top of the tree" and AUTO-APPROVES the request. Once the climb
+			// intersects with the requester's company, a cross-company graft ALSO empties the chain, so
+			// without this guard closing the isolation leak would silently approve employee requests that
+			// have no approver at all. Same refusal as the leave path, for the same reason.
+			var chainResult = await _chain.ApproverChainAsync(draft.EmployeeID);
+			var chain = chainResult.Approvers;
+			if (chain.Count == 0 && chainResult.HierarchyDefect)
+				return (false, "لا يمكن تحديد سلسلة الموافقة لهذا الموظف — الهيكل التنظيمي غير صحيح. راجع إدارة الموارد البشرية.", null);
 			draft.CreatedAt = DateTime.UtcNow;
 			draft.CreatedBy = draft.EmployeeID;
 			if (chain.Count == 0)

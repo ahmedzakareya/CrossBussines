@@ -1,6 +1,7 @@
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace CrossBuy.BL
 {
@@ -9,7 +10,12 @@ namespace CrossBuy.BL
 		/// Ordered chain of approver employee IDs from the direct manager up to (and including)
 		/// the head of the NEAREST organizational unit (company/branch/administrative body)
 		/// the employee belongs to. Level 1 = direct manager, last = the unit head (final approver).
+		/// Stage 1 Batch C.1: every approver is now intersected with the REQUESTER'S OWN COMPANY.
 		Task<List<int>> ManagerChainAsync(int employeeId);
+
+		/// The same chain plus whether building it hit a cross-company graft. `CreateAsync` needs the
+		/// distinction, because "no approver above me" and "my chain is broken" must not act alike.
+		Task<ApproverChain> ApproverChainAsync(int employeeId);
 
 		/// Create a leave request, build its approval chain, notify the first approver
 		/// (or auto-approve when the requester is at/above the top of the chain).
@@ -20,17 +26,29 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note);
 	}
 
+	/// The approver chain plus an explicit defect signal.
+	///
+	/// `HierarchyDefect` means the upward climb was STOPPED because the next node above belonged to another
+	/// company. It exists because the two "empty chain" cases demand opposite handling: a genuine top-of-tree
+	/// requester is auto-approved, whereas a requester whose chain is broken by a cross-company graft must be
+	/// refused — auto-approving them would turn an isolation defect into an unapproved leave.
+	public sealed record ApproverChain(List<int> Approvers, bool HierarchyDefect, int DroppedNodes);
+
 	public class LeaveWorkflowService : ILeaveWorkflowService
 	{
 		private readonly CrossDbContext _context;
 		private readonly INotificationService _notifications;
 		private readonly ILeaveDashboardService _dashboard;
+		private readonly ILogger<LeaveWorkflowService> _log;
 
-		public LeaveWorkflowService(CrossDbContext context, INotificationService notifications, ILeaveDashboardService dashboard)
+		public LeaveWorkflowService(
+			CrossDbContext context, INotificationService notifications, ILeaveDashboardService dashboard,
+			ILogger<LeaveWorkflowService> log)
 		{
 			_context = context;
 			_notifications = notifications;
 			_dashboard = dashboard;
+			_log = log;
 		}
 
 		// the position/seat title of an employee in the org tree (e.g., "رئيس قسم", "مدير الفرع")
@@ -49,9 +67,55 @@ namespace CrossBuy.BL
 		}
 
 		public async Task<List<int>> ManagerChainAsync(int employeeId)
+			=> (await ApproverChainAsync(employeeId)).Approvers;
+
+		// STAGE 1 BATCH C.1 — THE LEAK THIS CLOSES.
+		//
+		// This climb had NO company predicate. `Hierarchical` carries no CompanyID (it is one shared org tree,
+		// which is why Batch B's global filters deliberately skip it), so on a multi-company install the node
+		// above an employee's position could be another company's employee. That person then became a real
+		// approver: they were written into `LeaveRequest.CurrentApproverEmployeeID`, notified, shown the
+		// request — name, dates, reason — on their approvals screen, and could APPROVE OR REJECT it. A leave
+		// request is HR data about a person in a company that approver has no relationship to.
+		//
+		// The intersection is on Employee.EmpCompanyID — the requester's own company, read from their row, not
+		// from a caller argument and never defaulted. A foreign node STOPS the climb rather than being skipped
+		// over: continuing upward through it would keep walking a subtree that belongs to someone else's
+		// company, so everything above it is equally untrustworthy.
+		//
+		// It is not silently discarded: the stop is logged at Warning naming the requester, the foreign node
+		// and the company, and it is surfaced to the caller as `HierarchyDefect` so `CreateAsync` refuses the
+		// request instead of falling into its auto-approve branch.
+		public async Task<ApproverChain> ApproverChainAsync(int employeeId)
 		{
 			var all = await _context.Hierarchicals.AsNoTracking().ToListAsync();
 			var byId = all.ToDictionary(h => h.H_ID);
+
+			// the requester's own company — the only permitted basis for the intersection
+			var companyId = await _context.Employee.AsNoTracking()
+				.Where(e => e.ID == employeeId)
+				.Select(e => (int?)e.EmpCompanyID)
+				.FirstOrDefaultAsync();
+
+			if (companyId is not > 0)
+			{
+				// No company on the requester's row ⇒ no basis to validate ANY approver. Fail closed and
+				// report it as a defect, so the caller refuses rather than auto-approving.
+				_log.LogWarning(
+					"Leave: employee {Employee} has no company on their Employee row; no approver chain can be " +
+					"validated, so none is produced.", employeeId);
+				return new ApproverChain(new List<int>(), true, 0);
+			}
+
+			// every employee the tree references, restricted to the requester's company in ONE query
+			var treeEmployeeIds = all
+				.Where(h => h.H_Type == 5 && h.H_ObjectID.HasValue)
+				.Select(h => h.H_ObjectID!.Value).Distinct().ToList();
+
+			var sameCompany = (await _context.Employee.AsNoTracking()
+				.Where(e => treeEmployeeIds.Contains(e.ID) && e.EmpCompanyID == companyId.Value)
+				.Select(e => e.ID)
+				.ToListAsync()).ToHashSet();
 
 			// the manager directly above: employee node → its position → the parent employee node
 			int? ManagerOf(int empId)
@@ -80,15 +144,32 @@ namespace CrossBuy.BL
 			var chain = new List<int>();
 			var current = employeeId;
 			var guard = 0;
-			while (guard++ < 50)
+			var defect = false;
+			var dropped = 0;
+			while (guard++ < 50)   // cycle protection preserved: bounded climb + the chain.Contains check below
 			{
 				var mgr = ManagerOf(current);
 				if (mgr == null || mgr == employeeId || chain.Contains(mgr.Value)) break;
+
+				// the company intersection — a foreign node ends the chain, it is never approved past
+				if (!sameCompany.Contains(mgr.Value))
+				{
+					dropped++;
+					defect = true;
+					_log.LogWarning(
+						"Leave: the approver chain for employee {Employee} (company {Company}) was stopped at org " +
+						"node employee {Manager}, who does not belong to that company. Hierarchical has no " +
+						"CompanyID, so a cross-company graft is possible; the request will be refused rather " +
+						"than approved by a foreign manager or auto-approved on an empty chain.",
+						employeeId, companyId.Value, mgr.Value);
+					break;
+				}
+
 				chain.Add(mgr.Value);
 				if (IsUnitHead(mgr.Value)) break;   // reached the nearest unit head → final approver
 				current = mgr.Value;
 			}
-			return chain;
+			return new ApproverChain(chain, defect, dropped);
 		}
 
 		public async Task<(bool ok, string? error, LeaveRequest? req)> CreateAsync(
@@ -125,7 +206,15 @@ namespace CrossBuy.BL
 			if (days > remaining)
 				return (false, $"الرصيد غير كافٍ. المتبقي {(remaining < 0 ? 0 : remaining)} يوم والمطلوب {days} يوم.", null);
 
-			var chain = await ManagerChainAsync(employeeId);
+			var chainResult = await ApproverChainAsync(employeeId);
+			var chain = chainResult.Approvers;
+
+			// A chain broken by a cross-company graft must NOT reach the auto-approve branch below. Without
+			// this, closing the isolation leak would have created a worse defect: the requester's foreign
+			// manager gets filtered out, the chain comes back empty, and `chain.Count == 0` reads that as
+			// "requester is at the top of the tree" and approves the leave with no approver at all.
+			if (chain.Count == 0 && chainResult.HierarchyDefect)
+				return (false, "لا يمكن تحديد سلسلة الموافقة لهذا الموظف — الهيكل التنظيمي غير صحيح. راجع إدارة الموارد البشرية.", null);
 
 			var req = new LeaveRequest
 			{
