@@ -158,6 +158,7 @@ namespace CrossBuy.BL.Workspace
             var favorites = await SafeAsync("Favorites", () => LoadFavoritesAsync(context, cancellationToken));
             var reports = Trim(await SafeAsync("Reports", () => LoadReportsAsync(context, cancellationToken)), ReportsShown);
             var activity = await SafeAsync("Recent Activity", () => LoadActivityAsync(context, cancellationToken));
+            var approvals = await SafeAsync("Approvals", () => LoadApprovalsAsync(context, cancellationToken));
 
             var unreadNotifications = await SafeCountAsync(() => _notifications.CountUnreadAsync(context, cancellationToken));
             var unreadMentions = await SafeCountAsync(() => CountUnreadMentionsAsync(context, cancellationToken));
@@ -172,6 +173,7 @@ namespace CrossBuy.BL.Workspace
                     (notifications.State, "Notifications"), (mentions.State, "Mentions"),
                     (favorites.State, "Favorites"), (reports.State, "Reports"),
                     (activity.State, "Recent Activity"),
+                    (approvals.State, "Approvals"),
                 }
                 .Where(p => p.State == WorkspacePanelState.Unavailable)
                 .Select(p => p.Name)
@@ -192,9 +194,11 @@ namespace CrossBuy.BL.Workspace
                 Favorites = favorites,
                 Reports = reports,
                 Activity = activity,
+                Approvals = approvals,
                 QuickActions = WorkspaceNavigation.QuickActions(capabilities),
                 UnreadNotifications = unreadNotifications,
                 UnreadMentions = unreadMentions,
+                PendingApprovals = approvals.Total ?? 0,
                 UnavailablePanels = dark,
             };
         }
@@ -469,6 +473,66 @@ namespace CrossBuy.BL.Workspace
         // ================================================================================================
         // NOTIFICATIONS + MENTIONS — Phase 5. Consumption-only; neither activates anything.
         // ================================================================================================
+        // How many approval rows the dashboard panel shows. The TOTAL is reported separately, so a
+        // capped panel never implies the queue is this short.
+        private const int ApprovalsShown = 5;
+
+        private async Task<WorkspacePanel<WorkspaceApprovalItem>> LoadApprovalsAsync(
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            var inbox = _services.GetService<CrossBuy.BL.Approvals.IApprovalInboxService>();
+            if (inbox == null)
+                return WorkspacePanel<WorkspaceApprovalItem>.Unavailable(
+                    "The approvals read platform is not registered in this environment.");
+
+            if (context.EmployeeId is not > 0)
+                return WorkspacePanel<WorkspaceApprovalItem>.AccessDenied(
+                    "This session has no employee, so pending approvals cannot be resolved.");
+
+            // take is applied by the READ PLATFORM, not here, so the rows the panel shows are the newest
+            // across all three silos rather than the newest of whichever silo happened to be listed first.
+            var page = await inbox.GetPendingForCurrentApproverAsync(
+                context, context.EmployeeId!.Value, ApprovalsShown, cancellationToken);
+
+            var now = DateTime.UtcNow;
+            var items = page.Rows.Select(r => new WorkspaceApprovalItem
+            {
+                Reference = r.Reference,
+                Silo = r.Silo,
+                ApprovalType = r.ApprovalType,
+                // The module carries bilingual pairs; the panel picks by current culture the same way every
+                // other Workspace panel does.
+                Title = PickTitle(r),
+                Requester = Pick(r.RequesterNameAr, r.RequesterNameEn),
+                Submitted = r.SubmittedAt,
+                AgeDays = r.SubmittedAt.HasValue
+                    ? Math.Max(0, (int)(now.Date - r.SubmittedAt.Value.Date).TotalDays)
+                    : null,
+                // The MODULE supplied the pair; this only formats it. No navigation framework is
+                // introduced, and Workspace never names a module route itself.
+                Url = "/" + r.Navigation.Controller + "/" + r.Navigation.Action,
+            }).ToList();
+
+            // Total is the whole inbox, not the page: From() maps an empty list to the Empty state and
+            // keeps the real total, so a capped panel never implies the queue is this short.
+            return WorkspacePanel<WorkspaceApprovalItem>.From(items, page.TotalPending);
+        }
+
+        private static string PickTitle(CrossBuy.BL.Approvals.PendingApprovalRow row)
+        {
+            var picked = Pick(row.TitleAr, row.TitleEn);
+            // Employee requests carry their kind as the discriminator rather than a title, and inventory
+            // carries a DocType. Falling back to it keeps every row labelled with something real instead of
+            // inventing a localized string in a BL service.
+            return string.IsNullOrWhiteSpace(picked) ? (row.ApprovalType ?? "") : picked;
+        }
+
+        private static string? Pick(string? ar, string? en)
+        {
+            bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+            return isAr ? (ar ?? en) : (en ?? ar);
+        }
+
         private async Task<WorkspacePanel<WorkspaceNotification>> LoadNotificationsAsync(
             BusinessContext context, bool unreadOnly, int take, CancellationToken cancellationToken)
         {

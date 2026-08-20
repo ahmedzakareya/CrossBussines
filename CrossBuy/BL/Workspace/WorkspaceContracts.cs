@@ -175,6 +175,42 @@ namespace CrossBuy.BL.Workspace
 
     // ---- item shapes ----------------------------------------------------------------------------
 
+    // ---- APPROVALS -------------------------------------------------------------------------------
+    //
+    // THE WORKSPACE DEFINES NO APPROVAL TYPES. It consumes the approval read platform:
+    //
+    //     CrossBuy.BL.Approvals.IApprovalInboxService
+    //         .GetPendingForCurrentApproverAsync(BusinessContext, employeeId, take) -> ApprovalInboxPage
+    //
+    // That service already unions the three silos (leave · employee-request · inventory), and each silo's
+    // COMPANY BOUNDARY stays inside the module that owns its rows — the boundaries are not even the same
+    // shape, so re-deriving any of them here would be a second copy of the code that has already needed
+    // two security fixes. This type carries only what the panel draws.
+    //
+    // READ ONLY. There is no Approve, Reject, Post, Release, Confirm or Escalate anywhere on this path:
+    // each row links to the owning module's own screen to act, using navigation the MODULE supplied.
+    public sealed class WorkspaceApprovalItem
+    {
+        /// <summary>Stable cross-silo identity from the read platform ("Leave:42").</summary>
+        public required string Reference { get; init; }
+
+        /// <summary>Which silo it came from, so the panel can label and icon it.</summary>
+        public required string Silo { get; init; }
+
+        /// <summary>The module's own type discriminator (leave-type id, Letter/Permission, DocType).</summary>
+        public string? ApprovalType { get; init; }
+
+        public required string Title { get; init; }
+        public string? Requester { get; init; }
+        public DateTime? Submitted { get; init; }
+
+        /// <summary>Age in whole days at the time the panel was built, for an "N days waiting" hint.</summary>
+        public int? AgeDays { get; init; }
+
+        /// <summary>Resolved from the module-supplied navigation target. Workspace knows no module routes.</summary>
+        public string? Url { get; init; }
+    }
+
     public sealed class WorkspaceWorkItem
     {
         public required int Id { get; init; }
@@ -412,6 +448,7 @@ namespace CrossBuy.BL.Workspace
 
         public IReadOnlyList<WorkspaceMetric> Metrics { get; init; } = Array.Empty<WorkspaceMetric>();
         public WorkspacePanel<WorkspaceWorkItem> MyWork { get; init; } = WorkspacePanel<WorkspaceWorkItem>.Empty();
+        public WorkspacePanel<WorkspaceApprovalItem> Approvals { get; init; } = WorkspacePanel<WorkspaceApprovalItem>.Empty();
         public WorkspacePanel<WorkspaceAgendaRow> Agenda { get; init; } = WorkspacePanel<WorkspaceAgendaRow>.Empty();
         public WorkspacePanel<WorkspaceNotification> Notifications { get; init; } = WorkspacePanel<WorkspaceNotification>.Empty();
         public WorkspacePanel<WorkspaceMention> Mentions { get; init; } = WorkspacePanel<WorkspaceMention>.Empty();
@@ -422,6 +459,10 @@ namespace CrossBuy.BL.Workspace
 
         public int UnreadNotifications { get; init; }
         public int UnreadMentions { get; init; }
+
+        // Total pending across every silo, BEFORE the panel's take — so "12 pending" and a
+        // five-row panel do not contradict each other.
+        public int PendingApprovals { get; init; }
 
         // Panels that could not be served, for the shell's diagnostics strip. Published rather than swallowed:
         // an operator should see that panels are dark rather than infer it from an empty screen.
