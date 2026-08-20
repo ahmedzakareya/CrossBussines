@@ -310,6 +310,11 @@ builder.Services.AddScoped<ICrmCustomerLink, CrmCustomerLink>();
 builder.Services.AddScoped<ICrmAccessService, CrmAccessService>();
 builder.Services.AddScoped<IInventoryAccessService, InventoryAccessService>();
 builder.Services.AddScoped<IInventoryApprovalService, InventoryApprovalService>();
+
+// Approvals read platform (TAB-6, narrow read ownership). The reusable cross-silo inbox: it consumes
+// the three module readers registered above and holds no CrossDbContext of its own, so it cannot
+// query a module table even by accident. Read-only - approve/reject stay with the module services.
+builder.Services.AddScoped<CrossBuy.BL.Approvals.IApprovalInboxService, CrossBuy.BL.Approvals.ApprovalInboxService>();
 builder.Services.AddScoped<IOpeningBalanceService, OpeningBalanceService>();
 builder.Services.AddScoped<IIntegrityCheckService, IntegrityCheckService>();
 builder.Services.AddHostedService<IntegrityCheckHostedService>();

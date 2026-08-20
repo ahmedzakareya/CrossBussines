@@ -481,7 +481,11 @@ namespace CrossBuy.Tests
 			Assert.DoesNotContain("_db.InventoryApprovals", source);
 			Assert.DoesNotContain("_db.InventoryUserRoles", source);
 			Assert.DoesNotContain("InventoryUserRoles", source);
-			Assert.Contains("ApprovalInboxAsync", source);
+			// After the read-platform migration the controller reaches NONE of the three silo tables and
+			// delegates the whole union. Stricter than the original assertion, which only covered inventory.
+			Assert.DoesNotContain("_db.LeaveRequests", source);
+			Assert.DoesNotContain("_db.EmployeeRequests", source);
+			Assert.Contains("GetPendingForCurrentApproverAsync", source);
 		}
 
 		[Fact]
@@ -493,9 +497,42 @@ namespace CrossBuy.Tests
 			Assert.Contains("_context.TryGetCurrentAsync()", source);
 			Assert.Contains("context.CompanyId", source);
 
-			// EmployeeRequests states its own CompanyID; Leave uses the requester's company.
-			Assert.Contains("r.CompanyID == companyId", source);
-			Assert.Contains("r.Employee.EmpCompanyID == companyId", source);
+			// The silo predicates now live in the MODULE readers that own the rows, so this asserts them
+			// where they are rather than where they used to be - and covers all three silos, not two.
+			var leaveCode = SourceCode("CrossBuy", "BL", "LeaveWorkflowService.cs");
+			var requestCode = SourceCode("CrossBuy", "BL", "EmployeeRequestService.cs");
+			var inventoryCode = SourceCode("CrossBuy", "BL", "InventoryApprovalService.cs");
+
+			// Leave has no CompanyID column: the boundary is the requester's own Employee row.
+			Assert.Contains("r.Employee.EmpCompanyID == context.CompanyId", leaveCode);
+			// EmployeeRequest states its own CompanyID.
+			Assert.Contains("r.CompanyID == context.CompanyId", requestCode);
+			// Inventory bounds the rows AND the role gate by company.
+			Assert.Contains("a.CompanyID == context.CompanyId", inventoryCode);
+			Assert.Contains("r.CompanyID == context.CompanyId", inventoryCode);
+
+			foreach (var moduleCode in new[] { leaveCode, requestCode, inventoryCode })
+			{
+				Assert.DoesNotContain("Request.Query", moduleCode);
+				Assert.DoesNotContain("Request.Form", moduleCode);
+				Assert.DoesNotContain("Session.Get", moduleCode);
+			}
+
+			// The leave and employee-request modules carry NO defaulted company at all.
+			Assert.DoesNotContain("CompanyId = 1", leaveCode);
+			Assert.DoesNotContain("CompanyId = 1", requestCode);
+
+			// InventoryApprovalService is the honest exception, and the assertion is scoped rather than
+			// dropped. Its file still declares `private const int CompanyId = 1` for the LEGACY WRITE paths
+			// (RequiresApprovalAsync / SubmitAsync / ApproveAsync / RejectAsync), which 96cb210 deliberately
+			// left to the Stage 1 Batch A conversion that owns them. What this phase must guarantee is that
+			// the READ path never touches it: ApprovalInboxAsync resolves the company from the passed
+			// BusinessContext, asserted above. This narrows to the read method's own body so the constant
+			// cannot leak into it without failing here.
+			var inboxBody = MethodBody(inventoryCode, "public async Task<(bool isInventoryManager, List<InventoryApproval> pending)> ApprovalInboxAsync");
+			Assert.Contains("context.CompanyId", inboxBody);
+			Assert.DoesNotContain("CompanyId = 1", inboxBody);
+			Assert.DoesNotContain("== CompanyId", inboxBody);
 
 			// No request-controlled or defaulted company may appear.
 			Assert.DoesNotContain("CompanyId = 1", source);
@@ -515,6 +552,35 @@ namespace CrossBuy.Tests
 			var lines = ApprovalsControllerSource().Split(lineFeed)
 				.Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal));
 			return string.Join(lineFeed.ToString(), lines);
+		}
+
+		// The text of one method, from its signature to the next method at the same indentation. Crude but
+		// sufficient, and far better than asserting over a whole file that legitimately contains a legacy
+		// constant on paths this phase does not own.
+		private static string MethodBody(string code, string signature)
+		{
+			var start = code.IndexOf(signature, StringComparison.Ordinal);
+			Assert.True(start >= 0, $"method not found: {signature}");
+			var next = code.IndexOf(((char)10) + "		public ", start + signature.Length, StringComparison.Ordinal);
+			return next < 0 ? code[start..] : code[start..next];
+		}
+
+		// Same comment-stripping rule as ApprovalsControllerCode, for any source file.
+		private static string SourceCode(params string[] parts)
+		{
+			const char lineFeed = (char)10;
+			for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+			{
+				var candidate = Path.Combine(new[] { directory.FullName }.Concat(parts).ToArray());
+				if (!File.Exists(candidate)) continue;
+				var lines = File.ReadAllText(candidate).Split(lineFeed)
+					.Where(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal));
+				return string.Join(lineFeed.ToString(), lines);
+			}
+
+			Assert.Fail($"{string.Join("/", parts)} could not be located from the test assembly directory. " +
+						"The structural guard cannot run, and a sweep over an empty string would pass vacuously.");
+			return string.Empty;
 		}
 
 		private static string ApprovalsControllerSource()
@@ -541,8 +607,17 @@ namespace CrossBuy.Tests
 				? StubContextAccessor.Unresolved()
 				: new StubContextAccessor(context);
 
+			// The controller now consumes the reusable cross-silo inbox instead of querying the three
+			// silos itself. The inbox is built from the REAL module readers, so these tests still drive
+			// every company boundary end to end — that is what makes them the migration's proof that the
+			// rendered page is unchanged.
+			var leave = new LeaveWorkflowService(host.Db, new InboxNoopNotifications(),
+				new InboxStubLeaveDashboard(), Microsoft.Extensions.Logging.Abstractions.NullLogger<LeaveWorkflowService>.Instance);
+			var inbox = new CrossBuy.BL.Approvals.ApprovalInboxService(
+				leave, new EmployeeRequestService(host.Db, new InboxNoopNotifications(), leave), Service(host.Db));
+
 			var controller = new ApprovalsController(
-				new StubEmployees(employeeId), host.Db, new StubLocalizer(), Service(host.Db), accessor);
+				new StubEmployees(employeeId), host.Db, new StubLocalizer(), inbox, accessor);
 
 			var http = new DefaultHttpContext
 			{
@@ -594,6 +669,30 @@ namespace CrossBuy.Tests
 			public bool IsLocalUrl(string? url) => true;
 			public string? Link(string? routeName, object? values) => "/";
 			public string? RouteUrl(UrlRouteContext routeContext) => "/";
+		}
+
+		private sealed class InboxNoopNotifications : INotificationService
+		{
+			public Task NotifyAsync(int recipientEmployeeId, string? titleAr, string? titleEn,
+				string? bodyAr, string? bodyEn, string type, int? refId = null,
+				string? url = null, int? companyId = null, int? actorEmployeeId = null,
+				string? priority = null, string? category = null, string? dedupKey = null,
+				DateTime? expiresAt = null, string? icon = null,
+				string? entityType = null, int? entityId = null) => Task.CompletedTask;
+
+			public Task<int> NotifyRoleAsync(int companyId, string scope, string[] roles,
+				string? titleAr, string? titleEn, string? bodyAr, string? bodyEn,
+				string type, int? refId = null, int? exceptEmployeeId = null) => Task.FromResult(0);
+		}
+
+		private sealed class InboxStubLeaveDashboard : ILeaveDashboardService
+		{
+			public Task<PeopleDashboardDto> BuildAsync(int employeeId) => throw new NotImplementedException();
+			public Task<int> RemainingForTypeAsync(int employeeId, int leaveTypeId) => Task.FromResult(30);
+			public Task<int> RemainingForTypeInYearAsync(int employeeId, int leaveTypeId, int year) => Task.FromResult(30);
+			public Task<bool[]?> WorkDayFlagsAsync(int employeeId) => Task.FromResult<bool[]?>(null);
+			public Task<int> WorkingDaysAsync(int employeeId, DateTime start, DateTime end)
+				=> Task.FromResult(Math.Max(1, (end.Date - start.Date).Days + 1));
 		}
 
 		private sealed class StubTempDataProvider : ITempDataProvider
