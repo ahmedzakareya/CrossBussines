@@ -1,8 +1,10 @@
 @using CrossBuy.BL.Workspace
+@using CrossBuy.BL.Approvals
 @using System.Globalization
 @using Microsoft.AspNetCore.Mvc.Localization
 @using Microsoft.AspNetCore.Html
 @inject IViewLocalizer Localizer
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> Shared
 @model WorkspaceDashboard
 @{
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
@@ -26,6 +28,30 @@
     // The previous cbw-* design and its stylesheet are NOT used here. The data, the panels and the
     // five panel states are unchanged - only the markup that presents them.
     // ---------------------------------------------------------------------------------------------
+
+    // The silo's own display name, from SharedResources - the same strings the Approvals screen uses, so
+    // "Leave" reads identically on both surfaces. The row carries the silo KEY; only the label is
+    // presentation, which is why the read platform does not carry one.
+    string SiloLabel(string silo) => silo switch
+    {
+        ApprovalSilos.Leave => Shared["Leave"].Value,
+        ApprovalSilos.Request => Shared["Employee request"].Value,
+        ApprovalSilos.Inventory => Shared["Inventory"].Value,
+        _ => silo,
+    };
+
+    // The module's own type discriminator, localized where SharedResources knows the term and passed
+    // through untouched where it does not. No term is invented here.
+    string ApprovalTypeLabel(WorkspaceApprovalItem item) => item.ApprovalType switch
+    {
+        "PurchaseOrder" => Shared["Purchase order"].Value,
+        "StockTransfer" => Shared["Transfer"].Value,
+        "StockCount" => Shared["Stock count"].Value,
+        "WriteOff" => Shared["Write-off"].Value,
+        "Permission" => Shared["Permission"].Value,
+        "Letter" => Shared["Letter"].Value,
+        _ => item.Title,
+    };
 
     string MetricColor(WorkspaceTone tone) => tone switch
     {
@@ -305,6 +331,85 @@
                     </div>
                 </div>
                 <!--end::My Work-->
+
+                <!--begin::Approvals-->
+                @*
+                    READ ONLY, BY DESIGN. Every row links to the owning module's own screen to act; there
+                    is no approve/reject control anywhere in this panel, and no POST. The rows come from
+                    the already-company-safe path (module readers -> ApprovalInboxService ->
+                    WorkspaceService -> this model), so this markup contains no security logic of its own
+                    and no module route: each link uses the navigation the MODULE supplied.
+                *@
+                <div class="card card-flush mb-5 mb-xl-10" id="approvals" aria-busy="false">
+                    <div class="card-header pt-7">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">
+                                <i class="ki-outline ki-check-square fs-3 text-primary me-2" aria-hidden="true"></i>@Shared["Approvals"]
+                                @if (Model.PendingApprovals > 0)
+                                {
+                                    <span class="badge badge-light-primary fs-8 ms-2">@Model.PendingApprovals</span>
+                                }
+                            </span>
+                        </h3>
+                        @if (Model.Approvals.IsShowable && Model.PendingApprovals > 0)
+                        {
+                            <div class="card-toolbar">
+                                <a href="@Url.Action("Index", "Approvals")" class="btn btn-sm btn-light">@Localizer["View all"]</a>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Approvals.HasItems)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                                    <thead>
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                            <th>@Localizer["Type"]</th>
+                                            <th>@Localizer["Details"]</th>
+                                            <th class="text-end">@Localizer["When"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var approval in Model.Approvals.Items)
+                                        {
+                                            <tr>
+                                                @* The silo is named in TEXT, not by colour alone. *@
+                                                <td class="min-w-100px">
+                                                    <span class="badge badge-light fs-8 text-gray-800">@SiloLabel(approval.Silo)</span>
+                                                </td>
+                                                <td class="min-w-200px">
+                                                    <a class="fw-bold text-gray-900 text-hover-primary"
+                                                       href="@approval.Url"
+                                                       aria-label="@($"{SiloLabel(approval.Silo)} — {ApprovalTypeLabel(approval)}")">@ApprovalTypeLabel(approval)</a>
+                                                    @if (!string.IsNullOrWhiteSpace(approval.Requester))
+                                                    {
+                                                        <span class="d-block text-gray-600 fs-7">@approval.Requester</span>
+                                                    }
+                                                </td>
+                                                <td class="text-end text-gray-700 fw-semibold">
+                                                    @if (approval.AgeDays is > 0)
+                                                    {
+                                                        <span>@approval.AgeDays.Value @Shared["days"]</span>
+                                                    }
+                                                    else if (approval.Submitted.HasValue)
+                                                    {
+                                                        <span>@Localizer["Now"]</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            @PanelNotice(Model.Approvals.State, Shared["No pending approvals"].Value, "ki-outline ki-check-circle")
+                        }
+                    </div>
+                </div>
+                <!--end::Approvals-->
 
                 <!--begin::Agenda-->
                 <div class="card card-flush mb-5 mb-xl-10" id="agenda" aria-busy="false">
