@@ -331,6 +331,78 @@ namespace CrossBuy.Models.Context
 				// navigation would invite an Include() that loads a project the caller may not access.
 			});
 
+			// ---- AI Foundation Increment 1: AiProjections ----
+			// The ONLY table the future AI/RAG layer reads. Structure ships in
+			// deploy/sql/platform_ai_projections.sql; this mapping exists so EF generates the same names and
+			// so a test host can materialise it from the model alone (the pattern used by Communication above).
+			builder.Entity<Platform.AiProjection>(e =>
+			{
+				e.ToTable("AiProjections");
+				e.HasKey(x => x.Id);
+				e.Property(x => x.Id).ValueGeneratedOnAdd();
+				e.Property(x => x.Consumer).HasMaxLength(60).IsRequired();
+				e.Property(x => x.EntityType).HasMaxLength(60).IsRequired();
+				e.Property(x => x.EventType).HasMaxLength(80).IsRequired();
+				e.Property(x => x.ProjectionType).HasMaxLength(60).IsRequired();
+				e.Property(x => x.PayloadJson).IsRequired();
+				// Increment 2 — read-side classification + revocation tombstone.
+				// Structure ships in deploy/sql/platform_ai_projections_slice_002.sql.
+				e.Property(x => x.Visibility).HasMaxLength(40).IsRequired().HasDefaultValue("Internal");
+				e.Property(x => x.RevokedBy).HasMaxLength(100);
+				e.Property(x => x.RevocationReason).HasMaxLength(200);
+				e.Ignore(x => x.IsRevoked);
+				// Increment 3 — retention. Nullable on purpose: NULL = unknown = not eligible, never
+				// "keeps forever". Structure ships in deploy/sql/platform_ai_projections_slice_003.sql.
+				e.Property(x => x.RetentionClass).HasMaxLength(40);
+				// The retrieval read path: live rows for one company and shape, newest first.
+				e.HasIndex(x => new { x.CompanyID, x.ProjectionType, x.OccurredAt })
+					.HasFilter("[RevokedAt] IS NULL").HasDatabaseName("IX_AiProjections_Retrieval");
+				// IDEMPOTENCY, enforced by the database and not by the application: a retried or
+				// concurrently-delivered dispatch must not produce a second row of the same shape.
+				e.HasIndex(x => new { x.BusinessEventId, x.ProjectionType }).IsUnique()
+					.HasDatabaseName("UX_AiProjections_Event_Shape");
+				// The read path the AI layer will use, and the one a revocation sweep needs.
+				e.HasIndex(x => new { x.CompanyID, x.EntityType, x.EntityId, x.OccurredAt })
+					.HasDatabaseName("IX_AiProjections_Company_Entity");
+			});
+
+			// ---- AI Foundation Increment 4.6: AiEgressAudits ----
+			// The DURABLE record of every external AI egress attempt, allowed or refused. Structure ships in
+			// deploy/sql/platform_ai_egress_audit.sql; this mapping exists so EF generates the same names and
+			// so a test host can materialise it from the model alone — the same pattern as AiProjections above.
+			//
+			// NO PAYLOAD COLUMN EXISTS, here or in the table. The classification matrix controls what leaves
+			// the estate; storing the prompt would recreate that retention inside CrossBuy.
+			builder.Entity<Platform.AiEgressAudit>(e =>
+			{
+				e.ToTable("AiEgressAudits");
+				e.HasKey(x => x.Id);
+				e.Property(x => x.Id).ValueGeneratedOnAdd();
+				e.Property(x => x.ProviderId).HasMaxLength(64).IsRequired();
+				e.Property(x => x.Feature).HasMaxLength(64).IsRequired();
+				e.Property(x => x.Model).HasMaxLength(128);
+				e.Property(x => x.Classification).HasMaxLength(64).IsRequired();
+				e.Property(x => x.DestinationClass).HasMaxLength(64).IsRequired();
+				e.Property(x => x.GovernanceDecision).HasMaxLength(256).IsRequired();
+				e.Property(x => x.ApprovalReference).HasMaxLength(256);
+				e.Property(x => x.CorrelationId).HasMaxLength(128).IsRequired();
+				e.Property(x => x.Outcome).HasMaxLength(32).IsRequired();
+				e.Property(x => x.FailureCategory).HasMaxLength(128);
+				e.Property(x => x.CostCurrency).HasMaxLength(8);
+				e.Property(x => x.EstimatedCost).HasPrecision(18, 6);
+				// Computed in the database and never written from code — a total that can disagree with its
+				// own parts is a reporting bug waiting to happen.
+				e.Property(x => x.TotalTokens)
+					.HasComputedColumnSql("[InputTokens] + [OutputTokens]", stored: true)
+					.ValueGeneratedOnAddOrUpdate();
+				// "What did this tenant send, and when" — every operator screen.
+				e.HasIndex(x => new { x.CompanyID, x.OccurredAtUtc }).HasDatabaseName("IX_AiEgressAudits_Company_Time");
+				// "What has this provider cost this period" — billing reconciliation.
+				e.HasIndex(x => new { x.ProviderId, x.OccurredAtUtc }).HasDatabaseName("IX_AiEgressAudits_Provider_Time");
+				// "Show me every refusal." Filtered, so a healthy database keeps the security question cheap.
+				e.HasIndex(x => x.OccurredAtUtc).HasFilter("[Success] = 0").HasDatabaseName("IX_AiEgressAudits_Failed");
+			});
+
 			// ---- Communication Platform (ADR-030 §5) — the platform's ENTIRE EF mapping, in ONE line ----
 			// Fourteen tables, their keys, lengths and indexes all live in
 			// Models/Context/Communication/CommunicationModel.cs, which that work stream owns outright. This file
@@ -413,6 +485,12 @@ namespace CrossBuy.Models.Context
         // Structure is deployed by deploy/sql/platform_business_events.sql (migrations are disabled).
         public DbSet<Platform.BusinessEvent> BusinessEvents { get; set; }
         public DbSet<Platform.BusinessEventDispatch> BusinessEventDispatches { get; set; }
+        public DbSet<Platform.AiProjection> AiProjections { get; set; }
+
+        // Increment 4.6 — the durable external-AI egress audit. Append-only; nothing updates a row.
+        // Structure is deployed by deploy/sql/platform_ai_egress_audit.sql (migrations are disabled).
+        public DbSet<Platform.AiEgressAudit> AiEgressAudits { get; set; }
+
 
         // Stage 1 Batch C — the ONE shared module role-assignment table, and project membership.
         // Structure ships in deploy/sql/platform_role_assignments.sql and deploy/sql/project_members.sql

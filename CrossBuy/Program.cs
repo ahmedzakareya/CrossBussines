@@ -421,6 +421,71 @@ builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiProviderAuthority, Cros
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiEgressPolicy, CrossBuy.BL.Platform.Ai.AiEgressPolicy>();
 builder.Services.AddScoped<IAiInsightsService, AiInsightsService>();
 
+// ---- AI Foundation Increment 1 — read-only projection boundary ----
+// The consumer writes AiProjections and NOTHING else: no business writes, no model call, no provider.
+// Registration only decides what it is OFFERED; IAiConsumerGrants (default-deny) decides what it may keep.
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.Ai.AiProjectionConsumer>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiConsumerGrants, CrossBuy.BL.Platform.Ai.AiConsumerGrants>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionStore, CrossBuy.BL.Platform.Ai.AiProjectionStore>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionBuilder, CrossBuy.BL.Platform.Ai.TaskLifecycleProjectionBuilder>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionBuilder, CrossBuy.BL.Platform.Ai.CalendarSchedulingProjectionBuilder>();
+
+// ---- AI Foundation Increment 2 — secure READ side + revocation ----
+// The reader re-authorizes every row against the AUTHENTICATED USER's BusinessContext on every call; it
+// never runs as a system context and exposes no IQueryable. Revocation is tenant-scoped and idempotent.
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiProjectionShapeRegistry, CrossBuy.BL.Platform.Ai.AiProjectionShapeRegistry>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionReader, CrossBuy.BL.Platform.Ai.AiProjectionReader>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionRevocationService, CrossBuy.BL.Platform.Ai.AiProjectionRevocationService>();
+
+// ---- AI Foundation Increment 3 — egress governance + retention ----
+// IAiEgressPolicy is the ONE boundary that approves outbound AI data; IAiService cannot be called
+// without an AiEgressApproval that only this policy can mint. The retention registry decides how long
+// AI-derived data may exist, and a shape with no declared policy is never persisted.
+// IAiEgressPolicy is already registered above, in the AI GOVERNANCE RUNTIME block.
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiRetentionPolicyRegistry, CrossBuy.BL.Platform.Ai.AiRetentionPolicyRegistry>();
+
+// ---- AI Foundation Increment 4.3 — RUNTIME PROVIDER APPROVAL (BLOCKER-1) ----
+// The governance record that decides whether an EXTERNAL processor is approved. Registered as a
+// SINGLETON because it holds no per-request state and reads nothing: no configuration, no HttpContext,
+// no environment. Before this existed, `AiService:DestinationClass` in a settings file was the entire
+// approval — a configuration line could confer authority the owner had never granted.
+// IAiProviderAuthority is already registered above, in the AI GOVERNANCE RUNTIME block.
+
+// ---- AI Foundation Increment 4.5 — cost, volume and failure controls ----
+//
+// SINGLETONS because they hold counters that must survive across requests — a per-request rate limiter
+// counts to one and permits everything. They read IConfiguration for their NUMBERS only; none of them
+// can approve a provider, and none is on the local-loopback path.
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiRateLimiter, CrossBuy.BL.Platform.Ai.AiRateLimiter>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiPricingProvider, CrossBuy.BL.Platform.Ai.AiConfiguredPricingProvider>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiUsageGuard, CrossBuy.BL.Platform.Ai.AiUsageGuard>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiProviderSwitchboard, CrossBuy.BL.Platform.Ai.AiProviderSwitchboard>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiCircuitBreaker, CrossBuy.BL.Platform.Ai.AiCircuitBreaker>();
+
+// ---- Increment 4.6 — the audit is now DURABLE as well as logged ----
+//
+// SCOPED, not singleton: the store takes CrossDbContext, which is scoped. AiEgressAuditSink writes the
+// structured log line FIRST and the database row SECOND — the copy that cannot fail is written before
+// the one that can — and a persistence failure never propagates to the caller. See the Phase 5 note on
+// AiEgressAuditSink for why a failed audit does not fail (or retry) a paid provider call.
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiEgressAuditStore, CrossBuy.BL.Platform.Ai.SqlAiEgressAuditStore>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiEgressAuditSink, CrossBuy.BL.Platform.Ai.AiEgressAuditSink>();
+
+// The OpenAI adapter. Registering it does NOT approve OpenAI: SendAsync requires an AiEgressApproval,
+// which only AiEgressPolicy can mint and which it will not mint for an unapproved external processor.
+// The adapter is resolvable, testable and — today — unreachable.
+builder.Services.AddHttpClient(CrossBuy.BL.Platform.Ai.OpenAiProviderAdapter.HttpClientName, (sp, c) =>
+{
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var opt = CrossBuy.BL.Platform.Ai.OpenAiOptions.FromConfiguration(cfg);
+
+    // No Authorization header here. The credential is attached per request and never stored on a shared
+    // handler, so it cannot outlive the call or be observed by another caller.
+    c.Timeout = TimeSpan.FromSeconds(opt.TimeoutSeconds + 5);   // backstop; the adapter's own token fires first
+});
+builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiExternalProvider, CrossBuy.BL.Platform.Ai.OpenAiProviderAdapter>();
+
+
 // Swagger / OpenAPI — only documents the mobile/web REST API (the /api/* controllers)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
