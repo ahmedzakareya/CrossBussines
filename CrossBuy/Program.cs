@@ -424,6 +424,13 @@ builder.Services.AddScoped<IAiInsightsService, AiInsightsService>();
 // ---- AI Foundation Increment 1 — read-only projection boundary ----
 // The consumer writes AiProjections and NOTHING else: no business writes, no model call, no provider.
 // Registration only decides what it is OFFERED; IAiConsumerGrants (default-deny) decides what it may keep.
+// Outbox consumers. BusinessEventConsumers.Registered must stay in step with what is registered
+// here, in BOTH directions: a name with no implementation accumulates dispatch rows nothing drains
+// (BusinessEventDispatchWorker logs an error for each), and an implementation with no name is never
+// dispatched to at all. All three names in Registered now have one.
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.TimelineProjectionConsumer>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.NotificationProjectionConsumer>();   // slice 2
+builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventNotificationMapper, CrossBuy.BL.Platform.BusinessEventNotificationMapper>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventConsumer, CrossBuy.BL.Platform.Ai.AiProjectionConsumer>();
 builder.Services.AddSingleton<CrossBuy.BL.Platform.Ai.IAiConsumerGrants, CrossBuy.BL.Platform.Ai.AiConsumerGrants>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.Ai.IAiProjectionStore, CrossBuy.BL.Platform.Ai.AiProjectionStore>();
