@@ -678,7 +678,19 @@ namespace CrossBuy.BL.Workspace
             // Merged newest-first ACROSS sources — sorted here, because the merged stream is what the user reads.
             var items = all.OrderByDescending(a => a.At ?? DateTime.MinValue).Take(ActivityShown).ToList();
 
-            return failed.Count > 0 && items.Count > 0
+            // EVERY source failed. That is NOT an empty week, and it must not render as one: "nothing changed"
+            // and "we could not find out what changed" are different sentences, and collapsing them is how a
+            // broken deployment looks quiet. This became the ordinary failure path the moment activity had a
+            // SINGLE authoritative producer — with one source, any platform fault landed on the old
+            // `failed.Count > 0 && items.Count > 0` guard, fell through, and reported Empty.
+            //
+            // Same rule the Reports panel already applies when all of its sources fail.
+            if (failed.Count > 0 && items.Count == 0)
+                return WorkspacePanel<WorkspaceActivityItem>.TemporaryFailure(
+                    $"Recent activity could not be loaded ({string.Join(", ", failed)}). " +
+                    "This is usually temporary — try again.");
+
+            return failed.Count > 0
                 ? WorkspacePanel<WorkspaceActivityItem>.Partial(items, failed,
                     $"Showing activity without {string.Join(", ", failed)}.")
                 : WorkspacePanel<WorkspaceActivityItem>.From(items);

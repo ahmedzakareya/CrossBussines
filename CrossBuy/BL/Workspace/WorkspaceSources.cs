@@ -1,3 +1,5 @@
+using CrossBuy.BL.Platform;
+using Microsoft.Extensions.DependencyInjection;
 using CrossBuy.BL.Reporting;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Platform;
@@ -123,39 +125,100 @@ namespace CrossBuy.BL.Workspace
 
     // ---- recent activity -----------------------------------------------------------------------
     //
-    // Built from the caller's own notifications rather than the platform entity timeline.
+    // "WHAT CHANGED?" IS A BUSINESS-EVENT QUESTION, AND IT IS ANSWERED BY THE PLATFORM TIMELINE.
     //
-    // ITimelineProjectionService answers "what happened to THIS RECORD" and needs an entity to be about. A
-    // workspace feed answers "what happened to ME", and the notification store is exactly that — already
-    // filtered to the recipient. Using the entity timeline here would surface activity on records the caller
-    // may not be entitled to open.
-    public sealed class NotificationActivityWorkspaceSource : IWorkspaceActivitySource
+    // This panel used to be built from the caller's own NOTIFICATIONS. The reasoning recorded here was that
+    // ITimelineProjectionService answers "what happened to THIS RECORD" and needs an entity to be about,
+    // whereas a workspace feed answers "what happened around me" - so the notification store was the only
+    // thing already filtered to the recipient.
+    //
+    // THAT REASONING IS NOW OBSOLETE. The platform exposes GetRecentForContextAsync: a cross-entity,
+    // company-scoped, permission-filtered recent feed. It applies the SAME four filters the per-entity read
+    // applies, with one deliberate difference the Workspace depends on - an entity the caller may not view is
+    // SKIPPED rather than throwing, so one unreadable record cannot blank the panel or turn it into a probe
+    // for what exists.
+    //
+    // WHY THE SWAP MATTERS RATHER THAN BEING COSMETIC. A notification is something somebody decided to TELL
+    // you; a business event is something that HAPPENED. The old feed could only ever show the subset of
+    // activity that had a notification producer wired, and it re-rendered the Notifications panel's own rows
+    // beside it - two panels, one source. This one reports the governed history that actually exists.
+    //
+    // THE WORKSPACE STILL COMPOSES NOTHING. It does not read BusinessEvents, does not judge visibility, does
+    // not resolve routes: the row's Url arrives already resolved through IEntityRegistry, which is why no
+    // module route is spelled anywhere in this file.
+    public sealed class TimelineActivityWorkspaceSource : IWorkspaceActivitySource
     {
-        private readonly IWorkspaceNotificationSource _notifications;
+        // The dashboard asks "what changed lately", not "everything the platform retains". Seven days keeps
+        // the panel about the current working week; the platform clamps anything larger to its own
+        // MaxRecentLookbackDays, so this can only ever be narrower than the governed ceiling, never wider.
+        // PUBLIC because it is a stated product policy, not an implementation detail: the regression
+        // tests assert the request carries THIS window, and a reader asking "how far back does my
+        // activity panel reach?" should find the answer without opening another tab's file.
+        public const int LookbackDays = 7;
 
-        public NotificationActivityWorkspaceSource(IWorkspaceNotificationSource notifications)
-        {
-            _notifications = notifications;
-        }
+        private readonly IServiceProvider _services;
 
-        public string SourceName => "Notifications";
+        public TimelineActivityWorkspaceSource(IServiceProvider services) { _services = services; }
+
+        public string SourceName => "Timeline";
 
         public async Task<IReadOnlyList<WorkspaceActivityItem>> GetAsync(
             BusinessContext context, int take, CancellationToken cancellationToken = default)
         {
-            var rows = await _notifications.GetAsync(context, unreadOnly: false, take, cancellationToken);
+            // RESOLVED OPTIONALLY, LIKE EVERY OTHER CROSS-MODULE CONTRACT THIS TAB CONSUMES. Taking
+            // ITimelineProjectionService as a constructor parameter would make AddCrossBusinessWorkspace
+            // un-validatable on its own — the platform registers that service in Program.cs, not here — and
+            // the Workspace must not register another tab's implementation to close its own graph. That is
+            // exactly the duplicate-producer defect the Reporting favourites source was withdrawn for.
+            var timeline = _services.GetService<ITimelineProjectionService>();
 
-            return rows.Select(n => new WorkspaceActivityItem
+            // ...but UNLIKE the favourites source, absence is NOT answered with an empty list. Favourites
+            // degrade to fewer rows; an activity feed that cannot reach the platform would be claiming
+            // "nothing changed", which is a different sentence from "we could not find out". Throwing puts
+            // the panel into TemporaryFailure with a reason, which is the honest state.
+            if (timeline == null)
+                throw new InvalidOperationException(
+                    "The platform timeline is not registered in this environment, so recent activity cannot " +
+                    "be read. Register ITimelineProjectionService (see the Platform block in Program.cs).");
+
+            // No local guard on company or take. The platform read fails closed on an unresolved company and
+            // clamps take itself; re-deciding either here would be a second copy of a rule this tab does not
+            // own, and the copy is what drifts.
+            var rows = await timeline.GetRecentForContextAsync(
+                context, DateTime.UtcNow.AddDays(-LookbackDays), take, cancellationToken);
+
+            var arabic = WorkspaceCulture.IsArabic();
+
+            // ORDER IS NOT RE-APPLIED. The feed is already CreatedAt DESC, EventId DESC - a total order with a
+            // unique tiebreak. Re-sorting on the timestamp alone would lose that tiebreak and let two events
+            // sharing an instant swap places between renders.
+            return rows.Select(t => new WorkspaceActivityItem
             {
-                Title = n.Title,
-                Detail = n.Body,
-                Actor = n.Category,
-                At = n.At,
-                Icon = "ki-outline ki-notification-status",
-                Tone = WorkspaceTone.Neutral,
-                Url = n.Url,
+                Title = WorkspaceCulture.Pick(t.TitleAr, t.TitleEn, arabic) ?? t.EventType,
+                Detail = WorkspaceCulture.Pick(t.DescriptionAr, t.DescriptionEn, arabic),
+                Actor = t.ActorDisplayName,
+                At = t.CreatedAt,
+
+                // The presenter's own icon and colour, so a row looks the same here as on the record's own
+                // timeline. Nothing is re-derived from the event type.
+                Icon = t.Icon,
+                Tone = ToneOf(t.Color),
+
+                // Resolved by the platform through IEntityRegistry. The Workspace never builds this.
+                Url = t.Url,
             }).ToList();
         }
+
+        // The presenter speaks Metronic's colour vocabulary; the Workspace speaks tones. This is the only
+        // translation, and it maps onto the tones the dashboard already renders.
+        private static WorkspaceTone ToneOf(string? color) => color?.ToLowerInvariant() switch
+        {
+            "success" => WorkspaceTone.Ok,
+            "warning" => WorkspaceTone.Warn,
+            "danger" => WorkspaceTone.Critical,
+            "info" or "primary" => WorkspaceTone.Info,
+            _ => WorkspaceTone.Neutral,
+        };
     }
 
     // ---- favourites ----------------------------------------------------------------------------

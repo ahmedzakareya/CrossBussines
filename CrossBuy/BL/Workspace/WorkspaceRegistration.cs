@@ -58,7 +58,11 @@ namespace CrossBuy.BL.Workspace
             // A module contributes rows by registering one of these AFTER this call. It never edits the
             // Workspace, and the Workspace never learns about the module.
             services.AddScoped<IWorkspaceFavoritesSource, ReportFavoritesWorkspaceSource>();
-            services.AddScoped<IWorkspaceActivitySource, NotificationActivityWorkspaceSource>();
+            // ONE authoritative producer of "what changed". It was the notification store; it is now the
+            // platform business-event timeline. Registering both would put the Notifications panel's own
+            // rows beside themselves in the Activity panel - the same duplicate-producer defect the
+            // Reporting favourites source was withdrawn for.
+            services.AddScoped<IWorkspaceActivitySource, TimelineActivityWorkspaceSource>();
 
             return services;
         }
