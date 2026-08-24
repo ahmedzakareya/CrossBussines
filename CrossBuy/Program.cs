@@ -278,6 +278,27 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 // Tasks authorization (Phase 3C-4). TasksAccessService asks the platform permission provider for
 // the linked-entity check, so the provider and the entity registry it reads come with it.
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEntityRegistry, CrossBuy.BL.Platform.EntityRegistry>();
+
+// ---------------- Communication Platform (ADR-030) — ACTIVATED ----------------
+//
+// Dormant until now: the code, the EF mapping (CrossDbContext -> CommunicationModel.Configure) and the
+// schema slice were all committed, but nothing registered the services, so every platform service
+// resolved to null and every consumer reported the platform "not activated".
+//
+// WHY IT IS SAFE TO ACTIVATE, audited before flipping it on:
+//   * EVERY registration inside is AddScoped. There is NO AddHostedService and NO BackgroundService in
+//     AddCommunicationPlatform, so activation starts no worker and no timer. Nothing begins polling.
+//   * It needs IEntityRegistry (the line above), IOrgHierarchy, IPlatformPermissionProvider and
+//     ITimelineProjectionService. All four are already registered here and all are Scoped.
+//   * The business-event bridge is NOT part of this call. AddCommunicationPlatform binds
+//     NullCommBusinessEventBridge; the real PlatformBusinessEventBridge is a SEPARATE opt-in
+//     (UseBusinessEventBridge) and is deliberately NOT called, because it makes RecordAsync a hard
+//     dependency of every comment and CLAUDE.md records that coupling failing a whole screen when a
+//     kernel table is missing (HM-D44/D45, HM-D53). Coordinate with the kernel owner before enabling it.
+//
+// SQL BEFORE CODE: deploy/sql/communication_platform_slice_001.sql (14 additive tables, idempotent) is
+// applied first. Re-running it creates nothing, which is how it is meant to behave.
+CrossBuy.BL.Communication.CommunicationPlatformRegistration.AddCommunicationPlatform(builder.Services, builder.Configuration);
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformPermissionProvider, CrossBuy.BL.Platform.PlatformPermissionProvider>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.Platform.DefaultPermissionAdapter>();
 
