@@ -253,6 +253,12 @@ namespace CrossBuy.Controllers.Api
 				//
 				// Company 1 is explicit, matching the governed matrix's own company.
 				("uat.commui",  "مدقّق واجهة الاتصالات", "UAT Comm UI",   1,  System.Array.Empty<string>()),
+				//
+				// Second verification persona, same contract and same reason. uat.commui above was created on a
+				// previous machine, and this endpoint deliberately NEVER rewrites an existing password, so its
+				// credential is unknowable here. Adding a NAME is the only way to obtain a login without
+				// resetting an account somebody else may be using. Least privilege, company 1, no roles.
+				("uat.commctx", "مدقّق سياق الاتصالات", "UAT Comm Context", 1, System.Array.Empty<string>()),
 			};
 
 			// Roles first: assigning a role that does not exist fails, and the vocabulary is the one Program.cs
