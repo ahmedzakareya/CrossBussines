@@ -21,11 +21,34 @@ namespace CrossBuy.BL.Platform
         // Returns the merged, filtered, newest-first timeline otherwise.
         Task<IReadOnlyList<TimelineItemViewModel>> GetAsync(
             string entityCode, int entityId, BusinessContext context, int take = 100, CancellationToken cancellationToken = default);
+
+        // Cross-entity variant: "what changed recently in my company", for a dashboard feed. The same four
+        // filters apply, with one deliberate difference. GetAsync THROWS when the caller may not view the
+        // entity, because it was asked about one named record and silence would be a lie. A feed is asked about
+        // the company, so an entity the caller may not see is SKIPPED - otherwise one unreadable record would
+        // blank the whole panel, and the panel would become a probe for what exists.
+        //
+        // sinceUtc is a mandatory lookback and is clamped server-side to MaxRecentLookbackDays; take is clamped
+        // to MaxTake. Ordering is CreatedAt DESC, EventId DESC.
+        Task<IReadOnlyList<TimelineItemViewModel>> GetRecentForContextAsync(
+            BusinessContext context, DateTime sinceUtc, int take, CancellationToken cancellationToken = default);
     }
 
     public class TimelineProjectionService : ITimelineProjectionService
     {
         public const int MaxTake = 200;
+
+        // The recent feed is a dashboard read, not an archive: a caller may ask for a NARROWER window, never a
+        // wider one. This number is the kernel's own. Workspace states its agenda lookback separately and on
+        // purpose (WorkspaceService.AgendaOverdueLookbackDays) - a constant shared between a module and the
+        // kernel is a coupling that quietly retunes one screen when the other is tuned.
+        public const int MaxRecentLookbackDays = 30;
+
+        // Hard ceiling on rows the recent feed will EXAMINE, independent of take. Authorization is resolved per
+        // distinct entity, so an otherwise reasonable window over a busy company fans out into unbounded
+        // permission work. The scan already stops as soon as take rows are accepted; this bounds the
+        // pathological case where nearly everything in the window is invisible to this caller.
+        public const int MaxRecentCandidates = 1000;
 
         private readonly CrossDbContext _db;
         private readonly IEntityRegistry _registry;
@@ -127,6 +150,159 @@ namespace CrossBuy.BL.Platform
                 .Take(take)
                 .ToList();
         }
+
+        // ---- PKS-001 recent feed --------------------------------------------------------------------------
+        //
+        // SOURCE: BusinessEvents, projected on read. There is no persisted timeline read model in this
+        // architecture - the per-record contract above projects the same table - and adding a second
+        // persistence model for one dashboard panel would fork the vocabulary the kernel exists to keep single.
+        //
+        // LEGACY ADAPTERS ARE DELIBERATELY NOT MERGED HERE. ILegacyTimelineAdapter.GetAsync is keyed by ONE
+        // entity id and offers no time-ordered cross-entity query, so a company-wide merge would have to
+        // enumerate every record of every adapted type and then probe each one for its first kernel event to
+        // apply the dedup rule - an N x all-entity scan to fill one panel. The recent feed is therefore
+        // platform Business Events only; per-record history stays complete through GetAsync.
+        public async Task<IReadOnlyList<TimelineItemViewModel>> GetRecentForContextAsync(
+            BusinessContext context, DateTime sinceUtc, int take, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            // Fail closed. An unresolved company is not "every company" - it is no company.
+            if (context.CompanyId <= 0) return Array.Empty<TimelineItemViewModel>();
+
+            take = Math.Clamp(take, 1, MaxTake);
+
+            var since = sinceUtc.Kind == DateTimeKind.Local ? sinceUtc.ToUniversalTime() : sinceUtc;
+            var floor = DateTime.UtcNow.AddDays(-MaxRecentLookbackDays);
+            if (since < floor) since = floor;   // clamp only: a caller may narrow the window, never widen it.
+
+            var query = _db.BusinessEvents.AsNoTracking()
+                .Where(e => e.CompanyID == context.CompanyId && e.CreatedAt >= since);
+            query = ApplyBranchFilter(query, context);
+
+            var candidates = await query
+                .OrderByDescending(e => e.CreatedAt).ThenByDescending(e => e.EventId)
+                .Take(MaxRecentCandidates)
+                .Select(e => new RecentRow(e.EventUid, e.EntityType, e.EntityId, e.EventType,
+                                           e.ActorEmployeeId, e.Payload, e.PayloadVersion, e.Visibility, e.CreatedAt))
+                .ToListAsync(cancellationToken);
+
+            // One gate per DISTINCT entity, cached. A null gate means "this caller gets nothing from this
+            // record" and short-circuits every later row for it, so a busy entity costs one permission pass.
+            var gates = new Dictionary<(string EntityType, int EntityId), RecentGate?>();
+            Exception? firstGateFault = null;
+            int gatesResolved = 0, gatesFaulted = 0;
+
+            var accepted = new List<(RecentRow Row, RecentGate Gate)>(take);
+            foreach (var r in candidates)
+            {
+                if (accepted.Count == take) break;   // already in final order; stop paying for more.
+
+                var key = (r.EntityType, r.EntityId);
+                if (!gates.TryGetValue(key, out var gate))
+                {
+                    try
+                    {
+                        gate = await ResolveRecentGateAsync(r.EntityType, r.EntityId, context, cancellationToken);
+                        gatesResolved++;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;   // cancellation belongs to the caller and is never "one bad row".
+                    }
+                    catch (Exception ex)
+                    {
+                        // Isolation: one module adapter throwing on one record must not blank the feed. Whether
+                        // this was a bad row or a broken subsystem is decided after the loop, not here.
+                        firstGateFault ??= ex;
+                        gatesFaulted++;
+                        gate = null;
+                    }
+                    gates[key] = gate;
+                }
+                if (gate == null) continue;
+
+                if (!gate.Visibilities.Contains(r.Visibility)) continue;
+
+                // Same own-actor rule as GetAsync, for the same reason: Restricted sits in the allowed set for
+                // an ordinary user ONLY so their own rows survive the SQL filter and the rest drop here.
+                if (r.Visibility == BusinessEventVisibility.Restricted
+                    && !gate.MayReadAnyRestricted
+                    && r.ActorEmployeeId != context.EmployeeId)
+                    continue;
+
+                accepted.Add((r, gate));
+            }
+
+            // Nothing resolved and something faulted: the failure is systemic, not a bad row. Returning an empty
+            // list here would render as a calm "no recent activity" on top of a broken subsystem.
+            if (gatesResolved == 0 && gatesFaulted > 0) throw firstGateFault!;
+
+            if (accepted.Count == 0) return Array.Empty<TimelineItemViewModel>();
+
+            var actorNames = await ResolveActorNamesAsync(accepted.Select(a => a.Row.ActorEmployeeId), cancellationToken);
+
+            // No re-sort. candidates arrived CreatedAt DESC, EventId DESC and this loop preserves it. The
+            // per-record merge above re-sorts on CreatedAt alone because legacy items carry no EventId; doing
+            // that here would discard the tiebreak that makes the feed deterministic across equal timestamps.
+            var items = new List<TimelineItemViewModel>(accepted.Count);
+            foreach (var (r, gate) in accepted)
+            {
+                var presentation = TimelineEventPresenter.Present(r.EventType, r.PayloadVersion, r.Payload);
+                items.Add(new TimelineItemViewModel
+                {
+                    EventUid = r.EventUid, EntityType = r.EntityType, EntityId = r.EntityId,
+                    EventType = r.EventType,
+                    TitleAr = presentation.TitleAr, TitleEn = presentation.TitleEn,
+                    DescriptionAr = presentation.DescriptionAr, DescriptionEn = presentation.DescriptionEn,
+                    ActorEmployeeId = r.ActorEmployeeId,
+                    ActorDisplayName = r.ActorEmployeeId.HasValue ? actorNames.GetValueOrDefault(r.ActorEmployeeId.Value) : null,
+                    Icon = presentation.Icon, Color = presentation.Color,
+                    CreatedAt = r.CreatedAt, PayloadVersion = r.PayloadVersion,
+                    Visibility = r.Visibility, Url = gate.Url,
+                    Source = TimelineItemSource.Event,
+                });
+            }
+            return items;
+        }
+
+        // The per-entity half of the feed's authorization, reusing exactly what GetAsync uses. Returns null for
+        // "this caller sees nothing here", which covers every reason a candidate is dropped without being an
+        // error: an entity code no longer registered, a type with no timeline, no View grant, or a record that
+        // no longer exists in this company.
+        private async Task<RecentGate?> ResolveRecentGateAsync(
+            string entityCode, int entityId, BusinessContext context, CancellationToken cancellationToken)
+        {
+            // GetAsync throws on an unregistered code because a caller naming one is a programming error. A feed
+            // reads whatever history already holds, so a code left behind by a removed module is data, not a
+            // defect - drop the row and keep the panel.
+            if (!_registry.TryGetDefinition(entityCode, out var definition) || definition == null) return null;
+            if (!definition.SupportsTimeline) return null;
+            if (entityId <= 0) return null;
+
+            var view = await _permissions.CanAsync(context, definition.Code, entityId, PlatformActions.View, cancellationToken);
+            if (!view.Allowed) return null;   // SKIP, never throw - see the interface comment.
+
+            // Existence AND company ownership in one call: Found is false for a deleted record and for one that
+            // belongs to another company. A row whose entity cannot be resolved has no honest navigation target,
+            // so it must not appear at all.
+            var resolved = await _registry.ResolveAsync(definition.Code, entityId, context, cancellationToken);
+            if (!resolved.Found) return null;
+
+            var (visibilities, mayReadAnyRestricted) =
+                await ResolveVisibilitiesAsync(context, definition.Code, entityId, cancellationToken);
+
+            return new RecentGate(visibilities, mayReadAnyRestricted,
+                                  resolved.Url ?? _registry.BuildUrl(definition.Code, entityId));
+        }
+
+        // Named rather than anonymous so an accepted row can be carried alongside its gate into the second pass,
+        // where actor names are resolved for the whole page in one query.
+        private sealed record RecentRow(
+            Guid EventUid, string EntityType, int EntityId, string EventType,
+            int? ActorEmployeeId, string? Payload, int PayloadVersion, string Visibility, DateTime CreatedAt);
+
+        private sealed record RecentGate(HashSet<string> Visibilities, bool MayReadAnyRestricted, string? Url);
 
         // Branch isolation is applied only when BOTH sides have a branch. A caller with no branch (an
         // accountant at head office) must not lose branch-stamped history, and an event with no branch
