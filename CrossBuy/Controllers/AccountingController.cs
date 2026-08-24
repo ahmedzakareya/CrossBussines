@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CrossBuy.BL;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
@@ -94,28 +94,82 @@ namespace CrossBuy.Controllers
 				return RedirectToAction(nameof(Index));
 			}
 
-			var vm = new AiInsightsVm();
+			var vm = new AiInsightsVm { CompanyId = scope.CompanyId };
+
+			// EACH CAPABILITY IS EVALUATED INDEPENDENTLY. Previously one try/catch wrapped all three and
+			// one `ServiceDown` flag described them together, so a single failing call blanked the two
+			// that had worked. They are separate models over separate data; they fail separately too.
+			var anomaly = await ReadInsightAsync<AnomalyResult>(
+				() => _insights.ScanJournalAnomaliesAsync(scope.CompanyId), scope.CompanyId,
+				r => r.Scanned);
+			vm.Anomaly = anomaly.Result;
+			vm.AnomalyPanel = anomaly.Panel;
+
+			var cashflow = await ReadInsightAsync<CashflowResult>(
+				() => _insights.ForecastCashflowAsync(scope.CompanyId, CashflowHorizonDays), scope.CompanyId,
+				// A projection with no periods is a projection of nothing: the horizon produced no weeks
+				// to report, which is an input problem rather than a clean forecast.
+				r => r.Periods.Count);
+			vm.Cashflow = cashflow.Result;
+			vm.CashflowPanel = cashflow.Panel;
+
+			var inventory = await ReadInsightAsync<InventoryResult>(
+				() => _insights.AnalyzeInventoryAsync(scope.CompanyId, InventorySlowDays), scope.CompanyId,
+				r => r.ItemsAnalyzed);
+			vm.Inventory = inventory.Result;
+			vm.InventoryPanel = inventory.Panel;
+
+			return View(vm);
+		}
+
+		private const int CashflowHorizonDays = 90;
+		private const int InventorySlowDays = 90;
+
+		/// <summary>Runs one local-ML insight and maps it onto a state the page can render honestly.</summary>
+		/// <remarks>
+		/// The CLASSIFICATION lives in AiInsightMapper, which is pure and directly tested. This method
+		/// owns only the parts that cannot be pure: making the call and turning transport faults into the
+		/// same vocabulary.
+		///
+		/// NOTHING FROM THE SERVICE REACHES THE USER AS TEXT. Every Detail is a constant chosen here; the
+		/// upstream payload and any exception stay out of the view. The previous version assigned the raw
+		/// response JSON and `ex.Message` straight into the model, putting service internals — and
+		/// potentially the business rows the payload was built from — on a user's screen.
+		/// </remarks>
+		private async Task<(T? Result, AiInsightPanel Panel)> ReadInsightAsync<T>(
+			Func<Task<AiProxyResult>> call, int companyId, Func<T, int> recordsConsidered) where T : class
+		{
+			var nowUtc = DateTime.UtcNow;
 			var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
 			try
 			{
-				var a = await _insights.ScanJournalAnomaliesAsync(scope.CompanyId);
-				var c = await _insights.ForecastCashflowAsync(scope.CompanyId, 90);
-				var i = await _insights.AnalyzeInventoryAsync(scope.CompanyId, 90);
-				if (a.Status == 200) vm.Anomaly = JsonSerializer.Deserialize<AnomalyResult>(a.Json, opts);
-				if (c.Status == 200) vm.Cashflow = JsonSerializer.Deserialize<CashflowResult>(c.Json, opts);
-				if (i.Status == 200) vm.Inventory = JsonSerializer.Deserialize<InventoryResult>(i.Json, opts);
-				if (vm.Anomaly == null && vm.Cashflow == null && vm.Inventory == null)
-				{
-					vm.ServiceDown = true;
-					vm.ServiceMessage = a.Json;
-				}
+				var response = await call();
+				if (response.Status != 200)
+					return (null, AiInsightMapper.Map(response.Status, null, companyId, nowUtc));
+
+				var parsed = JsonSerializer.Deserialize<T>(response.Json, opts);
+				if (parsed == null)
+					return (null, AiInsightMapper.Failed("ai-insight:unreadable-response", companyId, nowUtc));
+
+				return (parsed, AiInsightMapper.Map(200, recordsConsidered(parsed), companyId, nowUtc));
 			}
-			catch (Exception ex)
+			catch (JsonException)
 			{
-				vm.ServiceDown = true;
-				vm.ServiceMessage = ex.Message;
+				return (null, AiInsightMapper.Failed("ai-insight:unreadable-response", companyId, nowUtc));
 			}
-			return View(vm);
+			catch (HttpRequestException)
+			{
+				// The local ML service is not running. Recoverable by an operator, and honestly "we could
+				// not ask" rather than "the answer is no".
+				return (null, AiInsightMapper.Unavailable("ai-insight:service-unavailable", companyId, nowUtc));
+			}
+			catch (TaskCanceledException)
+			{
+				// The HttpClient timeout surfaces as a cancellation, not an HttpRequestException. A slow
+				// service is an unavailable one from the reader's side.
+				return (null, AiInsightMapper.Unavailable("ai-insight:service-timeout", companyId, nowUtc));
+			}
 		}
 
 		// ===== segregation of duties helpers (1c) =====

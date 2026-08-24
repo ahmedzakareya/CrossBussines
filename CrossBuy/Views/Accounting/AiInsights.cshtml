@@ -1,4 +1,4 @@
-@using CrossBuy.ViewModel.Ai
+﻿@using CrossBuy.ViewModel.Ai
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @model AiInsightsVm
@@ -16,6 +16,25 @@
         "reorder" => "Reorder",
         "slow" => "Slow",
         _ => c ?? ""
+    };
+
+    // The four states, as words a reader can act on. INSUFFICIENT DATA IS NOT "ALL CLEAR" and is
+    // deliberately worded so it cannot be mistaken for one.
+    string StateLabel(AiInsightState st) => st switch
+    {
+        AiInsightState.Ok => "Up to date",
+        AiInsightState.InsufficientData => "Not enough data to analyse",
+        AiInsightState.Unavailable => "Analysis service unavailable",
+        AiInsightState.Failed => "Analysis could not be completed",
+        _ => "Unknown"
+    };
+    string StateBadge(AiInsightState st) => st switch
+    {
+        AiInsightState.Ok => "success",
+        AiInsightState.InsufficientData => "warning",
+        AiInsightState.Unavailable => "secondary",
+        AiInsightState.Failed => "danger",
+        _ => "light"
     };
 }
 
@@ -41,17 +60,45 @@
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
 
-            @if (Model.ServiceDown)
+            @{
+                // PROVENANCE, stated once for the whole page. Every value is a fact the system already
+                // holds: which company the data was scoped to, which engine answered, and when. No AI
+                // wrote any of this text.
+                var panels = new[] { Model.AnomalyPanel, Model.CashflowPanel, Model.InventoryPanel };
+                var newest = panels.Where(p => p.GeneratedAtUtc.HasValue).Select(p => p.GeneratedAtUtc!.Value).DefaultIfEmpty().Max();
+            }
+            <div class="card card-flush mb-5">
+                <div class="card-body py-4 d-flex flex-wrap gap-6 align-items-center">
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Data scope"]</div>
+                        <div class="fw-bold text-gray-800">@Localizer["Company"] @Model.CompanyId</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Analysis source"]</div>
+                        <div class="fw-bold text-gray-800">@Localizer["On-premises model"] <span class="text-gray-400 fs-8">(@Model.AnomalyPanel.Source)</span></div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Generated"]</div>
+                        <div class="fw-bold text-gray-800">@(newest == default ? Localizer["Not generated"].Value : newest.ToString("yyyy-MM-dd HH:mm") + " UTC")</div>
+                    </div>
+                    <div class="ms-auto text-gray-500 fs-8">
+                        <i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["No data leaves this installation"]
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.AllUnavailable)
             {
                 <div class="card card-flush">
                     <div class="card-body text-center py-15">
                         <i class="ki-outline ki-information-5 fs-3x text-warning mb-4"></i>
-                        <h3 class="text-gray-800">@Localizer["AI service is currently unavailable"]</h3>
-                        <div class="text-gray-500 fs-6 mt-2">@Localizer["Make sure the Python AI service is running on port 8000."]</div>
-                        @if (!string.IsNullOrEmpty(Model.ServiceMessage))
-                        {
-                            <div class="text-gray-400 fs-8 mt-3">@Model.ServiceMessage</div>
-                        }
+                        <h3 class="text-gray-800">@Localizer["No insights are available right now"]</h3>
+                        <div class="text-gray-500 fs-6 mt-2">@Localizer["The on-premises analysis service did not return a result. Existing accounting and inventory screens are unaffected."]</div>
+                        <div class="d-flex justify-content-center gap-6 mt-6">
+                            <span class="badge badge-light-@StateBadge(Model.AnomalyPanel.State)">@Localizer["Journal anomalies"]: @Localizer[StateLabel(Model.AnomalyPanel.State)]</span>
+                            <span class="badge badge-light-@StateBadge(Model.CashflowPanel.State)">@Localizer["Cash-flow projection"]: @Localizer[StateLabel(Model.CashflowPanel.State)]</span>
+                            <span class="badge badge-light-@StateBadge(Model.InventoryPanel.State)">@Localizer["Inventory risk"]: @Localizer[StateLabel(Model.InventoryPanel.State)]</span>
+                        </div>
                     </div>
                 </div>
             }
@@ -112,7 +159,17 @@
                         <div class="card-toolbar"><span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@Localizer["Duplicates"]: @(Model.Anomaly?.Summary?.Duplicates ?? 0)</span></div>
                     </div>
                     <div class="card-body pt-2">
-                        @if (Model.Anomaly != null && Model.Anomaly.Anomalies.Any())
+                        @if (!Model.AnomalyPanel.HasResult)
+                        {
+                            <div class="text-center py-8">
+                                <span class="badge badge-light-@StateBadge(Model.AnomalyPanel.State) fs-7">@Localizer[StateLabel(Model.AnomalyPanel.State)]</span>
+                                @if (Model.AnomalyPanel.State == AiInsightState.InsufficientData)
+                                {
+                                    <div class="text-gray-500 fs-7 mt-3">@Localizer["No journal entries were available to analyse for this company, so no conclusion can be drawn."]</div>
+                                }
+                            </div>
+                        }
+                        else if (Model.Anomaly != null && Model.Anomaly.Anomalies.Any())
                         {
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle gs-0 gy-3">
@@ -136,7 +193,15 @@
                                 </table>
                             </div>
                         }
-                        else { <div class="text-gray-500 py-5 text-center">@Localizer["No anomalies found"]</div> }
+                        else
+                        {
+                            // Reached only when the model DID examine entries. The count is shown so the
+                            // reassurance is attributable rather than bare.
+                            <div class="text-gray-500 py-5 text-center">
+                                @Localizer["No anomalies found"]
+                                <div class="text-gray-400 fs-8 mt-1">@Localizer["Entries examined"]: @(Model.AnomalyPanel.RecordsConsidered ?? 0)</div>
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -152,7 +217,17 @@
                                 </div>
                             </div>
                             <div class="card-body pt-2">
-                                @if (Model.Cashflow != null)
+                                @if (!Model.CashflowPanel.HasResult)
+                                {
+                                    <div class="text-center py-8">
+                                        <span class="badge badge-light-@StateBadge(Model.CashflowPanel.State) fs-7">@Localizer[StateLabel(Model.CashflowPanel.State)]</span>
+                                        @if (Model.CashflowPanel.State == AiInsightState.InsufficientData)
+                                        {
+                                            <div class="text-gray-500 fs-7 mt-3">@Localizer["There are no open receivables or payables to project, so no cash-flow projection was produced."]</div>
+                                        }
+                                    </div>
+                                }
+                                else if (Model.Cashflow != null)
                                 {
                                     <div class="d-flex justify-content-between mb-2"><span class="text-gray-600">@Localizer["Opening cash"]</span><span class="fw-bold">@Money(Model.Cashflow.OpeningCash)</span></div>
                                     <div class="d-flex justify-content-between mb-2"><span class="text-gray-600">@Localizer["Expected inflow"]</span><span class="fw-bold text-primary">@Money(Model.Cashflow.TotalExpectedInflow)</span></div>
@@ -174,7 +249,17 @@
                                 <div class="card-toolbar"><span class="badge badge-light-danger">@Localizer["Stockout"]: @(Model.Inventory?.Summary?.StockoutRisk ?? 0)</span></div>
                             </div>
                             <div class="card-body pt-2">
-                                @if (Model.Inventory != null && Model.Inventory.Flagged.Any())
+                                @if (!Model.InventoryPanel.HasResult)
+                                {
+                                    <div class="text-center py-8">
+                                        <span class="badge badge-light-@StateBadge(Model.InventoryPanel.State) fs-7">@Localizer[StateLabel(Model.InventoryPanel.State)]</span>
+                                        @if (Model.InventoryPanel.State == AiInsightState.InsufficientData)
+                                        {
+                                            <div class="text-gray-500 fs-7 mt-3">@Localizer["No stocked items were available to analyse for this company, so no conclusion can be drawn."]</div>
+                                        }
+                                    </div>
+                                }
+                                else if (Model.Inventory != null && Model.Inventory.Flagged.Any())
                                 {
                                     <div class="table-responsive">
                                         <table class="table table-row-dashed align-middle gs-0 gy-3">
@@ -197,7 +282,13 @@
                                         </table>
                                     </div>
                                 }
-                                else { <div class="text-gray-500 py-5 text-center">@Localizer["No alerts"]</div> }
+                                else
+                                {
+                                    <div class="text-gray-500 py-5 text-center">
+                                        @Localizer["No alerts"]
+                                        <div class="text-gray-400 fs-8 mt-1">@Localizer["Items analysed"]: @(Model.InventoryPanel.RecordsConsidered ?? 0)</div>
+                                    </div>
+                                }
                             </div>
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -156,5 +156,65 @@
   </data>
   <data name="Slow" xml:space="preserve">
     <value>راكد</value>
+  </data>
+  <data name="Data scope" xml:space="preserve">
+    <value>نطاق البيانات</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>الشركة</value>
+  </data>
+  <data name="Analysis source" xml:space="preserve">
+    <value>مصدر التحليل</value>
+  </data>
+  <data name="On-premises model" xml:space="preserve">
+    <value>نموذج داخل المنشأة</value>
+  </data>
+  <data name="Generated" xml:space="preserve">
+    <value>تاريخ الإنشاء</value>
+  </data>
+  <data name="Not generated" xml:space="preserve">
+    <value>لم يتم الإنشاء</value>
+  </data>
+  <data name="No data leaves this installation" xml:space="preserve">
+    <value>لا تغادر أي بيانات هذا التثبيت</value>
+  </data>
+  <data name="No insights are available right now" xml:space="preserve">
+    <value>لا تتوفر أي تحليلات في الوقت الحالي</value>
+  </data>
+  <data name="The on-premises analysis service did not return a result. Existing accounting and inventory screens are unaffected." xml:space="preserve">
+    <value>لم تُرجع خدمة التحليل الداخلية أي نتيجة. شاشات المحاسبة والمخزون الحالية غير متأثرة.</value>
+  </data>
+  <data name="Inventory risk" xml:space="preserve">
+    <value>مخاطر المخزون</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>محدَّث</value>
+  </data>
+  <data name="Not enough data to analyse" xml:space="preserve">
+    <value>لا توجد بيانات كافية للتحليل</value>
+  </data>
+  <data name="Analysis service unavailable" xml:space="preserve">
+    <value>خدمة التحليل غير متاحة</value>
+  </data>
+  <data name="Analysis could not be completed" xml:space="preserve">
+    <value>تعذّر إكمال التحليل</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>غير معروف</value>
+  </data>
+  <data name="No journal entries were available to analyse for this company, so no conclusion can be drawn." xml:space="preserve">
+    <value>لا توجد قيود يومية متاحة للتحليل لهذه الشركة، لذلك لا يمكن استخلاص أي نتيجة.</value>
+  </data>
+  <data name="Entries examined" xml:space="preserve">
+    <value>القيود التي تم فحصها</value>
+  </data>
+  <data name="There are no open receivables or payables to project, so no cash-flow projection was produced." xml:space="preserve">
+    <value>لا توجد ذمم مدينة أو دائنة مفتوحة لإسقاطها، لذلك لم يتم إنتاج توقع للتدفق النقدي.</value>
+  </data>
+  <data name="No stocked items were available to analyse for this company, so no conclusion can be drawn." xml:space="preserve">
+    <value>لا توجد أصناف مخزنية متاحة للتحليل لهذه الشركة، لذلك لا يمكن استخلاص أي نتيجة.</value>
+  </data>
+  <data name="Items analysed" xml:space="preserve">
+    <value>الأصناف التي تم تحليلها</value>
   </data>
 </root>

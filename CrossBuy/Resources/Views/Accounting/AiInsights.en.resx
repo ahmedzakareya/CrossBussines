@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -156,5 +156,65 @@
   </data>
   <data name="Slow" xml:space="preserve">
     <value>Slow</value>
+  </data>
+  <data name="Data scope" xml:space="preserve">
+    <value>Data scope</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Analysis source" xml:space="preserve">
+    <value>Analysis source</value>
+  </data>
+  <data name="On-premises model" xml:space="preserve">
+    <value>On-premises model</value>
+  </data>
+  <data name="Generated" xml:space="preserve">
+    <value>Generated</value>
+  </data>
+  <data name="Not generated" xml:space="preserve">
+    <value>Not generated</value>
+  </data>
+  <data name="No data leaves this installation" xml:space="preserve">
+    <value>No data leaves this installation</value>
+  </data>
+  <data name="No insights are available right now" xml:space="preserve">
+    <value>No insights are available right now</value>
+  </data>
+  <data name="The on-premises analysis service did not return a result. Existing accounting and inventory screens are unaffected." xml:space="preserve">
+    <value>The on-premises analysis service did not return a result. Existing accounting and inventory screens are unaffected.</value>
+  </data>
+  <data name="Inventory risk" xml:space="preserve">
+    <value>Inventory risk</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>Up to date</value>
+  </data>
+  <data name="Not enough data to analyse" xml:space="preserve">
+    <value>Not enough data to analyse</value>
+  </data>
+  <data name="Analysis service unavailable" xml:space="preserve">
+    <value>Analysis service unavailable</value>
+  </data>
+  <data name="Analysis could not be completed" xml:space="preserve">
+    <value>Analysis could not be completed</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="No journal entries were available to analyse for this company, so no conclusion can be drawn." xml:space="preserve">
+    <value>No journal entries were available to analyse for this company, so no conclusion can be drawn.</value>
+  </data>
+  <data name="Entries examined" xml:space="preserve">
+    <value>Entries examined</value>
+  </data>
+  <data name="There are no open receivables or payables to project, so no cash-flow projection was produced." xml:space="preserve">
+    <value>There are no open receivables or payables to project, so no cash-flow projection was produced.</value>
+  </data>
+  <data name="No stocked items were available to analyse for this company, so no conclusion can be drawn." xml:space="preserve">
+    <value>No stocked items were available to analyse for this company, so no conclusion can be drawn.</value>
+  </data>
+  <data name="Items analysed" xml:space="preserve">
+    <value>Items analysed</value>
   </data>
 </root>
