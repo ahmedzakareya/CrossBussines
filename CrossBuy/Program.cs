@@ -126,7 +126,35 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     // Narrow these further, or widen them, by editing THIS line — nothing in the platform changes.
     .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.View, "Admin", "SuperAdmin", "Auditor")
     .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.Confidential, "Admin", "SuperAdmin")
-    .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.Restricted, "SuperAdmin"));
+    .MapPermission(CrossBuy.BL.Reporting.BusinessEventsReportPermissions.Restricted, "SuperAdmin")
+
+    // ---- R2 ACTIVATION: the MODULE datasets ----
+    //
+    // One key per module for the datasets themselves, and a SEPARATE narrower key for the money-sensitive
+    // columns inside them. The split is the point: reading that a customer was billed 10 000 is a different
+    // grant from reading that the company earned 800 on it, and reading how many units are on a shelf is a
+    // different grant from reading what they cost.
+    //
+    //   accounting.reports.view          the five Accounting datasets (registers + aging + profitability rows)
+    //   accounting.reports.profitability additionally reveals Revenue / COGS / Margin / Margin %
+    //   inventory.reports.view           stock on hand and the movement register, QUANTITIES only
+    //   inventory.reports.cost           additionally reveals AvgCost / TotalValue / UnitCost / movement value
+    //   crm.reports.view                 leads and opportunities
+    //
+    // Accountant and Storekeeper are mapped here as the ordinary operational roles for their own module's
+    // registers. The COST and PROFITABILITY tiers are deliberately NOT given to them — those stay with
+    // administration until an owner decides otherwise. Narrow these further, or widen them, by editing THESE
+    // lines; nothing in the platform changes.
+    .MapPermission(CrossBuy.BL.Reporting.AccountingReportPermissions.View,
+        "Admin", "SuperAdmin", "Auditor", "Accountant")
+    .MapPermission(CrossBuy.BL.Reporting.AccountingReportPermissions.Profitability,
+        "Admin", "SuperAdmin")
+    .MapPermission(CrossBuy.BL.Reporting.InventoryReportPermissions.View,
+        "Admin", "SuperAdmin", "Auditor", "Storekeeper")
+    .MapPermission(CrossBuy.BL.Reporting.InventoryReportPermissions.Cost,
+        "Admin", "SuperAdmin")
+    .MapPermission(CrossBuy.BL.Reporting.CrmReportPermissions.View,
+        "Admin", "SuperAdmin", "Auditor", "Sales"));
 
 // ---- CrossBusiness Workspace (R1–R3) ----
 //

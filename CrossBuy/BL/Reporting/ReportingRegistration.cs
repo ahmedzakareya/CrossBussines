@@ -124,6 +124,38 @@ namespace CrossBuy.BL.Reporting
             services.AddSingleton<IReportDefinitionProvider, BusinessEventsReportDefinitionProvider>();
             services.AddScoped<IReportDatasetDefinition>(_ => BusinessEventsDataset.Definition());
 
+            // ---- R2 ACTIVATION — the MODULE datasets: Accounting · Inventory · CRM ------------------------
+            //
+            // R1's single platform dataset proved the layer; it could not make Report Studio useful, because a
+            // builder over one dataset is a builder over nothing. These are that prerequisite.
+            //
+            // THE SHAPE IS IDENTICAL FOR ALL THREE, deliberately, and it is the shape R1 predicted: a definition
+            // provider (singleton — pure, injects nothing), one data source per dataset (scoped — they touch
+            // CrossDbContext or a module service), and the dataset definitions themselves. No platform type
+            // changed to accommodate them, which is the property the seam existed to have.
+            //
+            // TWO OF THE ACCOUNTING SOURCES INJECT IReceivableService RATHER THAN CrossDbContext, and that is the
+            // architecture visible in the DI list: receivables aging and customer profitability are Accounting's
+            // calculations, so Reporting calls the owner instead of reproducing the arithmetic. A source that
+            // needs a module service is a source that is reading a module's answer.
+            //
+            // EVERY key below is UNMAPPED until a host maps it, and the evaluator is fail-closed — so registering
+            // these datasets grants nobody anything by itself. See Program.cs for the deliberate mapping.
+            services.AddSingleton<IReportDefinitionProvider, AccountingReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, SalesRevenueDataSource>();
+            services.AddScoped<IReportDataSource, PurchasesDataSource>();
+            services.AddScoped<IReportDataSource, CustomerAgingDataSource>();
+            services.AddScoped<IReportDataSource, CustomerProfitabilityDataSource>();
+            services.AddScoped<IReportDataSource, JournalActivityDataSource>();
+
+            services.AddSingleton<IReportDefinitionProvider, InventoryReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, StockOnHandDataSource>();
+            services.AddScoped<IReportDataSource, StockMovementsDataSource>();
+
+            services.AddSingleton<IReportDefinitionProvider, CrmReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, CrmLeadsDataSource>();
+            services.AddScoped<IReportDataSource, CrmOpportunitiesDataSource>();
+
             services.AddScoped<IReportDataSourceRegistry, ReportDataSourceRegistry>();
 
             // ---- dataset layer (ADR-037 §Dataset) --------------------------------------------------------
@@ -133,9 +165,26 @@ namespace CrossBuy.BL.Reporting
             // scoped evaluator is the captive dependency CLAUDE.md records as having once stopped this
             // application from booting — ValidateScopes would (correctly) refuse to build the graph.
             //
-            // ONE dataset is registered as of R1: Platform.BusinessEvents.Log (above). Accounting, Inventory and
-            // CRM datasets remain out of scope — a module adds one AddScoped<IReportDatasetDefinition, X>() line
-            // when its own increment arrives, and nothing in the platform changes.
+            // TEN datasets are registered as of R2: the platform's Business Event log (above) plus five
+            // Accounting, two Inventory and two CRM. Each is a separate AddScoped<IReportDatasetDefinition>
+            // registration — the registry validates every one in its constructor and refuses duplicate codes, so
+            // a malformed or colliding dataset fails at graph construction rather than on a user's first click.
+            foreach (var accounting in AccountingDatasets.All())
+            {
+                var definition = accounting;   // captured per iteration, NOT the loop variable's final value
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+            foreach (var inventory in InventoryDatasets.All())
+            {
+                var definition = inventory;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+            foreach (var crm in CrmDatasets.All())
+            {
+                var definition = crm;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+
             services.AddScoped<IReportDatasetRegistry, ReportDatasetRegistry>();
 
             // ---- R3: the user-facing surface --------------------------------------------------------------
