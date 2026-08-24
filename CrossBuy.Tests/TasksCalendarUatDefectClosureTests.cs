@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
+using CrossBuy.Tests.TestSupport;
 
 namespace CrossBuy.Tests
 {
@@ -41,7 +42,7 @@ namespace CrossBuy.Tests
 		public ICalendarService Calendar { get; }
 		public ICalendarSchedulingService Scheduling { get; }
 		public ITaskOverdueSweepService OverdueSweep { get; }
-		public RecordingNotificationService Notifications { get; }
+		public UatRecordingNotificationService Notifications { get; }
 
 		/// The context every service sees. Company A, an Http source — i.e. a signed-in user of company A.
 		/// Swapping this for Unresolved() is how the fail-closed tests are driven.
@@ -59,7 +60,7 @@ namespace CrossBuy.Tests
 				cmd.ExecuteNonQuery();
 			}
 
-			Notifications = new RecordingNotificationService(Db);
+			Notifications = new UatRecordingNotificationService(Db);
 			var notify = new TaskNotificationService(Db, Notifications);
 
 			IBusinessContextAccessor accessor = contextResolvable
@@ -126,7 +127,7 @@ namespace CrossBuy.Tests
 				.Options;
 			var db = new CrossDbContext(options, holder);
 
-			var notifier = new RecordingNotificationService(db);
+			var notifier = new UatRecordingNotificationService(db);
 			var notify = new TaskNotificationService(db, notifier);
 			var events = new BusinessEventService(db, new EntityRegistry(db),
 				new StubContextAccessor(new BusinessContext

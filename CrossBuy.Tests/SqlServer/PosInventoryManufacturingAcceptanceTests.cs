@@ -6,6 +6,7 @@ using CrossBuy.Models.Context.Admin;
 using CrossBuy.Models.Context.Inventory;
 using CrossBuy.Models.Context.Pos;
 using CrossBuy.Models.Platform;
+using CrossBuy.Tests.TestSupport;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,20 +48,19 @@ namespace CrossBuy.Tests.SqlServer
 	// ReceivableService invoice stack. Arranging a partial version of that would produce failures that belong to
 	// the arrangement rather than the product, so POS PayAsync end-to-end is declared a COVERAGE GAP in the report
 	// instead of being half-simulated here. The routing RULE it applies is asserted directly (Scenario B2).
-	[Collection(SqlServerCollection.Name)]
+	[Collection(UatSqlProbeCollection.Name)]
 	public class PosInventoryManufacturingAcceptanceTests : IAsyncLifetime
 	{
 		private const int Co = 1;        // the company under test
 		private const int Foreign = 2;   // an unrelated company, for the isolation negatives
 		private static readonly DateTime D = new(2026, 8, 24);
 
-		private readonly SqlServerFixture _sql;
+		private readonly UatSqlProbeFixture _sql;
 		private readonly ITestOutputHelper _out;
-		public PosInventoryManufacturingAcceptanceTests(SqlServerFixture sql, ITestOutputHelper output) { _sql = sql; _out = output; }
+		public PosInventoryManufacturingAcceptanceTests(UatSqlProbeFixture sql, ITestOutputHelper output) { _sql = sql; _out = output; }
 		private void Ready() => Skip.If(!_sql.Available, _sql.SkipReason);
 
-		private SqlServerFixture.ProbeDatabase? _probe;
-		private string _sharedBefore = "";
+		private UatSqlProbeFixture.ProbeDatabase? _probe;
 
 		// ---- ids captured from the DATABASE. Every one of these is an IDENTITY column in the real schema, so
 		// hardcoding them fails with "Cannot insert explicit value for identity column" — the same lesson the F4
@@ -72,7 +72,6 @@ namespace CrossBuy.Tests.SqlServer
 		public async Task InitializeAsync()
 		{
 			if (!_sql.Available) return;
-			_sharedBefore = await _sql.SharedFixtureFingerprintAsync();
 			_probe = await _sql.CreateProbeDatabaseAsync("POSMFG");
 			await ArrangeAsync();
 		}
@@ -277,12 +276,26 @@ namespace CrossBuy.Tests.SqlServer
 		// PURITY — this family must leave the shared fixture untouched (RISK-036).
 		// ===================================================================================================
 		[SkippableFact]
-		public async Task Family_owns_an_isolated_probe_and_adds_nothing_to_the_shared_fixture()
+		public async Task Family_runs_against_its_own_disposable_probe_and_never_a_real_database()
 		{
 			Ready();
-			Assert.Equal(_sharedBefore, await _sql.SharedFixtureFingerprintAsync());
 			Assert.NotNull(_probe);
 			Assert.StartsWith("CrossBuyProbe_POSMFG_", _probe!.Name, StringComparison.Ordinal);
+
+			// The safety claim is about the CONNECTION, not about intent: whatever CROSSBUY_TEST_SQL names, the
+			// catalogue this suite actually addresses is its own probe. Asserted here so a fixture change that
+			// let a real database through would fail loudly instead of quietly writing to it.
+			var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_probe.ConnectionString);
+			Assert.Equal(_probe.Name, builder.InitialCatalog);
+
+			bool addressesARealDatabase = new[] { "CrossBuy", "CrossBuyDB", "CrossBuyDB2", "CrossBuyDev", "CrossBuyCert" }
+				.Any(r => string.Equals(r, builder.InitialCatalog, StringComparison.OrdinalIgnoreCase));
+			Assert.False(addressesARealDatabase,
+				$"the suite must never address a real database; it addressed '{builder.InitialCatalog}'");
+
+			// and the probe is live, so the two assertions above describe a real database rather than a name
+			await using var sp = Graph();
+			Assert.True(await sp.GetRequiredService<CrossDbContext>().Database.CanConnectAsync());
 		}
 
 		// DIAGNOSTIC (kept: it is the only way to see WHY a movement insert fails). StockService wraps its
