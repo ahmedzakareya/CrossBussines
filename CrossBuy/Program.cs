@@ -212,6 +212,14 @@ builder.Services.AddSingleton(new CrossBuy.BL.Platform.CertificationRuntimeState
 builder.Services.AddSingleton<CrossBuy.BL.Platform.ICompanyBypassAudit, CrossBuy.BL.Platform.LoggingCompanyBypassAudit>();
 builder.Services.AddSingleton<CrossBuy.BL.Platform.ICompanyBypassPolicy, CrossBuy.BL.Platform.CompanyBypassPolicy>();
 builder.Services.AddSingleton<CrossBuy.BL.Platform.IRuntimeInstanceInfo, CrossBuy.BL.Platform.RuntimeInstanceInfo>();
+// Stage 0 Batch B — single-worker-process control. The gate holds ONE application lock for the
+// process lifetime, so a second instance stays on standby instead of duplicating background work.
+// Singleton for that reason: a scoped gate would take a new lock per request. The concrete type is
+// registered too because WorkerGate is IAsyncDisposable and the lease must be released once, by the
+// same instance that took it.
+builder.Services.Configure<CrossBuy.BL.Platform.RuntimeOptions>(builder.Configuration.GetSection("Runtime"));
+builder.Services.AddSingleton<CrossBuy.BL.Platform.WorkerGate>();
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IWorkerGate>(sp => sp.GetRequiredService<CrossBuy.BL.Platform.WorkerGate>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyIsolationBypass, CrossBuy.BL.Platform.CompanyIsolationBypass>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEventDispatchStore, CrossBuy.BL.Platform.SqlEventDispatchStore>();            // ADR-003: per-consumer outbox state
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventService, CrossBuy.BL.Platform.BusinessEventService>();           // ADR-001: in-transaction event recording
@@ -224,6 +232,22 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy
 builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.PurchaseInvoiceLegacyTimelineAdapter>();       // slice 2
 builder.Services.AddScoped<CrossBuy.BL.Platform.ILegacyTimelineAdapter, CrossBuy.BL.Platform.ManufWorkOrderLegacyTimelineAdapter>();        // slice 2
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventMonitorService, CrossBuy.BL.Platform.BusinessEventMonitorService>(); // Stage 0 Batch B: operator read model + guarded retry
+
+// The transactional-outbox dispatcher. Nothing else drains BusinessEventDispatch, so without this the
+// timeline, notification and AI consumers are constructed by no one and the fan-out is inert.
+//
+// Options bind from Platform:EventDispatch; every value has a safe class default, so a deployment with
+// no section behaves exactly as the committed defaults describe.
+//
+// SUPPRESSED IN CERTIFICATION RUNTIME. The dispatcher mutates state - it claims rows, writes timeline
+// and notification projections, and advances per-consumer dispatch state - and a conformance capture
+// must OBSERVE stable data rather than consume it, or two runs of the same page disagree.
+// `certificationRuntime` is the value HEAD already computes and carries; it is true only when
+// development, the explicit opt-in variable and the certification catalogue ALL agree, so this cannot
+// accidentally disable the dispatcher on a normal host. Only this worker is gated here.
+builder.Services.Configure<CrossBuy.BL.Platform.BusinessEventDispatchOptions>(
+    builder.Configuration.GetSection("Platform:EventDispatch"));
+if (!certificationRuntime) builder.Services.AddHostedService<CrossBuy.BL.Platform.BusinessEventDispatchWorker>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IRequestCompanyResolver, CrossBuy.BL.Platform.RequestCompanyResolver>();   // D1/CORRECTION-005: validated company source
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformRoleDirectory, CrossBuy.BL.Platform.PlatformRoleDirectory>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IOrgHierarchy, CrossBuy.BL.Platform.OrgHierarchy>();
