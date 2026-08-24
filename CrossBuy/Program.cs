@@ -407,7 +407,12 @@ builder.Services.AddHttpClient<IAiService, AiService>((sp, c) =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
     c.BaseAddress = new Uri(cfg["AiService:BaseUrl"] ?? "http://localhost:8000");
-    c.DefaultRequestHeaders.Add("X-AI-Secret", cfg["AiService:Secret"] ?? "");
+    // Attached ONLY when a usable secret exists. `?? ""` sent an EMPTY credential, which is
+    // fail-open: the request still left the estate and was merely refused at the far end.
+    // IsUsableSecret is the committed egress rule (AiEgressPolicy), so both layers agree.
+    var secret = cfg["AiService:Secret"];
+    if (CrossBuy.BL.Platform.Ai.AiEgressPolicy.IsUsableSecret(secret))
+        c.DefaultRequestHeaders.Add("X-AI-Secret", secret);
     c.Timeout = TimeSpan.FromSeconds(120);
 });
 // AI GOVERNANCE RUNTIME (integration hotfix). Committed HEAD registered IAiInsightsService while

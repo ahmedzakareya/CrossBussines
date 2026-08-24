@@ -123,6 +123,21 @@ namespace CrossBuy.Tests
 			Assert.True(count >= 4, $"expected at least four legacy timeline adapters, found {count}");
 		}
 
+		[Fact]
+		public void The_ai_service_credential_is_never_attached_empty()
+		{
+			// `?? ""` sent an EMPTY X-AI-Secret, which is fail-open: the request left the estate and was
+			// merely refused at the far end. The header must be conditional on a usable secret, and the
+			// rule must be the committed egress one rather than a second copy.
+			var program = ProgramSource();
+
+			Assert.DoesNotContain("\"X-AI-Secret\", cfg[\"AiService:Secret\"] ?? \"\"", program);
+			Assert.Contains("AiEgressPolicy.IsUsableSecret(secret)", program);
+
+			// And no fabricated fallback crept in beside it.
+			Assert.DoesNotContain("X-AI-Secret\", \"", program);
+		}
+
 		// ---------------------------------------------------------------------------------------------
 
 		private static string NameOf(string value) => value switch
