@@ -6,6 +6,10 @@
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var ven = ViewBag.Vendor as Vendor;
+    @* The legacy CommentEntityType/CommentEntityId pair fed _DocTimeline and is dead now that the
+       conversation comes from the Communication Platform. Note it also hardcoded the string
+       "PurchaseInvoice" rather than the frozen EntityRegistry constant — a literal that could drift
+       away from the registry silently. The replacement below uses the constant. *@
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -39,5 +43,17 @@
                 <div class="d-flex flex-stack fs-4"><span class="fw-bold">@SR["GrandTotal"]</span><span class="fw-bold text-primary">@Model.GrandTotal.ToString("N2")</span></div>
             </div></div>
         </div></div>
+        @{
+            // Platform Kernel slice 2 — the business-event timeline sits above the existing comments widget,
+            // exactly as on the sales invoice. Both key off the same canonical IEntityRegistry code.
+            ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice;
+            ViewBag.TimelineEntityId = Model.ID;
+        }
+        @await Html.PartialAsync("_DocEventTimeline")
+        @* BUSINESS CONVERSATION — see the note in SalesInvoiceDetail. Same panel, same platform, only
+           the entity code differs; that is the whole point of routing through CommEntityRef instead of
+           writing a per-module comment widget. Replaces _DocTimeline so one store stays authoritative. *@
+        @{ ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice; ViewBag.ConversationEntityId = Model.ID; }
+        @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>
