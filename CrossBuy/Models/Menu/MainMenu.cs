@@ -291,6 +291,10 @@
 					// Rules-based review list. Placed straight after the pipeline because it answers the
 					// question a salesperson asks while looking at one: which of these needs me today?
 					new() { LabelAr = "تحليلات الفرص", LabelEn = "Opportunity Insights", Action = "OpportunityInsights", Controller = "Crm" },
+					// Account-level companion to the line above: that one asks which DEALS need attention,
+					// this one asks which RELATIONSHIPS are weakening. Adjacent because a manager moves
+					// between the two questions constantly.
+					new() { LabelAr = "تحليلات الحسابات", LabelEn = "Account Insights", Action = "AccountInsights", Controller = "Crm" },
 					new() { LabelAr = "إعداد خطوط الأنابيب", LabelEn = "Pipeline setup", Action = "Pipelines", Controller = "Crm", Perm = "crm-manage" },
 					new() { LabelAr = "الأنشطة والمهام", LabelEn = "Activities", Action = "Activities", Controller = "Crm" },
 					new() { LabelAr = "الحملات التسويقية", LabelEn = "Campaigns", Action = "Campaigns", Controller = "Crm" },

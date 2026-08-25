@@ -277,6 +277,54 @@
 				.ToList();
 	}
 
+	// ----- CRM Account Health (product expansion wave 2) -----
+	//
+	// A DIFFERENT QUESTION FROM CrmOpportunityInsightsVm, deliberately. That screen asks "which deals need
+	// attention"; this one asks "which relationships are weakening". An account can hold three healthy
+	// deals and still have gone silent, and no per-opportunity rule can see that.
+	//
+	// Still no CRM model exists, so this is rules over counts. See CrmAccountHealthRules.
+	public sealed class CrmAccountHealthVm
+	{
+		public AiInsightPanel Panel { get; set; } = new();
+
+		/// Resolved company. Server-derived; this screen accepts no company from the caller.
+		public int CompanyId { get; set; }
+
+		/// Accounts examined. Zero means InsufficientData, never a clean bill of health.
+		public int Analysed { get; set; }
+
+		public int RecentWindowDays { get; set; }
+		public int PreviousWindowDays { get; set; }
+
+		public IReadOnlyList<CrossBuy.BL.Platform.Ai.CrmAccountHealthRules.Insight> Insights { get; set; }
+			= Array.Empty<CrossBuy.BL.Platform.Ai.CrmAccountHealthRules.Insight>();
+
+		/// Distinct accounts carrying at least one finding — the number a manager acts on. The insight
+		/// count is larger, because one neglected account can trip several rules at once.
+		public int AccountsNeedingAttention =>
+			Insights.Select(i => i.Account.AccountId).Distinct().Count();
+
+		public int CountOf(CrossBuy.BL.Platform.Ai.CrmAccountHealthRules.Finding f) =>
+			Insights.Count(i => i.Finding == f);
+
+		/// Open pipeline value on the accounts that carry a finding, counted ONCE per account however many
+		/// findings it tripped. Summing per insight would double-count the same money.
+		public decimal ExposedOpenValue =>
+			Insights.Select(i => i.Account).DistinctBy(a => a.AccountId).Sum(a => a.OpenOpportunityValue);
+
+		public decimal PastDueValue =>
+			Insights.Select(i => i.Account).DistinctBy(a => a.AccountId).Sum(a => a.PastDueOpportunityValue);
+
+		public IReadOnlyList<string> OwnersPresent =>
+			Insights.Select(i => i.Account.OwnerName)
+				.Where(n => !string.IsNullOrWhiteSpace(n))
+				.Select(n => n!)
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.OrderBy(n => n, StringComparer.CurrentCulture)
+				.ToList();
+	}
+
 	// ----- page view model -----
 	public class AiInsightsVm
 	{

@@ -1,5 +1,6 @@
 ﻿using CrossBuy.BL;
 using CrossBuy.ViewModel.Ai;
+using Rules = CrossBuy.BL.Platform.Ai.CrmAccountHealthRules;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Crm;
@@ -548,6 +549,181 @@ namespace CrossBuy.Controllers
 		}
 
 		// ---------------- Opportunities ----------------
+		// ===== CRM Account Health Insights (rules-based decision support) =====
+		//
+		// A DIFFERENT QUESTION FROM OpportunityInsights, not a second rendering of it. That screen asks
+		// "which deals need attention"; this one asks "which relationships are weakening". An account can
+		// hold three healthy-looking deals and still have gone silent for two months, and no per-opportunity
+		// rule can see that.
+		//
+		// STILL NO CRM MODEL. Re-audited this increment: crossbuy_ai ships journal-anomaly, cashflow and
+		// inventory and nothing that takes an account. So this performs NO AI egress and claims no
+		// probability, score or prediction - it is arithmetic over counts the reader can check.
+		//
+		// BOUNDED QUERIES, NOT ONE PER ACCOUNT. Five aggregate queries serve any number of accounts:
+		// accounts, direct account activity, opportunity-linked activity, open opportunities, owner names.
+		// Every count is computed by SQL; no activity row is materialised in memory.
+		[HttpGet]
+		[CrossBuy.Models.CrmPerm("read")]
+		public async Task<IActionResult> AccountInsights()
+		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["CrmErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			var nowUtc = DateTime.UtcNow;
+			var vm = new CrossBuy.ViewModel.Ai.CrmAccountHealthVm
+			{
+				CompanyId = scope.CompanyId,
+				RecentWindowDays = Rules.RecentWindowDays,
+				PreviousWindowDays = Rules.PreviousWindowDays,
+			};
+
+			try
+			{
+				var recentFrom = nowUtc.Date.AddDays(-Rules.RecentWindowDays);
+				var previousFrom = recentFrom.AddDays(-Rules.PreviousWindowDays);
+
+				// Owner narrowing from the module's own contract, applied ON TOP of the company predicate.
+				// It can only narrow; the company filter below is ours and independent of it.
+				var visibleOwners = await _access.VisibleOwnerIdsAsync();
+
+				var accountsQuery = _context.CrmAccounts.AsNoTracking()
+					.Where(a => a.CompanyID == scope.CompanyId);
+				if (visibleOwners != null)
+					accountsQuery = accountsQuery.Where(a => a.OwnerEmployeeId != null && visibleOwners.Contains(a.OwnerEmployeeId.Value));
+
+				var accounts = await accountsQuery
+					.Select(a => new { a.ID, a.Name, a.NameEn, a.OwnerEmployeeId })
+					.ToListAsync();
+
+				vm.Analysed = accounts.Count;
+				if (accounts.Count == 0)
+				{
+					// Nothing examined is NOT a healthy customer base. Map(200, 0) yields InsufficientData.
+					vm.Panel = AiInsightMapper.Map(200, 0, scope.CompanyId, nowUtc);
+					return View(vm);
+				}
+
+				var ids = accounts.Select(a => a.ID).ToList();
+
+				// ---- activity, aggregated in SQL, from BOTH authoritative links to an account ----
+				//
+				// 1. an activity recorded directly against the account (EntityType/EntityId), and
+				// 2. an activity on one of the account's opportunities.
+				// Both are real engagement with that customer. Each is company-predicated in its own right
+				// rather than trusted to the join - a filter that is only correct because of another table's
+				// predicate is one refactor away from being wrong.
+				var direct = await _context.Activities.AsNoTracking()
+					.Where(x => x.CompanyID == scope.CompanyId
+						&& x.EntityType == "Account" && x.EntityId != null && ids.Contains(x.EntityId.Value))
+					.GroupBy(x => x.EntityId!.Value)
+					.Select(g => new
+					{
+						AccountId = g.Key,
+						Recent = g.Count(x => x.CreatedAt != null && x.CreatedAt >= recentFrom),
+						Previous = g.Count(x => x.CreatedAt != null && x.CreatedAt >= previousFrom && x.CreatedAt < recentFrom),
+						LastAt = g.Max(x => x.CreatedAt),
+						Open = g.Count(x => !x.Done),
+					})
+					.ToListAsync();
+
+				var viaOpp = await (
+					from act in _context.Activities.AsNoTracking()
+						.Where(x => x.CompanyID == scope.CompanyId && x.OpportunityId != null)
+					join opp in _context.Opportunities.AsNoTracking()
+						.Where(o => o.CompanyID == scope.CompanyId && o.AccountId != null)
+						on act.OpportunityId equals opp.ID
+					where ids.Contains(opp.AccountId!.Value)
+					group act by opp.AccountId!.Value into g
+					select new
+					{
+						AccountId = g.Key,
+						Recent = g.Count(x => x.CreatedAt != null && x.CreatedAt >= recentFrom),
+						Previous = g.Count(x => x.CreatedAt != null && x.CreatedAt >= previousFrom && x.CreatedAt < recentFrom),
+						LastAt = g.Max(x => x.CreatedAt),
+						Open = g.Count(x => !x.Done),
+					}).ToListAsync();
+
+				// ---- open opportunities and overdue exposure, aggregated in SQL ----
+				var closedStages = Rules.ClosedStagesForExposure;
+				var today = nowUtc.Date;
+				var exposure = await _context.Opportunities.AsNoTracking()
+					.Where(o => o.CompanyID == scope.CompanyId
+						&& o.AccountId != null && ids.Contains(o.AccountId.Value)
+						&& !closedStages.Contains(o.Stage))
+					.GroupBy(o => o.AccountId!.Value)
+					.Select(g => new
+					{
+						AccountId = g.Key,
+						OpenCount = g.Count(),
+						OpenValue = g.Sum(x => (decimal?)x.Amount) ?? 0m,
+						PastDueCount = g.Count(x => x.ExpectedCloseDate != null && x.ExpectedCloseDate < today),
+						PastDueValue = g.Sum(x => x.ExpectedCloseDate != null && x.ExpectedCloseDate < today
+							? (decimal?)x.Amount : 0m) ?? 0m,
+					})
+					.ToListAsync();
+
+				var ownerNames = await _context.Employee.AsNoTracking()
+					.Where(e => e.EmpCompanyID == scope.CompanyId)
+					.Select(e => new { e.ID, e.FullName })
+					.ToDictionaryAsync(e => e.ID, e => e.FullName);
+
+				var directById = direct.ToDictionary(x => x.AccountId);
+				var viaOppById = viaOpp.ToDictionary(x => x.AccountId);
+				var exposureById = exposure.ToDictionary(x => x.AccountId);
+
+				var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+				var signals = accounts.Select(a =>
+				{
+					directById.TryGetValue(a.ID, out var d);
+					viaOppById.TryGetValue(a.ID, out var v);
+					exposureById.TryGetValue(a.ID, out var x);
+
+					// Two sources of the same fact, combined. MAX for the date, SUM for the counts.
+					DateTime? lastAt = (d?.LastAt, v?.LastAt) switch
+					{
+						(null, null) => null,
+						(var p, null) => p,
+						(null, var q) => q,
+						var (p, q) => p > q ? p : q,
+					};
+
+					return new Rules.Signal
+					{
+						AccountId = a.ID,
+						Name = (!isAr && !string.IsNullOrWhiteSpace(a.NameEn)) ? a.NameEn! : a.Name,
+						OwnerEmployeeId = a.OwnerEmployeeId,
+						OwnerName = a.OwnerEmployeeId != null && ownerNames.TryGetValue(a.OwnerEmployeeId.Value, out var on) ? on : null,
+						RecentActivityCount = (d?.Recent ?? 0) + (v?.Recent ?? 0),
+						PreviousActivityCount = (d?.Previous ?? 0) + (v?.Previous ?? 0),
+						LastActivityAt = lastAt,
+						OpenFollowUpCount = (d?.Open ?? 0) + (v?.Open ?? 0),
+						OpenOpportunityCount = x?.OpenCount ?? 0,
+						OpenOpportunityValue = x?.OpenValue ?? 0m,
+						PastDueOpportunityCount = x?.PastDueCount ?? 0,
+						PastDueOpportunityValue = x?.PastDueValue ?? 0m,
+					};
+				});
+
+				vm.Insights = Rules.Analyse(signals, nowUtc);
+				vm.Panel = AiInsightMapper.Map(200, accounts.Count, scope.CompanyId, nowUtc);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException)
+			{
+				vm.Panel = AiInsightMapper.Unavailable("crm-account:data-unavailable", scope.CompanyId, nowUtc);
+			}
+			catch (InvalidOperationException)
+			{
+				vm.Panel = AiInsightMapper.Failed("crm-account:unreadable-data", scope.CompanyId, nowUtc);
+			}
+
+			return View(vm);
+		}
+
 		// ===== CRM Opportunity Insights (rules-based decision support) =====
 		//
 		// NOT AI, AND THE SCREEN SAYS SO. There is no CRM model in this product: crossbuy_ai ships

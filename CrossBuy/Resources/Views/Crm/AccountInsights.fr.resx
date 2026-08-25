@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Account" xml:space="preserve">
+    <value>Compte</value>
+  </data>
+  <data name="Account Insights" xml:space="preserve">
+    <value>Analyses des comptes</value>
+  </data>
+  <data name="Accounts analysed" xml:space="preserve">
+    <value>Comptes analysés</value>
+  </data>
+  <data name="Accounts needing attention" xml:space="preserve">
+    <value>Comptes nécessitant une attention</value>
+  </data>
+  <data name="Activity stopped" xml:space="preserve">
+    <value>Activité arrêtée</value>
+  </data>
+  <data name="All owners" xml:space="preserve">
+    <value>Tous les responsables</value>
+  </data>
+  <data name="All severities" xml:space="preserve">
+    <value>Toutes les gravités</value>
+  </data>
+  <data name="Assessment could not be completed" xml:space="preserve">
+    <value>L'évaluation n'a pas pu être effectuée</value>
+  </data>
+  <data name="Business rules" xml:space="preserve">
+    <value>Règles métier</value>
+  </data>
+  <data name="CRM data is unavailable" xml:space="preserve">
+    <value>Données CRM indisponibles</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Société</value>
+  </data>
+  <data name="Comparison windows" xml:space="preserve">
+    <value>Fenêtres de comparaison</value>
+  </data>
+  <data name="Data scope" xml:space="preserve">
+    <value>Périmètre des données</value>
+  </data>
+  <data name="Days silent" xml:space="preserve">
+    <value>Jours sans contact</value>
+  </data>
+  <data name="Declining activity" xml:space="preserve">
+    <value>Activité en baisse</value>
+  </data>
+  <data name="Engagement is compared across two equal, adjacent windows of" xml:space="preserve">
+    <value>L'engagement est comparé sur deux fenêtres égales et adjacentes de</value>
+  </data>
+  <data name="Finding" xml:space="preserve">
+    <value>Constat</value>
+  </data>
+  <data name="Generated" xml:space="preserve">
+    <value>Généré le</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>Élevé</value>
+  </data>
+  <data name="Inactive accounts" xml:space="preserve">
+    <value>Comptes inactifs</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Faible</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Moyen</value>
+  </data>
+  <data name="Method" xml:space="preserve">
+    <value>Méthode</value>
+  </data>
+  <data name="Needing attention" xml:space="preserve">
+    <value>Nécessitant une attention</value>
+  </data>
+  <data name="No CRM activity has ever been recorded for this account" xml:space="preserve">
+    <value>Aucune activité CRM n'a jamais été enregistrée pour ce compte</value>
+  </data>
+  <data name="No accounts were available to examine for this company, so account health cannot be assessed. This is not a statement that your customer relationships are healthy." xml:space="preserve">
+    <value>Aucun compte n'était disponible pour cette société ; la santé des comptes ne peut être évaluée. Cela n'indique pas que vos relations clients sont saines.</value>
+  </data>
+  <data name="No activity ever recorded" xml:space="preserve">
+    <value>Aucune activité enregistrée</value>
+  </data>
+  <data name="No activity in the last" xml:space="preserve">
+    <value>Aucune activité durant les derniers</value>
+  </data>
+  <data name="No activity in the recent window" xml:space="preserve">
+    <value>Aucune activité sur la fenêtre récente</value>
+  </data>
+  <data name="No attention conditions detected" xml:space="preserve">
+    <value>Aucune condition d'attention détectée</value>
+  </data>
+  <data name="No data leaves this installation" xml:space="preserve">
+    <value>Aucune donnée ne quitte cette installation</value>
+  </data>
+  <data name="No next action scheduled" xml:space="preserve">
+    <value>Aucune action suivante planifiée</value>
+  </data>
+  <data name="No open follow-up is scheduled against this account or its deals" xml:space="preserve">
+    <value>Aucun suivi ouvert n'est planifié pour ce compte ou ses affaires</value>
+  </data>
+  <data name="Not enough data to assess account health" xml:space="preserve">
+    <value>Données insuffisantes pour évaluer la santé des comptes</value>
+  </data>
+  <data name="Not generated" xml:space="preserve">
+    <value>Non généré</value>
+  </data>
+  <data name="Open deals" xml:space="preserve">
+    <value>Affaires ouvertes</value>
+  </data>
+  <data name="Open deals, engagement stopped" xml:space="preserve">
+    <value>Affaires ouvertes, engagement arrêté</value>
+  </data>
+  <data name="Open value" xml:space="preserve">
+    <value>Valeur ouverte</value>
+  </data>
+  <data name="Open value on flagged accounts" xml:space="preserve">
+    <value>Valeur ouverte sur les comptes signalés</value>
+  </data>
+  <data name="Opportunity Insights" xml:space="preserve">
+    <value>Analyses des opportunités</value>
+  </data>
+  <data name="Ordered by: most serious first, then longest silent, then largest open pipeline value." xml:space="preserve">
+    <value>Tri : le plus grave d'abord, puis le plus longtemps silencieux, puis la plus grande valeur ouverte.</value>
+  </data>
+  <data name="Overdue deal exposure" xml:space="preserve">
+    <value>Exposition aux affaires en retard</value>
+  </data>
+  <data name="Owner" xml:space="preserve">
+    <value>Responsable</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Précédente</value>
+  </data>
+  <data name="Recent" xml:space="preserve">
+    <value>Récente</value>
+  </data>
+  <data name="Rule-based account review" xml:space="preserve">
+    <value>Revue de comptes basée sur des règles</value>
+  </data>
+  <data name="Severity" xml:space="preserve">
+    <value>Gravité</value>
+  </data>
+  <data name="Showing the first 200 of" xml:space="preserve">
+    <value>Affichage des 200 premiers sur</value>
+  </data>
+  <data name="The CRM data could not be read. Every other CRM screen is unaffected." xml:space="preserve">
+    <value>Les données CRM n'ont pas pu être lues. Tous les autres écrans CRM sont intacts.</value>
+  </data>
+  <data name="The review could not be completed. Nothing has been changed." xml:space="preserve">
+    <value>La revue n'a pas pu être effectuée. Rien n'a été modifié.</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Inconnu</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>À jour</value>
+  </data>
+  <data name="Why" xml:space="preserve">
+    <value>Motif</value>
+  </data>
+  <data name="accounts were examined and none matched a configured attention condition." xml:space="preserve">
+    <value>comptes ont été examinés et aucun ne correspond à une condition d'attention configurée.</value>
+  </data>
+  <data name="activities" xml:space="preserve">
+    <value>activités</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>jours</value>
+  </data>
+  <data name="days ago" xml:space="preserve">
+    <value>jours</value>
+  </data>
+  <data name="days each, using your own CRM records. There is no predictive model: nothing here estimates churn, health or a probability, and every finding shows the counts it came from." xml:space="preserve">
+    <value>jours chacune, à partir de vos propres enregistrements CRM. Il n'y a aucun modèle prédictif : rien ici n'estime l'attrition, la santé ou une probabilité, et chaque constat affiche les décomptes dont il provient.</value>
+  </data>
+  <data name="days; last was" xml:space="preserve">
+    <value>jours ; le dernier remonte à</value>
+  </data>
+  <data name="deals past their expected close date, worth" xml:space="preserve">
+    <value>affaires ayant dépassé leur date de clôture prévue, pour</value>
+  </data>
+  <data name="findings" xml:space="preserve">
+    <value>constats</value>
+  </data>
+  <data name="lower" xml:space="preserve">
+    <value>de moins</value>
+  </data>
+  <data name="never" xml:space="preserve">
+    <value>jamais</value>
+  </data>
+  <data name="no contact in the recent window" xml:space="preserve">
+    <value>aucun contact sur la fenêtre récente</value>
+  </data>
+  <data name="open deals worth" xml:space="preserve">
+    <value>affaires ouvertes pour</value>
+  </data>
+  <data name="vs previous" xml:space="preserve">
+    <value>contre précédente</value>
+  </data>
+</root>

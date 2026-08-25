@@ -1,0 +1,322 @@
+@using CrossBuy.ViewModel.Ai
+@using CrossBuy.BL.Platform.Ai
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model CrmAccountHealthVm
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    ViewData["Title"] = Localizer["Account Insights"].Value;
+    string Money(decimal v) => v.ToString("N2");
+
+    string FindingLabel(CrmAccountHealthRules.Finding f) => f switch
+    {
+        CrmAccountHealthRules.Finding.DecliningActivity => "Declining activity",
+        CrmAccountHealthRules.Finding.ActivityStopped => "Activity stopped",
+        CrmAccountHealthRules.Finding.NoActivityEver => "No activity ever recorded",
+        CrmAccountHealthRules.Finding.OpenOpportunitiesEngagementStopped => "Open deals, engagement stopped",
+        CrmAccountHealthRules.Finding.OverdueOpportunityExposure => "Overdue deal exposure",
+        CrmAccountHealthRules.Finding.NoNextAction => "No next action scheduled",
+        _ => "Unknown"
+    };
+    string FindingBadge(CrmAccountHealthRules.Finding f) => f switch
+    {
+        CrmAccountHealthRules.Finding.DecliningActivity => "danger",
+        CrmAccountHealthRules.Finding.ActivityStopped => "warning",
+        CrmAccountHealthRules.Finding.NoActivityEver => "secondary",
+        CrmAccountHealthRules.Finding.OpenOpportunitiesEngagementStopped => "danger",
+        CrmAccountHealthRules.Finding.OverdueOpportunityExposure => "warning",
+        _ => "light"
+    };
+    string SevBadge(CrmAccountHealthRules.Severity s) => s switch
+    {
+        CrmAccountHealthRules.Severity.High => "danger",
+        CrmAccountHealthRules.Severity.Medium => "warning",
+        _ => "secondary"
+    };
+    string SevLabel(CrmAccountHealthRules.Severity s) => s switch
+    {
+        CrmAccountHealthRules.Severity.High => "High",
+        CrmAccountHealthRules.Severity.Medium => "Medium",
+        _ => "Low"
+    };
+    string StateLabel(AiInsightState st) => st switch
+    {
+        AiInsightState.Ok => "Up to date",
+        AiInsightState.InsufficientData => "Not enough data to assess account health",
+        AiInsightState.Unavailable => "CRM data is unavailable",
+        AiInsightState.Failed => "Assessment could not be completed",
+        _ => "Unknown"
+    };
+
+    // The evidence sentence, built in the reader's language from the numbers the rule produced.
+    // NOTE the decline case: it always shows BOTH counts, never the percentage alone.
+    string Evidence(CrmAccountHealthRules.Insight i)
+    {
+        var a = i.Account;
+        return i.Finding switch
+        {
+            CrmAccountHealthRules.Finding.DecliningActivity =>
+                $"{a.PreviousActivityCount} → {a.RecentActivityCount} {Localizer["activities"].Value} " +
+                $"({i.DeclinePercent}% {Localizer["lower"].Value})",
+            CrmAccountHealthRules.Finding.ActivityStopped => i.DaysSinceLastActivity.HasValue
+                ? $"{Localizer["No activity in the last"].Value} {Model.RecentWindowDays} {Localizer["days; last was"].Value} {i.DaysSinceLastActivity} {Localizer["days ago"].Value}"
+                : Localizer["No activity in the recent window"].Value,
+            CrmAccountHealthRules.Finding.NoActivityEver =>
+                Localizer["No CRM activity has ever been recorded for this account"].Value,
+            CrmAccountHealthRules.Finding.OpenOpportunitiesEngagementStopped =>
+                $"{a.OpenOpportunityCount} {Localizer["open deals worth"].Value} {Money(a.OpenOpportunityValue)}, {Localizer["no contact in the recent window"].Value}",
+            CrmAccountHealthRules.Finding.OverdueOpportunityExposure =>
+                $"{a.PastDueOpportunityCount} {Localizer["deals past their expected close date, worth"].Value} {Money(a.PastDueOpportunityValue)}",
+            CrmAccountHealthRules.Finding.NoNextAction =>
+                Localizer["No open follow-up is scheduled against this account or its deals"].Value,
+            _ => string.Empty
+        };
+    }
+
+    // "0" and "not known" are different answers and must not render the same way.
+    string DaysOrNever(int? d) => d.HasValue ? d.Value.ToString() : Localizer["never"].Value;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Account Insights"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Crm")" class="text-muted text-hover-primary">@SR["CRM"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Account Insights"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="@Url.Action("Accounts","Crm")" class="btn btn-sm btn-light fw-bold">@SR["Accounts"]</a>
+                <a href="@Url.Action("OpportunityInsights","Crm")" class="btn btn-sm btn-light fw-bold">@Localizer["Opportunity Insights"]</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @* WHAT THIS IS, before anything else. No CRM model exists, so calling this a prediction
+               would be inventing one. *@
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2x text-primary me-4 flex-shrink-0"></i>
+                <div class="fw-semibold">
+                    <div class="fs-6 text-gray-900 fw-bold mb-1">@Localizer["Rule-based account review"]</div>
+                    <div class="fs-7 text-gray-700">
+                        @Localizer["Engagement is compared across two equal, adjacent windows of"] @Model.RecentWindowDays @Localizer["days each, using your own CRM records. There is no predictive model: nothing here estimates churn, health or a probability, and every finding shows the counts it came from."]
+                    </div>
+                </div>
+            </div>
+
+            @* PROVENANCE *@
+            <div class="card card-flush mb-5">
+                <div class="card-body py-4 d-flex flex-wrap gap-6 align-items-center">
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Data scope"]</div>
+                        <div class="fw-bold text-gray-800">@Localizer["Company"] @Model.CompanyId</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Method"]</div>
+                        <div class="fw-bold text-gray-800">@Localizer["Business rules"]</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Comparison windows"]</div>
+                        <div class="fw-bold text-gray-800">@Model.RecentWindowDays @Localizer["vs previous"] @Model.PreviousWindowDays @Localizer["days"]</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Generated"]</div>
+                        <div class="fw-bold text-gray-800">
+                            @(Model.Panel.GeneratedAtUtc.HasValue
+                                ? Model.Panel.GeneratedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC"
+                                : Localizer["Not generated"].Value)
+                        </div>
+                    </div>
+                    <div class="ms-auto text-gray-500 fs-8">
+                        <i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["No data leaves this installation"]
+                    </div>
+                </div>
+            </div>
+
+            @if (!Model.Panel.HasResult)
+            {
+                <div class="card card-flush">
+                    <div class="card-body text-center py-15">
+                        <i class="ki-outline ki-information-5 fs-3x text-warning mb-4"></i>
+                        <h3 class="text-gray-800">@Localizer[StateLabel(Model.Panel.State)]</h3>
+                        @if (Model.Panel.State == AiInsightState.InsufficientData)
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">
+                                @Localizer["No accounts were available to examine for this company, so account health cannot be assessed. This is not a statement that your customer relationships are healthy."]
+                            </div>
+                        }
+                        else if (Model.Panel.State == AiInsightState.Unavailable)
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">@Localizer["The CRM data could not be read. Every other CRM screen is unaffected."]</div>
+                        }
+                        else
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">@Localizer["The review could not be completed. Nothing has been changed."]</div>
+                        }
+                        <div class="mt-6">
+                            <a href="@Url.Action("Accounts","Crm")" class="btn btn-sm btn-light">@SR["Accounts"]</a>
+                            <a href="@Url.Action("Activities","Crm")" class="btn btn-sm btn-light ms-2">@SR["Activities"]</a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!--begin::summary — every number derived from the result -->
+                <div class="row g-5 g-xl-8 mb-5">
+                    @{
+                        var cards = new (string label, string value, string icon, string color)[]
+                        {
+                            (Localizer["Accounts analysed"].Value, Model.Analysed.ToString(), "ki-briefcase", "primary"),
+                            (Localizer["Needing attention"].Value, Model.AccountsNeedingAttention.ToString(), "ki-information-5", Model.AccountsNeedingAttention > 0 ? "danger" : "success"),
+                            (Localizer["Declining activity"].Value, Model.CountOf(CrmAccountHealthRules.Finding.DecliningActivity).ToString(), "ki-chart-line-down", "danger"),
+                            (Localizer["Inactive accounts"].Value, (Model.CountOf(CrmAccountHealthRules.Finding.ActivityStopped) + Model.CountOf(CrmAccountHealthRules.Finding.NoActivityEver)).ToString(), "ki-time", "warning"),
+                            (Localizer["Overdue deal exposure"].Value, Money(Model.PastDueValue), "ki-calendar-remove", "warning"),
+                            (Localizer["Open value on flagged accounts"].Value, Money(Model.ExposedOpenValue), "ki-dollar", "info"),
+                        };
+                    }
+                    @foreach (var c in cards)
+                    {
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="card h-100">
+                                <div class="card-body p-5">
+                                    <div class="symbol symbol-40px mb-3"><span class="symbol-label bg-light-@c.color"><i class="ki-outline @c.icon fs-2x text-@c.color"></i></span></div>
+                                    <span class="fw-bold fs-2x text-gray-900 lh-1">@c.value</span>
+                                    <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@c.label</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <!--end::summary-->
+
+                @if (Model.Insights.Count == 0)
+                {
+                    @* AvailableClean — real accounts examined, no configured condition matched. It does
+                       NOT say the customers are healthy; the rules do not establish that. *@
+                    <div class="card card-flush">
+                        <div class="card-body text-center py-15">
+                            <i class="ki-outline ki-shield-tick fs-3x text-success mb-4"></i>
+                            <h3 class="text-gray-800">@Localizer["No attention conditions detected"]</h3>
+                            <div class="text-gray-500 fs-6 mt-2">
+                                @Model.Analysed @Localizer["accounts were examined and none matched a configured attention condition."]
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="card card-flush">
+                        <div class="card-header pt-5 flex-wrap gap-3">
+                            <h3 class="card-title text-gray-900 fw-bold m-0">@Localizer["Accounts needing attention"]</h3>
+                            <div class="card-toolbar flex-wrap gap-2">
+                                <select id="fSeverity" class="form-select form-select-sm w-auto" aria-label="@Localizer["Severity"]">
+                                    <option value="">@Localizer["All severities"]</option>
+                                    <option value="High">@Localizer["High"]</option>
+                                    <option value="Medium">@Localizer["Medium"]</option>
+                                    <option value="Low">@Localizer["Low"]</option>
+                                </select>
+                                <select id="fOwner" class="form-select form-select-sm w-auto" aria-label="@Localizer["Owner"]">
+                                    <option value="">@Localizer["All owners"]</option>
+                                    @foreach (var o in Model.OwnersPresent) { <option value="@o">@o</option> }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body pt-2">
+                            <div class="text-gray-500 fs-8 mb-3">
+                                @Localizer["Ordered by: most serious first, then longest silent, then largest open pipeline value."]
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle gs-0 gy-3" id="tAccounts">
+                                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                        <tr>
+                                            <th>@Localizer["Account"]</th>
+                                            <th>@Localizer["Owner"]</th>
+                                            <th>@Localizer["Finding"]</th>
+                                            <th>@Localizer["Why"]</th>
+                                            <th class="text-center">@Localizer["Recent"]</th>
+                                            <th class="text-center">@Localizer["Previous"]</th>
+                                            <th class="text-center">@Localizer["Days silent"]</th>
+                                            <th class="text-end">@Localizer["Open deals"]</th>
+                                            <th class="text-end">@Localizer["Open value"]</th>
+                                            <th>@Localizer["Severity"]</th>
+                                            <th class="text-end">@SR["Actions"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var i in Model.Insights.Take(200))
+                                    {
+                                        var a = i.Account;
+                                        <tr data-sev="@i.Severity" data-owner="@(a.OwnerName ?? "")">
+                                            <td><span class="fw-bold text-gray-800">@a.Name</span></td>
+                                            <td class="text-gray-700">@(a.OwnerName ?? "—")</td>
+                                            <td><span class="badge badge-light-@FindingBadge(i.Finding)">@Localizer[FindingLabel(i.Finding)]</span></td>
+                                            <td class="text-gray-700 fs-7">@Evidence(i)</td>
+                                            @* The two raw counts sit beside every row, so a percentage can
+                                               never appear without the evidence that produced it. *@
+                                            <td class="text-center fw-semibold">@a.RecentActivityCount</td>
+                                            <td class="text-center text-gray-600">@a.PreviousActivityCount</td>
+                                            <td class="text-center">@DaysOrNever(i.DaysSinceLastActivity)</td>
+                                            <td class="text-end">@a.OpenOpportunityCount</td>
+                                            <td class="text-end fw-semibold">@Money(a.OpenOpportunityValue)</td>
+                                            <td><span class="badge badge-light-@SevBadge(i.Severity)">@Localizer[SevLabel(i.Severity)]</span></td>
+                                            <td class="text-end text-nowrap">
+                                                @* NAVIGATION ONLY into screens that already exist. *@
+                                                <a href="@Url.Action("AccountEditor","Crm", new { id = a.AccountId })"
+                                                   class="btn btn-icon btn-sm btn-light me-1" title="@Localizer["Account"]" aria-label="@Localizer["Account"]">
+                                                    <i class="ki-outline ki-briefcase fs-5" aria-hidden="true"></i>
+                                                </a>
+                                                <a href="@Url.Action("Opportunities","Crm")"
+                                                   class="btn btn-icon btn-sm btn-light me-1" title="@SR["Opportunities"]" aria-label="@SR["Opportunities"]">
+                                                    <i class="ki-outline ki-chart-line-up fs-5" aria-hidden="true"></i>
+                                                </a>
+                                                <a href="@Url.Action("Activities","Crm")"
+                                                   class="btn btn-icon btn-sm btn-light" title="@SR["Activities"]" aria-label="@SR["Activities"]">
+                                                    <i class="ki-outline ki-check-square fs-5" aria-hidden="true"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (Model.Insights.Count > 200)
+                            {
+                                <div class="text-gray-500 fs-8 mt-3">
+                                    @Localizer["Showing the first 200 of"] @Model.Insights.Count @Localizer["findings"].
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Filters hide rows already rendered. No request is issued, so they cannot widen the company
+        // scope or reach a record the server did not already authorise.
+        (function () {
+            var sev = document.getElementById('fSeverity');
+            var own = document.getElementById('fOwner');
+            var tbl = document.getElementById('tAccounts');
+            if (!tbl) return;
+            function apply() {
+                var s = sev ? sev.value : '', o = own ? own.value : '';
+                tbl.querySelectorAll('tbody tr').forEach(function (tr) {
+                    var ok = (!s || tr.dataset.sev === s) && (!o || tr.dataset.owner === o);
+                    tr.style.display = ok ? '' : 'none';
+                });
+            }
+            [sev, own].forEach(function (el) { if (el) el.addEventListener('change', apply); });
+        })();
+    </script>
+}
