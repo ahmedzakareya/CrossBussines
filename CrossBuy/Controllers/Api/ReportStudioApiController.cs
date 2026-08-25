@@ -39,14 +39,17 @@ namespace CrossBuy.Controllers.Api
         private readonly IReportStudioService _studio;
         private readonly IReportAuthorizationService _authorization;
         private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
+        private readonly IReportAssetService _assets;
 
         public ReportStudioApiController(IReportStudioService studio,
             IReportAuthorizationService authorization,
-            CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
+            CrossBuy.BL.Platform.IBusinessContextAccessor contexts,
+            IReportAssetService assets)
         {
             _studio = studio;
             _authorization = authorization;
             _contexts = contexts;
+            _assets = assets;
         }
 
         // THE AUTHORITY CALL, in one place, run by EVERY endpoint below before it does anything.
@@ -72,6 +75,40 @@ namespace CrossBuy.Controllers.Api
                 definition, ReportAccessLevel.Run, context, ct);
 
             return decision.Allowed;
+        }
+
+        // THE AUTHOR GATE — for the asset endpoints, which belong to no single dataset.
+        //
+        // A logo is not attached to a report; it is a company image that any of the caller's reports may place.
+        // So there is no dataset code to authorize, and inventing a fake one would be worse than useless.
+        //
+        // What IS checkable, and is exactly the right question, is whether this caller may author reports here
+        // at all: they must have at least one dataset they can build over, and the platform's own report gate
+        // must clear the report behind it. Someone with no Studio dataset cannot upload a logo, and the company
+        // isolation on the assets themselves is enforced independently by IReportAssetService.
+        //
+        // It also puts AuthorizeReportAsync in these endpoints' call graph, which is what CBA001 requires of a
+        // mutating action — and requires for a good reason: an authorization decision reached by descending
+        // into a service is one no reader of the endpoint can see.
+        private async Task<bool> AuthorizeAuthorAsync(CancellationToken ct)
+        {
+            var context = await _contexts.TryGetCurrentAsync(ct);
+            if (context is not { CompanyId: > 0 }) return false;
+
+            var model = await _studio.BuildAsync(ct);
+            if (model.HasNoDatasets) return false;
+
+            foreach (var dataset in model.Datasets)
+            {
+                var definition = await _studio.ResolveDefinitionAsync(dataset.DatasetCode, ct);
+                if (definition is null) continue;
+
+                var decision = await _authorization.AuthorizeReportAsync(
+                    definition, ReportAccessLevel.Run, context, ct);
+
+                if (decision.Allowed) return true;
+            }
+            return false;
         }
 
         // The fields the caller may use on one dataset, with the operators each field legally accepts.
@@ -163,6 +200,134 @@ namespace CrossBuy.Controllers.Api
             Response.Headers["X-Report-Row-Count"] = (result.Run?.RowCount ?? 0).ToString();
 
             return File(result.Artifact.Content, result.Artifact.ContentType, result.Artifact.FileName);
+        }
+
+        // =========================================================================================
+        // REPORT STUDIO V2 — THE VISUAL DESIGNER'S ENDPOINTS
+        // =========================================================================================
+
+        // §9. The parameters the dataset declares, so the designer can offer "last quarter" instead of being
+        // stuck on whatever the dataset defaults to. A GET for the same reason /fields is one.
+        [HttpGet("parameters")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Parameters(string datasetCode, CancellationToken ct)
+        {
+            var parameters = await _studio.ParametersAsync(datasetCode ?? "", ct);
+            return Ok(new { parameters });
+        }
+
+        // The images this caller may place. Company-scoped inside the service; this endpoint has no company
+        // parameter and could not be given one.
+        [HttpGet("assets")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Assets(CancellationToken ct)
+        {
+            var assets = await _studio.AssetsAsync(ct);
+            return Ok(new { assets });
+        }
+
+        // THE BYTES, for the designer canvas and the picker.
+        //
+        // Note what the route takes: an ID, not a path and not a URL. There is no shape of request to this
+        // endpoint that names a file, so there is nothing here to traverse and nothing to point at a remote
+        // host. A foreign id 404s because the service's query carries the company predicate — the same answer
+        // a deleted one gives.
+        [HttpGet("assets/{id:int}")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Asset(int id, CancellationToken ct)
+        {
+            var context = await _contexts.TryGetCurrentAsync(ct);
+            if (context is not { CompanyId: > 0 }) return NotFound();
+
+            var asset = await _assets.ReadAsync(id, context, ct);
+            if (asset is null) return NotFound();
+
+            return File(asset.Value.Bytes, asset.Value.ContentType);
+        }
+
+        // UPLOAD. The browser sends BYTES; it does not send a path, and there is no property on this action
+        // that could carry one. What gets stored, where, and under what name is decided by the service.
+        [HttpPost("assets")]
+        [RequestSizeLimit(8 * 1024 * 1024)]
+        public async Task<IActionResult> UploadAsset(IFormFile file, ReportImageRole role, string? title,
+            CancellationToken ct)
+        {
+            if (!await AuthorizeAuthorAsync(ct)) return NotFound();
+
+            var context = await _contexts.TryGetCurrentAsync(ct);
+            if (context is not { CompanyId: > 0 }) return NotFound();
+
+            if (file is null || file.Length == 0)
+                return BadRequest(new { errors = new[] { "No file was supplied." } });
+
+            await using var stream = file.OpenReadStream();
+            var saved = await _assets.UploadAsync(stream, file.FileName, role, title, context, ct);
+
+            // Null means the bytes were refused — not an image, too large, or a script-bearing SVG. One message
+            // for all three: a precise reason here would be a free oracle for what the sniffer accepts.
+            return saved is null
+                ? BadRequest(new { errors = new[] { "That file was not accepted as an image." } })
+                : Ok(new { asset = saved });
+        }
+
+        [HttpPost("assets/{id:int}/delete")]
+        public async Task<IActionResult> DeleteAsset(int id, CancellationToken ct)
+        {
+            if (!await AuthorizeAuthorAsync(ct)) return NotFound();
+
+            var context = await _contexts.TryGetCurrentAsync(ct);
+            if (context is not { CompanyId: > 0 }) return NotFound();
+
+            var removed = await _assets.DeleteAsync(id, context, ct);
+            return removed ? Ok(new { ok = true }) : NotFound();
+        }
+
+        // PRINT PREVIEW — the standalone print document for the SAME draft the designer is showing.
+        //
+        // Returned as HTML rather than as a view because this controller has none, and because the markup is
+        // produced by the renderer in BL: a Razor print view would be a second template of exactly the kind §12
+        // forbids. The browser opens it and calls print(); the PDF endpoint below converts the identical bytes.
+        [HttpPost("print")]
+        [Produces("text/html")]
+        public async Task<IActionResult> Print([FromBody] StudioDraft draft, CancellationToken ct)
+        {
+            if (!await AuthorizeAsync(draft?.DatasetCode, ct)) return NotFound();
+
+            var result = await _studio.RunAsync(draft, ReportOutputFormat.PrintHtml, preview: false, ct);
+
+            if (result.IsDenied) return NotFound();
+            if (!result.IsSuccess || result.Artifact is null)
+                return BadRequest(new { errors = result.Errors.Select(d => d.Message).ToList() });
+
+            return Content(System.Text.Encoding.UTF8.GetString(result.Artifact.Content), "text/html");
+        }
+
+        // PDF — first-class, per §13, and now genuinely bound: PlaywrightHtmlToPdfConverter converts the print
+        // document this same pipeline produces. If the browser is not installed the run comes back Failed with
+        // the converter's own reason, which is actionable, rather than with a stack trace.
+        [HttpPost("pdf")]
+        public async Task<IActionResult> Pdf([FromBody] StudioDraft draft, CancellationToken ct)
+        {
+            if (!await AuthorizeAsync(draft?.DatasetCode, ct)) return NotFound();
+
+            var result = await _studio.RunAsync(draft, ReportOutputFormat.Pdf, preview: false, ct);
+
+            if (result.IsDenied) return NotFound();
+            if (!result.IsSuccess || result.Artifact is null)
+                return BadRequest(new { errors = result.Errors.Select(d => d.Message).ToList() });
+
+            if (result.Run?.Truncated == true) Response.Headers["X-Report-Truncated"] = "true";
+
+            return File(result.Artifact.Content, result.Artifact.ContentType, result.Artifact.FileName);
+        }
+
+        // REOPEN — the stored design, re-validated against what this caller may see today.
+        [HttpGet("open/{templateId:int}")]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> Open(int templateId, CancellationToken ct)
+        {
+            var draft = await _studio.OpenAsync(templateId, ct);
+            return draft is null ? NotFound() : Ok(new { draft });
         }
     }
 }

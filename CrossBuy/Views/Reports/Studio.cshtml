@@ -10,37 +10,53 @@
 }
 @*
     ============================================================================================
-    THE REPORT STUDIO.
+    THE REPORT STUDIO — V2, THE VISUAL DESIGNER.
 
-    VISUAL AUTHORITY: THE INVENTORY MODULE, as recorded in the corrected Studio contract §0. There is no
-    Studio theme, no Studio stylesheet and no Studio shell — every class below already exists in Inventory:
+    V1 built a column list. This builds a DOCUMENT: a printable page with margins, seven bands, and
+    elements the user places, moves, resizes and styles wherever they want them on it.
 
-      shell + sidebar   _LayoutInventory.cshtml, unchanged
-      toolbar           Inventory's page-heading + breadcrumb-separatorless + bullet
-      panels            card / card-flush / card-header / card-body, as Inventory/Items.cshtml uses
-      table             table align-middle table-row-dashed — the approved Metronic variant
-      buttons           btn btn-sm btn-flex btn-light / btn-primary
+    ────────────────────────────────────────────────────────────────────────────────────────────
+    THE ONE INVARIANT THIS SCREEN IS BUILT AROUND (§14):
 
-    STRINGS ARE INLINE BILINGUAL rather than resx, and that is a deliberate, precedented choice:
-    CrossBuy/Resources/** belongs to the integration owner in the ownership registry, and CLAUDE.md records
-    that resx edits collide with the shared plumbing other tabs use. Views/Account/AccessDenied.cshtml — a
-    platform screen certified earlier in this workstream — uses exactly this convention for the same reason.
-    Every user-facing string here therefore has both languages at the point of use, and no shared file is
-    touched.
+        WHAT IS SAVED IS STRUCTURE, NEVER THIS DOM.
 
-    RTL IS FIRST-CLASS, not a mirror applied afterwards: the layout is built from Bootstrap LOGICAL
-    properties (ms-*/me-*, ps-*/pe-*, text-start/text-end, row/col), which flip with `dir` automatically.
-    There is not one `left`/`right` in this file.
+    Every drag, resize and nudge below edits a plain JavaScript object — bands, elements, millimetres —
+    and that object is what is POSTed, validated server-side and persisted. The HTML on this page is a
+    VIEW of that object and is rebuilt from it after every change. Nothing is ever read back out of the
+    DOM to be saved. That is why a saved report survives this file changing, and why the server can
+    refuse a layout it does not like without having to parse markup.
 
-    NO DEMO CONTENT. Every number on this screen comes from a real run of a real dataset the caller is
-    permitted to use. There is no placeholder chart, no sample series and no fake total — the preview pane
-    is empty until the user runs something.
+    MILLIMETRES, NOT PIXELS. Positions are stored in mm because the output is paper; px would only mean
+    something at one zoom on one screen. The canvas multiplies by a scale factor for display and divides
+    on the way back, and that is the only place the two units meet.
+
+    ────────────────────────────────────────────────────────────────────────────────────────────
+    VISUAL AUTHORITY: THE INVENTORY MODULE, as the corrected Studio contract §0 records. There is no
+    Studio theme and no Studio shell — the page chrome, cards, buttons and inputs are Inventory's
+    (_LayoutInventory.cshtml, card / card-header / card-body, btn btn-sm btn-light, form-control-sm).
+
+    The CANVAS is the one exception and is deliberately its own thing: a sheet of paper, a ruler and a
+    selection handle have no Metronic equivalent, and dressing them as cards would make a design surface
+    that lies about what it is. Its styles are scoped under .cbd- and touch nothing else.
+
+    STRINGS ARE INLINE BILINGUAL rather than resx, the same deliberate choice V1 recorded:
+    CrossBuy/Resources/** belongs to the integration owner in the ownership registry, and CLAUDE.md
+    records that resx edits collide with the plumbing other tabs use.
+
+    RTL IS ONE LAYOUT, NOT TWO. Element X is a distance from the CONTENT START edge and is emitted as
+    `inset-inline-start` — here on the canvas and identically in ReportVisualRenderer. The browser
+    resolves it against `dir`, so the same saved document is correct in both directions and there is no
+    mirrored copy to keep in step. Drag deltas are negated under RTL for the same reason: the pointer
+    moves in screen space, the model lives in logical space.
+
+    NO DEMO CONTENT. Every value in the preview comes from a real run of a real dataset the caller is
+    permitted to use.
     ============================================================================================
 *@
 
 <div class="d-flex flex-column flex-column-fluid">
 
-    @* ---- TOOLBAR: name · save · run · export ---------------------------------------------------- *@
+    @* ---- TOOLBAR ------------------------------------------------------------------------------- *@
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
         <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
             <div class="page-title d-flex flex-column justify-content-center gap-1">
@@ -56,293 +72,1634 @@
                         <a href="@Url.Action("Index","Reports")" class="text-muted text-hover-primary">@(arabic ? "مركز التقارير" : "Reports Center")</a>
                     </li>
                     <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
-                    <li class="breadcrumb-item text-muted">@(arabic ? "استوديو" : "Studio")</li>
+                    <li class="breadcrumb-item text-muted">@(arabic ? "مصمِّم التقارير" : "Report Designer")</li>
                 </ul>
             </div>
 
-            @* flex-wrap so four controls wrap onto a second line at 390px instead of pushing the document
-               into horizontal scroll — the same fix the Report Viewer's toolbar carries. *@
-            <div class="d-flex align-items-center flex-wrap gap-2 gap-lg-3">
-                <input id="cb-studio-name" type="text" class="form-control form-control-sm w-200px"
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <input id="cbd-name" type="text" class="form-control form-control-sm w-200px"
                        placeholder="@(arabic ? "اسم التقرير" : "Report name")"
                        aria-label="@(arabic ? "اسم التقرير" : "Report name")" />
 
-                <button type="button" id="cb-studio-run" class="btn btn-sm btn-flex btn-primary fw-bold">
-                    <i class="ki-outline ki-play fs-3"></i>@(arabic ? "تشغيل" : "Run")
+                <button type="button" id="cbd-undo" class="btn btn-sm btn-icon btn-light" disabled
+                        title="@(arabic ? "تراجع" : "Undo") (Ctrl+Z)" aria-label="@(arabic ? "تراجع" : "Undo")">
+                    <i class="ki-outline ki-arrow-left fs-4"></i>
                 </button>
-                <button type="button" id="cb-studio-save" class="btn btn-sm btn-flex btn-light fw-bold">
-                    <i class="ki-outline ki-check fs-3"></i>@SR["Save"]
+                <button type="button" id="cbd-redo" class="btn btn-sm btn-icon btn-light" disabled
+                        title="@(arabic ? "إعادة" : "Redo") (Ctrl+Y)" aria-label="@(arabic ? "إعادة" : "Redo")">
+                    <i class="ki-outline ki-arrow-right fs-4"></i>
                 </button>
-                <button type="button" id="cb-studio-csv" class="btn btn-sm btn-flex btn-light fw-bold">
-                    <i class="ki-outline ki-file-down fs-3"></i>CSV
+
+                <div class="vr mx-1"></div>
+
+                <button type="button" id="cbd-preview" class="btn btn-sm btn-flex btn-light">
+                    <i class="ki-outline ki-eye fs-5 me-1"></i>@(arabic ? "معاينة" : "Preview")
                 </button>
-                <button type="button" id="cb-studio-xlsx" class="btn btn-sm btn-flex btn-light fw-bold">
-                    <i class="ki-outline ki-file-down fs-3"></i>XLSX
+                <button type="button" id="cbd-print" class="btn btn-sm btn-flex btn-light">
+                    <i class="ki-outline ki-printer fs-5 me-1"></i>@(arabic ? "طباعة" : "Print")
+                </button>
+                <button type="button" id="cbd-pdf" class="btn btn-sm btn-flex btn-light">
+                    <i class="ki-outline ki-file-down fs-5 me-1"></i>PDF
+                </button>
+
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="ki-outline ki-exit-down fs-5 me-1"></i>@(arabic ? "تصدير" : "Export")
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><button type="button" class="dropdown-item" data-export="3">CSV</button></li>
+                        <li><button type="button" class="dropdown-item" data-export="2">Excel (XLSX)</button></li>
+                    </ul>
+                </div>
+
+                <button type="button" id="cbd-save" class="btn btn-sm btn-flex btn-primary">
+                    <i class="ki-outline ki-check fs-5 me-1"></i>@(arabic ? "حفظ" : "Save")
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="kt_app_content" class="app-content flex-column-fluid">
-        <div class="app-container container-fluid">
+    <div class="app-container container-fluid">
 
-            @if (Model.HasNoDatasets)
-            {
-                @* A REAL STATE, not an empty canvas pretending to work. Distinct from "no rows": nothing the
-                   user does on this screen can change it, so it says so and names who can. *@
-                <div class="alert alert-light-warning d-flex align-items-center p-5">
-                    <i class="ki-outline ki-information-5 fs-2hx text-warning me-4"></i>
-                    <div class="d-flex flex-column">
-                        <h4 class="mb-1 text-gray-900">
-                            @(arabic ? "لا توجد مجموعات بيانات متاحة لك" : "No data sets are available to you")
-                        </h4>
-                        <span class="text-gray-600">
-                            @(arabic
-                                ? "الاستوديو يعرض فقط المجموعات التي تملك صلاحيتها. اطلب من مسؤول النظام منحك صلاحية تقارير الوحدة التي تحتاجها."
-                                : "The Studio only offers data sets you hold permission for. Ask your administrator to grant you the reporting permission for the module you need.")
+        @if (Model.HasNoDatasets)
+        {
+            @* A REAL STATE, not an error page: nothing this caller may build over. *@
+            <div class="card card-flush">
+                <div class="card-body text-center py-15">
+                    <i class="ki-outline ki-information-5 fs-3x text-gray-400 mb-4 d-block"></i>
+                    <div class="fw-bold fs-4 text-gray-800 mb-2">
+                        @(arabic ? "لا توجد مجموعات بيانات متاحة لك" : "No data sets are available to you")
+                    </div>
+                    <div class="text-muted fs-6">
+                        @(arabic
+                            ? "يحتاج بناء التقارير إلى صلاحية على مجموعة بيانات واحدة على الأقل. تواصل مع مسؤول النظام."
+                            : "Building a report needs permission on at least one data set. Ask your administrator.")
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            @* ---- PAGE SETUP STRIP -------------------------------------------------------------- *@
+            <div class="card card-flush mb-3">
+                <div class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
+
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="fs-8 fw-semibold text-muted" for="cbd-paper">@(arabic ? "الورق" : "Paper")</label>
+                        <select id="cbd-paper" class="form-select form-select-sm w-100px">
+                            <option value="0">A4</option>
+                            <option value="1">A5</option>
+                            <option value="2">Letter</option>
+                            <option value="3">Legal</option>
+                            <option value="4">80mm</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="fs-8 fw-semibold text-muted" for="cbd-orient">@(arabic ? "الاتجاه" : "Orientation")</label>
+                        <select id="cbd-orient" class="form-select form-select-sm w-125px">
+                            <option value="0">@(arabic ? "طولي" : "Portrait")</option>
+                            <option value="1">@(arabic ? "عرضي" : "Landscape")</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="fs-8 fw-semibold text-muted me-1">@(arabic ? "الهوامش (مم)" : "Margins (mm)")</span>
+                        <input id="cbd-mt" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أعلى" : "Top")" aria-label="@(arabic ? "هامش أعلى" : "Top margin")" />
+                        <input id="cbd-mb" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أسفل" : "Bottom")" aria-label="@(arabic ? "هامش أسفل" : "Bottom margin")" />
+                        <input id="cbd-ml" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "يسار" : "Left")" aria-label="@(arabic ? "هامش يسار" : "Left margin")" />
+                        <input id="cbd-mr" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "يمين" : "Right")" aria-label="@(arabic ? "هامش يمين" : "Right margin")" />
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="fs-8 fw-semibold text-muted" for="cbd-grid">@(arabic ? "الشبكة" : "Grid")</label>
+                        <input id="cbd-grid" type="number" step="1" min="1" max="20" class="form-control form-control-sm w-60px" aria-label="@(arabic ? "مقاس الشبكة" : "Grid size")" />
+                        <div class="form-check form-check-sm form-check-custom">
+                            <input id="cbd-snap" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label fs-8 fw-semibold" for="cbd-snap">@(arabic ? "محاذاة" : "Snap")</label>
+                        </div>
+                        <div class="form-check form-check-sm form-check-custom">
+                            <input id="cbd-showgrid" class="form-check-input" type="checkbox" checked />
+                            <label class="form-check-label fs-8 fw-semibold" for="cbd-showgrid">@(arabic ? "إظهار" : "Show")</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <label class="fs-8 fw-semibold text-muted" for="cbd-zoom">@(arabic ? "تكبير" : "Zoom")</label>
+                        <input id="cbd-zoom" type="range" min="40" max="200" step="10" value="100" class="w-125px" aria-label="@(arabic ? "تكبير" : "Zoom")" />
+                        <span id="cbd-zoom-label" class="fs-8 fw-semibold text-gray-700 w-40px">100%</span>
+                        <button type="button" id="cbd-fit" class="btn btn-sm btn-light">@(arabic ? "ملاءمة" : "Fit")</button>
+                    </div>
+                </div>
+            </div>
+
+            @* ---- THE THREE RAILS --------------------------------------------------------------- *@
+            <div class="cbd-wrap">
+
+                @* ---------------- LEFT RAIL: toolbox / data ------------------------------------- *@
+                <div class="cbd-rail">
+                    <div class="card card-flush">
+                        <div class="card-header min-h-40px px-3">
+                            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-8 fw-bold">
+                                <li class="nav-item"><a class="nav-link active py-2" data-bs-toggle="tab" href="#cbd-tab-toolbox">@(arabic ? "الأدوات" : "Toolbox")</a></li>
+                                <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-data">@(arabic ? "البيانات" : "Data")</a></li>
+                                <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-bands">@(arabic ? "الأقسام" : "Bands")</a></li>
+                            </ul>
+                        </div>
+                        <div class="card-body p-3 cbd-rail-body">
+                            <div class="tab-content">
+
+                                @* ---- TOOLBOX ---- *@
+                                <div class="tab-pane fade show active" id="cbd-tab-toolbox">
+                                    <div class="text-muted fs-8 mb-2">
+                                        @(arabic ? "اسحب أداة إلى الصفحة، أو انقر لإضافتها إلى القسم المحدد." : "Drag a tool onto the page, or click to add it to the selected band.")
+                                    </div>
+                                    <div id="cbd-toolbox" class="d-flex flex-column gap-1"></div>
+
+                                    <div class="separator my-3"></div>
+
+                                    <div class="fs-8 fw-bold text-gray-700 mb-2">@(arabic ? "الصور" : "Images")</div>
+                                    <div id="cbd-assets" class="d-flex flex-wrap gap-2 mb-2"></div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <select id="cbd-asset-role" class="form-select form-select-sm w-100px" aria-label="@(arabic ? "دور الصورة" : "Image role")">
+                                            <option value="1">@(arabic ? "شعار" : "Logo")</option>
+                                            <option value="2">@(arabic ? "توقيع" : "Signature")</option>
+                                            <option value="3">@(arabic ? "ختم" : "Stamp")</option>
+                                            <option value="0">@(arabic ? "أخرى" : "Other")</option>
+                                        </select>
+                                        <label class="btn btn-sm btn-light-primary mb-0">
+                                            <i class="ki-outline ki-cloud-add fs-5 me-1"></i>@(arabic ? "رفع" : "Upload")
+                                            <input id="cbd-asset-file" type="file" accept="image/*" class="d-none" />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                @* ---- DATA ---- *@
+                                <div class="tab-pane fade" id="cbd-tab-data">
+                                    <label class="fs-8 fw-bold text-gray-700 mb-1" for="cbd-dataset">@(arabic ? "مجموعة البيانات" : "Data set")</label>
+                                    <select id="cbd-dataset" class="form-select form-select-sm mb-3">
+                                        <option value="">@(arabic ? "— اختر —" : "— choose —")</option>
+                                        @foreach (var d in Model.Datasets)
+                                        {
+                                            <option value="@d.DatasetCode" title="@d.Description">@d.Title (@d.Module)</option>
+                                        }
+                                    </select>
+
+                                    <div class="fs-8 fw-bold text-gray-700 mb-1">@(arabic ? "الحقول" : "Fields")</div>
+                                    <div class="text-muted fs-8 mb-2">@(arabic ? "اسحب حقلًا إلى الصفحة." : "Drag a field onto the page.")</div>
+                                    <div id="cbd-fields" class="d-flex flex-column gap-1 mb-3"></div>
+
+                                    <div class="separator my-3"></div>
+
+                                    @* §9 — the parameters the dataset itself declares. *@
+                                    <div class="fs-8 fw-bold text-gray-700 mb-1">@(arabic ? "المعاملات" : "Parameters")</div>
+                                    <div id="cbd-params" class="d-flex flex-column gap-2 mb-2"></div>
+                                    <div id="cbd-params-empty" class="text-muted fs-8">@(arabic ? "لا توجد معاملات." : "No parameters.")</div>
+
+                                    <div class="separator my-3"></div>
+
+                                    <div class="d-flex flex-stack mb-1">
+                                        <span class="fs-8 fw-bold text-gray-700">@(arabic ? "المرشِّحات" : "Filters")</span>
+                                        <button type="button" id="cbd-add-filter" class="btn btn-sm btn-icon btn-light" aria-label="@(arabic ? "إضافة مرشِّح" : "Add filter")"><i class="ki-outline ki-plus fs-5"></i></button>
+                                    </div>
+                                    <div id="cbd-filters" class="d-flex flex-column gap-2 mb-3"></div>
+
+                                    <div class="d-flex flex-stack mb-1">
+                                        <span class="fs-8 fw-bold text-gray-700">@(arabic ? "الترتيب" : "Sorting")</span>
+                                        <button type="button" id="cbd-add-sort" class="btn btn-sm btn-icon btn-light" aria-label="@(arabic ? "إضافة ترتيب" : "Add sort")"><i class="ki-outline ki-plus fs-5"></i></button>
+                                    </div>
+                                    <div id="cbd-sorts" class="d-flex flex-column gap-2"></div>
+                                </div>
+
+                                @* ---- BANDS ---- *@
+                                <div class="tab-pane fade" id="cbd-tab-bands">
+                                    <div class="text-muted fs-8 mb-2">
+                                        @(arabic ? "ارتفاع كل قسم بالمليمتر. القسم بارتفاع صفر لا يُطبع." : "Each band's height in millimetres. A band of height zero does not print.")
+                                    </div>
+                                    <div id="cbd-bandlist" class="d-flex flex-column gap-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.Saved.Count > 0)
+                    {
+                        <div class="card card-flush mt-3">
+                            <div class="card-header min-h-40px px-3">
+                                <h3 class="card-title fs-8 fw-bold text-gray-700 m-0">@(arabic ? "تقاريري" : "My reports")</h3>
+                            </div>
+                            <div class="card-body p-3 d-flex flex-column gap-1">
+                                @foreach (var saved in Model.Saved)
+                                {
+                                    <button type="button" class="btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2"
+                                            data-open="@saved.TemplateId">
+                                        <i class="ki-outline ki-file fs-5 me-2"></i>@saved.Name
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* ---------------- CANVAS -------------------------------------------------------- *@
+                <div class="cbd-stage">
+                    <div class="cbd-ruler-corner"></div>
+                    <div id="cbd-ruler-h" class="cbd-ruler-h" aria-hidden="true"></div>
+                    <div id="cbd-ruler-v" class="cbd-ruler-v" aria-hidden="true"></div>
+
+                    <div id="cbd-scroll" class="cbd-scroll">
+                        <div id="cbd-page" class="cbd-page">
+                            <div id="cbd-content" class="cbd-content"></div>
+                        </div>
+                    </div>
+
+                    <div class="cbd-statusbar">
+                        <span id="cbd-status" class="fs-8 text-muted"></span>
+                        <span class="ms-auto d-flex gap-1">
+                            <button type="button" id="cbd-front" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "إلى الأمام" : "Bring to front")">
+                                <i class="ki-outline ki-up-square fs-6"></i>
+                            </button>
+                            <button type="button" id="cbd-back" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "إلى الخلف" : "Send to back")">
+                                <i class="ki-outline ki-down-square fs-6"></i>
+                            </button>
+                            <button type="button" id="cbd-dup" class="btn btn-sm btn-light py-1 px-2 fs-8" title="@(arabic ? "تكرار" : "Duplicate") (Ctrl+D)">
+                                <i class="ki-outline ki-copy fs-6"></i>
+                            </button>
+                            <button type="button" id="cbd-del" class="btn btn-sm btn-light-danger py-1 px-2 fs-8" title="@(arabic ? "حذف" : "Delete") (Del)">
+                                <i class="ki-outline ki-trash fs-6"></i>
+                            </button>
                         </span>
                     </div>
                 </div>
-            }
-            else
-            {
-                <div class="row g-5 g-xl-8">
 
-                    @* ================= LEFT: dataset + available fields ================= *@
-                    <div class="col-12 col-lg-3">
-                        <div class="card card-flush h-lg-100">
-                            <div class="card-header align-items-center py-4">
-                                <div class="card-title">
-                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "البيانات" : "Data")</h3>
-                                </div>
-                            </div>
-                            <div class="card-body pt-0">
-
-                                <label class="form-label fw-semibold fs-7 text-muted mb-1" for="cb-studio-dataset">
-                                    @(arabic ? "مجموعة البيانات" : "Data set")
-                                </label>
-                                <select id="cb-studio-dataset" class="form-select form-select-sm mb-4">
-                                    @foreach (var dataset in Model.Datasets)
-                                    {
-                                        <option value="@dataset.DatasetCode"
-                                                title="@dataset.Description">@dataset.Title — @dataset.Module</option>
-                                    }
-                                </select>
-
-                                <div class="d-flex flex-stack mb-2">
-                                    <span class="fw-semibold fs-7 text-muted">@(arabic ? "الحقول المتاحة" : "Available fields")</span>
-                                    <span class="badge badge-light fs-8" id="cb-studio-field-count">0</span>
-                                </div>
-
-                                @* Every entry here was produced server-side from the fields THIS caller may
-                                   see. A gated field is absent, not disabled — a disabled row would disclose
-                                   that the field exists and what it is called. *@
-                                <div id="cb-studio-fields" class="d-flex flex-column gap-1"
-                                     tabindex="0" role="region"
-                                     aria-label="@(arabic ? "الحقول المتاحة" : "Available fields")"
-                                     style="max-height:520px;overflow-y:auto;"></div>
+                @* ---------------- RIGHT RAIL: properties ---------------------------------------- *@
+                <div class="cbd-rail">
+                    <div class="card card-flush">
+                        <div class="card-header min-h-40px px-3">
+                            <h3 class="card-title fs-8 fw-bold text-gray-700 m-0">@(arabic ? "الخصائص" : "Properties")</h3>
+                        </div>
+                        <div class="card-body p-3 cbd-rail-body">
+                            <div id="cbd-props"></div>
+                            <div id="cbd-props-empty" class="text-muted fs-8 text-center py-10">
+                                @(arabic ? "اختر عنصرًا لعرض خصائصه." : "Select an element to edit it.")
                             </div>
                         </div>
                     </div>
 
-                    @* ================= CENTER: canvas (selected columns) ================= *@
-                    <div class="col-12 col-lg-6">
-                        <div class="card card-flush h-lg-100">
-                            <div class="card-header align-items-center py-4">
-                                <div class="card-title">
-                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "أعمدة التقرير" : "Report columns")</h3>
-                                </div>
-                                <div class="card-toolbar">
-                                    <span class="text-muted fs-7" id="cb-studio-column-count">0</span>
-                                </div>
-                            </div>
-                            <div class="card-body pt-0">
-                                <div id="cb-studio-columns" class="d-flex flex-column gap-2"
-                                     tabindex="0" role="region"
-                                     aria-label="@(arabic ? "أعمدة التقرير" : "Report columns")"></div>
-
-                                <div id="cb-studio-columns-empty" class="text-center text-muted py-10">
-                                    @(arabic
-                                        ? "اختر حقولًا من اليمين لبناء التقرير."
-                                        : "Pick fields from the field list to build the report.")
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    @* ================= RIGHT: filters + sorting + options ================= *@
-                    <div class="col-12 col-lg-3">
-                        <div class="card card-flush h-lg-100">
-                            <div class="card-header align-items-center py-4">
-                                <div class="card-title">
-                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "الترشيح والترتيب" : "Filters & sorting")</h3>
-                                </div>
-                            </div>
-                            <div class="card-body pt-0">
-
-                                <div class="d-flex flex-stack mb-2">
-                                    <span class="fw-semibold fs-7 text-muted">@(arabic ? "الترشيحات" : "Filters")</span>
-                                    <button type="button" id="cb-studio-add-filter"
-                                            class="btn btn-sm btn-light-primary py-1 px-3 fs-8 fw-bold">
-                                        <i class="ki-outline ki-plus fs-5"></i>@(arabic ? "إضافة" : "Add")
-                                    </button>
-                                </div>
-                                <div id="cb-studio-filters" class="d-flex flex-column gap-2 mb-6"></div>
-
-                                <div class="d-flex flex-stack mb-2">
-                                    <span class="fw-semibold fs-7 text-muted">@(arabic ? "الترتيب" : "Sorting")</span>
-                                    <button type="button" id="cb-studio-add-sort"
-                                            class="btn btn-sm btn-light-primary py-1 px-3 fs-8 fw-bold">
-                                        <i class="ki-outline ki-plus fs-5"></i>@(arabic ? "إضافة" : "Add")
-                                    </button>
-                                </div>
-                                <div id="cb-studio-sorts" class="d-flex flex-column gap-2 mb-6"></div>
-
-                                <label class="form-label fw-semibold fs-7 text-muted mb-1" for="cb-studio-pagesize">
-                                    @(arabic ? "عدد الصفوف" : "Page size")
-                                </label>
-                                <select id="cb-studio-pagesize" class="form-select form-select-sm">
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                    <option value="500">500</option>
-                                    <option value="1000">1000</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="cbd-errors" class="alert alert-danger d-none mt-3 py-3 px-4 fs-8 mb-0"></div>
                 </div>
+            </div>
+        }
+    </div>
+</div>
 
-                @* ================= BOTTOM: preview ================= *@
-                <div class="row g-5 g-xl-8 mt-0">
-                    <div class="col-12">
-                        <div class="card card-flush">
-                            <div class="card-header align-items-center py-4">
-                                <div class="card-title">
-                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "المعاينة" : "Preview")</h3>
-                                </div>
-                                <div class="card-toolbar">
-                                    <span class="text-muted fs-7" id="cb-studio-status"></span>
-                                </div>
-                            </div>
-                            <div class="card-body pt-0">
-                                <div id="cb-studio-errors" class="alert alert-light-danger d-none p-4 fs-7"></div>
-
-                                @* The renderer's own markup, confined but not restyled, so the preview predicts
-                                   the exported artifact. Focusable + named for the same reason every scrolling
-                                   table on this product is. *@
-                                <div id="cb-studio-preview" class="table-responsive"
-                                     tabindex="0" role="region"
-                                     aria-label="@(arabic ? "معاينة التقرير" : "Report preview")"
-                                     style="font-variant-numeric:tabular-nums;">
-                                    <div class="text-center text-muted py-10">
-                                        @(arabic ? "اضغط «تشغيل» لعرض النتائج." : "Press Run to see results.")
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+@* ---- PREVIEW MODAL ----------------------------------------------------------------------------- *@
+<div class="modal fade" id="cbd-preview-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl">
+        <div class="modal-content">
+            <div class="modal-header py-3">
+                <h3 class="modal-title fs-5">@(arabic ? "معاينة الطباعة" : "Print preview")</h3>
+                <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="@(arabic ? "إغلاق" : "Close")">
+                    <i class="ki-outline ki-cross fs-2"></i>
                 </div>
-
-                @if (Model.Saved.Count > 0)
-                {
-                    <div class="row g-5 g-xl-8 mt-0">
-                        <div class="col-12">
-                            <div class="card card-flush">
-                                <div class="card-header align-items-center py-4">
-                                    <div class="card-title">
-                                        <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "تقاريري المحفوظة" : "My saved reports")</h3>
-                                    </div>
-                                    <div class="card-toolbar"><span class="text-muted fs-7">@Model.Saved.Count</span></div>
-                                </div>
-                                <div class="card-body pt-0">
-                                    <div class="table-responsive" tabindex="0" role="region"
-                                         aria-label="@(arabic ? "تقاريري المحفوظة" : "My saved reports")">
-                                        <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
-                                            <thead>
-                                                <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0"
-                                                    style="border-bottom:2px solid #13433a;">
-                                                    <th class="ps-4">@SR["Name"]</th>
-                                                    <th>@(arabic ? "مجموعة البيانات" : "Data set")</th>
-                                                    <th class="text-end">@(arabic ? "الإصدار" : "Version")</th>
-                                                    <th class="text-end pe-4">@SR["Date"]</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="fw-semibold text-gray-600">
-                                                @foreach (var saved in Model.Saved)
-                                                {
-                                                    <tr>
-                                                        <td class="ps-4">
-                                                            <a href="@Url.Action("Studio","Reports", new { open = saved.TemplateId })"
-                                                               class="text-gray-800 text-hover-primary fw-bold">@saved.Name</a>
-                                                        </td>
-                                                        <td>@saved.DatasetCode</td>
-                                                        <td class="text-end">@saved.VersionNo</td>
-                                                        <td class="text-end pe-4">@(saved.UpdatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
-                                                    </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }
+            </div>
+            <div class="modal-body bg-light-secondary" id="cbd-preview-body" style="max-height:75vh;overflow:auto"></div>
+            <div class="modal-footer py-2">
+                <span id="cbd-preview-meta" class="fs-8 text-muted me-auto"></span>
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@(arabic ? "إغلاق" : "Close")</button>
+            </div>
         </div>
     </div>
 </div>
 
-@* The antiforgery token the builder's POSTs carry. Rendered here because the Studio endpoints sit behind
-   [AutoValidateAntiforgeryToken] — a cookie-authenticated API needs it, and a cross-origin page cannot set
-   the header. *@
+@* The antiforgery token every POST below carries: the Studio endpoints sit behind
+   [AutoValidateAntiforgeryToken] because they authenticate by session cookie. *@
 @Html.AntiForgeryToken()
+
+@section Styles {
+<style>
+    /* ---------------------------------------------------------------------------------------------
+       THE CANVAS. Scoped under .cbd- and used nowhere else on the site.
+
+       Colours come from Metronic's own CSS variables so the designer follows the active theme instead
+       of hardcoding a light-mode palette — a designer that stayed white in dark mode would be the one
+       screen in the product that ignored the user's choice.
+       --------------------------------------------------------------------------------------------- */
+    .cbd-wrap { display: flex; gap: .75rem; align-items: flex-start; }
+    .cbd-rail { width: 290px; flex: 0 0 290px; }
+    .cbd-rail-body { max-height: calc(100vh - 330px); overflow-y: auto; }
+
+    .cbd-stage {
+        flex: 1 1 auto; min-width: 0;
+        display: grid;
+        grid-template-columns: 22px 1fr;
+        grid-template-rows: 22px 1fr 34px;
+        background: var(--bs-card-bg); border-radius: .475rem; border: 1px solid var(--bs-border-color);
+        overflow: hidden;
+    }
+    .cbd-ruler-corner { grid-column: 1; grid-row: 1; background: var(--bs-gray-200); }
+    .cbd-ruler-h { grid-column: 2; grid-row: 1; background: var(--bs-gray-200); position: relative; overflow: hidden; }
+    .cbd-ruler-v { grid-column: 1; grid-row: 2; background: var(--bs-gray-200); position: relative; overflow: hidden; }
+    .cbd-tick { position: absolute; font-size: 8px; color: var(--bs-gray-600); }
+    .cbd-tick-h { top: 0; border-inline-start: 1px solid var(--bs-gray-400); height: 100%; padding-inline-start: 2px; }
+    .cbd-tick-v { inset-inline-start: 0; border-top: 1px solid var(--bs-gray-400); width: 100%; padding-inline-start: 2px; }
+
+    .cbd-scroll { grid-column: 2; grid-row: 2; overflow: auto; background: var(--bs-gray-200); padding: 14px; min-height: 420px; max-height: calc(100vh - 330px); }
+    .cbd-statusbar { grid-column: 1 / -1; grid-row: 3; display: flex; align-items: center; gap: .5rem; padding: 0 .75rem; border-top: 1px solid var(--bs-border-color); }
+
+    .cbd-page { background: #fff; position: relative; margin: 0 auto; box-shadow: 0 2px 14px rgba(0,0,0,.15); }
+    .cbd-content { position: absolute; }
+
+    .cbd-band { position: relative; border-bottom: 1px dashed var(--bs-gray-400); }
+    .cbd-band.sel { background: rgba(var(--bs-primary-rgb), .04); }
+    .cbd-band-tag {
+        position: absolute; top: 1px; inset-inline-start: 1px; z-index: 0;
+        font-size: 8px; line-height: 1; padding: 2px 4px; border-radius: 2px;
+        background: var(--bs-gray-200); color: var(--bs-gray-700); pointer-events: none; user-select: none;
+    }
+    .cbd-band.drop { background: rgba(var(--bs-primary-rgb), .10); }
+
+    .cbd-el {
+        position: absolute; box-sizing: border-box; overflow: hidden; cursor: move;
+        display: flex; user-select: none;
+    }
+    /* overflow:visible ONLY while selected. The element clips its own content (a long value must not
+       spill across the page), but the resize handles sit half-outside its box — with the clip on they
+       were invisible AND unclickable, so nothing could be resized with the mouse. Found by the probe. */
+    .cbd-el.sel { outline: 2px solid var(--bs-primary); outline-offset: -1px; overflow: visible; }
+    .cbd-el-body { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: pre-wrap; word-break: break-word; }
+    .cbd-el img { display: block; width: 100%; height: 100%; }
+
+    .cbd-handle {
+        position: absolute; width: 9px; height: 9px; background: #fff;
+        border: 1px solid var(--bs-primary); border-radius: 1px; z-index: 999;
+    }
+    .cbd-handle.nw { inset-inline-start: -5px; top: -5px; cursor: nwse-resize; }
+    .cbd-handle.ne { inset-inline-end: -5px; top: -5px; cursor: nesw-resize; }
+    .cbd-handle.sw { inset-inline-start: -5px; bottom: -5px; cursor: nesw-resize; }
+    .cbd-handle.se { inset-inline-end: -5px; bottom: -5px; cursor: nwse-resize; }
+
+    .cbd-guide { position: absolute; background: #f1416c; z-index: 998; pointer-events: none; }
+
+    .cbd-tool { cursor: grab; }
+    .cbd-asset { border: 1px solid var(--bs-border-color); border-radius: .3rem; padding: 2px; cursor: grab; background: #fff; }
+    .cbd-asset img { width: 46px; height: 34px; object-fit: contain; display: block; }
+
+    /* The preview pane hosts the RENDERER's own markup. It is given room and left alone: restyling it
+       here would make the preview disagree with the print, which is the one thing this design forbids. */
+    #cbd-preview-body .cbv-page { margin: 0 auto 14px; }
+
+    /* Tablet: the rails collapse under the canvas rather than squeezing it to nothing. */
+    @@media (max-width: 1199.98px) {
+        .cbd-wrap { flex-wrap: wrap; }
+        .cbd-rail { width: 100%; flex: 1 1 100%; order: 2; }
+        .cbd-stage { order: 1; flex: 1 1 100%; width: 100%; }
+        .cbd-rail-body { max-height: 300px; }
+    }
+</style>
+}
 
 @section Scripts {
 <script>
+"use strict";
 (function () {
-    "use strict";
 
-    // Server-rendered state. The dataset list is already permission-filtered; this script never decides
-    // what the user may see, it only renders what the server sent and posts back what the user chose.
-    var ARABIC = @(arabic ? "true" : "false");
-    var OPEN_DRAFT = @Html.Raw(openDraft is null
-        ? "null"
-        : System.Text.Json.JsonSerializer.Serialize(openDraft, new System.Text.Json.JsonSerializerOptions
-          { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+    // =============================================================================================
+    // THE MODEL. This object — not the DOM — is the report.
+    // =============================================================================================
+    var AR = @(arabic ? "true" : "false");
 
-    var T = {
-        remove:   ARABIC ? "إزالة"        : "Remove",
-        up:       ARABIC ? "أعلى"         : "Up",
-        down:     ARABIC ? "أسفل"         : "Down",
-        asc:      ARABIC ? "تصاعدي"       : "Ascending",
-        desc:     ARABIC ? "تنازلي"       : "Descending",
-        value:    ARABIC ? "قيمة"         : "Value",
-        rows:     ARABIC ? "صف"           : "rows",
-        partial:  ARABIC ? "نتيجة جزئية"  : "partial result",
-        running:  ARABIC ? "جارٍ التشغيل…": "Running…",
-        saved:    ARABIC ? "تم الحفظ"     : "Saved",
-        nofields: ARABIC ? "لا حقول"      : "No fields",
-        pick:     ARABIC ? "اختر حقولًا من القائمة لبناء التقرير." : "Pick fields from the field list to build the report."
+    var BAND = { ReportHeader: 0, PageHeader: 1, GroupHeader: 2, Detail: 3, GroupFooter: 4, PageFooter: 5, ReportFooter: 6 };
+    var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7 };
+    var SYS  = { CurrentDate: 0, CurrentDateTime: 1, PageNumber: 2, TotalPages: 3, PageXOfY: 4, ReportName: 5 };
+    var AGG  = { None: 0, Sum: 1, Average: 2, Min: 3, Max: 4, Count: 5 };
+
+    var BAND_LABEL = [
+        AR ? "رأس التقرير"  : "Report header",
+        AR ? "رأس الصفحة"   : "Page header",
+        AR ? "رأس المجموعة" : "Group header",
+        AR ? "التفاصيل"     : "Detail",
+        AR ? "ذيل المجموعة" : "Group footer",
+        AR ? "ذيل الصفحة"   : "Page footer",
+        AR ? "ذيل التقرير"  : "Report footer"
+    ];
+
+    // Paper, in mm. The same table ReportPaper holds server-side; duplicated here ONLY to draw the sheet,
+    // never to decide anything — the server recomputes the printable box from its own copy.
+    var PAPER = { 0: [210, 297], 1: [148, 210], 2: [215.9, 279.4], 3: [215.9, 355.6], 4: [80, 297] };
+
+    var FONTS = ["Inter", "Tahoma", "Arial", "Cairo", "Amiri", "Times New Roman", "Courier New"];
+
+    function blankLayout() {
+        var bands = [];
+        for (var k = 0; k <= 6; k++) {
+            bands.push({
+                kind: k,
+                heightMm: (k === BAND.Detail ? 8 : (k === BAND.GroupHeader || k === BAND.GroupFooter ? 0 : 18)),
+                groupFieldKey: null,
+                elements: []
+            });
+        }
+        return {
+            schemaVersion: 1,
+            page: { pageSize: 0, orientation: 0, marginTopMm: 18, marginBottomMm: 16, marginLeftMm: 12, marginRightMm: 12, rtl: AR },
+            gridMm: 5,
+            snapToGrid: true,
+            bands: bands,
+            parameters: {}
+        };
+    }
+
+    var S = {
+        templateId: 0,
+        name: "",
+        datasetCode: "",
+        columns: [],
+        filters: [],
+        sorts: [],
+        parameters: {},
+        layout: blankLayout(),
+
+        fields: [],          // StudioFieldOption[]
+        paramDefs: [],       // StudioParameterOption[]
+        assets: [],          // ReportAssetSummary[]
+
+        selection: [],       // element ids
+        selectedBand: BAND.Detail,
+        zoom: 1,
+        showGrid: true,
+        clipboard: null
     };
 
-    var fields = [];                 // what the caller may use on the current dataset
-    var state  = { templateId: 0, columns: [], filters: [], sorts: [] };
+    var undoStack = [], redoStack = [];
 
-    var $ = function (id) { return document.getElementById(id); };
-    var token = function () {
+    // =============================================================================================
+    // small helpers
+    // =============================================================================================
+    function $(id) { return document.getElementById(id); }
+    function esc(v) {
+        return String(v == null ? "" : v)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function uid() { return "e" + Math.random().toString(36).slice(2, 10); }
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+    function token() {
         var el = document.querySelector('input[name="__RequestVerificationToken"]');
         return el ? el.value : "";
-    };
-    var esc = function (s) {
-        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-            return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c];
-        });
-    };
-    var fieldOf = function (key) {
-        for (var i = 0; i < fields.length; i++) { if (fields[i].key === key) { return fields[i]; } }
+    }
+    function fieldOf(key) {
+        for (var i = 0; i < S.fields.length; i++) { if (S.fields[i].key === key) { return S.fields[i]; } }
         return null;
-    };
+    }
+    function band(kind) {
+        for (var i = 0; i < S.layout.bands.length; i++) { if (S.layout.bands[i].kind === kind) { return S.layout.bands[i]; } }
+        return null;
+    }
+    function allElements() {
+        var out = [];
+        S.layout.bands.forEach(function (b) { b.elements.forEach(function (e) { out.push({ b: b, e: e }); }); });
+        return out;
+    }
+    function elementById(id) {
+        var hit = null;
+        allElements().forEach(function (p) { if (p.e.id === id) { hit = p; } });
+        return hit;
+    }
+
+    function paper() {
+        var p = PAPER[S.layout.page.pageSize] || PAPER[0];
+        return S.layout.page.orientation === 1 ? [p[1], p[0]] : [p[0], p[1]];
+    }
+    function contentWidthMm() {
+        var pg = S.layout.page;
+        return Math.max(10, paper()[0] - pg.marginLeftMm - pg.marginRightMm);
+    }
+    function contentHeightMm() {
+        var pg = S.layout.page;
+        return Math.max(10, paper()[1] - pg.marginTopMm - pg.marginBottomMm);
+    }
+    // mm → px at the current zoom. 96 CSS px per inch is the browser's own definition, so a page at 100%
+    // is close to physical size on a typical display and exactly right in proportion at any zoom.
+    function scale() { return (96 / 25.4) * S.zoom; }
+
+    function snap(mm) {
+        if (!S.layout.snapToGrid) { return Math.round(mm * 10) / 10; }
+        var g = S.layout.gridMm > 0 ? S.layout.gridMm : 1;
+        return Math.round(mm / g) * g;
+    }
+
+    // =============================================================================================
+    // UNDO / REDO
+    //
+    // Snapshots of the MODEL, not of the DOM. 60 deep: enough to undo a session's worth of nudges and
+    // small enough that the layouts never become the reason the tab runs out of memory.
+    // =============================================================================================
+    function snapshot() {
+        undoStack.push(JSON.stringify({ layout: S.layout, columns: S.columns, filters: S.filters, sorts: S.sorts, parameters: S.parameters }));
+        if (undoStack.length > 60) { undoStack.shift(); }
+        redoStack.length = 0;
+        syncUndoButtons();
+    }
+    function restore(json) {
+        var st = JSON.parse(json);
+        S.layout = st.layout; S.columns = st.columns; S.filters = st.filters; S.sorts = st.sorts; S.parameters = st.parameters;
+        S.selection = [];
+        renderAll();
+    }
+    function undo() {
+        if (!undoStack.length) { return; }
+        redoStack.push(JSON.stringify({ layout: S.layout, columns: S.columns, filters: S.filters, sorts: S.sorts, parameters: S.parameters }));
+        restore(undoStack.pop());
+        syncUndoButtons();
+    }
+    function redo() {
+        if (!redoStack.length) { return; }
+        undoStack.push(JSON.stringify({ layout: S.layout, columns: S.columns, filters: S.filters, sorts: S.sorts, parameters: S.parameters }));
+        restore(redoStack.pop());
+        syncUndoButtons();
+    }
+    function syncUndoButtons() {
+        $("cbd-undo").disabled = undoStack.length === 0;
+        $("cbd-redo").disabled = redoStack.length === 0;
+    }
+
+    // =============================================================================================
+    // THE TOOLBOX — twenty-two placeable things, each one a plain element record.
+    //
+    // Note there is no "logo goes top-left" tool and no "signature block". §5 is explicit that a logo,
+    // a signature and a stamp must be placeable ANYWHERE; they are Image elements with a role, and the
+    // role affects nothing but the default picture and the label.
+    // =============================================================================================
+    var TOOLS = [
+        { id: "text",    icon: "ki-text-align-left",   label: AR ? "نص"              : "Text label",     make: function () { return el(KIND.Text, { text: AR ? "نص" : "Text", widthMm: 40, heightMm: 6 }); } },
+        { id: "title",   icon: "ki-text-bold",         label: AR ? "عنوان"           : "Title",          make: function () { return el(KIND.Text, { text: AR ? "عنوان التقرير" : "Report title", widthMm: 90, heightMm: 10, style: { fontSizePt: 16, bold: true, align: 1 } }); } },
+        { id: "field",   icon: "ki-abstract-25",       label: AR ? "حقل"             : "Data field",     make: function () { return el(KIND.Field, { widthMm: 35, heightMm: 6 }); } },
+        { id: "table",   icon: "ki-row-horizontal",    label: AR ? "جدول"            : "Table",          make: function () { return el(KIND.Table, { widthMm: Math.min(contentWidthMm(), 160), heightMm: 30, columns: [] }); } },
+        { id: "line-h",  icon: "ki-minus",             label: AR ? "خط أفقي"         : "Horizontal line", make: function () { return el(KIND.Line, { widthMm: 60, heightMm: 0.4, style: { borderStyle: 1, borderColor: "#000000" } }); } },
+        { id: "line-v",  icon: "ki-text-italic",       label: AR ? "خط رأسي"         : "Vertical line",  make: function () { return el(KIND.Line, { widthMm: 0.4, heightMm: 20, style: { borderStyle: 1, borderColor: "#000000" } }); } },
+        { id: "rect",    icon: "ki-abstract-41",       label: AR ? "مستطيل"          : "Rectangle",      make: function () { return el(KIND.Rectangle, { widthMm: 50, heightMm: 20, style: { borderStyle: 1, borderColor: "#000000" } }); } },
+        { id: "logo",    icon: "ki-picture",           label: AR ? "شعار الشركة"     : "Company logo",   make: function () { return el(KIND.Image, { imageRole: 1, widthMm: 35, heightMm: 18 }); } },
+        { id: "sign",    icon: "ki-pencil",            label: AR ? "توقيع"           : "Signature",      make: function () { return el(KIND.Image, { imageRole: 2, widthMm: 40, heightMm: 18 }); } },
+        { id: "stamp",   icon: "ki-shield-tick",       label: AR ? "ختم"             : "Stamp",          make: function () { return el(KIND.Image, { imageRole: 3, widthMm: 30, heightMm: 30 }); } },
+        { id: "image",   icon: "ki-picture",           label: AR ? "صورة"            : "Image",          make: function () { return el(KIND.Image, { imageRole: 0, widthMm: 35, heightMm: 25 }); } },
+        { id: "sum",     icon: "ki-plus-square",       label: AR ? "مجموع"           : "Sum",            make: function () { return el(KIND.Summary, { aggregate: AGG.Sum, widthMm: 35, heightMm: 6, style: { align: 2, bold: true } }); } },
+        { id: "avg",     icon: "ki-chart-simple",      label: AR ? "متوسط"           : "Average",        make: function () { return el(KIND.Summary, { aggregate: AGG.Average, widthMm: 35, heightMm: 6, style: { align: 2 } }); } },
+        { id: "min",     icon: "ki-down",              label: AR ? "أصغر قيمة"       : "Minimum",        make: function () { return el(KIND.Summary, { aggregate: AGG.Min, widthMm: 35, heightMm: 6, style: { align: 2 } }); } },
+        { id: "max",     icon: "ki-up",                label: AR ? "أكبر قيمة"       : "Maximum",        make: function () { return el(KIND.Summary, { aggregate: AGG.Max, widthMm: 35, heightMm: 6, style: { align: 2 } }); } },
+        { id: "count",   icon: "ki-abstract-14",       label: AR ? "عدد"             : "Count",          make: function () { return el(KIND.Summary, { aggregate: AGG.Count, widthMm: 30, heightMm: 6, style: { align: 2 } }); } },
+        { id: "pageno",  icon: "ki-abstract-24",       label: AR ? "رقم الصفحة"      : "Page number",    make: function () { return el(KIND.SystemField, { systemField: SYS.PageNumber, widthMm: 20, heightMm: 6, style: { align: 1 } }); } },
+        { id: "pagexy",  icon: "ki-abstract-23",       label: AR ? "صفحة س من ص"     : "Page X of Y",    make: function () { return el(KIND.SystemField, { systemField: SYS.PageXOfY, widthMm: 32, heightMm: 6, style: { align: 1 } }); } },
+        { id: "pages",   icon: "ki-abstract-22",       label: AR ? "عدد الصفحات"     : "Total pages",    make: function () { return el(KIND.SystemField, { systemField: SYS.TotalPages, widthMm: 20, heightMm: 6 }); } },
+        { id: "date",    icon: "ki-calendar",          label: AR ? "التاريخ"         : "Print date",     make: function () { return el(KIND.SystemField, { systemField: SYS.CurrentDate, widthMm: 30, heightMm: 6 }); } },
+        { id: "datetime",icon: "ki-time",              label: AR ? "التاريخ والوقت"  : "Date and time",  make: function () { return el(KIND.SystemField, { systemField: SYS.CurrentDateTime, widthMm: 42, heightMm: 6 }); } },
+        { id: "repname", icon: "ki-document",          label: AR ? "اسم التقرير"     : "Report name",    make: function () { return el(KIND.SystemField, { systemField: SYS.ReportName, widthMm: 60, heightMm: 8, style: { bold: true } }); } }
+    ];
+
+    function el(kind, over) {
+        var e = {
+            id: uid(), kind: kind, xMm: 5, yMm: 3, widthMm: 40, heightMm: 6, z: 0,
+            text: null, fieldKey: null, systemField: SYS.CurrentDate, aggregate: AGG.Sum,
+            assetId: null, imageRole: 0, fit: 0, preserveAspect: true, columns: [],
+            style: {
+                fontFamily: null, fontSizePt: 9, bold: false, italic: false, underline: false,
+                align: 0, verticalAlign: 0, color: null, background: null, borderColor: null,
+                borderStyle: 0, borderWidthMm: 0.2, paddingMm: 0.5, numberFormat: null, dateFormat: null, visible: true
+            }
+        };
+        over = over || {};
+        Object.keys(over).forEach(function (k) {
+            if (k === "style") { Object.keys(over.style).forEach(function (sk) { e.style[sk] = over.style[sk]; }); }
+            else { e[k] = over[k]; }
+        });
+        return e;
+    }
+
+    function renderToolbox() {
+        $("cbd-toolbox").innerHTML = TOOLS.map(function (t) {
+            return "<button type='button' draggable='true' data-tool='" + t.id + "' " +
+                   "class='btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2 cbd-tool'>" +
+                   "<i class='ki-outline " + t.icon + " fs-5 me-2'></i>" + esc(t.label) + "</button>";
+        }).join("");
+
+        Array.prototype.forEach.call($("cbd-toolbox").querySelectorAll("[data-tool]"), function (b) {
+            b.addEventListener("dragstart", function (ev) {
+                ev.dataTransfer.setData("text/plain", "tool:" + b.getAttribute("data-tool"));
+                ev.dataTransfer.effectAllowed = "copy";
+            });
+            b.addEventListener("click", function () { addTool(b.getAttribute("data-tool"), null); });
+        });
+    }
+
+    function toolById(id) {
+        for (var i = 0; i < TOOLS.length; i++) { if (TOOLS[i].id === id) { return TOOLS[i]; } }
+        return null;
+    }
+
+    function addTool(toolId, at) {
+        var t = toolById(toolId);
+        if (!t) { return; }
+        var e = t.make();
+        var b = band(at ? at.kind : S.selectedBand) || band(BAND.Detail);
+        if (at) { e.xMm = snap(at.xMm); e.yMm = snap(at.yMm); }
+        e.z = nextZ(b);
+        snapshot();
+        b.elements.push(e);
+        S.selectedBand = b.kind;
+        S.selection = [e.id];
+        renderAll();
+    }
+
+    function nextZ(b) {
+        var max = 0;
+        b.elements.forEach(function (e) { if (e.z > max) { max = e.z; } });
+        return max + 1;
+    }
+
+    // =============================================================================================
+    // THE CANVAS
+    // =============================================================================================
+    function renderCanvas() {
+        var sc = scale();
+        var pw = paper()[0], ph = paper()[1];
+        var pg = S.layout.page;
+
+        var pageEl = $("cbd-page");
+        pageEl.style.width = (pw * sc) + "px";
+        pageEl.style.direction = pg.rtl ? "rtl" : "ltr";
+
+        var bandsHeight = S.layout.bands.reduce(function (a, b) { return a + (b.heightMm || 0); }, 0);
+        var boxHeight = Math.max(contentHeightMm(), bandsHeight);
+        pageEl.style.height = ((boxHeight + pg.marginTopMm + pg.marginBottomMm) * sc) + "px";
+
+        var content = $("cbd-content");
+        content.style.top = (pg.marginTopMm * sc) + "px";
+        content.style.insetInlineStart = (pg.marginLeftMm * sc) + "px";
+        content.style.width = (contentWidthMm() * sc) + "px";
+        content.style.height = (boxHeight * sc) + "px";
+        content.style.backgroundImage = "";
+
+        if (S.showGrid && S.layout.gridMm > 0) {
+            var g = S.layout.gridMm * sc;
+            // Two 1px lines per axis. Drawn as a background so the grid costs nothing per element and
+            // never lands in the saved model.
+            content.style.backgroundImage =
+                "linear-gradient(to right, rgba(0,0,0,.06) 1px, transparent 1px)," +
+                "linear-gradient(to bottom, rgba(0,0,0,.06) 1px, transparent 1px)";
+            content.style.backgroundSize = g + "px " + g + "px";
+        }
+
+        content.innerHTML = S.layout.bands.map(function (b) { return bandHtml(b, sc); }).join("");
+
+        wireBands(sc);
+        wireElements(sc);
+        renderRulers(sc);
+        renderStatus();
+    }
+
+    function bandHtml(b, sc) {
+        var h = Math.max(0, b.heightMm || 0) * sc;
+        var selected = S.selectedBand === b.kind;
+        var tag = BAND_LABEL[b.kind] + " · " + (b.heightMm || 0) + "mm";
+
+        var inner = b.elements
+            .slice()
+            .sort(function (x, y) { return (x.z || 0) - (y.z || 0); })
+            .map(function (e) { return elementHtml(e, sc); })
+            .join("");
+
+        return "<div class='cbd-band" + (selected ? " sel" : "") + "' data-band='" + b.kind + "' " +
+               "style='height:" + h + "px'>" +
+               "<span class='cbd-band-tag'>" + esc(tag) + "</span>" + inner + "</div>";
+    }
+
+    function elementHtml(e, sc) {
+        var s = e.style || {};
+        var st = [];
+        st.push("inset-inline-start:" + (e.xMm * sc) + "px");
+        st.push("top:" + (e.yMm * sc) + "px");
+        st.push("width:" + (e.widthMm * sc) + "px");
+        st.push("height:" + (e.heightMm * sc) + "px");
+        st.push("z-index:" + (e.z || 0));
+        st.push("font-size:" + (s.fontSizePt * (96 / 72) * S.zoom) + "px");
+        if (s.fontFamily) { st.push("font-family:" + s.fontFamily); }
+        if (s.bold) { st.push("font-weight:700"); }
+        if (s.italic) { st.push("font-style:italic"); }
+        if (s.underline) { st.push("text-decoration:underline"); }
+        if (s.color) { st.push("color:" + s.color); }
+        if (s.background) { st.push("background:" + s.background); }
+        if (s.borderStyle) {
+            st.push("border:" + Math.max(1, s.borderWidthMm * sc) + "px " +
+                    ["none", "solid", "dashed", "dotted"][s.borderStyle] + " " + (s.borderColor || "#000"));
+        }
+        st.push("padding:" + (s.paddingMm * sc) + "px");
+        st.push("justify-content:" + ["flex-start", "center", "flex-end", "space-between"][s.align || 0]);
+        st.push("align-items:" + ["flex-start", "center", "flex-end"][s.verticalAlign || 0]);
+        if (s.visible === false) { st.push("opacity:.35"); }
+
+        var sel = S.selection.indexOf(e.id) >= 0;
+        var handles = sel
+            ? "<span class='cbd-handle nw' data-h='nw'></span><span class='cbd-handle ne' data-h='ne'></span>" +
+              "<span class='cbd-handle sw' data-h='sw'></span><span class='cbd-handle se' data-h='se'></span>"
+            : "";
+
+        return "<div class='cbd-el" + (sel ? " sel" : "") + "' data-el='" + e.id + "' style='" + st.join(";") + "'>" +
+               "<span class='cbd-el-body'>" + elementFace(e) + "</span>" + handles + "</div>";
+    }
+
+    // What the element LOOKS like on the canvas. A design-time face, deliberately not a data preview:
+    // a Field shows its field name in braces so the designer can see the binding, and real values come
+    // from Preview, which runs the actual report.
+    function elementFace(e) {
+        switch (e.kind) {
+            case KIND.Text:
+                return esc(e.text || "");
+            case KIND.Field: {
+                var f = fieldOf(e.fieldKey);
+                return "<span class='text-primary'>{" + esc(f ? f.title : (e.fieldKey || (AR ? "غير مرتبط" : "unbound"))) + "}</span>";
+            }
+            case KIND.SystemField: {
+                var names = [
+                    AR ? "{التاريخ}" : "{Date}",
+                    AR ? "{التاريخ والوقت}" : "{Date and time}",
+                    AR ? "{رقم الصفحة}" : "{Page}",
+                    AR ? "{عدد الصفحات}" : "{Pages}",
+                    AR ? "{صفحة س من ص}" : "{Page X of Y}",
+                    AR ? "{اسم التقرير}" : "{Report name}"
+                ];
+                return "<span class='text-info'>" + esc(names[e.systemField] || "") + "</span>";
+            }
+            case KIND.Summary: {
+                var f2 = fieldOf(e.fieldKey);
+                var agg = ["", "SUM", "AVG", "MIN", "MAX", "COUNT"][e.aggregate] || "";
+                return "<span class='text-success'>" + esc(agg) + "(" + esc(f2 ? f2.title : (e.fieldKey || "?")) + ")</span>";
+            }
+            case KIND.Image: {
+                if (e.assetId) {
+                    return "<img src='/api/reports/studio/assets/" + encodeURIComponent(e.assetId) + "' alt='' " +
+                           "style='object-fit:" + ["contain", "cover", "fill"][e.fit || 0] + "'>";
+                }
+                var roles = [AR ? "صورة" : "Image", AR ? "شعار" : "Logo", AR ? "توقيع" : "Signature", AR ? "ختم" : "Stamp"];
+                return "<span class='text-muted fs-8'><i class='ki-outline ki-picture fs-5 me-1'></i>" + esc(roles[e.imageRole] || "") + "</span>";
+            }
+            case KIND.Line:
+            case KIND.Rectangle:
+                return "";
+            case KIND.Table:
+                return tableFace(e);
+        }
+        return "";
+    }
+
+    function tableFace(e) {
+        if (!e.columns || !e.columns.length) {
+            return "<span class='text-muted fs-8'>" + (AR ? "جدول بلا أعمدة — أضف أعمدة من الخصائص" : "Empty table — add columns in Properties") + "</span>";
+        }
+        var head = e.columns.map(function (c) {
+            var f = fieldOf(c.fieldKey);
+            return "<th style='width:" + c.widthMm + "mm;text-align:" + ["start", "center", "end", "justify"][c.align || 0] + "'>" +
+                   esc(c.headerText || (f ? f.title : c.fieldKey)) + "</th>";
+        }).join("");
+        var row = e.columns.map(function (c) {
+            return "<td class='text-primary'>{" + esc(c.fieldKey) + "}</td>";
+        }).join("");
+        return "<table class='table table-sm m-0 fs-8' style='table-layout:fixed;width:100%'>" +
+               "<thead><tr>" + head + "</tr></thead><tbody><tr>" + row + "</tr></tbody></table>";
+    }
+
+    function renderRulers(sc) {
+        var cw = contentWidthMm(), ch = contentHeightMm();
+        var pg = S.layout.page;
+        var step = 10;
+
+        var h = [];
+        for (var x = 0; x <= cw; x += step) {
+            h.push("<span class='cbd-tick cbd-tick-h' style='inset-inline-start:" + ((pg.marginLeftMm + x) * sc + 14) + "px'>" + x + "</span>");
+        }
+        $("cbd-ruler-h").innerHTML = h.join("");
+
+        var v = [];
+        for (var y = 0; y <= ch; y += step) {
+            v.push("<span class='cbd-tick cbd-tick-v' style='top:" + ((pg.marginTopMm + y) * sc + 14) + "px'>" + y + "</span>");
+        }
+        $("cbd-ruler-v").innerHTML = v.join("");
+    }
+
+    function renderStatus() {
+        var parts = [];
+        parts.push((AR ? "الورق: " : "Paper: ") + paper()[0].toFixed(0) + " × " + paper()[1].toFixed(0) + " mm");
+        parts.push((AR ? "منطقة الطباعة: " : "Printable: ") + contentWidthMm().toFixed(0) + " × " + contentHeightMm().toFixed(0) + " mm");
+
+        if (S.selection.length === 1) {
+            var p = elementById(S.selection[0]);
+            if (p) {
+                parts.push(BAND_LABEL[p.b.kind] + " · " +
+                    "X " + p.e.xMm.toFixed(1) + " · Y " + p.e.yMm.toFixed(1) +
+                    " · " + p.e.widthMm.toFixed(1) + "×" + p.e.heightMm.toFixed(1) + " mm");
+            }
+        } else if (S.selection.length > 1) {
+            parts.push(S.selection.length + (AR ? " عناصر محددة" : " selected"));
+        }
+        $("cbd-status").textContent = parts.join("   |   ");
+    }
+
+    // =============================================================================================
+    // DRAG, DROP, MOVE, RESIZE
+    //
+    // RTL: the pointer moves in SCREEN space and the model lives in LOGICAL space, so the horizontal
+    // delta is negated under rtl. Get this wrong and an Arabic user's elements walk the wrong way —
+    // which is precisely the sort of thing a "mirror the CSS afterwards" approach never notices.
+    // =============================================================================================
+    function rtlSign() { return S.layout.page.rtl ? -1 : 1; }
+
+    function wireBands(sc) {
+        Array.prototype.forEach.call($("cbd-content").querySelectorAll(".cbd-band"), function (bandEl) {
+            var kind = parseInt(bandEl.getAttribute("data-band"), 10);
+
+            bandEl.addEventListener("dragover", function (ev) {
+                ev.preventDefault();
+                ev.dataTransfer.dropEffect = "copy";
+                bandEl.classList.add("drop");
+            });
+            bandEl.addEventListener("dragleave", function () { bandEl.classList.remove("drop"); });
+
+            bandEl.addEventListener("drop", function (ev) {
+                ev.preventDefault();
+                bandEl.classList.remove("drop");
+
+                var payload = ev.dataTransfer.getData("text/plain") || "";
+                var rect = bandEl.getBoundingClientRect();
+
+                // Logical X: distance from the band's START edge, which under rtl is its right edge.
+                var offset = S.layout.page.rtl ? (rect.right - ev.clientX) : (ev.clientX - rect.left);
+                var at = { kind: kind, xMm: Math.max(0, offset / sc), yMm: Math.max(0, (ev.clientY - rect.top) / sc) };
+
+                if (payload.indexOf("tool:") === 0) {
+                    addTool(payload.slice(5), at);
+                } else if (payload.indexOf("field:") === 0) {
+                    dropField(payload.slice(6), at);
+                } else if (payload.indexOf("asset:") === 0) {
+                    dropAsset(parseInt(payload.slice(6), 10), at);
+                }
+            });
+
+            bandEl.addEventListener("mousedown", function (ev) {
+                if (ev.target === bandEl || ev.target.classList.contains("cbd-band-tag")) {
+                    S.selectedBand = kind;
+                    if (!ev.shiftKey) { S.selection = []; }
+                    renderCanvas(); renderProps(); renderBandList();
+                }
+            });
+        });
+    }
+
+    function dropField(key, at) {
+        var f = fieldOf(key);
+        var e = el(KIND.Field, { fieldKey: key, widthMm: 35, heightMm: 6 });
+        if (f && (f.type === 2 || f.type === 3)) { e.style.align = 2; e.style.numberFormat = "N2"; }
+        if (f && f.type === 4) { e.style.dateFormat = "yyyy-MM-dd"; }
+        var b = band(at ? at.kind : S.selectedBand) || band(BAND.Detail);
+        if (at) { e.xMm = snap(at.xMm); e.yMm = snap(at.yMm); }
+        e.z = nextZ(b);
+        snapshot();
+        b.elements.push(e);
+        S.selectedBand = b.kind;
+        S.selection = [e.id];
+        renderAll();
+    }
+
+    function dropAsset(assetId, at) {
+        var a = null;
+        S.assets.forEach(function (x) { if (x.id === assetId) { a = x; } });
+        var e = el(KIND.Image, { assetId: assetId, imageRole: a ? a.role : 0, widthMm: 35, heightMm: 20 });
+        var b = band(at ? at.kind : S.selectedBand) || band(BAND.Detail);
+        if (at) { e.xMm = snap(at.xMm); e.yMm = snap(at.yMm); }
+        e.z = nextZ(b);
+        snapshot();
+        b.elements.push(e);
+        S.selectedBand = b.kind;
+        S.selection = [e.id];
+        renderAll();
+    }
+
+    function wireElements(sc) {
+        Array.prototype.forEach.call($("cbd-content").querySelectorAll("[data-el]"), function (node) {
+            var id = node.getAttribute("data-el");
+
+            node.addEventListener("mousedown", function (ev) {
+                ev.stopPropagation();
+                var handle = ev.target.getAttribute && ev.target.getAttribute("data-h");
+
+                if (ev.shiftKey) {
+                    var at = S.selection.indexOf(id);
+                    if (at >= 0) { S.selection.splice(at, 1); } else { S.selection.push(id); }
+                } else if (S.selection.indexOf(id) < 0) {
+                    S.selection = [id];
+                }
+
+                var pair = elementById(id);
+                if (pair) { S.selectedBand = pair.b.kind; }
+                renderCanvas(); renderProps(); renderBandList();
+
+                if (handle) { beginResize(ev, id, handle, sc); }
+                else { beginMove(ev, sc); }
+            });
+        });
+    }
+
+    function beginMove(ev, sc) {
+        var startX = ev.clientX, startY = ev.clientY;
+        var origin = {};
+        S.selection.forEach(function (id) {
+            var p = elementById(id);
+            if (p) { origin[id] = { x: p.e.xMm, y: p.e.yMm }; }
+        });
+        var moved = false;
+
+        function onMove(e2) {
+            var dxMm = ((e2.clientX - startX) * rtlSign()) / sc;
+            var dyMm = (e2.clientY - startY) / sc;
+            if (!moved && Math.abs(dxMm) < 0.3 && Math.abs(dyMm) < 0.3) { return; }
+            if (!moved) { snapshot(); moved = true; }
+
+            S.selection.forEach(function (id) {
+                var p = elementById(id);
+                if (!p || !origin[id]) { return; }
+                p.e.xMm = Math.max(0, snap(origin[id].x + dxMm));
+                p.e.yMm = Math.max(0, snap(origin[id].y + dyMm));
+            });
+            renderCanvas();
+            drawGuides(sc);
+        }
+        function onUp() {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            clearGuides();
+            renderProps();
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
+    function beginResize(ev, id, handle, sc) {
+        ev.stopPropagation();
+        var p = elementById(id);
+        if (!p) { return; }
+        var startX = ev.clientX, startY = ev.clientY;
+        var o = { x: p.e.xMm, y: p.e.yMm, w: p.e.widthMm, h: p.e.heightMm };
+        var taken = false;
+
+        function onMove(e2) {
+            var dx = ((e2.clientX - startX) * rtlSign()) / sc;
+            var dy = (e2.clientY - startY) / sc;
+            if (!taken) { snapshot(); taken = true; }
+
+            var west = handle === "nw" || handle === "sw";
+            var north = handle === "nw" || handle === "ne";
+
+            var w = west ? o.w - dx : o.w + dx;
+            var h = north ? o.h - dy : o.h + dy;
+
+            p.e.widthMm = Math.max(1, snap(w));
+            p.e.heightMm = Math.max(1, snap(h));
+            if (west) { p.e.xMm = Math.max(0, snap(o.x + (o.w - p.e.widthMm))); }
+            if (north) { p.e.yMm = Math.max(0, snap(o.y + (o.h - p.e.heightMm))); }
+
+            renderCanvas();
+            drawGuides(sc);
+        }
+        function onUp() {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            clearGuides();
+            renderProps();
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
+    // Alignment guides: a red line whenever a dragged edge or centre lines up with another element's.
+    // Purely visual — nothing here changes the model, which is why it can be as approximate as it likes.
+    function clearGuides() {
+        Array.prototype.forEach.call(document.querySelectorAll(".cbd-guide"), function (g) { g.remove(); });
+    }
+    function drawGuides(sc) {
+        clearGuides();
+        if (S.selection.length !== 1) { return; }
+        var me = elementById(S.selection[0]);
+        if (!me) { return; }
+
+        var host = $("cbd-content");
+        var tol = 0.6;
+        var mine = [me.e.xMm, me.e.xMm + me.e.widthMm / 2, me.e.xMm + me.e.widthMm];
+
+        allElements().forEach(function (p) {
+            if (p.e.id === me.e.id) { return; }
+            var theirs = [p.e.xMm, p.e.xMm + p.e.widthMm / 2, p.e.xMm + p.e.widthMm];
+            theirs.forEach(function (t) {
+                mine.forEach(function (m) {
+                    if (Math.abs(m - t) <= tol) {
+                        var g = document.createElement("div");
+                        g.className = "cbd-guide";
+                        g.style.insetInlineStart = (t * sc) + "px";
+                        g.style.top = "0";
+                        g.style.width = "1px";
+                        g.style.height = "100%";
+                        host.appendChild(g);
+                    }
+                });
+            });
+        });
+    }
+
+    // =============================================================================================
+    // SELECTION COMMANDS
+    // =============================================================================================
+    function deleteSelection() {
+        if (!S.selection.length) { return; }
+        snapshot();
+        S.layout.bands.forEach(function (b) {
+            b.elements = b.elements.filter(function (e) { return S.selection.indexOf(e.id) < 0; });
+        });
+        S.selection = [];
+        renderAll();
+    }
+
+    function duplicateSelection() {
+        if (!S.selection.length) { return; }
+        snapshot();
+        var fresh = [];
+        S.selection.forEach(function (id) {
+            var p = elementById(id);
+            if (!p) { return; }
+            var copy = clone(p.e);
+            copy.id = uid();
+            copy.xMm = snap(copy.xMm + (S.layout.gridMm || 2));
+            copy.yMm = snap(copy.yMm + (S.layout.gridMm || 2));
+            copy.z = nextZ(p.b);
+            p.b.elements.push(copy);
+            fresh.push(copy.id);
+        });
+        S.selection = fresh;
+        renderAll();
+    }
+
+    function copySelection() {
+        S.clipboard = S.selection.map(function (id) {
+            var p = elementById(id);
+            return p ? { kind: p.b.kind, e: clone(p.e) } : null;
+        }).filter(Boolean);
+    }
+
+    function pasteClipboard() {
+        if (!S.clipboard || !S.clipboard.length) { return; }
+        snapshot();
+        var fresh = [];
+        S.clipboard.forEach(function (item) {
+            var b = band(S.selectedBand) || band(item.kind) || band(BAND.Detail);
+            var copy = clone(item.e);
+            copy.id = uid();
+            copy.xMm = snap(copy.xMm + (S.layout.gridMm || 2));
+            copy.yMm = snap(copy.yMm + (S.layout.gridMm || 2));
+            copy.z = nextZ(b);
+            b.elements.push(copy);
+            fresh.push(copy.id);
+        });
+        S.selection = fresh;
+        renderAll();
+    }
+
+    function zOrder(toFront) {
+        if (!S.selection.length) { return; }
+        snapshot();
+        S.selection.forEach(function (id) {
+            var p = elementById(id);
+            if (!p) { return; }
+            if (toFront) { p.e.z = nextZ(p.b); }
+            else {
+                var min = 0;
+                p.b.elements.forEach(function (x) { if (x.z < min) { min = x.z; } });
+                p.e.z = min - 1;
+            }
+        });
+        renderAll();
+    }
+
+    function nudge(dx, dy) {
+        if (!S.selection.length) { return; }
+        snapshot();
+        S.selection.forEach(function (id) {
+            var p = elementById(id);
+            if (!p) { return; }
+            p.e.xMm = Math.max(0, Math.round((p.e.xMm + dx) * 10) / 10);
+            p.e.yMm = Math.max(0, Math.round((p.e.yMm + dy) * 10) / 10);
+        });
+        renderCanvas(); renderProps();
+    }
+
+    // =============================================================================================
+    // PROPERTIES PANEL — one form per element kind.
+    // =============================================================================================
+    function renderProps() {
+        var host = $("cbd-props"), empty = $("cbd-props-empty");
+
+        if (S.selection.length !== 1) {
+            host.innerHTML = "";
+            empty.style.display = "";
+            empty.textContent = S.selection.length > 1
+                ? (AR ? S.selection.length + " عناصر محددة — استخدم الأسهم أو الحذف." : S.selection.length + " elements selected — use the arrow keys or Delete.")
+                : (AR ? "اختر عنصرًا لعرض خصائصه." : "Select an element to edit it.");
+            renderStatus();
+            return;
+        }
+
+        empty.style.display = "none";
+        var p = elementById(S.selection[0]);
+        if (!p) { host.innerHTML = ""; return; }
+        var e = p.e, s = e.style;
+
+        var h = [];
+        h.push(row(AR ? "القسم" : "Band", "<span class='fw-semibold fs-8'>" + esc(BAND_LABEL[p.b.kind]) + "</span>"));
+
+        // ---- geometry, always ----
+        h.push("<div class='separator my-3'></div>");
+        h.push("<div class='row g-2'>");
+        h.push(numCol("X (mm)", "px", e.xMm));
+        h.push(numCol("Y (mm)", "py", e.yMm));
+        h.push(numCol(AR ? "العرض" : "Width", "pw", e.widthMm));
+        h.push(numCol(AR ? "الارتفاع" : "Height", "ph", e.heightMm));
+        h.push("</div>");
+
+        // ---- per-kind ----
+        h.push("<div class='separator my-3'></div>");
+
+        if (e.kind === KIND.Text) {
+            h.push(row(AR ? "النص" : "Text",
+                "<textarea id='p-text' rows='2' class='form-control form-control-sm'>" + esc(e.text || "") + "</textarea>"));
+        }
+
+        if (e.kind === KIND.Field || e.kind === KIND.Summary) {
+            h.push(row(AR ? "الحقل" : "Field", select("p-field", S.fields.map(function (f) {
+                return { v: f.key, t: f.title };
+            }), e.fieldKey)));
+        }
+
+        if (e.kind === KIND.Summary) {
+            h.push(row(AR ? "الدالة" : "Function", select("p-agg", [
+                { v: AGG.Sum, t: "SUM" }, { v: AGG.Average, t: "AVG" },
+                { v: AGG.Min, t: "MIN" }, { v: AGG.Max, t: "MAX" }, { v: AGG.Count, t: "COUNT" }
+            ], e.aggregate)));
+        }
+
+        if (e.kind === KIND.SystemField) {
+            h.push(row(AR ? "النوع" : "Kind", select("p-sys", [
+                { v: SYS.CurrentDate, t: AR ? "التاريخ" : "Date" },
+                { v: SYS.CurrentDateTime, t: AR ? "التاريخ والوقت" : "Date and time" },
+                { v: SYS.PageNumber, t: AR ? "رقم الصفحة" : "Page number" },
+                { v: SYS.TotalPages, t: AR ? "عدد الصفحات" : "Total pages" },
+                { v: SYS.PageXOfY, t: AR ? "صفحة س من ص" : "Page X of Y" },
+                { v: SYS.ReportName, t: AR ? "اسم التقرير" : "Report name" }
+            ], e.systemField)));
+        }
+
+        if (e.kind === KIND.Image) {
+            h.push(row(AR ? "الدور" : "Role", select("p-role", [
+                { v: 1, t: AR ? "شعار" : "Logo" }, { v: 2, t: AR ? "توقيع" : "Signature" },
+                { v: 3, t: AR ? "ختم" : "Stamp" }, { v: 0, t: AR ? "أخرى" : "Other" }
+            ], e.imageRole)));
+            h.push(row(AR ? "الصورة" : "Picture", select("p-asset",
+                [{ v: "", t: AR ? "— بلا —" : "— none —" }].concat(S.assets.map(function (a) {
+                    return { v: a.id, t: a.title || a.fileName };
+                })), e.assetId == null ? "" : e.assetId)));
+            h.push(row(AR ? "الملاءمة" : "Fit", select("p-fit", [
+                { v: 0, t: AR ? "احتواء" : "Contain" }, { v: 1, t: AR ? "تغطية" : "Cover" }, { v: 2, t: AR ? "تمديد" : "Stretch" }
+            ], e.fit)));
+        }
+
+        if (e.kind === KIND.Table) {
+            h.push(tableEditor(e));
+        }
+
+        // ---- text style, for everything that draws text ----
+        if (e.kind !== KIND.Line && e.kind !== KIND.Rectangle && e.kind !== KIND.Image) {
+            h.push("<div class='separator my-3'></div>");
+            h.push(row(AR ? "الخط" : "Font", select("p-font",
+                [{ v: "", t: AR ? "افتراضي" : "Default" }].concat(FONTS.map(function (f) { return { v: f, t: f }; })),
+                s.fontFamily || "")));
+            h.push("<div class='row g-2'>");
+            h.push(numCol(AR ? "الحجم (pt)" : "Size (pt)", "p-size", s.fontSizePt));
+            h.push("<div class='col-6 d-flex align-items-end gap-1 pb-1'>" +
+                   toggle("p-bold", "B", s.bold) + toggle("p-italic", "I", s.italic) + toggle("p-underline", "U", s.underline) +
+                   "</div>");
+            h.push("</div>");
+            h.push(row(AR ? "المحاذاة" : "Align", select("p-align", [
+                { v: 0, t: AR ? "بداية" : "Start" }, { v: 1, t: AR ? "وسط" : "Center" },
+                { v: 2, t: AR ? "نهاية" : "End" }, { v: 3, t: AR ? "ضبط" : "Justify" }
+            ], s.align)));
+            h.push(row(AR ? "رأسيًا" : "Vertical", select("p-valign", [
+                { v: 0, t: AR ? "أعلى" : "Top" }, { v: 1, t: AR ? "وسط" : "Middle" }, { v: 2, t: AR ? "أسفل" : "Bottom" }
+            ], s.verticalAlign)));
+
+            if (e.kind === KIND.Field || e.kind === KIND.Summary) {
+                h.push(row(AR ? "تنسيق رقمي" : "Number format",
+                    "<input id='p-numfmt' type='text' class='form-control form-control-sm' placeholder='N2' value='" + esc(s.numberFormat || "") + "'>"));
+                h.push(row(AR ? "تنسيق التاريخ" : "Date format",
+                    "<input id='p-datefmt' type='text' class='form-control form-control-sm' placeholder='yyyy-MM-dd' value='" + esc(s.dateFormat || "") + "'>"));
+            }
+        }
+
+        // ---- box style, for everything ----
+        h.push("<div class='separator my-3'></div>");
+        h.push("<div class='row g-2'>");
+        h.push(colorCol(AR ? "اللون" : "Colour", "p-color", s.color));
+        h.push(colorCol(AR ? "الخلفية" : "Background", "p-bg", s.background));
+        h.push("</div>");
+        h.push(row(AR ? "الإطار" : "Border", select("p-border", [
+            { v: 0, t: AR ? "بلا" : "None" }, { v: 1, t: AR ? "متصل" : "Solid" },
+            { v: 2, t: AR ? "متقطع" : "Dashed" }, { v: 3, t: AR ? "منقَّط" : "Dotted" }
+        ], s.borderStyle)));
+        h.push("<div class='row g-2'>");
+        h.push(colorCol(AR ? "لون الإطار" : "Border colour", "p-bcolor", s.borderColor));
+        h.push(numCol(AR ? "حشو (مم)" : "Padding (mm)", "p-pad", s.paddingMm));
+        h.push("</div>");
+
+        host.innerHTML = h.join("");
+        wireProps(e, p.b);
+        renderStatus();
+    }
+
+    function row(label, control) {
+        return "<div class='mb-2'><label class='fs-8 fw-semibold text-muted d-block mb-1'>" + esc(label) + "</label>" + control + "</div>";
+    }
+    function numCol(label, id, value) {
+        return "<div class='col-6 mb-2'><label class='fs-8 fw-semibold text-muted d-block mb-1' for='" + id + "'>" + esc(label) + "</label>" +
+               "<input id='" + id + "' type='number' step='0.5' class='form-control form-control-sm' value='" + (value == null ? "" : value) + "'></div>";
+    }
+    function colorCol(label, id, value) {
+        return "<div class='col-6 mb-2'><label class='fs-8 fw-semibold text-muted d-block mb-1' for='" + id + "'>" + esc(label) + "</label>" +
+               "<input id='" + id + "' type='color' class='form-control form-control-sm form-control-color w-100' value='" + esc(value || "#000000") + "'>" +
+               "<button type='button' class='btn btn-sm btn-light w-100 mt-1 fs-8 py-1' data-clear='" + id + "'>" + (AR ? "بلا" : "None") + "</button></div>";
+    }
+    function select(id, options, value) {
+        return "<select id='" + id + "' class='form-select form-select-sm'>" +
+               options.map(function (o) {
+                   return "<option value='" + esc(o.v) + "'" + (String(o.v) === String(value == null ? "" : value) ? " selected" : "") + ">" + esc(o.t) + "</option>";
+               }).join("") + "</select>";
+    }
+    function toggle(id, label, on) {
+        return "<button type='button' id='" + id + "' class='btn btn-sm " + (on ? "btn-primary" : "btn-light") + " px-3 py-1 fw-bold fs-8'>" + label + "</button>";
+    }
+
+    // ---- THE TABLE DESIGNER ----------------------------------------------------------------------
+    // A real column list: field, header, width, alignment, format and an optional total. §7 asks for a
+    // table that is designed rather than a fixed grid, and this is what "designed" means in practice —
+    // every column is a decision the user made and the renderer reproduces exactly.
+    function tableEditor(e) {
+        var rows = (e.columns || []).map(function (c, i) {
+            return "<div class='border border-dashed rounded p-2 mb-2'>" +
+                   "<div class='d-flex flex-stack mb-1'>" +
+                   "<span class='fs-8 fw-bold text-gray-700'>#" + (i + 1) + "</span>" +
+                   "<span class='d-flex gap-1'>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light py-0 px-1' data-cup='" + i + "' aria-label='" + (AR ? "أعلى" : "Up") + "'><i class='ki-outline ki-up fs-6'></i></button>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light py-0 px-1' data-cdown='" + i + "' aria-label='" + (AR ? "أسفل" : "Down") + "'><i class='ki-outline ki-down fs-6'></i></button>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger py-0 px-1' data-cdel='" + i + "' aria-label='" + (AR ? "حذف" : "Remove") + "'><i class='ki-outline ki-cross fs-6'></i></button>" +
+                   "</span></div>" +
+                   select("c-field-" + i, S.fields.map(function (f) { return { v: f.key, t: f.title }; }), c.fieldKey) +
+                   "<input id='c-head-" + i + "' type='text' class='form-control form-control-sm mt-1' placeholder='" + (AR ? "العنوان" : "Header") + "' value='" + esc(c.headerText || "") + "'>" +
+                   "<div class='row g-1 mt-1'>" +
+                   "<div class='col-6'><input id='c-width-" + i + "' type='number' step='1' min='5' class='form-control form-control-sm' value='" + c.widthMm + "' aria-label='" + (AR ? "العرض" : "Width") + "'></div>" +
+                   "<div class='col-6'>" + select("c-align-" + i, [
+                       { v: 0, t: AR ? "بداية" : "Start" }, { v: 1, t: AR ? "وسط" : "Center" }, { v: 2, t: AR ? "نهاية" : "End" }
+                   ], c.align) + "</div>" +
+                   "</div>" +
+                   "<div class='row g-1 mt-1'>" +
+                   "<div class='col-6'><input id='c-fmt-" + i + "' type='text' class='form-control form-control-sm' placeholder='N2' value='" + esc(c.format || "") + "' aria-label='" + (AR ? "التنسيق" : "Format") + "'></div>" +
+                   "<div class='col-6'>" + select("c-total-" + i, [
+                       { v: 0, t: AR ? "بلا إجمالي" : "No total" }, { v: 1, t: "SUM" }, { v: 2, t: "AVG" },
+                       { v: 3, t: "MIN" }, { v: 4, t: "MAX" }, { v: 5, t: "COUNT" }
+                   ], c.total) + "</div>" +
+                   "</div></div>";
+        }).join("");
+
+        return "<div class='fs-8 fw-bold text-gray-700 mb-2'>" + (AR ? "أعمدة الجدول" : "Table columns") + "</div>" +
+               rows +
+               "<button type='button' id='c-add' class='btn btn-sm btn-light-primary w-100 fs-8'>" +
+               "<i class='ki-outline ki-plus fs-5 me-1'></i>" + (AR ? "إضافة عمود" : "Add column") + "</button>";
+    }
+
+    function wireProps(e, b) {
+        function on(id, ev, fn) {
+            var node = $(id);
+            if (node) { node.addEventListener(ev, fn); }
+        }
+        function edit(fn) { snapshot(); fn(); renderCanvas(); renderStatus(); }
+        function num(id, dflt) {
+            var v = parseFloat($(id).value);
+            return isNaN(v) ? dflt : v;
+        }
+
+        on("px", "change", function () { edit(function () { e.xMm = Math.max(0, num("px", e.xMm)); }); });
+        on("py", "change", function () { edit(function () { e.yMm = Math.max(0, num("py", e.yMm)); }); });
+        on("pw", "change", function () { edit(function () { e.widthMm = Math.max(1, num("pw", e.widthMm)); }); });
+        on("ph", "change", function () { edit(function () { e.heightMm = Math.max(1, num("ph", e.heightMm)); }); });
+
+        on("p-text", "input", function () { e.text = $("p-text").value; renderCanvas(); });
+        on("p-field", "change", function () { edit(function () { e.fieldKey = $("p-field").value || null; }); });
+        on("p-agg", "change", function () { edit(function () { e.aggregate = parseInt($("p-agg").value, 10); }); });
+        on("p-sys", "change", function () { edit(function () { e.systemField = parseInt($("p-sys").value, 10); }); });
+        on("p-role", "change", function () { edit(function () { e.imageRole = parseInt($("p-role").value, 10); }); });
+        on("p-asset", "change", function () {
+            edit(function () {
+                var v = $("p-asset").value;
+                e.assetId = v === "" ? null : parseInt(v, 10);
+            });
+        });
+        on("p-fit", "change", function () { edit(function () { e.fit = parseInt($("p-fit").value, 10); }); });
+
+        on("p-font", "change", function () { edit(function () { e.style.fontFamily = $("p-font").value || null; }); });
+        on("p-size", "change", function () { edit(function () { e.style.fontSizePt = Math.max(4, num("p-size", 9)); }); });
+        on("p-bold", "click", function () { edit(function () { e.style.bold = !e.style.bold; }); renderProps(); });
+        on("p-italic", "click", function () { edit(function () { e.style.italic = !e.style.italic; }); renderProps(); });
+        on("p-underline", "click", function () { edit(function () { e.style.underline = !e.style.underline; }); renderProps(); });
+        on("p-align", "change", function () { edit(function () { e.style.align = parseInt($("p-align").value, 10); }); });
+        on("p-valign", "change", function () { edit(function () { e.style.verticalAlign = parseInt($("p-valign").value, 10); }); });
+        on("p-numfmt", "change", function () { e.style.numberFormat = $("p-numfmt").value || null; });
+        on("p-datefmt", "change", function () { e.style.dateFormat = $("p-datefmt").value || null; });
+
+        on("p-color", "change", function () { edit(function () { e.style.color = $("p-color").value; }); });
+        on("p-bg", "change", function () { edit(function () { e.style.background = $("p-bg").value; }); });
+        on("p-bcolor", "change", function () { edit(function () { e.style.borderColor = $("p-bcolor").value; }); });
+        on("p-border", "change", function () { edit(function () { e.style.borderStyle = parseInt($("p-border").value, 10); }); });
+        on("p-pad", "change", function () { edit(function () { e.style.paddingMm = Math.max(0, num("p-pad", 0.5)); }); });
+
+        Array.prototype.forEach.call(document.querySelectorAll("[data-clear]"), function (btn) {
+            btn.addEventListener("click", function () {
+                var id = btn.getAttribute("data-clear");
+                edit(function () {
+                    if (id === "p-color") { e.style.color = null; }
+                    if (id === "p-bg") { e.style.background = null; }
+                    if (id === "p-bcolor") { e.style.borderColor = null; }
+                });
+                renderProps();
+            });
+        });
+
+        // ---- table columns ----
+        on("c-add", "click", function () {
+            edit(function () {
+                e.columns = e.columns || [];
+                var f = S.fields[0];
+                e.columns.push({ fieldKey: f ? f.key : "", headerText: null, widthMm: 25, align: 0, format: null, total: 0 });
+            });
+            renderProps();
+        });
+
+        (e.columns || []).forEach(function (c, i) {
+            on("c-field-" + i, "change", function () { edit(function () { c.fieldKey = $("c-field-" + i).value; }); });
+            on("c-head-" + i, "change", function () { edit(function () { c.headerText = $("c-head-" + i).value || null; }); });
+            on("c-width-" + i, "change", function () { edit(function () { c.widthMm = Math.max(5, num("c-width-" + i, 25)); }); });
+            on("c-align-" + i, "change", function () { edit(function () { c.align = parseInt($("c-align-" + i).value, 10); }); });
+            on("c-fmt-" + i, "change", function () { edit(function () { c.format = $("c-fmt-" + i).value || null; }); });
+            on("c-total-" + i, "change", function () { edit(function () { c.total = parseInt($("c-total-" + i).value, 10); }); });
+
+            on("c-cdel-" + i, "click", function () { });
+        });
+
+        Array.prototype.forEach.call(document.querySelectorAll("[data-cdel]"), function (btn) {
+            btn.addEventListener("click", function () {
+                edit(function () { e.columns.splice(parseInt(btn.getAttribute("data-cdel"), 10), 1); });
+                renderProps();
+            });
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-cup]"), function (btn) {
+            btn.addEventListener("click", function () {
+                var i = parseInt(btn.getAttribute("data-cup"), 10);
+                if (i <= 0) { return; }
+                edit(function () { var t = e.columns[i - 1]; e.columns[i - 1] = e.columns[i]; e.columns[i] = t; });
+                renderProps();
+            });
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-cdown]"), function (btn) {
+            btn.addEventListener("click", function () {
+                var i = parseInt(btn.getAttribute("data-cdown"), 10);
+                if (i >= e.columns.length - 1) { return; }
+                edit(function () { var t = e.columns[i + 1]; e.columns[i + 1] = e.columns[i]; e.columns[i] = t; });
+                renderProps();
+            });
+        });
+    }
+
+    // =============================================================================================
+    // BAND LIST — heights and the grouping field.
+    // =============================================================================================
+    function renderBandList() {
+        var groupable = S.fields.filter(function (f) { return f.groupable; });
+
+        $("cbd-bandlist").innerHTML = S.layout.bands.map(function (b) {
+            var isGroup = b.kind === BAND.GroupHeader || b.kind === BAND.GroupFooter;
+            var g = isGroup
+                ? "<div class='mt-1'>" + select("bg-" + b.kind,
+                    [{ v: "", t: AR ? "— بلا تجميع —" : "— no grouping —" }].concat(groupable.map(function (f) {
+                        return { v: f.key, t: f.title };
+                    })), b.groupFieldKey || "") + "</div>"
+                : "";
+
+            return "<div class='border border-dashed rounded p-2" + (S.selectedBand === b.kind ? " border-primary" : "") + "' data-bandrow='" + b.kind + "'>" +
+                   "<div class='d-flex flex-stack'>" +
+                   "<span class='fs-8 fw-bold text-gray-800'>" + esc(BAND_LABEL[b.kind]) + "</span>" +
+                   "<input id='bh-" + b.kind + "' type='number' step='1' min='0' class='form-control form-control-sm w-70px' value='" + (b.heightMm || 0) + "' aria-label='" + esc(BAND_LABEL[b.kind]) + "'>" +
+                   "</div>" + g + "</div>";
+        }).join("");
+
+        S.layout.bands.forEach(function (b) {
+            var input = $("bh-" + b.kind);
+            if (input) {
+                input.addEventListener("change", function () {
+                    var v = parseFloat(input.value);
+                    snapshot();
+                    b.heightMm = isNaN(v) ? 0 : Math.max(0, v);
+                    renderCanvas();
+                });
+            }
+            var sel = $("bg-" + b.kind);
+            if (sel) {
+                sel.addEventListener("change", function () {
+                    snapshot();
+                    b.groupFieldKey = sel.value || null;
+                    renderCanvas();
+                });
+            }
+        });
+
+        Array.prototype.forEach.call($("cbd-bandlist").querySelectorAll("[data-bandrow]"), function (rowEl) {
+            rowEl.addEventListener("click", function (ev) {
+                if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT") { return; }
+                S.selectedBand = parseInt(rowEl.getAttribute("data-bandrow"), 10);
+                renderCanvas(); renderBandList();
+            });
+        });
+    }
+
+    // =============================================================================================
+    // DATA TAB — fields, parameters, filters, sorts
+    // =============================================================================================
+    function renderFields() {
+        $("cbd-fields").innerHTML = S.fields.map(function (f) {
+            return "<button type='button' draggable='true' data-field='" + esc(f.key) + "' " +
+                   "class='btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2 cbd-tool'>" +
+                   "<i class='ki-outline ki-abstract-25 fs-5 me-2 text-primary'></i>" + esc(f.title) + "</button>";
+        }).join("");
+
+        Array.prototype.forEach.call($("cbd-fields").querySelectorAll("[data-field]"), function (b) {
+            b.addEventListener("dragstart", function (ev) {
+                ev.dataTransfer.setData("text/plain", "field:" + b.getAttribute("data-field"));
+                ev.dataTransfer.effectAllowed = "copy";
+            });
+            b.addEventListener("click", function () { dropField(b.getAttribute("data-field"), null); });
+        });
+    }
+
+    // §9. Rendered from the DESCRIPTORS the dataset declares — type, required, options, bounds — so a
+    // dataset that gains a parameter gains an input here with no change to this file.
+    function renderParams() {
+        var host = $("cbd-params");
+        $("cbd-params-empty").style.display = S.paramDefs.length ? "none" : "";
+
+        host.innerHTML = S.paramDefs.map(function (d) {
+            var v = S.parameters[d.key] == null ? "" : S.parameters[d.key];
+            var input;
+
+            if (d.options && d.options.length) {
+                input = "<select id='pa-" + esc(d.key) + "' class='form-select form-select-sm'>" +
+                        "<option value=''>" + (AR ? "— افتراضي —" : "— default —") + "</option>" +
+                        d.options.map(function (o) {
+                            return "<option value='" + esc(o.value) + "'" + (o.value === v ? " selected" : "") + ">" + esc(o.label) + "</option>";
+                        }).join("") + "</select>";
+            } else {
+                // 4 = Date in ReportFieldType; anything else takes text, and the SERVER's binder decides
+                // whether the text is acceptable. A client-side type guess here would be a second rule.
+                var type = d.type === 4 ? "date" : (d.type === 2 || d.type === 3 || d.type === 1 ? "number" : "text");
+                input = "<input id='pa-" + esc(d.key) + "' type='" + type + "' class='form-control form-control-sm' " +
+                        (d.minValue ? "min='" + esc(d.minValue) + "' " : "") +
+                        (d.maxValue ? "max='" + esc(d.maxValue) + "' " : "") +
+                        "placeholder='" + esc(d.defaultValue || "") + "' value='" + esc(v) + "'>";
+            }
+
+            return "<div><label class='fs-8 fw-semibold text-muted d-block mb-1' for='pa-" + esc(d.key) + "'>" +
+                   esc(d.title) + (d.required ? " <span class='text-danger'>*</span>" : "") + "</label>" +
+                   input +
+                   (d.help ? "<div class='form-text fs-9 mt-1'>" + esc(d.help) + "</div>" : "") +
+                   "</div>";
+        }).join("");
+
+        S.paramDefs.forEach(function (d) {
+            var node = $("pa-" + d.key);
+            if (node) {
+                node.addEventListener("change", function () {
+                    S.parameters[d.key] = node.value === "" ? null : node.value;
+                });
+            }
+        });
+    }
+
+    function renderFilters() {
+        $("cbd-filters").innerHTML = S.filters.map(function (f, i) {
+            var field = fieldOf(f.field);
+            var ops = field ? field.operators : [];
+            return "<div class='border border-dashed rounded p-2'>" +
+                   "<div class='d-flex flex-stack mb-1'>" +
+                   "<span class='fs-8 fw-bold text-gray-700'>#" + (i + 1) + "</span>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger py-0 px-1' data-fdel='" + i + "' aria-label='" + (AR ? "حذف" : "Remove") + "'><i class='ki-outline ki-cross fs-6'></i></button>" +
+                   "</div>" +
+                   select("f-field-" + i, S.fields.filter(function (x) { return x.filterable; }).map(function (x) {
+                       return { v: x.key, t: x.title };
+                   }), f.field) +
+                   "<div class='row g-1 mt-1'>" +
+                   "<div class='col-5'>" + select("f-op-" + i, ops.map(function (o) { return { v: o.operator, t: o.label }; }), f.operator) + "</div>" +
+                   "<div class='col-7'><input id='f-val-" + i + "' type='text' class='form-control form-control-sm' value='" + esc((f.values && f.values[0]) || "") + "' aria-label='" + (AR ? "القيمة" : "Value") + "'></div>" +
+                   "</div></div>";
+        }).join("");
+
+        S.filters.forEach(function (f, i) {
+            var fe = $("f-field-" + i), oe = $("f-op-" + i), ve = $("f-val-" + i);
+            if (fe) { fe.addEventListener("change", function () { f.field = fe.value; renderFilters(); }); }
+            if (oe) { oe.addEventListener("change", function () { f.operator = parseInt(oe.value, 10); }); }
+            if (ve) { ve.addEventListener("change", function () { f.values = [ve.value]; }); }
+        });
+        Array.prototype.forEach.call($("cbd-filters").querySelectorAll("[data-fdel]"), function (b) {
+            b.addEventListener("click", function () {
+                S.filters.splice(parseInt(b.getAttribute("data-fdel"), 10), 1);
+                renderFilters();
+            });
+        });
+    }
+
+    function renderSorts() {
+        $("cbd-sorts").innerHTML = S.sorts.map(function (s, i) {
+            return "<div class='d-flex align-items-center gap-1'>" +
+                   "<div class='flex-grow-1'>" + select("s-field-" + i, S.fields.filter(function (x) { return x.sortable; }).map(function (x) {
+                       return { v: x.key, t: x.title };
+                   }), s.field) + "</div>" +
+                   "<div class='w-100px'>" + select("s-dir-" + i, [
+                       { v: "false", t: AR ? "تصاعدي" : "Asc" }, { v: "true", t: AR ? "تنازلي" : "Desc" }
+                   ], String(!!s.descending)) + "</div>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger' data-sdel='" + i + "' aria-label='" + (AR ? "حذف" : "Remove") + "'><i class='ki-outline ki-cross fs-6'></i></button>" +
+                   "</div>";
+        }).join("");
+
+        S.sorts.forEach(function (s, i) {
+            var fe = $("s-field-" + i), de = $("s-dir-" + i);
+            if (fe) { fe.addEventListener("change", function () { s.field = fe.value; }); }
+            if (de) { de.addEventListener("change", function () { s.descending = de.value === "true"; }); }
+        });
+        Array.prototype.forEach.call($("cbd-sorts").querySelectorAll("[data-sdel]"), function (b) {
+            b.addEventListener("click", function () {
+                S.sorts.splice(parseInt(b.getAttribute("data-sdel"), 10), 1);
+                renderSorts();
+            });
+        });
+    }
+
+    function renderAssets() {
+        $("cbd-assets").innerHTML = S.assets.map(function (a) {
+            return "<div class='cbd-asset' draggable='true' data-asset='" + a.id + "' title='" + esc(a.title || a.fileName) + "'>" +
+                   "<img src='/api/reports/studio/assets/" + a.id + "' alt='" + esc(a.title || a.fileName) + "'></div>";
+        }).join("");
+
+        Array.prototype.forEach.call($("cbd-assets").querySelectorAll("[data-asset]"), function (node) {
+            node.addEventListener("dragstart", function (ev) {
+                ev.dataTransfer.setData("text/plain", "asset:" + node.getAttribute("data-asset"));
+                ev.dataTransfer.effectAllowed = "copy";
+            });
+            node.addEventListener("click", function () { dropAsset(parseInt(node.getAttribute("data-asset"), 10), null); });
+        });
+    }
+
+    function renderAll() {
+        renderCanvas();
+        renderProps();
+        renderBandList();
+        renderFilters();
+        renderSorts();
+        syncUndoButtons();
+    }
+
+    // =============================================================================================
+    // SERVER CALLS
+    // =============================================================================================
+    function draft() {
+        return {
+            templateId: S.templateId,
+            datasetCode: S.datasetCode,
+            name: $("cbd-name").value,
+            columns: S.columns,
+            filters: S.filters,
+            sorts: S.sorts,
+            parameters: S.parameters,
+            pageSize: 200,
+            visual: S.layout
+        };
+    }
 
     function post(url, body) {
         return fetch(url, {
@@ -352,283 +1709,303 @@
         });
     }
 
-    function draft() {
-        return {
-            templateId: state.templateId,
-            datasetCode: $("cb-studio-dataset").value,
-            name: $("cb-studio-name").value,
-            columns: state.columns,
-            filters: state.filters,
-            sorts: state.sorts,
-            pageSize: parseInt($("cb-studio-pagesize").value, 10) || 50
-        };
-    }
-
     function showErrors(list) {
-        var box = $("cb-studio-errors");
+        var box = $("cbd-errors");
         if (!list || !list.length) { box.classList.add("d-none"); box.innerHTML = ""; return; }
         box.classList.remove("d-none");
-        box.innerHTML = "<ul class='mb-0 ps-4'>" +
-            list.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>";
+        box.innerHTML = "<ul class='mb-0 ps-4'>" + list.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>";
     }
 
-    // ---- rendering -----------------------------------------------------------------------------
-    function renderFields() {
-        var host = $("cb-studio-fields");
-        $("cb-studio-field-count").textContent = fields.length;
-        if (!fields.length) { host.innerHTML = "<div class='text-muted fs-8 py-4'>" + T.nofields + "</div>"; return; }
+    function loadDataset(code) {
+        S.datasetCode = code;
+        S.fields = []; S.paramDefs = [];
+        if (!code) { renderFields(); renderParams(); renderAll(); return; }
 
-        host.innerHTML = fields.map(function (f) {
-            var on = state.columns.indexOf(f.key) >= 0;
-            return "<button type='button' class='btn btn-sm btn-flex " +
-                   (on ? "btn-light-primary" : "btn-light") +
-                   " justify-content-start fw-semibold fs-8 py-2' data-field='" + esc(f.key) + "'>" +
-                   "<i class='ki-outline " + (on ? "ki-check-square" : "ki-plus-square") + " fs-5 me-2'></i>" +
-                   esc(f.title) + "</button>";
-        }).join("");
-
-        Array.prototype.forEach.call(host.querySelectorAll("[data-field]"), function (btn) {
-            btn.addEventListener("click", function () { toggleColumn(btn.getAttribute("data-field")); });
-        });
-    }
-
-    function renderColumns() {
-        var host = $("cb-studio-columns");
-        $("cb-studio-column-count").textContent = state.columns.length;
-        $("cb-studio-columns-empty").style.display = state.columns.length ? "none" : "";
-
-        host.innerHTML = state.columns.map(function (key, i) {
-            var f = fieldOf(key);
-            return "<div class='d-flex flex-stack border border-dashed rounded p-3'>" +
-                   "<span class='fw-semibold fs-7 text-gray-800'>" + esc(f ? f.title : key) + "</span>" +
-                   "<span class='d-flex gap-1'>" +
-                   "<button type='button' class='btn btn-icon btn-sm btn-light' data-up='" + i + "' title='" + T.up + "' aria-label='" + T.up + "'><i class='ki-outline ki-up fs-5'></i></button>" +
-                   "<button type='button' class='btn btn-icon btn-sm btn-light' data-down='" + i + "' title='" + T.down + "' aria-label='" + T.down + "'><i class='ki-outline ki-down fs-5'></i></button>" +
-                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger' data-del='" + esc(key) + "' title='" + T.remove + "' aria-label='" + T.remove + "'><i class='ki-outline ki-cross fs-5'></i></button>" +
-                   "</span></div>";
-        }).join("");
-
-        Array.prototype.forEach.call(host.querySelectorAll("[data-del]"), function (b) {
-            b.addEventListener("click", function () { toggleColumn(b.getAttribute("data-del")); });
-        });
-        Array.prototype.forEach.call(host.querySelectorAll("[data-up]"), function (b) {
-            b.addEventListener("click", function () { move(parseInt(b.getAttribute("data-up"), 10), -1); });
-        });
-        Array.prototype.forEach.call(host.querySelectorAll("[data-down]"), function (b) {
-            b.addEventListener("click", function () { move(parseInt(b.getAttribute("data-down"), 10), 1); });
-        });
-    }
-
-    function move(i, by) {
-        var j = i + by;
-        if (j < 0 || j >= state.columns.length) { return; }
-        var t = state.columns[i]; state.columns[i] = state.columns[j]; state.columns[j] = t;
-        renderColumns();
-    }
-
-    function toggleColumn(key) {
-        var i = state.columns.indexOf(key);
-        if (i >= 0) { state.columns.splice(i, 1); } else { state.columns.push(key); }
-        renderFields(); renderColumns();
-    }
-
-    function renderFilters() {
-        var host = $("cb-studio-filters");
-        host.innerHTML = state.filters.map(function (flt, i) {
-            var filterable = fields.filter(function (f) { return f.filterable; });
-            var f = fieldOf(flt.field) || filterable[0];
-            var ops = (f && f.operators) || [];
-
-            return "<div class='border border-dashed rounded p-3 d-flex flex-column gap-2'>" +
-                   "<select class='form-select form-select-sm' data-flt-field='" + i + "'>" +
-                     filterable.map(function (x) {
-                        return "<option value='" + esc(x.key) + "'" + (f && x.key === f.key ? " selected" : "") + ">" + esc(x.title) + "</option>";
-                     }).join("") +
-                   "</select>" +
-                   "<select class='form-select form-select-sm' data-flt-op='" + i + "'>" +
-                     ops.map(function (o) {
-                        return "<option value='" + o.operator + "'" + (o.operator === flt.operator ? " selected" : "") + ">" + esc(o.label) + "</option>";
-                     }).join("") +
-                   "</select>" +
-                   "<div class='d-flex gap-1'>" +
-                   "<input type='text' class='form-control form-control-sm' data-flt-val='" + i + "' value='" + esc(flt.values[0] || "") + "' placeholder='" + T.value + "' aria-label='" + T.value + "' />" +
-                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger' data-flt-del='" + i + "' title='" + T.remove + "' aria-label='" + T.remove + "'><i class='ki-outline ki-cross fs-5'></i></button>" +
-                   "</div></div>";
-        }).join("");
-
-        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-field]"), function (s) {
-            s.addEventListener("change", function () {
-                var i = parseInt(s.getAttribute("data-flt-field"), 10);
-                state.filters[i].field = s.value;
-                var f = fieldOf(s.value);
-                // Reset the operator to one this field actually allows — the server would refuse the old one.
-                state.filters[i].operator = (f && f.operators.length) ? f.operators[0].operator : 0;
-                renderFilters();
-            });
-        });
-        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-op]"), function (s) {
-            s.addEventListener("change", function () {
-                state.filters[parseInt(s.getAttribute("data-flt-op"), 10)].operator = parseInt(s.value, 10);
-            });
-        });
-        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-val]"), function (s) {
-            s.addEventListener("input", function () {
-                state.filters[parseInt(s.getAttribute("data-flt-val"), 10)].values = [s.value];
-            });
-        });
-        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-del]"), function (b) {
-            b.addEventListener("click", function () {
-                state.filters.splice(parseInt(b.getAttribute("data-flt-del"), 10), 1); renderFilters();
-            });
-        });
-    }
-
-    function renderSorts() {
-        var host = $("cb-studio-sorts");
-        host.innerHTML = state.sorts.map(function (srt, i) {
-            var sortable = fields.filter(function (f) { return f.sortable; });
-            return "<div class='border border-dashed rounded p-3 d-flex flex-column gap-2'>" +
-                   "<select class='form-select form-select-sm' data-srt-field='" + i + "'>" +
-                     sortable.map(function (x) {
-                        return "<option value='" + esc(x.key) + "'" + (x.key === srt.field ? " selected" : "") + ">" + esc(x.title) + "</option>";
-                     }).join("") +
-                   "</select>" +
-                   "<div class='d-flex gap-1'>" +
-                   "<select class='form-select form-select-sm' data-srt-dir='" + i + "'>" +
-                   "<option value='0'" + (srt.descending ? "" : " selected") + ">" + T.asc + "</option>" +
-                   "<option value='1'" + (srt.descending ? " selected" : "") + ">" + T.desc + "</option>" +
-                   "</select>" +
-                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger' data-srt-del='" + i + "' title='" + T.remove + "' aria-label='" + T.remove + "'><i class='ki-outline ki-cross fs-5'></i></button>" +
-                   "</div></div>";
-        }).join("");
-
-        Array.prototype.forEach.call(host.querySelectorAll("[data-srt-field]"), function (s) {
-            s.addEventListener("change", function () {
-                state.sorts[parseInt(s.getAttribute("data-srt-field"), 10)].field = s.value;
-            });
-        });
-        Array.prototype.forEach.call(host.querySelectorAll("[data-srt-dir]"), function (s) {
-            s.addEventListener("change", function () {
-                state.sorts[parseInt(s.getAttribute("data-srt-dir"), 10)].descending = s.value === "1";
-            });
-        });
-        Array.prototype.forEach.call(host.querySelectorAll("[data-srt-del]"), function (b) {
-            b.addEventListener("click", function () {
-                state.sorts.splice(parseInt(b.getAttribute("data-srt-del"), 10), 1); renderSorts();
-            });
-        });
-    }
-
-    // ---- server calls --------------------------------------------------------------------------
-    function loadFields(datasetCode, keep) {
-        return fetch("/api/reports/studio/fields?datasetCode=" + encodeURIComponent(datasetCode))
+        fetch("/api/reports/studio/fields?datasetCode=" + encodeURIComponent(code))
             .then(function (r) { return r.json(); })
-            .then(function (d) {
-                fields = (d && d.fields) || [];
-                if (!keep) {
-                    // A dataset change resets the canvas: a column from the previous dataset would be
-                    // refused by the server anyway, and silently carrying it over reads as a bug.
-                    state.columns = fields.filter(function (f) { return f.selectedByDefault; })
-                                          .slice(0, 8).map(function (f) { return f.key; });
-                    state.filters = []; state.sorts = [];
-                }
-                renderFields(); renderColumns(); renderFilters(); renderSorts();
-            });
+            .then(function (d) { S.fields = d.fields || []; renderFields(); renderAll(); });
+
+        fetch("/api/reports/studio/parameters?datasetCode=" + encodeURIComponent(code))
+            .then(function (r) { return r.json(); })
+            .then(function (d) { S.paramDefs = d.parameters || []; renderParams(); });
     }
 
-    function run() {
+    function loadAssets() {
+        fetch("/api/reports/studio/assets")
+            .then(function (r) { return r.json(); })
+            .then(function (d) { S.assets = d.assets || []; renderAssets(); renderProps(); });
+    }
+
+    function doPreview() {
         showErrors(null);
-        $("cb-studio-status").textContent = T.running;
+        $("cbd-preview-body").innerHTML = "<div class='text-center py-10'><span class='spinner-border text-primary'></span></div>";
+        var modal = new bootstrap.Modal($("cbd-preview-modal"));
+        modal.show();
+
         post("/api/reports/studio/preview", draft())
-            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
             .then(function (res) {
                 if (!res.ok) {
-                    $("cb-studio-status").textContent = "";
-                    showErrors((res.body && res.body.errors) || []);
+                    $("cbd-preview-body").innerHTML = "";
+                    $("cbd-preview-meta").textContent = "";
+                    showErrors(res.d.errors || [AR ? "تعذر إنشاء المعاينة." : "The preview could not be produced."]);
+                    modal.hide();
                     return;
                 }
-                $("cb-studio-preview").innerHTML = res.body.html;
-                $("cb-studio-status").textContent = res.body.rowCount + " " + T.rows +
-                    (res.body.truncated ? " · " + T.partial : "");
-            })
-            .catch(function () { $("cb-studio-status").textContent = ""; });
+                // The RENDERER's markup, verbatim. Not restyled here: a preview that was prettied up locally
+                // would stop being a preview of the printed document.
+                $("cbd-preview-body").innerHTML = res.d.html;
+                $("cbd-preview-meta").textContent =
+                    (AR ? "عدد الصفوف: " : "Rows: ") + res.d.rowCount +
+                    (res.d.truncated ? (AR ? " (مقتطع)" : " (truncated)") : "");
+            });
     }
 
-    function save() {
+    function doPrint() {
+        showErrors(null);
+        post("/api/reports/studio/print", draft())
+            .then(function (r) {
+                if (!r.ok) { return r.json().then(function (d) { showErrors(d.errors || []); return null; }); }
+                return r.text();
+            })
+            .then(function (html) {
+                if (!html) { return; }
+                // A blank window carrying the SAME document the PDF converts. No second print template.
+                var w = window.open("", "_blank");
+                if (!w) { showErrors([AR ? "منع المتصفح فتح نافذة الطباعة." : "The browser blocked the print window."]); return; }
+                w.document.open(); w.document.write(html); w.document.close();
+                w.onload = function () { w.focus(); w.print(); };
+            });
+    }
+
+    function doDownload(url, body) {
+        showErrors(null);
+        post(url, body)
+            .then(function (r) {
+                if (!r.ok) { return r.json().then(function (d) { showErrors(d.errors || []); return null; }); }
+                var name = "report";
+                var cd = r.headers.get("Content-Disposition") || "";
+                var m = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(cd);
+                if (m) { name = decodeURIComponent(m[1].replace(/"/g, "")); }
+                return r.blob().then(function (b) { return { blob: b, name: name }; });
+            })
+            .then(function (file) {
+                if (!file) { return; }
+                var a = document.createElement("a");
+                a.href = URL.createObjectURL(file.blob);
+                a.download = file.name;
+                document.body.appendChild(a); a.click();
+                setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            });
+    }
+
+    function doSave() {
         showErrors(null);
         post("/api/reports/studio/save", draft())
-            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
             .then(function (res) {
-                if (!res.ok) { showErrors((res.body && res.body.errors) || []); return; }
-                state.templateId = res.body.templateId;
-                $("cb-studio-status").textContent = T.saved + " · #" + res.body.templateId;
+                if (!res.ok) { showErrors(res.d.errors || []); return; }
+                S.templateId = res.d.templateId;
+                $("cbd-status").textContent = (AR ? "تم الحفظ — نسخة " : "Saved — version ") + res.d.versionNo;
             });
     }
 
-    function exportAs(format) {
-        showErrors(null);
-        post("/api/reports/studio/export?format=" + format, draft())
-            .then(function (r) {
-                if (!r.ok) { return r.json().then(function (b) { showErrors((b && b.errors) || []); }); }
-                var name = r.headers.get("Content-Disposition") || "";
-                var m = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(name);
-                return r.blob().then(function (blob) {
-                    var url = URL.createObjectURL(blob);
-                    var a = document.createElement("a");
-                    a.href = url;
-                    a.download = m ? decodeURIComponent(m[1]) : ("report." + (format === 3 ? "csv" : "xlsx"));
-                    document.body.appendChild(a); a.click();
-                    document.body.removeChild(a); URL.revokeObjectURL(url);
-                });
+    function doOpen(templateId) {
+        fetch("/api/reports/studio/open/" + templateId)
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d) { showErrors([AR ? "تعذر فتح التقرير." : "That report could not be opened."]); return; }
+                applyDraft(d.draft);
             });
     }
 
-    // ---- wire up -------------------------------------------------------------------------------
-    var dsSelect = $("cb-studio-dataset");
-    if (!dsSelect) { return; }   // the "no data sets" state renders no builder
+    function applyDraft(dr) {
+        if (!dr) { return; }
+        S.templateId = dr.templateId || 0;
+        S.datasetCode = dr.datasetCode || "";
+        S.columns = dr.columns || [];
+        S.filters = (dr.filters || []).map(function (f) { return { field: f.field, operator: f.operator, values: f.values || [] }; });
+        S.sorts = (dr.sorts || []).map(function (s) { return { field: s.field, descending: !!s.descending }; });
+        S.parameters = dr.parameters || {};
+        S.layout = dr.visual || blankLayout();
+        S.selection = [];
+        undoStack.length = 0; redoStack.length = 0;
 
-    dsSelect.addEventListener("change", function () { loadFields(dsSelect.value, false); });
+        $("cbd-name").value = dr.name || "";
+        $("cbd-dataset").value = S.datasetCode;
+        syncPageInputs();
+        loadDataset(S.datasetCode);
+        renderAll();
+    }
 
-    $("cb-studio-add-filter").addEventListener("click", function () {
-        var filterable = fields.filter(function (f) { return f.filterable; });
-        if (!filterable.length) { return; }
-        var f = filterable[0];
-        state.filters.push({
-            field: f.key,
-            operator: f.operators.length ? f.operators[0].operator : 0,
-            values: [""]
+    // =============================================================================================
+    // PAGE SETUP INPUTS
+    // =============================================================================================
+    function syncPageInputs() {
+        var pg = S.layout.page;
+        $("cbd-paper").value = pg.pageSize;
+        $("cbd-orient").value = pg.orientation;
+        $("cbd-mt").value = pg.marginTopMm;
+        $("cbd-mb").value = pg.marginBottomMm;
+        $("cbd-ml").value = pg.marginLeftMm;
+        $("cbd-mr").value = pg.marginRightMm;
+        $("cbd-grid").value = S.layout.gridMm;
+        $("cbd-snap").checked = !!S.layout.snapToGrid;
+    }
+
+    function wirePageInputs() {
+        function bindNum(id, apply) {
+            $(id).addEventListener("change", function () {
+                var v = parseFloat($(id).value);
+                if (isNaN(v)) { return; }
+                snapshot(); apply(Math.max(0, v)); renderCanvas();
+            });
+        }
+        $("cbd-paper").addEventListener("change", function () {
+            snapshot(); S.layout.page.pageSize = parseInt($("cbd-paper").value, 10); renderCanvas();
         });
-        renderFilters();
-    });
+        $("cbd-orient").addEventListener("change", function () {
+            snapshot(); S.layout.page.orientation = parseInt($("cbd-orient").value, 10); renderCanvas();
+        });
+        bindNum("cbd-mt", function (v) { S.layout.page.marginTopMm = v; });
+        bindNum("cbd-mb", function (v) { S.layout.page.marginBottomMm = v; });
+        bindNum("cbd-ml", function (v) { S.layout.page.marginLeftMm = v; });
+        bindNum("cbd-mr", function (v) { S.layout.page.marginRightMm = v; });
+        bindNum("cbd-grid", function (v) { S.layout.gridMm = Math.max(1, v); });
 
-    $("cb-studio-add-sort").addEventListener("click", function () {
-        var sortable = fields.filter(function (f) { return f.sortable; });
-        if (!sortable.length) { return; }
-        state.sorts.push({ field: sortable[0].key, descending: false });
-        renderSorts();
-    });
+        $("cbd-snap").addEventListener("change", function () { S.layout.snapToGrid = $("cbd-snap").checked; });
+        $("cbd-showgrid").addEventListener("change", function () { S.showGrid = $("cbd-showgrid").checked; renderCanvas(); });
 
-    $("cb-studio-run").addEventListener("click", run);
-    $("cb-studio-save").addEventListener("click", save);
-    // The ENUM VALUES, not their ordinal position: ReportOutputFormat is Html=0, Pdf=1, Xlsx=2, Csv=3,
-    // PrintHtml=4. The XLSX button sent 4 in the first cut, which is PrintHtml, and the endpoint's own
-    // format guard correctly refused it with a 400 — found by runtime verification, invisible to the compiler.
-    $("cb-studio-csv").addEventListener("click", function () { exportAs(3); });    // ReportOutputFormat.Csv
-    $("cb-studio-xlsx").addEventListener("click", function () { exportAs(2); });   // ReportOutputFormat.Xlsx
-
-    // REOPEN. The draft was resolved and re-validated on the server, so what arrives here is already
-    // limited to what this caller may see today.
-    if (OPEN_DRAFT) {
-        state.templateId = OPEN_DRAFT.templateId;
-        state.columns    = OPEN_DRAFT.columns || [];
-        state.filters    = OPEN_DRAFT.filters || [];
-        state.sorts      = OPEN_DRAFT.sorts || [];
-        $("cb-studio-name").value = OPEN_DRAFT.name || "";
-        dsSelect.value = OPEN_DRAFT.datasetCode;
-        loadFields(OPEN_DRAFT.datasetCode, true);
-    } else {
-        loadFields(dsSelect.value, false);
+        $("cbd-zoom").addEventListener("input", function () {
+            S.zoom = parseInt($("cbd-zoom").value, 10) / 100;
+            $("cbd-zoom-label").textContent = Math.round(S.zoom * 100) + "%";
+            renderCanvas();
+        });
+        $("cbd-fit").addEventListener("click", function () {
+            var avail = $("cbd-scroll").clientWidth - 40;
+            var z = avail / (paper()[0] * (96 / 25.4));
+            S.zoom = Math.max(0.4, Math.min(2, z));
+            $("cbd-zoom").value = Math.round(S.zoom * 100);
+            $("cbd-zoom-label").textContent = Math.round(S.zoom * 100) + "%";
+            renderCanvas();
+        });
     }
+
+    // =============================================================================================
+    // KEYBOARD
+    // =============================================================================================
+    function wireKeyboard() {
+        document.addEventListener("keydown", function (ev) {
+            var tag = (ev.target.tagName || "").toLowerCase();
+            if (tag === "input" || tag === "textarea" || tag === "select") { return; }
+
+            var step = ev.shiftKey ? (S.layout.gridMm || 1) : 1;
+
+            if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); deleteSelection(); return; }
+            if (ev.key === "ArrowLeft") { ev.preventDefault(); nudge(-step * rtlSign(), 0); return; }
+            if (ev.key === "ArrowRight") { ev.preventDefault(); nudge(step * rtlSign(), 0); return; }
+            if (ev.key === "ArrowUp") { ev.preventDefault(); nudge(0, -step); return; }
+            if (ev.key === "ArrowDown") { ev.preventDefault(); nudge(0, step); return; }
+            if (ev.key === "Escape") { S.selection = []; renderCanvas(); renderProps(); return; }
+
+            if (ev.ctrlKey || ev.metaKey) {
+                var k = ev.key.toLowerCase();
+                if (k === "z") { ev.preventDefault(); undo(); }
+                else if (k === "y") { ev.preventDefault(); redo(); }
+                else if (k === "c") { ev.preventDefault(); copySelection(); }
+                else if (k === "v") { ev.preventDefault(); pasteClipboard(); }
+                else if (k === "d") { ev.preventDefault(); duplicateSelection(); }
+                else if (k === "a") {
+                    ev.preventDefault();
+                    var b = band(S.selectedBand);
+                    S.selection = b ? b.elements.map(function (e) { return e.id; }) : [];
+                    renderCanvas(); renderProps();
+                }
+            }
+        });
+    }
+
+    // =============================================================================================
+    // BOOT
+    // =============================================================================================
+    function boot() {
+        if (!$("cbd-toolbox")) { return; }   // the no-datasets state renders no designer
+
+        renderToolbox();
+        syncPageInputs();
+        wirePageInputs();
+        wireKeyboard();
+        renderAll();
+        loadAssets();
+
+        $("cbd-dataset").addEventListener("change", function () { loadDataset($("cbd-dataset").value); });
+
+        $("cbd-undo").addEventListener("click", undo);
+        $("cbd-redo").addEventListener("click", redo);
+        $("cbd-del").addEventListener("click", deleteSelection);
+        $("cbd-dup").addEventListener("click", duplicateSelection);
+        $("cbd-front").addEventListener("click", function () { zOrder(true); });
+        $("cbd-back").addEventListener("click", function () { zOrder(false); });
+
+        $("cbd-preview").addEventListener("click", doPreview);
+        $("cbd-print").addEventListener("click", doPrint);
+        $("cbd-pdf").addEventListener("click", function () { doDownload("/api/reports/studio/pdf", draft()); });
+        $("cbd-save").addEventListener("click", doSave);
+
+        Array.prototype.forEach.call(document.querySelectorAll("[data-export]"), function (b) {
+            b.addEventListener("click", function () {
+                doDownload("/api/reports/studio/export?format=" + b.getAttribute("data-export"), draft());
+            });
+        });
+
+        Array.prototype.forEach.call(document.querySelectorAll("[data-open]"), function (b) {
+            b.addEventListener("click", function () { doOpen(parseInt(b.getAttribute("data-open"), 10)); });
+        });
+
+        $("cbd-add-filter").addEventListener("click", function () {
+            var f = S.fields.filter(function (x) { return x.filterable; })[0];
+            if (!f) { return; }
+            S.filters.push({ field: f.key, operator: f.operators.length ? f.operators[0].operator : 0, values: [""] });
+            renderFilters();
+        });
+        $("cbd-add-sort").addEventListener("click", function () {
+            var f = S.fields.filter(function (x) { return x.sortable; })[0];
+            if (!f) { return; }
+            S.sorts.push({ field: f.key, descending: false });
+            renderSorts();
+        });
+
+        // Upload: BYTES go up, an ID comes back. No path is sent and none could be.
+        $("cbd-asset-file").addEventListener("change", function () {
+            var file = $("cbd-asset-file").files[0];
+            if (!file) { return; }
+            var fd = new FormData();
+            fd.append("file", file);
+            fd.append("role", $("cbd-asset-role").value);
+            fd.append("title", file.name);
+
+            fetch("/api/reports/studio/assets", {
+                method: "POST",
+                headers: { "RequestVerificationToken": token() },
+                body: fd
+            })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                .then(function (res) {
+                    $("cbd-asset-file").value = "";
+                    if (!res.ok) { showErrors(res.d.errors || []); return; }
+                    S.assets.unshift(res.d.asset);
+                    renderAssets(); renderProps();
+                });
+        });
+
+        @if (openDraft != null)
+        {
+            <text>applyDraft(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(openDraft, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })));</text>
+        }
+    }
+
+    if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", boot); }
+    else { boot(); }
 })();
 </script>
 }

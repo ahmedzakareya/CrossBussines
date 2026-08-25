@@ -383,7 +383,7 @@ namespace CrossBuy.BL.Reporting
                 Formats = new[]
                 {
                     ReportOutputFormat.Html, ReportOutputFormat.PrintHtml,
-                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx,
+                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx, ReportOutputFormat.Pdf,
                 },
                 MaxRows = dataset.MaxRows,
                 PreviewRows = 100,
@@ -460,6 +460,15 @@ namespace CrossBuy.BL.Reporting
                 rows = rows.Where(l => l.OwnerEmployeeId == ownerId.Value);
                 applied.Add(ReportFilter.Eq("OwnerEmployeeId", ownerId.Value.ToString()));
             }
+
+            // §10 PUSHDOWN: reaches SQL before the cap below.
+            rows = ReportFilterPushdown.Apply(rows, query.Filters, applied,
+                new Dictionary<string, ReportFilterPushdown.Push<Models.Context.Crm.Lead>>(StringComparer.Ordinal)
+                {
+                    ["Status"] = (q, op, v) => ReportFilterPushdown.Text(q, l => l.Status, op, v),
+                    ["Source"] = (q, op, v) => ReportFilterPushdown.Text(q, l => l.Source, op, v),
+                    ["Name"] = (q, op, v) => ReportFilterPushdown.Text(q, l => l.Name, op, v),
+                });
 
             int cap = query.MaxRows > 0 ? query.MaxRows : CrmDatasets.MaxRows;
 
@@ -561,6 +570,15 @@ namespace CrossBuy.BL.Reporting
                 rows = rows.Where(o => o.OwnerEmployeeId == ownerId.Value);
                 applied.Add(ReportFilter.Eq("OwnerEmployeeId", ownerId.Value.ToString()));
             }
+
+            rows = ReportFilterPushdown.Apply(rows, query.Filters, applied,
+                new Dictionary<string, ReportFilterPushdown.Push<Models.Context.Crm.Opportunity>>(StringComparer.Ordinal)
+                {
+                    ["Stage"] = (q, op, v) => ReportFilterPushdown.Text(q, o => o.Stage, op, v),
+                    ["Title"] = (q, op, v) => ReportFilterPushdown.Text(q, o => o.Title, op, v),
+                    ["PipelineId"] = (q, op, v) => ReportFilterPushdown.Integer(q, o => o.PipelineId, op, v),
+                    ["Amount"] = (q, op, v) => ReportFilterPushdown.Number(q, o => o.Amount, op, v),
+                });
 
             int cap = query.MaxRows > 0 ? query.MaxRows : CrmDatasets.MaxRows;
 

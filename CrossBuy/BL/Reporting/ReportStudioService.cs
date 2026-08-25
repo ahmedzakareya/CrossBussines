@@ -86,6 +86,45 @@ namespace CrossBuy.BL.Reporting
         public int ValueCount { get; init; } = 1;
     }
 
+    // ---- §9: THE PARAMETER LIMITATION, CLOSED ---------------------------------------------------
+    //
+    // V1 shipped a builder that could not set a dataset parameter, so every report ran on the dataset's own
+    // defaults — which for the module datasets means month-start..today. §9 records the consequence honestly:
+    // "the user cannot report on last quarter". That is not a missing convenience, it is a report tool that
+    // cannot answer the most ordinary question asked of one.
+    //
+    // The fix is NOT a date box bolted onto the screen. It is to surface the parameters the DATASET ALREADY
+    // DECLARES — key, type, required, default, closed option set, bounds — and let the platform's own
+    // IReportParameterBinder validate the values. So there is no second parameter model, no hardcoded period,
+    // and a dataset that later adds a parameter gains an input with no Studio change.
+    //
+    // SystemSupplied descriptors (CompanyId, EmployeeId, Culture, Now) are ABSENT from this list, exactly as
+    // ReportParameterDescriptor's own comment requires: the UI must not render an input for them, and a value
+    // supplied for one is ignored rather than honoured. That is what keeps "no browser companyId authority"
+    // true at the parameter layer too.
+    public sealed class StudioParameterOption
+    {
+        public required string Key { get; init; }
+        public required string Title { get; init; }
+        public ReportFieldType Type { get; init; }
+        public bool Required { get; init; }
+        public bool AllowMultiple { get; init; }
+        public string? DefaultValue { get; init; }
+        public string? Help { get; init; }
+        public string? MinValue { get; init; }
+        public string? MaxValue { get; init; }
+
+        // A closed value set, when the descriptor declares one. Rendered as a select, and enforced by the
+        // binder regardless of what the browser sends.
+        public IReadOnlyList<StudioParameterChoice> Options { get; init; } = Array.Empty<StudioParameterChoice>();
+    }
+
+    public sealed class StudioParameterChoice
+    {
+        public required string Value { get; init; }
+        public required string Label { get; init; }
+    }
+
     public sealed class StudioSavedReport
     {
         public required int TemplateId { get; init; }
@@ -133,6 +172,15 @@ namespace CrossBuy.BL.Reporting
         public List<StudioFilterDraft> Filters { get; set; } = new();
         public List<StudioSortDraft> Sorts { get; set; } = new();
         public int PageSize { get; set; } = 50;
+
+        // §9. Key → text value, in the same notation the binder already accepts. Text rather than typed so a
+        // browser value goes through EXACTLY the binder a default goes through, and cannot bypass its bounds,
+        // its option set or its type check by arriving pre-parsed.
+        public Dictionary<string, string?> Parameters { get; set; } = new();
+
+        // §14. The positioned design. Null for a V1 column-list report, which is still a legitimate thing to
+        // build — the designer is an addition, not a replacement.
+        public ReportVisualLayout? Visual { get; set; }
     }
 
     public sealed class StudioValidation
@@ -147,6 +195,13 @@ namespace CrossBuy.BL.Reporting
         public IReadOnlyList<ReportFilter> Filters { get; set; } = Array.Empty<ReportFilter>();
         public IReadOnlyList<ReportSort> Sorts { get; set; } = Array.Empty<ReportSort>();
         public int PageSize { get; set; } = 50;
+
+        public IReadOnlyDictionary<string, string?> Parameters { get; set; } = new Dictionary<string, string?>();
+
+        // The layout AFTER validation. On a strict submission this is the layout as supplied (or the whole
+        // submission failed); it is never a partially-repaired one, because silently moving somebody's elements
+        // is worse than telling them what is wrong.
+        public ReportVisualLayout? Visual { get; set; }
     }
 
     public interface IReportStudioService
@@ -157,6 +212,14 @@ namespace CrossBuy.BL.Reporting
         // same "no such thing, as far as you are concerned" answer the Viewer gives.
         Task<IReadOnlyList<StudioFieldOption>> FieldsAsync(string datasetCode,
             CancellationToken cancellationToken = default);
+
+        // §9. The user-settable parameters this dataset declares. Empty when the dataset is not theirs — the
+        // same answer FieldsAsync gives, for the same reason.
+        Task<IReadOnlyList<StudioParameterOption>> ParametersAsync(string datasetCode,
+            CancellationToken cancellationToken = default);
+
+        // The images this caller may place. Company-scoped by IReportAssetService; a foreign id is not in it.
+        Task<IReadOnlyList<ReportAssetSummary>> AssetsAsync(CancellationToken cancellationToken = default);
 
         // THE GATE. Everything below calls it; nothing bypasses it.
         Task<StudioValidation> ValidateAsync(StudioDraft draft, CancellationToken cancellationToken = default);
@@ -193,6 +256,8 @@ namespace CrossBuy.BL.Reporting
         private readonly IReportTemplateService _templates;
         private readonly IReportService _reports;
         private readonly IBusinessContextAccessor _contexts;
+        private readonly IReportVisualLayoutValidator _visual;
+        private readonly IReportAssetService _assets;
 
         public ReportStudioService(
             IReportDatasetRegistry datasets,
@@ -200,8 +265,12 @@ namespace CrossBuy.BL.Reporting
             IReportPermissionEvaluator permissions,
             IReportTemplateService templates,
             IReportService reports,
-            IBusinessContextAccessor contexts)
+            IBusinessContextAccessor contexts,
+            IReportVisualLayoutValidator visual,
+            IReportAssetService assets)
         {
+            _visual = visual;
+            _assets = assets;
             _datasets = datasets;
             _catalog = catalog;
             _permissions = permissions;
@@ -350,6 +419,49 @@ namespace CrossBuy.BL.Reporting
                 .ToList();
         }
 
+        public async Task<IReadOnlyList<StudioParameterOption>> ParametersAsync(string datasetCode,
+            CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context is not { CompanyId: > 0 }) return Array.Empty<StudioParameterOption>();
+
+            var dataset = await PermittedDatasetAsync(datasetCode, context, cancellationToken);
+            if (dataset is null) return Array.Empty<StudioParameterOption>();
+
+            bool arabic = Arabic;
+
+            return dataset.Parameters
+                .Where(pd => !pd.SystemSupplied)   // see StudioParameterOption's header
+                .Select(pd => new StudioParameterOption
+                {
+                    Key = pd.Key,
+                    Title = arabic ? pd.TitleAr : pd.TitleEn,
+                    Type = pd.Type,
+                    Required = pd.Required,
+                    AllowMultiple = pd.AllowMultiple,
+                    DefaultValue = pd.DefaultValue,
+                    Help = arabic ? pd.HelpTextAr : pd.HelpTextEn,
+                    MinValue = pd.MinValue,
+                    MaxValue = pd.MaxValue,
+                    Options = pd.Options
+                        .Select(o => new StudioParameterChoice
+                        {
+                            Value = o.Value,
+                            Label = arabic ? o.LabelAr : o.LabelEn,
+                        })
+                        .ToList(),
+                })
+                .ToList();
+        }
+
+        public async Task<IReadOnlyList<ReportAssetSummary>> AssetsAsync(
+            CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context is not { CompanyId: > 0 }) return Array.Empty<ReportAssetSummary>();
+            return await _assets.ListAsync(context, cancellationToken);
+        }
+
         // The V1 operator vocabulary, intersected with what the field legally allows. Between/In/StartsWith and
         // the null tests exist in the platform and are deliberately NOT offered yet — V1 ships the five shapes
         // the brief names, and an operator the screen cannot express is an operator the validator would refuse.
@@ -449,7 +561,10 @@ namespace CrossBuy.BL.Reporting
                 if (!columns.Contains(key, StringComparer.Ordinal)) columns.Add(key);
             }
 
-            if (columns.Count == 0)
+            // A DESIGNED report does not need a column list: its Detail band names the fields it draws, and
+            // requiring a redundant second list would make the designer refuse a document it can render
+            // perfectly well. A V1 column-list report still needs one.
+            if (columns.Count == 0 && draft.Visual is null)
                 result.Errors.Add(arabic ? "اختر عمودًا واحدًا على الأقل." : "Choose at least one column.");
 
             // ---- filters -------------------------------------------------------------------------
@@ -530,6 +645,59 @@ namespace CrossBuy.BL.Reporting
             // ---- page size -----------------------------------------------------------------------
             var pageSize = draft.PageSize <= 0 ? 50 : Math.Min(draft.PageSize, MaxPageSize);
 
+            // ---- §9 parameters -------------------------------------------------------------------
+            //
+            // ONLY declared, non-system keys survive. An undeclared key is refused rather than passed on, so a
+            // browser cannot smuggle a value into a data source by naming something the dataset never offered;
+            // a SystemSupplied key is refused rather than ignored, so an attempt to set CompanyId is a visible
+            // error instead of a silent no-op that leaves the caller believing it worked.
+            //
+            // The VALUES are not parsed here. IReportParameterBinder owns type, bounds and option-set checking
+            // and runs inside the engine on every execution — checking them a second time here would be a
+            // second, drifting copy of a rule the platform already owns.
+            var declared = dataset.Parameters.ToDictionary(pd => pd.Key, StringComparer.Ordinal);
+            var parameters = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+            foreach (var (key, value) in draft.Parameters ?? new Dictionary<string, string?>())
+            {
+                if (string.IsNullOrWhiteSpace(value)) continue;   // "not set" — the descriptor's default applies
+
+                if (!declared.TryGetValue(key, out var descriptor))
+                {
+                    result.Errors.Add(arabic
+                        ? $"المعامل «{key}» غير معرَّف لهذه المجموعة."
+                        : $"Parameter '{key}' is not declared on this data set.");
+                    continue;
+                }
+
+                if (descriptor.SystemSupplied)
+                {
+                    result.Errors.Add(arabic
+                        ? $"المعامل «{key}» يحدده النظام ولا يمكن ضبطه."
+                        : $"Parameter '{key}' is supplied by the system and cannot be set.");
+                    continue;
+                }
+
+                parameters[key] = value;
+            }
+
+            // ---- §14 the visual layout -----------------------------------------------------------
+            //
+            // STRICT here, because this is a submission: a rejected binding is reported, never quietly removed.
+            // The permitted set handed in is the SAME `permitted` dictionary the columns were checked against,
+            // which is what makes "a persisted layout can never bypass current field permissions" structural —
+            // there is one permitted set per validation and every part of the draft is checked against it.
+            ReportVisualLayout? visual = null;
+            if (draft.Visual is not null)
+            {
+                var assetIds = await _assets.PermittedIdsAsync(context, cancellationToken);
+                var check = _visual.Validate(draft.Visual, dataset,
+                    permitted.Keys.ToHashSet(StringComparer.Ordinal), assetIds);
+
+                if (!check.Ok) result.Errors.AddRange(check.Errors);
+                else visual = draft.Visual;
+            }
+
             if (result.Ok)
             {
                 result.Definition = definition;
@@ -538,6 +706,8 @@ namespace CrossBuy.BL.Reporting
                 result.Filters = filters;
                 result.Sorts = sorts;
                 result.PageSize = pageSize;
+                result.Parameters = parameters;
+                result.Visual = visual;
             }
             return result;
         }
@@ -582,6 +752,16 @@ namespace CrossBuy.BL.Reporting
                 if (!fetched.Contains(key, StringComparer.Ordinal)) fetched.Add(key);
             }
 
+            // A DESIGNED report fetches what its ELEMENTS bind to, not what a column list says. Without this a
+            // document whose Detail band draws InvoiceNo and GrandTotal would render two empty boxes, because
+            // the shaped view would carry only the V1 column list — the same "field not fetched" defect V1's
+            // filter bug was, in a new disguise.
+            if (validation.Visual is not null)
+            {
+                foreach (var key in VisualFieldKeys(validation.Visual))
+                    if (!fetched.Contains(key, StringComparer.Ordinal)) fetched.Add(key);
+            }
+
             var request = new ReportRequest
             {
                 ReportCode = validation.Definition!.Code,
@@ -590,6 +770,8 @@ namespace CrossBuy.BL.Reporting
                 VisibleColumns = fetched,
                 Filters = validation.Filters,
                 Sorts = validation.Sorts,
+                Parameters = validation.Parameters,
+                Visual = validation.Visual,
                 MaxRows = preview ? PreviewRows : validation.PageSize,
                 Archive = false,
             };
@@ -600,6 +782,25 @@ namespace CrossBuy.BL.Reporting
             return preview
                 ? await _reports.PreviewAsync(request, cancellationToken)
                 : await _reports.GenerateAsync(request, cancellationToken);
+        }
+
+        // Every dataset field a layout binds to, from any band: a field element, a summary's source, or a
+        // table column. One place, so a new element kind that binds a field is handled by extending this and
+        // not by hunting for fetch sites.
+        internal static IEnumerable<string> VisualFieldKeys(ReportVisualLayout layout)
+        {
+            foreach (var band in layout.Bands)
+            {
+                if (!string.IsNullOrWhiteSpace(band.GroupFieldKey)) yield return band.GroupFieldKey!;
+
+                foreach (var element in band.Elements)
+                {
+                    if (!string.IsNullOrWhiteSpace(element.FieldKey)) yield return element.FieldKey!;
+
+                    foreach (var column in element.Columns)
+                        if (!string.IsNullOrWhiteSpace(column.FieldKey)) yield return column.FieldKey!;
+                }
+            }
         }
 
         // ========================================================================================
@@ -642,7 +843,13 @@ namespace CrossBuy.BL.Reporting
                     VisibleColumns = validation.Columns,
                     Filters = validation.Filters,
                     Sorts = validation.Sorts,
+                    Parameters = validation.Parameters,
                     ShowGrandTotals = true,
+
+                    // STRUCTURE, not markup. What is stored is bands, elements and millimetres — never the DOM
+                    // the designer happened to build, which §14 forbids and which would make the saved report
+                    // un-reopenable the first time the designer's HTML changed.
+                    Visual = validation.Visual,
                 },
                 ChangeNote = "Report Studio",
             }, context, cancellationToken);
@@ -704,6 +911,25 @@ namespace CrossBuy.BL.Reporting
                         .Select(s => new StudioSortDraft { Field = s.Field, Descending = s.Descending })
                         .ToList(),
                     PageSize = 50,
+
+                    // Only DECLARED, non-system parameters come back. A stored value for a parameter the dataset
+                    // has since dropped is discarded rather than replayed into a binder that no longer knows it.
+                    Parameters = layout.Parameters
+                        .Where(kv => dataset.Parameters.Any(pd =>
+                            string.Equals(pd.Key, kv.Key, StringComparison.Ordinal) && !pd.SystemSupplied))
+                        .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal),
+
+                    // LENIENT on reopen, and the asymmetry with Validate is the whole point: refusing the
+                    // document because one element binds a field its author has since lost would leave them
+                    // unable to open their own report. The illegal bindings are DROPPED — which only ever
+                    // removes access — and everything else opens.
+                    //
+                    // §17 in one line: a saved layout is not a grant. It is re-checked against what this caller
+                    // may see TODAY, every single time it is opened.
+                    Visual = layout.Visual is null
+                        ? null
+                        : _visual.Sanitise(layout.Visual, dataset, permitted,
+                                           await _assets.PermittedIdsAsync(context, cancellationToken)).Sanitised,
                 };
             }
 

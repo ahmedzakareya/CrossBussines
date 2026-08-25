@@ -83,6 +83,22 @@ namespace CrossBuy.BL.Reporting
         // finished document.
         public bool IsPreview { get; init; }
 
+        // ---- REPORT STUDIO V2 ----------------------------------------------------------------------
+        //
+        // The positioned document design, when the resolved template has one. NULL is the normal case and means
+        // "render the column table you always rendered", which is why every existing report is unaffected.
+        //
+        // It rides on the RENDER CONTEXT rather than on a separate pipeline because §12 requires the designer,
+        // the print view and the PDF to consume ONE definition: the PDF renderer converts the print HTML, the
+        // print HTML comes from the same builder as the preview, and all three read this property. A visual
+        // report that printed differently from its preview is therefore not expressible.
+        public ReportVisualLayout? Visual { get; init; }
+
+        // assetId → data URI, resolved by the engine through IReportAssetService (company-scoped). Inlined so a
+        // headless browser converting to PDF needs no route back to the application — the same self-containment
+        // rule the HTML renderer already follows for styles.
+        public IReadOnlyDictionary<int, string> Assets { get; init; } = new Dictionary<int, string>();
+
         public bool IsArabic => Culture.TwoLetterISOLanguageName == "ar";
         public bool Rtl => PageSetup.Rtl;
 

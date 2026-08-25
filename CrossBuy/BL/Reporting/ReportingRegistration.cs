@@ -1,3 +1,5 @@
+﻿using Microsoft.Extensions.Hosting;
+
 namespace CrossBuy.BL.Reporting
 {
     // ============================================================================================
@@ -58,12 +60,18 @@ namespace CrossBuy.BL.Reporting
             // THE SUBSTITUTION POINT. Registering another IReportRenderer for Pdf AFTER this call replaces PDF
             // generation product-wide with no caller change (the registry is last-wins by design). A future
             // StimulsoftRenderer is exactly this one line.
+            // Stateless, so a singleton. Injected into HtmlReportRenderer, which is where the visual branch lives.
+            services.AddSingleton<IReportVisualRenderer, ReportVisualRenderer>();
+
             services.AddSingleton<HtmlReportRenderer>();
             services.AddSingleton<IReportRenderer>(sp => sp.GetRequiredService<HtmlReportRenderer>());
 
             // The PDF renderer is registered even though its converter is unbound: the registry reports it
             // unavailable, so a Pdf request fails with a clear operator-facing reason instead of "no renderer".
-            services.AddSingleton<IHtmlToPdfConverter, UnconfiguredHtmlToPdfConverter>();
+            // V2: the browser seam is BOUND. PlaywrightPdfReportRenderer was always registered and always
+            // answered "engine unavailable" because its converter was the unconfigured stub. A singleton
+            // because it holds one Chromium instance for the process — see the converter's header.
+            services.AddSingleton<IHtmlToPdfConverter, PlaywrightHtmlToPdfConverter>();
             services.AddSingleton<IReportRenderer, PlaywrightPdfReportRenderer>();
 
             services.AddSingleton<IReportExporter, CsvReportExporter>();
@@ -198,6 +206,28 @@ namespace CrossBuy.BL.Reporting
             // already here. See the file header for the one thing it does add — the draft gate.
             services.AddScoped<IReportStudioService, ReportStudioService>();
 
+            // V2 — the visual designer's two supporting services.
+            //
+            // The validator is a SINGLETON: it is a pure function of (layout, dataset, permitted sets) and
+            // holds nothing per-request. The permitted sets are resolved per request and handed IN, which is
+            // what keeps a stateless validator from becoming a stale-permission cache.
+            services.AddSingleton<IReportVisualLayoutValidator, ReportVisualLayoutValidator>();
+
+            // THE HOST ANCHORS THE ASSET ROOT. A relative default is resolved against the content root, which
+            // is the only place that knows where the application actually lives; an absolute one set by the
+            // host is honoured untouched.
+            services.AddSingleton(sp =>
+            {
+                var assets = options.Assets;
+                if (!Path.IsPathRooted(assets.RootPath))
+                {
+                    var root = sp.GetService<IHostEnvironment>()?.ContentRootPath ?? AppContext.BaseDirectory;
+                    assets.RootPath = Path.Combine(root, assets.RootPath);
+                }
+                return assets;
+            });
+            services.AddScoped<IReportAssetService, ReportAssetService>();
+
             // ---- R3: the user-facing surface --------------------------------------------------------------
             //
             // The presenter behind the Reports Center and the Report Viewer. SCOPED: it holds the report
@@ -225,12 +255,21 @@ namespace CrossBuy.BL.Reporting
         public ReportEngineOptions Engine { get; } = new();
         public ReportArchiveOptions Archive { get; } = new();
         public ReportPermissionOptions Permissions { get; } = new();
+        public ReportAssetOptions Assets { get; } = new();
 
         // Convenience for the common case: point the archive at the web root's uploads folder, matching where the
         // product's other uploads live.
         public ReportingPlatformOptions UseArchiveRoot(string rootPath)
         {
             if (!string.IsNullOrWhiteSpace(rootPath)) Archive.RootPath = rootPath;
+            return this;
+        }
+
+        // Where designer images live. Beside the archive by default; a host that separates uploads can point
+        // it elsewhere without the platform learning about the path.
+        public ReportingPlatformOptions UseAssetRoot(string rootPath)
+        {
+            if (!string.IsNullOrWhiteSpace(rootPath)) Assets.RootPath = rootPath;
             return this;
         }
 

@@ -470,6 +470,7 @@ namespace CrossBuy.Models.Context
         public DbSet<Reporting.ReportTagLink> ReportTagLinks { get; set; }
         public DbSet<Reporting.ReportFavorite> ReportFavorites { get; set; }
         public DbSet<Reporting.ReportShare> ReportShares { get; set; }
+        public DbSet<Reporting.ReportAsset> ReportAssets { get; set; }
         public DbSet<Reporting.ReportRun> ReportRuns { get; set; }
         public DbSet<Reporting.ReportArchiveEntry> ReportArchiveEntries { get; set; }
         public DbSet<Reporting.ReportSchedule> ReportSchedules { get; set; }

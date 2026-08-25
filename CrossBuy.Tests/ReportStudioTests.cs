@@ -39,13 +39,15 @@ namespace CrossBuy.Tests
 
         private static ReportStudioService Studio(ReportingTestHost host, params IReportDatasetDefinition[] datasets) =>
             new(host.DatasetRegistry(datasets), host.Catalog, host.PermissionEvaluator,
-                host.Templates, host.Reports(host.EngineWith(NullSource.Instance)), host.Accessor);
+                host.Templates, host.Reports(host.EngineWith(NullSource.Instance)), host.Accessor,
+                host.VisualValidator, host.Assets);
 
         // A Studio wired to a REAL data source, for the tests that actually run a report.
         private static ReportStudioService StudioWith(ReportingTestHost host, IReportDataSource source,
             params IReportDatasetDefinition[] datasets) =>
             new(host.DatasetRegistry(datasets), host.Catalog, host.PermissionEvaluator,
-                host.Templates, host.Reports(host.EngineWith(source)), host.Accessor);
+                host.Templates, host.Reports(host.EngineWith(source)), host.Accessor,
+                host.VisualValidator, host.Assets);
 
         private static readonly IReportDatasetDefinition[] AllThree =
         {

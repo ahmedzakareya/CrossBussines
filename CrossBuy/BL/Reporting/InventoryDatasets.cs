@@ -405,7 +405,7 @@ namespace CrossBuy.BL.Reporting
                 Formats = new[]
                 {
                     ReportOutputFormat.Html, ReportOutputFormat.PrintHtml,
-                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx,
+                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx, ReportOutputFormat.Pdf,
                 },
                 MaxRows = dataset.MaxRows,
                 PreviewRows = 100,
@@ -471,6 +471,18 @@ namespace CrossBuy.BL.Reporting
                 _ => rows,
             };
             if (belowQty.HasValue) rows = rows.Where(b => b.QtyOnHand < belowQty.Value);
+
+            // §10 PUSHDOWN — the same reasoning as the StockState filter above, generalised. A Studio filter now
+            // reaches SQL BEFORE the cap instead of searching the slice the cap already chose.
+            rows = ReportFilterPushdown.Apply(rows, query.Filters, applied,
+                new Dictionary<string, ReportFilterPushdown.Push<Models.Context.Inventory.StockBalance>>(StringComparer.Ordinal)
+                {
+                    ["ItemId"] = (q, op, v) => ReportFilterPushdown.Integer(q, b => b.ItemId, op, v),
+                    ["WarehouseId"] = (q, op, v) => ReportFilterPushdown.Integer(q, b => b.WarehouseId, op, v),
+                    ["QtyOnHand"] = (q, op, v) => ReportFilterPushdown.Number(q, b => b.QtyOnHand, op, v),
+                    ["AvgCost"] = (q, op, v) => ReportFilterPushdown.Number(q, b => b.AvgCost, op, v),
+                    ["TotalValue"] = (q, op, v) => ReportFilterPushdown.Number(q, b => b.TotalValue, op, v),
+                });
 
             int cap = query.MaxRows > 0 ? query.MaxRows : InventoryDatasets.OnHandMaxRows;
 
@@ -596,6 +608,19 @@ namespace CrossBuy.BL.Reporting
             else if (direction == "Out") rows = rows.Where(m => m.Direction < 0);
 
             if (sourceTypes.Count > 0) rows = rows.Where(m => m.SourceType != null && sourceTypes.Contains(m.SourceType));
+
+            rows = ReportFilterPushdown.Apply(rows, query.Filters, applied,
+                new Dictionary<string, ReportFilterPushdown.Push<Models.Context.Inventory.StockMovement>>(StringComparer.Ordinal)
+                {
+                    ["ItemId"] = (q, op, v) => ReportFilterPushdown.Integer(q, m => m.ItemId, op, v),
+                    ["WarehouseId"] = (q, op, v) => ReportFilterPushdown.Integer(q, m => m.WarehouseId, op, v),
+                    ["MovementDate"] = (q, op, v) => ReportFilterPushdown.Date(q, m => m.MovementDate, op, v),
+                    ["SourceType"] = (q, op, v) => ReportFilterPushdown.Text(q, m => m.SourceType, op, v),
+                    ["MovementNo"] = (q, op, v) => ReportFilterPushdown.Text(q, m => m.MovementNo, op, v),
+                    ["QtyBase"] = (q, op, v) => ReportFilterPushdown.Number(q, m => m.QtyBase, op, v),
+                    ["UnitCost"] = (q, op, v) => ReportFilterPushdown.Number(q, m => m.UnitCost, op, v),
+                    ["TotalCost"] = (q, op, v) => ReportFilterPushdown.Number(q, m => m.TotalCost, op, v),
+                });
 
             int cap = query.MaxRows > 0 ? query.MaxRows : InventoryDatasets.MovementMaxRows;
 

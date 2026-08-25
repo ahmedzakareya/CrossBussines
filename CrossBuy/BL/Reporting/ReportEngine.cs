@@ -129,8 +129,10 @@ namespace CrossBuy.BL.Reporting
             IReportTemplateService templates, IReportParameterBinder binder,
             IReportDataSourceRegistry dataSources, IReportDataShaper shaper, IReportOutputPipeline output,
             IReportArchiveService archive, IReportHistoryService history, IReportBrandingProvider branding,
-            ReportEngineOptions options, IReportClock clock, ILogger<ReportEngine> logger)
+            ReportEngineOptions options, IReportClock clock, ILogger<ReportEngine> logger,
+            IReportAssetService? assets = null)
         {
+            _assets = assets;
             _catalog = catalog;
             _authorization = authorization;
             _templates = templates;
@@ -144,6 +146,44 @@ namespace CrossBuy.BL.Reporting
             _options = options;
             _clock = clock;
             _logger = logger;
+        }
+
+        // OPTIONAL on purpose. A deployment (or a test host) with no asset store still renders every report; it
+        // simply has no images to inline. Requiring it would couple every existing report to a V2 table.
+        private readonly IReportAssetService? _assets;
+
+        // ----------------------------------------------------------------------------------------------
+        // ASSET INLINING. The bytes are read through IReportAssetService, which applies the company predicate on
+        // its own query — so an id belonging to another tenant resolves to nothing here exactly as it does
+        // everywhere else, and a layout carrying a foreign id renders a gap rather than a leak.
+        //
+        // Nothing runs at all unless a visual layout actually references an image. That is what keeps every
+        // existing report (and a test host with no ReportAssets table) on precisely the path it was on before.
+        // ----------------------------------------------------------------------------------------------
+        private async Task<IReadOnlyDictionary<int, string>> ResolveAssetsAsync(ReportVisualLayout? visual,
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            var empty = (IReadOnlyDictionary<int, string>)new Dictionary<int, string>();
+            if (visual is null || _assets is null) return empty;
+
+            var ids = visual.Bands
+                .SelectMany(b => b.Elements)
+                .Where(e => e.Kind == ReportElementKind.Image && e.AssetId is > 0)
+                .Select(e => e.AssetId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (ids.Count == 0) return empty;
+
+            var map = new Dictionary<int, string>();
+            foreach (var id in ids)
+            {
+                var asset = await _assets.ReadAsync(id, context, cancellationToken);
+                if (asset is null) continue;   // not this company's, or deleted — renders as an empty box
+                map[id] = "data:" + asset.Value.ContentType + ";base64,"
+                        + Convert.ToBase64String(asset.Value.Bytes);
+            }
+            return map;
         }
 
         public async Task<ReportResult> GenerateAsync(ReportRequest request, BusinessContext context,
@@ -218,6 +258,14 @@ namespace CrossBuy.BL.Reporting
                 : layout.VisibleColumns;
 
             var pageSetup = request.PageSetup ?? layout.PageSetup;
+
+            // Same precedence as PageSetup directly above: an explicit request wins, else the stored template's.
+            var visual = request.Visual ?? layout.Visual;
+
+            // A DESIGNED report carries its own paper, and it is the authority for it: the designer positioned
+            // every element against that page's printable box in millimetres, so honouring a different PageSetup
+            // here would print the document at a size it was never laid out for.
+            if (visual is not null) pageSetup = visual.Page;
 
             var maxRows = ResolveMaxRows(definition, request);
 
@@ -307,6 +355,10 @@ namespace CrossBuy.BL.Reporting
                 GeneratedAt = startedAt,
                 GeneratedBy = context.EmployeeId?.ToString(),
                 IsPreview = request.Kind == ReportRunKind.Preview,
+
+                // V2. Null for every column-list report, which is all of them until somebody designs one.
+                Visual = visual,
+                Assets = await ResolveAssetsAsync(visual, context, cancellationToken),
             };
 
             ReportArtifact artifact;

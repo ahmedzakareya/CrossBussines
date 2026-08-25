@@ -31,6 +31,13 @@ namespace CrossBuy.BL.Reporting
         public bool IsAvailable => true;
         public string? UnavailableReason => null;
 
+        // REPORT STUDIO V2. Optional so a composition root that constructs this renderer by hand keeps compiling;
+        // when it is absent a visual layout falls back to the column table rather than failing, which is the safe
+        // direction — the report still renders, it is simply not positioned.
+        private readonly IReportVisualRenderer? _visual;
+
+        public HtmlReportRenderer(IReportVisualRenderer? visual = null) => _visual = visual;
+
         public Task<ReportArtifact> RenderAsync(ReportRenderContext context,
             CancellationToken cancellationToken = default)
         {
@@ -46,6 +53,29 @@ namespace CrossBuy.BL.Reporting
         // ------------------------------------------------------------------------------------------------
         private string Build(ReportRenderContext context, bool fullDocument)
         {
+            // ---- THE V2 BRANCH ----------------------------------------------------------------------
+            //
+            // A resolved template that carries a positioned design is rendered by the visual renderer instead of
+            // the column table. It sits HERE, in the one builder both Html and PrintHtml go through and which the
+            // PDF renderer also converts, so all three outputs take the branch together and cannot disagree.
+            if (context.Visual is not null && _visual is not null)
+            {
+                return _visual.Render(new ReportVisualRenderContext
+                {
+                    Layout = context.Visual,
+                    Definition = context.View.Definition,
+                    Data = context.View,
+                    Assets = context.Assets,
+                    ReportTitle = context.Title,
+                    Arabic = context.IsArabic,
+                    Now = context.GeneratedAt,
+
+                    // A FRAGMENT for the embedded preview pane, a standalone DOCUMENT for print and PDF — the
+                    // same distinction fullDocument already draws for the table renderer.
+                    ScreenPreview = !fullDocument,
+                });
+            }
+
             var sb = new StringBuilder(16 * 1024);
             var view = context.View;
             var dir = context.Rtl ? "rtl" : "ltr";

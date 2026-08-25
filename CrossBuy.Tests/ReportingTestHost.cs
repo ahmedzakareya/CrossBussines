@@ -120,7 +120,7 @@ namespace CrossBuy.Tests
             Binder = new ReportParameterBinder(Clock);
             Shaper = new ReportDataShaper();
 
-            Html = new HtmlReportRenderer();
+            Html = new HtmlReportRenderer(VisualRenderer);
             PdfConverter = new UnconfiguredHtmlToPdfConverter();
             Renderers = new ReportRendererRegistry(new IReportRenderer[]
             {
@@ -155,7 +155,7 @@ namespace CrossBuy.Tests
             Branding = new CompanyReportBrandingProvider(Db);
 
             Engine = new ReportEngine(Catalog, Authorization, Templates, Binder, DataSources, Shaper, Output,
-                Archive, History, Branding, EngineOptions, Clock, NullLogger<ReportEngine>.Instance);
+                Archive, History, Branding, EngineOptions, Clock, NullLogger<ReportEngine>.Instance, Assets);
 
             ScheduleCalculator = new ReportScheduleCalculator();
             Schedules = new ReportScheduleService(Db, Catalog, Authorization, ScheduleCalculator, Clock);
@@ -180,7 +180,7 @@ namespace CrossBuy.Tests
             new(Catalog, Authorization, Templates, Binder,
                 new ReportDataSourceRegistry(new[] { dataSource }),
                 Shaper, Output, Archive, History, Branding, EngineOptions, Clock,
-                NullLogger<ReportEngine>.Instance);
+                NullLogger<ReportEngine>.Instance, Assets);
 
         // ---- R3: the user-facing surface, wired on demand ------------------------------------------------
         //
@@ -206,6 +206,26 @@ namespace CrossBuy.Tests
             IReportEngine? engine = null, params IReportDatasetDefinition[] datasets) =>
             new(Reports(engine), Library, History, Archive, Templates,
                 DatasetRegistry(datasets), Catalog, Accessor);
+
+        // ---- REPORT STUDIO V2 --------------------------------------------------------------------
+        //
+        // Built lazily for the same reason the presenter is: every existing test's construction cost stays
+        // exactly what it was, and a V2 test asks for what it needs.
+        //
+        // The asset ROOT is a per-host temp directory. Assets are files, and a suite that wrote them into a
+        // shared folder would make one test's logo visible to the next — which is the one thing an isolation
+        // test must not be able to get for free.
+        public ReportAssetOptions AssetOptions => _assetOptions ??= new ReportAssetOptions
+        {
+            RootPath = Path.Combine(Path.GetTempPath(), "cb-report-assets", Guid.NewGuid().ToString("N")[..12]),
+        };
+        private ReportAssetOptions? _assetOptions;
+
+        public ReportAssetService Assets => _assets ??= new ReportAssetService(Db, AssetOptions, Clock);
+        private ReportAssetService? _assets;
+
+        public ReportVisualLayoutValidator VisualValidator { get; } = new();
+        public ReportVisualRenderer VisualRenderer { get; } = new();
 
         public CompanyScopeHolder Holder { get; } = new();
         public CrossDbContext Db { get; }

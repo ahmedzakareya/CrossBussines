@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace CrossBuy.BL.Reporting
 {
@@ -177,6 +177,14 @@ namespace CrossBuy.BL.Reporting
         public string? TitleOverrideEn { get; init; }
 
         public bool ShowGrandTotals { get; init; } = true;
+
+        // REPORT STUDIO V2 — the positioned, banded document design.
+        //
+        // Added to ReportLayout rather than to a new table because §14 prefers it and because the layout is
+        // ALREADY persisted as JSON on the template version: a new property round-trips through
+        // ReportLayoutJson with no migration, no second saved-report path and no schema change. Null means a
+        // V1 column-list report, which keeps every existing template readable.
+        public ReportVisualLayout? Visual { get; init; }
 
         public static ReportLayout Empty { get; } = new();
     }

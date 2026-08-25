@@ -129,7 +129,7 @@ namespace CrossBuy.BL.Reporting
                 Formats = new[]
                 {
                     ReportOutputFormat.Html, ReportOutputFormat.PrintHtml,
-                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx,
+                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx, ReportOutputFormat.Pdf,
                 },
                 AllowSchedule = false,   // a catalogue listing on a cadence is noise, not information
                 AllowArchive = false,
@@ -243,7 +243,7 @@ namespace CrossBuy.BL.Reporting
                 Formats = new[]
                 {
                     ReportOutputFormat.Html, ReportOutputFormat.PrintHtml,
-                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx,
+                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx, ReportOutputFormat.Pdf,
                 },
                 MaxRows = 20_000,
                 PreviewRows = 100,

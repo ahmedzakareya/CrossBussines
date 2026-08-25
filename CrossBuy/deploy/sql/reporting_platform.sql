@@ -1,4 +1,4 @@
-/* ============================================================================================================
+﻿/* ============================================================================================================
    Reporting Platform (ADR-037) — schema, slice 1.
 
    IDEMPOTENT and ADDITIVE. Re-runnable any number of times: every object is created only if absent, and no
@@ -555,13 +555,53 @@ GO
        catalog by IReportLibraryService.SyncPlatformCategoriesAsync, so there is no hand-maintained seed list here
        that could disagree with the catalog.
    ------------------------------------------------------------------------------------------------------------ */
+-- =================================================================================================
+-- REPORT STUDIO V2 — dbo.ReportAssets
+--
+-- Stored logos, signatures and stamps for the visual designer. The BYTES are on disk under the
+-- configured asset root; this row carries only the tenancy, the identity and the metadata. A saved
+-- visual layout references an asset by Id and never by path or URL, which is what makes "no
+-- arbitrary path, no arbitrary server fetch" a property of the contract rather than a runtime check.
+--
+-- Idempotent and additive, like every other table in this slice.
+-- =================================================================================================
+IF OBJECT_ID(N'dbo.ReportAssets', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ReportAssets (
+        Id           INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ReportAssets PRIMARY KEY,
+        CompanyID    INT           NOT NULL,
+        Role         INT           NOT NULL DEFAULT(0),        -- 0 Custom 1 Logo 2 Signature 3 Stamp
+        FileName     NVARCHAR(260) NOT NULL DEFAULT(N''),
+        ContentType  NVARCHAR(120) NOT NULL DEFAULT(N''),
+        Length       BIGINT        NOT NULL DEFAULT(0),
+        StoredPath   NVARCHAR(600) NOT NULL DEFAULT(N''),
+        ContentHash  CHAR(64)      NULL,
+        Title        NVARCHAR(200) NULL,
+        DeletedAt    DATETIME2     NULL,
+        CreatedBy    INT           NULL,
+        CreatedAt    DATETIME2     NULL
+    );
+
+    -- The picker's query: this company's live assets, newest first, optionally by role.
+    CREATE INDEX IX_ReportAssets_Company_Role
+        ON dbo.ReportAssets (CompanyID, Role, Id DESC) INCLUDE (FileName, ContentType, Length, Title);
+
+    -- De-duplicates a re-upload of the same bytes within one company. FILTERED so soft-deleted rows and
+    -- rows written before hashing are not forced unique.
+    CREATE UNIQUE INDEX UX_ReportAssets_Company_Hash
+        ON dbo.ReportAssets (CompanyID, ContentHash)
+        WHERE ContentHash IS NOT NULL AND DeletedAt IS NULL;
+END;
+GO
+
 SELECT t.TableName,
        CASE WHEN OBJECT_ID(N'dbo.' + t.TableName, N'U') IS NULL THEN 'MISSING' ELSE 'ok' END AS Status
 FROM (VALUES
         (N'ReportTemplates'), (N'ReportTemplateVersions'), (N'ReportCategories'),
         (N'ReportTags'), (N'ReportTagLinks'), (N'ReportFavorites'), (N'ReportShares'),
         (N'ReportRuns'), (N'ReportArchiveEntries'),
-        (N'ReportSchedules'), (N'ReportScheduleRecipients'), (N'ReportDeliveryAttempts')
+        (N'ReportSchedules'), (N'ReportScheduleRecipients'), (N'ReportDeliveryAttempts'),
+        (N'ReportAssets')
      ) AS t(TableName)
 ORDER BY t.TableName;
 GO

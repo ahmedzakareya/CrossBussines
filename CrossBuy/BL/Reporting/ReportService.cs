@@ -96,6 +96,15 @@ namespace CrossBuy.BL.Reporting
                 Groupings = request.Groupings,
                 VisibleColumns = request.VisibleColumns,
                 PageSetup = request.PageSetup,
+
+                // FORWARDED, and it was not at first. PreviewAsync rebuilds the request field by field rather
+                // than copying it — a deliberate choice, so a preview can never inherit Archive = true — and
+                // the cost of that choice is that a NEW property is silently dropped until someone adds it
+                // here. A designed report previewed as V1's column table while printing correctly, which is
+                // precisely the "preview and print disagree" failure the one-layout rule exists to prevent.
+                // Caught by the test that renders both and compares them.
+                Visual = request.Visual,
+
                 Culture = request.Culture,
                 Archive = false,
                 MaxRows = request.MaxRows,

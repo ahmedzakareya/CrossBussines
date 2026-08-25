@@ -67,6 +67,11 @@ namespace CrossBuy.BL.Reporting
                 GeneratedAt = context.GeneratedAt,
                 GeneratedBy = context.GeneratedBy,
                 IsPreview = context.IsPreview,
+
+                // Forwarded, or the PDF would silently fall back to the column table for a designed report — the
+                // exact "preview and PDF disagree" defect the one-layout rule exists to prevent.
+                Visual = context.Visual,
+                Assets = context.Assets,
             };
 
             var html = _html.BuildPrintDocument(printContext);

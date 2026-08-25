@@ -115,6 +115,19 @@ namespace CrossBuy.BL.Reporting
         public IReadOnlyList<string> VisibleColumns { get; init; } = Array.Empty<string>();
 
         // null = the template's page setup. Only meaningful for document formats.
+        // REPORT STUDIO V2 — an UNSAVED positioned design, for the designer's live preview.
+        //
+        // Same precedence rule as PageSetup: the request wins, else the template's. It has to exist, because the
+        // whole point of a designer is to see the document BEFORE it is saved, and routing the preview through a
+        // temporary saved template would litter the catalogue with drafts.
+        //
+        // It is not an authorization hole, and deliberately not for three independent reasons: text nodes are
+        // HTML-encoded by the renderer; a field key that is not in the SHAPED view renders empty, and the shaped
+        // view is built from the caller's permitted columns; and image ids are resolved through
+        // IReportAssetService, whose query carries the company predicate. Report Studio additionally validates a
+        // submitted layout strictly before it ever gets here — but the render path does not DEPEND on that.
+        public ReportVisualLayout? Visual { get; init; }
+
         public ReportPageSetup? PageSetup { get; init; }
 
         // UI culture for labels and number/date formatting. null = the ambient CultureInfo.CurrentUICulture,

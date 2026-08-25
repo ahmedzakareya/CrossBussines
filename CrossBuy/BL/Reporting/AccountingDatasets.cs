@@ -661,12 +661,18 @@ namespace CrossBuy.BL.Reporting
             DefaultFormat = ReportOutputFormat.Html,
             Capabilities = new ReportCapabilities
             {
-                // No PDF: the converter is unbound in this deployment, and a capability list promising a format
-                // nobody can produce is a lie the UI repeats.
+                // PDF IS DECLARED, and the reason it was not is now gone: the converter is BOUND
+                // (PlaywrightHtmlToPdfConverter), so this list no longer promises a format nobody can make.
+                //
+                // Declaring it is also the correct DIVISION: this list says what the REPORT supports, which is
+                // a property of the report. Whether this DEPLOYMENT can produce it is a different question,
+                // and IReportService.AvailableFormatsAsync already answers it by intersecting this list with
+                // the renderers that are actually available — so a host without the browser installed shows no
+                // PDF button rather than a button that errors.
                 Formats = new[]
                 {
                     ReportOutputFormat.Html, ReportOutputFormat.PrintHtml,
-                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx,
+                    ReportOutputFormat.Csv, ReportOutputFormat.Xlsx, ReportOutputFormat.Pdf,
                 },
                 MaxRows = dataset.MaxRows,
                 PreviewRows = 100,
@@ -743,6 +749,19 @@ namespace CrossBuy.BL.Reporting
                 rows = rows.Where(i => i.CustomerId == customerId.Value);
                 applied.Add(ReportFilter.Eq("CustomerId", customerId.Value.ToString()));
             }
+
+            // §10 PUSHDOWN: a Studio filter reaches SQL here, BEFORE the cap below. Without this a filter
+            // searched only the newest N rows the source had already fetched.
+            rows = ReportFilterPushdown.Apply(rows, query.Filters, applied,
+                new Dictionary<string, ReportFilterPushdown.Push<Models.Context.Accounting.SalesInvoice>>(StringComparer.Ordinal)
+                {
+                    ["Status"] = (q, op, v) => ReportFilterPushdown.Text(q, i => i.Status, op, v),
+                    ["InvoiceNo"] = (q, op, v) => ReportFilterPushdown.Text(q, i => i.InvoiceNo, op, v),
+                    ["InvoiceDate"] = (q, op, v) => ReportFilterPushdown.Date(q, i => i.InvoiceDate, op, v),
+                    ["GrandTotal"] = (q, op, v) => ReportFilterPushdown.Number(q, i => i.GrandTotal, op, v),
+                    ["SubTotal"] = (q, op, v) => ReportFilterPushdown.Number(q, i => i.SubTotal, op, v),
+                    ["CustomerId"] = (q, op, v) => ReportFilterPushdown.Integer(q, i => i.CustomerId, op, v),
+                });
 
             int cap = query.MaxRows > 0 ? query.MaxRows : AccountingDatasets.MaxRows;
 
@@ -834,6 +853,16 @@ namespace CrossBuy.BL.Reporting
                 rows = rows.Where(i => i.VendorId == vendorId.Value);
                 applied.Add(ReportFilter.Eq("VendorId", vendorId.Value.ToString()));
             }
+
+            rows = ReportFilterPushdown.Apply(rows, query.Filters, applied,
+                new Dictionary<string, ReportFilterPushdown.Push<Models.Context.Accounting.PurchaseInvoice>>(StringComparer.Ordinal)
+                {
+                    ["Status"] = (q, op, v) => ReportFilterPushdown.Text(q, i => i.Status, op, v),
+                    ["InvoiceNo"] = (q, op, v) => ReportFilterPushdown.Text(q, i => i.InvoiceNo, op, v),
+                    ["InvoiceDate"] = (q, op, v) => ReportFilterPushdown.Date(q, i => i.InvoiceDate, op, v),
+                    ["GrandTotal"] = (q, op, v) => ReportFilterPushdown.Number(q, i => i.GrandTotal, op, v),
+                    ["VendorId"] = (q, op, v) => ReportFilterPushdown.Integer(q, i => i.VendorId, op, v),
+                });
 
             int cap = query.MaxRows > 0 ? query.MaxRows : AccountingDatasets.MaxRows;
 
@@ -1045,6 +1074,16 @@ namespace CrossBuy.BL.Reporting
                 applied.Add(ReportFilter.Eq("Status", status));
             }
             if (types.Count > 0) rows = rows.Where(j => types.Contains(j.JournalType));
+
+            rows = ReportFilterPushdown.Apply(rows, query.Filters, applied,
+                new Dictionary<string, ReportFilterPushdown.Push<Models.Context.Accounting.JournalEntry>>(StringComparer.Ordinal)
+                {
+                    ["Status"] = (q, op, v) => ReportFilterPushdown.Text(q, j => j.Status, op, v),
+                    ["EntryNo"] = (q, op, v) => ReportFilterPushdown.Text(q, j => j.EntryNo, op, v),
+                    ["JournalType"] = (q, op, v) => ReportFilterPushdown.Text(q, j => j.JournalType, op, v),
+                    ["SourceType"] = (q, op, v) => ReportFilterPushdown.Text(q, j => j.SourceType, op, v),
+                    ["EntryDate"] = (q, op, v) => ReportFilterPushdown.Date(q, j => j.EntryDate, op, v),
+                });
 
             int cap = query.MaxRows > 0 ? query.MaxRows : AccountingDatasets.MaxRows;
 
