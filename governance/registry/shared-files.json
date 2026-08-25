@@ -119,6 +119,13 @@
       "owner": "Integration Owner - approved shared governance infrastructure",
       "changeRule": "Changes require explicit owner approval (-AllowShared) and must not weaken the ownership checker or its exit codes.",
       "reason": "The enforcement tooling itself. A tab that could silently relax check-file-ownership.ps1 could grant itself any path."
+    },
+    {
+      "fileId": "SHF-18",
+      "path": "CrossBuy/BL/Platform/BusinessEventService.cs",
+      "owner": "Architectural invariant - owner coordination required",
+      "changeRule": "No change without pre-coordination with the owner.",
+      "reason": "The single outbox writer; the per-consumer fan-out is decided here, so one edit changes what every consumer ever sees."
     }
   ]
 }
