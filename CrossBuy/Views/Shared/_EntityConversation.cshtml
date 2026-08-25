@@ -1,0 +1,184 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    // =========================================================================================
+    // BUSINESS ENTITY CONVERSATION — one reusable panel, any supported entity family.
+    //
+    // Include it from a document view after setting two ViewBag values:
+    //
+    //     ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice;
+    //     ViewBag.ConversationEntityId   = Model.ID;
+    //
+    // It stores NOTHING and knows nothing about invoices. The thread, the comments, the mentions
+    // and the audit trail live in the Communication Platform, reached through its entity-reference
+    // abstraction; this file renders whatever the endpoint returns. Adding a third family later is
+    // two ViewBag lines in that family's view plus its own permission gate — never a copy of this.
+    //
+    // WHY THE STATES ARE DISTINCT, and why that is not decoration:
+    //   404  the caller may not read this record — or it does not exist. ONE indistinguishable
+    //        answer on purpose, so the panel cannot be used to discover that a record exists in a
+    //        company the caller cannot see. The panel says "not available" and nothing more: no
+    //        thread id, no participant name, no mention count, no body.
+    //   503  Communication is not deployed here, or the family does not carry comments. A
+    //        capability that is switched off must never look like a conversation nobody has joined.
+    //   empty  the platform answered and there is genuinely nothing to show.
+    // A collapsed set of states is how a broken deployment comes to look like a quiet week.
+    //
+    // Metronic vocabulary only — card, symbol, separator, form-control, btn, ki-outline. No new
+    // stylesheet, no bespoke class, no invented colour. Spacing uses the logical properties
+    // (ms-/me-/text-start) so Arabic RTL mirrors without a second rule.
+    // =========================================================================================
+    var convCode = (ViewBag.ConversationEntityCode as string) ?? "";
+    var convId = ViewBag.ConversationEntityId?.ToString() ?? "0";
+    var convBlank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
+    var convListUrl = Url.Action("InvoiceConversation", "Accounting") ?? "";
+    var convAddUrl = Url.Action("InvoiceConversationAdd", "Accounting") ?? "";
+}
+<div class="card mt-5" id="cbConv"
+     data-code="@convCode" data-id="@convId"
+     data-list="@convListUrl" data-add="@convAddUrl">
+    <div class="card-header align-items-center">
+        <div class="card-title fw-bold fs-5 m-0">
+            <i class="ki-outline ki-message-text-2 fs-3 text-primary me-2" aria-hidden="true"></i>@Localizer["Conversation"]
+        </div>
+        <div class="card-toolbar">
+            <span class="badge badge-light-primary d-none" id="cbConvCount"></span>
+        </div>
+    </div>
+    <div class="card-body pt-2">
+        @* Live region: a screen reader hears the list change instead of silently re-rendering. *@
+        <div id="cbConvList" class="mb-5" role="status" aria-live="polite">
+            <div class="text-muted text-center py-6 fs-7">@Localizer["Loading the conversation"]</div>
+        </div>
+
+        <div id="cbConvComposer" class="d-none">
+            <div class="separator my-4"></div>
+            @Html.AntiForgeryToken()
+            <label class="form-label fs-8 text-muted" for="cbConvInput">@Localizer["Add a message"]</label>
+            <div class="d-flex align-items-start gap-3">
+                <textarea id="cbConvInput" class="form-control form-control-solid" rows="2"
+                          placeholder="@Localizer["Write a message"]"></textarea>
+                <button type="button" class="btn btn-primary flex-shrink-0" id="cbConvSend">
+                    <i class="ki-outline ki-send fs-4" aria-hidden="true"></i>@Localizer["Send"]
+                </button>
+            </div>
+            <div class="text-danger fs-8 mt-2 d-none" id="cbConvErr" role="alert"></div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var box = document.getElementById('cbConv');
+    if (!box || box.__wired) { return; }
+    box.__wired = true;
+
+    var code = box.getAttribute('data-code');
+    var id = box.getAttribute('data-id');
+    var listUrl = box.getAttribute('data-list');
+    var addUrl = box.getAttribute('data-add');
+    var list = document.getElementById('cbConvList');
+    var composer = document.getElementById('cbConvComposer');
+    var countBadge = document.getElementById('cbConvCount');
+    var blank = '@convBlank';
+
+    var T = {
+        empty: @Html.Raw(Json.Serialize(Localizer["No messages on this record yet"].Value)),
+        unavailable: @Html.Raw(Json.Serialize(Localizer["Conversations are unavailable in this environment"].Value)),
+        denied: @Html.Raw(Json.Serialize(Localizer["This conversation is not available"].Value)),
+        failed: @Html.Raw(Json.Serialize(Localizer["The conversation could not be loaded"].Value)),
+        edited: @Html.Raw(Json.Serialize(Localizer["edited"].Value)),
+        removed: @Html.Raw(Json.Serialize(Localizer["message removed"].Value))
+    };
+
+    // Text goes in as TEXT. Every value below is server data that may contain a person's own words.
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    function when(iso) { if (!iso) { return ''; } try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+
+    function notice(text, tone) {
+        list.innerHTML = '<div class="alert bg-light-' + tone + ' d-flex align-items-center p-4 mb-0">' +
+            '<i class="ki-outline ki-information-5 fs-2 text-' + tone + ' me-3" aria-hidden="true"></i>' +
+            '<span class="fw-semibold fs-7 text-gray-700">' + esc(text) + '</span></div>';
+    }
+
+    function row(c) {
+        var mentions = (c.mentions || [])
+            .filter(function (m) { return m.display; })
+            .map(function (m) { return '<span class="badge badge-light-info fs-9 me-1">@@' + esc(m.display) + '</span>'; })
+            .join('');
+
+        var meta = '<span class="text-muted fs-8">' + esc(when(c.createdAt)) + '</span>';
+        if (c.editedAt) { meta += '<span class="text-muted fs-8 ms-2">(' + esc(T.edited) + ')</span>'; }
+
+        var body = c.isDeleted
+            ? '<span class="text-muted fst-italic fs-7">' + esc(T.removed) + '</span>'
+            : '<span class="text-gray-800 fs-7">' + esc(c.body) + '</span>';
+
+        return '<div class="d-flex align-items-start mb-4">' +
+            '<div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">' +
+                '<img src="' + blank + '" alt="" aria-hidden="true" />' +
+            '</div>' +
+            '<div class="flex-grow-1">' +
+                '<div class="d-flex flex-wrap align-items-center gap-2 mb-1">' +
+                    '<span class="fw-bold text-gray-900 fs-7">' + esc(c.author) + '</span>' + meta +
+                '</div>' +
+                '<div class="text-start">' + body + '</div>' +
+                (mentions ? '<div class="mt-1">' + mentions + '</div>' : '') +
+            '</div>' +
+        '</div>';
+    }
+
+    function render(data) {
+        var items = data.comments || [];
+        if (!items.length) {
+            list.innerHTML = '<div class="text-muted text-center py-6 fs-7">' + esc(T.empty) + '</div>';
+        } else {
+            list.innerHTML = items.map(row).join('');
+        }
+        countBadge.textContent = items.length;
+        countBadge.classList.remove('d-none');
+        composer.classList.remove('d-none');
+    }
+
+    function load() {
+        var url = listUrl + '?entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id);
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                // 404 is the deliberately indistinguishable refusal; 503 is an inactive capability.
+                if (r.status === 404) { notice(T.denied, 'secondary'); return null; }
+                if (r.status === 503) { notice(T.unavailable, 'primary'); return null; }
+                if (!r.ok) { notice(T.failed, 'warning'); return null; }
+                return r.json();
+            })
+            .then(function (d) { if (d && d.ok) { render(d); } else if (d) { notice(T.failed, 'warning'); } })
+            .catch(function () { notice(T.failed, 'warning'); });
+    }
+
+    var sendBtn = document.getElementById('cbConvSend');
+    var input = document.getElementById('cbConvInput');
+    var err = document.getElementById('cbConvErr');
+
+    sendBtn.addEventListener('click', function () {
+        var text = (input.value || '').trim();
+        err.classList.add('d-none');
+        if (!text) { return; }
+
+        var tokenEl = box.querySelector('input[name="__RequestVerificationToken"]');
+        var fd = new FormData();
+        fd.append('entity', code);
+        fd.append('id', id);
+        fd.append('body', text);
+        if (tokenEl) { fd.append('__RequestVerificationToken', tokenEl.value); }
+
+        sendBtn.disabled = true;
+        fetch(addUrl, { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function (r) { return r.status === 404 || r.status === 503 ? null : r.json(); })
+            .then(function (d) {
+                if (d && d.ok) { input.value = ''; load(); }
+                else { err.textContent = (d && d.error) ? d.error : T.failed; err.classList.remove('d-none'); }
+            })
+            .catch(function () { err.textContent = T.failed; err.classList.remove('d-none'); })
+            .finally(function () { sendBtn.disabled = false; });
+    });
+
+    load();
+})();
+</script>

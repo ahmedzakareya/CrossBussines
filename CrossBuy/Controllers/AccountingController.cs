@@ -1700,6 +1700,221 @@ namespace CrossBuy.Controllers
 			TempData["AccMsg"] = L["Role deleted"].Value;
 			return RedirectToAction(nameof(AccountingRoles));
 		}
+
+		// =============================================================================================
+		// BUSINESS CONVERSATIONS on sales and purchase invoices.
+		//
+		// The conversation is NOT stored here. There is no invoice-comment table and no second
+		// communication store: the thread, the comments, the mentions, the actors and the audit trail all
+		// belong to the Communication Platform, reached through its entity-reference abstraction
+		// (CommEntityRef + ICommEntitySurface). This controller contributes a permission decision and a
+		// projection, nothing else. Tasks proved the same architecture; this reuses it rather than
+		// re-implementing it, and the two invoice endpoints share ONE gate and ONE projection below.
+		//
+		// ORDER OF CHECKS IS THE SECURITY PROPERTY, and it is deliberate:
+		//
+		//   1. company resolved  — from IRequestCompanyResolver, never from DefaultCompanyId and never
+		//                          from anything the caller supplied.
+		//   2. module permission — IAccountingAccessService "read", the approved contract. It fails closed
+		//                          on an unresolved company and denies an unknown action.
+		//   3. THE ROW          — the invoice must exist IN THE RESOLVED COMPANY.
+		//   4. platform present — only now may the caller learn whether Communication is deployed.
+		//   5. capability       — and whether this entity family carries comments at all.
+		//
+		// Steps 2 and 3 return the IDENTICAL refusal, deliberately: "no such invoice" and "that invoice
+		// belongs to another company" must be indistinguishable. Otherwise the endpoint becomes an
+		// existence oracle — a caller could enumerate ids and learn which invoices exist elsewhere. For
+		// the same reason the refusal carries no thread id, no participant name, no mention count and no
+		// comment body, and the resolver's own reason is never rendered (it names companies).
+		// =============================================================================================
+
+		/// The families this surface serves, mapped to the frozen EntityRegistry codes. An entity code
+		/// arriving from the query string is matched against THIS list and nothing else: a caller cannot
+		/// name an arbitrary family and have it forwarded to the platform.
+		private static readonly Dictionary<string, string> ConversationFamilies =
+			new(StringComparer.Ordinal)
+			{
+				["SalesInvoice"] = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice,
+				["PurchaseInvoice"] = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice,
+			};
+
+		/// Resolved outcome of steps 1-3. `Ok == false` carries no detail on purpose.
+		private sealed class ConversationGate
+		{
+			public bool Ok;
+			public CrossBuy.Models.Platform.BusinessContext? Context;
+			public string EntityCode = "";
+		}
+
+		private CrossBuy.BL.Platform.IBusinessContextAccessor? BusinessContexts =>
+			HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.Platform.IBusinessContextAccessor))
+				as CrossBuy.BL.Platform.IBusinessContextAccessor;
+
+		/// Steps 1-3. One helper, so the two invoice endpoints cannot drift apart on authorization.
+		private async Task<ConversationGate> ConversationGateAsync(string? entity, int id, CancellationToken ct)
+		{
+			if (id <= 0) return new ConversationGate();
+			if (string.IsNullOrWhiteSpace(entity) || !ConversationFamilies.TryGetValue(entity, out var code))
+				return new ConversationGate();
+
+			// 1 — the company is RESOLVED. An unresolved scope refuses before any row is read.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return new ConversationGate();
+
+			var ctx = BusinessContexts == null ? null : await BusinessContexts.TryGetCurrentAsync(ct);
+			if (ctx == null || ctx.CompanyId <= 0) return new ConversationGate();
+
+			// 2 — the module permission, asked of the approved service rather than decided here.
+			//
+			// The SESSION-FREE overload, on the concrete AccountingAccessService: it takes the resolved
+			// BusinessContext and the target explicitly, so nothing is inferred from ambient session
+			// state. IAccountingAccessService only publishes the session-based CanAsync(action), which is
+			// why TasksController takes the concrete type for exactly this call — same precedent here.
+			// If the service cannot be resolved the gate REFUSES; it does not fall through to allow.
+			var accounting = HttpContext.RequestServices.GetService(typeof(AccountingAccessService))
+				as AccountingAccessService;
+			if (accounting == null) return new ConversationGate();
+
+			if (!await accounting.CanAsync(ctx, "read",
+					CrossBuy.Models.Platform.PermissionTarget.ForEntity(code, id), ct))
+				return new ConversationGate();
+
+			// 3 — the ROW, in the caller's own company. Company is in the WHERE clause, never checked
+			// after loading: a row from another company must never be materialised here at all.
+			bool exists = code == CrossBuy.BL.Platform.EntityRegistry.SalesInvoice
+				? await _context.SalesInvoices.AsNoTracking()
+					.AnyAsync(i => i.ID == id && i.CompanyID == ctx.CompanyId, ct)
+				: await _context.PurchaseInvoices.AsNoTracking()
+					.AnyAsync(i => i.ID == id && i.CompanyID == ctx.CompanyId, ct);
+
+			if (!exists) return new ConversationGate();
+
+			return new ConversationGate { Ok = true, Context = ctx, EntityCode = code };
+		}
+
+		/// The optional platform, asked for and never required — the same shape TasksController uses.
+		/// Both services come from ONE registration, so a half-present pair is treated as absent rather
+		/// than used: a conversation that can list but not add is a worse answer than an honest 503.
+		private (CrossBuy.BL.Communication.ICommThreadService Threads,
+		         CrossBuy.BL.Communication.ICommCommentService Comments,
+		         CrossBuy.BL.Communication.ICommEntitySurface Surface)? TryConversation()
+		{
+			var sp = HttpContext.RequestServices;
+			var threads = sp.GetService(typeof(CrossBuy.BL.Communication.ICommThreadService))
+				as CrossBuy.BL.Communication.ICommThreadService;
+			var comments = sp.GetService(typeof(CrossBuy.BL.Communication.ICommCommentService))
+				as CrossBuy.BL.Communication.ICommCommentService;
+			var surface = sp.GetService(typeof(CrossBuy.BL.Communication.ICommEntitySurface))
+				as CrossBuy.BL.Communication.ICommEntitySurface;
+			return threads is null || comments is null || surface is null ? null : (threads, comments, surface);
+		}
+
+		/// The machine code the browser branches on. A CODE, not a sentence: an unavailable capability
+		/// must be distinguishable from a refusal and from a failure, and a translated sentence cannot
+		/// carry that distinction.
+		public const string ConversationUnavailableCode = "communication_unavailable";
+
+		private IActionResult ConversationUnavailable() =>
+			StatusCode(StatusCodes.Status503ServiceUnavailable, new
+			{
+				ok = false,
+				unavailable = true,
+				code = ConversationUnavailableCode,
+				error = L["Conversations are unavailable in this environment"].Value,
+			});
+
+		// GET /Accounting/InvoiceConversation?entity=SalesInvoice&id=123
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> InvoiceConversation(string? entity, int id, CancellationToken ct = default)
+		{
+			var gate = await ConversationGateAsync(entity, id, ct);
+			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+			var comm = TryConversation();
+			if (comm == null) return ConversationUnavailable();
+
+			var reference = new CrossBuy.Models.Communication.CommEntityRef(gate.EntityCode, id);
+
+			// The registry decides whether this family carries comments — not this controller.
+			var allowed = await comm.Value.Surface.EvaluateAsync(
+				reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
+			if (!allowed.Allowed)
+				return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+				{
+					ok = false, unavailable = true, code = "capability_disabled",
+					error = L["Conversations are unavailable in this environment"].Value,
+				});
+
+			var thread = await comm.Value.Threads.GetOrCreateAsync(gate.Context!,
+				new CrossBuy.Models.Communication.CommThreadRequest { Entity = reference }, ct);
+
+			var page = await comm.Value.Comments.ListAsync(gate.Context!, thread.Id, null, ct);
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+			return Json(new
+			{
+				ok = true,
+				threadId = thread.Id,
+				entity = new { code = gate.EntityCode, id },
+				comments = page.Items.Select(c => new
+				{
+					id = c.CommentId,
+					body = c.Body,
+					author = c.Author.Display(isAr),
+					authorEmployeeId = c.Author.EmployeeId,
+					createdAt = c.CreatedAt,
+					editedAt = c.EditedAt,
+					isDeleted = c.IsDeleted,
+					// Mentions come from the platform's own projection. LABELS only — deliberately not
+					// TargetId, TargetKey or ResolvedRecipientCount. Who else was notified, and how many
+					// people a role mention reached, is not this screen's business and leaking the count
+					// would describe the shape of an organisation the caller may not be able to see.
+					mentions = c.Mentions.Select(m => new
+					{
+						display = isAr ? (m.LabelAr ?? m.LabelEn) : (m.LabelEn ?? m.LabelAr),
+					}),
+				}),
+			});
+		}
+
+		// POST /Accounting/InvoiceConversationAdd
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> InvoiceConversationAdd(string? entity, int id, string? body,
+			CancellationToken ct = default)
+		{
+			// The SAME gate as the read. A caller who may not read the invoice may not comment on it,
+			// and the refusal is identical so the write path is not an existence oracle either.
+			var gate = await ConversationGateAsync(entity, id, ct);
+			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+			if (string.IsNullOrWhiteSpace(body))
+				return Json(new { ok = false, error = L["Write a comment"].Value });
+
+			var comm = TryConversation();
+			if (comm == null) return ConversationUnavailable();
+
+			var reference = new CrossBuy.Models.Communication.CommEntityRef(gate.EntityCode, id);
+
+			var allowed = await comm.Value.Surface.EvaluateAsync(
+				reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
+			if (!allowed.Allowed)
+				return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+				{
+					ok = false, unavailable = true, code = "capability_disabled",
+					error = L["Conversations are unavailable in this environment"].Value,
+				});
+
+			// The platform owns body policy, mention parsing, the audit row and any notification fan-out.
+			// Nothing about a comment is re-implemented here, and no second notification channel exists.
+			var added = await comm.Value.Comments.AddAsync(gate.Context!,
+				new CrossBuy.Models.Communication.CommCommentRequest
+				{
+					Entity = reference,
+					Body = body,
+				}, ct);
+
+			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
+		}
 	}
 
 	public class JournalListItem

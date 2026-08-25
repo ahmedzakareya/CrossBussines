@@ -6,6 +6,7 @@
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var cust = ViewBag.Customer as Customer;
+    // Communication Hub P4 — prefill the "Send by email" action for this invoice
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
@@ -40,5 +41,22 @@
                 <div class="d-flex flex-stack fs-4"><span class="fw-bold">@SR["GrandTotal"]</span><span class="fw-bold text-primary">@Model.GrandTotal.ToString("N2")</span></div>
             </div></div>
         </div></div>
+        @{
+            // Platform Kernel slice 1 — pilot screen. The business-event timeline sits above the existing
+            // comments widget; both key off the same canonical IEntityRegistry code.
+            ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice;
+            ViewBag.TimelineEntityId = Model.ID;
+        }
+        @await Html.PartialAsync("_DocEventTimeline")
+        @* BUSINESS CONVERSATION. This replaces the _DocTimeline widget rather than sitting beside it.
+           _DocTimeline posts to /Comments/* and stores rows in the legacy DocComments table — a SECOND
+           comment store for the same (EntityType, EntityId) pair the Communication Platform already
+           owns. Two widgets writing two stores on one screen is how a conversation ends up half in each,
+           and it is the same duplicate-producer defect that had to be removed from the Workspace reports
+           panel. The platform is the authoritative store (EntityRegistry declares SalesInvoice
+           SupportsComments = true), so it keeps the screen and the legacy widget gives it up.
+           Nothing was migrated because there was nothing to migrate: DocComments held 0 rows. *@
+        @{ ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice; ViewBag.ConversationEntityId = Model.ID; }
+        @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>
