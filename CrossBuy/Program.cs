@@ -366,6 +366,20 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 builder.Services.AddScoped<CrossBuy.BL.CalendarAccessService>();
 builder.Services.AddScoped<CrossBuy.BL.ICalendarAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CalendarAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CalendarAccessService>());
+
+// Communication, registered exactly as the five module access services above are: the concrete type,
+// the module's own interface, and IModuleAccessService - all three resolving the SAME scoped instance.
+//
+// This is the layer the Communication scope was missing. CommunicationPermissionAdapter has been
+// registered since the adapters landed, but an adapter with no IModuleAccessService behind it denies
+// with "No IModuleAccessService is registered for scope 'Communication'" - fail closed and honest,
+// but the module was never actually asked. Now it is.
+//
+// It takes no IPlatformPermissionProvider, so it adds nothing to the resolution cycle that
+// TasksAccessService and CalendarAccessService break with Func<>.
+builder.Services.AddScoped<CrossBuy.BL.CommunicationAccessService>();
+builder.Services.AddScoped<CrossBuy.BL.ICommunicationAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrossBuy.BL.CommunicationAccessService>());
 builder.Services.AddScoped<ITaskService, TaskService>();   // TM-1: task management
 builder.Services.AddScoped<ITaskLinkResolver, TaskLinkResolver>();   // TM-2: polymorphic record link
 builder.Services.AddScoped<ITimesheetService, TimesheetService>();   // TM-3: timesheet

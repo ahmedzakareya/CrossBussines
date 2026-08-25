@@ -128,6 +128,146 @@ namespace CrossBuy.Tests
                 "registry entities use these scopes but no adapter claims them: " + string.Join(", ", uncovered));
         }
 
+        // ---- the SECOND layer: the module behind the adapter ------------------------------------
+        //
+        // Registering an adapter is half the wiring. The adapter delegates to an IModuleAccessService
+        // resolved by scope, so an adapter with no module behind it denies just as firmly as no adapter
+        // at all - with a different message and the same empty screen. These hold the second half.
+
+        // Scope -> the access service that implements IModuleAccessService for it, as committed.
+        // Inventory and Crm are ABSENT on purpose: InventoryAccessService and CrmAccessService implement
+        // only their own module interfaces (IInventoryAccessService / ICrmAccessService) with the legacy
+        // session-shaped CanAsync(string action), not the platform contract. There is nothing to register
+        // for those two, and inventing one would be writing module policy from the kernel side.
+        public static readonly (string Scope, string Service)[] ModuleServices =
+        {
+            (EntityRegistry.ScopeAccounting,    "AccountingAccessService"),
+            (EntityRegistry.ScopePos,           "PosAccessService"),
+            (EntityRegistry.ScopeHr,            "HrAccessService"),
+            (EntityRegistry.ScopeProjects,      "ProjectsAccessService"),
+            (EntityRegistry.ScopeCalendar,      "CalendarAccessService"),
+            (EntityRegistry.ScopeTasks,         "TasksAccessService"),
+            (EntityRegistry.ScopeCommunication, "CommunicationAccessService"),
+        };
+
+        [Fact]
+        public void Every_committed_module_access_service_is_registered_as_IModuleAccessService()
+        {
+            var source = ProgramSource();
+
+            var missing = ModuleServices
+                .Select(m => m.Service)
+                .Where(s => !IsRegisteredAsModuleAccessService(source, s))
+                .ToList();
+
+            Assert.True(missing.Count == 0,
+                "these services implement IModuleAccessService but are not registered as one, so their " +
+                "adapter has nothing to delegate to: " + string.Join(", ", missing));
+        }
+
+        [Fact]
+        public void The_module_service_and_its_module_interface_resolve_the_same_instance()
+        {
+            var source = ProgramSource();
+
+            // The three-line pattern: concrete, module interface, platform interface - the last two
+            // resolving THROUGH the concrete one. Registering the platform interface with its own
+            // AddScoped<IModuleAccessService, XAccessService>() would give the request two instances and
+            // two caches, which is the kind of thing that only shows up under load.
+            foreach (var (_, service) in ModuleServices)
+                Assert.True(IsRegisteredAsModuleAccessService(source, service),
+                    service + " is not registered as IModuleAccessService through its concrete type");
+        }
+
+        // Program.cs qualifies some of these as CrossBuy.BL.X and others as bare X - there is a
+        // `using CrossBuy.BL;` at the top, so both compile and both are present today. Matching either
+        // spelling keeps this test about the REGISTRATION rather than about one file's naming habit.
+        private static bool IsRegisteredAsModuleAccessService(string source, string service)
+            => System.Text.RegularExpressions.Regex.IsMatch(
+                source,
+                @"IModuleAccessService>\(sp => sp\.GetRequiredService<(?:CrossBuy\.BL\.)?"
+                + System.Text.RegularExpressions.Regex.Escape(service) + @">\(\)\)");
+
+        [Fact]
+        public void Scopes_with_no_committed_module_service_are_not_pretended_to_work()
+        {
+            // Inventory and Crm have an adapter and no platform access service. This test states that as
+            // the current, deliberate position: they DENY, and nothing in this phase papered over it.
+            var covered = ModuleServices.Select(m => m.Scope).ToHashSet(StringComparer.Ordinal);
+
+            Assert.DoesNotContain(EntityRegistry.ScopeInventory, covered);
+            Assert.DoesNotContain(EntityRegistry.ScopeCrm, covered);
+
+            // Manufacturing delegates to the Inventory module, so it is blocked by the same gap rather
+            // than by one of its own - which is why it must not get a policy invented for it.
+            Assert.DoesNotContain(EntityRegistry.ScopeManufacturing, covered);
+        }
+
+        [Fact]
+        public async Task An_elevated_action_never_collapses_into_View_on_any_adapter()
+        {
+            // Each adapter is asked directly, because the provider can only route ONE entity type per
+            // call and these fixtures seed a Task. Every adapter gets stubs for every scope, so each
+            // picks its own module through its own ModuleScope - including Manufacturing, which
+            // deliberately picks Inventory's.
+            foreach (var (adapter, stubs) in EveryAdapterWithAllScopes())
+            {
+                foreach (var action in new[] { PlatformActions.View, PlatformActions.ViewConfidential, PlatformActions.ViewRestricted })
+                    await adapter.CanAsync(new PermissionCheckRequest
+                    {
+                        Context = PlatformTestHost.DefaultContext(),
+                        EntityType = EntityRegistry.Task,
+                        EntityId = 1,
+                        Action = action,
+                    });
+
+                var asked = stubs.SelectMany(s => s.Asked).ToList();
+
+                // Whatever a module hears for View, it must hear something DIFFERENT for the two elevated
+                // tiers. If they collapsed, every Confidential and Restricted timeline row would be
+                // readable by anyone holding the base grant.
+                Assert.Equal(3, asked.Count);
+                Assert.Equal(3, asked.Distinct(StringComparer.Ordinal).Count());
+            }
+        }
+
+        [Fact]
+        public async Task An_action_outside_the_three_canonical_ones_is_refused_by_every_adapter()
+        {
+            foreach (var (adapter, stubs) in EveryAdapterWithAllScopes())
+            {
+                var decision = await adapter.CanAsync(new PermissionCheckRequest
+                {
+                    Context = PlatformTestHost.DefaultContext(),
+                    EntityType = EntityRegistry.Task,
+                    EntityId = 1,
+                    Action = "Delete",
+                });
+
+                Assert.False(decision.Allowed);
+                Assert.Empty(stubs.SelectMany(s => s.Asked));   // never even reached the module
+            }
+        }
+
+        private static IEnumerable<(IModulePermissionAdapter Adapter, List<StubModule> Stubs)> EveryAdapterWithAllScopes()
+        {
+            string[] scopes =
+            {
+                EntityRegistry.ScopeAccounting, EntityRegistry.ScopeInventory, EntityRegistry.ScopeManufacturing,
+                EntityRegistry.ScopeCrm, EntityRegistry.ScopePos, EntityRegistry.ScopeHr,
+                EntityRegistry.ScopeProjects, EntityRegistry.ScopeCalendar, EntityRegistry.ScopeTasks,
+                EntityRegistry.ScopeCommunication,
+            };
+
+            // Fresh stubs per adapter, so `Asked` records ONE adapter's delegation and not the running
+            // total of all ten.
+            for (int i = 0; i < Expected.Length; i++)
+            {
+                var stubs = scopes.Select(s => new StubModule(s, allow: true)).ToList();
+                yield return (Adapters(stubs.Cast<IModuleAccessService>().ToArray())[i], stubs);
+            }
+        }
+
         // ---- fail closed ------------------------------------------------------------------------
 
         [Fact]
@@ -319,8 +459,11 @@ namespace CrossBuy.Tests
         // ---- fixtures ---------------------------------------------------------------------------
 
         private static List<IModulePermissionAdapter> Adapters(IModuleAccessService module)
+            => Adapters(new[] { module });
+
+        // Order matters: it matches Expected, so a caller can pair adapter i with its expected scope.
+        private static List<IModulePermissionAdapter> Adapters(IModuleAccessService[] modules)
         {
-            var modules = new[] { module };
             return new List<IModulePermissionAdapter>
             {
                 new AccountingPermissionAdapter(modules), new InventoryPermissionAdapter(modules),
