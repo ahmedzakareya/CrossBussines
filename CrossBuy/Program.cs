@@ -326,6 +326,33 @@ CrossBuy.BL.Communication.CommunicationPlatformRegistration.AddCommunicationPlat
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformPermissionProvider, CrossBuy.BL.Platform.PlatformPermissionProvider>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.Platform.DefaultPermissionAdapter>();
 
+// The ten per-module adapters. Until now DefaultPermissionAdapter above was the ONLY registration, so
+// PlatformPermissionProvider found no adapter for any scope but "None" and denied - correctly and fail
+// closed, but for a configuration reason rather than a policy one. That denied 11 of the 14 registered
+// entities, including all six that support a timeline, which is why the governed recent feed came back
+// empty for every caller regardless of what they were entitled to see.
+//
+// NO SEMANTIC CHANGE. Each adapter delegates to its module's existing IModuleAccessService; the mapping
+// from the three canonical platform actions onto module action strings was written with the adapters and
+// is not touched here. Registering them lets the module answer instead of the platform refusing to ask.
+//
+// STILL FAIL CLOSED, in two ways worth stating because both look like bugs from outside:
+//   * a scope with no adapter is unchanged - it denies, and PlatformPermissionVocabularyTests holds that;
+//   * an adapter whose module has no IModuleAccessService registered denies too, naming the module. Four
+//     are in that state today (Inventory, Manufacturing which delegates to Inventory, Crm, Communication):
+//     their access services exist but are not registered as IModuleAccessService. Registering the adapter
+//     changes only WHICH honest denial they get, never whether they are denied.
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.AccountingPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.InventoryPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.ManufacturingPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.CrmPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.PosPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.HrPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.ProjectsPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.CalendarPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.TasksPermissionAdapter>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.ModulePermissions.CommunicationPermissionAdapter>();
+
 // Func<>, NOT the provider itself: the provider's adapters depend on IEnumerable<IModuleAccessService>,
 // which contains this very service — a cycle that hung startup with no exception. The Func defers
 // resolution past construction.
