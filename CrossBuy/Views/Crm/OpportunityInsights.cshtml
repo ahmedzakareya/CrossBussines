@@ -1,4 +1,4 @@
-@using CrossBuy.ViewModel.Ai
+﻿@using CrossBuy.ViewModel.Ai
 @using CrossBuy.BL.Platform.Ai
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
@@ -277,22 +277,29 @@
                                         <td class="text-gray-700 fs-7">@Evidence(i)</td>
                                         <td><span class="badge badge-light-@SevBadge(i.Severity)">@Localizer[SevLabel(i.Severity)]</span></td>
                                         <td class="text-end text-nowrap">
-                                            @* NAVIGATION ONLY. Nothing on this screen changes a record. *@
-                                            <a href="@Url.Action("OpportunityProducts","Crm", new { id = o.OpportunityId })"
-                                               class="btn btn-icon btn-sm btn-light me-1" title="@Localizer["Opportunity"]" aria-label="@Localizer["Opportunity"]">
-                                                <i class="ki-outline ki-chart-line-up fs-5" aria-hidden="true"></i>
-                                            </a>
-                                            @if (o.AccountId.HasValue)
-                                            {
-                                                <a href="@Url.Action("AccountEditor","Crm", new { id = o.AccountId.Value })"
-                                                   class="btn btn-icon btn-sm btn-light me-1" title="@Localizer["Account"]" aria-label="@Localizer["Account"]">
-                                                    <i class="ki-outline ki-briefcase fs-5" aria-hidden="true"></i>
-                                                </a>
-                                            }
-                                            <a href="@Url.Action("Activities","Crm")"
-                                               class="btn btn-icon btn-sm btn-light" title="@SR["Activities"]" aria-label="@SR["Activities"]">
-                                                <i class="ki-outline ki-check-square fs-5" aria-hidden="true"></i>
-                                            </a>
+                                            @* One primary action, everything else behind the menu (compact by design).
+                                               The task is PROPOSED here and created only after the user reviews it. *@
+                                            <div class="d-inline-flex align-items-center gap-1">
+                                                <button type="button" class="btn btn-sm btn-light-primary fw-bold"
+                                                        data-insight-action="task"
+                                                        data-source="CrmOpportunity" data-entity-id="@o.OpportunityId" data-finding="@i.Finding">
+                                                    @Localizer["Create follow-up"]
+                                                </button>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-icon btn-sm btn-light" type="button" data-bs-toggle="dropdown"
+                                                            aria-expanded="false" aria-label="@Localizer["More actions"]">
+                                                        <i class="ki-outline ki-dots-vertical fs-5" aria-hidden="true"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li><a class="dropdown-item" href="@Url.Action("OpportunityProducts","Crm", new { id = o.OpportunityId })">@Localizer["Opportunity"]</a></li>
+                                                        @if (o.AccountId.HasValue)
+                                                        {
+                                                            <li><a class="dropdown-item" href="@Url.Action("AccountEditor","Crm", new { id = o.AccountId.Value })">@Localizer["Account"]</a></li>
+                                                        }
+                                                        <li><a class="dropdown-item" href="@Url.Action("Activities","Crm")">@SR["Activities"]</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -313,6 +320,7 @@
 </div>
 
 @section Scripts {
+    @await Html.PartialAsync("~/Views/Shared/_InsightActionScripts.cshtml")
     <script>
         // Filters hide rows that are already rendered. They issue no request, so they cannot widen the
         // company scope or reach a record the server did not already authorise.

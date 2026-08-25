@@ -1,4 +1,4 @@
-@using CrossBuy.ViewModel.Ai
+﻿@using CrossBuy.ViewModel.Ai
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @model InventoryRiskVm
@@ -246,15 +246,49 @@
                                                 }
                                             </td>
                                             <td class="text-end text-nowrap">
-                                                @* NAVIGATION ONLY. Nothing on this screen mutates stock. *@
-                                                <a href="@Url.Action("EditItem","Inventory", new { id = it.ItemId })"
-                                                   class="btn btn-icon btn-sm btn-light me-1" title="@SR["Item"]" aria-label="@SR["Item"]">
-                                                    <i class="ki-outline ki-package fs-5" aria-hidden="true"></i>
-                                                </a>
-                                                <a href="@Url.Action("StockMovements","Inventory", new { itemId = it.ItemId })"
-                                                   class="btn btn-icon btn-sm btn-light" title="@Localizer["All movements"]" aria-label="@Localizer["All movements"]">
-                                                    <i class="ki-outline ki-arrow-right-left fs-5" aria-hidden="true"></i>
-                                                </a>
+                                                @*
+                                                    ACTIONS DEPEND ON THE FINDING, never on what is possible. A slow/dead
+                                                    item offers a REVIEW, not a replenishment: it is sitting there because
+                                                    nobody wants it, and suggesting a purchase would be harmful advice
+                                                    wearing the clothes of a recommendation. InsightActions.For decides.
+                                                *@
+                                                @{
+                                                    var acts = CrossBuy.BL.Platform.Ai.InsightActions.For(
+                                                        CrossBuy.BL.Platform.Ai.InsightActions.Sources.InventoryItem, it.Class ?? "");
+                                                    var canReplenish = acts.Contains(CrossBuy.BL.Platform.Ai.InsightActions.ActionKind.OpenReplenishment);
+                                                    var canTask = acts.Contains(CrossBuy.BL.Platform.Ai.InsightActions.ActionKind.CreateFollowUpTask);
+                                                }
+                                                <div class="d-inline-flex align-items-center gap-1">
+                                                    @if (canReplenish)
+                                                    {
+                                                        <a href="@Url.Action("NewMovement","Inventory")" class="btn btn-sm btn-light-primary fw-bold">@Localizer["Replenish"]</a>
+                                                    }
+                                                    else if (canTask)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-light-primary fw-bold"
+                                                                data-insight-action="task"
+                                                                data-source="InventoryItem" data-entity-id="@it.ItemId" data-finding="@it.Class">
+                                                            @Localizer["Review"]
+                                                        </button>
+                                                    }
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-icon btn-sm btn-light" type="button" data-bs-toggle="dropdown"
+                                                                aria-expanded="false" aria-label="@Localizer["More actions"]">
+                                                            <i class="ki-outline ki-dots-vertical fs-5" aria-hidden="true"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu dropdown-menu-end">
+                                                            @if (canReplenish && canTask)
+                                                            {
+                                                                <li><button type="button" class="dropdown-item"
+                                                                            data-insight-action="task"
+                                                                            data-source="InventoryItem" data-entity-id="@it.ItemId" data-finding="@it.Class">
+                                                                    @Localizer["Create follow-up task"]</button></li>
+                                                            }
+                                                            <li><a class="dropdown-item" href="@Url.Action("EditItem","Inventory", new { id = it.ItemId })">@SR["Item"]</a></li>
+                                                            <li><a class="dropdown-item" href="@Url.Action("StockMovements","Inventory", new { itemId = it.ItemId })">@Localizer["All movements"]</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     }
@@ -275,3 +309,5 @@
         </div>
     </div>
 </div>
+
+@await Html.PartialAsync("~/Views/Shared/_InsightActionScripts.cshtml")

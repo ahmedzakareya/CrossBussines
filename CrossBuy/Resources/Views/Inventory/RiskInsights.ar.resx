@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -169,5 +169,68 @@
   </data>
   <data name="flagged items" xml:space="preserve">
     <value>صنف مُعلَّم</value>
+  </data>
+  <data name="Create follow-up" xml:space="preserve">
+    <value>إنشاء متابعة</value>
+  </data>
+  <data name="Create follow-up task" xml:space="preserve">
+    <value>إنشاء مهمة متابعة</value>
+  </data>
+  <data name="Create task" xml:space="preserve">
+    <value>إنشاء المهمة</value>
+  </data>
+  <data name="More actions" xml:space="preserve">
+    <value>إجراءات أخرى</value>
+  </data>
+  <data name="Replenish" xml:space="preserve">
+    <value>إعادة التوريد</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>مراجعة</value>
+  </data>
+  <data name="Task title" xml:space="preserve">
+    <value>عنوان المهمة</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Assignee" xml:space="preserve">
+    <value>المسؤول</value>
+  </data>
+  <data name="Due date" xml:space="preserve">
+    <value>تاريخ الاستحقاق</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>الأولوية</value>
+  </data>
+  <data name="Normal" xml:space="preserve">
+    <value>عادية</value>
+  </data>
+  <data name="Urgent" xml:space="preserve">
+    <value>عاجلة</value>
+  </data>
+  <data name="Task created" xml:space="preserve">
+    <value>تم إنشاء المهمة</value>
+  </data>
+  <data name="Task" xml:space="preserve">
+    <value>مهمة</value>
+  </data>
+  <data name="Open task" xml:space="preserve">
+    <value>فتح المهمة</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>المصدر</value>
+  </data>
+  <data name="Finding" xml:space="preserve">
+    <value>الملاحظة</value>
+  </data>
+  <data name="A follow-up is already open for this finding" xml:space="preserve">
+    <value>توجد بالفعل متابعة مفتوحة لهذه الملاحظة</value>
+  </data>
+  <data name="Open the existing task" xml:space="preserve">
+    <value>فتح المهمة الحالية</value>
+  </data>
+  <data name="A reference back to the originating record is added automatically." xml:space="preserve">
+    <value>تتم إضافة مرجع للسجل الأصلي تلقائياً.</value>
   </data>
 </root>

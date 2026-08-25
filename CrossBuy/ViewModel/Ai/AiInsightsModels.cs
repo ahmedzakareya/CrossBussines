@@ -325,6 +325,50 @@
 				.ToList();
 	}
 
+	// ----- Insight -> Task review form (product expansion wave 2) -----
+	//
+	// Composed by the server, shown to the user for review, posted back, and then REVALIDATED FIELD BY
+	// FIELD. Nothing here is trusted on the way back just because the server produced it on the way out:
+	// between those two moments it lived in a browser.
+	//
+	// NOTE what is absent: there is no CompanyId the caller can set. The company is resolved server-side
+	// on both the GET and the POST, so there is nothing to tamper with.
+	public sealed class InsightTaskFormVm
+	{
+		/// InsightActions.Sources value. Revalidated against the frozen list.
+		public string Source { get; set; } = "";
+
+		/// The source record. Must exist IN THE RESOLVED COMPANY or it is treated as nonexistent.
+		public int EntityId { get; set; }
+
+		/// The finding that justified the action. Must be one this source offers a task for.
+		public string FindingCode { get; set; } = "";
+
+		/// Display-only, filled from the source row the server just verified.
+		public string SourceLabel { get; set; } = "";
+
+		/// Display-only. Resolved, never posted.
+		public int CompanyId { get; set; }
+
+		// ---- the editable proposal ----
+		public string Title { get; set; } = "";
+		public string? Reason { get; set; }
+		public int AssigneeEmployeeId { get; set; }
+		public DateTime? DueDate { get; set; }
+		public string Priority { get; set; } = "Normal";
+
+		/// The owner of the source record, offered as the default assignee when there is one.
+		public int SuggestedAssigneeEmployeeId { get; set; }
+
+		public List<(int Id, string Name)> Assignees { get; set; } = new();
+
+		public string? ReturnUrl { get; set; }
+
+		/// An OPEN task already raised for this exact finding, if any. The form warns instead of
+		/// silently creating a second one; the server refuses the duplicate regardless.
+		public int? ExistingOpenTaskId { get; set; }
+	}
+
 	// ----- page view model -----
 	public class AiInsightsVm
 	{

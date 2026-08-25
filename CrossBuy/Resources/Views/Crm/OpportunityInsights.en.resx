@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -217,5 +217,65 @@
   </data>
   <data name="open opportunities were reviewed and none matched a review rule." xml:space="preserve">
     <value>open opportunities were reviewed and none matched a review rule.</value>
+  </data>
+  <data name="Create follow-up" xml:space="preserve">
+    <value>Create follow-up</value>
+  </data>
+  <data name="Create follow-up task" xml:space="preserve">
+    <value>Create follow-up task</value>
+  </data>
+  <data name="Create task" xml:space="preserve">
+    <value>Create task</value>
+  </data>
+  <data name="More actions" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="Replenish" xml:space="preserve">
+    <value>Replenish</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>Review</value>
+  </data>
+  <data name="Task title" xml:space="preserve">
+    <value>Task title</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Assignee" xml:space="preserve">
+    <value>Assignee</value>
+  </data>
+  <data name="Due date" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Urgent" xml:space="preserve">
+    <value>Urgent</value>
+  </data>
+  <data name="Task created" xml:space="preserve">
+    <value>Task created</value>
+  </data>
+  <data name="Task" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="Open task" xml:space="preserve">
+    <value>Open task</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="A follow-up is already open for this finding" xml:space="preserve">
+    <value>A follow-up is already open for this finding</value>
+  </data>
+  <data name="Open the existing task" xml:space="preserve">
+    <value>Open the existing task</value>
+  </data>
+  <data name="A reference back to the originating record is added automatically." xml:space="preserve">
+    <value>A reference back to the originating record is added automatically.</value>
   </data>
 </root>

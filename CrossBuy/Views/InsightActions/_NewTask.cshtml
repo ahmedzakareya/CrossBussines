@@ -1,0 +1,101 @@
+@using CrossBuy.ViewModel.Ai
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model InsightTaskFormVm
+@{
+    // The REVIEW step. Nothing is created by opening this: the user reads what is proposed, edits what
+    // they want, and only then submits. Every field below is revalidated server-side on POST.
+}
+
+<form id="insightTaskForm" method="post" action="@Url.Action("CreateTask", "InsightActions")">
+    @Html.AntiForgeryToken()
+
+    @* Identity of the source travels as hidden fields, but carries NO authority: the server re-reads
+       the record in the resolved company and re-checks both permissions before writing anything. *@
+    <input type="hidden" asp-for="Source" />
+    <input type="hidden" asp-for="EntityId" />
+    <input type="hidden" asp-for="FindingCode" />
+    <input type="hidden" asp-for="ReturnUrl" />
+
+    <div class="modal-header py-4">
+        <h3 class="modal-title fs-5 fw-bold">@Localizer["Create follow-up task"]</h3>
+        <button type="button" class="btn btn-icon btn-sm btn-active-light" data-bs-dismiss="modal" aria-label="@SR["Close"]">
+            <i class="ki-outline ki-cross fs-2" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <div class="modal-body">
+        @if (Model.ExistingOpenTaskId.HasValue)
+        {
+            @* An open task for this exact finding already exists. Warned, not blocked silently - and the
+               server refuses the duplicate regardless of what this form does. *@
+            <div class="alert alert-warning d-flex align-items-center p-4 mb-4">
+                <i class="ki-outline ki-information-5 fs-2x me-3 flex-shrink-0"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">@Localizer["A follow-up is already open for this finding"]</div>
+                    <a href="/Tasks/Detail?id=@Model.ExistingOpenTaskId" class="fw-semibold">@Localizer["Open the existing task"]</a>
+                </div>
+            </div>
+        }
+
+        <div class="mb-4">
+            <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Source"]</div>
+            <div class="fw-bold text-gray-800">@Model.SourceLabel</div>
+            <div class="text-gray-400 fs-8">@Localizer["Finding"]: @Model.FindingCode</div>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label required fw-semibold" for="insightTaskTitle">@Localizer["Task title"]</label>
+            <input id="insightTaskTitle" asp-for="Title" class="form-control form-control-sm" required maxlength="200" />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-semibold" for="insightTaskReason">@Localizer["Reason"]</label>
+            <textarea id="insightTaskReason" asp-for="Reason" class="form-control form-control-sm" rows="3"></textarea>
+            <div class="form-text">@Localizer["A reference back to the originating record is added automatically."]</div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold" for="insightTaskAssignee">@Localizer["Assignee"]</label>
+                <select id="insightTaskAssignee" asp-for="AssigneeEmployeeId" class="form-select form-select-sm">
+                    @foreach (var a in Model.Assignees)
+                    {
+                        <option value="@a.Id" selected="@(a.Id == Model.SuggestedAssigneeEmployeeId)">@a.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold" for="insightTaskDue">@Localizer["Due date"]</label>
+                <input id="insightTaskDue" asp-for="DueDate" type="date" class="form-control form-control-sm" />
+            </div>
+            <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold" for="insightTaskPriority">@Localizer["Priority"]</label>
+                <select id="insightTaskPriority" asp-for="Priority" class="form-select form-select-sm">
+                    <option value="Low">@Localizer["Low"]</option>
+                    <option value="Normal">@Localizer["Normal"]</option>
+                    <option value="High">@Localizer["High"]</option>
+                    <option value="Urgent">@Localizer["Urgent"]</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="insightTaskError" class="alert alert-danger mt-4 d-none" role="alert"></div>
+
+        @* Success is rendered only after the server returns a persisted task id. *@
+        <div id="insightTaskSuccess" class="alert alert-success mt-4 d-none" role="status">
+            <div class="fw-bold">@Localizer["Task created"]</div>
+            <div class="mt-1">
+                <span class="me-2">@Localizer["Task"] #<span id="insightTaskId"></span></span>
+                <a id="insightTaskLink" href="#" class="fw-semibold">@Localizer["Open task"]</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer py-4">
+        <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+        <button type="submit" id="insightTaskSubmit" class="btn btn-sm btn-primary">
+            <span class="indicator-label">@Localizer["Create task"]</span>
+        </button>
+    </div>
+</form>

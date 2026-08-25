@@ -1,0 +1,98 @@
+@*
+    Shared client behaviour for the insight -> task flow, included once per insight screen.
+
+    IT ISSUES EXACTLY TWO REQUESTS: a GET that asks the server to compose the review form, and a POST
+    that asks it to create the task. It computes nothing, decides nothing, and carries no authority -
+    every field it sends is revalidated server-side, and the company is never sent at all.
+
+    Submit is disabled for the duration of the POST. That is a courtesy against a double-click, NOT the
+    duplicate protection: the server's open-task check is what actually prevents a second task, because
+    a browser guard is one refresh away from being bypassed.
+*@
+<div class="modal fade" id="insightActionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" id="insightActionModalContent"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var modalEl = document.getElementById('insightActionModal');
+    if (!modalEl || typeof bootstrap === 'undefined') return;
+    var modal = new bootstrap.Modal(modalEl);
+    var content = document.getElementById('insightActionModalContent');
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-insight-action="task"]');
+        if (!trigger) return;
+        e.preventDefault();
+
+        var url = '/InsightActions/NewTask'
+            + '?source=' + encodeURIComponent(trigger.dataset.source || '')
+            + '&entityId=' + encodeURIComponent(trigger.dataset.entityId || '')
+            + '&finding=' + encodeURIComponent(trigger.dataset.finding || '')
+            + '&returnUrl=' + encodeURIComponent(window.location.pathname);
+
+        content.innerHTML = '<div class="p-10 text-center text-gray-500">…</div>';
+        modal.show();
+
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                // A refusal comes back as JSON, not a form. Show it rather than rendering raw JSON.
+                if (html.trim().charAt(0) === '{') {
+                    var j = {};
+                    try { j = JSON.parse(html); } catch (_) { }
+                    content.innerHTML = '<div class="modal-body p-8"><div class="alert alert-danger mb-0"></div></div>';
+                    content.querySelector('.alert').textContent = j.error || 'Not permitted';
+                    return;
+                }
+                content.innerHTML = html;
+                wireForm();
+            })
+            .catch(function () {
+                content.innerHTML = '<div class="modal-body p-8"><div class="alert alert-danger mb-0">Request failed</div></div>';
+            });
+    });
+
+    function wireForm() {
+        var form = document.getElementById('insightTaskForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var submit = document.getElementById('insightTaskSubmit');
+            var err = document.getElementById('insightTaskError');
+            var okBox = document.getElementById('insightTaskSuccess');
+            err.classList.add('d-none');
+            submit.disabled = true;
+
+            fetch(form.getAttribute('action'), {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (!res || !res.ok) {
+                        err.textContent = (res && res.error) ? res.error : 'Could not create the task';
+                        err.classList.remove('d-none');
+                        submit.disabled = false;
+                        return;
+                    }
+                    // Success is shown ONLY now - after the server returned a persisted id.
+                    document.getElementById('insightTaskId').textContent = res.taskId;
+                    var link = document.getElementById('insightTaskLink');
+                    link.setAttribute('href', res.url);
+                    okBox.classList.remove('d-none');
+                    submit.classList.add('d-none');
+                })
+                .catch(function () {
+                    err.textContent = 'Request failed';
+                    err.classList.remove('d-none');
+                    submit.disabled = false;
+                });
+        });
+    }
+})();
+</script>

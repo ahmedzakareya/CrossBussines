@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
@@ -217,5 +217,65 @@
   </data>
   <data name="open opportunities were reviewed and none matched a review rule." xml:space="preserve">
     <value>opportunités ouvertes ont été examinées et aucune ne correspond à une règle de revue.</value>
+  </data>
+  <data name="Create follow-up" xml:space="preserve">
+    <value>Créer un suivi</value>
+  </data>
+  <data name="Create follow-up task" xml:space="preserve">
+    <value>Créer une tâche de suivi</value>
+  </data>
+  <data name="Create task" xml:space="preserve">
+    <value>Créer la tâche</value>
+  </data>
+  <data name="More actions" xml:space="preserve">
+    <value>Autres actions</value>
+  </data>
+  <data name="Replenish" xml:space="preserve">
+    <value>Réapprovisionner</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>Examiner</value>
+  </data>
+  <data name="Task title" xml:space="preserve">
+    <value>Titre de la tâche</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Motif</value>
+  </data>
+  <data name="Assignee" xml:space="preserve">
+    <value>Responsable</value>
+  </data>
+  <data name="Due date" xml:space="preserve">
+    <value>Échéance</value>
+  </data>
+  <data name="Priority" xml:space="preserve">
+    <value>Priorité</value>
+  </data>
+  <data name="Normal" xml:space="preserve">
+    <value>Normale</value>
+  </data>
+  <data name="Urgent" xml:space="preserve">
+    <value>Urgente</value>
+  </data>
+  <data name="Task created" xml:space="preserve">
+    <value>Tâche créée</value>
+  </data>
+  <data name="Task" xml:space="preserve">
+    <value>Tâche</value>
+  </data>
+  <data name="Open task" xml:space="preserve">
+    <value>Ouvrir la tâche</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="A follow-up is already open for this finding" xml:space="preserve">
+    <value>Un suivi est déjà ouvert pour ce constat</value>
+  </data>
+  <data name="Open the existing task" xml:space="preserve">
+    <value>Ouvrir la tâche existante</value>
+  </data>
+  <data name="A reference back to the originating record is added automatically." xml:space="preserve">
+    <value>Une référence à l'enregistrement d'origine est ajoutée automatiquement.</value>
   </data>
 </root>
