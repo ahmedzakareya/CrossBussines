@@ -31,9 +31,19 @@ public class ReconciliationTests
     // authorization-baseline.json id for id (asserted below). 410 = 157 + 110 + 143. A grown total with unchanged
     // debt is what "added protected endpoints" looks like; had the debt moved, this would be a finding instead of
     // an update. engineering/authorization-baseline.json records the same delta in frozenBaselineHistory.
-    private const int FrozenMutating = 410;
+    // REPORT STUDIO V1 (TAB-2, 2026-08-25): +5 mutating and +5 in-body protected, +0 attribute-protected,
+    // +0 debt. The five are ReportStudioApiController's endpoints — Fields, Validate, Preview, Save and
+    // Export — every one of which authorizes in-body through IReportAuthorizationService before it acts.
+    // CBA001 fired on all four POSTs when the controller first landed and was fixed by adding that gate, not
+    // by a baseline entry.
+    //
+    // THE FIGURE THAT MATTERS DID NOT MOVE: debt is still 143 and the gap set still matches
+    // authorization-baseline.json id for id. 415 = 157 + 115 + 143 — a grown total with unchanged debt, which
+    // is what "added protected endpoints" looks like, exactly as the note above records for the previous
+    // increment. Had the debt moved this would be a finding instead of an update.
+    private const int FrozenMutating = 415;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 110;
+    private const int FrozenInBodyProtected = 115;
 
     /// <summary>The enforced invariant. This one may only ever shrink.</summary>
     private const int FrozenGaps = 143;
@@ -57,7 +67,9 @@ public class ReconciliationTests
     // The controller is not a hole in the coverage metric either: it is 404 outside Development
     // ([CrossBuy.Models.DevOnly]), key-gated, and its own guards refuse to write unless the live connection
     // resolves to CrossBuyDev. A GET-only dev harness has nothing for the mutating inventory to measure.
-    private const int FrozenControllers = 45;
+    // +1 for ReportStudioApiController (Report Studio V1). Its five endpoints all authorize in-body, so the
+    // controller count and the descriptive totals move together while the debt figure does not.
+    private const int FrozenControllers = 46;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

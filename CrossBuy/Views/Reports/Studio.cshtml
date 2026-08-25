@@ -610,8 +610,11 @@
 
     $("cb-studio-run").addEventListener("click", run);
     $("cb-studio-save").addEventListener("click", save);
+    // The ENUM VALUES, not their ordinal position: ReportOutputFormat is Html=0, Pdf=1, Xlsx=2, Csv=3,
+    // PrintHtml=4. The XLSX button sent 4 in the first cut, which is PrintHtml, and the endpoint's own
+    // format guard correctly refused it with a 400 — found by runtime verification, invisible to the compiler.
     $("cb-studio-csv").addEventListener("click", function () { exportAs(3); });    // ReportOutputFormat.Csv
-    $("cb-studio-xlsx").addEventListener("click", function () { exportAs(4); });   // ReportOutputFormat.Xlsx
+    $("cb-studio-xlsx").addEventListener("click", function () { exportAs(2); });   // ReportOutputFormat.Xlsx
 
     // REOPEN. The draft was resolved and re-validated on the server, so what arrives here is already
     // limited to what this caller may see today.

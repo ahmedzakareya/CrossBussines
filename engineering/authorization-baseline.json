@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 410,
+    "mutating": 415,
     "attributeProtected": 157,
-    "inBodyProtected": 110,
+    "inBodyProtected": 115,
     "gaps": 143
   },
   "rules": [
@@ -2021,6 +2021,14 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Report Studio V1 verification closure (TAB-2, 2026-08-25)",
+      "mutating": 415,
+      "attributeProtected": 157,
+      "inBodyProtected": 115,
+      "gaps": 143,
+      "note": "Report Studio V1 added ONE controller, ReportStudioApiController, with FIVE endpoints - Fields, Validate, Preview, Save and Export. Growth is +5 mutating and +5 in-body protected, +0 attribute-protected and +0 debt, and the arithmetic still closes: 157 + 115 + 143 = 415. Every one of the five authorizes in-body through IReportAuthorizationService.AuthorizeReportAsync at the boundary before it acts, resolving the dataset's report definition from the caller's own permitted list. CBA001 FIRED ON ALL FOUR POSTS when the controller first landed and was fixed by ADDING THAT GATE - not by a baseline entry, not by a suppression, and not by reshaping a write as a GET. NO entry was added, removed or edited; the gap figure stays 143 and the entries list is byte-identical; no CBA diagnostic was suppressed and the shrink-only rule was not relaxed. Only the descriptive totals moved, because production code was added - the case this file's own rules paragraph describes."
+    },
     {
       "stage": "Stage 1 close / Stage 2A entry gate",
       "mutating": 388,

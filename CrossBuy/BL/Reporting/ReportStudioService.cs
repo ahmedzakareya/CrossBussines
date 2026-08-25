@@ -559,12 +559,35 @@ namespace CrossBuy.BL.Reporting
                     format,
                     validation.Errors.Select(e => ReportDiagnostic.Error("studio_invalid_draft", e)).ToList());
 
+            // A FILTERED OR SORTED FIELD MUST BE FETCHED, even if the user did not choose to display it.
+            //
+            // Found by runtime verification, and it was the worst possible failure mode: a draft that showed
+            // InvoiceNo and Total while filtering Status = Posted returned ZERO rows against a company with 146
+            // posted invoices. The data source projects only the requested columns, so Status was absent from
+            // every row, and the shaper's filter compared against a missing value and matched nothing. No error,
+            // no warning — just an empty report that looked like an answer.
+            //
+            // The platform already solves exactly this for groupings: ReportEngine.ResolveRequestedColumns adds
+            // the grouping fields to the fetch set for the same reason. This extends that rule to filters and
+            // sorts rather than inventing a new one, and it is done HERE rather than in the engine because the
+            // engine's behaviour is correct for every report whose columns an author fixed — Studio is the only
+            // surface where the display set and the predicate set are chosen independently.
+            //
+            // The consequence is deliberate and visible: a field you filter on appears as a column. That is a
+            // far better outcome than a silently empty page, and it shows the user what the filter acted on.
+            var fetched = validation.Columns.ToList();
+            foreach (var key in validation.Filters.Select(f => f.Field)
+                                   .Concat(validation.Sorts.Select(s => s.Field)))
+            {
+                if (!fetched.Contains(key, StringComparer.Ordinal)) fetched.Add(key);
+            }
+
             var request = new ReportRequest
             {
                 ReportCode = validation.Definition!.Code,
                 Format = format,
                 Kind = preview ? ReportRunKind.Preview : ReportRunKind.Full,
-                VisibleColumns = validation.Columns,
+                VisibleColumns = fetched,
                 Filters = validation.Filters,
                 Sorts = validation.Sorts,
                 MaxRows = preview ? PreviewRows : validation.PageSize,
