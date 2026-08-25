@@ -187,6 +187,17 @@ namespace CrossBuy.BL.Reporting
 
             services.AddScoped<IReportDatasetRegistry, ReportDatasetRegistry>();
 
+            // ---- WAVE 1: Report Studio -------------------------------------------------------------------
+            //
+            // SCOPED, because it resolves the caller's BusinessContext and their permissions on every call —
+            // which is the whole point: a Studio draft is untrusted input and is re-validated per request,
+            // never cached across them.
+            //
+            // It adds no engine, no second saved-report store and no execution path: it composes the dataset
+            // registry, the permission evaluator, the template service and IReportService, all of which were
+            // already here. See the file header for the one thing it does add — the draft gate.
+            services.AddScoped<IReportStudioService, ReportStudioService>();
+
             // ---- R3: the user-facing surface --------------------------------------------------------------
             //
             // The presenter behind the Reports Center and the Report Viewer. SCOPED: it holds the report

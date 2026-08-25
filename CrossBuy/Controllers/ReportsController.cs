@@ -42,14 +42,17 @@ namespace CrossBuy.Controllers
         private readonly IReportArchiveService _archive;
         private readonly IReportHistoryService _history;
         private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
+        private readonly IReportStudioService _studio;
 
         public ReportsController(
             IReportsCenterPresenter presenter,
             IReportService reports,
             IReportArchiveService archive,
             IReportHistoryService history,
-            CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
+            CrossBuy.BL.Platform.IBusinessContextAccessor contexts,
+            IReportStudioService studio)
         {
+            _studio = studio;
             _presenter = presenter;
             _reports = reports;
             _archive = archive;
@@ -77,6 +80,33 @@ namespace CrossBuy.Controllers
                 FavoritesOnly = favorites,
                 Arabic = Arabic,
             }, cancellationToken);
+
+            return View(model);
+        }
+
+        // =========================================================================================
+        // THE REPORT STUDIO
+        //
+        // A GET like every other action here, and for the same reason: opening the builder is a read. The
+        // builder's own writes (preview, save) are POSTs on ReportStudioApiController, which carries the
+        // antiforgery filter this controller deliberately does not — the same read/write split the Reports
+        // Center already uses.
+        //
+        // The screen is handed only what the CALLER may build over. Nothing about the shape of a dataset the
+        // caller cannot use reaches the browser, so there is no client-side filtering to get wrong.
+        // =========================================================================================
+        [HttpGet]
+        public async Task<IActionResult> Studio(int? open, CancellationToken cancellationToken)
+        {
+            var model = await _studio.BuildAsync(cancellationToken);
+
+            // `open` reopens a saved report. It is resolved SERVER-SIDE and re-validated against today's
+            // permissions — a stale bookmark to somebody else's template simply yields an empty canvas rather
+            // than an error that would confirm the template exists.
+            if (open is > 0)
+            {
+                ViewData["StudioOpenDraft"] = await _studio.OpenAsync(open.Value, cancellationToken);
+            }
 
             return View(model);
         }

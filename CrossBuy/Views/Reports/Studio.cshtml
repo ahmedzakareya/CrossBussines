@@ -1,0 +1,631 @@
+@using CrossBuy.BL.Reporting
+@using System.Globalization
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model ReportStudioModel
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = arabic ? "استوديو التقارير" : "Report Studio";
+    var openDraft = ViewData["StudioOpenDraft"] as StudioDraft;
+}
+@*
+    ============================================================================================
+    THE REPORT STUDIO.
+
+    VISUAL AUTHORITY: THE INVENTORY MODULE, as recorded in the corrected Studio contract §0. There is no
+    Studio theme, no Studio stylesheet and no Studio shell — every class below already exists in Inventory:
+
+      shell + sidebar   _LayoutInventory.cshtml, unchanged
+      toolbar           Inventory's page-heading + breadcrumb-separatorless + bullet
+      panels            card / card-flush / card-header / card-body, as Inventory/Items.cshtml uses
+      table             table align-middle table-row-dashed — the approved Metronic variant
+      buttons           btn btn-sm btn-flex btn-light / btn-primary
+
+    STRINGS ARE INLINE BILINGUAL rather than resx, and that is a deliberate, precedented choice:
+    CrossBuy/Resources/** belongs to the integration owner in the ownership registry, and CLAUDE.md records
+    that resx edits collide with the shared plumbing other tabs use. Views/Account/AccessDenied.cshtml — a
+    platform screen certified earlier in this workstream — uses exactly this convention for the same reason.
+    Every user-facing string here therefore has both languages at the point of use, and no shared file is
+    touched.
+
+    RTL IS FIRST-CLASS, not a mirror applied afterwards: the layout is built from Bootstrap LOGICAL
+    properties (ms-*/me-*, ps-*/pe-*, text-start/text-end, row/col), which flip with `dir` automatically.
+    There is not one `left`/`right` in this file.
+
+    NO DEMO CONTENT. Every number on this screen comes from a real run of a real dataset the caller is
+    permitted to use. There is no placeholder chart, no sample series and no fake total — the preview pane
+    is empty until the user runs something.
+    ============================================================================================
+*@
+
+<div class="d-flex flex-column flex-column-fluid">
+
+    @* ---- TOOLBAR: name · save · run · export ---------------------------------------------------- *@
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">
+                    <i class="ki-outline ki-abstract-26 fs-2 me-2 text-primary"></i>@(arabic ? "استوديو التقارير" : "Report Studio")
+                </h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                    <li class="breadcrumb-item text-muted">
+                        <a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a>
+                    </li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">
+                        <a href="@Url.Action("Index","Reports")" class="text-muted text-hover-primary">@(arabic ? "مركز التقارير" : "Reports Center")</a>
+                    </li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@(arabic ? "استوديو" : "Studio")</li>
+                </ul>
+            </div>
+
+            @* flex-wrap so four controls wrap onto a second line at 390px instead of pushing the document
+               into horizontal scroll — the same fix the Report Viewer's toolbar carries. *@
+            <div class="d-flex align-items-center flex-wrap gap-2 gap-lg-3">
+                <input id="cb-studio-name" type="text" class="form-control form-control-sm w-200px"
+                       placeholder="@(arabic ? "اسم التقرير" : "Report name")"
+                       aria-label="@(arabic ? "اسم التقرير" : "Report name")" />
+
+                <button type="button" id="cb-studio-run" class="btn btn-sm btn-flex btn-primary fw-bold">
+                    <i class="ki-outline ki-play fs-3"></i>@(arabic ? "تشغيل" : "Run")
+                </button>
+                <button type="button" id="cb-studio-save" class="btn btn-sm btn-flex btn-light fw-bold">
+                    <i class="ki-outline ki-check fs-3"></i>@SR["Save"]
+                </button>
+                <button type="button" id="cb-studio-csv" class="btn btn-sm btn-flex btn-light fw-bold">
+                    <i class="ki-outline ki-file-down fs-3"></i>CSV
+                </button>
+                <button type="button" id="cb-studio-xlsx" class="btn btn-sm btn-flex btn-light fw-bold">
+                    <i class="ki-outline ki-file-down fs-3"></i>XLSX
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @if (Model.HasNoDatasets)
+            {
+                @* A REAL STATE, not an empty canvas pretending to work. Distinct from "no rows": nothing the
+                   user does on this screen can change it, so it says so and names who can. *@
+                <div class="alert alert-light-warning d-flex align-items-center p-5">
+                    <i class="ki-outline ki-information-5 fs-2hx text-warning me-4"></i>
+                    <div class="d-flex flex-column">
+                        <h4 class="mb-1 text-gray-900">
+                            @(arabic ? "لا توجد مجموعات بيانات متاحة لك" : "No data sets are available to you")
+                        </h4>
+                        <span class="text-gray-600">
+                            @(arabic
+                                ? "الاستوديو يعرض فقط المجموعات التي تملك صلاحيتها. اطلب من مسؤول النظام منحك صلاحية تقارير الوحدة التي تحتاجها."
+                                : "The Studio only offers data sets you hold permission for. Ask your administrator to grant you the reporting permission for the module you need.")
+                        </span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row g-5 g-xl-8">
+
+                    @* ================= LEFT: dataset + available fields ================= *@
+                    <div class="col-12 col-lg-3">
+                        <div class="card card-flush h-lg-100">
+                            <div class="card-header align-items-center py-4">
+                                <div class="card-title">
+                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "البيانات" : "Data")</h3>
+                                </div>
+                            </div>
+                            <div class="card-body pt-0">
+
+                                <label class="form-label fw-semibold fs-7 text-muted mb-1" for="cb-studio-dataset">
+                                    @(arabic ? "مجموعة البيانات" : "Data set")
+                                </label>
+                                <select id="cb-studio-dataset" class="form-select form-select-sm mb-4">
+                                    @foreach (var dataset in Model.Datasets)
+                                    {
+                                        <option value="@dataset.DatasetCode"
+                                                title="@dataset.Description">@dataset.Title — @dataset.Module</option>
+                                    }
+                                </select>
+
+                                <div class="d-flex flex-stack mb-2">
+                                    <span class="fw-semibold fs-7 text-muted">@(arabic ? "الحقول المتاحة" : "Available fields")</span>
+                                    <span class="badge badge-light fs-8" id="cb-studio-field-count">0</span>
+                                </div>
+
+                                @* Every entry here was produced server-side from the fields THIS caller may
+                                   see. A gated field is absent, not disabled — a disabled row would disclose
+                                   that the field exists and what it is called. *@
+                                <div id="cb-studio-fields" class="d-flex flex-column gap-1"
+                                     tabindex="0" role="region"
+                                     aria-label="@(arabic ? "الحقول المتاحة" : "Available fields")"
+                                     style="max-height:520px;overflow-y:auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ================= CENTER: canvas (selected columns) ================= *@
+                    <div class="col-12 col-lg-6">
+                        <div class="card card-flush h-lg-100">
+                            <div class="card-header align-items-center py-4">
+                                <div class="card-title">
+                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "أعمدة التقرير" : "Report columns")</h3>
+                                </div>
+                                <div class="card-toolbar">
+                                    <span class="text-muted fs-7" id="cb-studio-column-count">0</span>
+                                </div>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div id="cb-studio-columns" class="d-flex flex-column gap-2"
+                                     tabindex="0" role="region"
+                                     aria-label="@(arabic ? "أعمدة التقرير" : "Report columns")"></div>
+
+                                <div id="cb-studio-columns-empty" class="text-center text-muted py-10">
+                                    @(arabic
+                                        ? "اختر حقولًا من اليمين لبناء التقرير."
+                                        : "Pick fields from the field list to build the report.")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ================= RIGHT: filters + sorting + options ================= *@
+                    <div class="col-12 col-lg-3">
+                        <div class="card card-flush h-lg-100">
+                            <div class="card-header align-items-center py-4">
+                                <div class="card-title">
+                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "الترشيح والترتيب" : "Filters & sorting")</h3>
+                                </div>
+                            </div>
+                            <div class="card-body pt-0">
+
+                                <div class="d-flex flex-stack mb-2">
+                                    <span class="fw-semibold fs-7 text-muted">@(arabic ? "الترشيحات" : "Filters")</span>
+                                    <button type="button" id="cb-studio-add-filter"
+                                            class="btn btn-sm btn-light-primary py-1 px-3 fs-8 fw-bold">
+                                        <i class="ki-outline ki-plus fs-5"></i>@(arabic ? "إضافة" : "Add")
+                                    </button>
+                                </div>
+                                <div id="cb-studio-filters" class="d-flex flex-column gap-2 mb-6"></div>
+
+                                <div class="d-flex flex-stack mb-2">
+                                    <span class="fw-semibold fs-7 text-muted">@(arabic ? "الترتيب" : "Sorting")</span>
+                                    <button type="button" id="cb-studio-add-sort"
+                                            class="btn btn-sm btn-light-primary py-1 px-3 fs-8 fw-bold">
+                                        <i class="ki-outline ki-plus fs-5"></i>@(arabic ? "إضافة" : "Add")
+                                    </button>
+                                </div>
+                                <div id="cb-studio-sorts" class="d-flex flex-column gap-2 mb-6"></div>
+
+                                <label class="form-label fw-semibold fs-7 text-muted mb-1" for="cb-studio-pagesize">
+                                    @(arabic ? "عدد الصفوف" : "Page size")
+                                </label>
+                                <select id="cb-studio-pagesize" class="form-select form-select-sm">
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="500">500</option>
+                                    <option value="1000">1000</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ================= BOTTOM: preview ================= *@
+                <div class="row g-5 g-xl-8 mt-0">
+                    <div class="col-12">
+                        <div class="card card-flush">
+                            <div class="card-header align-items-center py-4">
+                                <div class="card-title">
+                                    <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "المعاينة" : "Preview")</h3>
+                                </div>
+                                <div class="card-toolbar">
+                                    <span class="text-muted fs-7" id="cb-studio-status"></span>
+                                </div>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div id="cb-studio-errors" class="alert alert-light-danger d-none p-4 fs-7"></div>
+
+                                @* The renderer's own markup, confined but not restyled, so the preview predicts
+                                   the exported artifact. Focusable + named for the same reason every scrolling
+                                   table on this product is. *@
+                                <div id="cb-studio-preview" class="table-responsive"
+                                     tabindex="0" role="region"
+                                     aria-label="@(arabic ? "معاينة التقرير" : "Report preview")"
+                                     style="font-variant-numeric:tabular-nums;">
+                                    <div class="text-center text-muted py-10">
+                                        @(arabic ? "اضغط «تشغيل» لعرض النتائج." : "Press Run to see results.")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Saved.Count > 0)
+                {
+                    <div class="row g-5 g-xl-8 mt-0">
+                        <div class="col-12">
+                            <div class="card card-flush">
+                                <div class="card-header align-items-center py-4">
+                                    <div class="card-title">
+                                        <h3 class="fw-bold text-gray-900 fs-4 m-0">@(arabic ? "تقاريري المحفوظة" : "My saved reports")</h3>
+                                    </div>
+                                    <div class="card-toolbar"><span class="text-muted fs-7">@Model.Saved.Count</span></div>
+                                </div>
+                                <div class="card-body pt-0">
+                                    <div class="table-responsive" tabindex="0" role="region"
+                                         aria-label="@(arabic ? "تقاريري المحفوظة" : "My saved reports")">
+                                        <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
+                                            <thead>
+                                                <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0"
+                                                    style="border-bottom:2px solid #13433a;">
+                                                    <th class="ps-4">@SR["Name"]</th>
+                                                    <th>@(arabic ? "مجموعة البيانات" : "Data set")</th>
+                                                    <th class="text-end">@(arabic ? "الإصدار" : "Version")</th>
+                                                    <th class="text-end pe-4">@SR["Date"]</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="fw-semibold text-gray-600">
+                                                @foreach (var saved in Model.Saved)
+                                                {
+                                                    <tr>
+                                                        <td class="ps-4">
+                                                            <a href="@Url.Action("Studio","Reports", new { open = saved.TemplateId })"
+                                                               class="text-gray-800 text-hover-primary fw-bold">@saved.Name</a>
+                                                        </td>
+                                                        <td>@saved.DatasetCode</td>
+                                                        <td class="text-end">@saved.VersionNo</td>
+                                                        <td class="text-end pe-4">@(saved.UpdatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@* The antiforgery token the builder's POSTs carry. Rendered here because the Studio endpoints sit behind
+   [AutoValidateAntiforgeryToken] — a cookie-authenticated API needs it, and a cross-origin page cannot set
+   the header. *@
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+(function () {
+    "use strict";
+
+    // Server-rendered state. The dataset list is already permission-filtered; this script never decides
+    // what the user may see, it only renders what the server sent and posts back what the user chose.
+    var ARABIC = @(arabic ? "true" : "false");
+    var OPEN_DRAFT = @Html.Raw(openDraft is null
+        ? "null"
+        : System.Text.Json.JsonSerializer.Serialize(openDraft, new System.Text.Json.JsonSerializerOptions
+          { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }));
+
+    var T = {
+        remove:   ARABIC ? "إزالة"        : "Remove",
+        up:       ARABIC ? "أعلى"         : "Up",
+        down:     ARABIC ? "أسفل"         : "Down",
+        asc:      ARABIC ? "تصاعدي"       : "Ascending",
+        desc:     ARABIC ? "تنازلي"       : "Descending",
+        value:    ARABIC ? "قيمة"         : "Value",
+        rows:     ARABIC ? "صف"           : "rows",
+        partial:  ARABIC ? "نتيجة جزئية"  : "partial result",
+        running:  ARABIC ? "جارٍ التشغيل…": "Running…",
+        saved:    ARABIC ? "تم الحفظ"     : "Saved",
+        nofields: ARABIC ? "لا حقول"      : "No fields",
+        pick:     ARABIC ? "اختر حقولًا من القائمة لبناء التقرير." : "Pick fields from the field list to build the report."
+    };
+
+    var fields = [];                 // what the caller may use on the current dataset
+    var state  = { templateId: 0, columns: [], filters: [], sorts: [] };
+
+    var $ = function (id) { return document.getElementById(id); };
+    var token = function () {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : "";
+    };
+    var esc = function (s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c];
+        });
+    };
+    var fieldOf = function (key) {
+        for (var i = 0; i < fields.length; i++) { if (fields[i].key === key) { return fields[i]; } }
+        return null;
+    };
+
+    function post(url, body) {
+        return fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "RequestVerificationToken": token() },
+            body: JSON.stringify(body)
+        });
+    }
+
+    function draft() {
+        return {
+            templateId: state.templateId,
+            datasetCode: $("cb-studio-dataset").value,
+            name: $("cb-studio-name").value,
+            columns: state.columns,
+            filters: state.filters,
+            sorts: state.sorts,
+            pageSize: parseInt($("cb-studio-pagesize").value, 10) || 50
+        };
+    }
+
+    function showErrors(list) {
+        var box = $("cb-studio-errors");
+        if (!list || !list.length) { box.classList.add("d-none"); box.innerHTML = ""; return; }
+        box.classList.remove("d-none");
+        box.innerHTML = "<ul class='mb-0 ps-4'>" +
+            list.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>";
+    }
+
+    // ---- rendering -----------------------------------------------------------------------------
+    function renderFields() {
+        var host = $("cb-studio-fields");
+        $("cb-studio-field-count").textContent = fields.length;
+        if (!fields.length) { host.innerHTML = "<div class='text-muted fs-8 py-4'>" + T.nofields + "</div>"; return; }
+
+        host.innerHTML = fields.map(function (f) {
+            var on = state.columns.indexOf(f.key) >= 0;
+            return "<button type='button' class='btn btn-sm btn-flex " +
+                   (on ? "btn-light-primary" : "btn-light") +
+                   " justify-content-start fw-semibold fs-8 py-2' data-field='" + esc(f.key) + "'>" +
+                   "<i class='ki-outline " + (on ? "ki-check-square" : "ki-plus-square") + " fs-5 me-2'></i>" +
+                   esc(f.title) + "</button>";
+        }).join("");
+
+        Array.prototype.forEach.call(host.querySelectorAll("[data-field]"), function (btn) {
+            btn.addEventListener("click", function () { toggleColumn(btn.getAttribute("data-field")); });
+        });
+    }
+
+    function renderColumns() {
+        var host = $("cb-studio-columns");
+        $("cb-studio-column-count").textContent = state.columns.length;
+        $("cb-studio-columns-empty").style.display = state.columns.length ? "none" : "";
+
+        host.innerHTML = state.columns.map(function (key, i) {
+            var f = fieldOf(key);
+            return "<div class='d-flex flex-stack border border-dashed rounded p-3'>" +
+                   "<span class='fw-semibold fs-7 text-gray-800'>" + esc(f ? f.title : key) + "</span>" +
+                   "<span class='d-flex gap-1'>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light' data-up='" + i + "' title='" + T.up + "' aria-label='" + T.up + "'><i class='ki-outline ki-up fs-5'></i></button>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light' data-down='" + i + "' title='" + T.down + "' aria-label='" + T.down + "'><i class='ki-outline ki-down fs-5'></i></button>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger' data-del='" + esc(key) + "' title='" + T.remove + "' aria-label='" + T.remove + "'><i class='ki-outline ki-cross fs-5'></i></button>" +
+                   "</span></div>";
+        }).join("");
+
+        Array.prototype.forEach.call(host.querySelectorAll("[data-del]"), function (b) {
+            b.addEventListener("click", function () { toggleColumn(b.getAttribute("data-del")); });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll("[data-up]"), function (b) {
+            b.addEventListener("click", function () { move(parseInt(b.getAttribute("data-up"), 10), -1); });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll("[data-down]"), function (b) {
+            b.addEventListener("click", function () { move(parseInt(b.getAttribute("data-down"), 10), 1); });
+        });
+    }
+
+    function move(i, by) {
+        var j = i + by;
+        if (j < 0 || j >= state.columns.length) { return; }
+        var t = state.columns[i]; state.columns[i] = state.columns[j]; state.columns[j] = t;
+        renderColumns();
+    }
+
+    function toggleColumn(key) {
+        var i = state.columns.indexOf(key);
+        if (i >= 0) { state.columns.splice(i, 1); } else { state.columns.push(key); }
+        renderFields(); renderColumns();
+    }
+
+    function renderFilters() {
+        var host = $("cb-studio-filters");
+        host.innerHTML = state.filters.map(function (flt, i) {
+            var filterable = fields.filter(function (f) { return f.filterable; });
+            var f = fieldOf(flt.field) || filterable[0];
+            var ops = (f && f.operators) || [];
+
+            return "<div class='border border-dashed rounded p-3 d-flex flex-column gap-2'>" +
+                   "<select class='form-select form-select-sm' data-flt-field='" + i + "'>" +
+                     filterable.map(function (x) {
+                        return "<option value='" + esc(x.key) + "'" + (f && x.key === f.key ? " selected" : "") + ">" + esc(x.title) + "</option>";
+                     }).join("") +
+                   "</select>" +
+                   "<select class='form-select form-select-sm' data-flt-op='" + i + "'>" +
+                     ops.map(function (o) {
+                        return "<option value='" + o.operator + "'" + (o.operator === flt.operator ? " selected" : "") + ">" + esc(o.label) + "</option>";
+                     }).join("") +
+                   "</select>" +
+                   "<div class='d-flex gap-1'>" +
+                   "<input type='text' class='form-control form-control-sm' data-flt-val='" + i + "' value='" + esc(flt.values[0] || "") + "' placeholder='" + T.value + "' aria-label='" + T.value + "' />" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger' data-flt-del='" + i + "' title='" + T.remove + "' aria-label='" + T.remove + "'><i class='ki-outline ki-cross fs-5'></i></button>" +
+                   "</div></div>";
+        }).join("");
+
+        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-field]"), function (s) {
+            s.addEventListener("change", function () {
+                var i = parseInt(s.getAttribute("data-flt-field"), 10);
+                state.filters[i].field = s.value;
+                var f = fieldOf(s.value);
+                // Reset the operator to one this field actually allows — the server would refuse the old one.
+                state.filters[i].operator = (f && f.operators.length) ? f.operators[0].operator : 0;
+                renderFilters();
+            });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-op]"), function (s) {
+            s.addEventListener("change", function () {
+                state.filters[parseInt(s.getAttribute("data-flt-op"), 10)].operator = parseInt(s.value, 10);
+            });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-val]"), function (s) {
+            s.addEventListener("input", function () {
+                state.filters[parseInt(s.getAttribute("data-flt-val"), 10)].values = [s.value];
+            });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll("[data-flt-del]"), function (b) {
+            b.addEventListener("click", function () {
+                state.filters.splice(parseInt(b.getAttribute("data-flt-del"), 10), 1); renderFilters();
+            });
+        });
+    }
+
+    function renderSorts() {
+        var host = $("cb-studio-sorts");
+        host.innerHTML = state.sorts.map(function (srt, i) {
+            var sortable = fields.filter(function (f) { return f.sortable; });
+            return "<div class='border border-dashed rounded p-3 d-flex flex-column gap-2'>" +
+                   "<select class='form-select form-select-sm' data-srt-field='" + i + "'>" +
+                     sortable.map(function (x) {
+                        return "<option value='" + esc(x.key) + "'" + (x.key === srt.field ? " selected" : "") + ">" + esc(x.title) + "</option>";
+                     }).join("") +
+                   "</select>" +
+                   "<div class='d-flex gap-1'>" +
+                   "<select class='form-select form-select-sm' data-srt-dir='" + i + "'>" +
+                   "<option value='0'" + (srt.descending ? "" : " selected") + ">" + T.asc + "</option>" +
+                   "<option value='1'" + (srt.descending ? " selected" : "") + ">" + T.desc + "</option>" +
+                   "</select>" +
+                   "<button type='button' class='btn btn-icon btn-sm btn-light-danger' data-srt-del='" + i + "' title='" + T.remove + "' aria-label='" + T.remove + "'><i class='ki-outline ki-cross fs-5'></i></button>" +
+                   "</div></div>";
+        }).join("");
+
+        Array.prototype.forEach.call(host.querySelectorAll("[data-srt-field]"), function (s) {
+            s.addEventListener("change", function () {
+                state.sorts[parseInt(s.getAttribute("data-srt-field"), 10)].field = s.value;
+            });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll("[data-srt-dir]"), function (s) {
+            s.addEventListener("change", function () {
+                state.sorts[parseInt(s.getAttribute("data-srt-dir"), 10)].descending = s.value === "1";
+            });
+        });
+        Array.prototype.forEach.call(host.querySelectorAll("[data-srt-del]"), function (b) {
+            b.addEventListener("click", function () {
+                state.sorts.splice(parseInt(b.getAttribute("data-srt-del"), 10), 1); renderSorts();
+            });
+        });
+    }
+
+    // ---- server calls --------------------------------------------------------------------------
+    function loadFields(datasetCode, keep) {
+        return fetch("/api/reports/studio/fields?datasetCode=" + encodeURIComponent(datasetCode))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                fields = (d && d.fields) || [];
+                if (!keep) {
+                    // A dataset change resets the canvas: a column from the previous dataset would be
+                    // refused by the server anyway, and silently carrying it over reads as a bug.
+                    state.columns = fields.filter(function (f) { return f.selectedByDefault; })
+                                          .slice(0, 8).map(function (f) { return f.key; });
+                    state.filters = []; state.sorts = [];
+                }
+                renderFields(); renderColumns(); renderFilters(); renderSorts();
+            });
+    }
+
+    function run() {
+        showErrors(null);
+        $("cb-studio-status").textContent = T.running;
+        post("/api/reports/studio/preview", draft())
+            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+            .then(function (res) {
+                if (!res.ok) {
+                    $("cb-studio-status").textContent = "";
+                    showErrors((res.body && res.body.errors) || []);
+                    return;
+                }
+                $("cb-studio-preview").innerHTML = res.body.html;
+                $("cb-studio-status").textContent = res.body.rowCount + " " + T.rows +
+                    (res.body.truncated ? " · " + T.partial : "");
+            })
+            .catch(function () { $("cb-studio-status").textContent = ""; });
+    }
+
+    function save() {
+        showErrors(null);
+        post("/api/reports/studio/save", draft())
+            .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+            .then(function (res) {
+                if (!res.ok) { showErrors((res.body && res.body.errors) || []); return; }
+                state.templateId = res.body.templateId;
+                $("cb-studio-status").textContent = T.saved + " · #" + res.body.templateId;
+            });
+    }
+
+    function exportAs(format) {
+        showErrors(null);
+        post("/api/reports/studio/export?format=" + format, draft())
+            .then(function (r) {
+                if (!r.ok) { return r.json().then(function (b) { showErrors((b && b.errors) || []); }); }
+                var name = r.headers.get("Content-Disposition") || "";
+                var m = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(name);
+                return r.blob().then(function (blob) {
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement("a");
+                    a.href = url;
+                    a.download = m ? decodeURIComponent(m[1]) : ("report." + (format === 3 ? "csv" : "xlsx"));
+                    document.body.appendChild(a); a.click();
+                    document.body.removeChild(a); URL.revokeObjectURL(url);
+                });
+            });
+    }
+
+    // ---- wire up -------------------------------------------------------------------------------
+    var dsSelect = $("cb-studio-dataset");
+    if (!dsSelect) { return; }   // the "no data sets" state renders no builder
+
+    dsSelect.addEventListener("change", function () { loadFields(dsSelect.value, false); });
+
+    $("cb-studio-add-filter").addEventListener("click", function () {
+        var filterable = fields.filter(function (f) { return f.filterable; });
+        if (!filterable.length) { return; }
+        var f = filterable[0];
+        state.filters.push({
+            field: f.key,
+            operator: f.operators.length ? f.operators[0].operator : 0,
+            values: [""]
+        });
+        renderFilters();
+    });
+
+    $("cb-studio-add-sort").addEventListener("click", function () {
+        var sortable = fields.filter(function (f) { return f.sortable; });
+        if (!sortable.length) { return; }
+        state.sorts.push({ field: sortable[0].key, descending: false });
+        renderSorts();
+    });
+
+    $("cb-studio-run").addEventListener("click", run);
+    $("cb-studio-save").addEventListener("click", save);
+    $("cb-studio-csv").addEventListener("click", function () { exportAs(3); });    // ReportOutputFormat.Csv
+    $("cb-studio-xlsx").addEventListener("click", function () { exportAs(4); });   // ReportOutputFormat.Xlsx
+
+    // REOPEN. The draft was resolved and re-validated on the server, so what arrives here is already
+    // limited to what this caller may see today.
+    if (OPEN_DRAFT) {
+        state.templateId = OPEN_DRAFT.templateId;
+        state.columns    = OPEN_DRAFT.columns || [];
+        state.filters    = OPEN_DRAFT.filters || [];
+        state.sorts      = OPEN_DRAFT.sorts || [];
+        $("cb-studio-name").value = OPEN_DRAFT.name || "";
+        dsSelect.value = OPEN_DRAFT.datasetCode;
+        loadFields(OPEN_DRAFT.datasetCode, true);
+    } else {
+        loadFields(dsSelect.value, false);
+    }
+})();
+</script>
+}

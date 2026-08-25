@@ -99,6 +99,12 @@ namespace CrossBuy.Models.Menu
 				// owner asks for "my favourites" as a destination, not as a checkbox to remember to tick.
 				new() { LabelAr = "التقارير المفضّلة", LabelEn = "Favourite reports", Action = "Index",
 					Controller = "Reports", RouteValues = new() { ["favorites"] = "true" } },
+				// The builder. A REAL screen of its own — not a tab, panel or dialog — so it earns an entry
+				// under the same rule the rows above follow. No Perm hook: the Studio itself is open to any
+				// signed-in user and renders an explicit "no data sets are available to you" state when their
+				// permissions yield nothing, which is more useful than a row that vanishes without saying why.
+				new() { LabelAr = "استوديو التقارير", LabelEn = "Report Studio", Action = "Studio",
+					Controller = "Reports" },
 			}},
 		};
 

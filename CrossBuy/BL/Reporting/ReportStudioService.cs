@@ -1,0 +1,690 @@
+using CrossBuy.BL.Platform;
+using CrossBuy.Models.Context.Reporting;
+using CrossBuy.Models.Platform;
+
+namespace CrossBuy.BL.Reporting
+{
+    // ============================================================================================
+    // REPORT STUDIO V1 — THE PRODUCT LAYER, AND ONLY THE PRODUCT LAYER.
+    //
+    // Everything a builder needs already existed before this file: the dataset catalogue and its
+    // permission-filtered ListForStudioAsync, the field sensitivity model, the permission evaluator, an engine
+    // that already accepts VisibleColumns/Filters/Sorts/MaxRows, the CSV and XLSX exporters, and — the piece
+    // most likely to have been rebuilt by mistake — a SAVED REPORT CONTRACT.
+    //
+    //     ReportLayout ALREADY persists VisibleColumns, Filters, Sorts, Groupings, Parameters and PageSetup,
+    //     and ReportTemplateService.SaveAsync already stores it company-scoped, owned and versioned.
+    //
+    // So Studio saves a ReportTemplate. It does NOT introduce a second saved-report table, a second save
+    // service or a second execution path. A Studio report and a hand-written report are the same object run
+    // through the same pipeline, which is the single most important property of this increment: the builder
+    // composes what the platform already allows rather than reaching past it.
+    //
+    // ────────────────────────────────────────────────────────────────────────────────────────────
+    // WHAT THIS FILE ADDS, AND WHY IT HAS TO EXIST: THE DRAFT IS UNTRUSTED INPUT.
+    //
+    // Every other report in the product has a column set an author fixed in code. Studio is the first surface
+    // where the CALLER names the columns, the filters and the sorts — so it is the first surface where a
+    // request can ask for something it may not have.
+    //
+    // A discovery that shaped this file: ReportColumn.Internal is enforced by the shaper, but ToColumn() maps
+    // only Sensitivity.Never onto it. Confidential and Restricted fields therefore travel as ORDINARY columns
+    // at run time, and ReportDatasetDefinition.VisibleFields — the per-caller gate — is called by nothing.
+    // That is harmless for a fixed report (its author chose the columns) and NOT harmless for a builder.
+    //
+    // So this service is the authority on three questions, and every Studio path goes through it:
+    //
+    //     1. which datasets may this caller build over?      → ListForStudioAsync (already gated)
+    //     2. which FIELDS of it may this caller see?         → VisibleFields(resolved permissions)
+    //     3. is this draft legal?                            → Validate: every column, filter field and sort
+    //                                                          field must be in (2), every operator must be
+    //                                                          legal for its field, and anything else is
+    //                                                          REFUSED — not silently dropped.
+    //
+    // REFUSED, NOT DROPPED, is deliberate. Silently dropping a forbidden column would let a caller probe the
+    // schema by watching which columns come back, and would let a saved report quietly lose a column its owner
+    // believes is there. A refusal says what was wrong with the request without saying what the field contains.
+    //
+    // NO SQL AND NO EXPRESSION EVER CROSSES THIS BOUNDARY. A filter is (field, operator, values[]) — three
+    // pieces of structured data validated against the dataset — and it reaches the source as a ReportFilter
+    // object. There is no predicate string, no free-text WHERE and no user expression anywhere in the contract.
+    // ============================================================================================
+
+    // ---- what the screen renders ----------------------------------------------------------------
+    public sealed class StudioDatasetOption
+    {
+        public required string DatasetCode { get; init; }
+        public required string ReportCode { get; init; }   // the definition the engine actually runs
+        public required string Title { get; init; }
+        public string? Description { get; init; }
+        public required string Module { get; init; }
+        public int FieldCount { get; init; }
+    }
+
+    public sealed class StudioFieldOption
+    {
+        public required string Key { get; init; }
+        public required string Title { get; init; }
+        public ReportFieldType Type { get; init; }
+        public bool Filterable { get; init; }
+        public bool Sortable { get; init; }
+        public bool Groupable { get; init; }
+        public bool SelectedByDefault { get; init; }
+
+        // The operators this field legally accepts, already narrowed by the dataset. The screen renders exactly
+        // these, so a user cannot pick an operator the validator will refuse — the UI and the gate agree because
+        // they read the same source.
+        public IReadOnlyList<StudioOperatorOption> Operators { get; init; } = Array.Empty<StudioOperatorOption>();
+    }
+
+    public sealed class StudioOperatorOption
+    {
+        public required ReportFilterOperator Operator { get; init; }
+        public required string Label { get; init; }
+
+        // Between and the two null tests need a different input shape: two boxes, or none at all.
+        public int ValueCount { get; init; } = 1;
+    }
+
+    public sealed class StudioSavedReport
+    {
+        public required int TemplateId { get; init; }
+        public required string Name { get; init; }
+        public required string DatasetCode { get; init; }
+        public required string ReportCode { get; init; }
+        public DateTime? UpdatedAt { get; init; }
+        public int VersionNo { get; init; }
+    }
+
+    public sealed class ReportStudioModel
+    {
+        public IReadOnlyList<StudioDatasetOption> Datasets { get; init; } = Array.Empty<StudioDatasetOption>();
+        public IReadOnlyList<StudioSavedReport> Saved { get; init; } = Array.Empty<StudioSavedReport>();
+        public bool Arabic { get; init; }
+
+        // No dataset the caller may build over. A real, renderable state — not an error and not an empty canvas
+        // pretending to work.
+        public bool HasNoDatasets => Datasets.Count == 0;
+    }
+
+    // ---- what the browser sends back -------------------------------------------------------------
+    //
+    // Plain data. Note what is ABSENT: no SQL, no expression, no companyId. The tenant is never accepted from
+    // a request — it comes from the resolved BusinessContext on the server, every time.
+    public sealed class StudioFilterDraft
+    {
+        public string Field { get; set; } = "";
+        public ReportFilterOperator Operator { get; set; } = ReportFilterOperator.Equals;
+        public List<string?> Values { get; set; } = new();
+    }
+
+    public sealed class StudioSortDraft
+    {
+        public string Field { get; set; } = "";
+        public bool Descending { get; set; }
+    }
+
+    public sealed class StudioDraft
+    {
+        public int TemplateId { get; set; }               // 0 = a new report
+        public string DatasetCode { get; set; } = "";
+        public string Name { get; set; } = "";
+        public List<string> Columns { get; set; } = new();
+        public List<StudioFilterDraft> Filters { get; set; } = new();
+        public List<StudioSortDraft> Sorts { get; set; } = new();
+        public int PageSize { get; set; } = 50;
+    }
+
+    public sealed class StudioValidation
+    {
+        public bool Ok => Errors.Count == 0;
+        public List<string> Errors { get; } = new();
+
+        // Filled only when Ok. These are the platform's own structures, ready for the engine.
+        public ReportDefinition? Definition { get; set; }
+        public IReportDatasetDefinition? Dataset { get; set; }
+        public IReadOnlyList<string> Columns { get; set; } = Array.Empty<string>();
+        public IReadOnlyList<ReportFilter> Filters { get; set; } = Array.Empty<ReportFilter>();
+        public IReadOnlyList<ReportSort> Sorts { get; set; } = Array.Empty<ReportSort>();
+        public int PageSize { get; set; } = 50;
+    }
+
+    public interface IReportStudioService
+    {
+        Task<ReportStudioModel> BuildAsync(CancellationToken cancellationToken = default);
+
+        // The fields this caller may use on one dataset. Returns empty when the dataset is not theirs — the
+        // same "no such thing, as far as you are concerned" answer the Viewer gives.
+        Task<IReadOnlyList<StudioFieldOption>> FieldsAsync(string datasetCode,
+            CancellationToken cancellationToken = default);
+
+        // THE GATE. Everything below calls it; nothing bypasses it.
+        Task<StudioValidation> ValidateAsync(StudioDraft draft, CancellationToken cancellationToken = default);
+
+        // The report definition behind a dataset the caller may use, or null.
+        //
+        // Exists so the CONTROLLER can run the platform's own report gate at the boundary before it does
+        // anything — CBA001 requires an authorization decision the analyzer can SEE in an endpoint's call
+        // graph, and it is right to: a rule found only by descending into a service is a rule nobody declared
+        // and any other caller can bypass. The controller therefore calls IReportAuthorizationService itself,
+        // and this method is what gives it something to authorize.
+        Task<ReportDefinition?> ResolveDefinitionAsync(string datasetCode,
+            CancellationToken cancellationToken = default);
+
+        Task<ReportResult> RunAsync(StudioDraft draft, ReportOutputFormat format, bool preview,
+            CancellationToken cancellationToken = default);
+
+        Task<ReportTemplateSaveResult> SaveAsync(StudioDraft draft, CancellationToken cancellationToken = default);
+
+        // Reopen: the stored layout, re-validated against what the caller may see TODAY.
+        Task<StudioDraft?> OpenAsync(int templateId, CancellationToken cancellationToken = default);
+    }
+
+    public sealed class ReportStudioService : IReportStudioService
+    {
+        // A preview is capped hard. The point of a preview is "is this the report I meant", which 200 rows
+        // answers as well as 20 000 and a great deal faster.
+        public const int PreviewRows = 200;
+        public const int MaxPageSize = 5_000;
+
+        private readonly IReportDatasetRegistry _datasets;
+        private readonly IReportCatalog _catalog;
+        private readonly IReportPermissionEvaluator _permissions;
+        private readonly IReportTemplateService _templates;
+        private readonly IReportService _reports;
+        private readonly IBusinessContextAccessor _contexts;
+
+        public ReportStudioService(
+            IReportDatasetRegistry datasets,
+            IReportCatalog catalog,
+            IReportPermissionEvaluator permissions,
+            IReportTemplateService templates,
+            IReportService reports,
+            IBusinessContextAccessor contexts)
+        {
+            _datasets = datasets;
+            _catalog = catalog;
+            _permissions = permissions;
+            _templates = templates;
+            _reports = reports;
+            _contexts = contexts;
+        }
+
+        private static bool Arabic =>
+            System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+        // ----------------------------------------------------------------------------------------
+        // THE DATASET → REPORT LINK.
+        //
+        // The engine runs a REPORT, not a dataset, and the two are joined by DataSourceKey — the same rule
+        // ReportsCenterPresenter already uses. Matching on code would break the platform's own pilot, whose
+        // dataset is "Platform.BusinessEvents.Log" while its report is "Platform.BusinessEventLog".
+        // ----------------------------------------------------------------------------------------
+        // The per-caller field gate. ReportDatasetDefinition.VisibleFields is declared on the CONCRETE type, so a
+        // registry that hands back the interface cannot call it — IsFieldVisible is the same rule as a static, and
+        // using it keeps ONE definition of "may this caller see this field" rather than a second copy here.
+        private static IEnumerable<ReportDatasetField> Visible(
+            IReportDatasetDefinition dataset, IReadOnlySet<string> held) =>
+            dataset.Fields.Where(f => ReportDatasetDefinition.IsFieldVisible(f, held));
+
+        private ReportDefinition? DefinitionFor(IReportDatasetDefinition dataset) =>
+            _catalog.GetDefinitions().FirstOrDefault(d =>
+                string.Equals(d.DataSourceKey, dataset.DataSourceKey, StringComparison.Ordinal));
+
+        // The caller's permission set, resolved ONCE per operation. Field visibility is decided against a
+        // resolved set rather than an async call per field — VisibleFields is deliberately synchronous.
+        private async Task<IReadOnlySet<string>> HeldAsync(IReportDatasetDefinition dataset,
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            var keys = dataset.Fields
+                .Select(f => f.RequiredPermissionKey)
+                .Where(k => !string.IsNullOrWhiteSpace(k))
+                .Select(k => k!)
+                .Distinct(StringComparer.Ordinal);
+
+            var held = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var key in keys)
+                if (await _permissions.HasPermissionAsync(key, context, cancellationToken))
+                    held.Add(key);
+
+            return held;
+        }
+
+        public async Task<ReportStudioModel> BuildAsync(CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+
+            // Fail closed and quietly: an unresolved company builds over nothing.
+            if (context is not { CompanyId: > 0 }) return new ReportStudioModel { Arabic = Arabic };
+
+            var datasets = await _datasets.ListForStudioAsync(context, cancellationToken);
+            var options = new List<StudioDatasetOption>();
+
+            foreach (var dataset in datasets)
+            {
+                var definition = DefinitionFor(dataset);
+
+                // A dataset with no runnable report is not offered. Showing it would produce a builder whose
+                // Run button cannot work.
+                if (definition is null) continue;
+
+                var held = await HeldAsync(dataset, context, cancellationToken);
+
+                options.Add(new StudioDatasetOption
+                {
+                    DatasetCode = dataset.DatasetCode,
+                    ReportCode = definition.Code,
+                    Title = Arabic ? dataset.TitleAr : dataset.TitleEn,
+                    Description = Arabic ? dataset.DescriptionAr : dataset.DescriptionEn,
+                    Module = dataset.Module,
+                    FieldCount = Visible(dataset, held).Count(),
+                });
+            }
+
+            // Saved Studio reports = the caller's own templates on those reports, listed through the template
+            // service so its scope and ownership rules decide what is visible.
+            var saved = new List<StudioSavedReport>();
+            foreach (var option in options)
+            {
+                foreach (var template in await _templates.ListAsync(option.ReportCode, context, cancellationToken))
+                {
+                    if (template.Scope is not (ReportTemplateScope.Personal or ReportTemplateScope.Company)) continue;
+
+                    saved.Add(new StudioSavedReport
+                    {
+                        TemplateId = template.Id,
+                        Name = Arabic ? template.Name : (template.NameEn ?? template.Name),
+                        DatasetCode = option.DatasetCode,
+                        ReportCode = option.ReportCode,
+                        UpdatedAt = template.UpdatedAt,
+                        VersionNo = template.CurrentVersionNo,
+                    });
+                }
+            }
+
+            return new ReportStudioModel
+            {
+                Datasets = options,
+                Saved = saved.OrderByDescending(s => s.UpdatedAt).ToList(),
+                Arabic = Arabic,
+            };
+        }
+
+        public async Task<ReportDefinition?> ResolveDefinitionAsync(string datasetCode,
+            CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context is not { CompanyId: > 0 }) return null;
+
+            var dataset = await PermittedDatasetAsync(datasetCode, context, cancellationToken);
+            return dataset is null ? null : DefinitionFor(dataset);
+        }
+
+        public async Task<IReadOnlyList<StudioFieldOption>> FieldsAsync(string datasetCode,
+            CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context is not { CompanyId: > 0 }) return Array.Empty<StudioFieldOption>();
+
+            var dataset = await PermittedDatasetAsync(datasetCode, context, cancellationToken);
+            if (dataset is null) return Array.Empty<StudioFieldOption>();
+
+            var held = await HeldAsync(dataset, context, cancellationToken);
+            bool arabic = Arabic;
+
+            // VisibleFields is the gate. A Confidential field the caller lacks is ABSENT from this list, not
+            // greyed out — a greyed entry discloses that the field exists and what it is called.
+            return Visible(dataset, held)
+                .Where(f => !f.IsCalculated || f.Filterable || f.Sortable || true)
+                .Select(f => new StudioFieldOption
+                {
+                    Key = f.Key,
+                    Title = arabic ? f.TitleAr : f.TitleEn,
+                    Type = f.Type,
+                    Filterable = f.Filterable,
+                    Sortable = f.Sortable,
+                    Groupable = f.Groupable,
+                    SelectedByDefault = f.VisibleByDefault,
+                    Operators = f.Filterable ? OperatorsFor(f, arabic) : Array.Empty<StudioOperatorOption>(),
+                })
+                .ToList();
+        }
+
+        // The V1 operator vocabulary, intersected with what the field legally allows. Between/In/StartsWith and
+        // the null tests exist in the platform and are deliberately NOT offered yet — V1 ships the five shapes
+        // the brief names, and an operator the screen cannot express is an operator the validator would refuse.
+        private static readonly ReportFilterOperator[] V1Operators =
+        {
+            ReportFilterOperator.Equals,
+            ReportFilterOperator.NotEquals,
+            ReportFilterOperator.Contains,
+            ReportFilterOperator.GreaterOrEqual,
+            ReportFilterOperator.LessOrEqual,
+        };
+
+        private static IReadOnlyList<StudioOperatorOption> OperatorsFor(ReportDatasetField field, bool arabic) =>
+            V1Operators
+                .Where(op => ReportDatasetOperators.IsAllowed(field, op))
+                .Select(op => new StudioOperatorOption { Operator = op, Label = Label(op, arabic) })
+                .ToList();
+
+        private static string Label(ReportFilterOperator op, bool arabic) => op switch
+        {
+            ReportFilterOperator.Equals => arabic ? "يساوي" : "equals",
+            ReportFilterOperator.NotEquals => arabic ? "لا يساوي" : "not equals",
+            ReportFilterOperator.Contains => arabic ? "يحتوي" : "contains",
+            ReportFilterOperator.GreaterOrEqual => arabic ? "أكبر من أو يساوي" : "at least",
+            ReportFilterOperator.LessOrEqual => arabic ? "أصغر من أو يساوي" : "at most",
+            _ => op.ToString(),
+        };
+
+        // A dataset the caller may build over, or null. Goes through ListForStudioAsync rather than Resolve so
+        // the permission gate is the SAME one the picker used — resolving directly would answer for a dataset
+        // the picker never offered.
+        private async Task<IReportDatasetDefinition?> PermittedDatasetAsync(string? datasetCode,
+            BusinessContext context, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(datasetCode)) return null;
+
+            var permitted = await _datasets.ListForStudioAsync(context, cancellationToken);
+            return permitted.FirstOrDefault(d =>
+                string.Equals(d.DatasetCode, datasetCode, StringComparison.Ordinal));
+        }
+
+        // ========================================================================================
+        // THE GATE
+        // ========================================================================================
+        public async Task<StudioValidation> ValidateAsync(StudioDraft draft,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new StudioValidation();
+            bool arabic = Arabic;
+
+            if (draft is null)
+            {
+                result.Errors.Add(arabic ? "لا توجد بيانات." : "No draft was supplied.");
+                return result;
+            }
+
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context is not { CompanyId: > 0 })
+            {
+                result.Errors.Add(arabic ? "لا توجد شركة محدَّدة لهذا الطلب." : "No company is resolved for this request.");
+                return result;
+            }
+
+            var dataset = await PermittedDatasetAsync(draft.DatasetCode, context, cancellationToken);
+            if (dataset is null)
+            {
+                // Deliberately the same message whether the dataset does not exist or is not theirs. Telling
+                // them apart would make this endpoint a catalogue oracle.
+                result.Errors.Add(arabic ? "مجموعة البيانات غير متاحة." : "That data set is not available to you.");
+                return result;
+            }
+
+            var definition = DefinitionFor(dataset);
+            if (definition is null)
+            {
+                result.Errors.Add(arabic ? "لا يوجد تقرير قابل للتشغيل لهذه المجموعة."
+                                         : "That data set has no runnable report.");
+                return result;
+            }
+
+            // THE PERMITTED FIELD SET. Everything below is checked against this and nothing else.
+            var held = await HeldAsync(dataset, context, cancellationToken);
+            var permitted = Visible(dataset, held).ToDictionary(f => f.Key, StringComparer.Ordinal);
+
+            // ---- columns -------------------------------------------------------------------------
+            var columns = new List<string>();
+            foreach (var key in draft.Columns ?? new List<string>())
+            {
+                if (!permitted.TryGetValue(key, out _))
+                {
+                    // One message for "no such field" and for "not yours" — see above.
+                    result.Errors.Add(arabic
+                        ? $"الحقل «{key}» غير متاح في هذه المجموعة."
+                        : $"Field '{key}' is not available on this data set.");
+                    continue;
+                }
+                if (!columns.Contains(key, StringComparer.Ordinal)) columns.Add(key);
+            }
+
+            if (columns.Count == 0)
+                result.Errors.Add(arabic ? "اختر عمودًا واحدًا على الأقل." : "Choose at least one column.");
+
+            // ---- filters -------------------------------------------------------------------------
+            var filters = new List<ReportFilter>();
+            foreach (var filter in draft.Filters ?? new List<StudioFilterDraft>())
+            {
+                if (!permitted.TryGetValue(filter.Field, out var field))
+                {
+                    result.Errors.Add(arabic
+                        ? $"لا يمكن الترشيح على «{filter.Field}»."
+                        : $"Cannot filter on '{filter.Field}'.");
+                    continue;
+                }
+
+                if (!field.Filterable)
+                {
+                    result.Errors.Add(arabic
+                        ? $"الحقل «{field.TitleAr}» غير قابل للترشيح."
+                        : $"Field '{field.TitleEn}' is not filterable.");
+                    continue;
+                }
+
+                // The operator must be legal for THIS field, per the dataset's own narrowing. A free-text
+                // search over a JSON payload, say, is refused because the field declares it so.
+                if (!V1Operators.Contains(filter.Operator) || !ReportDatasetOperators.IsAllowed(field, filter.Operator))
+                {
+                    result.Errors.Add(arabic
+                        ? $"المُعامل غير مسموح على «{field.TitleAr}»."
+                        : $"That operator is not allowed on '{field.TitleEn}'.");
+                    continue;
+                }
+
+                var values = (filter.Values ?? new List<string?>())
+                    .Where(v => !string.IsNullOrWhiteSpace(v))
+                    .ToList();
+
+                if (values.Count == 0)
+                {
+                    result.Errors.Add(arabic
+                        ? $"أدخل قيمة للترشيح على «{field.TitleAr}»."
+                        : $"Enter a value to filter '{field.TitleEn}'.");
+                    continue;
+                }
+
+                // Constructed as a STRUCTURE. The value never becomes part of a predicate string — the shaper
+                // and the data sources compare it as data.
+                filters.Add(new ReportFilter
+                {
+                    Field = field.Key,
+                    Operator = filter.Operator,
+                    Values = new List<string?> { values[0] },
+                });
+            }
+
+            // ---- sorts ---------------------------------------------------------------------------
+            var sorts = new List<ReportSort>();
+            foreach (var sort in draft.Sorts ?? new List<StudioSortDraft>())
+            {
+                if (!permitted.TryGetValue(sort.Field, out var field))
+                {
+                    result.Errors.Add(arabic
+                        ? $"لا يمكن الترتيب على «{sort.Field}»."
+                        : $"Cannot sort on '{sort.Field}'.");
+                    continue;
+                }
+                if (!field.Sortable)
+                {
+                    result.Errors.Add(arabic
+                        ? $"الحقل «{field.TitleAr}» غير قابل للترتيب."
+                        : $"Field '{field.TitleEn}' is not sortable.");
+                    continue;
+                }
+                if (sorts.Any(s => string.Equals(s.Field, field.Key, StringComparison.Ordinal))) continue;
+
+                sorts.Add(ReportSort.By(field.Key, sort.Descending));
+            }
+
+            // ---- page size -----------------------------------------------------------------------
+            var pageSize = draft.PageSize <= 0 ? 50 : Math.Min(draft.PageSize, MaxPageSize);
+
+            if (result.Ok)
+            {
+                result.Definition = definition;
+                result.Dataset = dataset;
+                result.Columns = columns;
+                result.Filters = filters;
+                result.Sorts = sorts;
+                result.PageSize = pageSize;
+            }
+            return result;
+        }
+
+        // ========================================================================================
+        // RUN — preview, full run and export are ONE path with one parameter different.
+        //
+        // That is the property the brief asks for at §9 ("export uses same saved definition"): there is no
+        // separate export builder that could drift from what the preview showed, and no way to export a column
+        // the preview would have refused, because both re-validate the same draft.
+        // ========================================================================================
+        public async Task<ReportResult> RunAsync(StudioDraft draft, ReportOutputFormat format, bool preview,
+            CancellationToken cancellationToken = default)
+        {
+            var validation = await ValidateAsync(draft, cancellationToken);
+            if (!validation.Ok)
+                return ReportResult.Failed(
+                    validation.Definition?.Code ?? draft?.DatasetCode ?? "",
+                    format,
+                    validation.Errors.Select(e => ReportDiagnostic.Error("studio_invalid_draft", e)).ToList());
+
+            var request = new ReportRequest
+            {
+                ReportCode = validation.Definition!.Code,
+                Format = format,
+                Kind = preview ? ReportRunKind.Preview : ReportRunKind.Full,
+                VisibleColumns = validation.Columns,
+                Filters = validation.Filters,
+                Sorts = validation.Sorts,
+                MaxRows = preview ? PreviewRows : validation.PageSize,
+                Archive = false,
+            };
+
+            // GenerateAsync authorizes the report again on its own account. Studio's validation is the field
+            // gate; this is the report gate, and both run on every single execution — which is what "permissions
+            // rechecked at run time" means in practice.
+            return preview
+                ? await _reports.PreviewAsync(request, cancellationToken)
+                : await _reports.GenerateAsync(request, cancellationToken);
+        }
+
+        // ========================================================================================
+        // SAVE — a validated draft becomes a ReportTemplate + ReportLayout. No new table, no SQL text.
+        // ========================================================================================
+        public async Task<ReportTemplateSaveResult> SaveAsync(StudioDraft draft,
+            CancellationToken cancellationToken = default)
+        {
+            var validation = await ValidateAsync(draft, cancellationToken);
+            if (!validation.Ok)
+                return new ReportTemplateSaveResult
+                {
+                    Success = false,
+                    Diagnostics = validation.Errors
+                        .Select(e => ReportDiagnostic.Error("studio_invalid_draft", e)).ToList(),
+                };
+
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context is not { CompanyId: > 0 })
+                return new ReportTemplateSaveResult { Success = false };
+
+            var name = string.IsNullOrWhiteSpace(draft.Name)
+                ? (Arabic ? "تقرير بدون اسم" : "Untitled report")
+                : draft.Name.Trim();
+
+            // PERSONAL scope: a Studio draft is the author's until somebody promotes it. Promotion to Company is
+            // an explicit, separately-authorized act (ReportTemplateService), not a side effect of saving.
+            //
+            // The company and the owner are set by SaveAsync from the CONTEXT — this input carries neither, and
+            // there is no field on it that could.
+            return await _templates.SaveAsync(new ReportTemplateInput
+            {
+                Id = draft.TemplateId,
+                ReportCode = validation.Definition!.Code,
+                Name = name,
+                NameEn = name,
+                Scope = ReportTemplateScope.Personal,
+                Layout = new ReportLayout
+                {
+                    VisibleColumns = validation.Columns,
+                    Filters = validation.Filters,
+                    Sorts = validation.Sorts,
+                    ShowGrandTotals = true,
+                },
+                ChangeNote = "Report Studio",
+            }, context, cancellationToken);
+        }
+
+        // ========================================================================================
+        // REOPEN — the stored layout, RE-VALIDATED against today's permissions.
+        //
+        // A saved report is not a grant. If the author has since lost the profitability right, reopening their
+        // own report must not hand the columns back, so the stored layout is run through the same gate a fresh
+        // draft is. Columns that no longer clear are dropped HERE (rather than refused) because the alternative
+        // is a report its owner can never open again — and dropping is safe in this direction: it removes
+        // access, it cannot grant it.
+        // ========================================================================================
+        public async Task<StudioDraft?> OpenAsync(int templateId, CancellationToken cancellationToken = default)
+        {
+            var context = await _contexts.TryGetCurrentAsync(cancellationToken);
+            if (context is not { CompanyId: > 0 } || templateId <= 0) return null;
+
+            var datasets = await _datasets.ListForStudioAsync(context, cancellationToken);
+
+            foreach (var dataset in datasets)
+            {
+                var definition = DefinitionFor(dataset);
+                if (definition is null) continue;
+
+                // ListAsync applies the template's own scope and ownership rules, so a template belonging to
+                // another company or another person is simply not in this list.
+                var templates = await _templates.ListAsync(definition.Code, context, cancellationToken);
+                if (templates.All(t => t.Id != templateId)) continue;
+
+                var resolution = await _templates.ResolveAsync(definition, templateId, null, context,
+                    cancellationToken);
+                if (resolution.Template is null) continue;
+
+                var held = await HeldAsync(dataset, context, cancellationToken);
+                var permitted = Visible(dataset, held)
+                    .Select(f => f.Key)
+                    .ToHashSet(StringComparer.Ordinal);
+
+                var layout = resolution.Layout;
+
+                return new StudioDraft
+                {
+                    TemplateId = templateId,
+                    DatasetCode = dataset.DatasetCode,
+                    Name = Arabic ? resolution.Template.Name : (resolution.Template.NameEn ?? resolution.Template.Name),
+                    Columns = layout.VisibleColumns.Where(permitted.Contains).ToList(),
+                    Filters = layout.Filters
+                        .Where(f => permitted.Contains(f.Field))
+                        .Select(f => new StudioFilterDraft
+                        {
+                            Field = f.Field,
+                            Operator = f.Operator,
+                            Values = f.Values.ToList(),
+                        }).ToList(),
+                    Sorts = layout.Sorts
+                        .Where(s => permitted.Contains(s.Field))
+                        .Select(s => new StudioSortDraft { Field = s.Field, Descending = s.Descending })
+                        .ToList(),
+                    PageSize = 50,
+                };
+            }
+
+            return null;
+        }
+    }
+}
