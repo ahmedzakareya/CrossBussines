@@ -1,3 +1,4 @@
+using System.Linq;
 using CrossBuy.Models.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -31,6 +32,13 @@ namespace CrossBuy.BL.Platform
         // no reports receives a set of one rather than an empty set that reads as "denied".
         Task<IReadOnlySet<int>> DirectAndIndirectReportsAsync(
             int companyId, int managerEmployeeId, CancellationToken cancellationToken = default);
+
+        // The employee's DIRECT manager: the nearest ancestor in the org tree that is itself an employee
+        // node, intersected with `companyId`. Returns null when there is no such manager — an unplaced
+        // employee, a root, or a manager who belongs to another company. Null is an answer, not an error:
+        // the caller is expected to record it honestly rather than substitute somebody.
+        Task<int?> DirectManagerAsync(
+            int companyId, int employeeId, CancellationToken cancellationToken = default);
     }
 
     public sealed class OrgHierarchy : IOrgHierarchy
@@ -104,6 +112,79 @@ namespace CrossBuy.BL.Platform
 
             foreach (var id in sameCompany) team.Add(id);
             return team;
+        }
+
+        // ---- the UPWARD walk -----------------------------------------------------------------------------
+        //
+        // DirectAndIndirectReportsAsync walks DOWN. Overdue-task escalation needs the opposite question —
+        // "who does this person report to?" — and it must answer it with the same two disciplines the
+        // downward walk established, because the same data hazards apply:
+        //
+        //   * THE NEAREST EMPLOYEE ANCESTOR, not the immediate parent. The tree mixes node types: an employee
+        //     node's parent is usually a department, whose parent may be another department, and the manager
+        //     is the first H_Type == 5 node above them. Treating the immediate parent as the manager would
+        //     resolve to a department id and notify whoever happens to share that number.
+        //   * THE COMPANY INTERSECTION IS DECISIVE. Hierarchical carries no CompanyID, so the tree can span
+        //     tenants. A manager whose Employee row belongs to another company is NOT the answer, and there is
+        //     no fallback to company 1 or to anybody else — the method returns null and says why in the log.
+        //
+        // Cycle-guarded for the same reason the downward walk is: the tree is user-maintained.
+        public async Task<int?> DirectManagerAsync(
+            int companyId, int employeeId, CancellationToken cancellationToken = default)
+        {
+            if (companyId <= 0 || employeeId <= 0) return null;
+
+            var all = await _db.Hierarchicals.AsNoTracking()
+                .Select(h => new { h.H_ID, h.H_Parent, h.H_Type, h.H_ObjectID })
+                .ToListAsync(cancellationToken);
+
+            var myNode = all.FirstOrDefault(h => h.H_Type == EmployeeNodeType && h.H_ObjectID == employeeId);
+            if (myNode == null)
+            {
+                _log.LogDebug(
+                    "Employee {Employee} is not placed in the org tree, so no direct manager resolves in company {Company}.",
+                    employeeId, companyId);
+                return null;
+            }
+
+            var byId = all.ToDictionary(h => h.H_ID);
+            var visited = new HashSet<int> { myNode.H_ID };
+            var cursor = myNode;
+
+            while (cursor.H_Parent.HasValue && byId.TryGetValue(cursor.H_Parent.Value, out var parent))
+            {
+                if (!visited.Add(parent.H_ID)) break;                        // cycle in a user-maintained tree
+
+                if (parent.H_Type == EmployeeNodeType && parent.H_ObjectID.HasValue)
+                {
+                    int candidate = parent.H_ObjectID.Value;
+
+                    // A node that points back at the same person is not a manager of themselves.
+                    if (candidate == employeeId) { cursor = parent; continue; }
+
+                    bool sameCompanyAndActive = await _db.Employee.AsNoTracking()
+                        .AnyAsync(e => e.ID == candidate && e.EmpCompanyID == companyId && e.IsActive, cancellationToken);
+
+                    if (sameCompanyAndActive) return candidate;
+
+                    // Deliberately NOT "keep climbing until somebody matches". The nearest employee ancestor IS
+                    // the direct manager; if that person is inactive or belongs to another company then this
+                    // employee has no valid direct manager, and inventing a more distant one would silently
+                    // escalate across a tenant boundary or to somebody who does not manage them.
+                    _log.LogWarning(
+                        "Direct manager {Manager} of employee {Employee} is not an active employee of company {Company}; " +
+                        "no manager resolves. Hierarchical carries no CompanyID, so the tree can span tenants.",
+                        candidate, employeeId, companyId);
+                    return null;
+                }
+
+                cursor = parent;
+            }
+
+            _log.LogDebug(
+                "Employee {Employee} has no employee ancestor in the org tree of company {Company} (they are at the top, or only non-employee nodes are above them).",
+                employeeId, companyId);
+            return null;
         }
     }
 }

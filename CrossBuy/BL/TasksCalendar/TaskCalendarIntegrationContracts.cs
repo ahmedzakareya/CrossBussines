@@ -327,6 +327,17 @@ namespace CrossBuy.BL.TasksCalendar
 					F("NewStatus", "string", true, EventDataClass.Operational)),
 				TaskExclusions),
 
+			New("Task.Escalated", TaskCalendarEntityCodes.Task, "Tasks",
+				"a task is still not Done after its due date plus the escalation grace, so the assignee's DIRECT " +
+				"MANAGER is told. Raised once per missed due date per manager — the occurrence is keyed on the due " +
+				"date, not on the sweep time, so a worker that runs repeatedly (or restarts) does not re-escalate.",
+				With("TaskID",
+					F("NewDueAt", "DateTime?", true, EventDataClass.Operational, "UTC — the date that was missed"),
+					F("NewAssigneeID", "int?", true, EventDataClass.Personal, "who was supposed to do it"),
+					F("ManagerEmployeeID", "int?", true, EventDataClass.Personal, "the direct manager who was told"),
+					F("OverdueHours", "int?", false, EventDataClass.Operational, "how long it had been overdue when escalated")),
+				TaskExclusions),
+
 			New("Task.Cancelled", TaskCalendarEntityCodes.Task, "Tasks",
 				"a task is cancelled — NOTE: TaskItem.Status has no Cancelled value today (New|InProgress|Done). " +
 				"The contract is defined; raising it requires the status vocabulary to gain the value first.",

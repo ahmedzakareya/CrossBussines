@@ -44,6 +44,12 @@ namespace CrossBuy.BL.TasksCalendar
 		Task<long> TaskReopenedAsync(TaskItem task, string previousStatus, int? actorId, Guid correlationId, CancellationToken ct = default);
 		Task<long> TaskBecameOverdueAsync(TaskItem task, DateTime dueUtc, CancellationToken ct = default);
 
+		// Raised when a task is STILL not Done after its due date plus the escalation grace, and the assignee's
+		// direct manager has been told. `managerEmployeeId` is the manager who was notified — never a fallback
+		// and never a foreign-company employee; when no manager resolves, no event is raised at all.
+		Task<long> TaskEscalatedAsync(TaskItem task, DateTime dueUtc, int managerEmployeeId, int overdueHours,
+			CancellationToken ct = default);
+
 		Task<long> CalendarCreatedAsync(int companyId, int eventId, int organizerId, string title,
 			DateTime? startUtc, DateTime? endUtc, DateOnly? startLocalDate, DateOnly? endLocalDate,
 			bool isAllDay, string? timeZoneId, string scope, int attendeeCount,
@@ -142,6 +148,21 @@ namespace CrossBuy.BL.TasksCalendar
 				{
 					newDueAt = TaskCalendarTime.AssumeUtc(dueUtc),
 					newAssigneeId = Nullable(t.AssigneeEmployeeId),
+					sourceModule = TaskModule
+				}, ct);
+
+		// The OCCURRENCE is (due date, manager), not the sweep time. That is what makes a repeated sweep, a
+		// process restart, or two workers racing produce ONE event: the kernel's DedupKey collapses them.
+		public Task<long> TaskEscalatedAsync(TaskItem t, DateTime dueUtc, int managerEmployeeId, int overdueHours,
+			CancellationToken ct = default) =>
+			RecordTask(t, "Task.Escalated", null,
+				TaskNotificationService.DeterministicEscalationCorrelation(t.ID, dueUtc, managerEmployeeId),
+				$"escalated:{Stamp(dueUtc)}:{managerEmployeeId}", new
+				{
+					newDueAt = TaskCalendarTime.AssumeUtc(dueUtc),
+					newAssigneeId = Nullable(t.AssigneeEmployeeId),
+					managerEmployeeId = Nullable(managerEmployeeId),
+					overdueHours,
 					sourceModule = TaskModule
 				}, ct);
 

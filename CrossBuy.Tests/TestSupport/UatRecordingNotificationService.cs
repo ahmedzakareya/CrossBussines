@@ -71,6 +71,12 @@ namespace CrossBuy.Tests.TestSupport
 				BodyAr = bodyAr, BodyEn = bodyEn, Type = type, RefId = refId, CompanyID = companyId,
 				ActorEmployeeID = actorEmployeeId, DedupKey = dedupKey, Url = url,
 				EntityType = entityType, EntityId = entityId, IsRead = false,
+				// The real NotificationService stamps CreatedAt (NotificationService.cs:49,118). Omitting it here
+				// left every persisted row with a null timestamp, so anything deriving "when did this happen?"
+				// from the notification — task escalation reports the escalation time from exactly this column —
+				// read null and could not tell a caller when. A double that drops a field the contract always
+				// writes is not a smaller double, it is a wrong one.
+				CreatedAt = DateTime.UtcNow,
 			});
 			await _db.SaveChangesAsync();
 		}

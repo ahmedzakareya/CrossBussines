@@ -175,6 +175,7 @@ builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskDependencyService, Cro
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskTemplateService, CrossBuy.BL.TasksCalendar.TaskTemplateService>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher, CrossBuy.BL.TasksCalendar.TaskCalendarEventPublisher>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskNotificationService, CrossBuy.BL.TasksCalendar.TaskNotificationService>();
+builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskEscalationService, CrossBuy.BL.TasksCalendar.TaskEscalationService>();   // overdue -> direct-manager escalation
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ICalendarSchedulingService, CrossBuy.BL.TasksCalendar.CalendarSchedulingService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IJobTitles, JobTitleService>();
@@ -435,6 +436,12 @@ builder.Services.AddHostedService<IntegrityCheckHostedService>();
 builder.Services.AddHostedService<CrmReminderHostedService>();
 builder.Services.AddHostedService<TaskGeneratorHostedService>();   // TM-7
 builder.Services.AddHostedService<TaskScheduleMatchHostedService>();   // TM-9-ب: scheduled-task matcher
+// Overdue manager escalation. It suppresses ITSELF when the host is a certification runtime, via
+// CertificationRuntimeState.BackgroundWritersSuppressed, so this registration stays unconditional.
+// Deliberately NOT gated here: Program.cs carries exactly one gated hosted service (the event
+// dispatcher), an invariant asserted by BusinessEventDispatchWorkerCompositionTests. Suppressing
+// inside the worker is also stronger, because it holds however the service is composed.
+builder.Services.AddHostedService<CrossBuy.BL.TasksCalendar.TaskEscalationHostedService>();
 builder.Services.AddSignalR();
 
 

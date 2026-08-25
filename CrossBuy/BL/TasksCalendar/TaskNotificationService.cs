@@ -55,9 +55,10 @@ namespace CrossBuy.BL.TasksCalendar
 		public const string Completed = "task_completed";
 		public const string Reopened = "task_reopened";
 		public const string Cancelled = "task_cancelled";
+		public const string Escalated = "task_escalated";
 
 		public static readonly IReadOnlyList<string> All =
-			new[] { Assigned, Reassigned, DueDateChanged, BecameOverdue, Completed, Reopened, Cancelled };
+			new[] { Assigned, Reassigned, DueDateChanged, BecameOverdue, Completed, Reopened, Cancelled, Escalated };
 	}
 
 	/// The outcome of one notification attempt — auditable, and honest about what actually happened.
@@ -95,6 +96,11 @@ namespace CrossBuy.BL.TasksCalendar
 
 		Task<IReadOnlyList<TaskNotificationOutcome>> TaskCancelledAsync(
 			int taskId, int? actorEmployeeId, Guid correlationId, CancellationToken ct = default);
+
+		// Tell the assignee's DIRECT MANAGER that a task is still not Done well past its due date. The caller
+		// resolves the manager (company-checked) and passes it in; this method does not guess one.
+		Task<IReadOnlyList<TaskNotificationOutcome>> TaskEscalatedAsync(
+			int taskId, DateTime dueUtc, int managerEmployeeId, CancellationToken ct = default);
 	}
 
 	public sealed class TaskNotificationService : ITaskNotificationService
@@ -177,6 +183,20 @@ namespace CrossBuy.BL.TasksCalendar
 				titleAr: "أُلغيت المهمة", titleEn: "A task was cancelled",
 				body: t => (Ar: t.Title, En: t.TitleEn ?? t.Title), ct: ct);
 
+		public Task<IReadOnlyList<TaskNotificationOutcome>> TaskEscalatedAsync(
+			int taskId, DateTime dueUtc, int managerEmployeeId, CancellationToken ct = default) =>
+			SendAsync(taskId, TaskNotificationKinds.Escalated, actorEmployeeId: null,
+				correlationId: DeterministicEscalationCorrelation(taskId, dueUtc, managerEmployeeId),
+				// ONLY the manager. The assignee already received task_became_overdue for this same date; telling
+				// them again that they are late is noise, and escalation is a message to the manager by definition.
+				recipients: _ => new[] { managerEmployeeId },
+				// Keyed on the MISSED DUE DATE and the manager, never on the sweep time. So an hourly worker
+				// escalates once per missed date, a restart does not re-escalate, and moving the due date is a
+				// genuinely new occurrence that may escalate again.
+				occurrence: _ => $"escalated:{Stamp(dueUtc)}",
+				titleAr: "تصعيد مهمة متأخرة", titleEn: "An overdue task was escalated to you",
+				body: t => (Ar: t.Title, En: t.TitleEn ?? t.Title), ct: ct);
+
 		// -------------------------------------------------------------------------------------
 		// the one path every notification goes through
 		// -------------------------------------------------------------------------------------
@@ -242,7 +262,7 @@ namespace CrossBuy.BL.TasksCalendar
 					url: DeepLink(taskId),
 					companyId: companyId,
 					actorEmployeeId: actorEmployeeId,
-					priority: kind == TaskNotificationKinds.BecameOverdue ? "High" : null,
+					priority: kind is TaskNotificationKinds.BecameOverdue or TaskNotificationKinds.Escalated ? "High" : null,
 					category: Category,
 					dedupKey: dedupKey,
 					entityType: TaskCalendarEntityCodes.Task,
@@ -274,6 +294,16 @@ namespace CrossBuy.BL.TasksCalendar
 		internal static Guid DeterministicOverdueCorrelation(int taskId, DateTime dueUtc)
 		{
 			var seed = $"overdue:{taskId}:{Stamp(dueUtc)}";
+			var bytes = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(seed));
+			return new Guid(bytes);
+		}
+
+		/// Escalation has no user action either, and it must not share the overdue correlation: they are two
+		/// different facts about the same missed date. Includes the manager so escalating to a different
+		/// manager (a reorganised tree) is a distinguishable event rather than a silent duplicate.
+		internal static Guid DeterministicEscalationCorrelation(int taskId, DateTime dueUtc, int managerEmployeeId)
+		{
+			var seed = $"escalated:{taskId}:{Stamp(dueUtc)}:{managerEmployeeId}";
 			var bytes = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(seed));
 			return new Guid(bytes);
 		}
