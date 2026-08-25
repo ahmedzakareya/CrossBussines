@@ -228,6 +228,55 @@
 			Flagged.Where(f => string.Equals(f.Class, cls, StringComparison.OrdinalIgnoreCase));
 	}
 
+	// ----- CRM Opportunity Insights (product expansion wave 2) -----
+	//
+	// THERE IS NO CRM MODEL. crossbuy_ai ships journal-anomaly, cashflow and inventory models and nothing
+	// that takes an opportunity. This screen is therefore DETERMINISTIC BUSINESS RULES over fields the CRM
+	// already stores (see BL/Platform/Ai/CrmOpportunityRiskRules.cs), and it says exactly that to the
+	// reader. It performs NO AI egress, because there is nothing to send anywhere.
+	public sealed class CrmOpportunityInsightsVm
+	{
+		public AiInsightPanel Panel { get; set; } = new();
+
+		/// The resolved company. Server-derived; this screen accepts no company from the caller.
+		public int CompanyId { get; set; }
+
+		/// Open opportunities examined. Zero means InsufficientData, never "all clear".
+		public int Analysed { get; set; }
+
+		public IReadOnlyList<CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Insight> Insights { get; set; }
+			= Array.Empty<CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Insight>();
+
+		/// Distinct opportunities carrying at least one finding — the number a reader acts on. The insight
+		/// count is larger, because one neglected deal can trip several rules at once.
+		public int OpportunitiesWithFindings =>
+			Insights.Select(i => i.Opportunity.OpportunityId).Distinct().Count();
+
+		public int CountOf(CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Finding f) =>
+			Insights.Count(i => i.Finding == f);
+
+		public int CountOfSeverity(CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Severity s) =>
+			Insights.Count(i => i.Severity == s);
+
+		/// Filter values offered in the UI, built from what is actually present rather than from the enum:
+		/// offering a filter that can only ever return nothing is a small lie about the data.
+		public IReadOnlyList<string> OwnersPresent =>
+			Insights.Select(i => i.Opportunity.OwnerName)
+				.Where(n => !string.IsNullOrWhiteSpace(n))
+				.Select(n => n!)
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.OrderBy(n => n, StringComparer.CurrentCulture)
+				.ToList();
+
+		public IReadOnlyList<string> StagesPresent =>
+			Insights.Select(i => i.Opportunity.Stage)
+				.Where(v => !string.IsNullOrWhiteSpace(v))
+				.Select(v => v!)
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+				.OrderBy(v => v, StringComparer.Ordinal)
+				.ToList();
+	}
+
 	// ----- page view model -----
 	public class AiInsightsVm
 	{

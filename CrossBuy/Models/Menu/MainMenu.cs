@@ -1,4 +1,4 @@
-namespace CrossBuy.Models.Menu
+﻿namespace CrossBuy.Models.Menu
 {
 	public class MenuItem
 	{
@@ -288,6 +288,9 @@ namespace CrossBuy.Models.Menu
 					new() { LabelAr = "العملاء المحتملون", LabelEn = "Leads", Action = "Leads", Controller = "Crm" },
 					new() { LabelAr = "الفرص البيعية", LabelEn = "Opportunities", Action = "Opportunities", Controller = "Crm" },
 					new() { LabelAr = "خط الأنابيب (Kanban)", LabelEn = "Pipeline (Kanban)", Action = "Pipeline", Controller = "Crm" },
+					// Rules-based review list. Placed straight after the pipeline because it answers the
+					// question a salesperson asks while looking at one: which of these needs me today?
+					new() { LabelAr = "تحليلات الفرص", LabelEn = "Opportunity Insights", Action = "OpportunityInsights", Controller = "Crm" },
 					new() { LabelAr = "إعداد خطوط الأنابيب", LabelEn = "Pipeline setup", Action = "Pipelines", Controller = "Crm", Perm = "crm-manage" },
 					new() { LabelAr = "الأنشطة والمهام", LabelEn = "Activities", Action = "Activities", Controller = "Crm" },
 					new() { LabelAr = "الحملات التسويقية", LabelEn = "Campaigns", Action = "Campaigns", Controller = "Crm" },

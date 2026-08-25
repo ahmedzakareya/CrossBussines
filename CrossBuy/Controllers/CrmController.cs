@@ -1,4 +1,5 @@
-using CrossBuy.BL;
+﻿using CrossBuy.BL;
+using CrossBuy.ViewModel.Ai;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Crm;
@@ -31,7 +32,9 @@ namespace CrossBuy.Controllers
 		private readonly CrossDbContext _context;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 		private const int DefaultCompanyId = 1;
-		public CrmController(ICrmService crm, CrossDbContext context, IStringLocalizer<CrossBuy.SharedResources> localizer) { _crm = crm; _context = context; L = localizer; }
+		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
+		private readonly ICrmAccessService _access;
+		public CrmController(ICrmService crm, CrossDbContext context, CrossBuy.BL.Platform.IRequestCompanyResolver company, ICrmAccessService access, IStringLocalizer<CrossBuy.SharedResources> localizer) { _crm = crm; _context = context; _company = company; _access = access; L = localizer; }
 
 		// ---------------- CRM custom fields (3-7b-i) ----------------
 		private ICrmCustomFieldService CfSvc => (HttpContext.RequestServices.GetService(typeof(ICrmCustomFieldService)) as ICrmCustomFieldService)!;
@@ -545,6 +548,133 @@ namespace CrossBuy.Controllers
 		}
 
 		// ---------------- Opportunities ----------------
+		// ===== CRM Opportunity Insights (rules-based decision support) =====
+		//
+		// NOT AI, AND THE SCREEN SAYS SO. There is no CRM model in this product: crossbuy_ai ships
+		// journal-anomaly, cashflow and inventory models and nothing that takes an opportunity. This action
+		// therefore performs NO AI egress at all - it reads the company's own CRM rows and applies the
+		// deterministic rules in CrmOpportunityRiskRules. Calling that "AI" on the page would be inventing a
+		// model, which is the one thing this surface must not do.
+		//
+		// READ-ONLY. Nothing here writes, and every link it renders is a GET to a screen that already exists.
+		[HttpGet]
+		[CrossBuy.Models.CrmPerm("read")]
+		public async Task<IActionResult> OpportunityInsights()
+		{
+			// COMPANY IS RESOLVED, NEVER SUPPLIED. The action takes no parameters, so there is nothing a
+			// caller could offer. The rest of this controller still uses its DefaultCompanyId constant; that
+			// is pre-existing debt this screen does not inherit and does not fix.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				// The resolver's reason is deliberately not rendered: it names companies, and "your company is
+				// 2, the record is 1" tells a caller a record exists where they cannot see it.
+				TempData["CrmErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			var vm = new CrossBuy.ViewModel.Ai.CrmOpportunityInsightsVm { CompanyId = scope.CompanyId };
+			var nowUtc = DateTime.UtcNow;
+
+			try
+			{
+				// OWNER SCOPE comes from the CRM module's own contract, not from logic copied to here. Null
+				// means "no owner narrowing for this user"; a set means they see only those owners.
+				//
+				// IT IS APPLIED ON TOP OF THE COMPANY PREDICATE, never instead of it. At HEAD that service
+				// still derives its roles from a hardcoded company 1 (another workstream is repairing it), so
+				// a wrong owner set could narrow this list oddly - but it can never widen it across companies,
+				// because the company filter below is ours and independent of it.
+				var visibleOwners = await _access.VisibleOwnerIdsAsync();
+
+				var opps = _context.Opportunities.AsNoTracking()
+					.Where(o => o.CompanyID == scope.CompanyId);
+				if (visibleOwners != null)
+					opps = opps.Where(o => o.OwnerEmployeeId != null && visibleOwners.Contains(o.OwnerEmployeeId.Value));
+
+				// Only OPEN opportunities are examined. A Won or Lost deal with no recent activity is
+				// finished, not neglected, and putting it on a work list trains the reader to ignore the list.
+				var closed = CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.ClosedStages.ToList();
+				var rows = await opps
+					.Where(o => !closed.Contains(o.Stage))
+					.Select(o => new
+					{
+						o.ID, o.Title, o.TitleEn, o.AccountId, o.Stage, o.Amount, o.Probability,
+						o.ExpectedCloseDate, o.CreatedAt, o.OwnerEmployeeId,
+					})
+					.ToListAsync();
+
+				vm.Analysed = rows.Count;
+
+				if (rows.Count == 0)
+				{
+					// Nothing examined is NOT a clean pipeline. Map(200, 0) yields InsufficientData.
+					vm.Panel = AiInsightMapper.Map(200, 0, scope.CompanyId, nowUtc);
+					return View(vm);
+				}
+
+				var ids = rows.Select(r => r.ID).ToList();
+
+				// Last activity and open-follow-up counts, company-scoped in their own right rather than
+				// trusted to the join: a filter that is only correct because of another table's predicate is
+				// one refactor away from being wrong.
+				var activity = await _context.Activities.AsNoTracking()
+					.Where(a => a.CompanyID == scope.CompanyId && a.OpportunityId != null && ids.Contains(a.OpportunityId.Value))
+					.GroupBy(a => a.OpportunityId!.Value)
+					.Select(g => new
+					{
+						OpportunityId = g.Key,
+						LastAt = g.Max(x => x.CreatedAt),
+						Open = g.Count(x => !x.Done),
+					})
+					.ToListAsync();
+				var activityById = activity.ToDictionary(a => a.OpportunityId);
+
+				var accountNames = await _context.CrmAccounts.AsNoTracking()
+					.Where(a => a.CompanyID == scope.CompanyId)
+					.Select(a => new { a.ID, a.Name })
+					.ToDictionaryAsync(a => a.ID, a => a.Name);
+
+				var ownerNames = await _context.Employee.AsNoTracking()
+					.Where(e => e.EmpCompanyID == scope.CompanyId)
+					.Select(e => new { e.ID, e.FullName })
+					.ToDictionaryAsync(e => e.ID, e => e.FullName);
+
+				var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+				var signals = rows.Select(r => new CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Signal
+				{
+					OpportunityId = r.ID,
+					Title = (!isAr && !string.IsNullOrWhiteSpace(r.TitleEn)) ? r.TitleEn! : r.Title,
+					AccountId = r.AccountId,
+					AccountName = r.AccountId != null && accountNames.TryGetValue(r.AccountId.Value, out var an) ? an : null,
+					Stage = r.Stage,
+					Amount = r.Amount,
+					Probability = r.Probability,
+					ExpectedCloseDate = r.ExpectedCloseDate,
+					CreatedAt = r.CreatedAt,
+					OwnerEmployeeId = r.OwnerEmployeeId,
+					OwnerName = r.OwnerEmployeeId != null && ownerNames.TryGetValue(r.OwnerEmployeeId.Value, out var on) ? on : null,
+					LastActivityAt = activityById.TryGetValue(r.ID, out var ac) ? ac.LastAt : null,
+					OpenActivityCount = activityById.TryGetValue(r.ID, out var ac2) ? ac2.Open : 0,
+				});
+
+				vm.Insights = CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Analyse(signals, nowUtc);
+				vm.Panel = AiInsightMapper.Map(200, rows.Count, scope.CompanyId, nowUtc);
+			}
+			catch (Microsoft.Data.SqlClient.SqlException)
+			{
+				// The data this screen reads is unreachable. Recoverable, and honestly "we could not look",
+				// not "there is nothing wrong".
+				vm.Panel = AiInsightMapper.Unavailable("crm-insight:data-unavailable", scope.CompanyId, nowUtc);
+			}
+			catch (InvalidOperationException)
+			{
+				vm.Panel = AiInsightMapper.Failed("crm-insight:unreadable-data", scope.CompanyId, nowUtc);
+			}
+
+			return View(vm);
+		}
+
 		[HttpGet] public async Task<IActionResult> Opportunities()
 		{
 			ViewBag.Pipeline = await _crm.PipelineSummaryAsync(DefaultCompanyId);

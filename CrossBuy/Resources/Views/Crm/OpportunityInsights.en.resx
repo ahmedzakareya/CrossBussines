@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Account" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="All owners" xml:space="preserve">
+    <value>All owners</value>
+  </data>
+  <data name="All severities" xml:space="preserve">
+    <value>All severities</value>
+  </data>
+  <data name="All stages" xml:space="preserve">
+    <value>All stages</value>
+  </data>
+  <data name="Analysis could not be completed" xml:space="preserve">
+    <value>Analysis could not be completed</value>
+  </data>
+  <data name="Business rules" xml:space="preserve">
+    <value>Business rules</value>
+  </data>
+  <data name="CRM data is unavailable" xml:space="preserve">
+    <value>CRM data is unavailable</value>
+  </data>
+  <data name="Closes in" xml:space="preserve">
+    <value>Closes in</value>
+  </data>
+  <data name="Closing soon, nobody working it" xml:space="preserve">
+    <value>Closing soon, nobody working it</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Data scope" xml:space="preserve">
+    <value>Data scope</value>
+  </data>
+  <data name="Expected" xml:space="preserve">
+    <value>Expected</value>
+  </data>
+  <data name="Expected close date passed" xml:space="preserve">
+    <value>Expected close date passed</value>
+  </data>
+  <data name="Finding" xml:space="preserve">
+    <value>Finding</value>
+  </data>
+  <data name="Generated" xml:space="preserve">
+    <value>Generated</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="High priority" xml:space="preserve">
+    <value>High priority</value>
+  </data>
+  <data name="Last CRM activity was" xml:space="preserve">
+    <value>Last CRM activity was</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Method" xml:space="preserve">
+    <value>Method</value>
+  </data>
+  <data name="Needing attention" xml:space="preserve">
+    <value>Needing attention</value>
+  </data>
+  <data name="No CRM activity has ever been recorded" xml:space="preserve">
+    <value>No CRM activity has ever been recorded</value>
+  </data>
+  <data name="No CRM activity in the" xml:space="preserve">
+    <value>No CRM activity in the</value>
+  </data>
+  <data name="No activity ever recorded" xml:space="preserve">
+    <value>No activity ever recorded</value>
+  </data>
+  <data name="No data leaves this installation" xml:space="preserve">
+    <value>No data leaves this installation</value>
+  </data>
+  <data name="No expected close date" xml:space="preserve">
+    <value>No expected close date</value>
+  </data>
+  <data name="No expected close date has been set" xml:space="preserve">
+    <value>No expected close date has been set</value>
+  </data>
+  <data name="No open follow-up activity is recorded" xml:space="preserve">
+    <value>No open follow-up activity is recorded</value>
+  </data>
+  <data name="No open next action" xml:space="preserve">
+    <value>No open next action</value>
+  </data>
+  <data name="No opportunities need attention" xml:space="preserve">
+    <value>No opportunities need attention</value>
+  </data>
+  <data name="No recent activity" xml:space="preserve">
+    <value>No recent activity</value>
+  </data>
+  <data name="Not enough data to analyse" xml:space="preserve">
+    <value>Not enough data to analyse</value>
+  </data>
+  <data name="Not generated" xml:space="preserve">
+    <value>Not generated</value>
+  </data>
+  <data name="Open a long time" xml:space="preserve">
+    <value>Open a long time</value>
+  </data>
+  <data name="Open for" xml:space="preserve">
+    <value>Open for</value>
+  </data>
+  <data name="Open opportunities analysed" xml:space="preserve">
+    <value>Open opportunities analysed</value>
+  </data>
+  <data name="Opportunity" xml:space="preserve">
+    <value>Opportunity</value>
+  </data>
+  <data name="Opportunity Insights" xml:space="preserve">
+    <value>Opportunity Insights</value>
+  </data>
+  <data name="Ordered by: most serious first, then longest overdue or neglected, then largest amount." xml:space="preserve">
+    <value>Ordered by: most serious first, then longest overdue or neglected, then largest amount.</value>
+  </data>
+  <data name="Owner" xml:space="preserve">
+    <value>Owner</value>
+  </data>
+  <data name="Past expected close date" xml:space="preserve">
+    <value>Past expected close date</value>
+  </data>
+  <data name="Review list" xml:space="preserve">
+    <value>Review list</value>
+  </data>
+  <data name="Rule-based review list" xml:space="preserve">
+    <value>Rule-based review list</value>
+  </data>
+  <data name="Severity" xml:space="preserve">
+    <value>Severity</value>
+  </data>
+  <data name="Showing the first 200 of" xml:space="preserve">
+    <value>Showing the first 200 of</value>
+  </data>
+  <data name="The CRM data could not be read. Every other CRM screen is unaffected." xml:space="preserve">
+    <value>The CRM data could not be read. Every other CRM screen is unaffected.</value>
+  </data>
+  <data name="The review could not be completed. Nothing has been changed." xml:space="preserve">
+    <value>The review could not be completed. Nothing has been changed.</value>
+  </data>
+  <data name="There are no open opportunities for this company, so nothing could be reviewed. This is not a statement that your pipeline is healthy." xml:space="preserve">
+    <value>There are no open opportunities for this company, so nothing could be reviewed. This is not a statement that your pipeline is healthy.</value>
+  </data>
+  <data name="These items are selected by fixed business rules over your own CRM records — activity dates, expected close dates, age and open follow-ups. There is no predictive model: nothing here estimates a win chance, a close date or a revenue figure." xml:space="preserve">
+    <value>These items are selected by fixed business rules over your own CRM records — activity dates, expected close dates, age and open follow-ups. There is no predictive model: nothing here estimates a win chance, a close date or a revenue figure.</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>Up to date</value>
+  </data>
+  <data name="Why" xml:space="preserve">
+    <value>Why</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="days ago" xml:space="preserve">
+    <value>days ago</value>
+  </data>
+  <data name="days since it was created" xml:space="preserve">
+    <value>days since it was created</value>
+  </data>
+  <data name="days, with no open follow-up" xml:space="preserve">
+    <value>days, with no open follow-up</value>
+  </data>
+  <data name="findings" xml:space="preserve">
+    <value>findings</value>
+  </data>
+  <data name="open opportunities were reviewed and none matched a review rule." xml:space="preserve">
+    <value>open opportunities were reviewed and none matched a review rule.</value>
+  </data>
+</root>

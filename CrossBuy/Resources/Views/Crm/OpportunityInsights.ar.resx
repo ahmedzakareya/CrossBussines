@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Account" xml:space="preserve">
+    <value>الحساب</value>
+  </data>
+  <data name="All owners" xml:space="preserve">
+    <value>كل المسؤولين</value>
+  </data>
+  <data name="All severities" xml:space="preserve">
+    <value>كل مستويات الخطورة</value>
+  </data>
+  <data name="All stages" xml:space="preserve">
+    <value>كل المراحل</value>
+  </data>
+  <data name="Analysis could not be completed" xml:space="preserve">
+    <value>تعذّر إكمال التحليل</value>
+  </data>
+  <data name="Business rules" xml:space="preserve">
+    <value>قواعد عمل</value>
+  </data>
+  <data name="CRM data is unavailable" xml:space="preserve">
+    <value>بيانات CRM غير متاحة</value>
+  </data>
+  <data name="Closes in" xml:space="preserve">
+    <value>يُغلق خلال</value>
+  </data>
+  <data name="Closing soon, nobody working it" xml:space="preserve">
+    <value>قرب الإغلاق ولا أحد يتابعها</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>الشركة</value>
+  </data>
+  <data name="Data scope" xml:space="preserve">
+    <value>نطاق البيانات</value>
+  </data>
+  <data name="Expected" xml:space="preserve">
+    <value>متوقع</value>
+  </data>
+  <data name="Expected close date passed" xml:space="preserve">
+    <value>تجاوز تاريخ الإغلاق المتوقع منذ</value>
+  </data>
+  <data name="Finding" xml:space="preserve">
+    <value>الملاحظة</value>
+  </data>
+  <data name="Generated" xml:space="preserve">
+    <value>تاريخ الإنشاء</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>مرتفع</value>
+  </data>
+  <data name="High priority" xml:space="preserve">
+    <value>أولوية مرتفعة</value>
+  </data>
+  <data name="Last CRM activity was" xml:space="preserve">
+    <value>آخر نشاط في CRM كان منذ</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>منخفض</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>متوسط</value>
+  </data>
+  <data name="Method" xml:space="preserve">
+    <value>الطريقة</value>
+  </data>
+  <data name="Needing attention" xml:space="preserve">
+    <value>تحتاج متابعة</value>
+  </data>
+  <data name="No CRM activity has ever been recorded" xml:space="preserve">
+    <value>لم يُسجَّل أي نشاط في CRM على الإطلاق</value>
+  </data>
+  <data name="No CRM activity in the" xml:space="preserve">
+    <value>لا يوجد نشاط في CRM خلال</value>
+  </data>
+  <data name="No activity ever recorded" xml:space="preserve">
+    <value>لم يُسجَّل أي نشاط</value>
+  </data>
+  <data name="No data leaves this installation" xml:space="preserve">
+    <value>لا تغادر أي بيانات هذا التثبيت</value>
+  </data>
+  <data name="No expected close date" xml:space="preserve">
+    <value>لا يوجد تاريخ إغلاق متوقع</value>
+  </data>
+  <data name="No expected close date has been set" xml:space="preserve">
+    <value>لم يتم تحديد تاريخ إغلاق متوقع</value>
+  </data>
+  <data name="No open follow-up activity is recorded" xml:space="preserve">
+    <value>لا يوجد نشاط متابعة مفتوح مسجَّل</value>
+  </data>
+  <data name="No open next action" xml:space="preserve">
+    <value>لا توجد خطوة تالية مفتوحة</value>
+  </data>
+  <data name="No opportunities need attention" xml:space="preserve">
+    <value>لا توجد فرص تحتاج متابعة</value>
+  </data>
+  <data name="No recent activity" xml:space="preserve">
+    <value>لا يوجد نشاط حديث</value>
+  </data>
+  <data name="Not enough data to analyse" xml:space="preserve">
+    <value>لا توجد بيانات كافية للتحليل</value>
+  </data>
+  <data name="Not generated" xml:space="preserve">
+    <value>لم يتم الإنشاء</value>
+  </data>
+  <data name="Open a long time" xml:space="preserve">
+    <value>مفتوحة منذ فترة طويلة</value>
+  </data>
+  <data name="Open for" xml:space="preserve">
+    <value>مفتوحة منذ</value>
+  </data>
+  <data name="Open opportunities analysed" xml:space="preserve">
+    <value>الفرص المفتوحة التي تم فحصها</value>
+  </data>
+  <data name="Opportunity" xml:space="preserve">
+    <value>الفرصة</value>
+  </data>
+  <data name="Opportunity Insights" xml:space="preserve">
+    <value>تحليلات الفرص</value>
+  </data>
+  <data name="Ordered by: most serious first, then longest overdue or neglected, then largest amount." xml:space="preserve">
+    <value>الترتيب: الأخطر أولاً، ثم الأطول تأخيراً أو إهمالاً، ثم الأكبر قيمة.</value>
+  </data>
+  <data name="Owner" xml:space="preserve">
+    <value>المسؤول</value>
+  </data>
+  <data name="Past expected close date" xml:space="preserve">
+    <value>تجاوز تاريخ الإغلاق المتوقع</value>
+  </data>
+  <data name="Review list" xml:space="preserve">
+    <value>قائمة المراجعة</value>
+  </data>
+  <data name="Rule-based review list" xml:space="preserve">
+    <value>قائمة مراجعة قائمة على القواعد</value>
+  </data>
+  <data name="Severity" xml:space="preserve">
+    <value>الخطورة</value>
+  </data>
+  <data name="Showing the first 200 of" xml:space="preserve">
+    <value>عرض أول 200 من</value>
+  </data>
+  <data name="The CRM data could not be read. Every other CRM screen is unaffected." xml:space="preserve">
+    <value>تعذّرت قراءة بيانات CRM. جميع شاشات CRM الأخرى غير متأثرة.</value>
+  </data>
+  <data name="The review could not be completed. Nothing has been changed." xml:space="preserve">
+    <value>تعذّر إكمال المراجعة. لم يتم تغيير أي شيء.</value>
+  </data>
+  <data name="There are no open opportunities for this company, so nothing could be reviewed. This is not a statement that your pipeline is healthy." xml:space="preserve">
+    <value>لا توجد فرص مفتوحة لهذه الشركة، لذلك لم تتم مراجعة أي شيء. هذا ليس تأكيداً بأن خط الفرص لديك سليم.</value>
+  </data>
+  <data name="These items are selected by fixed business rules over your own CRM records — activity dates, expected close dates, age and open follow-ups. There is no predictive model: nothing here estimates a win chance, a close date or a revenue figure." xml:space="preserve">
+    <value>يتم اختيار هذه العناصر بقواعد عمل ثابتة على سجلات CRM الخاصة بك — تواريخ النشاط، وتواريخ الإغلاق المتوقعة، والعمر، والمتابعات المفتوحة. لا يوجد نموذج تنبؤي: لا شيء هنا يقدّر فرصة الفوز أو تاريخ الإغلاق أو قيمة الإيراد.</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>غير معروف</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>محدَّث</value>
+  </data>
+  <data name="Why" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="days ago" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="days since it was created" xml:space="preserve">
+    <value>يوم منذ إنشائها</value>
+  </data>
+  <data name="days, with no open follow-up" xml:space="preserve">
+    <value>يوم، بدون متابعة مفتوحة</value>
+  </data>
+  <data name="findings" xml:space="preserve">
+    <value>ملاحظة</value>
+  </data>
+  <data name="open opportunities were reviewed and none matched a review rule." xml:space="preserve">
+    <value>فرصة مفتوحة تمت مراجعتها ولم تطابق أي قاعدة مراجعة.</value>
+  </data>
+</root>
