@@ -205,6 +205,102 @@
             </div>
         }
 
+        @* ================================================================================================
+           WHAT REQUIRES MY ATTENTION?
+
+           The first card on the screen, above the metric tiles, because it is the one answer a person
+           opens this page for. Every row is already on the dashboard further down - this card only says
+           which of them comes first.
+
+           Metronic vocabulary only, and the SAME card/table/badge components the panels below already
+           use. No new design language, no new stylesheet, no bespoke class.
+           ================================================================================================ *@
+        <!--begin::Attention-->
+        <div class="card card-flush mb-5 mb-xl-10" id="attention" aria-busy="false">
+            <div class="card-header pt-7">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-900">
+                        <i class="ki-outline ki-abstract-23 fs-3 text-danger me-2"></i>@Localizer["What requires my attention?"]
+                    </span>
+                    @if (Model.Attention.HasItems)
+                    {
+                        <span class="text-gray-700 fw-semibold fs-7 mt-1">
+                            @Localizer["Ranked by urgency across your work, approvals and mentions."]
+                        </span>
+                    }
+                </h3>
+                @if (Model.Attention.Total is > 0 && Model.Attention.Total > Model.Attention.Items.Count)
+                {
+                    <div class="card-toolbar">
+                        <span class="badge badge-light-danger fs-8 fw-bold text-gray-800">
+                            @Localizer["Showing {0} of {1}", Model.Attention.Items.Count, Model.Attention.Total!]
+                        </span>
+                    </div>
+                }
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Attention.HasItems)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
+                            <thead>
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                    <th class="w-150px">@Localizer["Reason"]</th>
+                                    <th>@Localizer["Item"]</th>
+                                    <th class="w-125px">@Localizer["Source"]</th>
+                                    <th class="text-end w-125px">@Localizer["When"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Attention.Items)
+                                {
+                                    var tone = MetricColor(item.Tone);
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-light-@tone fs-8 fw-bold text-gray-800">@item.ReasonLabel(arabic)</span>
+                                        </td>
+                                        <td class="min-w-200px">
+                                            @* The destination comes from the panel the row was composed
+                                               from, which got it from the owning module. *@
+                                            <a class="fw-bold text-gray-900 text-hover-primary"
+                                               href="@(item.Url ?? Url.Action("Index", "Workspace"))">@item.Title</a>
+                                            @if (!string.IsNullOrWhiteSpace(item.Priority) && item.Priority != "Normal")
+                                            {
+                                                <span class="badge badge-light fs-8 ms-2">@item.Priority</span>
+                                            }
+                                        </td>
+                                        <td class="text-gray-700 fw-semibold">@item.Source(arabic)</td>
+                                        <td class="text-end text-gray-700 fw-semibold">
+                                            @if (item.AgeDays is > 0)
+                                            {
+                                                <span class="text-@tone">@Localizer["{0}d", item.AgeDays!]</span>
+                                            }
+                                            else if (item.Due.HasValue)
+                                            {
+                                                @item.Due.Value.ToString("yyyy-MM-dd")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-gray-700">&mdash;</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    @* Empty says "nothing needs you"; the other three states say why we cannot tell. The
+                       shared helper keeps them visually distinct, as everywhere else on this screen. *@
+                    @PanelNotice(Model.Attention.State,
+                        Localizer["Nothing needs your attention right now."].Value, "ki-outline ki-check-circle")
+                }
+            </div>
+        </div>
+        <!--end::Attention-->
+
         @if (Model.Metrics.Count > 0)
         {
             <!--begin::Metrics-->

@@ -289,6 +289,70 @@ namespace CrossBuy.BL.Workspace
         public string TypeLabel(bool arabic) => arabic ? TypeLabelAr : TypeLabelEn;
     }
 
+    // ---- ATTENTION ------------------------------------------------------------------------------
+    //
+    // "WHAT REQUIRES MY ATTENTION?" IS A COMPOSITION, NOT A SOURCE.
+    //
+    // Every row on this panel is already on the dashboard somewhere else — an overdue task in My Work,
+    // an approval waiting in Approvals, a mention in Mentions. Nothing new is read, nothing new is
+    // queried, and no module table is touched: the panel re-reads the panels that have already loaded
+    // and answers one question they cannot answer separately, which is "of all of that, what first?".
+    //
+    // WHY IT IS NOT A SIXTH SILO. A source of its own would have to re-derive "overdue", "waiting" and
+    // "urgent" from module data, and those three definitions already live in TaskService, the approval
+    // inbox and the mention service. A second copy of a rule is the thing this tab has removed twice
+    // already (the duplicate report producer, the notification-derived activity feed).
+
+    // The reasons a row can demand attention, IN PRIORITY ORDER. The enum's ORDER IS THE RANKING: a
+    // lower value outranks a higher one, always, regardless of age. That is deliberate and it is the
+    // whole business rule — an overdue commitment outranks an approval someone else is waiting on,
+    // which outranks something merely due today, which outranks a flag on the calendar.
+    //
+    // Ordering by enum rather than by a weighted score keeps it explicit and testable: there is no
+    // tuning constant to argue about, and "overdue outranks urgent" is a compile-time fact.
+    public enum WorkspaceAttentionReason
+    {
+        OverdueTask = 0,       // a commitment already missed
+        ApprovalWaiting = 1,   // somebody else is blocked on this person
+        DueToday = 2,          // still recoverable, but only today
+        UrgentTask = 3,        // flagged Urgent, not yet due
+        Mention = 4,           // someone asked for this person by name
+    }
+
+    public sealed class WorkspaceAttentionItem
+    {
+        public required WorkspaceAttentionReason Reason { get; init; }
+        public required string ReasonLabelAr { get; init; }
+        public required string ReasonLabelEn { get; init; }
+
+        public required string Title { get; init; }
+
+        // Which module the row came from, for the reader — not a route. Navigation is Url.
+        public required string SourceAr { get; init; }
+        public required string SourceEn { get; init; }
+
+        public DateTime? Due { get; init; }
+
+        /// How long this has been demanding attention: days late for an overdue item, days waiting for
+        /// an approval, days since a mention. It is the SECOND sort key, never the first.
+        public int? AgeDays { get; init; }
+
+        public string? Priority { get; init; }
+
+        /// Supplied by the panel the row came from, which got it from the owning module. The Workspace
+        /// builds no module route.
+        public string? Url { get; init; }
+
+        public WorkspaceTone Tone { get; init; }
+
+        /// 1-based position after ranking. Exposed so the order is assertable as a fact rather than
+        /// inferred from list position in a test.
+        public required int Rank { get; init; }
+
+        public string ReasonLabel(bool arabic) => arabic ? ReasonLabelAr : ReasonLabelEn;
+        public string Source(bool arabic) => arabic ? SourceAr : SourceEn;
+    }
+
     // ---- notifications / mentions ---------------------------------------------------------------
 
     public sealed class WorkspaceNotification
@@ -447,6 +511,10 @@ namespace CrossBuy.BL.Workspace
         public WorkspaceCapabilities Capabilities { get; init; } = WorkspaceCapabilities.None;
 
         public IReadOnlyList<WorkspaceMetric> Metrics { get; init; } = Array.Empty<WorkspaceMetric>();
+        // Composed from MyWork, Approvals and Mentions AFTER they load — see ComposeAttention.
+        public WorkspacePanel<WorkspaceAttentionItem> Attention { get; init; } =
+            WorkspacePanel<WorkspaceAttentionItem>.Empty();
+
         public WorkspacePanel<WorkspaceWorkItem> MyWork { get; init; } = WorkspacePanel<WorkspaceWorkItem>.Empty();
         public WorkspacePanel<WorkspaceApprovalItem> Approvals { get; init; } = WorkspacePanel<WorkspaceApprovalItem>.Empty();
         public WorkspacePanel<WorkspaceAgendaRow> Agenda { get; init; } = WorkspacePanel<WorkspaceAgendaRow>.Empty();

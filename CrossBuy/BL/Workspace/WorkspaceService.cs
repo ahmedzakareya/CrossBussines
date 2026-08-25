@@ -29,6 +29,9 @@ namespace CrossBuy.BL.Workspace
     // ============================================================================================
     public class WorkspaceService : IWorkspaceService
     {
+        // Five to ten rows is the brief. Eight keeps the card readable above the fold on a laptop
+        // without becoming a second work list — if everything is urgent, nothing is.
+        private const int AttentionShown = 8;
         private const int WorkItemsShown = 8;
         private const int NotificationsShown = 8;
         private const int MentionsShown = 6;
@@ -163,6 +166,10 @@ namespace CrossBuy.BL.Workspace
             var unreadNotifications = await SafeCountAsync(() => _notifications.CountUnreadAsync(context, cancellationToken));
             var unreadMentions = await SafeCountAsync(() => CountUnreadMentionsAsync(context, cancellationToken));
 
+            // Composed LAST, from panels that have already resolved. It issues no query of its own —
+            // see ComposeAttention for why this is a composition rather than a sixth source.
+            var attention = ComposeAttention(work, approvals, mentions, DateTime.Now);
+
             var metrics = await SafeMetricsAsync(context, unreadNotifications, unreadMentions, cancellationToken);
 
             // Only genuinely BLOCKED panels are reported in the diagnostics strip. A partially-available agenda
@@ -187,6 +194,7 @@ namespace CrossBuy.BL.Workspace
                 CompanyName = companyName,
                 Capabilities = capabilities,
                 Metrics = metrics,
+                Attention = attention,
                 MyWork = work,
                 Agenda = agenda,
                 Notifications = notifications,
@@ -695,6 +703,189 @@ namespace CrossBuy.BL.Workspace
                     $"Showing activity without {string.Join(", ", failed)}.")
                 : WorkspacePanel<WorkspaceActivityItem>.From(items);
         }
+
+        // ================================================================================================
+        // ATTENTION — "what requires my attention?"
+        //
+        // A COMPOSITION OVER PANELS THAT HAVE ALREADY LOADED. It takes no service, opens no connection and
+        // reads no module table: every row here is a row the dashboard is already showing somewhere else.
+        // What it adds is the one thing the separate panels cannot say — the ORDER.
+        //
+        // THE RANKING IS THE ENUM, and that is the whole rule:
+        //
+        //     overdue task  >  approval waiting  >  due today  >  urgent task  >  mention
+        //
+        // Reason first, ALWAYS. A three-day-old approval does not overtake an overdue commitment, however
+        // long it has waited — seniority inside a reason is the second key, never the first. Age breaks
+        // ties within a reason; a stable identity key breaks ties within an age, so the same data always
+        // produces the same order and a test can assert a position rather than "somewhere near the top".
+        //
+        // ONE ROW PER THING. A task can be overdue AND urgent; it appears once, under the stronger reason,
+        // because a person reading a list of eight does not need to be told twice.
+        //
+        // STATIC AND PURE so the ranking is testable without a container, a context or a clock.
+        // PUBLIC because the ranking IS the product rule here, and a rule nobody can assert from
+        // outside is a rule that drifts. It takes panels and a clock and returns a panel - there is
+        // nothing to mock and nothing to arrange, so the ladder is testable as a plain function.
+        public static WorkspacePanel<WorkspaceAttentionItem> ComposeAttention(
+            WorkspacePanel<WorkspaceWorkItem> work,
+            WorkspacePanel<WorkspaceApprovalItem> approvals,
+            WorkspacePanel<WorkspaceMention> mentions,
+            DateTime now)
+        {
+            var today = now.Date;
+            var candidates = new List<(WorkspaceAttentionItem Item, int Age, string Key)>();
+
+            // ---- tasks -------------------------------------------------------------------------
+            //
+            // From MY WORK and not from the Agenda, deliberately: both carry the same tasks, and taking
+            // them from two panels is how one commitment becomes two rows. My Work is also already
+            // filtered to OPEN work, so nothing finished can reach this list.
+            foreach (var w in work.Items)
+            {
+                var due = w.Due?.Date;
+                WorkspaceAttentionReason? reason =
+                    due is { } d && d < today ? WorkspaceAttentionReason.OverdueTask
+                    : due is { } t && t == today ? WorkspaceAttentionReason.DueToday
+                    : string.Equals(w.Priority, "Urgent", StringComparison.OrdinalIgnoreCase)
+                        ? WorkspaceAttentionReason.UrgentTask
+                        : null;
+
+                if (reason is null) continue;   // open, on time, not urgent — it is work, not attention
+
+                var age = reason == WorkspaceAttentionReason.OverdueTask && due is { } late
+                    ? (today - late).Days
+                    : 0;
+
+                candidates.Add((new WorkspaceAttentionItem
+                {
+                    Reason = reason.Value,
+                    ReasonLabelAr = ReasonAr(reason.Value),
+                    ReasonLabelEn = ReasonEn(reason.Value),
+                    Title = w.Title,
+                    SourceAr = "المهام", SourceEn = "Tasks",
+                    Due = w.Due,
+                    AgeDays = reason == WorkspaceAttentionReason.OverdueTask ? age : null,
+                    Priority = w.Priority,
+                    Url = w.Url,
+                    Tone = reason == WorkspaceAttentionReason.OverdueTask ? WorkspaceTone.Critical
+                         : reason == WorkspaceAttentionReason.DueToday ? WorkspaceTone.Warn
+                         : WorkspaceTone.Warn,
+                    Rank = 0,
+                }, age, $"task:{w.Id}"));
+            }
+
+            // ---- approvals ---------------------------------------------------------------------
+            //
+            // Second by reason and not first: somebody else is blocked, which is urgent, but a
+            // commitment this person has ALREADY missed is more urgent still.
+            foreach (var a in approvals.Items)
+            {
+                var age = a.AgeDays ?? 0;
+                candidates.Add((new WorkspaceAttentionItem
+                {
+                    Reason = WorkspaceAttentionReason.ApprovalWaiting,
+                    ReasonLabelAr = ReasonAr(WorkspaceAttentionReason.ApprovalWaiting),
+                    ReasonLabelEn = ReasonEn(WorkspaceAttentionReason.ApprovalWaiting),
+                    Title = a.Title,
+                    SourceAr = "الاعتمادات", SourceEn = "Approvals",
+                    Due = a.Submitted,
+                    AgeDays = a.AgeDays,
+                    Priority = a.ApprovalType,
+                    Url = a.Url,
+                    Tone = WorkspaceTone.Warn,
+                    Rank = 0,
+                }, age, $"approval:{a.Reference}"));
+            }
+
+            // ---- mentions ----------------------------------------------------------------------
+            //
+            // Last by reason: being named is a request for attention, not yet an obligation. Present
+            // only when Communication is activated — a dormant platform contributes nothing here rather
+            // than an apology, because the Mentions panel already states that on its own.
+            foreach (var m in mentions.Items)
+            {
+                var age = m.At is { } at ? Math.Max(0, (today - at.Date).Days) : 0;
+                candidates.Add((new WorkspaceAttentionItem
+                {
+                    Reason = WorkspaceAttentionReason.Mention,
+                    ReasonLabelAr = ReasonAr(WorkspaceAttentionReason.Mention),
+                    ReasonLabelEn = ReasonEn(WorkspaceAttentionReason.Mention),
+                    Title = m.Excerpt ?? m.EntityLabel,
+                    SourceAr = "التواصل", SourceEn = "Communication",
+                    Due = m.At,
+                    AgeDays = age,
+                    Priority = null,
+                    Url = m.Url,
+                    Tone = WorkspaceTone.Info,
+                    Rank = 0,
+                }, age, $"mention:{m.MentionId}"));
+            }
+
+            // Reason, then seniority inside the reason, then identity. The third key is what makes the
+            // order total: without it two same-age rows could swap places between two renders of the
+            // same data, and a screenshot baseline over this card could never be verified.
+            var ordered = candidates
+                .GroupBy(c => c.Key)
+                .Select(g => g.OrderBy(c => (int)c.Item.Reason).First())   // one row per thing
+                .OrderBy(c => (int)c.Item.Reason)
+                .ThenByDescending(c => c.Age)
+                .ThenBy(c => c.Key, StringComparer.Ordinal)
+                .ToList();
+
+            var items = ordered
+                .Take(AttentionShown)
+                .Select((c, i) => new WorkspaceAttentionItem
+                {
+                    Reason = c.Item.Reason,
+                    ReasonLabelAr = c.Item.ReasonLabelAr, ReasonLabelEn = c.Item.ReasonLabelEn,
+                    Title = c.Item.Title,
+                    SourceAr = c.Item.SourceAr, SourceEn = c.Item.SourceEn,
+                    Due = c.Item.Due, AgeDays = c.Item.AgeDays, Priority = c.Item.Priority,
+                    Url = c.Item.Url, Tone = c.Item.Tone,
+                    Rank = i + 1,
+                })
+                .ToList();
+
+            if (items.Count > 0)
+                return WorkspacePanel<WorkspaceAttentionItem>.From(items, ordered.Count);
+
+            // NOTHING TO SHOW IS NOT AUTOMATICALLY "NOTHING NEEDS YOU". If a contributing panel could not
+            // answer, this card inherits that — otherwise a failed Tasks module would render as a calm
+            // morning, which is the one thing an attention panel must never do.
+            var contributing = new[] { work.State, approvals.State, mentions.State };
+
+            if (contributing.Any(st => st == WorkspacePanelState.TemporaryFailure))
+                return WorkspacePanel<WorkspaceAttentionItem>.TemporaryFailure(
+                    "Some of the sources behind this list could not be read, so it may be incomplete. " +
+                    "This is usually temporary — try again.");
+
+            if (contributing.All(st => st is WorkspacePanelState.Unavailable or WorkspacePanelState.AccessDenied))
+                return WorkspacePanel<WorkspaceAttentionItem>.Unavailable(
+                    "None of the sources behind this list is available in this environment.");
+
+            return WorkspacePanel<WorkspaceAttentionItem>.Empty();
+        }
+
+        // Bilingual in code rather than through resx, matching the rest of this file: these two labels are
+        // produced by the read model, not by a view, and the file already carries its Arabic this way.
+        private static string ReasonAr(WorkspaceAttentionReason r) => r switch
+        {
+            WorkspaceAttentionReason.OverdueTask => "متأخرة",
+            WorkspaceAttentionReason.ApprovalWaiting => "بانتظار اعتمادك",
+            WorkspaceAttentionReason.DueToday => "مستحقة اليوم",
+            WorkspaceAttentionReason.UrgentTask => "عاجلة",
+            _ => "إشارة إليك",
+        };
+
+        private static string ReasonEn(WorkspaceAttentionReason r) => r switch
+        {
+            WorkspaceAttentionReason.OverdueTask => "Overdue",
+            WorkspaceAttentionReason.ApprovalWaiting => "Waiting on you",
+            WorkspaceAttentionReason.DueToday => "Due today",
+            WorkspaceAttentionReason.UrgentTask => "Urgent",
+            _ => "You were mentioned",
+        };
 
         // ================================================================================================
         // METRICS
