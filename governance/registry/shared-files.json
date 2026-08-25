@@ -126,6 +126,20 @@
       "owner": "Architectural invariant - owner coordination required",
       "changeRule": "No change without pre-coordination with the owner.",
       "reason": "The single outbox writer; the per-consumer fan-out is decided here, so one edit changes what every consumer ever sees."
+    },
+    {
+      "fileId": "SHF-19",
+      "path": "CrossBuy/Controllers/AccountingController.cs",
+      "owner": "Module surface - integration owner unblock only",
+      "changeRule": "Company-context remediation of named read paths only. No posting, stock, journal, receivable or payment behaviour may change under this entry.",
+      "reason": "Invoice read paths still resolve company from a compile-time constant while the product surface above them is company-scoped; TAB-7 is unassigned so the screens cannot be fixed by their owner."
+    },
+    {
+      "fileId": "SHF-20",
+      "path": "CrossBuy/Views/Shared/_DocEventTimeline.cshtml",
+      "owner": "Integration Owner - shared document partial",
+      "changeRule": "Shared by three committed document views; changes require owner approval (-AllowShared).",
+      "reason": "Three committed views include this partial and it was never committed, so a clean checkout throws partial-not-found on both invoice detail screens and the work order screen."
     }
   ]
 }
