@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="All movements" xml:space="preserve">
+    <value>All movements</value>
+  </data>
+  <data name="Analysis could not be completed" xml:space="preserve">
+    <value>Analysis could not be completed</value>
+  </data>
+  <data name="Analysis service unavailable" xml:space="preserve">
+    <value>Analysis service unavailable</value>
+  </data>
+  <data name="Analysis source" xml:space="preserve">
+    <value>Analysis source</value>
+  </data>
+  <data name="Below reorder point or low cover" xml:space="preserve">
+    <value>Below reorder point or low cover</value>
+  </data>
+  <data name="Capital in slow stock" xml:space="preserve">
+    <value>Capital in slow stock</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>Company</value>
+  </data>
+  <data name="Data scope" xml:space="preserve">
+    <value>Data scope</value>
+  </data>
+  <data name="Days cover" xml:space="preserve">
+    <value>Days cover</value>
+  </data>
+  <data name="Demand window" xml:space="preserve">
+    <value>Demand window</value>
+  </data>
+  <data name="Flagged" xml:space="preserve">
+    <value>Flagged</value>
+  </data>
+  <data name="Flagged items" xml:space="preserve">
+    <value>Flagged items</value>
+  </data>
+  <data name="Generated" xml:space="preserve">
+    <value>Generated</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="Items analysed" xml:space="preserve">
+    <value>Items analysed</value>
+  </data>
+  <data name="Items are classified from on-hand quantity, value and outbound demand over the window above, using fixed rules and simple statistics. This is not a demand forecast and carries no prediction of future sales." xml:space="preserve">
+    <value>Items are classified from on-hand quantity, value and outbound demand over the window above, using fixed rules and simple statistics. This is not a demand forecast and carries no prediction of future sales.</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="No data leaves this installation" xml:space="preserve">
+    <value>No data leaves this installation</value>
+  </data>
+  <data name="No inventory risks were flagged" xml:space="preserve">
+    <value>No inventory risks were flagged</value>
+  </data>
+  <data name="No stocked items were available to analyse for this company, so no conclusion can be drawn about inventory risk." xml:space="preserve">
+    <value>No stocked items were available to analyse for this company, so no conclusion can be drawn about inventory risk.</value>
+  </data>
+  <data name="Not enough data to analyse" xml:space="preserve">
+    <value>Not enough data to analyse</value>
+  </data>
+  <data name="Not generated" xml:space="preserve">
+    <value>Not generated</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>On hand</value>
+  </data>
+  <data name="On-premises model" xml:space="preserve">
+    <value>On-premises model</value>
+  </data>
+  <data name="Out of stock" xml:space="preserve">
+    <value>Out of stock</value>
+  </data>
+  <data name="Out of stock with recent demand" xml:space="preserve">
+    <value>Out of stock with recent demand</value>
+  </data>
+  <data name="Reorder" xml:space="preserve">
+    <value>Reorder</value>
+  </data>
+  <data name="Risk Insights" xml:space="preserve">
+    <value>Risk Insights</value>
+  </data>
+  <data name="Severity" xml:space="preserve">
+    <value>Severity</value>
+  </data>
+  <data name="Showing the first 100 of" xml:space="preserve">
+    <value>Showing the first 100 of</value>
+  </data>
+  <data name="Slow / dead" xml:space="preserve">
+    <value>Slow / dead</value>
+  </data>
+  <data name="Slow / dead stock" xml:space="preserve">
+    <value>Slow / dead stock</value>
+  </data>
+  <data name="Suggested reorder" xml:space="preserve">
+    <value>Suggested reorder</value>
+  </data>
+  <data name="Suggestions for review only" xml:space="preserve">
+    <value>Suggestions for review only</value>
+  </data>
+  <data name="The analysis service replied with a result that could not be read. Nothing has been changed." xml:space="preserve">
+    <value>The analysis service replied with a result that could not be read. Nothing has been changed.</value>
+  </data>
+  <data name="The on-premises analysis service did not respond. Every other inventory screen is unaffected." xml:space="preserve">
+    <value>The on-premises analysis service did not respond. Every other inventory screen is unaffected.</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>Up to date</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Why" xml:space="preserve">
+    <value>Why</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="flagged items" xml:space="preserve">
+    <value>flagged items</value>
+  </data>
+</root>

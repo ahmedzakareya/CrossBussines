@@ -1,4 +1,4 @@
-@using CrossBuy.Controllers
+﻿@using CrossBuy.Controllers
 @model InventoryDashboardDto
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
@@ -101,6 +101,10 @@
                         (Localizer["Categories"].Value, Model.CategoryCount.ToString(), "ki-category", "info", Url.Action("Categories","Inventory"), Localizer["cat"].Value, "info"),
                         (Localizer["Composite"].Value, Model.CompositeCount.ToString(), "ki-abstract-26", "dark", Url.Action("Items","Inventory"), "BOM", "dark"),
                         (Localizer["Out of stock"].Value, Model.OutOfStock.ToString(), "ki-information-5", Model.OutOfStock>0?"danger":"success", Url.Action("StockBalances","Inventory"), Model.OutOfStock>0?Localizer["alert"].Value:Localizer["ok"].Value, Model.OutOfStock>0?"danger":"success"),
+                        // Entry point to the on-premises risk analysis. Deliberately shows NO number: the
+                        // dashboard is rendered from the database and has not run the model, and printing a
+                        // count here would be a figure nothing produced. The card invites, the screen answers.
+                        (Localizer["Risk Insights"].Value, "AI", "ki-abstract-26", "dark", Url.Action("RiskInsights","Inventory"), Localizer["local"].Value, "dark"),
                     };
                 }
                 @foreach (var s in stats)

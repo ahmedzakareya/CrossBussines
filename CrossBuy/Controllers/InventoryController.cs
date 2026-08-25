@@ -1,7 +1,9 @@
-using CrossBuy.BL;
+﻿using CrossBuy.BL;
 using CrossBuy.Models;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Inventory;
+using CrossBuy.ViewModel.Ai;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -35,10 +37,11 @@ namespace CrossBuy.Controllers
 		private readonly ICurrencyRounding _rounding;                   // HM-4: currency decimals for label/price display
 		// D1 Wave 1 / CORRECTION-005: validated company source for the remediated WarehouseQuickAdd.
 		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
+		private readonly IAiInsightsService _insights;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
-		public InventoryController(IItemService items, IWarehouseService warehouses, IChartOfAccountsService coa, CrossDbContext context, IWebHostEnvironment env, IStockService stock, IProcurementService proc, ISellingService sell, IInventoryAccessService access, IInventoryApprovalService approvals, IOpeningBalanceService opening, IIntegrityCheckService integrity, IPricingService pricing, IThreeWayMatchService match, ICurrencyService currency, IAccountingAccessService accAccess, IManufService manuf, IShelfLabelService labels, ICurrencyRounding rounding, CrossBuy.BL.Platform.IRequestCompanyResolver company, IStringLocalizer<CrossBuy.SharedResources> localizer)
+		public InventoryController(IItemService items, IWarehouseService warehouses, IChartOfAccountsService coa, CrossDbContext context, IWebHostEnvironment env, IStockService stock, IProcurementService proc, ISellingService sell, IInventoryAccessService access, IInventoryApprovalService approvals, IOpeningBalanceService opening, IIntegrityCheckService integrity, IPricingService pricing, IThreeWayMatchService match, ICurrencyService currency, IAccountingAccessService accAccess, IManufService manuf, IShelfLabelService labels, ICurrencyRounding rounding, CrossBuy.BL.Platform.IRequestCompanyResolver company, IAiInsightsService insights, IStringLocalizer<CrossBuy.SharedResources> localizer)
 		{
-			_items = items; _warehouses = warehouses; _coa = coa; _context = context; _env = env; _stock = stock; _proc = proc; _sell = sell; _access = access; _approvals = approvals; _opening = opening; _integrity = integrity; _pricing = pricing; _match = match; _currency = currency; _accAccess = accAccess; _manuf = manuf; _labels = labels; _rounding = rounding; L = localizer; _company = company;
+			_items = items; _warehouses = warehouses; _coa = coa; _context = context; _env = env; _stock = stock; _proc = proc; _sell = sell; _access = access; _approvals = approvals; _opening = opening; _integrity = integrity; _pricing = pricing; _match = match; _currency = currency; _accAccess = accAccess; _manuf = manuf; _labels = labels; _rounding = rounding; L = localizer; _company = company; _insights = insights;
 		}
 
 		// saves an uploaded item image to wwwroot/uploads/items and returns the public path (null if no file)
@@ -580,6 +583,76 @@ namespace CrossBuy.Controllers
 			Response.Headers["X-Page"] = (page < 1 ? 1 : page).ToString();
 			Response.Headers["X-Pages"] = Math.Max(1, pages).ToString();
 		}
+
+		// ===== Inventory Risk Insights (AI, on-premises) =====
+		//
+		// PLACED HERE, next to StockMovements, because that is where this screen sends the reader: an
+		// insight the user cannot act on from the page it appears on is a report, not a decision aid.
+		//
+		// READ-ONLY BY CONSTRUCTION. The action gathers nothing and writes nothing — it asks
+		// IAiInsightsService, which is the governed path, and renders what comes back. No stock movement,
+		// no reorder, no adjustment is created here or anywhere this screen links to.
+		[HttpGet]
+		public async Task<IActionResult> RiskInsights()
+		{
+			// SERVER-DERIVED, and the action deliberately takes no parameters at all — there is nothing a
+			// caller could supply for a company, so there is nothing to validate or coerce. The rest of this
+			// controller still uses the DefaultCompanyId constant; that is pre-existing debt this screen does
+			// not inherit and does not fix.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				// The resolver's own reason is NOT rendered: it names companies, and "your company is 2, the
+				// record is company 1" tells a caller that a record exists where they cannot see it.
+				TempData["InvErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			var vm = new InventoryRiskVm { CompanyId = scope.CompanyId, WindowDays = RiskWindowDays };
+			var nowUtc = DateTime.UtcNow;
+
+			try
+			{
+				var response = await _insights.AnalyzeInventoryAsync(scope.CompanyId, RiskWindowDays);
+				if (response.Status != 200)
+				{
+					vm.Panel = AiInsightMapper.Map(response.Status, null, scope.CompanyId, nowUtc);
+					return View(vm);
+				}
+
+				var parsed = JsonSerializer.Deserialize<InventoryResult>(
+					response.Json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+				if (parsed == null)
+				{
+					vm.Panel = AiInsightMapper.Failed("ai-insight:unreadable-response", scope.CompanyId, nowUtc);
+					return View(vm);
+				}
+
+				// ItemsAnalyzed, NOT FlaggedCount. Zero flags out of 900 items is a real, reassuring result;
+				// zero flags out of ZERO items is silence, and rendering the two the same way would be the
+				// false "all good" this screen exists to avoid.
+				vm.Result = parsed;
+				vm.Panel = AiInsightMapper.Map(200, parsed.ItemsAnalyzed, scope.CompanyId, nowUtc);
+			}
+			catch (JsonException)
+			{
+				vm.Panel = AiInsightMapper.Failed("ai-insight:unreadable-response", scope.CompanyId, nowUtc);
+			}
+			catch (HttpRequestException)
+			{
+				// The on-premises model is not running. Inventory keeps working; only this panel is empty.
+				vm.Panel = AiInsightMapper.Unavailable("ai-insight:service-unavailable", scope.CompanyId, nowUtc);
+			}
+			catch (TaskCanceledException)
+			{
+				vm.Panel = AiInsightMapper.Unavailable("ai-insight:service-timeout", scope.CompanyId, nowUtc);
+			}
+
+			return View(vm);
+		}
+
+		/// The window the model treats as "recent". Shown on the screen so the classification is judgeable.
+		private const int RiskWindowDays = 90;
 
 		[HttpGet] public async Task<IActionResult> StockMovements(int? itemId, int? warehouseId)
 		{

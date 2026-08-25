@@ -1,0 +1,277 @@
+@using CrossBuy.ViewModel.Ai
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model InventoryRiskVm
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    ViewData["Title"] = Localizer["Risk Insights"].Value;
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    string Money(decimal v) => v.ToString("N2");
+    string Qty(decimal v) => v.ToString("N2");
+    string R(AiReason r) => isAr ? r.Ar : r.En;
+
+    string ClassBadge(string? c) => c switch { "stockout" => "danger", "reorder" => "warning", "slow" => "secondary", _ => "light" };
+    string ClassLabel(string? c) => c switch { "stockout" => "Out of stock", "reorder" => "Reorder", "slow" => "Slow / dead", _ => c ?? "" };
+    string SevBadge(string? s) => s switch { "high" => "danger", "medium" => "warning", "low" => "secondary", _ => "light" };
+    string SevLabel(string? s) => s switch { "high" => "High", "medium" => "Medium", "low" => "Low", _ => "" };
+
+    string StateLabel(AiInsightState st) => st switch
+    {
+        AiInsightState.Ok => "Up to date",
+        AiInsightState.InsufficientData => "Not enough data to analyse",
+        AiInsightState.Unavailable => "Analysis service unavailable",
+        AiInsightState.Failed => "Analysis could not be completed",
+        _ => "Unknown"
+    };
+    string StateBadge(AiInsightState st) => st switch
+    {
+        AiInsightState.Ok => "success",
+        AiInsightState.InsufficientData => "warning",
+        AiInsightState.Unavailable => "secondary",
+        AiInsightState.Failed => "danger",
+        _ => "light"
+    };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack">
+            <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Risk Insights"]</h1>
+                <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                    <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-muted">@Localizer["Risk Insights"]</li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge badge-light-secondary fs-8">
+                    <i class="ki-outline ki-abstract-26 fs-6 me-1"></i>@Localizer["Suggestions for review only"]
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @* PROVENANCE. Every value is a fact the system already holds. No model wrote this text. *@
+            <div class="card card-flush mb-5">
+                <div class="card-body py-4 d-flex flex-wrap gap-6 align-items-center">
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Data scope"]</div>
+                        <div class="fw-bold text-gray-800">@Localizer["Company"] @Model.CompanyId</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Analysis source"]</div>
+                        <div class="fw-bold text-gray-800">
+                            @Localizer["On-premises model"] <span class="text-gray-400 fs-8">(@Model.Panel.Source)</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Generated"]</div>
+                        <div class="fw-bold text-gray-800">
+                            @(Model.Panel.GeneratedAtUtc.HasValue
+                                ? Model.Panel.GeneratedAtUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC"
+                                : Localizer["Not generated"].Value)
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Items analysed"]</div>
+                        <div class="fw-bold text-gray-800">@(Model.Panel.RecordsConsidered ?? 0)</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 fs-8 text-uppercase fw-bold">@Localizer["Demand window"]</div>
+                        <div class="fw-bold text-gray-800">@Model.WindowDays @Localizer["days"]</div>
+                    </div>
+                    <div class="ms-auto text-gray-500 fs-8">
+                        <i class="ki-outline ki-shield-tick fs-6 me-1"></i>@Localizer["No data leaves this installation"]
+                    </div>
+                </div>
+            </div>
+
+            @* HOW THE CLASSIFICATION IS MADE, stated plainly so the reader can judge it rather than
+               trust it. The model is rules plus statistics; it forecasts nothing. *@
+            <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+                <i class="ki-outline ki-information-5 fs-2x text-primary me-4"></i>
+                <div class="d-flex flex-stack flex-grow-1">
+                    <div class="fw-semibold">
+                        <div class="fs-7 text-gray-700">
+                            @Localizer["Items are classified from on-hand quantity, value and outbound demand over the window above, using fixed rules and simple statistics. This is not a demand forecast and carries no prediction of future sales."]
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!Model.Panel.HasResult)
+            {
+                @* THE STATE THAT MUST NEVER READ AS "ALL GOOD". *@
+                <div class="card card-flush">
+                    <div class="card-body text-center py-15">
+                        <i class="ki-outline ki-information-5 fs-3x text-warning mb-4"></i>
+                        <h3 class="text-gray-800">@Localizer[StateLabel(Model.Panel.State)]</h3>
+
+                        @if (Model.Panel.State == AiInsightState.InsufficientData)
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">
+                                @Localizer["No stocked items were available to analyse for this company, so no conclusion can be drawn about inventory risk."]
+                            </div>
+                        }
+                        else if (Model.Panel.State == AiInsightState.Unavailable)
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">
+                                @Localizer["The on-premises analysis service did not respond. Every other inventory screen is unaffected."]
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-gray-500 fs-6 mt-2">
+                                @Localizer["The analysis service replied with a result that could not be read. Nothing has been changed."]
+                            </div>
+                        }
+
+                        <div class="mt-6">
+                            <a href="@Url.Action("StockBalances","Inventory")" class="btn btn-sm btn-light">@SR["Stock balances"]</a>
+                            <a href="@Url.Action("StockMovements","Inventory")" class="btn btn-sm btn-light ms-2">@Localizer["All movements"]</a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var stockout = Model.OfClass("stockout").ToList();
+                var reorder = Model.OfClass("reorder").ToList();
+                var slow = Model.OfClass("slow").ToList();
+
+                <!--begin::summary-->
+                <div class="row g-5 g-xl-10 mb-5">
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100">
+                            <div class="card-body p-5">
+                                <div class="d-flex flex-stack w-100 mb-3">
+                                    <div class="symbol symbol-40px"><span class="symbol-label bg-light-danger"><i class="ki-outline ki-information-5 fs-2x text-danger"></i></span></div>
+                                    <span class="badge badge-light-@StateBadge(Model.Panel.State) fs-8 fw-bold">@Localizer[StateLabel(Model.Panel.State)]</span>
+                                </div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1">@stockout.Count</span>
+                                <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Out of stock with recent demand"]</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100">
+                            <div class="card-body p-5">
+                                <div class="symbol symbol-40px mb-3"><span class="symbol-label bg-light-warning"><i class="ki-outline ki-handcart fs-2x text-warning"></i></span></div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1">@reorder.Count</span>
+                                <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Below reorder point or low cover"]</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100">
+                            <div class="card-body p-5">
+                                <div class="symbol symbol-40px mb-3"><span class="symbol-label bg-light-secondary"><i class="ki-outline ki-package fs-2x text-gray-600"></i></span></div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1">@slow.Count</span>
+                                <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Slow / dead stock"]</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="card h-100">
+                            <div class="card-body p-5">
+                                <div class="symbol symbol-40px mb-3"><span class="symbol-label bg-light-info"><i class="ki-outline ki-dollar fs-2x text-info"></i></span></div>
+                                <span class="fw-bold fs-2x text-gray-900 lh-1">@Money(Model.Result?.Summary?.DeadStockValue ?? 0)</span>
+                                <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@Localizer["Capital in slow stock"]</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::summary-->
+
+                <div class="card card-flush">
+                    <div class="card-header pt-5">
+                        <h3 class="card-title text-gray-900 fw-bold">@Localizer["Flagged items"]</h3>
+                        <div class="card-toolbar">
+                            <span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">
+                                @Localizer["Flagged"]: @Model.Flagged.Count / @(Model.Panel.RecordsConsidered ?? 0)
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Flagged.Count == 0)
+                        {
+                            @* A REAL clean result: the model examined items and flagged none. The count is
+                               shown so the reassurance is attributable rather than bare. *@
+                            <div class="text-gray-500 py-8 text-center">
+                                <i class="ki-outline ki-shield-tick fs-3x text-success mb-3 d-block"></i>
+                                @Localizer["No inventory risks were flagged"]
+                                <div class="text-gray-400 fs-8 mt-1">@Localizer["Items analysed"]: @(Model.Panel.RecordsConsidered ?? 0)</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle gs-0 gy-3">
+                                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                        <tr>
+                                            <th>@SR["Item"]</th>
+                                            <th>@SR["Status"]</th>
+                                            <th>@Localizer["Severity"]</th>
+                                            <th class="text-end">@Localizer["On hand"]</th>
+                                            <th class="text-end">@Localizer["Days cover"]</th>
+                                            <th class="text-end">@Localizer["Value"]</th>
+                                            <th class="text-end">@Localizer["Suggested reorder"]</th>
+                                            <th>@Localizer["Why"]</th>
+                                            <th class="text-end">@SR["Actions"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach (var it in Model.Flagged.OrderBy(f => f.Class == "stockout" ? 0 : f.Class == "reorder" ? 1 : 2).ThenByDescending(f => f.Value).Take(100))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="fw-bold text-gray-800">@it.Name</span>
+                                                <div class="text-gray-400 fs-8">@it.Code</div>
+                                            </td>
+                                            <td><span class="badge badge-light-@ClassBadge(it.Class)">@Localizer[ClassLabel(it.Class)]</span></td>
+                                            <td><span class="badge badge-light-@SevBadge(it.Severity)">@Localizer[SevLabel(it.Severity)]</span></td>
+                                            <td class="text-end @(it.OnHand <= 0 ? "text-danger fw-bold" : "")">@Qty(it.OnHand)</td>
+                                            <td class="text-end">@(it.DaysCover.HasValue ? it.DaysCover.Value.ToString("N1") : "—")</td>
+                                            <td class="text-end fw-semibold">@Money(it.Value)</td>
+                                            <td class="text-end">@(it.SuggestedReorderQty.HasValue ? Qty(it.SuggestedReorderQty.Value) : "—")</td>
+                                            <td>
+                                                @* The model's OWN reason codes, bilingual, as emitted. Nothing generated. *@
+                                                @foreach (var r in it.Reasons)
+                                                {
+                                                    <span class="badge badge-light-secondary me-1 mb-1">@R(r)</span>
+                                                }
+                                            </td>
+                                            <td class="text-end text-nowrap">
+                                                @* NAVIGATION ONLY. Nothing on this screen mutates stock. *@
+                                                <a href="@Url.Action("EditItem","Inventory", new { id = it.ItemId })"
+                                                   class="btn btn-icon btn-sm btn-light me-1" title="@SR["Item"]" aria-label="@SR["Item"]">
+                                                    <i class="ki-outline ki-package fs-5" aria-hidden="true"></i>
+                                                </a>
+                                                <a href="@Url.Action("StockMovements","Inventory", new { itemId = it.ItemId })"
+                                                   class="btn btn-icon btn-sm btn-light" title="@Localizer["All movements"]" aria-label="@Localizer["All movements"]">
+                                                    <i class="ki-outline ki-arrow-right-left fs-5" aria-hidden="true"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @if (Model.Flagged.Count > 100)
+                            {
+                                <div class="text-gray-500 fs-8 mt-3">
+                                    @Localizer["Showing the first 100 of"] @Model.Flagged.Count @Localizer["flagged items"].
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

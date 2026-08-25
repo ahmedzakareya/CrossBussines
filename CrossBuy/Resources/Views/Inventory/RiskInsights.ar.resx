@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="All movements" xml:space="preserve">
+    <value>كل الحركات</value>
+  </data>
+  <data name="Analysis could not be completed" xml:space="preserve">
+    <value>تعذّر إكمال التحليل</value>
+  </data>
+  <data name="Analysis service unavailable" xml:space="preserve">
+    <value>خدمة التحليل غير متاحة</value>
+  </data>
+  <data name="Analysis source" xml:space="preserve">
+    <value>مصدر التحليل</value>
+  </data>
+  <data name="Below reorder point or low cover" xml:space="preserve">
+    <value>تحت نقطة إعادة الطلب أو تغطية منخفضة</value>
+  </data>
+  <data name="Capital in slow stock" xml:space="preserve">
+    <value>رأس مال في مخزون راكد</value>
+  </data>
+  <data name="Company" xml:space="preserve">
+    <value>الشركة</value>
+  </data>
+  <data name="Data scope" xml:space="preserve">
+    <value>نطاق البيانات</value>
+  </data>
+  <data name="Days cover" xml:space="preserve">
+    <value>أيام التغطية</value>
+  </data>
+  <data name="Demand window" xml:space="preserve">
+    <value>نافذة الطلب</value>
+  </data>
+  <data name="Flagged" xml:space="preserve">
+    <value>مُعلَّم</value>
+  </data>
+  <data name="Flagged items" xml:space="preserve">
+    <value>الأصناف المُعلَّمة</value>
+  </data>
+  <data name="Generated" xml:space="preserve">
+    <value>تاريخ الإنشاء</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>مرتفع</value>
+  </data>
+  <data name="Items analysed" xml:space="preserve">
+    <value>الأصناف التي تم تحليلها</value>
+  </data>
+  <data name="Items are classified from on-hand quantity, value and outbound demand over the window above, using fixed rules and simple statistics. This is not a demand forecast and carries no prediction of future sales." xml:space="preserve">
+    <value>يتم تصنيف الأصناف من الكمية المتاحة والقيمة والطلب الصادر خلال النافذة أعلاه، باستخدام قواعد ثابتة وإحصاءات بسيطة. هذا ليس تنبؤاً بالطلب ولا يتضمن أي توقع للمبيعات المستقبلية.</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>منخفض</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>متوسط</value>
+  </data>
+  <data name="No data leaves this installation" xml:space="preserve">
+    <value>لا تغادر أي بيانات هذا التثبيت</value>
+  </data>
+  <data name="No inventory risks were flagged" xml:space="preserve">
+    <value>لم يتم تعليم أي مخاطر مخزون</value>
+  </data>
+  <data name="No stocked items were available to analyse for this company, so no conclusion can be drawn about inventory risk." xml:space="preserve">
+    <value>لا توجد أصناف مخزنية متاحة للتحليل لهذه الشركة، لذلك لا يمكن استخلاص أي نتيجة بشأن مخاطر المخزون.</value>
+  </data>
+  <data name="Not enough data to analyse" xml:space="preserve">
+    <value>لا توجد بيانات كافية للتحليل</value>
+  </data>
+  <data name="Not generated" xml:space="preserve">
+    <value>لم يتم الإنشاء</value>
+  </data>
+  <data name="On hand" xml:space="preserve">
+    <value>المتاح</value>
+  </data>
+  <data name="On-premises model" xml:space="preserve">
+    <value>نموذج داخل المنشأة</value>
+  </data>
+  <data name="Out of stock" xml:space="preserve">
+    <value>نفاد المخزون</value>
+  </data>
+  <data name="Out of stock with recent demand" xml:space="preserve">
+    <value>نفاد مخزون مع طلب حديث</value>
+  </data>
+  <data name="Reorder" xml:space="preserve">
+    <value>إعادة طلب</value>
+  </data>
+  <data name="Risk Insights" xml:space="preserve">
+    <value>تحليلات المخاطر</value>
+  </data>
+  <data name="Severity" xml:space="preserve">
+    <value>الخطورة</value>
+  </data>
+  <data name="Showing the first 100 of" xml:space="preserve">
+    <value>عرض أول 100 من</value>
+  </data>
+  <data name="Slow / dead" xml:space="preserve">
+    <value>راكد/بطيء</value>
+  </data>
+  <data name="Slow / dead stock" xml:space="preserve">
+    <value>مخزون راكد/بطيء</value>
+  </data>
+  <data name="Suggested reorder" xml:space="preserve">
+    <value>الكمية المقترحة</value>
+  </data>
+  <data name="Suggestions for review only" xml:space="preserve">
+    <value>اقتراحات للمراجعة فقط</value>
+  </data>
+  <data name="The analysis service replied with a result that could not be read. Nothing has been changed." xml:space="preserve">
+    <value>ردّت خدمة التحليل بنتيجة تعذّرت قراءتها. لم يتم تغيير أي شيء.</value>
+  </data>
+  <data name="The on-premises analysis service did not respond. Every other inventory screen is unaffected." xml:space="preserve">
+    <value>لم تستجب خدمة التحليل الداخلية. جميع شاشات المخزون الأخرى غير متأثرة.</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>غير معروف</value>
+  </data>
+  <data name="Up to date" xml:space="preserve">
+    <value>محدَّث</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>القيمة</value>
+  </data>
+  <data name="Why" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>يوم</value>
+  </data>
+  <data name="flagged items" xml:space="preserve">
+    <value>صنف مُعلَّم</value>
+  </data>
+</root>

@@ -193,6 +193,41 @@
 		public const string LocalMl = "local-ml";
 	}
 
+	// ----- Inventory Risk Insights (product expansion wave 1) -----
+	//
+	// WHAT THE LOCAL MODEL ACTUALLY DOES, stated here because the screen must not overclaim it.
+	// crossbuy_ai/app/ml/inventory.py is DETERMINISTIC RULES PLUS SIMPLE STATISTICS over on-hand
+	// quantity, value and outbound demand. It classifies four situations and computes average daily
+	// usage, days-of-cover and a suggested reorder quantity:
+	//
+	//     slow      on hand, but nothing issued in the window   -> capital tied up
+	//     stockout  at or below zero WITH recent demand         -> depletion that already bit
+	//     reorder   below the configured reorder point
+	//     reorder   days-of-cover under two weeks
+	//
+	// IT IS NOT A FORECASTER. It does not predict future demand, does not detect anomalous individual
+	// movements, and produces no confidence interval. The screen therefore reports severity and the
+	// model's own reason codes as what they are — a rules-and-statistics classification — and claims
+	// nothing else. Anything more would be a sentence the model never said.
+	public sealed class InventoryRiskVm
+	{
+		public InventoryResult? Result { get; set; }
+		public AiInsightPanel Panel { get; set; } = new();
+
+		/// The resolved company. Server-derived; this screen accepts no company from the caller.
+		public int CompanyId { get; set; }
+
+		/// The window, in days, the model treated as "recent" — surfaced so a reader can judge the
+		/// classification rather than take it on faith.
+		public int WindowDays { get; set; }
+
+		public IReadOnlyList<InventoryItem> Flagged =>
+			Result?.Flagged ?? (IReadOnlyList<InventoryItem>)Array.Empty<InventoryItem>();
+
+		public IEnumerable<InventoryItem> OfClass(string cls) =>
+			Flagged.Where(f => string.Equals(f.Class, cls, StringComparison.OrdinalIgnoreCase));
+	}
+
 	// ----- page view model -----
 	public class AiInsightsVm
 	{
