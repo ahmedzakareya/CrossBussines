@@ -144,6 +144,8 @@ namespace CrossBuy.BL.Platform
 
             foreach (var consumer in BusinessEventConsumers.Registered)
             {
+                if (!IsEligible(consumer, definition)) continue;
+
                 _db.BusinessEventDispatches.Add(new BusinessEventDispatch
                 {
                     EventId = stored.EventId,
@@ -157,6 +159,35 @@ namespace CrossBuy.BL.Platform
 
             return stored.EventId;
         }
+
+        // ---- consumer eligibility -----------------------------------------------------------------
+        //
+        // Fan-out is decided here, at record time, so the question "will any consumer ever be able to do
+        // something with this row" has to be answered here too. Creating work that is guaranteed to fail
+        // is not a harmless extra row: it retries under the backoff policy, ends terminal at
+        // Attempts = MaxAttempts, and sits in the operator's failure list forever describing a defect
+        // that does not exist. CrossBuyDev carries 77 of exactly those.
+        //
+        // TIMELINE PROJECTION is eligible only for an entity that declares a timeline. The registry
+        // already answered that when it resolved `definition`, which is why this takes the definition
+        // rather than looking the entity up again - a second lookup would be a second source of truth for
+        // one capability, and the two would eventually disagree.
+        //
+        // This is CAPABILITY-BASED and deliberately names no entity. JournalEntry is the case that
+        // exposed it, but the rule is about SupportsTimeline, so an entity that gains or loses a timeline
+        // changes its own dispatch behaviour by changing its own definition and nothing here moves.
+        //
+        // TimelineProjectionConsumer keeps its strict guard. It still rejects an unsupported entity if one
+        // ever reaches it - through replay, a definition changed after recording, or a row written by an
+        // older build. This suppresses work that should never be created; it does not make the consumer
+        // lenient about work that arrives anyway, and those are different jobs.
+        //
+        // EVERY OTHER CONSUMER IS UNAFFECTED, by default rather than by listing them: an unknown consumer
+        // name is eligible. Notification and AI projections do not depend on a timeline screen, and a new
+        // consumer must not silently inherit a rule written for this one.
+        private static bool IsEligible(string consumer, EntityDefinition definition)
+            => !string.Equals(consumer, BusinessEventConsumers.TimelineProjection, StringComparison.Ordinal)
+               || definition.SupportsTimeline;
 
         public BusinessEventEnvelope BuildEnvelope(BusinessEvent stored)
         {
