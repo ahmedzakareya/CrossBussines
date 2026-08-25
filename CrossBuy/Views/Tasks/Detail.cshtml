@@ -18,6 +18,9 @@
     var checklist = ViewBag.Checklist as List<TaskChecklistItem> ?? new();
     var deps = ViewBag.Dependencies as List<TaskDependencyView> ?? new();
     var blocking = ViewBag.Blocking as TaskBlockingState;
+    // Escalation is DERIVED — there is no column to read. Null-tolerant so a Detail rendered by an older
+    // action degrades to "no escalation" instead of throwing.
+    var esc = ViewBag.Escalation as TaskEscalationStatus;
     ViewData["Title"] = t?.Title ?? T("مهمة", "Task");
 
     Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "info" };
@@ -56,6 +59,39 @@
         </div>
     }
 
+    @if (esc != null && esc.IsEscalated)
+    {
+        @* The escalation banner names WHO now owns the chase and WHEN it happened. "Escalated" on its own is
+           a dead end, exactly as "Blocked" would be. *@
+        <div class="alert alert-danger d-flex align-items-center py-3 mb-5" data-cb-escalated="1">
+            <i class="ki-outline ki-arrow-up-right fs-2 text-danger me-3"></i>
+            <span>
+                @if (!string.IsNullOrWhiteSpace(esc.ManagerName))
+                {
+                    @T("صُعِّدت هذه المهمة إلى المدير المباشر:", "This task was escalated to the direct manager:")
+                    <span class="fw-semibold"> @esc.ManagerName</span>
+                }
+                else
+                {
+                    @T("صُعِّدت هذه المهمة إلى المدير المباشر.", "This task was escalated to the direct manager.")
+                }
+                @if (esc.EscalatedAtUtc.HasValue)
+                {
+                    <text> — </text>
+                    <span class="fw-semibold">@esc.EscalatedAtUtc.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                }
+            </span>
+        </div>
+    }
+    else if (esc != null && esc.State == TaskEscalationState.EscalationPending)
+    {
+        <div class="alert alert-warning d-flex align-items-center py-3 mb-5" data-cb-escalation-pending="1">
+            <i class="ki-outline ki-time fs-2 text-warning me-3"></i>
+            <span>@T("متأخرة بما يستوجب التصعيد إلى المدير المباشر في الدورة القادمة.",
+                     "Overdue long enough to be escalated to the direct manager on the next sweep.")</span>
+        </div>
+    }
+
     <div class="row g-5">
         <div class="col-lg-4">
             <div class="card card-flush mb-5">
@@ -72,6 +108,27 @@
                     <div class="d-flex flex-stack py-2 border-bottom border-gray-300">
                         <span class="text-muted fs-7">@T("تاريخ الاستحقاق", "Due date")</span>
                         <span class="fs-7 fw-semibold">@(t?.DueDate?.ToString("yyyy-MM-dd") ?? "—")</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-300">
+                        <span class="text-muted fs-7">@T("التصعيد", "Escalation")</span>
+                        @{
+                            var escState = esc?.State ?? TaskEscalationState.NotDue;
+                            var escBadge = escState switch
+                            {
+                                TaskEscalationState.Escalated => "danger",
+                                TaskEscalationState.EscalationPending => "warning",
+                                TaskEscalationState.Overdue => "warning",
+                                _ => "success",
+                            };
+                            var escLabel = escState switch
+                            {
+                                TaskEscalationState.Escalated => T("مُصعَّدة", "Escalated"),
+                                TaskEscalationState.EscalationPending => T("في انتظار التصعيد", "Escalation pending"),
+                                TaskEscalationState.Overdue => T("متأخرة", "Overdue"),
+                                _ => T("غير مستحقة", "Not due"),
+                            };
+                        }
+                        <span class="badge badge-light-@escBadge fs-8" data-cb-escalation-state="@escState">@escLabel</span>
                     </div>
                     <div class="d-flex flex-stack py-2">
                         <span class="text-muted fs-7">@T("قائمة التحقق", "Checklist")</span>

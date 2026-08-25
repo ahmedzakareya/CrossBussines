@@ -14,6 +14,10 @@
     var employees = ViewBag.Employees as List<(int Id, string Name)> ?? new();
     var blocking = ViewBag.Blocking as Dictionary<int, TaskBlockingState> ?? new();
     var checklists = ViewBag.Checklists as Dictionary<int, ChecklistProgress> ?? new();
+    // Escalation is derived per card in one query by the controller. Read defensively: a board rendered by
+    // an older action must not throw, it must simply show no escalation.
+    var escalations = ViewBag.Escalations as IReadOnlyDictionary<int, CrossBuy.BL.TasksCalendar.TaskEscalationStatus>
+        ?? new Dictionary<int, CrossBuy.BL.TasksCalendar.TaskEscalationStatus>();
     var scope = (string)(ViewBag.Scope ?? "mine");
     string q = ViewBag.Q as string; string curPriority = ViewBag.Priority as string;
     int? curAssignee = ViewBag.Assignee as int?;
@@ -128,6 +132,7 @@
                         {
                             var isBlocked = blocking.TryGetValue(t.Id, out var b) && b.IsBlocked;
                             var hasList = checklists.TryGetValue(t.Id, out var cl) && cl.Total > 0;
+                            escalations.TryGetValue(t.Id, out var esc);
                             <div class="card card-flush mb-3 border border-gray-300" draggable="true"
                                  data-cb-card="@t.Id" data-cb-status="@t.Status"
                                  data-cb-blocked="@(isBlocked ? "1" : "0")">
@@ -136,6 +141,38 @@
                                         <a href="/Tasks/Detail?id=@t.Id" class="fw-semibold text-gray-900">@t.Title</a>
                                         <span class="badge badge-light-@pc(t.Priority) fs-8">@pl(t.Priority)</span>
                                     </div>
+
+                                    @if (esc != null && esc.IsEscalated)
+                                    {
+                                        @* An escalated card names the MANAGER and the time. "Escalated" alone would
+                                           tell the board nothing actionable — the whole point is who now owns the chase. *@
+                                        <div class="d-flex align-items-center text-danger fs-8 mb-2" data-cb-escalated="1">
+                                            <i class="ki-outline ki-arrow-up-right fs-7 me-1"></i>
+                                            <span>
+                                                @if (!string.IsNullOrWhiteSpace(esc.ManagerName))
+                                                {
+                                                    @T("مُصعَّدة إلى", "Escalated to")<text> </text>@esc.ManagerName
+                                                }
+                                                else
+                                                {
+                                                    @T("مُصعَّدة", "Escalated")
+                                                }
+                                                @if (esc.EscalatedAtUtc.HasValue)
+                                                {
+                                                    <text> · </text>@esc.EscalatedAtUtc.Value.ToString("yyyy-MM-dd HH:mm")
+                                                }
+                                            </span>
+                                        </div>
+                                    }
+                                    else if (esc != null && esc.State == CrossBuy.BL.TasksCalendar.TaskEscalationState.EscalationPending)
+                                    {
+                                        @* Honest about the state the sweep will act on next, rather than pretending
+                                           it has already happened. *@
+                                        <div class="d-flex align-items-center text-warning fs-8 mb-2" data-cb-escalation-pending="1">
+                                            <i class="ki-outline ki-time fs-7 me-1"></i>
+                                            <span>@T("في انتظار التصعيد", "Escalation pending")</span>
+                                        </div>
+                                    }
 
                                     @if (isBlocked)
                                     {

@@ -122,12 +122,15 @@ namespace CrossBuy.Controllers
 			CrossBuy.BL.TasksCalendar.ITaskChecklistService checklist,
 			CrossBuy.BL.TasksCalendar.ITaskDependencyService deps,
 			CrossBuy.BL.TasksCalendar.ITaskTemplateService templates,
+			CrossBuy.BL.TasksCalendar.ITaskEscalationService escalation,
 			IServiceProvider services,
 			IFileManagerService files, IWebHostEnvironment env)
-		{ _services = services; _files = files; _env = env; _tasksAccess = tasksAccess; _businessContexts = businessContexts; _company = company; _accounting = accounting; _tasks = tasks; _links = links; _ts = ts; _cost = cost; _billing = billing; _gen = gen; _reports = reports; _matcher = matcher; _checklist = checklist; _deps = deps; _templates = templates; }
+		{ _services = services; _files = files; _env = env; _tasksAccess = tasksAccess; _businessContexts = businessContexts; _company = company; _accounting = accounting; _tasks = tasks; _links = links; _ts = ts; _cost = cost; _billing = billing; _gen = gen; _reports = reports; _matcher = matcher; _checklist = checklist; _deps = deps; _templates = templates; _escalation = escalation; }
 		// D1 Wave 1 — resolves the company (CORRECTION-005) and ASKS the approved access services. No predicate
 		// lives here: TasksAccessService owns the task record rule and the linked-entity check; AccountingAccessService
 		// owns the posting right. TaskItem.CompanyId is verified inside TasksAccessService against the ROW.
+		private readonly CrossBuy.BL.TasksCalendar.ITaskEscalationService _escalation;
+
 		private sealed class TaskGate { public bool Ok; public int CompanyId; public int? EmployeeId; }
 
 		// Template administration is company-wide, not per-task: a template belongs to no single task, so
@@ -537,6 +540,9 @@ namespace CrossBuy.Controllers
 			var ids = rows.Select(r => r.Id).ToList();
 			ViewBag.Blocking = await _deps.BlockingStateManyAsync(co, ids);
 			ViewBag.Checklists = await _checklist.ProgressManyAsync(co, ids);
+			// Escalation is DERIVED, so the board asks for it the same way — one query for every card, never
+			// one per card. A card that has been escalated shows it; nothing else changes.
+			ViewBag.Escalations = await _escalation.EvaluateManyAsync(co, ids);
 			return View("Board");
 		}
 
@@ -566,6 +572,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Dependencies = await _deps.ForTaskAsync(co, id);
 			ViewBag.Blocking = await _deps.BlockingStateAsync(co, id);
 			ViewBag.Employees = await _tasks.ActiveEmployeesAsync(co);
+			ViewBag.Escalation = await _escalation.EvaluateAsync(co, id);
 			return View("Detail");
 		}
 
