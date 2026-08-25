@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 
@@ -41,9 +41,24 @@ public class ReconciliationTests
     // authorization-baseline.json id for id. 415 = 157 + 115 + 143 — a grown total with unchanged debt, which
     // is what "added protected endpoints" looks like, exactly as the note above records for the previous
     // increment. Had the debt moved this would be a finding instead of an update.
-    private const int FrozenMutating = 415;
+    // ---- Insight -> Task action endpoint (TAB-4, insight action workflows) ----
+    //
+    // ONE new controller, InsightActionsController, with ONE mutating action: CreateTask. The three
+    // insight screens needed a single governed place to turn a finding into a follow-up task, and one
+    // shared endpoint is what stopped that becoming three copies of the same authorization code.
+    //
+    // IT AUTHORIZES IN BODY, and on BOTH sides: the source module (inventory or CRM read) AND task
+    // creation, plus a resolved company, a source row that must exist inside it, and an assignee that
+    // must be an active employee of it. CBA001 does not fire, so this is an in-body-protected endpoint
+    // rather than a baseline entry.
+    //
+    // THE FIGURE THAT MATTERS DID NOT MOVE: debt is still 143 and the gap set still matches
+    // authorization-baseline.json id for id. 416 = 157 + 116 + 143 - a grown total with unchanged debt,
+    // which is what "added a protected endpoint" looks like, exactly as the notes above record for the
+    // previous two increments. Had the debt moved this would be a finding instead of an update.
+    private const int FrozenMutating = 416;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 115;
+    private const int FrozenInBodyProtected = 116;
 
     /// <summary>The enforced invariant. This one may only ever shrink.</summary>
     private const int FrozenGaps = 143;
@@ -69,7 +84,7 @@ public class ReconciliationTests
     // resolves to CrossBuyDev. A GET-only dev harness has nothing for the mutating inventory to measure.
     // +1 for ReportStudioApiController (Report Studio V1). Its five endpoints all authorize in-body, so the
     // controller count and the descriptive totals move together while the debt figure does not.
-    private const int FrozenControllers = 46;
+    private const int FrozenControllers = 47;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

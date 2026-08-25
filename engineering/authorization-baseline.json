@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 415,
+    "mutating": 416,
     "attributeProtected": 157,
-    "inBodyProtected": 115,
+    "inBodyProtected": 116,
     "gaps": 143
   },
   "rules": [
@@ -2061,6 +2061,14 @@
       "gaps": 143,
       "controllers": 45,
       "note": "Controller-count-only reconciliation for UatSeedController, the [DevOnly] UAT dataset harness on api/uat introduced by the UAT dataset owner. The analyzer's frozen CONTROLLER count moves 44 -> 45; NONE of the four figures that matter moves. Mutating stays 410, attribute-protected 157, in-body-protected 110 and debt 143, and 157 + 110 + 143 = 410 still closes. THE REASON IS MECHANICAL, not a judgement: every action on that controller is [HttpGet] - preflight, prime, seed, counts, cleanup - so the analyzer models the controller but finds no mutating endpoint on it to classify. VERIFIED INDEPENDENTLY rather than asserted: the analyzer's own evidence file docs/architecture/evidence/Roslyn-Authorization-Inventory.csv holds 410 rows and ZERO of them name UatSeed, which is the same 410 the frozen mutating total asserts, so the new controller contributed nothing to any protected category and nothing to the debt. NO entry in this file was added, removed or edited; count stays 143 and entries stays 143. No CBA diagnostic was suppressed, CBA001 was not weakened, no security attribute was removed, and no product authorization was changed to satisfy a count. The controller is not an unmeasured hole: it returns 404 outside Development via [CrossBuy.Models.DevOnly], is shared-key gated, and its own preflight refuses to write unless the live connection resolves to CrossBuyDev. Also recorded here: the passwordless GET api/uat/signin that briefly existed on this controller has been REMOVED in the same increment; UAT runtime automation now authenticates through the ordinary AccountController.Login / PasswordSignInAsync path."
+    },
+    {
+      "date": "2026-08-25",
+      "change": "InsightActionsController.CreateTask - one governed endpoint shared by the three insight screens, turning a finding into a follow-up task through ITaskService.",
+      "mutating": "415 -> 416",
+      "inBodyProtected": "115 -> 116",
+      "attributeProtected": "157 (unchanged)",
+      "gaps": "143 (unchanged) - no unprotected endpoint was added; CBA001 does not fire on the new action"
     }
   ]
 }
