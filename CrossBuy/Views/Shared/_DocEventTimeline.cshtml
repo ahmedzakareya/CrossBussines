@@ -1,0 +1,77 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    // Platform Kernel slice 1 — the business-event timeline for one document. Include from a document view
+    // after setting ViewBag.TimelineEntityType (a canonical IEntityRegistry code) + ViewBag.TimelineEntityId.
+    //
+    // Deliberately a SEPARATE partial from _DocTimeline: that one is the comments widget and is already
+    // included by three screens (sales invoice, purchase invoice, quotation). Changing it would have
+    // touched two documents outside this slice's pilot, so the event timeline is added alongside it and is
+    // wired into the sales invoice only.
+    var tType = (ViewBag.TimelineEntityType as string) ?? "";
+    var tId = ViewBag.TimelineEntityId?.ToString() ?? "0";
+}
+<div class="card mt-5" id="cbEventTimeline" data-type="@tType" data-id="@tId">
+    <div class="card-header">
+        <div class="card-title fw-bold fs-5">
+            <i class="ki-outline ki-time fs-3 text-primary me-2"></i>@SR["Activity timeline"]
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="cbEvtList" class="timeline timeline-border-dashed">
+            <div class="text-muted text-center py-6 fs-7">@SR["Loading..."]</div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var box = document.getElementById('cbEventTimeline'); if (!box || box.__wired) return; box.__wired = true;
+    var type = box.getAttribute('data-type'), id = box.getAttribute('data-id');
+    var host = document.getElementById('cbEvtList');
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    function when(iso) { try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+
+    function row(e) {
+        // A legacy row is history reconstructed from pre-kernel data — marked so nobody reads it as a
+        // recorded event with an actor.
+        var badge = e.legacy
+            ? '<span class="badge badge-light-secondary fs-9 ms-2">@SR["Historical"]</span>'
+            : '';
+        var actor = e.actorName ? '<span class="text-muted fs-8 ms-2">' + esc(e.actorName) + '</span>' : '';
+        return '<div class="timeline-item">' +
+            '<div class="timeline-line w-40px"></div>' +
+            '<div class="timeline-icon symbol symbol-circle symbol-40px">' +
+              '<div class="symbol-label bg-light-' + esc(e.color) + '">' +
+                '<i class="' + esc(e.icon) + ' fs-4 text-' + esc(e.color) + '"></i>' +
+              '</div>' +
+            '</div>' +
+            '<div class="timeline-content mb-8 mt-n1 ps-3">' +
+              '<div class="d-flex align-items-center flex-wrap">' +
+                '<span class="fw-bold text-gray-900">' + esc(e.title) + '</span>' + badge + actor +
+                '<span class="text-muted fs-8 ms-auto">' + when(e.createdAt) + '</span>' +
+              '</div>' +
+              (e.description
+                ? '<div class="text-gray-700 fs-7 mt-1" style="unicode-bidi:plaintext" dir="auto">' + esc(e.description) + '</div>'
+                : '') +
+            '</div>' +
+          '</div>';
+    }
+
+    fetch('/PlatformTimeline/List?entityType=' + encodeURIComponent(type) + '&entityId=' + encodeURIComponent(id),
+          { credentials: 'same-origin' })
+        .then(function (r) {
+            // 403 means "not authorised to view this record" — say so rather than showing an empty history.
+            if (r.status === 403) { host.innerHTML = '<div class="text-muted text-center py-6 fs-7">@SR["You are not authorised to view this activity"]</div>'; return null; }
+            return r.ok ? r.json() : [];
+        })
+        .then(function (list) {
+            if (list === null) return;
+            host.innerHTML = list.length
+                ? list.map(row).join('')
+                : '<div class="text-muted text-center py-6 fs-7">@SR["No activity yet"]</div>';
+        })
+        .catch(function () {
+            host.innerHTML = '<div class="text-muted text-center py-6 fs-7">@SR["Could not load the activity timeline"]</div>';
+        });
+})();
+</script>

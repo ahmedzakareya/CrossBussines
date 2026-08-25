@@ -239,7 +239,20 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> SalesInvoiceDetail(int id)
 		{
-			var inv = await _context.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+			// CORRECTION-005 — the company is RESOLVED, never the compile-time constant. The screen above
+			// this action is company-scoped, so a constant here meant a company-2 accountant either saw
+			// company 1 or saw nothing, depending only on which ids happened to exist.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			// The company predicate is IN THE QUERY, so a foreign invoice is not found rather than found
+			// and then refused. Missing and inaccessible therefore return the SAME redirect, and a caller
+			// cannot use the difference to learn that an invoice exists in another company.
+			var inv = await _context.SalesInvoices.AsNoTracking().Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == scope.CompanyId);
 			if (inv == null) return RedirectToAction(nameof(SalesInvoices));
 			ViewBag.Customer = await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.ID == inv.CustomerId);
 			return View(inv);
@@ -310,7 +323,15 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PurchaseInvoiceDetail(int id)
 		{
-			var inv = await _context.PurchaseInvoices.AsNoTracking().Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
+			// Same remediation and same reasoning as SalesInvoiceDetail above.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			var inv = await _context.PurchaseInvoices.AsNoTracking().Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == scope.CompanyId);
 			if (inv == null) return RedirectToAction(nameof(PurchaseInvoices));
 			ViewBag.Vendor = await _context.Vendors.AsNoTracking().FirstOrDefaultAsync(v => v.ID == inv.VendorId);
 			return View(inv);
@@ -666,7 +687,16 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> SalesInvoicesExport(string? q, string? status)
 		{
-			var query = _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId);
+			// CORRECTION-005 — resolved company. An unresolved scope must not export a workbook at
+			// all: a spreadsheet leaves the application and cannot be recalled.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			var query = _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == scope.CompanyId);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<Models.Context.Accounting.SalesInvoice>(terms, s => i => i.InvoiceNo.Contains(s) || (i.Notes != null && i.Notes.Contains(s))); if (pred != null) query = query.Where(pred); }
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(i => i.Status == status);
@@ -679,7 +709,16 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PurchaseInvoicesExport(string? q, string? status)
 		{
-			var query = _context.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId);
+			// CORRECTION-005 — resolved company. An unresolved scope must not export a workbook at
+			// all: a spreadsheet leaves the application and cannot be recalled.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Index));
+			}
+
+			var query = _context.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == scope.CompanyId);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0) { var pred = PredicateBuilder.AnyTerm<Models.Context.Accounting.PurchaseInvoice>(terms, s => i => i.InvoiceNo.Contains(s) || (i.Notes != null && i.Notes.Contains(s))); if (pred != null) query = query.Where(pred); }
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(i => i.Status == status);
@@ -762,7 +801,12 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> SalesInvoicesData(string? q, string? status, int page = 1, int pageSize = 25)
 		{
-			var query = _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId);
+			// CORRECTION-005 — resolved company, and it is the FIRST thing this action does: an
+			// unresolved scope returns an empty grid rather than another company's invoices.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { SetPaging(0, 1, pageSize); return PartialView("_SalesInvoiceRows", System.Array.Empty<Models.Context.Accounting.SalesInvoice>()); }
+
+			var query = _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == scope.CompanyId);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0)
 			{
@@ -1078,7 +1122,12 @@ namespace CrossBuy.Controllers
 		[SessionValidation][HttpGet]
 		public async Task<IActionResult> PurchaseInvoicesData(string? q, string? status, int page = 1, int pageSize = 25)
 		{
-			var query = _context.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId);
+			// CORRECTION-005 — resolved company, and it is the FIRST thing this action does: an
+			// unresolved scope returns an empty grid rather than another company's invoices.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) { SetPaging(0, 1, pageSize); return PartialView("_PurchaseInvoiceRows", System.Array.Empty<Models.Context.Accounting.PurchaseInvoice>()); }
+
+			var query = _context.PurchaseInvoices.AsNoTracking().Where(i => i.CompanyID == scope.CompanyId);
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0)
 			{
