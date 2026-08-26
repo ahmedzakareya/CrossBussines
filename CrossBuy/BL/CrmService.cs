@@ -246,6 +246,28 @@ namespace CrossBuy.BL
 
 		// CRM 3-1 data scope: owner-ids the current user may see (null = unrestricted)
 		private async Task<List<int>?> ScopeAsync() => (await _access.VisibleOwnerIdsAsync())?.ToList();
+
+		// The LIST rule, applied to one row.
+		//
+		// Every scoped list here narrows to `OwnerEmployeeId == null || scope.Contains(owner)`. The
+		// single-record reads beside them checked only the company, so a rep who could not SEE a record in
+		// their own list could still READ it by putting its id in the query string — four editor screens
+		// take an id straight off the URL. Hiding a row from a list while serving it by id is not a
+		// narrower kind of access, it is the same access behind a worse door.
+		//
+		// Three behaviours are preserved deliberately, because they are the list's behaviours:
+		//   * scope == null is UNRESTRICTED — manager-with-team, marketing, viewer, and the unconfigured
+		//     bootstrap case. Manager and system authority keep working exactly as policy already says.
+		//   * an UNOWNED row (null owner) stays visible to everyone, as it is in every list predicate.
+		//   * a hidden row is reported as ABSENT, never as forbidden, so the id cannot be probed for
+		//     existence — the same reason a foreign company's id is answered like a missing one.
+		private async Task<bool> OwnerVisibleAsync(int? ownerEmployeeId)
+		{
+			var scope = await ScopeAsync();
+			if (scope == null) return true;
+			if (ownerEmployeeId is not int owner) return true;
+			return scope.Contains(owner);
+		}
 		private int? Me() => _access.CurrentEmployeeId();
 
 		// ---------------- Leads ----------------
@@ -268,8 +290,11 @@ namespace CrossBuy.BL
 			return (rows, total);
 		}
 
-		public Task<Lead?> GetLeadAsync(int companyId, int id) =>
-			_context.Leads.AsNoTracking().FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == id);
+		public async Task<Lead?> GetLeadAsync(int companyId, int id)
+		{
+			var e = await _context.Leads.AsNoTracking().FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == id);
+			return e != null && await OwnerVisibleAsync(e.OwnerEmployeeId) ? e : null;
+		}
 
 		public async Task<(bool ok, string? error)> SaveLeadAsync(int companyId, Lead dto, string? userId)
 		{
@@ -563,8 +588,11 @@ namespace CrossBuy.BL
 			return await src.GroupBy(o => o.Stage).Select(g => new PipelineStage { Stage = g.Key, Count = g.Count(), Amount = g.Sum(x => x.Amount) }).ToListAsync();
 		}
 
-		public Task<Opportunity?> GetOpportunityAsync(int companyId, int id) =>
-			_context.Opportunities.AsNoTracking().FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == id);
+		public async Task<Opportunity?> GetOpportunityAsync(int companyId, int id)
+		{
+			var e = await _context.Opportunities.AsNoTracking().FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == id);
+			return e != null && await OwnerVisibleAsync(e.OwnerEmployeeId) ? e : null;
+		}
 
 		public async Task<(bool ok, string? error)> SaveOpportunityAsync(int companyId, Opportunity dto, string? userId)
 		{
@@ -620,8 +648,11 @@ namespace CrossBuy.BL
 			return rows.Select(r => (r.ID, r.Name)).ToList();
 		}
 
-		public Task<Campaign?> GetCampaignAsync(int companyId, int id) =>
-			_context.Campaigns.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ID == id);
+		public async Task<Campaign?> GetCampaignAsync(int companyId, int id)
+		{
+			var e = await _context.Campaigns.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ID == id);
+			return e != null && await OwnerVisibleAsync(e.OwnerEmployeeId) ? e : null;
+		}
 
 		public async Task<(bool ok, string? error)> SaveCampaignAsync(int companyId, Campaign dto, string? userId)
 		{
@@ -736,6 +767,7 @@ namespace CrossBuy.BL
 		{
 			var l = await _context.CrmMarketingLists.AsNoTracking().FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == id);
 			if (l == null) return null;
+			if (!await OwnerVisibleAsync(l.OwnerEmployeeId)) return null;
 			l.Members = await _context.CrmListMembers.AsNoTracking().Where(m => m.CompanyID == companyId && m.ListId == id).OrderByDescending(m => m.ID).ToListAsync();
 			return l;
 		}
@@ -847,8 +879,11 @@ namespace CrossBuy.BL
 			return (rows, total);
 		}
 
-		public Task<CrmTicket?> GetTicketAsync(int companyId, int id) =>
-			_context.CrmTickets.AsNoTracking().FirstOrDefaultAsync(t => t.CompanyID == companyId && t.ID == id);
+		public async Task<CrmTicket?> GetTicketAsync(int companyId, int id)
+		{
+			var e = await _context.CrmTickets.AsNoTracking().FirstOrDefaultAsync(t => t.CompanyID == companyId && t.ID == id);
+			return e != null && await OwnerVisibleAsync(e.OwnerEmployeeId) ? e : null;
+		}
 
 		public async Task<(bool ok, string? error, int id)> SaveTicketAsync(int companyId, CrmTicket dto, string? userId)
 		{
@@ -1133,6 +1168,8 @@ namespace CrossBuy.BL
 		{
 			var a = await _context.CrmAccounts.AsNoTracking().FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == id);
 			if (a == null) return null;
+			// Checked before the contacts are loaded: a hidden account must not cause its people to be read.
+			if (!await OwnerVisibleAsync(a.OwnerEmployeeId)) return null;
 			a.Contacts = await _context.CrmContacts.AsNoTracking().Where(c => c.CompanyID == companyId && c.AccountId == id).OrderByDescending(c => c.IsPrimary).ThenBy(c => c.Name).ToListAsync();
 			return a;
 		}
