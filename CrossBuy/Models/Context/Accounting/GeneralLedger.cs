@@ -10,7 +10,16 @@ namespace CrossBuy.Models.Context.Accounting
 	{
 		public int ID { get; set; }
 		public int CompanyID { get; set; }
-		public string EntryNo { get; set; } = "";          // e.g. JV-2026-000123
+		// NULLABLE BY LIFECYCLE, not by accident. A journal entry is created as a DRAFT with no number and is
+		// numbered on POST (JournalEntryService.cs:84 creates it with `EntryNo = null!`, :273 reserves the real
+		// number), and a filtered unique index ignores the NULLs so drafts do not collide. The live column
+		// agrees: CrossBuyDev has EntryNo as nvarchar(40) NULL with UX_JE_Company_EntryNo.
+		//
+		// The model previously declared it non-nullable, so model-generated DDL emitted NOT NULL and the draft
+		// insert died with "Cannot insert the value NULL into column 'EntryNo'". The runtime and the database
+		// were right and the model was wrong; this aligns the model rather than forcing the database to
+		// contradict the posting lifecycle. Numbering semantics are untouched.
+		public string? EntryNo { get; set; }               // null while draft; e.g. JV-2026-000123 once posted
 		public DateTime EntryDate { get; set; }
 		public int FiscalPeriodId { get; set; }
 		public string JournalType { get; set; } = "Manual"; // Manual/Auto/Recurring/Reversing/Opening/Closing
