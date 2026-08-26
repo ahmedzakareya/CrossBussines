@@ -176,6 +176,10 @@ builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskTemplateService, Cross
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskCalendarEventPublisher, CrossBuy.BL.TasksCalendar.TaskCalendarEventPublisher>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskNotificationService, CrossBuy.BL.TasksCalendar.TaskNotificationService>();
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ITaskEscalationService, CrossBuy.BL.TasksCalendar.TaskEscalationService>();   // overdue -> direct-manager escalation
+// SHF-01 shared-file change, approved for this closure and bounded to ONE call: the Tasks/Calendar
+// worker composition. It registers ITaskOverdueSweepService, which had an implementation and tests but
+// no registration and therefore no caller. Nothing above or below is reordered.
+CrossBuy.BL.TasksCalendar.TasksCalendarRegistration.AddTasksCalendarWorkers(builder.Services);
 builder.Services.AddScoped<CrossBuy.BL.TasksCalendar.ICalendarSchedulingService, CrossBuy.BL.TasksCalendar.CalendarSchedulingService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IJobTitles, JobTitleService>();
