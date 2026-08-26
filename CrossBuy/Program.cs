@@ -426,7 +426,16 @@ builder.Services.AddScoped<IShelfLabelService, ShelfLabelService>();   // HM-4: 
 builder.Services.AddScoped<IThreeWayMatchService, ThreeWayMatchService>();
 builder.Services.AddScoped<ICrmService, CrmService>();
 builder.Services.AddScoped<ICrmCustomerLink, CrmCustomerLink>();
-builder.Services.AddScoped<ICrmAccessService, CrmAccessService>();
+// CRM authorization. THREE registrations resolving ONE scoped instance, the same shape Tasks and
+// Calendar use: registering IModuleAccessService with its own AddScoped<,> would hand a request two
+// CrmAccessService objects, two role reads and two caches, and the two could disagree within one call.
+//
+// IModuleAccessService is what makes CrmPermissionAdapter able to answer at all. Until now the adapter
+// was registered with nothing behind it, so PlatformPermissionProvider denied the Crm scope for a
+// configuration reason rather than a policy one.
+builder.Services.AddScoped<CrmAccessService>();
+builder.Services.AddScoped<ICrmAccessService>(sp => sp.GetRequiredService<CrmAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrmAccessService>());
 builder.Services.AddScoped<IInventoryAccessService, InventoryAccessService>();
 builder.Services.AddScoped<IInventoryApprovalService, InventoryApprovalService>();
 
