@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Crm;
 using Microsoft.EntityFrameworkCore;
 
@@ -365,7 +365,7 @@ namespace CrossBuy.BL
 			if (acc == null) return null;
 			if (acc.CustomerId.HasValue) return acc.CustomerId.Value;
 			var custId = await _link.CreateCustomerAsync(companyId, acc.Name, acc.NameEn, null, null);
-			var primary = await _context.CrmContacts.AsNoTracking().Where(c => c.AccountId == accountId).OrderByDescending(c => c.IsPrimary).Select(c => c.Name).FirstOrDefaultAsync();
+			var primary = await _context.CrmContacts.AsNoTracking().Where(c => c.CompanyID == companyId && c.AccountId == accountId).OrderByDescending(c => c.IsPrimary).Select(c => c.Name).FirstOrDefaultAsync();
 			await _link.EnrichAsync(custId, acc.Phone, acc.Email, acc.Segment, primary ?? acc.Name);
 			acc.CustomerId = custId;
 			await _context.SaveChangesAsync();
@@ -382,7 +382,7 @@ namespace CrossBuy.BL
 					var custId = await EnsureAccountCustomerAsync(companyId, o.AccountId.Value);
 					if (custId.HasValue && o.CustomerId != custId)
 					{
-						var live = await _context.Opportunities.FirstOrDefaultAsync(x => x.ID == o.ID);
+						var live = await _context.Opportunities.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == o.ID);
 						if (live != null) { live.CustomerId = custId; await _context.SaveChangesAsync(); }
 					}
 				}
@@ -503,7 +503,7 @@ namespace CrossBuy.BL
 		{
 			var opp = await _context.Opportunities.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == oppId);
 			if (opp == null) return (false, "الفرصة غير موجودة");
-			_context.OpportunityProducts.RemoveRange(_context.OpportunityProducts.Where(p => p.OpportunityId == oppId));
+			_context.OpportunityProducts.RemoveRange(_context.OpportunityProducts.Where(p => p.CompanyID == companyId && p.OpportunityId == oppId));
 			decimal total = 0;
 			foreach (var l in (lines ?? new()).Where(l => l.ItemId != null || !string.IsNullOrWhiteSpace(l.ItemDescription)))
 			{
@@ -524,7 +524,7 @@ namespace CrossBuy.BL
 			if (opp == null) return (false, "الفرصة غير موجودة", null);
 			if (opp.QuotationId.HasValue) return (false, "تم إنشاء عرض سعر لهذه الفرصة بالفعل", opp.QuotationId);
 			if (opp.AccountId == null) return (false, "اربط الفرصة بحساب أولًا", null);
-			var products = await _context.OpportunityProducts.AsNoTracking().Where(p => p.OpportunityId == oppId).ToListAsync();
+			var products = await _context.OpportunityProducts.AsNoTracking().Where(p => p.CompanyID == companyId && p.OpportunityId == oppId).ToListAsync();
 			if (products.Count == 0) return (false, "أضف بنودًا للفرصة قبل التحويل لعرض سعر", null);
 			var custId = await EnsureAccountCustomerAsync(companyId, opp.AccountId.Value);
 			if (custId == null) return (false, "تعذّر ربط الحساب بعميل مالي", null);
@@ -712,7 +712,7 @@ namespace CrossBuy.BL
 		{
 			var query = _context.CrmMarketingLists.AsNoTracking().Where(l => l.CompanyID == companyId)
 				.Select(l => new ListRow { Id = l.ID, Name = l.Name, NameEn = l.NameEn, Description = l.Description, DescriptionEn = l.DescriptionEn, IsActive = l.IsActive,
-					Members = _context.CrmListMembers.Count(m => m.ListId == l.ID) });
+					Members = _context.CrmListMembers.Count(m => m.CompanyID == companyId && m.ListId == l.ID) });
 			var terms = SearchTerms.Parse(q);
 			if (terms.Count > 0)
 			{
@@ -1125,7 +1125,7 @@ namespace CrossBuy.BL
 			page = Clamp(page, ref pageSize);
 			var rows = await query.OrderByDescending(a => a.ID).Skip((page - 1) * pageSize).Take(pageSize)
 				.Select(a => new AccountRow { Id = a.ID, Name = a.Name, NameEn = a.NameEn, Industry = a.Industry, IndustryEn = a.IndustryEn, Segment = a.Segment, Phone = a.Phone, CustomerId = a.CustomerId, IsActive = a.IsActive,
-					Contacts = _context.CrmContacts.Count(c => c.AccountId == a.ID), Opps = _context.Opportunities.Count(o => o.AccountId == a.ID) }).ToListAsync();
+					Contacts = _context.CrmContacts.Count(c => c.CompanyID == companyId && c.AccountId == a.ID), Opps = _context.Opportunities.Count(o => o.CompanyID == companyId && o.AccountId == a.ID) }).ToListAsync();
 			return (rows, total);
 		}
 
@@ -1133,7 +1133,7 @@ namespace CrossBuy.BL
 		{
 			var a = await _context.CrmAccounts.AsNoTracking().FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == id);
 			if (a == null) return null;
-			a.Contacts = await _context.CrmContacts.AsNoTracking().Where(c => c.AccountId == id).OrderByDescending(c => c.IsPrimary).ThenBy(c => c.Name).ToListAsync();
+			a.Contacts = await _context.CrmContacts.AsNoTracking().Where(c => c.CompanyID == companyId && c.AccountId == id).OrderByDescending(c => c.IsPrimary).ThenBy(c => c.Name).ToListAsync();
 			return a;
 		}
 
