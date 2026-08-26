@@ -1,5 +1,6 @@
 using CrossBuy.BL;
 using CrossBuy.BL.Platform;
+using CrossBuy.BL.Platform.Ai;
 using CrossBuy.BL.TasksCalendar;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
@@ -576,6 +577,71 @@ namespace CrossBuy.Tests
 			Assert.Equal(TaskEscalationState.Escalated, after[pending.ID].State);
 			Assert.Equal(TaskEscalationState.Overdue, after[overdue.ID].State);      // still inside grace
 			Assert.Equal(TaskEscalationState.NotDue, after[done.ID].State);
+		}
+
+		// ---- an INSIGHT-CREATED task is an ordinary task -----------------------------------------------
+		//
+		// InsightActionTests already proves the ABSENCE of an origin filter by reading the source. This proves
+		// the consequence BEHAVIOURALLY, which source-grepping cannot: a task carrying the real
+		// InsightActions.OriginLine stamp in its description escalates exactly like any other, through the same
+		// sweep, to the same manager, with the same event and the same idempotency.
+		//
+		// The stamp is composed by the PRODUCT (InsightActions.OriginLine), not typed here, so if that format
+		// ever changes this test follows it instead of asserting a stale literal.
+		[Fact]
+		public async Task An_insight_created_task_escalates_exactly_like_any_other_task()
+		{
+			var (f, emp, mgr) = Arrange();
+			using var _f = f;
+
+			string origin = InsightActions.OriginLine(InsightActions.Sources.InventoryItem, 4242, "StockoutRisk");
+			Assert.StartsWith(InsightActions.OriginStamp, origin, StringComparison.Ordinal);
+
+			// exactly what InsightActionsController persists: an ordinary task whose description carries the
+			// origin line, with a real due date and a real assignee
+			var t = f.AddTask(EscalationFixture.CompanyA, emp, Now.AddDays(-3), title: "follow up stockout risk");
+			var live = await f.Db.TaskItems.FirstAsync(x => x.ID == t.ID);
+			live.Description = "Review the shortage and raise a purchase order. " + origin;
+			live.EntityType = "Item";
+			live.EntityId = 4242;
+			await f.Db.SaveChangesAsync();
+
+			var r = await f.Escalation.SweepAsync(EscalationFixture.CompanyA);
+
+			// it was not skipped, filtered, or treated specially
+			Assert.Equal(1, r.Examined);
+			Assert.Equal(1, r.Escalated);
+			Assert.Equal(0, r.NoManager);
+
+			var sent = f.Notifications.Sent.Where(n => n.Type == TaskNotificationKinds.Escalated).ToList();
+			Assert.Single(sent);
+			Assert.Equal(mgr, sent[0].RecipientEmployeeId);
+			Assert.Equal($"/Tasks/Index?taskId={t.ID}", sent[0].Url);
+			Assert.Single(f.EscalationEvents(t.ID));
+
+			// the origin stamp survived escalation untouched — escalation reads tasks, it does not rewrite them
+			var after = await f.Db.TaskItems.AsNoTracking().FirstAsync(x => x.ID == t.ID);
+			Assert.Contains(origin, after.Description ?? "");
+
+			// and the derived state is the ordinary Escalated, not an insight-specific one
+			var state = await f.Escalation.EvaluateAsync(EscalationFixture.CompanyA, t.ID);
+			Assert.Equal(TaskEscalationState.Escalated, state.State);
+			Assert.Equal(mgr, state.ManagerEmployeeId);
+		}
+
+		[Fact]
+		public async Task An_insight_created_task_is_idempotent_across_sweeps_like_any_other()
+		{
+			var (f, emp, _) = Arrange();
+			using var _f = f;
+			var t = f.AddTask(EscalationFixture.CompanyA, emp, Now.AddDays(-4));
+			var live = await f.Db.TaskItems.FirstAsync(x => x.ID == t.ID);
+			live.Description = InsightActions.OriginLine(InsightActions.Sources.CrmAccount, 42, "DecliningActivity");
+			await f.Db.SaveChangesAsync();
+
+			Assert.Equal(1, (await f.Escalation.SweepAsync(EscalationFixture.CompanyA)).Escalated);
+			Assert.Equal(0, (await f.Escalation.SweepAsync(EscalationFixture.CompanyA)).Escalated);
+			Assert.Equal(1, f.EscalationNotifications(t.ID));
 		}
 
 		// ---- 11. certification suppression ------------------------------------------------------------
