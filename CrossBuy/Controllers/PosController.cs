@@ -13,7 +13,52 @@ namespace CrossBuy.Controllers
 	[SessionValidation]
 	public class PosController : Controller
 	{
-		private const int DefaultCompanyId = 1;
+		// COMPANY RESOLUTION — replaces `private const int co = 1;`
+		//
+		// WHAT THE CONSTANT DID. Every read, write, report and lookup on this controller named company 1,
+		// whoever was signed in. That is not a display bug: PostMovementAsync, TransferAsync, WriteOffAsync,
+		// PostCountAsync, PostLandedCostAsync, the whole ManufService write surface and the item / category /
+		// unit / warehouse creators all received the literal, so another tenant's stock and work orders were
+		// readable AND writable from any session.
+		//
+		// WHY AN ACTION FILTER AND A PLAIN PROPERTY, rather than `await CompanyIdAsync()` at each call site.
+		// Resolution is async, but the company is needed inside LINQ lambdas, projections, expression-bodied
+		// actions and sync helpers, and `await` is illegal in a non-async lambda — doing it inline produced 138
+		// CS4034 errors. Resolving ONCE in OnActionExecutionAsync, before the action body runs, makes the value
+		// an ordinary int that every one of those places can read. It is also one resolution per request instead
+		// of one per call site.
+		//
+		// FAIL CLOSED. `co` is 0 when nothing resolves, and 0 is a company id no row can hold — so every
+		// downstream `CompanyId == companyId` predicate matches nothing, for reads AND for the row lookups the
+		// writes perform. That is the floor beneath every action, reached without the action having to remember
+		// to check. CompanyRefusedView/Json are for actions that additionally want to say so out loud.
+		private int? _companyId;
+
+		/// The resolved company for this request. 0 when none resolves — never 1, never a fallback.
+		private int co => _companyId ?? 0;
+
+		public override async Task OnActionExecutionAsync(
+			Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context,
+			Microsoft.AspNetCore.Mvc.Filters.ActionExecutionDelegate next)
+		{
+			if (!_companyId.HasValue)
+			{
+				var scope = await _company.ResolveAsync();
+				_companyId = scope.Ok ? scope.CompanyId : 0;
+			}
+			await next();
+		}
+
+		/// Page-shaped refusal, matching what InvPerm already does to a denied page request.
+		private IActionResult CompanyRefusedView()
+		{
+			TempData["Err"] = "تعذّر تحديد الشركة لهذه الجلسة";
+			return RedirectToAction("Index", "Home");
+		}
+
+		/// Endpoint-shaped refusal for the JSON actions these controllers expose.
+		private IActionResult CompanyRefusedJson() =>
+			Json(new { ok = false, error = "no_company_resolved" });
 		private readonly IPosSetupService _pos;
 		private readonly IWarehouseService _warehouses;
 		private readonly CrossDbContext _context;
@@ -36,7 +81,7 @@ namespace CrossBuy.Controllers
 		//
 		// This is the POS SETUP/ADMIN controller, not the cashier lane. Before this wave its shift, production and
 		// customer actions carried [HttpPost][ValidateAntiForgeryToken] and nothing else, with the company from the
-		// `DefaultCompanyId` constant. So any signed-in employee could open and close shifts (closing posts a cash
+		// `co` constant. So any signed-in employee could open and close shifts (closing posts a cash
 		// VARIANCE journal), run branch production (which MOVES STOCK), and create customers.
 		//
 		// It asks `IPosAccessService.CanAsync`, which reads the assigned `BranchUserRoles` — the DOCUMENTED PERMANENT
@@ -104,7 +149,7 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Dashboard(string? activity = null)
 		{
-			int companyId = DefaultCompanyId;
+			int companyId = co;
 			var today = DateTime.Today;
 			var monthStart = new DateTime(today.Year, today.Month, 1);
 			var yearStart = new DateTime(today.Year, 1, 1);
@@ -188,8 +233,8 @@ namespace CrossBuy.Controllers
 				ViewBag.Branch = branch;
 				ViewBag.Caps = await _pos.GetCapabilitiesAsync(branchId.Value);
 				ViewBag.PosSetting = await _pos.GetPosSettingAsync(branchId.Value);
-				ViewBag.Warehouses = await _warehouses.GetWarehousesAsync(DefaultCompanyId);
-				ViewBag.PriceLists = await _context.PriceLists.AsNoTracking().Where(p => p.CompanyID == DefaultCompanyId).OrderBy(p => p.Name).ToListAsync();
+				ViewBag.Warehouses = await _warehouses.GetWarehousesAsync(co);
+				ViewBag.PriceLists = await _context.PriceLists.AsNoTracking().Where(p => p.CompanyID == co).OrderBy(p => p.Name).ToListAsync();
 				ViewBag.Currencies = await _context.Currencies.AsNoTracking().OrderBy(c => c.Code).ToListAsync();
 			}
 			return View();
@@ -327,9 +372,9 @@ namespace CrossBuy.Controllers
 			await PopulateBranchesAsync(companyId, branchId);
 			if (branchId != null)
 			{
-				ViewBag.Rows = await _pos.GetBranchSourcingAsync(DefaultCompanyId, branchId.Value);
+				ViewBag.Rows = await _pos.GetBranchSourcingAsync(co, branchId.Value);
 				// semi-finished candidates + source-branch options (POS runs under company 1; branches for source = all branches)
-				ViewBag.SemiItems = await _context.Items.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && i.IsActive)
+				ViewBag.SemiItems = await _context.Items.AsNoTracking().Where(i => i.CompanyID == co && i.IsActive)
 					.OrderBy(i => i.ItemCode).Select(i => new PosSemiItem { ID = i.ID, ItemCode = i.ItemCode, Name = i.Name }).ToListAsync();
 				ViewBag.AllBranches = await _context.Branches.AsNoTracking().OrderBy(b => b.Name).Select(b => new PosBranchOption { ID = b.ID, Name = b.Name }).ToListAsync();
 			}
@@ -339,7 +384,7 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveItemSourcing(int branchId, int itemId, string method, int? sourceBranchId, int? semiFinishedItemId, string? transferTiming)
 		{
-			var (ok, err) = await _pos.SaveBranchItemSourcingAsync(DefaultCompanyId, branchId, itemId, method, sourceBranchId, semiFinishedItemId, transferTiming);
+			var (ok, err) = await _pos.SaveBranchItemSourcingAsync(co, branchId, itemId, method, sourceBranchId, semiFinishedItemId, transferTiming);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Sourcing saved"].Value : err;
 			return RedirectToAction(nameof(ItemSourcing), new { branchId });
 		}
@@ -348,7 +393,7 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> SourcingOverview()
 		{
-			ViewBag.Overview = await _pos.GetSourcingOverviewAsync(DefaultCompanyId);
+			ViewBag.Overview = await _pos.GetSourcingOverviewAsync(co);
 			return View();
 		}
 
@@ -357,14 +402,14 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> SyncConflicts(bool includeAcknowledged = false)
 		{
 			ViewBag.IncludeAck = includeAcknowledged;
-			ViewBag.Conflicts = await _pos.GetSyncConflictsAsync(DefaultCompanyId, includeAcknowledged);
+			ViewBag.Conflicts = await _pos.GetSyncConflictsAsync(co, includeAcknowledged);
 			return View();
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> AckSyncConflict(int id, bool includeAcknowledged = false)
 		{
-			var (ok, err) = await _pos.AcknowledgeSyncConflictAsync(DefaultCompanyId, id, null);
+			var (ok, err) = await _pos.AcknowledgeSyncConflictAsync(co, id, null);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Conflict acknowledged"].Value : err;
 			return RedirectToAction(nameof(SyncConflicts), new { includeAcknowledged });
 		}
@@ -399,16 +444,16 @@ namespace CrossBuy.Controllers
 		{
 			if (companyId == null && branchId != null) companyId = await _context.Branches.Where(b => b.ID == branchId).Select(b => (int?)b.CompanyID).FirstOrDefaultAsync();
 			await PopulateBranchesAsync(companyId, branchId);
-			// the POS operates under DefaultCompanyId (1) regardless of the branch's admin company — same as the cashier (PosCompanyId)
+			// the POS operates under co (1) regardless of the branch's admin company — same as the cashier (PosCompanyId)
 			if (branchId != null)
-				ViewBag.Reservations = await _pos.GetReservationsAsync(DefaultCompanyId, branchId.Value);
+				ViewBag.Reservations = await _pos.GetReservationsAsync(co, branchId.Value);
 			return View();
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveReservation(int branchId, int id, int tableId, int? customerId, string guestName, string? guestPhone, DateTime reservedAt, int durationMinutes, int partySize, string? notes)
 		{
-			var (ok, err) = await _pos.SaveReservationAsync(DefaultCompanyId, branchId, id, tableId, customerId, guestName, guestPhone ?? "", reservedAt, durationMinutes, partySize, notes);
+			var (ok, err) = await _pos.SaveReservationAsync(co, branchId, id, tableId, customerId, guestName, guestPhone ?? "", reservedAt, durationMinutes, partySize, notes);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Reservation saved"].Value : err;
 			return RedirectToAction(nameof(Reservations), new { branchId });
 		}
@@ -416,7 +461,7 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SetReservationStatus(int branchId, int id, string status)
 		{
-			var (ok, err) = await _pos.SetReservationStatusAsync(DefaultCompanyId, id, status);
+			var (ok, err) = await _pos.SetReservationStatusAsync(co, id, status);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Reservation updated"].Value : err;
 			return RedirectToAction(nameof(Reservations), new { branchId });
 		}
@@ -426,7 +471,7 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> ReservationEvents(int branchId, int? tableId)
 		{
-			var evs = await _pos.GetReservationEventsAsync(DefaultCompanyId, branchId, tableId);
+			var evs = await _pos.GetReservationEventsAsync(co, branchId, tableId);
 			var isAr = (HttpContext.Items["Culture"]?.ToString() == "ar");
 			var walkIn = isAr ? "عميل نقدي" : "Walk-in";
 			var data = evs.Select(e =>
@@ -451,13 +496,13 @@ namespace CrossBuy.Controllers
 		// POS-A: floor board data for the reservations screen — the SAME builder the cashier uses (3-way status).
 		[HttpGet]
 		public async Task<IActionResult> FloorData(int branchId)
-			=> Json(new { ok = true, halls = await _orders.GetFloorAsync(DefaultCompanyId, branchId) });
+			=> Json(new { ok = true, halls = await _orders.GetFloorAsync(co, branchId) });
 
 		// POS-A: customer search + quick-add — the SAME receivables service the cashier uses (POS-4e). New customer persists in the admin.
 		[HttpGet]
 		public async Task<IActionResult> CustomerSearch(string? q)
 		{
-			var (rows, _) = await _receivables.SearchCustomersAsync(DefaultCompanyId, q, true, 1, 15);
+			var (rows, _) = await _receivables.SearchCustomersAsync(co, q, true, 1, 15);
 			return Json(new { ok = true, customers = rows.Select(x => new { id = x.ID, name = x.Name, phone = x.Phone }) });
 		}
 
@@ -558,7 +603,7 @@ namespace CrossBuy.Controllers
 				// only the items already used as buttons are loaded for display (NOT the whole catalog — picking is via the search popup)
 				var usedIds = ((List<CrossBuy.Models.Context.Pos.PosQuickItem>)ViewBag.QuickItems).Select(q => q.ItemId).ToList();
 				ViewBag.ItemsById = await _context.Items.AsNoTracking().Where(i => usedIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i);
-				ViewBag.Categories = await _context.ItemCategories.AsNoTracking().Where(c => c.CompanyID == DefaultCompanyId && c.IsActive).OrderBy(c => c.Kind).ThenBy(c => c.Code).ToListAsync();
+				ViewBag.Categories = await _context.ItemCategories.AsNoTracking().Where(c => c.CompanyID == co && c.IsActive).OrderBy(c => c.Kind).ThenBy(c => c.Code).ToListAsync();
 			}
 			return View();
 		}
@@ -567,12 +612,12 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> ItemSearch(string? term, string? barcode, int? categoryId, int? groupId, int page = 1, int pageSize = 10)
 		{
-			var q = _context.Items.AsNoTracking().Where(i => i.CompanyID == DefaultCompanyId && i.ItemType == "Stockable");
+			var q = _context.Items.AsNoTracking().Where(i => i.CompanyID == co && i.ItemType == "Stockable");
 			if (groupId.HasValue && groupId.Value > 0)
 				q = q.Where(i => i.ItemCategoryId == groupId.Value);
 			else if (categoryId.HasValue && categoryId.Value > 0)
 			{
-				var childIds = await _context.ItemCategories.Where(c => c.CompanyID == DefaultCompanyId && c.ParentId == categoryId.Value).Select(c => c.ID).ToListAsync();
+				var childIds = await _context.ItemCategories.Where(c => c.CompanyID == co && c.ParentId == categoryId.Value).Select(c => c.ID).ToListAsync();
 				childIds.Add(categoryId.Value);
 				q = q.Where(i => childIds.Contains(i.ItemCategoryId));
 			}
@@ -584,8 +629,8 @@ namespace CrossBuy.Controllers
 			var total = await q.CountAsync();
 			var pageItems = await q.OrderBy(i => i.ItemCode).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 			// resolve category/group/uom names in memory
-			var cats = await _context.ItemCategories.AsNoTracking().Where(c => c.CompanyID == DefaultCompanyId).ToDictionaryAsync(c => c.ID, c => c);
-            var uoms = await _context.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == DefaultCompanyId).ToDictionaryAsync(u => u.ID, u => u.Name);
+			var cats = await _context.ItemCategories.AsNoTracking().Where(c => c.CompanyID == co).ToDictionaryAsync(c => c.ID, c => c);
+            var uoms = await _context.UnitsOfMeasure.AsNoTracking().Where(u => u.CompanyID == co).ToDictionaryAsync(u => u.ID, u => u.Name);
 			var isAr = Request.HttpContext.Items["Culture"]?.ToString() == "ar";
 			var rows = pageItems.Select(i =>
 			{
@@ -617,15 +662,15 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Modifiers(int? groupId)
 		{
-			ViewBag.Groups = await _pos.GetModifierGroupsAsync(DefaultCompanyId);
+			ViewBag.Groups = await _pos.GetModifierGroupsAsync(co);
 			if (groupId != null)
 			{
-				var g = await _pos.GetModifierGroupAsync(DefaultCompanyId, groupId.Value);
+				var g = await _pos.GetModifierGroupAsync(co, groupId.Value);
 				if (g != null)
 				{
 					ViewBag.Group = g;
-					ViewBag.Options = await _pos.GetOptionsAsync(DefaultCompanyId, groupId.Value);
-					ViewBag.GroupItems = await _pos.GetGroupItemsAsync(DefaultCompanyId, groupId.Value);
+					ViewBag.Options = await _pos.GetOptionsAsync(co, groupId.Value);
+					ViewBag.GroupItems = await _pos.GetGroupItemsAsync(co, groupId.Value);
 				}
 			}
 			return View();
@@ -634,7 +679,7 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveModifierGroup(int id, string name, string? nameEn, string type, int minSelect, int maxSelect, int sort, bool isActive = true)
 		{
-			var (ok, err, gid) = await _pos.SaveModifierGroupAsync(DefaultCompanyId, new CrossBuy.Models.Context.Pos.ModifierGroup { ID = id, Name = name, NameEn = nameEn, Type = type, MinSelect = minSelect, MaxSelect = maxSelect, Sort = sort, IsActive = isActive });
+			var (ok, err, gid) = await _pos.SaveModifierGroupAsync(co, new CrossBuy.Models.Context.Pos.ModifierGroup { ID = id, Name = name, NameEn = nameEn, Type = type, MinSelect = minSelect, MaxSelect = maxSelect, Sort = sort, IsActive = isActive });
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Group saved"].Value : err;
 			return RedirectToAction(nameof(Modifiers), new { groupId = ok ? gid : id });
 		}
@@ -642,7 +687,7 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteModifierGroup(int id)
 		{
-			var (ok, err) = await _pos.DeleteModifierGroupAsync(DefaultCompanyId, id);
+			var (ok, err) = await _pos.DeleteModifierGroupAsync(co, id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Group deleted"].Value : err;
 			return RedirectToAction(nameof(Modifiers));
 		}
@@ -650,7 +695,7 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveModifierOption(int groupId, int id, string? name, string? nameEn, int linkedItemId, decimal qtyDeducted, decimal extraPrice, bool isDefault = false)
 		{
-			var (ok, err) = await _pos.SaveOptionAsync(DefaultCompanyId, groupId, id, name, nameEn, linkedItemId, qtyDeducted, extraPrice, isDefault);
+			var (ok, err) = await _pos.SaveOptionAsync(co, groupId, id, name, nameEn, linkedItemId, qtyDeducted, extraPrice, isDefault);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Option saved"].Value : err;
 			return RedirectToAction(nameof(Modifiers), new { groupId });
 		}
@@ -658,7 +703,7 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteModifierOption(int groupId, int id)
 		{
-			var (ok, err) = await _pos.DeleteOptionAsync(DefaultCompanyId, id);
+			var (ok, err) = await _pos.DeleteOptionAsync(co, id);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Option deleted"].Value : err;
 			return RedirectToAction(nameof(Modifiers), new { groupId });
 		}
@@ -666,14 +711,14 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> AttachModifierItemJson(int groupId, int itemId)
 		{
-			var (ok, err) = await _pos.AttachGroupToItemAsync(DefaultCompanyId, groupId, itemId);
+			var (ok, err) = await _pos.AttachGroupToItemAsync(co, groupId, itemId);
 			return Json(new { ok, error = err });
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DetachModifierItem(int groupId, int linkId)
 		{
-			var (ok, err) = await _pos.DetachGroupFromItemAsync(DefaultCompanyId, linkId);
+			var (ok, err) = await _pos.DetachGroupFromItemAsync(co, linkId);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Unlinked"].Value : err;
 			return RedirectToAction(nameof(Modifiers), new { groupId });
 		}
@@ -687,7 +732,7 @@ namespace CrossBuy.Controllers
 			if (branchId != null)
 			{
 				ViewBag.Methods = await _pos.GetPaymentMethodsAsync(branchId.Value);
-				var accs = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == DefaultCompanyId && a.IsPostable && a.IsActive).OrderBy(a => a.Code).ToListAsync();
+				var accs = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == co && a.IsPostable && a.IsActive).OrderBy(a => a.Code).ToListAsync();
 				ViewBag.Accounts = accs;
 				ViewBag.AccountsById = accs.ToDictionary(a => a.ID, a => a);
 			}
@@ -825,7 +870,7 @@ namespace CrossBuy.Controllers
 			await PopulateBranchesAsync(companyId, branchId);
 			if (branchId != null)
 			{
-				ViewBag.Menu = await _pos.GetQuickMenuAsync(DefaultCompanyId, branchId.Value);
+				ViewBag.Menu = await _pos.GetQuickMenuAsync(co, branchId.Value);
 				ViewBag.PosSetting = await _pos.GetPosSettingAsync(branchId.Value);
 				var menu = (List<PosQuickMenuGroupDto>)ViewBag.Menu;
 				var ids = menu.SelectMany(g => g.Items).Select(i => i.ItemId).Distinct().ToList();
@@ -869,7 +914,7 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SetQuickCode(int branchId, int itemId, string? code)
 		{
-			var (ok, err) = await _pos.SetQuickCodeAsync(DefaultCompanyId, itemId, code);
+			var (ok, err) = await _pos.SetQuickCodeAsync(co, itemId, code);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Quick code saved"].Value : err;
 			return RedirectToAction(nameof(QuickMenu), new { branchId });
 		}
