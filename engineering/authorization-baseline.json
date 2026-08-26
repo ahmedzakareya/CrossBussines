@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 416,
+    "mutating": 420,
     "attributeProtected": 157,
-    "inBodyProtected": 116,
+    "inBodyProtected": 120,
     "gaps": 143
   },
   "rules": [
@@ -2069,6 +2069,14 @@
       "inBodyProtected": "115 -> 116",
       "attributeProtected": "157 (unchanged)",
       "gaps": "143 (unchanged) - no unprotected endpoint was added; CBA001 does not fire on the new action"
+    },
+    {
+      "date": "2026-08-26",
+      "change": "ReportStudioApiController.UploadAsset, DeleteAsset, Print, Pdf - four POST endpoints on the EXISTING studio controller, so the controller count is unchanged. All four authorize in body through IReportAuthorizationService.AuthorizeReportAsync and refuse with NotFound rather than Forbid.",
+      "mutating": "416 -> 420",
+      "inBodyProtected": "116 -> 120",
+      "attributeProtected": "157 (unchanged)",
+      "gaps": "143 (unchanged) - the gap set is identical id for id; no baseline entry was added or removed and CBA001 does not fire on any of the four"
     }
   ]
 }

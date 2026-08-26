@@ -56,9 +56,26 @@ public class ReconciliationTests
     // authorization-baseline.json id for id. 416 = 157 + 116 + 143 - a grown total with unchanged debt,
     // which is what "added a protected endpoint" looks like, exactly as the notes above record for the
     // previous two increments. Had the debt moved this would be a finding instead of an update.
-    private const int FrozenMutating = 416;
+    // ---- Report Studio V2 asset, print and PDF endpoints (TAB-2, reporting) ----
+    //
+    // FOUR new mutating actions, all on the existing ReportStudioApiController, so the controller count
+    // does not move: UploadAsset, DeleteAsset, Print and Pdf. Assets and export were the two things the
+    // designer could not do without leaving the page.
+    //
+    // ALL FOUR AUTHORIZE IN BODY, through IReportAuthorizationService.AuthorizeReportAsync, and each
+    // refuses with NotFound rather than Forbid so the endpoints cannot be used to enumerate a catalogue
+    // the caller may not see. Print and Pdf authorize the DRAFT's dataset; the two asset actions require
+    // authorship, which is satisfied only if the caller may run at least one dataset. A resolved company
+    // is required first in every case. CBA001 does not fire on any of them, so these are in-body
+    // protected endpoints and NOT baseline entries.
+    //
+    // THE FIGURE THAT MATTERS DID NOT MOVE: debt is still 143 and the gap set still matches
+    // authorization-baseline.json id for id. 420 = 157 + 120 + 143 - a grown total with unchanged debt,
+    // which is what "added four protected endpoints" looks like. Had the debt moved, or had the four
+    // arrived without an in-body check, this would be a finding rather than a count update.
+    private const int FrozenMutating = 420;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 116;
+    private const int FrozenInBodyProtected = 120;
 
     /// <summary>The enforced invariant. This one may only ever shrink.</summary>
     private const int FrozenGaps = 143;
