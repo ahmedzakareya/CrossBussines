@@ -126,7 +126,12 @@
         "CrossBuy/BL/Approvals/**",
         "CrossBuy/Controllers/ApprovalsController.cs",
         "CrossBuy/Views/Approvals/**",
-        "CrossBuy/BL/ApprovalInboxDto.cs"
+        "CrossBuy/BL/ApprovalInboxDto.cs",
+        "CrossBuy/Controllers/ProjectController.cs",
+        "CrossBuy/BL/ProjectMembershipService.cs",
+        "CrossBuy/Models/Context/Accounting/ProjectMember.cs",
+        "CrossBuy/Views/Project/Team.cshtml",
+        "CrossBuy.Tests/Projects*Tests.cs"
       ],
       "mayNotTouch": "Other tabs' trees; approval WRITE paths in module services",
       "status": "APPOINTED for read-only approval inbox (owner ruling); wider Workspace R3 scope still unassigned"
