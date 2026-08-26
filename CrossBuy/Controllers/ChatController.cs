@@ -17,17 +17,30 @@ namespace CrossBuy.Controllers
         private readonly IEmployeeService _employees;
         private readonly CrossDbContext _db;
         private readonly IWebHostEnvironment _env;
-        public ChatController(IChatService chat, IEmployeeService employees, CrossDbContext db, IWebHostEnvironment env)
-        { _chat = chat; _employees = employees; _db = db; _env = env; }
+        private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _contexts;
 
+        public ChatController(IChatService chat, IEmployeeService employees, CrossDbContext db, IWebHostEnvironment env,
+            CrossBuy.BL.Platform.IBusinessContextAccessor contexts)
+        { _chat = chat; _employees = employees; _db = db; _env = env; _contexts = contexts; }
+
+        // F5 — THE COMPANY COMES FROM THE RESOLVED BUSINESS CONTEXT.
+        //
+        // This used to read Employee.EmpCompanyID: a column on the person's own record. It is not a
+        // resolved request scope, it ignores company switching entirely, and it made the authorization
+        // company a property of the user row rather than of the request the platform actually resolved.
+        // Every other module answers this question through IBusinessContextAccessor, so chat does too.
+        //
+        // FAIL CLOSED. An unresolved context returns null and every action refuses. That is deliberate:
+        // "we could not establish which company you are acting for" must never degrade into "carry on
+        // without a company filter". ChatService resolves the context independently for exactly the same
+        // reason, so even a caller that got past this one cannot act unscoped.
         private async Task<(int empId, int companyId)?> MeAsync()
         {
-            var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(uid)) return null;
-            var emp = await _employees.GetEmployeeByUserIdAsync(uid);
-            if (emp == null) return null;
-            var companyId = await _db.Employee.AsNoTracking().Where(e => e.ID == emp.ID).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
-            return (emp.ID, companyId);
+            CrossBuy.Models.Platform.BusinessContext? ctx;
+            try { ctx = await _contexts.TryGetCurrentAsync(HttpContext.RequestAborted); }
+            catch (Exception) { return null; }
+            if (ctx == null || ctx.CompanyId <= 0 || ctx.EmployeeId is not > 0) return null;
+            return (ctx.EmployeeId.Value, ctx.CompanyId);
         }
 
         [HttpGet]
@@ -96,13 +109,36 @@ namespace CrossBuy.Controllers
             string? path = null, name = null, type = null;
             if (file != null && file.Length > 0)
             {
+                // F8-A — AUTHORIZE BEFORE ANYTHING REACHES DISK.
+                // The upload used to be written first and the message authorized afterwards, inside
+                // SendAsync. A non-member's message was correctly refused, but their file had already been
+                // saved under wwwroot and stayed there with nothing referencing it — an unauthorized write
+                // and an accumulating orphan. Membership is now proved first, so a refused upload never
+                // creates a file (F8-C).
+                // Refused as JSON, not Forbid(): under the cookie scheme Forbid() issues a 302 to the
+                // access-denied page, and this endpoint is called by fetch() — the client would follow the
+                // redirect and try to parse a login page as JSON. The refusal carries no detail about
+                // whether the conversation exists.
+                if (!await _chat.CanSendToAsync(c))
+                    return new ObjectResult(new { ok = false, code = "not_found" }) { StatusCode = StatusCodes.Status404NotFound };
+
+                // F8-B — CONSERVATIVE ALLOW-LIST, EXTENSION *AND* DECLARED TYPE.
+                // The old code accepted any extension and only used it to choose an icon. Files land under
+                // /uploads/chat, which PrivateFileGate requires authentication for — so this was never an
+                // anonymous hole — but an authenticated colleague opening a .html or .svg attachment would
+                // execute its script in the application's own origin. Active content is therefore refused
+                // outright rather than relied upon to be delivered safely.
+                var ext = Path.GetExtension(file.FileName ?? string.Empty).ToLowerInvariant();
+                if (!ChatAttachments.IsAcceptedType(ext, file.ContentType)) return BadRequest(new { ok = false, code = "attachment_type" });
+
                 var dir = Path.Combine(_env.WebRootPath, "uploads", "chat");
                 if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
-                var ext = Path.GetExtension(file.FileName);
+                // The stored name stays a GUID plus the validated extension — the client filename is never
+                // used to build a path, only kept as a display string.
                 var stored = Guid.NewGuid() + ext;
                 using (var s = System.IO.File.Create(Path.Combine(dir, stored))) await file.CopyToAsync(s);
                 path = "/uploads/chat/" + stored; name = Path.GetFileName(file.FileName);
-                type = new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".avif", ".jfif", ".heic", ".heif", ".ico", ".tif", ".tiff" }.Contains(ext.ToLowerInvariant()) ? "image" : "file";
+                type = ChatAttachments.IsImage(ext) ? "image" : "file";
             }
             var ids = (mentionedIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(s => int.TryParse(s, out var n) ? n : 0).Where(n => n > 0).ToList();

@@ -13,6 +13,26 @@ namespace CrossBuy.Models.Context.Chat
         public DateTime CreatedAt { get; set; }
         public DateTime? LastMessageAt { get; set; }         // for sorting the conversation list
         public string? LastMessagePreview { get; set; }      // short snippet for the list
+
+        // ---- Direct-conversation identity (F4) -------------------------------------------------
+        // A Direct conversation between A and B is ONE conversation per company, and that has to be a
+        // database fact rather than a service convention: find-then-insert loses a race, and two threads
+        // for one pair splits a conversation in half with no way to tell which is real.
+        //
+        // The pair is stored ORDERED — Low is always the smaller employee id — so {A,B} and {B,A} produce
+        // the same key and the symmetry is structural instead of something every caller has to remember.
+        // A filtered UNIQUE index over (CompanyID, DirectKeyLow, DirectKeyHigh) WHERE Kind = 'Direct'
+        // then makes the duplicate physically impossible; see deploy/sql/comm_chat_identity_001.sql.
+        //
+        // Nullable, and null for groups: a Group has a membership list, not a pair, and the filtered index
+        // deliberately ignores those rows so group membership stays free to change.
+        public int? DirectKeyLow { get; set; }
+        public int? DirectKeyHigh { get; set; }
+
+        // Orders a pair into the (Low, High) form the unique index expects. One place, so a caller cannot
+        // accidentally key {B,A} differently from {A,B}.
+        public static (int Low, int High) DirectKey(int employeeA, int employeeB)
+            => employeeA <= employeeB ? (employeeA, employeeB) : (employeeB, employeeA);
     }
 
     public class ConversationMember

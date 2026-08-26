@@ -114,7 +114,7 @@
                                     <i class="ki-outline ki-plus fs-1"></i>
                                     <input type="file" id="chatAttach" class="d-none" />
                                 </label>
-                                <textarea class="form-control cbchat-ta flex-grow-1" rows="1" id="chatInput" placeholder="@Localizer["Type a message"]"></textarea>
+                                <textarea class="form-control cbchat-ta flex-grow-1" rows="1" id="chatInput" maxlength="@CrossBuy.BL.ChatService.MaxMessageLength" placeholder="@Localizer["Type a message"]"></textarea>
                             </div>
                             <button class="btn btn-primary btn-icon cbchat-send" id="chatSend" type="button" title="@Localizer["Send"]"><i class="ki-outline ki-send fs-2"></i></button>
                         </div>
