@@ -724,6 +724,14 @@ app.MapControllerRoute(name: "reports-home", pattern: "Reports",
 app.MapControllerRoute(name: "workspace-home", pattern: "Workspace",
     defaults: new { controller = "Workspace", action = "Index" });
 
+// TAB-3 Internal Chat closure (F7). /Chat returned 404 while /Chat/Index worked: the default route
+// supplies a controller but no action for a single-segment path, so the bare module URL never matched.
+// Comm, Calendar, Reports and Workspace above already each carry this one line; Chat was simply missing
+// from the list, which is why the navigation entry existed and the URL did not resolve. Same pattern,
+// no new screen and no redirect chain.
+app.MapControllerRoute(name: "chat-home", pattern: "Chat",
+    defaults: new { controller = "Chat", action = "Index" });
+
 app.MapControllerRoute(name: "business-event-monitor-home", pattern: "BusinessEventMonitor",
     defaults: new { controller = "BusinessEventMonitor", action = "Index" });
 
