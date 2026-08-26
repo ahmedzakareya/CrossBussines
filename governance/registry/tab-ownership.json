@@ -2,31 +2,6 @@
   "$comment": "Generated from docs/roadmap-v2/_generator. Do not hand-edit; re-run the generator.",
   "tabs": [
     {
-      "tabId": "TAB-0",
-      "tab": "Integration Owner",
-      "scope": "Shared files, integration branch, SQL slice registry, ADR registry, release gates. R1 delivered by TAB-1 acting in this role until appointed.",
-      "ownedPaths": [
-        "CrossBuy/Program.cs",
-        "CrossBuy/Models/Context/CrossDbContext.cs",
-        "CrossBuy/CrossBuy.csproj",
-        "CrossBuy.sln",
-        "CrossBuy/Resources/**",
-        "CrossBuy/Views/Shared/**",
-        "CrossBuy/deploy/**",
-        "deploy/**",
-        "governance/**",
-        ".github/workflows/**",
-        "docs/platform/ADR-*",
-        "docs/deployment/**",
-        "CrossBuy/BL/Platform/**",
-        "CrossBuy/Models/Platform/**",
-        "CrossBuy/Models/Context/Platform/**",
-        "CrossBuy/Hubs/**"
-      ],
-      "mayNotTouch": "Module-owned trees",
-      "status": "TO BE APPOINTED - R1 action"
-    },
-    {
       "tabId": "TAB-1",
       "tab": "First Tab - Core Security and Platform Governance",
       "scope": "Authorization, bootstrap policy, grants, analyzer, security console.",
@@ -44,7 +19,20 @@
         "CrossBuy/Controllers/Api/PlatformGrantsApiController.cs",
         "engineering/**",
         "docs/platform/Stage-002A-*",
-        "docs/roadmap-v2/**"
+        "docs/roadmap-v2/**",
+        "CrossBuy/CrossBuy.csproj",
+        "CrossBuy.sln",
+        "CrossBuy/Resources/**",
+        "CrossBuy/Views/Shared/**",
+        "CrossBuy/deploy/**",
+        "deploy/**",
+        "governance/**",
+        ".github/workflows/**",
+        "docs/platform/ADR-*",
+        "docs/deployment/**",
+        "CrossBuy/BL/Platform/**",
+        "CrossBuy/Models/Platform/**",
+        "CrossBuy/Models/Context/Platform/**"
       ],
       "mayNotTouch": "Reporting, Communication, Construction trees",
       "status": "Active - B6 closed"
@@ -83,7 +71,9 @@
         "CrossBuy/Views/Chat/**",
         "CrossBuy/Resources/Views/Chat/**",
         "CrossBuy/Models/Context/Chat/**",
-        "CrossBuy/deploy/sql/comm_chat_*.sql"
+        "CrossBuy/deploy/sql/comm_chat_*.sql",
+        "CrossBuy/Hubs/ChatHub.cs",
+        "CrossBuy/Hubs/NotificationsHub.cs"
       ],
       "mayNotTouch": "Security, Reporting, Construction trees",
       "status": "Active - foundation complete, activation in R2"
@@ -140,36 +130,6 @@
       ],
       "mayNotTouch": "Other tabs' trees; approval WRITE paths in module services",
       "status": "APPOINTED for read-only approval inbox (owner ruling); wider Workspace R3 scope still unassigned"
-    },
-    {
-      "tabId": "TAB-7",
-      "tab": "Legacy Business Modules - UNASSIGNED",
-      "scope": "Accounting, Inventory, Purchasing, POS, Manufacturing, Projects, HR, CRM and Support - working modules with no active tab.",
-      "ownedPaths": [
-        "CrossBuy/Views/Accounting/**",
-        "CrossBuy/Views/Inventory/**",
-        "CrossBuy/Views/Crm/**",
-        "CrossBuy/Views/Pos/**",
-        "CrossBuy/Views/PosApp/**",
-        "CrossBuy/Views/Hyper/**",
-        "CrossBuy/Views/Project/**",
-        "CrossBuy/Views/People/**",
-        "CrossBuy/Views/Admin/**",
-        "CrossBuy/Views/Service/**",
-        "CrossBuy/Views/Currency/**",
-        "CrossBuy/Views/Store/**",
-        "CrossBuy/Views/Portal/**",
-        "CrossBuy/BL/*.cs",
-        "CrossBuy/Controllers/*.cs",
-        "CrossBuy/Models/Context/*.cs",
-        "CrossBuy/Models/Context/Accounting/**",
-        "CrossBuy/Models/Context/Inventory/**",
-        "CrossBuy/Models/Context/Crm/**",
-        "CrossBuy/Models/Context/Admin/**",
-        "CrossBuy/Models/Context/Pos/**"
-      ],
-      "mayNotTouch": "Other tabs' trees",
-      "status": "UNASSIGNED - legacy modules carry most of the 143 authorization debt"
     }
   ]
 }

@@ -111,7 +111,7 @@
       "path": "governance/registry/**",
       "owner": "Integration Owner - approved shared governance infrastructure",
       "changeRule": "Never hand-edit. Change the canonical dataset in docs/roadmap-v2/_generator and regenerate; every edit needs explicit owner approval (-AllowShared) and must preserve machine-enforced ownership semantics.",
-      "reason": "These registries ARE the ownership rules the checker reads. There is no operational TAB-0 to own them, so they are shared under owner approval rather than assigned - otherwise no ownership ruling can be landed reviewably at all."
+      "reason": "These registries ARE the ownership rules the checker reads. TAB-1 owns governance/** as integration owner, but shared is evaluated BEFORE ownership, so keeping them shared forces an explicit approval on every edit instead of letting the tab that owns the rules change the rules unremarked."
     },
     {
       "fileId": "SHF-17",
@@ -132,7 +132,7 @@
       "path": "CrossBuy/Controllers/AccountingController.cs",
       "owner": "Module surface - integration owner unblock only",
       "changeRule": "Company-context remediation of named read paths only. No posting, stock, journal, receivable or payment behaviour may change under this entry.",
-      "reason": "Invoice read paths still resolve company from a compile-time constant while the product surface above them is company-scoped; TAB-7 is unassigned so the screens cannot be fixed by their owner."
+      "reason": "Invoice read paths still resolve company from a compile-time constant while the product surface above them is company-scoped; the legacy business modules have no tab, so the screens cannot be fixed by their owner."
     },
     {
       "fileId": "SHF-20",
