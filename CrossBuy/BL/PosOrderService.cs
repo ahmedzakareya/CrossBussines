@@ -320,7 +320,16 @@ namespace CrossBuy.BL
 			methodByItem.TryGetValue(l.ItemId, out var method);
 			if (method == "RecipeAtSale")
 			{
-				invLines.Add(new SalesLineInput { ItemDescription = l.ItemName, Qty = qty, UnitPrice = l.UnitPrice, DiscountAmount = discount, TaxRate = l.TaxRate, RevenueAccountId = revenue, ItemId = null, WarehouseId = null });   // revenue only
+				// REVENUE ONLY, BUT ATTRIBUTABLE. The parent carries its ItemId so the sale can be traced to the
+				// dish that was sold; WarehouseId stays null, and that is what keeps it revenue-only.
+				// ReceivableService issues stock for lines matching `ItemId != null && WarehouseId != null && Qty > 0`
+				// (ReceivableService.cs:282), so a null warehouse produces NO stock movement for the parent while the
+				// BOM components below — which do carry a warehouse — remain the only things deducted.
+				//
+				// WHY IT MATTERED. With ItemId null the revenue line named no item, so a RecipeAtSale dish was absent
+				// from every item-level sales read while its ingredients carried the whole COGS. Company-level revenue
+				// and COGS are unchanged by this: same amount, same revenue account, same tax, one more populated column.
+				invLines.Add(new SalesLineInput { ItemDescription = l.ItemName, Qty = qty, UnitPrice = l.UnitPrice, DiscountAmount = discount, TaxRate = l.TaxRate, RevenueAccountId = revenue, ItemId = l.ItemId, WarehouseId = null });   // revenue only, still attributable
 				foreach (var c in bomByItem[l.ItemId])
 				{
 					decimal dq = Math.Round(c.Qty * (1 + c.Scrap / 100m) * qty, 4, MidpointRounding.AwayFromZero);
