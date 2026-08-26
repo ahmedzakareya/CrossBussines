@@ -76,7 +76,14 @@
         "CrossBuy/Models/Communication/**",
         "CrossBuy/deploy/sql/communication_platform_slice_001.sql",
         "CrossBuy/deploy/sql/comm_*",
-        "docs/platform/ADR-03[0-6]*"
+        "docs/platform/ADR-03[0-6]*",
+        "CrossBuy/BL/ChatService.cs",
+        "CrossBuy/Controllers/ChatController.cs",
+        "CrossBuy/Hubs/ChatHub.cs",
+        "CrossBuy/Views/Chat/**",
+        "CrossBuy/Resources/Views/Chat/**",
+        "CrossBuy/Models/Context/Chat/**",
+        "CrossBuy/deploy/sql/comm_chat_*.sql"
       ],
       "mayNotTouch": "Security, Reporting, Construction trees",
       "status": "Active - foundation complete, activation in R2"
