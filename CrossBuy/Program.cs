@@ -443,6 +443,12 @@ builder.Services.AddScoped<IInventoryApprovalService, InventoryApprovalService>(
 // the three module readers registered above and holds no CrossDbContext of its own, so it cannot
 // query a module table even by accident. Read-only - approve/reject stay with the module services.
 builder.Services.AddScoped<CrossBuy.BL.Approvals.IApprovalInboxService, CrossBuy.BL.Approvals.ApprovalInboxService>();
+
+// Projects membership writer (TAB-6, narrow Projects foundation ownership). The ONE registration this
+// pass adds. dbo.ProjectMembers had two readers and no writer, so a company that configured its first
+// Projects role would have locked every non-role-holder out of its own projects. This service holds no
+// permission rule of its own - it asks IProjectsAccessService, registered above, for every decision.
+builder.Services.AddScoped<IProjectMembershipService, ProjectMembershipService>();
 builder.Services.AddScoped<IOpeningBalanceService, OpeningBalanceService>();
 builder.Services.AddScoped<IIntegrityCheckService, IntegrityCheckService>();
 builder.Services.AddHostedService<IntegrityCheckHostedService>();

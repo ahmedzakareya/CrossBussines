@@ -73,12 +73,32 @@ public class ReconciliationTests
     // authorization-baseline.json id for id. 420 = 157 + 120 + 143 - a grown total with unchanged debt,
     // which is what "added four protected endpoints" looks like. Had the debt moved, or had the four
     // arrived without an in-body check, this would be a finding rather than a count update.
-    private const int FrozenMutating = 420;
+    // ----------------------------------------------------------------------------------------------
+    // Projects security + membership foundation (TAB-6, 2026-08-26).
+    //
+    // THE FIGURE THAT MATTERS FINALLY MOVED, AND IT MOVED DOWN: debt 143 -> 136. Every increment above
+    // this one recorded a grown total with UNCHANGED debt; this is the first that pays some back.
+    //
+    // SEVEN ENTRIES WERE REMOVED, not reclassified. ProjectController.SaveProject, DeleteProject,
+    // SaveProgress, ConfirmProgress, DeleteProgress, SaveActivityType and DeleteActivityType carried no
+    // authorization at all - they were Stage 1 debt, frozen since Batch-00. They now authorize in body
+    // through IProjectsAccessService.CanAsync before they act, so CBA004 FIRED on all seven and was
+    // resolved by REMOVING their baseline entries, which is the only direction this list may move.
+    //
+    // THREE NEW MUTATING ACTIONS ARRIVED PROTECTED: AddMember, UpdateMember and EndMember, the writer for
+    // dbo.ProjectMembers - a table that until this batch had two readers and no writer, so the record-level
+    // project access model could not be populated at all. Each resolves the company server-side and asks
+    // ProjectsAccessService for 'manage' on the target project before it writes; CBA001 fires on none of
+    // them. So mutating grows 420 -> 423 and in-body protected grows 120 -> 130 (+7 closed, +3 new).
+    //
+    // 423 = 157 + 130 + 136. Attribute-protected did not move.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 423;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 120;
+    private const int FrozenInBodyProtected = 130;
 
-    /// <summary>The enforced invariant. This one may only ever shrink.</summary>
-    private const int FrozenGaps = 143;
+    /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
+    private const int FrozenGaps = 136;
 
     // Controllers carrying at least one endpoint the analyzer models. Grew 40 -> 44 with the platform
     // modernization controllers that arrived with the same increment (Reporting, Workspace, Calendar and the

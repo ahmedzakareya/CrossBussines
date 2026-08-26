@@ -17,7 +17,6 @@ namespace CrossBuy.Controllers
 	[SessionValidation]
 	public class ProjectController : Controller
 	{
-		private const int DefaultCompanyId = 1;
 		private readonly IProjectService _projects;
 		private readonly IBoqService _boq;
 		private readonly IContractService _contract;
@@ -33,6 +32,8 @@ namespace CrossBuy.Controllers
 		private readonly CrossDbContext _db;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
 		private readonly IProjectsAccessService _projectsAccess;
+		// Batch: Projects foundation. The writer for dbo.ProjectMembers - see ProjectMembershipService.
+		private readonly IProjectMembershipService _members;
 		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _businessContexts;
 		// D1 Wave 1: the validated company source (CORRECTION-005) and the accounting right that GL-posting needs.
 		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
@@ -43,10 +44,10 @@ namespace CrossBuy.Controllers
 
 		public ProjectController(IProjectService projects, IBoqService boq, IContractService contract, IProgressService progress, IProgressBillingService billing, IProjectMaterialIssueService material, IProjectLaborService labor, IProjectBudgetService budget, ISubcontractBillingService subcontract, IVariationOrderService variation, IEquipmentDepreciationService equipDep, ICostCenterService costCenters, CrossDbContext db,
 			// Stage 1 Batch C — projects access service + session-free context, for the BOQ proof endpoint.
-			IProjectsAccessService projectsAccess, CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts,
+			IProjectsAccessService projectsAccess, IProjectMembershipService members, CrossBuy.BL.Platform.IBusinessContextAccessor businessContexts,
 			CrossBuy.BL.Platform.IRequestCompanyResolver company, AccountingAccessService accounting,
 			IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _projectsAccess = projectsAccess; _businessContexts = businessContexts; _projects = projects; _boq = boq; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; _company = company; _accounting = accounting; }
+		{ _projectsAccess = projectsAccess; _members = members; _businessContexts = businessContexts; _projects = projects; _boq = boq; _contract = contract; _progress = progress; _billing = billing; _material = material; _labor = labor; _budget = budget; _subcontract = subcontract; _variation = variation; _equipDep = equipDep; _costCenters = costCenters; _db = db; L = localizer; _company = company; _accounting = accounting; }
 
 		// Projects & Contracting is its OWN system → show its sidebar (not Accounting/Admin).
 		public override void OnActionExecuting(ActionExecutingContext context)
@@ -109,20 +110,48 @@ namespace CrossBuy.Controllers
 		}
 
 
-		// dropdown data for the project form
-		private async Task PopulateFormListsAsync()
+		// COMPANY-LEVEL GATE - for the screens and lookups that are not about one project.
+		//
+		// Same two steps as GateAsync and the same single refusal, minus the record: it resolves the
+		// company server-side and asks ProjectsAccessService for a MODULE-level right. Passing no target
+		// is what makes it module-level - membership is evaluated against a project, so a member cannot
+		// satisfy a check that names no project. That is the property the list and lookup screens need.
+		private async Task<ProjectGate> CompanyGateAsync(string action)
 		{
-			ViewBag.Customers = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == DefaultCompanyId)
+			IActionResult Deny()
+			{
+				TempData["PrjErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Projects));
+			}
+
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return new ProjectGate { Denied = Deny() };
+
+			var ctx = await _businessContexts.TryGetCurrentAsync();
+			if (ctx == null) return new ProjectGate { Denied = Deny() };
+
+			if (!await _projectsAccess.CanAsync(ctx, action, null))
+				return new ProjectGate { Denied = Deny() };
+
+			return new ProjectGate { Ok = true, CompanyId = scope.CompanyId };
+		}
+
+		// dropdown data for the project form
+		private async Task PopulateFormListsAsync(int companyId)
+		{
+			ViewBag.Customers = await _db.Customers.AsNoTracking().Where(c => c.CompanyID == companyId)
 				.OrderBy(c => c.Name).ToListAsync();
-			ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId, activeOnly: true);
-			ViewBag.ActivityTypes = await _projects.GetActivityTypesAsync(DefaultCompanyId, activeOnly: true);
+			ViewBag.CostCenters = await _costCenters.GetFlatAsync(companyId, activeOnly: true);
+			ViewBag.ActivityTypes = await _projects.GetActivityTypesAsync(companyId, activeOnly: true);
 		}
 
 		// ===== Main dashboard (system landing) — live stats, no fabricated data =====
 		[HttpGet]
 		public async Task<IActionResult> Dashboard()
 		{
-			var companyId = DefaultCompanyId;
+			var gate = await CompanyGateAsync(ProjectsActions.Read);
+			if (!gate.Ok) return gate.Denied!;
+			var companyId = gate.CompanyId;
 			var projects = await _db.Projects.AsNoTracking().Where(p => p.CompanyID == companyId).ToListAsync();
 			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 			string Bucket(Project p) => string.IsNullOrEmpty(p.Status) ? (p.IsActive ? "Active" : "Draft") : p.Status!;
@@ -170,10 +199,12 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Projects(string? q, string? status)
 		{
+			var gate = await CompanyGateAsync(ProjectsActions.Read);
+			if (!gate.Ok) return gate.Denied!;
 			bool? active = status == "active" ? true : status == "inactive" ? false : (bool?)null;
 			ViewBag.Q = q; ViewBag.Status = status;
-			await PopulateFormListsAsync();
-			return View(await _projects.GetProjectsAsync(DefaultCompanyId, q, active));
+			await PopulateFormListsAsync(gate.CompanyId);
+			return View(await _projects.GetProjectsAsync(gate.CompanyId, q, active));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
@@ -182,9 +213,17 @@ namespace CrossBuy.Controllers
 			int? customerId, string? location, decimal? contractValue, string? status, int? activityTypeId, int? costCenterId,
 			decimal? advancePercent, decimal? retentionPercent)
 		{
+			// Creating a project is a MODULE right and editing one is a RECORD right, so this action asks
+			// two different questions. `create` is deliberately absent from the membership path in
+			// ProjectsAccessService - you cannot be a member of a project that does not exist yet - so a
+			// non-role holder cannot create, while a project Member may still edit the project they are on.
+			var gate = id > 0
+				? await GateAsync(ProjectsActions.Edit, id)
+				: await CompanyGateAsync(ProjectsActions.Create);
+			if (!gate.Ok) return gate.Denied!;
 			var (ok, err, _) = await _projects.SaveAsync(new Project
 			{
-				ID = id, CompanyID = DefaultCompanyId, Code = code ?? "", Name = name ?? "", NameEn = nameEn ?? "",
+				ID = id, CompanyID = gate.CompanyId, Code = code ?? "", Name = name ?? "", NameEn = nameEn ?? "",
 				IsActive = isActive, StartDate = startDate, EndDate = endDate, Budget = budget,
 				CustomerId = customerId, Location = location, ContractValue = contractValue,
 				Status = status, ActivityTypeId = activityTypeId, CostCenterId = costCenterId,
@@ -197,7 +236,12 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteProject(int id)
 		{
-			var (ok, err) = await _projects.DeleteAsync(DefaultCompanyId, id);
+			// `close` and not `manage`: ProjectsAccessService returns false for close on the membership
+			// path, so deleting a project stays with the module role even for that project's own manager.
+			// Destroying the record is at least as administrative as freezing it.
+			var gate = await GateAsync(ProjectsActions.Close, id);
+			if (!gate.Ok) return gate.Denied!;
+			var (ok, err) = await _projects.DeleteAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Project deleted"].Value : err;
 			return RedirectToAction(nameof(Projects));
 		}
@@ -205,16 +249,20 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Profitability(DateTime? from, DateTime? to)
 		{
+			var gate = await CompanyGateAsync(ProjectsActions.BudgetView);
+			if (!gate.Ok) return gate.Denied!;
 			var f = from ?? new DateTime(DateTime.Today.Year, 1, 1);
 			var t = to ?? DateTime.Today;
 			ViewBag.From = f; ViewBag.To = t;
-			return View(await _projects.ProfitabilityAsync(DefaultCompanyId, f, t));
+			return View(await _projects.ProfitabilityAsync(gate.CompanyId, f, t));
 		}
 
 		// ---- BOQ (P1): inline editor per project ----
 		[HttpGet]
 		public async Task<IActionResult> Boq(int id)
 		{
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
 			// ===== Stage 1 Batch C proof endpoint (Projects) =====
 			// Before this batch there was no project record-level access AT ALL — `Project` had no member,
 			// manager or owner column, so any signed-in employee could open any project's BOQ. ProjectMembers
@@ -229,11 +277,11 @@ namespace CrossBuy.Controllers
 			// Refused and absent answer IDENTICALLY, so project ids cannot be enumerated by probing.
 			if (!mayRead) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			ViewBag.Summary = await _boq.GetSummaryAsync(DefaultCompanyId, id);
-			return View(await _boq.GetForProjectAsync(DefaultCompanyId, id));
+			ViewBag.Summary = await _boq.GetSummaryAsync(gate.CompanyId, id);
+			return View(await _boq.GetForProjectAsync(gate.CompanyId, id));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
@@ -254,14 +302,16 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Advance(int? projectId)
 		{
-			ViewBag.Projects = await _projects.GetProjectsAsync(DefaultCompanyId, null, true);
+			var gate = await CompanyGateAsync(ProjectsActions.BudgetView);
+			if (!gate.Ok) return gate.Denied!;
+			ViewBag.Projects = await _projects.GetProjectsAsync(gate.CompanyId, null, true);
 			ViewBag.CashAccounts = await _db.Accounts.AsNoTracking()
-				.Where(a => a.CompanyID == DefaultCompanyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101"))
+				.Where(a => a.CompanyID == gate.CompanyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101"))
 				.OrderBy(a => a.Code).ToListAsync();
-			var advAcc = await _db.Accounts.Where(a => a.CompanyID == DefaultCompanyId && a.Code == ContractService.AdvanceAccountCode).Select(a => a.ID).FirstOrDefaultAsync();
+			var advAcc = await _db.Accounts.Where(a => a.CompanyID == gate.CompanyId && a.Code == ContractService.AdvanceAccountCode).Select(a => a.ID).FirstOrDefaultAsync();
 			var bals = await (from l in _db.JournalEntryLines.AsNoTracking()
 							  join en in _db.JournalEntries.AsNoTracking() on l.JournalEntryId equals en.ID
-							  where en.CompanyID == DefaultCompanyId && en.Status == "Posted" && l.AccountId == advAcc && l.ProjectId != null
+							  where en.CompanyID == gate.CompanyId && en.Status == "Posted" && l.AccountId == advAcc && l.ProjectId != null
 							  group l by l.ProjectId!.Value into g
 							  select new { pid = g.Key, bal = g.Sum(x => x.Credit - x.Debit) }).ToListAsync();
 			ViewBag.AdvBalances = bals.ToDictionary(x => x.pid, x => Math.Round(x.bal, 2));
@@ -287,14 +337,16 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> RetentionRelease(int? projectId)
 		{
-			ViewBag.Projects = await _projects.GetProjectsAsync(DefaultCompanyId, null, true);
+			var gate = await CompanyGateAsync(ProjectsActions.BudgetView);
+			if (!gate.Ok) return gate.Denied!;
+			ViewBag.Projects = await _projects.GetProjectsAsync(gate.CompanyId, null, true);
 			ViewBag.CashAccounts = await _db.Accounts.AsNoTracking()
-				.Where(a => a.CompanyID == DefaultCompanyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101"))
+				.Where(a => a.CompanyID == gate.CompanyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101"))
 				.OrderBy(a => a.Code).ToListAsync();
-			var retAcc = await _db.Accounts.Where(a => a.CompanyID == DefaultCompanyId && a.Code == ContractService.RetentionAccountCode).Select(a => a.ID).FirstOrDefaultAsync();
+			var retAcc = await _db.Accounts.Where(a => a.CompanyID == gate.CompanyId && a.Code == ContractService.RetentionAccountCode).Select(a => a.ID).FirstOrDefaultAsync();
 			var bals = await (from l in _db.JournalEntryLines.AsNoTracking()
 							  join en in _db.JournalEntries.AsNoTracking() on l.JournalEntryId equals en.ID
-							  where en.CompanyID == DefaultCompanyId && en.Status == "Posted" && l.AccountId == retAcc && l.ProjectId != null
+							  where en.CompanyID == gate.CompanyId && en.Status == "Posted" && l.AccountId == retAcc && l.ProjectId != null
 							  group l by l.ProjectId!.Value into g
 							  select new { pid = g.Key, bal = g.Sum(x => x.Debit - x.Credit) }).ToListAsync();   // asset = debit-normal
 			ViewBag.RetBalances = bals.ToDictionary(x => x.pid, x => Math.Round(x.bal, 2));
@@ -318,14 +370,16 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> SubRetentionRelease(int? projectId)
 		{
-			ViewBag.Projects = await _projects.GetProjectsAsync(DefaultCompanyId, null, true);
+			var gate = await CompanyGateAsync(ProjectsActions.BudgetView);
+			if (!gate.Ok) return gate.Denied!;
+			ViewBag.Projects = await _projects.GetProjectsAsync(gate.CompanyId, null, true);
 			ViewBag.CashAccounts = await _db.Accounts.AsNoTracking()
-				.Where(a => a.CompanyID == DefaultCompanyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101"))
+				.Where(a => a.CompanyID == gate.CompanyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101"))
 				.OrderBy(a => a.Code).ToListAsync();
-			var retAcc = await _db.Accounts.Where(a => a.CompanyID == DefaultCompanyId && a.Code == ContractService.SubRetentionAccountCode).Select(a => a.ID).FirstOrDefaultAsync();
+			var retAcc = await _db.Accounts.Where(a => a.CompanyID == gate.CompanyId && a.Code == ContractService.SubRetentionAccountCode).Select(a => a.ID).FirstOrDefaultAsync();
 			var bals = await (from l in _db.JournalEntryLines.AsNoTracking()
 							  join en in _db.JournalEntries.AsNoTracking() on l.JournalEntryId equals en.ID
-							  where en.CompanyID == DefaultCompanyId && en.Status == "Posted" && l.AccountId == retAcc && l.ProjectId != null
+							  where en.CompanyID == gate.CompanyId && en.Status == "Posted" && l.AccountId == retAcc && l.ProjectId != null
 							  group l by l.ProjectId!.Value into g
 							  select new { pid = g.Key, bal = g.Sum(x => x.Credit - x.Debit) }).ToListAsync();   // liability = credit-normal
 			ViewBag.RetBalances = bals.ToDictionary(x => x.pid, x => Math.Round(x.bal, 2));
@@ -349,20 +403,24 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Progress(int id, int? m)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.Read, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			ViewBag.Measurements = await _progress.GetMeasurementsAsync(DefaultCompanyId, id);
-			return View(await _progress.BuildEditModelAsync(DefaultCompanyId, id, m));
+			ViewBag.Measurements = await _progress.GetMeasurementsAsync(gate.CompanyId, id);
+			return View(await _progress.BuildEditModelAsync(gate.CompanyId, id, m));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveProgress(int projectId, int measurementId, DateTime measurementDate, string? note, string rowsJson)
 		{
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
 			List<ProgressRowInput> rows;
 			try { rows = System.Text.Json.JsonSerializer.Deserialize<List<ProgressRowInput>>(rowsJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); }
 			catch { rows = new(); }
-			var (ok, err, sid) = await _progress.SaveMeasurementAsync(DefaultCompanyId, projectId, measurementId, measurementDate, note, rows, null);
+			var (ok, err, sid) = await _progress.SaveMeasurementAsync(gate.CompanyId, projectId, measurementId, measurementDate, note, rows, null);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress measurement saved"].Value : err;
 			return RedirectToAction(nameof(Progress), new { id = projectId, m = ok ? sid : measurementId });
 		}
@@ -370,7 +428,9 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ConfirmProgress(int id, int projectId)
 		{
-			var (ok, err) = await _progress.ConfirmAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+			var (ok, err) = await _progress.ConfirmAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Measurement confirmed"].Value : err;
 			return RedirectToAction(nameof(Progress), new { id = projectId, m = id });
 		}
@@ -378,7 +438,9 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteProgress(int id, int projectId)
 		{
-			var (ok, err) = await _progress.DeleteAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.Edit, projectId);
+			if (!gate.Ok) return gate.Denied!;
+			var (ok, err) = await _progress.DeleteAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Measurement deleted"].Value : err;
 			return RedirectToAction(nameof(Progress), new { id = projectId });
 		}
@@ -387,14 +449,16 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Billing(int id, int? m, int? b, decimal? taxRate, bool neu = false)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			ViewBag.Billings = await _billing.GetBillingsAsync(DefaultCompanyId, id);
+			ViewBag.Billings = await _billing.GetBillingsAsync(gate.CompanyId, id);
 			// show the editor only when the user explicitly starts a new billing (neu) or opens an existing one (b/m);
 			// otherwise the landing shows the list + a CTA, so «New billing» is a visible action, not a silent refresh.
 			ViewBag.ShowEditor = neu || (b.HasValue && b.Value > 0) || (m.HasValue && m.Value > 0);
-			return View(await _billing.BuildPreviewAsync(DefaultCompanyId, id, m, b, taxRate));
+			return View(await _billing.BuildPreviewAsync(gate.CompanyId, id, m, b, taxRate));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
@@ -445,18 +509,20 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> MaterialIssues(int id, int? b, int? w)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			ViewBag.Issues = await _material.GetIssuesAsync(DefaultCompanyId, id);
-			ViewBag.Warehouses = await _db.Warehouses.AsNoTracking().Where(x => x.CompanyID == DefaultCompanyId).OrderBy(x => x.Code).ToListAsync();
-			ViewBag.BoqItems = await _db.BoqItems.AsNoTracking().Where(x => x.CompanyID == DefaultCompanyId && x.ProjectId == id).OrderBy(x => x.SortOrder).ToListAsync();
+			ViewBag.Issues = await _material.GetIssuesAsync(gate.CompanyId, id);
+			ViewBag.Warehouses = await _db.Warehouses.AsNoTracking().Where(x => x.CompanyID == gate.CompanyId).OrderBy(x => x.Code).ToListAsync();
+			ViewBag.BoqItems = await _db.BoqItems.AsNoTracking().Where(x => x.CompanyID == gate.CompanyId && x.ProjectId == id).OrderBy(x => x.SortOrder).ToListAsync();
 			ViewBag.SelectedWarehouseId = w;
-			ViewBag.EditIssue = b.HasValue && b.Value > 0 ? await _material.GetAsync(DefaultCompanyId, b.Value) : null;
+			ViewBag.EditIssue = b.HasValue && b.Value > 0 ? await _material.GetAsync(gate.CompanyId, b.Value) : null;
 			if (w.HasValue && w.Value > 0)
 				ViewBag.Balances = await (from sb in _db.StockBalances.AsNoTracking()
 										  join it in _db.Items.AsNoTracking() on sb.ItemId equals it.ID
-										  where sb.CompanyID == DefaultCompanyId && sb.WarehouseId == w.Value && sb.QtyOnHand > 0
+										  where sb.CompanyID == gate.CompanyId && sb.WarehouseId == w.Value && sb.QtyOnHand > 0
 										  orderby it.ItemCode
 										  select new ProjectStockRow { ItemId = sb.ItemId, ItemCode = it.ItemCode, Name = it.Name, NameEn = it.NameEn, QtyOnHand = sb.QtyOnHand }).ToListAsync();
 			return View();
@@ -502,10 +568,12 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Labor(int id)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			return View(await _labor.GetProjectLaborAsync(DefaultCompanyId, id));
+			return View(await _labor.GetProjectLaborAsync(gate.CompanyId, id));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
@@ -523,25 +591,29 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Budget(int id)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
-			return View(await _budget.GetBudgetVsActualAsync(DefaultCompanyId, id));
+			return View(await _budget.GetBudgetVsActualAsync(gate.CompanyId, id));
 		}
 
 		// ---- P6-ج: subcontractor / equipment billing (via PayableService) ----
 		[HttpGet]
 		public async Task<IActionResult> Subcontracts(int id, int? sc, int? b, decimal? cumulativeWork, decimal? taxRate)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			ViewBag.Subcontracts = await _subcontract.GetSubcontractsAsync(DefaultCompanyId, id);
-			ViewBag.Vendors = await _db.Vendors.AsNoTracking().Where(v => v.CompanyID == DefaultCompanyId && v.IsActive).OrderBy(v => v.Name).ToListAsync();
+			ViewBag.Subcontracts = await _subcontract.GetSubcontractsAsync(gate.CompanyId, id);
+			ViewBag.Vendors = await _db.Vendors.AsNoTracking().Where(v => v.CompanyID == gate.CompanyId && v.IsActive).OrderBy(v => v.Name).ToListAsync();
 			ViewBag.SelectedSubcontractId = sc;
 			if (sc.HasValue && sc.Value > 0)
 			{
-				ViewBag.Billings = await _subcontract.GetBillingsAsync(DefaultCompanyId, sc.Value);
-				ViewBag.Preview = await _subcontract.BuildPreviewAsync(DefaultCompanyId, sc.Value, b, cumulativeWork, taxRate);
+				ViewBag.Billings = await _subcontract.GetBillingsAsync(gate.CompanyId, sc.Value);
+				ViewBag.Preview = await _subcontract.BuildPreviewAsync(gate.CompanyId, sc.Value, b, cumulativeWork, taxRate);
 			}
 			return View();
 		}
@@ -605,13 +677,15 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> VariationOrders(int id, int? vo)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			ViewBag.Orders = await _variation.GetForProjectAsync(DefaultCompanyId, id);
-			ViewBag.Revised = await _variation.RevisedContractValueAsync(DefaultCompanyId, id);
-			ViewBag.BoqItems = await _db.BoqItems.AsNoTracking().Where(x => x.CompanyID == DefaultCompanyId && x.ProjectId == id).OrderBy(x => x.SortOrder).ToListAsync();
-			ViewBag.EditOrder = vo.HasValue && vo.Value > 0 ? await _variation.GetAsync(DefaultCompanyId, vo.Value) : null;
+			ViewBag.Orders = await _variation.GetForProjectAsync(gate.CompanyId, id);
+			ViewBag.Revised = await _variation.RevisedContractValueAsync(gate.CompanyId, id);
+			ViewBag.BoqItems = await _db.BoqItems.AsNoTracking().Where(x => x.CompanyID == gate.CompanyId && x.ProjectId == id).OrderBy(x => x.SortOrder).ToListAsync();
+			ViewBag.EditOrder = vo.HasValue && vo.Value > 0 ? await _variation.GetAsync(gate.CompanyId, vo.Value) : null;
 			return View();
 		}
 
@@ -655,12 +729,14 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> EquipmentDepreciation(int id, int? a)
 		{
-			var prj = await _projects.GetAsync(DefaultCompanyId, id);
+			var gate = await GateAsync(ProjectsActions.BudgetView, id);
+			if (!gate.Ok) return gate.Denied!;
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
 			if (prj == null) { TempData["PrjErr"] = L["Project not found"].Value; return RedirectToAction(nameof(Projects)); }
 			ViewBag.Project = prj;
-			ViewBag.Allocations = await _equipDep.GetForProjectAsync(DefaultCompanyId, id);
-			ViewBag.Assets = await _equipDep.GetAssetsAsync(DefaultCompanyId);
-			ViewBag.EditAlloc = a.HasValue && a.Value > 0 ? await _equipDep.GetAsync(DefaultCompanyId, a.Value) : null;
+			ViewBag.Allocations = await _equipDep.GetForProjectAsync(gate.CompanyId, id);
+			ViewBag.Assets = await _equipDep.GetAssetsAsync(gate.CompanyId);
+			ViewBag.EditAlloc = a.HasValue && a.Value > 0 ? await _equipDep.GetAsync(gate.CompanyId, a.Value) : null;
 			return View();
 		}
 
@@ -698,16 +774,101 @@ namespace CrossBuy.Controllers
 			return RedirectToAction(nameof(EquipmentDepreciation), new { id = projectId });
 		}
 
+		// ===== PROJECT TEAM =====
+		//
+		// The only new screen in this pass, and it is here for a security reason rather than a product one:
+		// dbo.ProjectMembers had no writer, so a company that configured its first Projects role would have
+		// dropped every non-role-holder to AccessScope.None() with no way to grant anybody membership.
+		//
+		// Each action gates for the COMPANY and the redirect, then calls the service - which asks
+		// ProjectsAccessService again for itself. That repetition is deliberate: the service is the security
+		// boundary and must hold for any caller, not only for one that came through this controller.
+		[HttpGet]
+		public async Task<IActionResult> Team(int id)
+		{
+			var gate = await GateAsync(ProjectsActions.Read, id);
+			if (!gate.Ok) return gate.Denied!;
+
+			var prj = await _projects.GetAsync(gate.CompanyId, id);
+			if (prj == null) return RedirectToAction(nameof(Projects));
+			ViewBag.Project = prj;
+
+			var ctx = await _businessContexts.TryGetCurrentAsync();
+			ViewBag.Members = ctx == null
+				? new List<ProjectMemberRow>()
+				: await _members.ListAsync(ctx, id);
+
+			// Only this company's active employees are offered. The service re-checks the employee's company
+			// from the employee row, so a tampered form post cannot add somebody who is not in this list.
+			// SelectListItem and not an anonymous type: views compile into their own assembly, so a `dynamic`
+			// over an anonymous type declared here throws RuntimeBinderException at render time.
+			ViewBag.Employees = await _db.Employee.AsNoTracking()
+				.Where(e => e.EmpCompanyID == gate.CompanyId && e.IsActive)
+				.OrderBy(e => e.FullName)
+				.Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(e.FullName, e.ID.ToString()))
+				.ToListAsync();
+
+			ViewBag.Roles = ProjectMemberRoles.All;
+			ViewBag.CanManage = ctx != null
+				&& await _projectsAccess.CanAsync(ctx, ProjectsActions.Manage, PermissionTarget.ForProject(id));
+			return View();
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> AddMember(int projectId, int employeeId, string role, decimal? allocationPct)
+		{
+			var gate = await GateAsync(ProjectsActions.Manage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+			var ctx = await _businessContexts.TryGetCurrentAsync();
+			if (ctx == null) return RedirectToAction(nameof(Projects));
+
+			var (ok, err, _) = await _members.AddAsync(ctx, projectId, employeeId, role ?? "", allocationPct);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Member added"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Team), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> UpdateMember(int projectId, int membershipId, string role, decimal? allocationPct)
+		{
+			var gate = await GateAsync(ProjectsActions.Manage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+			var ctx = await _businessContexts.TryGetCurrentAsync();
+			if (ctx == null) return RedirectToAction(nameof(Projects));
+
+			var (ok, err) = await _members.UpdateAsync(ctx, projectId, membershipId, role ?? "", allocationPct);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Member updated"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Team), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> EndMember(int projectId, int membershipId)
+		{
+			var gate = await GateAsync(ProjectsActions.Manage, projectId);
+			if (!gate.Ok) return gate.Denied!;
+			var ctx = await _businessContexts.TryGetCurrentAsync();
+			if (ctx == null) return RedirectToAction(nameof(Projects));
+
+			var (ok, err) = await _members.EndAsync(ctx, projectId, membershipId);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Membership ended"].Value : L[err ?? ""].Value;
+			return RedirectToAction(nameof(Team), new { id = projectId });
+		}
+
 		// ---- Project activity types (user-defined lookup) ----
 		[HttpGet]
 		public async Task<IActionResult> ActivityTypes()
-			=> View(await _projects.GetActivityTypesAsync(DefaultCompanyId));
+		{
+			var gate = await CompanyGateAsync(ProjectsActions.Read);
+			if (!gate.Ok) return gate.Denied!;
+			return View(await _projects.GetActivityTypesAsync(gate.CompanyId));
+		}
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveActivityType(int id, string code, string name, string? nameEn, bool isActive)
 		{
+			var gate = await CompanyGateAsync(ProjectsActions.Read);
+			if (!gate.Ok) return gate.Denied!;
 			var (ok, err, _) = await _projects.SaveActivityTypeAsync(new ProjectActivityType
-			{ ID = id, CompanyID = DefaultCompanyId, Code = code ?? "", Name = name ?? "", NameEn = nameEn ?? "", IsActive = isActive });
+			{ ID = id, CompanyID = gate.CompanyId, Code = code ?? "", Name = name ?? "", NameEn = nameEn ?? "", IsActive = isActive });
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Saved"].Value : err;
 			return RedirectToAction(nameof(ActivityTypes));
 		}
@@ -715,7 +876,9 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteActivityType(int id)
 		{
-			var (ok, err) = await _projects.DeleteActivityTypeAsync(DefaultCompanyId, id);
+			var gate = await CompanyGateAsync(ProjectsActions.Manage);
+			if (!gate.Ok) return gate.Denied!;
+			var (ok, err) = await _projects.DeleteActivityTypeAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Deleted"].Value : err;
 			return RedirectToAction(nameof(ActivityTypes));
 		}

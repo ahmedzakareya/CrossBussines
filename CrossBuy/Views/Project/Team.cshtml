@@ -1,0 +1,155 @@
+@using CrossBuy.Models.Context.Accounting
+@using CrossBuy.BL
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var prj = ViewBag.Project as Project;
+    var members = ViewBag.Members as List<ProjectMemberRow> ?? new List<ProjectMemberRow>();
+    var roles = ViewBag.Roles as IReadOnlyList<string> ?? new List<string>();
+    var canManage = ViewBag.CanManage is true;
+    string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
+    var active = members.Where(m => m.IsActive && m.LeftAt == null).ToList();
+    var ended = members.Where(m => !(m.IsActive && m.LeftAt == null)).ToList();
+}
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0">@Localizer["Project team"]</h1>
+            <span class="text-gray-700 fs-7">@(prj == null ? "" : prj.Code + " — " + nm(prj.Name, prj.NameEn))</span></div>
+        <a href="@Url.Action("Projects","Project")" class="btn btn-light"><i class="ki-outline ki-arrow-@(isAr ? "right" : "left") fs-2"></i>@Localizer["Projects"]</a>
+    </div></div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+        @if (TempData["PrjMsg"] != null) { <div class="alert alert-success text-gray-800">@TempData["PrjMsg"]</div> }
+        @if (TempData["PrjErr"] != null) { <div class="alert alert-danger text-gray-800">@TempData["PrjErr"]</div> }
+
+        @* States the rule the screen enforces, because "Member" reads like it should include the money. *@
+        <div class="alert alert-light-primary d-flex align-items-center">
+            <i class="ki-outline ki-information-5 fs-2 me-3"></i>
+            <span>@Localizer["Membership grants access to this project's record. Manager may also manage this team. Membership never grants budget, billing or company-wide project administration."]</span>
+        </div>
+
+        @if (canManage)
+        {
+            <div class="card mb-5">
+                <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Add member"]</h3></div>
+                <div class="card-body pt-4">
+                    <form method="post" action="@Url.Action("AddMember","Project")" class="row g-3 align-items-end">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Employee"]</label>
+                            <select name="employeeId" class="form-select" required>
+                                <option value="">@Localizer["Select an employee"]</option>
+                                @foreach (var e in (ViewBag.Employees as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>) ?? new())
+                                {
+                                    <option value="@e.Value">@e.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Role"]</label>
+                            <select name="role" class="form-select">
+                                @foreach (var r in roles) { <option value="@r">@Localizer[r]</option> }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold text-gray-800">@Localizer["Allocation %"]</label>
+                            <input type="number" name="allocationPct" class="form-control" min="0" max="100" step="0.01" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add"]</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Team"]</h3></div>
+            <div class="card-body pt-2">
+                @if (!members.Any())
+                {
+                    <div class="text-gray-700 fs-6 py-6 text-center">@Localizer["Nobody is on this project yet."]</div>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle" style="font-variant-numeric:tabular-nums;">
+                        <thead><tr class="fw-bold text-gray-700 fs-7 text-uppercase">
+                            <th>@Localizer["Employee"]</th>
+                            <th class="w-150px">@Localizer["Role"]</th>
+                            <th class="text-end w-125px">@Localizer["Allocation %"]</th>
+                            <th class="w-125px">@Localizer["Joined"]</th>
+                            <th class="text-center w-125px">@SR["Status"]</th>
+                            @if (canManage) { <th class="w-250px"></th> }
+                        </tr></thead>
+                        <tbody>
+                        @foreach (var m in active)
+                        {
+                            <tr>
+                                <td class="fw-bold text-gray-900">@m.EmployeeName</td>
+                                <td>
+                                    @if (canManage)
+                                    {
+                                        <form method="post" action="@Url.Action("UpdateMember","Project")" class="d-flex gap-2 align-items-center">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+                                            <input type="hidden" name="membershipId" value="@m.Id" />
+                                            <select name="role" class="form-select form-select-sm w-125px">
+                                                @foreach (var r in roles)
+                                                {
+                                                    <option value="@r" selected="@(r == m.RoleOnProject)">@Localizer[r]</option>
+                                                }
+                                            </select>
+                                            <input type="number" name="allocationPct" class="form-control form-control-sm w-100px"
+                                                   min="0" max="100" step="0.01" value="@(m.AllocationPct?.ToString("0.##"))" />
+                                            <button type="submit" class="btn btn-sm btn-light-primary">@SR["Save"]</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-light-primary text-gray-800">@Localizer[m.RoleOnProject]</span>
+                                    }
+                                </td>
+                                <td class="text-end text-gray-800">@(m.AllocationPct?.ToString("0.##") ?? "—")</td>
+                                <td class="text-gray-700">@m.JoinedAt.ToString("yyyy-MM-dd")</td>
+                                <td class="text-center"><span class="badge badge-light-success text-gray-800">@Localizer["Active"]</span></td>
+                                @if (canManage)
+                                {
+                                    <td>
+                                        @* Ends the membership - it is never deleted, so the record of who worked
+                                           on this project survives. *@
+                                        <form method="post" action="@Url.Action("EndMember","Project")"
+                                              onsubmit="return confirm('@Localizer["End this membership?"]');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
+                                            <input type="hidden" name="membershipId" value="@m.Id" />
+                                            <button type="submit" class="btn btn-sm btn-light-danger">@Localizer["End membership"]</button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                        @foreach (var m in ended)
+                        {
+                            <tr class="opacity-75">
+                                <td class="fw-semibold text-gray-700">@m.EmployeeName</td>
+                                <td><span class="badge badge-light text-gray-800">@Localizer[m.RoleOnProject]</span></td>
+                                <td class="text-end text-gray-700">@(m.AllocationPct?.ToString("0.##") ?? "—")</td>
+                                <td class="text-gray-700">@m.JoinedAt.ToString("yyyy-MM-dd")</td>
+                                <td class="text-center">
+                                    <span class="badge badge-light-warning text-gray-800">
+                                        @Localizer["Ended"] @(m.LeftAt?.ToString("yyyy-MM-dd"))
+                                    </span>
+                                </td>
+                                @if (canManage) { <td></td> }
+                            </tr>
+                        }
+                        </tbody>
+                    </table></div>
+                }
+            </div>
+        </div>
+    </div></div>
+</div>

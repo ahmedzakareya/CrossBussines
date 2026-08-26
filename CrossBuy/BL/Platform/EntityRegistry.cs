@@ -229,7 +229,7 @@ namespace CrossBuy.BL.Platform
                 RouteTemplate = "/Project/Projects",
                 SupportsSearch = true, SupportsTimeline = false, SupportsComments = false,
                 SupportsFiles = false, SupportsFollowers = false,
-                PermissionScope = ScopeNone,
+                PermissionScope = ScopeProjects,
                 ListedInRecordPicker = true,
             },
             new EntityDefinition

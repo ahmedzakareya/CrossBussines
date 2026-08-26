@@ -1,11 +1,11 @@
-﻿{
+{
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 420,
+    "mutating": 423,
     "attributeProtected": 157,
-    "inBodyProtected": 120,
-    "gaps": 143
+    "inBodyProtected": 130,
+    "gaps": 136
   },
   "rules": [
     "This baseline may only SHRINK. CI rejects any commit that adds an entry.",
@@ -15,7 +15,7 @@
     "No blanket suppression. No project-wide disable switch.",
     "The 'gaps' figure and the entries list are the ENFORCED invariant and may only shrink. The mutating, attributeProtected and inBodyProtected figures are descriptive totals of the tree and legitimately grow when protected endpoints are added; frozenBaselineHistory records every such change with its reason."
   ],
-  "count": 143,
+  "count": 136,
   "entries": [
     {
       "id": "AccountController.ChangePassword",
@@ -1754,104 +1754,6 @@
       "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
     },
     {
-      "id": "ProjectController.ConfirmProgress",
-      "controller": "ProjectController",
-      "action": "ConfirmProgress",
-      "httpMethod": "POST",
-      "module": "Projects",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/ProjectController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 2",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "ProjectController.DeleteActivityType",
-      "controller": "ProjectController",
-      "action": "DeleteActivityType",
-      "httpMethod": "POST",
-      "module": "Projects",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/ProjectController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 2",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "ProjectController.DeleteProgress",
-      "controller": "ProjectController",
-      "action": "DeleteProgress",
-      "httpMethod": "POST",
-      "module": "Projects",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/ProjectController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 2",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "ProjectController.DeleteProject",
-      "controller": "ProjectController",
-      "action": "DeleteProject",
-      "httpMethod": "POST",
-      "module": "Projects",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/ProjectController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 2",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "ProjectController.SaveActivityType",
-      "controller": "ProjectController",
-      "action": "SaveActivityType",
-      "httpMethod": "POST",
-      "module": "Projects",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/ProjectController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 2",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "ProjectController.SaveProgress",
-      "controller": "ProjectController",
-      "action": "SaveProgress",
-      "httpMethod": "POST",
-      "module": "Projects",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/ProjectController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 2",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
-      "id": "ProjectController.SaveProject",
-      "controller": "ProjectController",
-      "action": "SaveProject",
-      "httpMethod": "POST",
-      "module": "Projects",
-      "isApi": false,
-      "file": "CrossBuy/Controllers/ProjectController.cs",
-      "inheritedGuard": "SessionValidation",
-      "classification": "AuthorizationGap",
-      "targetWave": "Wave 2",
-      "addedBy": "Stage-002A-Batch-00",
-      "reason": "Pre-existing Stage 1 debt, frozen baseline of 143"
-    },
-    {
       "id": "ServiceController.BranchDetails",
       "controller": "ServiceController",
       "action": "BranchDetails",
@@ -2021,6 +1923,14 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Projects security + membership foundation (TAB-6, 2026-08-26)",
+      "mutating": 423,
+      "attributeProtected": 157,
+      "inBodyProtected": 130,
+      "gaps": 136,
+      "note": "Seven ProjectController mutating actions that carried NO authorization at all - SaveProject, DeleteProject, SaveProgress, ConfirmProgress, DeleteProgress, SaveActivityType and DeleteActivityType - now authorize in-body through IProjectsAccessService.CanAsync before they act, so CBA004 REQUIRED their baseline entries to be removed. That is a shrink of 7: gaps 143 -> 136 and the entries list 143 -> 136. The same pass added the project membership writer (dbo.ProjectMembers previously had two readers and no writer), whose three mutating actions - AddMember, UpdateMember and EndMember - are in-body protected from the moment they land, so mutating moves 420 -> 423 and inBodyProtected 120 -> 130 (+7 closed, +3 new). The arithmetic still closes: 157 + 130 + 136 = 423. NO entry was added, no entry was edited, no CBA diagnostic was suppressed, and the shrink-only rule was not relaxed - the debt list only got shorter. The pass also removed all 61 uses of the hardcoded DefaultCompanyId = 1 and gated all 16 pre-existing GET screens, neither of which this file tracks because GETs are not mutating endpoints."
+    },
     {
       "stage": "Report Studio V1 verification closure (TAB-2, 2026-08-25)",
       "mutating": 415,
