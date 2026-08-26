@@ -159,30 +159,36 @@ namespace CrossBuy.Tests
         // invoice ones were closed. They are OUT OF SCOPE for an invoice unblock and are pinned here
         // rather than fixed quietly or left invisible: each needs its own owner decision about whether
         // the partial should be landed or the include removed, exactly as _DocEventTimeline did.
-        private static readonly string[] KnownMissingPartials =
-        {
-            "_DocTimeline  <- CrossBuy\\Views\\Inventory\\QuotationDetails.cshtml",
-            "_HrDocGallery  <- CrossBuy\\Views\\Admin\\DocExpiryAlerts.cshtml",
-            "_HrDocGallery  <- CrossBuy\\Views\\Admin\\HrDocuments.cshtml",
-        };
-
+        // Empty, and that is the assertion. Every partial a committed view includes now resolves to a
+        // committed file. The three entries that used to sit here are gone for two different reasons,
+        // and the difference matters:
+        //
+        //   _DocTimeline  was REAL - Inventory/QuotationDetails included a partial nobody had committed.
+        //                 It is committed now (SHF-21).
+        //
+        //   _HrDocGallery was a FALSE POSITIVE of this test, twice. Razor resolves a partial from the
+        //                 including view's own folder BEFORE Views/Shared, and Views/Admin/_HrDocGallery.cshtml
+        //                 has been tracked all along. The sweep below only looked in Shared, so it reported
+        //                 two working screens as broken. The sweep now checks both locations, which is the
+        //                 actual repair - the list being empty is a consequence of it, not a decision.
+        private static readonly string[] KnownMissingPartials = System.Array.Empty<string>();
         [Fact]
         public void No_view_gains_a_partial_that_does_not_exist()
         {
             var root = RepoRoot();
             var views = Path.Combine(root, "CrossBuy", "Views");
 
-            var present = new HashSet<string>(
-                Directory.EnumerateFiles(Path.Combine(views, "Shared"), "_*.cshtml")
-                    .Select(f => Path.GetFileNameWithoutExtension(f)!),
-                StringComparer.Ordinal);
-
             var missing = new SortedSet<string>(StringComparer.Ordinal);
             foreach (var view in Directory.EnumerateFiles(views, "*.cshtml", SearchOption.AllDirectories))
-                foreach (Match m in Regex.Matches(File.ReadAllText(view), @"PartialAsync\(""(_[A-Za-z0-9]+)""\)"))
+                foreach (Match m in Regex.Matches(File.ReadAllText(view), @"Partial(?:Async)?\(""(_[A-Za-z0-9]+)"""))
                 {
                     var name = m.Groups[1].Value;
-                    if (!present.Contains(name))
+
+                    // Razor's own order: the including view's folder first, then Views/Shared. Checking only
+                    // Shared is what made this test report two working Admin screens as broken.
+                    var local = Path.Combine(Path.GetDirectoryName(view)!, name + ".cshtml");
+                    var shared = Path.Combine(views, "Shared", name + ".cshtml");
+                    if (!File.Exists(local) && !File.Exists(shared))
                         missing.Add($"{name}  <- {Path.GetRelativePath(root, view)}");
                 }
 
