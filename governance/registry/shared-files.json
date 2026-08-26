@@ -140,6 +140,20 @@
       "owner": "Integration Owner - shared document partial",
       "changeRule": "Shared by three committed document views; changes require owner approval (-AllowShared).",
       "reason": "Three committed views include this partial and it was never committed, so a clean checkout throws partial-not-found on both invoice detail screens and the work order screen."
+    },
+    {
+      "fileId": "SHF-21",
+      "path": "CrossBuy/Views/Shared/_DocTimeline.cshtml",
+      "owner": "Integration Owner - shared document partial",
+      "changeRule": "Shared document comments widget; changes require owner approval (-AllowShared).",
+      "reason": "The committed Inventory/QuotationDetails view includes this partial and it was never committed, so a clean checkout throws partial-not-found on the quotation screen."
+    },
+    {
+      "fileId": "SHF-22",
+      "path": "CrossBuy/deploy/sql/project_members.sql",
+      "owner": "Integration Owner - deployment slice",
+      "changeRule": "Schema slice for a table committed product code queries; changes require owner approval (-AllowShared).",
+      "reason": "ProjectsAccessService queries dbo.ProjectMembers but the DDL that creates it was never committed, so a fresh deployment has no such table."
     }
   ]
 }
