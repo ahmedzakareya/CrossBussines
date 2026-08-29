@@ -1,3 +1,4 @@
+using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,25 +15,57 @@ namespace CrossBuy.Controllers.Api
 	public class HrApiController : ControllerBase
 	{
 		private readonly CrossDbContext _context;
+		private readonly IBusinessContextAccessor _contexts;
 
-		public HrApiController(CrossDbContext context)
+		public HrApiController(CrossDbContext context, IBusinessContextAccessor contexts)
 		{
 			_context = context;
+			_contexts = contexts;
 		}
 
-		// GET /api/hr/summary — dashboard counts
+		// GET /api/hr/summary — dashboard counts, for the RESOLVED company only.
+		//
+		// Every count here used to be unqualified, so one tenant's dashboard reported the installation:
+		// a two-company fixture returned employees=2, companies=2, jobTitles=1 to a caller who owned one
+		// employee. A count is a disclosure like any other — "how many people work at the other company"
+		// is not this caller's to know.
+		//
+		// `companies` is now 0 or 1 BY DEFINITION: a caller belongs to exactly one company, so the only
+		// honest answer is their own. It is kept in the payload rather than dropped so existing callers
+		// keep their shape.
 		[HttpGet("summary")]
 		public async Task<IActionResult> Summary()
 		{
+			var context = await _contexts.TryGetCurrentAsync(HttpContext?.RequestAborted ?? default);
+
+			// Fail closed: zeros, not totals.
+			if (context is not { CompanyId: > 0 })
+				return Ok(new { success = true, employees = 0, activeEmployees = 0,
+					companies = 0, branches = 0, jobTitles = 0, orgNodes = 0 });
+
+			int companyId = context.CompanyId;
+
+			// Hierarchicals carries NO company column of its own — the org tree is bounded through the
+			// employee row, which is the control OrgHierarchy already relies on (it walks the tree and
+			// intersects candidates with Employee.EmpCompanyID). The count follows the same boundary
+			// rather than inventing a second one: nodes of type 5 are employee nodes whose H_ObjectID is
+			// an Employee.ID, so the company is the employee's.
+			// int? on both sides: H_ObjectID is nullable, so the projection is too and a NULL node simply
+			// does not match — which is correct, an unplaced node belongs to no company.
+			var employeeNodeIds = _context.Employee
+				.Where(e => e.EmpCompanyID == companyId)
+				.Select(e => (int?)e.ID);
+
 			return Ok(new
 			{
 				success = true,
-				employees = await _context.Employee.CountAsync(),
-				activeEmployees = await _context.Employee.CountAsync(e => e.IsActive),
-				companies = await _context.Companies.CountAsync(),
-				branches = await _context.Branches.CountAsync(),
+				employees = await _context.Employee.CountAsync(e => e.EmpCompanyID == companyId),
+				activeEmployees = await _context.Employee.CountAsync(e => e.EmpCompanyID == companyId && e.IsActive),
+				companies = await _context.Companies.CountAsync(c => c.CompanyID == companyId),
+				branches = await _context.Branches.CountAsync(b => b.CompanyID == companyId),
 				jobTitles = await _context.JobTitles.CountAsync(),
-				orgNodes = await _context.Hierarchicals.CountAsync(),
+				orgNodes = await _context.Hierarchicals
+					.CountAsync(h => h.H_Type == 5 && employeeNodeIds.Contains(h.H_ObjectID)),
 			});
 		}
 
