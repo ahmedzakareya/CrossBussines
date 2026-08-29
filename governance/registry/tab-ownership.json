@@ -32,7 +32,10 @@
         "docs/deployment/**",
         "CrossBuy/BL/Platform/**",
         "CrossBuy/Models/Platform/**",
-        "CrossBuy/Models/Context/Platform/**"
+        "CrossBuy/Models/Context/Platform/**",
+        "CrossBuy/BL/IntegrityCheckHostedService.cs",
+        "CrossBuy/BL/CrmReminderHostedService.cs",
+        "CrossBuy.Tests/WriterWorkerGovernanceTests.cs"
       ],
       "mayNotTouch": "Reporting, Communication, Construction trees",
       "status": "Active - B6 closed"

@@ -225,6 +225,15 @@ builder.Services.AddSingleton<CrossBuy.BL.Platform.IRuntimeInstanceInfo, CrossBu
 builder.Services.Configure<CrossBuy.BL.Platform.RuntimeOptions>(builder.Configuration.GetSection("Runtime"));
 builder.Services.AddSingleton<CrossBuy.BL.Platform.WorkerGate>();
 builder.Services.AddSingleton<CrossBuy.BL.Platform.IWorkerGate>(sp => sp.GetRequiredService<CrossBuy.BL.Platform.WorkerGate>());
+
+// The company list every multi-company worker iterates. SCOPED, because it reads CrossDbContext.
+//
+// This was MISSING, and three committed workers already resolved it with GetRequiredService:
+// TaskGeneratorHostedService, TaskScheduleMatchHostedService and TaskEscalationHostedService. An
+// unregistered GetRequiredService throws, each of those catches and logs inside its own tick loop, and
+// the result was three workers that failed on every cycle forever while looking like they were running.
+// Their tests did not catch it because they inject a stub company scope instead of resolving one.
+builder.Services.AddScoped<CrossBuy.BL.Platform.IWorkerCompanyScope, CrossBuy.BL.Platform.WorkerCompanyScope>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.ICompanyIsolationBypass, CrossBuy.BL.Platform.CompanyIsolationBypass>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEventDispatchStore, CrossBuy.BL.Platform.SqlEventDispatchStore>();            // ADR-003: per-consumer outbox state
 builder.Services.AddScoped<CrossBuy.BL.Platform.IBusinessEventService, CrossBuy.BL.Platform.BusinessEventService>();           // ADR-001: in-transaction event recording
