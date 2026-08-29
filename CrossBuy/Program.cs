@@ -436,7 +436,16 @@ builder.Services.AddScoped<ICrmCustomerLink, CrmCustomerLink>();
 builder.Services.AddScoped<CrmAccessService>();
 builder.Services.AddScoped<ICrmAccessService>(sp => sp.GetRequiredService<CrmAccessService>());
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<CrmAccessService>());
-builder.Services.AddScoped<IInventoryAccessService, InventoryAccessService>();
+// Inventory authorization. THREE registrations resolving ONE scoped instance, the shape Accounting,
+// Tasks, Calendar and CRM already use. Registering IModuleAccessService with its own AddScoped<,> would
+// give a request two InventoryAccessService objects with two role reads that can disagree in one call.
+//
+// IModuleAccessService is what lets InventoryPermissionAdapter answer at all - and, because
+// ManufacturingPermissionAdapter deliberately sets ModuleScope => ScopeInventory, it is also the
+// authority Manufacturing resolves through. One engine, two adapters.
+builder.Services.AddScoped<InventoryAccessService>();
+builder.Services.AddScoped<IInventoryAccessService>(sp => sp.GetRequiredService<InventoryAccessService>());
+builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.GetRequiredService<InventoryAccessService>());
 builder.Services.AddScoped<IInventoryApprovalService, InventoryApprovalService>();
 
 // Approvals read platform (TAB-6, narrow read ownership). The reusable cross-silo inbox: it consumes

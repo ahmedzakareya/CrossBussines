@@ -135,10 +135,16 @@ namespace CrossBuy.Tests
         // at all - with a different message and the same empty screen. These hold the second half.
 
         // Scope -> the access service that implements IModuleAccessService for it, as committed.
-        // Inventory and Crm are ABSENT on purpose: InventoryAccessService and CrmAccessService implement
-        // only their own module interfaces (IInventoryAccessService / ICrmAccessService) with the legacy
-        // session-shaped CanAsync(string action), not the platform contract. There is nothing to register
-        // for those two, and inventing one would be writing module policy from the kernel side.
+        //
+        // Inventory and Crm USED to be absent here, and the note said so: both implemented only their
+        // own module interface with the legacy session-shaped CanAsync(string action), so the platform
+        // had nothing to delegate to and denied their scopes for a configuration reason. Both now
+        // implement the platform contract and are registered, so they belong in this table.
+        //
+        // Manufacturing is still absent, and that is deliberate rather than pending: it has no access
+        // service of its own because ManufacturingPermissionAdapter sets ModuleScope => ScopeInventory,
+        // so work-order authority IS Inventory policy. A ManufacturingAccessService appearing here
+        // would mean a second authority engine had been introduced.
         public static readonly (string Scope, string Service)[] ModuleServices =
         {
             (EntityRegistry.ScopeAccounting,    "AccountingAccessService"),
@@ -148,6 +154,8 @@ namespace CrossBuy.Tests
             (EntityRegistry.ScopeCalendar,      "CalendarAccessService"),
             (EntityRegistry.ScopeTasks,         "TasksAccessService"),
             (EntityRegistry.ScopeCommunication, "CommunicationAccessService"),
+            (EntityRegistry.ScopeCrm,           "CrmAccessService"),
+            (EntityRegistry.ScopeInventory,     "InventoryAccessService"),
         };
 
         [Fact]
@@ -189,18 +197,40 @@ namespace CrossBuy.Tests
                 + System.Text.RegularExpressions.Regex.Escape(service) + @">\(\)\)");
 
         [Fact]
-        public void Scopes_with_no_committed_module_service_are_not_pretended_to_work()
+        public void Manufacturing_has_no_service_of_its_own_and_resolves_through_Inventory()
         {
-            // Inventory and Crm have an adapter and no platform access service. This test states that as
-            // the current, deliberate position: they DENY, and nothing in this phase papered over it.
+            // THIS TEST USED TO ASSERT THE OPPOSITE, and it was right at the time: Inventory and Crm had
+            // no platform access service, so their scopes denied for a configuration reason. Both now have
+            // one, so an assertion that they are uncovered would be false rather than protective.
+            //
+            // What is still true, and is the thing worth holding, is Manufacturing. It deliberately has NO
+            // access service of its own: ManufacturingPermissionAdapter sets ModuleScope => ScopeInventory,
+            // so work-order authority is Inventory's policy rather than a second copy of it. A future
+            // "ManufacturingAccessService" appearing in this table would be the signal that a second
+            // authority engine had been introduced.
             var covered = ModuleServices.Select(m => m.Scope).ToHashSet(StringComparer.Ordinal);
 
-            Assert.DoesNotContain(EntityRegistry.ScopeInventory, covered);
-            Assert.DoesNotContain(EntityRegistry.ScopeCrm, covered);
-
-            // Manufacturing delegates to the Inventory module, so it is blocked by the same gap rather
-            // than by one of its own - which is why it must not get a policy invented for it.
+            Assert.Contains(EntityRegistry.ScopeInventory, covered);
+            Assert.Contains(EntityRegistry.ScopeCrm, covered);
             Assert.DoesNotContain(EntityRegistry.ScopeManufacturing, covered);
+
+            // And the delegation is the adapter's own declaration, not an assumption here: give every
+            // adapter a stub for every scope and only the Inventory-scoped one may be consulted.
+            var stubs = new[] { EntityRegistry.ScopeManufacturing, EntityRegistry.ScopeInventory }
+                .Select(sc => new StubModule(sc, allow: true)).ToList();
+            var manufacturing = Adapters(stubs.Cast<IModuleAccessService>().ToArray())
+                .Single(a => a.Scope == EntityRegistry.ScopeManufacturing);
+
+            manufacturing.CanAsync(new PermissionCheckRequest
+            {
+                Context = PlatformTestHost.DefaultContext(),
+                EntityType = EntityRegistry.ManufWorkOrder,
+                EntityId = 1,
+                Action = PlatformActions.View,
+            }).GetAwaiter().GetResult();
+
+            Assert.Empty(stubs.Single(x => x.Scope == EntityRegistry.ScopeManufacturing).Asked);
+            Assert.NotEmpty(stubs.Single(x => x.Scope == EntityRegistry.ScopeInventory).Asked);
         }
 
         [Fact]

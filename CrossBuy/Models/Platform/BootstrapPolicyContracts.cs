@@ -352,6 +352,11 @@ namespace CrossBuy.Models.Platform
         public const string UnknownAction = "unknown_action";
         public const string PosHasNoBootstrap = "pos_has_no_bootstrap";
         public const string CompanyUnresolved = "company_unresolved";
+
+        // The caller resolved to one company and the TARGET names another. Distinct from
+        // company_unresolved, which is "no company at all": this is a cross-company reach by a caller
+        // who does have a company, and collapsing them into one denial would hide it.
+        public const string CompanyMismatch = "company_mismatch";
         public const string RoleHeld = "role_held";
         public const string RoleNotHeld = "role_not_held";
     }
