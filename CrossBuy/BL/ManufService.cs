@@ -169,10 +169,54 @@ namespace CrossBuy.BL
 			if (itemId <= 0) return (false, "اختر الصنف المُصنَّع", 0);
 			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", 0);
 			if (warehouseId <= 0) return (false, "اختر المخزن", 0);
-			var bom = await _db.ItemComponents.AsNoTracking().Where(c => c.ParentItemId == itemId).OrderBy(c => c.SortOrder).ToListAsync();
+			// ===== COMPANY BOUNDARY. Every authoritative input is validated as belonging to `companyId`
+			// BEFORE anything is written. =====
+			//
+			// What used to happen: none of the three inputs was checked for ownership. The bill of materials was
+			// read as `Where(c => c.ParentItemId == itemId)` with no company predicate at all, so any company
+			// recipe was readable by any other; the manufactured item WAS read with a company predicate but only
+			// to pick a production mode, and a null result silently defaulted to "OrderBased" instead of refusing;
+			// and warehouseId was only checked for `> 0`. Company 1 could therefore open a live work order on
+			// company 2 item, in company 2 warehouse, planning company 2 components. Not a stray row either: the
+			// component rows are stamped `CompanyID = companyId` (the CALLER) while `ItemId` pointed at the other
+			// tenant parts, so the order was a cross-tenant hybrid that would consume caller stock against a
+			// recipe it was never entitled to read.
+			//
+			// A FOREIGN ID AND A MISSING ID GET THE SAME REFUSAL, deliberately. If "belongs to someone else" and
+			// "does not exist" said different things, this method would answer the question "does id N exist in
+			// another company?" - an id here would become a tenant probe. Both are "not found".
+			//
+			// `companyId` is not client-supplied on any path that reaches here: InventoryController derives it
+			// from IRequestCompanyResolver (never from a request parameter) and PosOrderService passes its own
+			// resolved company. So the value is already the resolved one, and no BusinessContext accessor is
+			// introduced into this constructor to re-derive it - that would add a DI coupling to a service that
+			// currently has none, for a value the two callers have already resolved.
+			var prod = await _db.Items.AsNoTracking()
+				.Where(i => i.ID == itemId && i.CompanyID == companyId)
+				.Select(i => new { i.ProductionMethod })
+				.FirstOrDefaultAsync();
+			if (prod == null) return (false, "الصنف المُصنَّع غير موجود", 0);
+
+			var warehouseOwned = await _db.Warehouses.AsNoTracking()
+				.AnyAsync(w => w.ID == warehouseId && w.CompanyID == companyId);
+			if (!warehouseOwned) return (false, "المخزن غير موجود", 0);
+
+			// The recipe is now company-scoped, so a foreign BOM is not merely rejected later - it is never read.
+			var bom = await _db.ItemComponents.AsNoTracking()
+				.Where(c => c.ParentItemId == itemId && c.CompanyID == companyId)
+				.OrderBy(c => c.SortOrder).ToListAsync();
 			if (bom.Count == 0) return (false, "هذا الصنف ليس له قائمة مواد (BOM) — أضف مكوّناته أولًا", 0);
+			// Every component the plan will reference must be ours too. A BOM row inside our own recipe can
+			// still name a foreign component id, and those ids are what get stamped onto ManufWorkOrderComponents
+			// and later consumed as stock - so this is checked before a single row is written, not at consumption.
+			var componentIds = bom.Select(b => b.ComponentItemId).Distinct().ToList();
+			var ownedComponentCount = await _db.Items.AsNoTracking()
+				.CountAsync(i => componentIds.Contains(i.ID) && i.CompanyID == companyId);
+			if (ownedComponentCount != componentIds.Count)
+				return (false, "قائمة المواد تحتوي على مكوّن لا ينتمي لهذه الشركة", 0);
+
 			// stamp the production mode from the item (overridable later); only OrderBased uses staged WO lifecycle
-			var prodMethod = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ID == itemId).Select(i => i.ProductionMethod).FirstOrDefaultAsync();
+			var prodMethod = prod.ProductionMethod;
 			var mode = !string.IsNullOrWhiteSpace(modeOverride) ? modeOverride
 				: (string.IsNullOrWhiteSpace(prodMethod) ? "OrderBased" : prodMethod);
 			if (mode != "Immediate" && mode != "OrderBased") mode = "OrderBased";
@@ -313,7 +357,9 @@ namespace CrossBuy.BL
 			var ops = await _db.ManufRoutingOps.AsNoTracking().Where(o => o.CompanyID == companyId && o.ItemId == itemId).ToListAsync();
 			if (ops.Count == 0) return (0, 0);
 			var wcIds = ops.Select(o => o.WorkCenterId).Distinct().ToList();
-			var wcs = await _db.ManufWorkCenters.AsNoTracking().Where(w => wcIds.Contains(w.ID)).ToDictionaryAsync(w => w.ID, w => w);
+			// Company-scoped: the work-center rates feed the labour/overhead stamped on a work order, and this
+			// runs inside CreateAsync, so an unscoped read here would let another company cost rates reach ours.
+			var wcs = await _db.ManufWorkCenters.AsNoTracking().Where(w => w.CompanyID == companyId && wcIds.Contains(w.ID)).ToDictionaryAsync(w => w.ID, w => w);
 			decimal labor = 0, oh = 0;
 			foreach (var op in ops)
 			{
