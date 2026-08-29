@@ -327,7 +327,18 @@ namespace CrossBuy.BL
 						var creq = new MovementRequest
 						{
 							Date = req.Date, ItemId = c.ComponentItemId, WarehouseId = req.WarehouseId, Direction = -1,
-							Qty = req.Qty * c.Quantity, UoMId = c.UoMId, SourceType = req.SourceType, SourceId = req.SourceId,
+							// THE AUTHORITATIVE BOM QUANTITY. This line used to be a bare `req.Qty * c.Quantity`,
+							// applying neither the planned-scrap uplift nor the 4-decimal rounding that every other
+							// BOM path applies - CompleteImmediateAsync below (`Math.Round(qty * c.Quantity *
+							// (1 + c.ScrapPct / 100m), 4)`) and ManufService.CreateAsync when it plans component
+							// rows. The same recipe therefore consumed a different amount of the same component
+							// depending only on which route the sale took, and the Bundle route consumed LESS than
+							// planned: measured 2.0000 where the authoritative route drew 2.2, and 0.9999 where it
+							// drew 1.0499. Consuming less than planned overstates stock on hand and understates the
+							// cost of what was sold. No third formula is introduced here - this is the same
+							// expression as the other two, so all three now agree.
+							Qty = Math.Round(req.Qty * c.Quantity * (1 + c.ScrapPct / 100m), 4),
+							UoMId = c.UoMId, SourceType = req.SourceType, SourceId = req.SourceId,
 							SourceLineId = req.SourceLineId, PostToGl = req.PostToGl, Notes = "تفكيك حزمة: " + hdr.ItemCode
 						};
 						var (ok, err, mv) = await PostSingleAsync(companyId, creq, userId);
@@ -1343,10 +1354,16 @@ namespace CrossBuy.BL
 				else subs.Add((null, c.PlannedQty, c.UoMId));
 
 				decimal compCost = 0m;
+				// SourceId = wo.ID on every movement below. These movements were stamped SourceType = "WorkOrder"
+				// with SourceId left null, while the JOURNAL ENTRIES for the same transitions all carried
+				// SourceId = wo.ID. So the financial half of a work order was traceable and the physical half was
+				// not: from a work-order id there was no query that returned its component issues and its finished
+				// receipt. StockMovement.SourceId is an existing nullable column - this needs no new table, only
+				// the value it was built to hold.
 				foreach (var s in subs)
 				{
 					var (ok, err, mv) = await PostSingleAsync(companyId, new MovementRequest
-					{ Date = date, ItemId = c.ItemId, WarehouseId = wo.WarehouseId, Direction = -1, Qty = s.qty, UoMId = s.uom, BatchNo = s.batchNo, SourceType = "WorkOrder", PostToGl = false, Notes = desc }, userId);
+					{ Date = date, ItemId = c.ItemId, WarehouseId = wo.WarehouseId, Direction = -1, Qty = s.qty, UoMId = s.uom, BatchNo = s.batchNo, SourceType = "WorkOrder", SourceId = wo.ID, PostToGl = false, Notes = desc }, userId);
 					if (!ok) return (false, $"تعذّر صرف مكوّن: {err}", 0);
 					accForCc.Add(invAcc.Value);
 					glLines.Add(new JournalLineInput { AccountId = invAcc.Value, Debit = 0, Credit = mv!.TotalCost, Description = desc });   // Cr component inventory
@@ -1430,8 +1447,27 @@ namespace CrossBuy.BL
 				var accForCc = new List<int> { finCat.InventoryAccountId!.Value, wipAcc.Value };
 				string desc = "أمر تشغيل: " + (wo.WoNo ?? ("#" + wo.ID)) + " — " + item.ItemCode;
 
-				// staged orders already issued materials at Release (WIP>0); direct/quick path issues now
-				bool alreadyIssued = wo.WipBalance > 0m;
+				// HAS THIS ORDER ALREADY ISSUED ITS MATERIALS? That is a LIFECYCLE question, and it used to be
+				// answered with a COST: `wo.WipBalance > 0m`. Release stamps the materials it issued as a value
+				// (`wo.WipBalance = material`, ReleaseWorkOrderAsync below), so when those materials were worth
+				// NOTHING the balance stayed 0, completion concluded nothing had been issued, and it issued the
+				// whole bill of materials a SECOND time. Measured on a BOM of 4: 4 issued at Release, 8 after
+				// Complete. Zero-valued material is not a freak input either - the release journal entry is
+				// posted only `if (material != 0m)` a few lines down, so the code already anticipates it. A
+				// zero-cost component, a promotional or sample input, a raw with no cost loaded yet, or a fully
+				// written-down batch all reach this line with material == 0.
+				//
+				// WHY ReleasedAt AND NOT `Status == "Released"`. Status is not durable: an order that receives
+				// sourced labour moves Released -> InProgress (:1535 and :1739), so a status equality check would
+				// re-issue for exactly the orders that had done the most work. ReleasedAt is written once, in the
+				// same statement that sets Status = "Released", and is never cleared - it exists to record this
+				// fact and nothing else reads it. The status terms are kept as a belt for any row released before
+				// that column was stamped; both point at the same transition, and neither can be zero.
+				//
+				// Draft still issues here, which is what keeps the direct/quick path (Mode = Immediate, completed
+				// without a separate Release) working exactly as before. Repeated Complete is unaffected: the
+				// guards above already refuse a Completed or Cancelled order.
+				bool alreadyIssued = wo.ReleasedAt != null || wo.Status == "Released" || wo.Status == "InProgress";
 				decimal material;
 				if (alreadyIssued) material = wo.MaterialCost;
 				else
@@ -1457,7 +1493,7 @@ namespace CrossBuy.BL
 
 				// produce finished goods at the rolled-up cost → Dr finished inventory, Cr WIP (clears this order's WIP)
 				var (pok, perr, prod) = await PostSingleAsync(companyId, new MovementRequest
-				{ Date = date, ItemId = item.ID, WarehouseId = wo.WarehouseId, Direction = 1, Qty = wo.Qty, UnitCostInBase = unit, SourceType = "WorkOrder", PostToGl = false, Notes = desc }, userId);
+				{ Date = date, ItemId = item.ID, WarehouseId = wo.WarehouseId, Direction = 1, Qty = wo.Qty, UnitCostInBase = unit, SourceType = "WorkOrder", SourceId = wo.ID, PostToGl = false, Notes = desc }, userId);
 				if (!pok) { await tx.RollbackAsync(); return (false, perr, 0); }
 				glLines.Add(new JournalLineInput { AccountId = finCat.InventoryAccountId.Value, Debit = total, Credit = 0, Description = desc });   // Dr finished inventory
 				glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = 0, Credit = total, Description = desc });                       // Cr WIP (clears)
@@ -1523,7 +1559,7 @@ namespace CrossBuy.BL
 
 				// receive finished goods at standard cost → Dr finished inventory / Cr WIP
 				var (pok, perr, prod) = await PostSingleAsync(companyId, new MovementRequest
-				{ Date = date, ItemId = item.ID, WarehouseId = wo.WarehouseId, Direction = 1, Qty = receiveQty, UnitCostInBase = stdUnitCost, SourceType = "WorkOrder", PostToGl = false, Notes = desc }, userId);
+				{ Date = date, ItemId = item.ID, WarehouseId = wo.WarehouseId, Direction = 1, Qty = receiveQty, UnitCostInBase = stdUnitCost, SourceType = "WorkOrder", SourceId = wo.ID, PostToGl = false, Notes = desc }, userId);
 				if (!pok) { await tx.RollbackAsync(); return (false, perr, 0); }
 				if (recvVal != 0m)
 				{
@@ -1614,7 +1650,7 @@ namespace CrossBuy.BL
 					var invAcc = InvAccOf(c.ItemId);
 					if (invAcc == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد المكوّنات"); }
 					var (ok, err, mv) = await PostSingleAsync(companyId, new MovementRequest
-					{ Date = date, ItemId = c.ItemId, WarehouseId = wo.WarehouseId, Direction = 1, Qty = c.IssuedQty, UoMId = c.UoMId, UnitCostInBase = c.UnitCost, SourceType = "WorkOrder", PostToGl = false, Notes = desc }, userId);
+					{ Date = date, ItemId = c.ItemId, WarehouseId = wo.WarehouseId, Direction = 1, Qty = c.IssuedQty, UoMId = c.UoMId, UnitCostInBase = c.UnitCost, SourceType = "WorkOrder", SourceId = wo.ID, PostToGl = false, Notes = desc }, userId);
 					if (!ok) { await tx.RollbackAsync(); return (false, $"تعذّر إرجاع مكوّن: {err}"); }
 					accForCc.Add(invAcc.Value);
 					glLines.Add(new JournalLineInput { AccountId = invAcc.Value, Debit = mv!.TotalCost, Credit = 0, Description = desc });   // Dr raw inventory (return)
