@@ -527,17 +527,21 @@ namespace CrossBuy.Tests.SqlServer
 			Assert.Equal(Co, semiIssues[0].CompanyID);
 		}
 
-		// CHARACTERISATION OF A REPORTED GAP — work-order stock movements carry no SourceId.
+		// A GAP THIS SUITE CHARACTERISED, NOW CLOSED — work-order stock movements carry their SourceId.
 		//
-		// StockService stamps both the component issue (StockService.cs:1349) and the finished-good receipt
-		// (StockService.cs:1460) with SourceType = "WorkOrder" and NO SourceId, while the journal entry for the
-		// same completion DOES carry SourceId = wo.ID (StockService.cs:1391). So the GL side of a work order is
-		// traceable to the order and the STOCK side is not: you cannot ask "which movements did WO-00007 make?".
+		// This test used to assert the OPPOSITE, on purpose: StockService stamped the component issue and the
+		// finished-good receipt with SourceType = "WorkOrder" and NO SourceId, while the journal entry for the
+		// same completion DID carry SourceId = wo.ID. The GL side of a work order was traceable to the order and
+		// the stock side was not, so "which movements did WO-00007 make?" had no answer. The note here said:
+		// "When the owning module stamps SourceId it will fail HERE and point at this note — that is intended."
 		//
-		// This test asserts what the code does today, on purpose, so the gap is evidence rather than an opinion.
-		// When the owning module stamps SourceId it will fail HERE and point at this note — that is intended.
+		// It did exactly that. The module now stamps SourceId on all four work-order movement sites, this test
+		// went red as designed, and the assertion is inverted to hold the fixed behaviour instead of the gap.
+		// The full before/after evidence lives in PimFoundationCorrectnessRegressionTests; what is kept here is
+		// the end-to-end claim in the acceptance suite that owns this chain: both halves of a work order — the
+		// stock it moved and the journal it posted — point back at the same order id.
 		[SkippableFact]
-		public async Task Gap_work_order_stock_movements_carry_no_source_id_while_the_journal_entry_does()
+		public async Task Work_order_stock_movements_and_journal_entries_both_carry_the_source_id()
 		{
 			Ready();
 			await MustReceiveAsync(_rawA, _whMain, 100m, 3m);
@@ -553,13 +557,13 @@ namespace CrossBuy.Tests.SqlServer
 			using var db = _sql.ContextFor(_probe!, Co);
 			var woMoves = await db.StockMovements.AsNoTracking().Where(m => m.SourceType == "WorkOrder").ToListAsync();
 			Assert.NotEmpty(woMoves);
-			_out.WriteLine($"[GAP] work-order stock movements={woMoves.Count}, of which SourceId set={woMoves.Count(m => m.SourceId != null)}");
-			Assert.All(woMoves, m => Assert.Null(m.SourceId));      // the gap: no link back to the work order
+			_out.WriteLine($"[TRACE] work-order stock movements={woMoves.Count}, of which SourceId set={woMoves.Count(m => m.SourceId != null)}");
+			Assert.All(woMoves, m => Assert.Equal(woId, m.SourceId));   // the closed gap: every movement links back
 
             var je = await db.JournalEntries.AsNoTracking().Where(j => j.SourceType == "WorkOrder").ToListAsync();
 			Assert.NotEmpty(je);
-			Assert.All(je, j => Assert.Equal(woId, j.SourceId));    // the GL side IS linked
-			_out.WriteLine($"[GAP] work-order journal entries={je.Count}, all carrying SourceId={woId}");
+			Assert.All(je, j => Assert.Equal(woId, j.SourceId));    // the GL side was always linked
+			_out.WriteLine($"[TRACE] work-order journal entries={je.Count}, all carrying SourceId={woId}");
 		}
 
 		// ===================================================================================================
