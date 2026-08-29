@@ -56,7 +56,14 @@
            panel. The platform is the authoritative store (EntityRegistry declares SalesInvoice
            SupportsComments = true), so it keeps the screen and the legacy widget gives it up.
            Nothing was migrated because there was nothing to migrate: DocComments held 0 rows. *@
-        @{ ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice; ViewBag.ConversationEntityId = Model.ID; }
+        @* The conversation endpoints are named HERE, not inside the shared partial. Accounting keeps
+           the two actions it has always used; the partial no longer resolves them on its behalf. *@
+        @{
+            ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice;
+            ViewBag.ConversationEntityId = Model.ID;
+            ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+            ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
+        }
         @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>

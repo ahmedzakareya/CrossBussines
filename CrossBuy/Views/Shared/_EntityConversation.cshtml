@@ -3,15 +3,28 @@
     // =========================================================================================
     // BUSINESS ENTITY CONVERSATION — one reusable panel, any supported entity family.
     //
-    // Include it from a document view after setting two ViewBag values:
+    // Include it from a document view after setting FOUR ViewBag values — what the record is, and
+    // where this module answers conversation traffic:
     //
     //     ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice;
     //     ViewBag.ConversationEntityId   = Model.ID;
+    //     ViewBag.ConversationListUrl    = Url.Action("InvoiceConversation", "Accounting");
+    //     ViewBag.ConversationAddUrl     = Url.Action("InvoiceConversationAdd", "Accounting");
     //
-    // It stores NOTHING and knows nothing about invoices. The thread, the comments, the mentions
-    // and the audit trail live in the Communication Platform, reached through its entity-reference
-    // abstraction; this file renders whatever the endpoint returns. Adding a third family later is
-    // two ViewBag lines in that family's view plus its own permission gate — never a copy of this.
+    // The two URLs used to be resolved HERE, as Url.Action(..., "Accounting"). The header already
+    // claimed this file "knows nothing about invoices", and that claim was false: a second module
+    // including the partial silently posted its messages at the Accounting controller, against a
+    // permission gate written for invoices. Answering that by branching on the module — or by
+    // copying the file — would put the same 404/503 refusal semantics in two places to drift apart.
+    // So the endpoints are now the CALLER’s to name, and this file has no module in it at all.
+    //
+    // A caller that names neither renders the disabled state below rather than fetching "undefined":
+    // a mis-wired panel must look broken, not look like a record nobody has commented on.
+    //
+    // It stores NOTHING. The thread, the comments, the mentions and the audit trail live in the
+    // Communication Platform, reached through its entity-reference abstraction; this file renders
+    // whatever the endpoint returns. Adding a family is four ViewBag lines in that family’s view
+    // plus its own permission gate — never a copy of this.
     //
     // WHY THE STATES ARE DISTINCT, and why that is not decoration:
     //   404  the caller may not read this record — or it does not exist. ONE indistinguishable
@@ -30,8 +43,10 @@
     var convCode = (ViewBag.ConversationEntityCode as string) ?? "";
     var convId = ViewBag.ConversationEntityId?.ToString() ?? "0";
     var convBlank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
-    var convListUrl = Url.Action("InvoiceConversation", "Accounting") ?? "";
-    var convAddUrl = Url.Action("InvoiceConversationAdd", "Accounting") ?? "";
+    // Module-neutral: supplied by the including view. No Url.Action and no controller name here.
+    var convListUrl = (ViewBag.ConversationListUrl as string) ?? "";
+    var convAddUrl = (ViewBag.ConversationAddUrl as string) ?? "";
+    var convWired = !string.IsNullOrWhiteSpace(convListUrl) && !string.IsNullOrWhiteSpace(convAddUrl);
 }
 <div class="card mt-5" id="cbConv"
      data-code="@convCode" data-id="@convId"
@@ -47,7 +62,19 @@
     <div class="card-body pt-2">
         @* Live region: a screen reader hears the list change instead of silently re-rendering. *@
         <div id="cbConvList" class="mb-5" role="status" aria-live="polite">
-            <div class="text-muted text-center py-6 fs-7">@Localizer["Loading the conversation"]</div>
+            @if (convWired)
+            {
+                <div class="text-muted text-center py-6 fs-7">@Localizer["Loading the conversation"]</div>
+            }
+            else
+            {
+                @* No endpoints named by the including view. Distinct from empty and from 503: this is a
+                   wiring mistake in the caller, and it must not be readable as "no messages yet". *@
+                <div class="alert bg-light-warning d-flex align-items-center p-4 mb-0">
+                    <i class="ki-outline ki-information-5 fs-2 text-warning me-3" aria-hidden="true"></i>
+                    <span class="fw-semibold fs-7 text-gray-700">@Localizer["Conversations are not configured for this screen"]</span>
+                </div>
+            }
         </div>
 
         <div id="cbConvComposer" class="d-none">
@@ -70,6 +97,10 @@
     var box = document.getElementById('cbConv');
     if (!box || box.__wired) { return; }
     box.__wired = true;
+
+    // Nothing to talk to. The server already rendered the not-configured notice; a fetch from here
+    // would resolve against the CURRENT page url and overwrite it with a generic failure.
+    if (!box.getAttribute('data-list') || !box.getAttribute('data-add')) { return; }
 
     var code = box.getAttribute('data-code');
     var id = box.getAttribute('data-id');

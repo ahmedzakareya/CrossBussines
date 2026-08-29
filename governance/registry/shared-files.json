@@ -154,6 +154,20 @@
       "owner": "Integration Owner - deployment slice",
       "changeRule": "Schema slice for a table committed product code queries; changes require owner approval (-AllowShared).",
       "reason": "ProjectsAccessService queries dbo.ProjectMembers but the DDL that creates it was never committed, so a fresh deployment has no such table."
+    },
+    {
+      "fileId": "SHF-23",
+      "path": "CrossBuy/Views/Accounting/SalesInvoiceDetail.cshtml",
+      "owner": "Integration Owner - shared conversation caller",
+      "changeRule": "Includes the shared _EntityConversation panel and must name its own two conversation endpoints; the partial resolves none on a caller's behalf. Accounting feature work and Platform contract changes both land here, so changes require owner approval (-AllowShared).",
+      "reason": "The conversation endpoints used to be hardcoded inside the shared partial as Url.Action of an Accounting action, so any second module including it posted to the Accounting controller. Moving them to the caller binds this view to a shared platform contract that a tab other than the Accounting owner maintains."
+    },
+    {
+      "fileId": "SHF-24",
+      "path": "CrossBuy/Views/Accounting/PurchaseInvoiceDetail.cshtml",
+      "owner": "Integration Owner - shared conversation caller",
+      "changeRule": "Includes the shared _EntityConversation panel and must name its own two conversation endpoints; the partial resolves none on a caller's behalf. Accounting feature work and Platform contract changes both land here, so changes require owner approval (-AllowShared).",
+      "reason": "The conversation endpoints used to be hardcoded inside the shared partial as Url.Action of an Accounting action, so any second module including it posted to the Accounting controller. Moving them to the caller binds this view to a shared platform contract that a tab other than the Accounting owner maintains."
     }
   ]
 }

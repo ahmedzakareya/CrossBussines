@@ -53,7 +53,14 @@
         @* BUSINESS CONVERSATION — see the note in SalesInvoiceDetail. Same panel, same platform, only
            the entity code differs; that is the whole point of routing through CommEntityRef instead of
            writing a per-module comment widget. Replaces _DocTimeline so one store stays authoritative. *@
-        @{ ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice; ViewBag.ConversationEntityId = Model.ID; }
+        @* The conversation endpoints are named HERE, not inside the shared partial. Accounting keeps
+           the two actions it has always used; the partial no longer resolves them on its behalf. *@
+        @{
+            ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice;
+            ViewBag.ConversationEntityId = Model.ID;
+            ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+            ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
+        }
         @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>

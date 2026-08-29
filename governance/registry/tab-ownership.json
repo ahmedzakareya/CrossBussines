@@ -35,7 +35,8 @@
         "CrossBuy/Models/Context/Platform/**",
         "CrossBuy/BL/IntegrityCheckHostedService.cs",
         "CrossBuy/BL/CrmReminderHostedService.cs",
-        "CrossBuy.Tests/WriterWorkerGovernanceTests.cs"
+        "CrossBuy.Tests/WriterWorkerGovernanceTests.cs",
+        "CrossBuy.Tests/EntityConversationPartialContractTests.cs"
       ],
       "mayNotTouch": "Reporting, Communication, Construction trees",
       "status": "Active - B6 closed"
