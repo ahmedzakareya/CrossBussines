@@ -36,7 +36,8 @@
         "CrossBuy/BL/IntegrityCheckHostedService.cs",
         "CrossBuy/BL/CrmReminderHostedService.cs",
         "CrossBuy.Tests/WriterWorkerGovernanceTests.cs",
-        "CrossBuy.Tests/EntityConversationPartialContractTests.cs"
+        "CrossBuy.Tests/EntityConversationPartialContractTests.cs",
+        "CrossBuy.Tests/HrBootstrapPolicyTests.cs"
       ],
       "mayNotTouch": "Reporting, Communication, Construction trees",
       "status": "Active - B6 closed"
@@ -51,7 +52,17 @@
         "CrossBuy/Controllers/Api/ReportsCenterApiController.cs",
         "CrossBuy/Views/Reports*/**",
         "CrossBuy/deploy/sql/reporting_platform.sql",
-        "docs/platform/ADR-037*"
+        "docs/platform/ADR-037*",
+        "CrossBuy/Controllers/Api/EmployeesApiController.cs",
+        "CrossBuy/Controllers/Api/HrApiController.cs",
+        "CrossBuy/Controllers/Api/LeaveApiController.cs",
+        "CrossBuy/Controllers/AdminController.Appraisals.cs",
+        "CrossBuy/Controllers/AdminController.Recruitment.cs",
+        "CrossBuy/Controllers/AdminController.Training.cs",
+        "CrossBuy/Controllers/PeopleController.cs",
+        "CrossBuy.Tests/LeaveApproverCompanyBoundaryTests.cs",
+        "CrossBuy.Tests/Hr/**",
+        "CrossBuy/deploy/sql/hr_*.sql"
       ],
       "mayNotTouch": "Security, Communication, Construction trees",
       "status": "Active - foundation complete, activation in R2"

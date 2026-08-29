@@ -182,6 +182,13 @@
       "owner": "Module surface - conversation endpoints only",
       "changeRule": "Communication conversation endpoints for Inventory-owned documents only (QuotationConversation, QuotationConversationAdd) and their shared gate. No stock, pricing, procurement, warehouse, approval or costing behaviour may change under this entry.",
       "reason": "The quotation conversation must be authorized by the module that owns the document rather than routed through AccountingController, so the endpoints live here; but the file is the Inventory module surface and is not TAB-3 work. Narrow entry mirroring SHF-19 rather than transferring a 2900-line controller."
+    },
+    {
+      "fileId": "SHF-27",
+      "path": "CrossBuy/Controllers/AdminController.cs",
+      "owner": "Integration Owner - mixed HR / organisation administration surface",
+      "changeRule": "HR Phase-1 sections ONLY. TAB-2 may modify the holiday, attendance, final-settlement, HR document and contract, leave accrual/encashment/carry-over/provision, leave type and leave policy, salary policy, attendance policy and employee actions (HolidaysList..DeleteHoliday, Attendance..SaveAttendance, FinalSettlement, PostFinalSettlement, HrDocuments..DeleteDocument, DocExpiryAlerts, NotifyExpiring, LeaveAccrual..SaveLeaveTypeEncashable, Polices..GetPolicy, EmployeesList, EmployeeData, GetPolicies, GetEmployeeByUserId, SaveEmployee). It may NOT modify the organisation-administration actions on the same file: JobTitlesList, GetJobTitles, JobTitle, GetBranches, GetCompanies, AdministrativeBodiesCompanyList, AdministrativeBodiesCompany, AdministrativeStructure, GetHierarchicals, Index. Changes require owner approval (-AllowShared).",
+      "reason": "1064 lines carrying two different surfaces. Roughly two thirds is HR - holidays, attendance, final settlement, HR documents, contracts, leave accrual and policies, salary and attendance policy, employees - but the rest administers companies, branches, job titles and the administrative hierarchy, which is org administration and not HR. Handing the whole file to the HR implementer as ownership would transfer company and branch administration with it, so the file stays shared and the rule names the exact HR actions instead. The three sibling partials (Appraisals, Recruitment, Training) are 100 percent HR and are narrow TAB-2 ownership rather than shared."
     }
   ]
 }

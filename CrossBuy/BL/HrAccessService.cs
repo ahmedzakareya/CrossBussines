@@ -73,10 +73,17 @@ namespace CrossBuy.BL
         private readonly IOrgHierarchy _org;
         private readonly ILogger<HrAccessService> _log;
 
+        // The platform’s bootstrap classification, consulted instead of a second copy of it here. HR used to
+        // name its own never-open actions inline; NeverBootstrapOpen already carries ("Hr","payroll-manage")
+        // and ("Hr","confidential-view") with the note "listed so a refactor cannot widen it", so the list was
+        // duplicated in two places that could drift apart. The table is now the only copy.
+        private readonly CrossBuy.BL.Platform.IBootstrapAccessPolicyReader _policies;
+
         public HrAccessService(
-            CrossDbContext db, IPlatformRoleDirectory roles, IOrgHierarchy org, ILogger<HrAccessService> log)
+            CrossDbContext db, IPlatformRoleDirectory roles, IOrgHierarchy org,
+            CrossBuy.BL.Platform.IBootstrapAccessPolicyReader policies, ILogger<HrAccessService> log)
             : base(roles, log)
-        { _db = db; _org = org; _log = log; }
+        { _db = db; _org = org; _policies = policies; _log = log; }
 
         public override string Scope => EntityRegistry.ScopeHr;
         public override IReadOnlyCollection<string> Actions => HrActions.All;
@@ -107,18 +114,19 @@ namespace CrossBuy.BL
             }
 
             // ---- BOOTSTRAP-OPEN ----
-            // Compatibility while a company has configured no HR role. It deliberately does NOT extend to the
-            // confidential tier or to payroll: those were unreachable-by-design data before this batch, and
-            // opening them by default would be a new exposure created by the very batch meant to close one.
             if (bootstrapOpen)
             {
-                if (action == HrActions.ConfidentialView || action == HrActions.PayrollManage)
+                // Compatibility while a company has configured no HR role — and NOT for every action. Which
+                // actions bootstrap may never satisfy is the platform’s classification, not this file’s: the
+                // pair that used to be hardcoded here is already in NeverBootstrapOpen, and asking the reader
+                // means adding a sensitive HR action to that table closes it here with no edit to this file.
+                if (await _policies.IsNeverBootstrapOpenAsync(Scope, action, cancellationToken))
                 {
                     _log.LogInformation(
-                        "Hr: '{Action}' denied under bootstrap-open for company {Company} — the confidential and " +
-                        "payroll-manage tiers are never bootstrap-open.", action, context.CompanyId);
+                        "Hr: '{Action}' denied under bootstrap-open for company {Company} — the platform classifies it as never-bootstrap-open.", action, context.CompanyId);
                     return false;
                 }
+
                 return await SubjectIsInScopeAsync(context, target, allowTeam: true, cancellationToken);
             }
 
@@ -207,9 +215,20 @@ namespace CrossBuy.BL
             var grants = await RoleDirectory.RolesAsync(context, Scope, cancellationToken);
             if (grants.Count > 0) return AccessScope.Company(context.CompanyId);
 
+            // BOOTSTRAP-OPEN, AND THE SAME CLASSIFICATION CanAsync APPLIES. This is the half that was wrong:
+            // the record-shaped answer refused confidential-view and payroll-manage under bootstrap, while
+            // this set-shaped answer handed back COMPANY scope for them. One API said "not for you" and the
+            // other said "everyone in the company", for the same caller and the same action — and a caller
+            // that asks for the scope first would have read salary and disciplinary data company-wide on a
+            // tenant that had simply never configured an HR role.
             bool bootstrapOpen = !await RoleDirectory
                 .AnyConfiguredAsync(context.CompanyId, Scope, cancellationToken);
-            if (bootstrapOpen) return AccessScope.Company(context.CompanyId);
+            if (bootstrapOpen)
+            {
+                if (await _policies.IsNeverBootstrapOpenAsync(Scope, action, cancellationToken))
+                    return AccessScope.None();
+                return AccessScope.Company(context.CompanyId);
+            }
 
             var team = await _org.DirectAndIndirectReportsAsync(context.CompanyId, context.EmployeeId.Value, cancellationToken);
             return team.Count > 1 ? AccessScope.Team(context.CompanyId, team) : AccessScope.Own(context.CompanyId);
