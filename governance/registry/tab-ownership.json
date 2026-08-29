@@ -77,7 +77,8 @@
         "CrossBuy/Models/Context/Chat/**",
         "CrossBuy/deploy/sql/comm_chat_*.sql",
         "CrossBuy/Hubs/ChatHub.cs",
-        "CrossBuy/Hubs/NotificationsHub.cs"
+        "CrossBuy/Hubs/NotificationsHub.cs",
+        "CrossBuy.Tests/Communication/QuotationConversationTests.cs"
       ],
       "mayNotTouch": "Security, Reporting, Construction trees",
       "status": "Active - foundation complete, activation in R2"

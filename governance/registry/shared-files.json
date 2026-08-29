@@ -168,6 +168,20 @@
       "owner": "Integration Owner - shared conversation caller",
       "changeRule": "Includes the shared _EntityConversation panel and must name its own two conversation endpoints; the partial resolves none on a caller's behalf. Accounting feature work and Platform contract changes both land here, so changes require owner approval (-AllowShared).",
       "reason": "The conversation endpoints used to be hardcoded inside the shared partial as Url.Action of an Accounting action, so any second module including it posted to the Accounting controller. Moving them to the caller binds this view to a shared platform contract that a tab other than the Accounting owner maintains."
+    },
+    {
+      "fileId": "SHF-25",
+      "path": "CrossBuy/Views/Inventory/QuotationDetails.cshtml",
+      "owner": "Integration Owner - shared conversation caller",
+      "changeRule": "Includes the shared _EntityConversation panel and must name its own two conversation endpoints; the partial resolves none on a caller's behalf. Inventory feature work and Platform contract changes both land here, so changes require owner approval (-AllowShared).",
+      "reason": "Same contract as SHF-23/24 on the invoice views. This screen was the last one rendering the legacy _DocTimeline widget into DocComments; converging it onto the Communication Platform binds an Inventory view to a shared platform contract that the Inventory owner does not maintain."
+    },
+    {
+      "fileId": "SHF-26",
+      "path": "CrossBuy/Controllers/InventoryController.cs",
+      "owner": "Module surface - conversation endpoints only",
+      "changeRule": "Communication conversation endpoints for Inventory-owned documents only (QuotationConversation, QuotationConversationAdd) and their shared gate. No stock, pricing, procurement, warehouse, approval or costing behaviour may change under this entry.",
+      "reason": "The quotation conversation must be authorized by the module that owns the document rather than routed through AccountingController, so the endpoints live here; but the file is the Inventory module surface and is not TAB-3 work. Narrow entry mirroring SHF-19 rather than transferring a 2900-line controller."
     }
   ]
 }

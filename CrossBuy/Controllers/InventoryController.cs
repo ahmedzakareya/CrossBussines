@@ -1824,6 +1824,195 @@ namespace CrossBuy.Controllers
 			return View(q);
 		}
 
+		// =============================================================================================
+		// QUOTATION BUSINESS CONVERSATION — the authoritative store, not the legacy one.
+		//
+		// A Quotation used to carry its discussion in DocComments, reached through _DocTimeline and
+		// /Comments/*. That was a SECOND comment store for an entity the Communication platform already
+		// declares: EntityRegistry registers Quotation with SupportsComments = true, Module = "Inventory"
+		// and PermissionScope = ScopeInventory. Two stores for one document is how a conversation ends up
+		// half in each, which is the defect already removed from the invoice screens.
+		//
+		// These endpoints live in INVENTORY because the document does. Routing a quotation conversation
+		// through AccountingController would have reused the existing endpoints for free and put an
+		// Inventory document under the Accounting module policy — the module that owns the record must be
+		// the module that authorizes talking about it.
+		//
+		// NOTHING ABOUT COMMENTS IS IMPLEMENTED HERE. Thread identity, body policy, mention parsing, the
+		// audit row and any notification fan-out all belong to the platform; this is a gate plus a
+		// projection. No new table, no quotation-specific comment service, no second notification channel.
+		// =============================================================================================
+
+		/// Resolved outcome of the gate. Ok == false deliberately carries no detail: a refusal must not
+		/// say whether the quotation is absent, belongs to another company, or is simply not permitted.
+		private sealed class QuotationConversationGate
+		{
+			public bool Ok;
+			public CrossBuy.Models.Platform.BusinessContext? Context;
+		}
+
+		private CrossBuy.BL.Platform.IBusinessContextAccessor? QuotationBusinessContexts =>
+			HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.Platform.IBusinessContextAccessor))
+				as CrossBuy.BL.Platform.IBusinessContextAccessor;
+
+		/// One gate for both endpoints, so read and write cannot drift apart on authorization.
+		/// action is the module ability being claimed: read to load the conversation, doc to add to it.
+		private async Task<QuotationConversationGate> QuotationConversationGateAsync(
+			int id, string action, CancellationToken ct)
+		{
+			if (id <= 0) return new QuotationConversationGate();
+
+			// 1 — COMPANY IS RESOLVED, never assumed. An unresolved scope refuses before any row is read,
+			// and co is not consulted here: the tenant authority for this path is the BusinessContext.
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok) return new QuotationConversationGate();
+
+			var ctx = QuotationBusinessContexts == null ? null : await QuotationBusinessContexts.TryGetCurrentAsync(ct);
+			if (ctx == null || ctx.CompanyId <= 0 || ctx.EmployeeId is not > 0) return new QuotationConversationGate();
+
+			// 2 — THE MODULE OWN AUTHORITY decides, with no new vocabulary invented for comments.
+			// read and doc are the abilities Inventory already publishes; a comment is not a new kind of
+			// permission, it is the existing ability applied to the existing document.
+			//
+			// The session-free overload lives on the CONCRETE service — IInventoryAccessService publishes
+			// only CanAsync(action), which reads ambient session state. Taking the concrete type is the
+			// same precedent AccountingController set for exactly this call. If the service cannot be
+			// resolved the gate REFUSES rather than falling through to allow.
+			var inventory = HttpContext.RequestServices.GetService(typeof(InventoryAccessService))
+				as InventoryAccessService;
+			if (inventory == null) return new QuotationConversationGate();
+
+			if (!await inventory.CanAsync(ctx, action,
+					CrossBuy.Models.Platform.PermissionTarget.ForEntity(
+						CrossBuy.BL.Platform.EntityRegistry.Quotation, id), ct))
+				return new QuotationConversationGate();
+
+			// 3 — THE ROW, in the caller own company. The company predicate is IN THE QUERY, so a
+			// quotation belonging to another company is never materialised — it is not loaded and then
+			// refused, which is what keeps foreign and absent indistinguishable to the caller.
+			bool exists = await _context.Quotations.AsNoTracking()
+				.AnyAsync(q => q.ID == id && q.CompanyID == ctx.CompanyId, ct);
+			if (!exists) return new QuotationConversationGate();
+
+			return new QuotationConversationGate { Ok = true, Context = ctx };
+		}
+
+		/// The optional platform, asked for and never required. Both services come from ONE registration,
+		/// so a half-present pair is treated as absent: a conversation that can list but not add is a
+		/// worse answer than an honest 503.
+		private (CrossBuy.BL.Communication.ICommThreadService Threads,
+		         CrossBuy.BL.Communication.ICommCommentService Comments,
+		         CrossBuy.BL.Communication.ICommEntitySurface Surface)? TryQuotationConversation()
+		{
+			var sp = HttpContext.RequestServices;
+			var threads = sp.GetService(typeof(CrossBuy.BL.Communication.ICommThreadService))
+				as CrossBuy.BL.Communication.ICommThreadService;
+			var comments = sp.GetService(typeof(CrossBuy.BL.Communication.ICommCommentService))
+				as CrossBuy.BL.Communication.ICommCommentService;
+			var surface = sp.GetService(typeof(CrossBuy.BL.Communication.ICommEntitySurface))
+				as CrossBuy.BL.Communication.ICommEntitySurface;
+			return threads is null || comments is null || surface is null ? null : (threads, comments, surface);
+		}
+
+		/// A machine CODE, not a sentence: the browser must be able to tell "the platform is switched off"
+		/// apart from "you may not see this" and from "it broke". A translated sentence cannot carry that.
+		public const string QuotationConversationUnavailableCode = "communication_unavailable";
+
+		private IActionResult QuotationConversationUnavailable(string code = QuotationConversationUnavailableCode) =>
+			StatusCode(StatusCodes.Status503ServiceUnavailable, new
+			{
+				ok = false,
+				unavailable = true,
+				code,
+				error = L["Conversations are unavailable in this environment"].Value,
+			});
+
+		// GET /Inventory/QuotationConversation?id=123
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> QuotationConversation(int id, CancellationToken ct = default)
+		{
+			var gate = await QuotationConversationGateAsync(id, "read", ct);
+			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+			var comm = TryQuotationConversation();
+			if (comm == null) return QuotationConversationUnavailable();
+
+			var reference = new CrossBuy.Models.Communication.CommEntityRef(
+				CrossBuy.BL.Platform.EntityRegistry.Quotation, id);
+
+			// The registry decides whether this family carries comments — not this controller.
+			var allowed = await comm.Value.Surface.EvaluateAsync(
+				reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
+			if (!allowed.Allowed) return QuotationConversationUnavailable("capability_disabled");
+
+			var thread = await comm.Value.Threads.GetOrCreateAsync(gate.Context!,
+				new CrossBuy.Models.Communication.CommThreadRequest { Entity = reference }, ct);
+
+			var page = await comm.Value.Comments.ListAsync(gate.Context!, thread.Id, null, ct);
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+			return Json(new
+			{
+				ok = true,
+				threadId = thread.Id,
+				entity = new { code = CrossBuy.BL.Platform.EntityRegistry.Quotation, id },
+				comments = page.Items.Select(c => new
+				{
+					id = c.CommentId,
+					body = c.Body,
+					author = c.Author.Display(isAr),
+					authorEmployeeId = c.Author.EmployeeId,
+					createdAt = c.CreatedAt,
+					editedAt = c.EditedAt,
+					isDeleted = c.IsDeleted,
+					// LABELS only — never TargetId, TargetKey or ResolvedRecipientCount. How many people a
+					// role mention reached describes the shape of an organisation the caller may not see.
+					mentions = c.Mentions.Select(m => new
+					{
+						display = isAr ? (m.LabelAr ?? m.LabelEn) : (m.LabelEn ?? m.LabelAr),
+					}),
+				}),
+			});
+		}
+
+		// POST /Inventory/QuotationConversationAdd
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> QuotationConversationAdd(int id, string? body, CancellationToken ct = default)
+		{
+			// doc rather than read: adding to the record discussion is a mutation of the record history,
+			// so it claims the module document ability. A reader who may not change the quotation may not
+			// add to its conversation either.
+			//
+			// The refusal is byte-identical to the read refusal, so the write path is not an existence
+			// oracle either.
+			var gate = await QuotationConversationGateAsync(id, "doc", ct);
+			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+			if (string.IsNullOrWhiteSpace(body))
+				return Json(new { ok = false, error = L["Write a comment"].Value });
+
+			var comm = TryQuotationConversation();
+			if (comm == null) return QuotationConversationUnavailable();
+
+			var reference = new CrossBuy.Models.Communication.CommEntityRef(
+				CrossBuy.BL.Platform.EntityRegistry.Quotation, id);
+
+			var allowed = await comm.Value.Surface.EvaluateAsync(
+				reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
+			if (!allowed.Allowed) return QuotationConversationUnavailable("capability_disabled");
+
+			// The platform owns body policy, mention parsing, the audit row and any notification fan-out.
+			var added = await comm.Value.Comments.AddAsync(gate.Context!,
+				new CrossBuy.Models.Communication.CommCommentRequest
+				{
+					Entity = reference,
+					Body = body,
+				}, ct);
+
+			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
+		}
+
+
 		[HttpPost][ValidateAntiForgeryToken]
 		[InvPerm("doc")]
 		public async Task<IActionResult> SetQuoteStatus(int id, string status)

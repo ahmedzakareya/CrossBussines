@@ -93,9 +93,26 @@ public class ReconciliationTests
     //
     // 423 = 157 + 130 + 136. Attribute-protected did not move.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 423;
+    // ----------------------------------------------------------------------------------------------
+    // 423 -> 424 (Quotation business conversation, 2026-08-29). ONE new POST on the EXISTING
+    // InventoryController: QuotationConversationAdd, the write half of the quotation discussion that
+    // moved off the legacy DocComments store onto the Communication Platform.
+    //
+    // It arrives PROTECTED, which is why the debt figure below does not move. The endpoint resolves the
+    // company server-side, requires a BusinessContext carrying a real employee, and asks
+    // InventoryAccessService for the "doc" action on PermissionTarget.ForEntity(Quotation, id) before it
+    // writes - "doc" and not "read", because adding to a record’s discussion changes that record’s
+    // history. CBA001 does not fire on it and no baseline entry was added.
+    //
+    // Its companion GET, QuotationConversation, is not a mutating endpoint and moves none of these
+    // figures. Attribute-protected does not move either: the endpoint authorizes in body, so the growth
+    // is entirely in-body, 130 -> 131.
+    //
+    // 424 = 157 + 131 + 136. The debt is UNCHANGED at 136 and the gap set is identical id for id.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 424;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 130;
+    private const int FrozenInBodyProtected = 131;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
     private const int FrozenGaps = 136;

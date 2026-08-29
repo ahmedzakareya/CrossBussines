@@ -7,8 +7,11 @@
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var cust = ViewBag.Customer as Customer;
-    ViewBag.CommentEntityType = "Quotation";
-    ViewBag.CommentEntityId = Model.ID;
+    @* The CommentEntityType/CommentEntityId pair fed _DocTimeline, which stored rows in the legacy
+       DocComments table. It is retired here: the quotation discussion now lives in the Communication
+       Platform alongside the invoices. Note the legacy pair also carried the literal string "Quotation"
+       rather than the frozen registry constant — a literal that could drift away from the registry in
+       silence. The replacement below uses EntityRegistry.Quotation. *@
     var itemCodes = ViewBag.Items as Dictionary<int, string> ?? new();
     string M(decimal v) => v.ToString("N2");
     string stCls(string s) => s switch { "Draft" => "secondary", "Sent" => "info", "Accepted" => "primary", "Converted" => "success", "Rejected" => "danger", "Expired" => "warning", _ => "light" };
@@ -77,6 +80,22 @@
                 </table>
             </div></div>
         </div>
-        @await Html.PartialAsync("_DocTimeline")
+        @* BUSINESS CONVERSATION. This REPLACES the _DocTimeline widget rather than sitting beside it.
+           _DocTimeline posts to /Comments/* and stores rows in DocComments — a SECOND comment store for
+           the same (EntityType, EntityId) pair the Communication Platform already owns, and the last one
+           still reachable from a screen. Two widgets writing two stores on one document is how a
+           discussion ends up half in each.
+
+           The four ViewBag values are the whole contract: what the record is, and where THIS module
+           answers conversation traffic. The endpoints are named here because the shared panel resolves
+           none on a caller's behalf — before d867505 it hardcoded Accounting's, which would have posted a
+           quotation's messages at a permission gate written for invoices. *@
+        @{
+            ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.Quotation;
+            ViewBag.ConversationEntityId = Model.ID;
+            ViewBag.ConversationListUrl = Url.Action("QuotationConversation", "Inventory");
+            ViewBag.ConversationAddUrl = Url.Action("QuotationConversationAdd", "Inventory");
+        }
+        @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>

@@ -1,10 +1,10 @@
-{
+﻿{
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 423,
+    "mutating": 424,
     "attributeProtected": 157,
-    "inBodyProtected": 130,
+    "inBodyProtected": 131,
     "gaps": 136
   },
   "rules": [
@@ -1923,6 +1923,14 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Quotation business conversation convergence (TAB-3 endpoint / TAB-1 reconciliation, 2026-08-29)",
+      "mutating": 424,
+      "attributeProtected": 157,
+      "inBodyProtected": 131,
+      "gaps": 136,
+      "note": "ONE new POST endpoint on the EXISTING InventoryController - QuotationConversationAdd - so the controller count does not move. It is protected in body from the moment it lands: it resolves the company server-side, requires a BusinessContext with a real employee, and asks InventoryAccessService for the 'doc' action on PermissionTarget.ForEntity(EntityRegistry.Quotation, id) before it writes. Adding to a record's discussion is a mutation of that record's history, so it claims the module's document ability rather than 'read'; a caller who may not change the quotation may not add to its conversation. It refuses with NotFound semantics identical to the read path's, so neither endpoint is an existence oracle for a quotation in another company. The companion GET, QuotationConversation, is not mutating and this file does not track it. So mutating moves 423 -> 424 and inBodyProtected 130 -> 131, attributeProtected is unchanged at 157, and the arithmetic still closes: 157 + 131 + 136 = 424. GAPS DO NOT MOVE AND MUST NOT: 136 before, 136 after, the gap set identical id for id. NO entry was added, removed or edited, CBA001 does not fire on the new endpoint, no diagnostic was suppressed, no Inventory permission was weakened and the endpoint was not marked ignored or reclassified. This is a descriptive reconciliation of one more mutating endpoint that arrived already protected - not a re-bless, which would mean accepting unprotected code by moving the debt figure."
+    },
     {
       "stage": "Projects security + membership foundation (TAB-6, 2026-08-26)",
       "mutating": 423,
