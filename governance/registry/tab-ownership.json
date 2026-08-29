@@ -62,7 +62,8 @@
         "CrossBuy/Controllers/PeopleController.cs",
         "CrossBuy.Tests/LeaveApproverCompanyBoundaryTests.cs",
         "CrossBuy.Tests/Hr/**",
-        "CrossBuy/deploy/sql/hr_*.sql"
+        "CrossBuy/deploy/sql/hr*.sql",
+        "deploy/sql/hr*.sql"
       ],
       "mayNotTouch": "Security, Communication, Construction trees",
       "status": "Active - foundation complete, activation in R2"
