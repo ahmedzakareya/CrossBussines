@@ -218,7 +218,18 @@ namespace CrossBuy.BL.Platform
                 RouteTemplate = "/Admin/EmployeesList",
                 SupportsSearch = true, SupportsTimeline = false, SupportsComments = false,
                 SupportsFiles = false, SupportsFollowers = false,
-                PermissionScope = ScopeNone,
+                // ScopeHr, not ScopeNone. ScopeNone routes to DefaultPermissionAdapter, which grants View
+                // to ANY authenticated caller whose company matched and refuses everything else - the
+                // weakest possible answer, and correct while it was true that "HR has no access service".
+                // That stopped being true: HrAccessService exists, is registered as the Hr
+                // IModuleAccessService, and its authorization foundation closed 42 endpoints. Leaving the
+                // registry on the fallback meant every platform-level permission question about an
+                // Employee was still answered by authentication plus company rather than by HR - the same
+                // correction CalendarEvent received when CalendarAccessService landed.
+                //
+                // This TIGHTENS: View now needs HR authority over the subject instead of a signed-in
+                // session, and it is what lets the document spine reach an owning module at all.
+                PermissionScope = ScopeHr,
                 ListedInRecordPicker = true,
             },
             new EntityDefinition

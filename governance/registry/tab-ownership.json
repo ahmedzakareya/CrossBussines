@@ -37,7 +37,8 @@
         "CrossBuy/BL/CrmReminderHostedService.cs",
         "CrossBuy.Tests/WriterWorkerGovernanceTests.cs",
         "CrossBuy.Tests/EntityConversationPartialContractTests.cs",
-        "CrossBuy.Tests/HrBootstrapPolicyTests.cs"
+        "CrossBuy.Tests/HrBootstrapPolicyTests.cs",
+        "CrossBuy.Tests/DocumentAccessFoundationTests.cs"
       ],
       "mayNotTouch": "Reporting, Communication, Construction trees",
       "status": "Active - B6 closed"

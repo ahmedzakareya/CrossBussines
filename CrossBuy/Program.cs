@@ -317,6 +317,24 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 // the linked-entity check, so the provider and the entity registry it reads come with it.
 builder.Services.AddScoped<CrossBuy.BL.Platform.IEntityRegistry, CrossBuy.BL.Platform.EntityRegistry>();
 
+// ---- Central Document Platform: the SHARED SECURITY SPINE only ----
+//
+// No document schema, no versions, no metadata, no events - those belong to the document domain and are
+// not registered here. What is registered is the seam that domain will call, so it does not have to
+// reopen the tenant/owner decisions to build on it.
+//
+// The resolver takes EVERY IDocumentOwnerResolver and EVERY IModuleAccessService, so onboarding a family
+// is one registration below rather than an edit to the resolver: the centre never learns a module name.
+builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentOwnerResolver, CrossBuy.BL.Platform.EmployeeDocumentOwnerResolver>();
+builder.Services.AddScoped<CrossBuy.BL.Platform.IDocumentAccessResolver, CrossBuy.BL.Platform.DocumentAccessResolver>();
+
+// Storage lives OUTSIDE wwwroot, deliberately: anything under the web root is reachable by
+// UseStaticFiles, and a static pipeline cannot ask who is calling. A file stored here has no URL at all.
+// Singleton because it holds only a root path. Nothing is migrated onto it in this batch.
+builder.Services.AddSingleton<CrossBuy.BL.Platform.IDocumentStorage>(_ =>
+    new CrossBuy.BL.Platform.LocalDocumentStorage(
+        System.IO.Path.Combine(builder.Environment.ContentRootPath, "App_Data", "documents")));
+
 // ---------------- Communication Platform (ADR-030) — ACTIVATED ----------------
 //
 // Dormant until now: the code, the EF mapping (CrossDbContext -> CommunicationModel.Configure) and the
