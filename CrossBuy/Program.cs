@@ -462,6 +462,10 @@ builder.Services.AddScoped<IBomExplosionService, BomExplosionService>();
 // Physical consumption, recorded separately from the payment fact. Scoped like every request-bound
 // service; it writes stock only through StockService and events only through the platform.
 builder.Services.AddScoped<IPosPreparationService, PosPreparationService>();
+// Restaurant inventory intelligence: a READ over evidence that already exists (the movement ledger,
+// the canonical explosion, write-off documents, shortage events, warehouse thresholds). It writes
+// nothing and posts nothing — opening a report must never be a business event.
+builder.Services.AddScoped<IRestaurantInventoryIntelligenceService, RestaurantInventoryIntelligenceService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IManufService, ManufService>();
 builder.Services.AddScoped<IProcurementService, ProcurementService>();
