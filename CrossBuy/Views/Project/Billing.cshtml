@@ -10,9 +10,13 @@
     var billings = ViewBag.Billings as List<ProgressBilling> ?? new();
     string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
     string iv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
-    bool editable = Model.Status == "Draft";
+    bool editable = ProgressBillingStatuses.IsEditable(Model.Status);
     string dis = editable ? "" : "disabled";
-    string Badge(string s) => s == "Posted" ? "success" : s == "Approved" ? "primary" : "secondary";
+    string Badge(string s) => s == ProgressBillingStatuses.Posted ? "success"
+        : s == ProgressBillingStatuses.Approved ? "primary"
+        : s == ProgressBillingStatuses.Submitted ? "info"
+        : s == ProgressBillingStatuses.Returned ? "warning"
+        : "secondary";
     var brand = "#13433a";
     bool showEditor = (ViewBag.ShowEditor as bool?) ?? false;
     bool billable = Model.BillableMeasurements.Any();
@@ -68,7 +72,7 @@
                                 </td>
                                 <td class="text-center text-nowrap pe-4">
                                     <a href="@Url.Action("Billing","Project", new { id = prj?.ID, b = r.ID })" class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]"><i class="ki-outline ki-eye fs-5"></i></a>
-                                    @if (r.Status == "Draft")
+                                    @if (ProgressBillingStatuses.IsEditable(r.Status))
                                     {
                                         <form asp-action="DeleteBilling" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete billing?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@r.ID" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-sm btn-icon btn-light-danger" title="@SR["Delete"]"><i class="ki-outline ki-trash fs-5"></i></button></form>
                                     }
@@ -89,7 +93,7 @@
                     <div class="card h-100">
                         <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Billing"] #@Model.BillingNo
                             @if (Model.Status == "Posted") { <span class="badge ms-2" style="background:#eaf3ef;color:@brand;">@Localizer[Model.Status]</span> }
-                            else if (Model.Status != "Draft") { <span class="badge badge-light-@Badge(Model.Status) ms-2">@Localizer[Model.Status]</span> }</h3></div>
+                            else if (Model.Status != ProgressBillingStatuses.Draft) { <span class="badge badge-light-@Badge(Model.Status) ms-2">@Localizer[Model.Status]</span> }</h3></div>
                         <div class="card-body">
                             <form asp-action="SaveBilling" method="post" id="fBilling">@Html.AntiForgeryToken()
                                 <input type="hidden" name="projectId" value="@(prj?.ID ?? 0)" />
@@ -148,21 +152,61 @@
                             </table>
                             <div class="text-muted fs-8 mt-3">@Localizer["Remaining advance"]: @Model.AdvanceBalance.ToString("N2") · @Localizer["Posts"]: Dr 1102 · Cr 4102/210201 · Dr 1104 · Dr 2104</div>
 
-                            <div class="d-flex gap-2 mt-5">
-                                @if (Model.Status == "Draft")
-                                {
-                                    <button type="submit" form="fBilling" class="btn btn-light-primary flex-fill"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button>
-                                    @if (Model.BillingId > 0)
+                                @* ---- WORKFLOW ACTIONS ----
+                                   Only LEGALLY AVAILABLE actions are rendered, and the state machine that decides is the same one
+                                   the service enforces (ProgressBillingStatuses.CanMove) - the buttons follow the rule, they do not
+                                   define it. Where an action is withheld for a workflow reason, the reason is stated: a control that
+                                   silently vanishes is indistinguishable from a bug. *@
+                                <div class="d-flex gap-2 mt-5 flex-wrap">
+                                    @if (ProgressBillingStatuses.IsEditable(Model.Status))
                                     {
-                                        <form asp-action="ApproveBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Approve billing?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-primary w-100"><i class="ki-outline ki-verify fs-3"></i>@Localizer["Approve"]</button></form>
+                                        <button type="submit" form="fBilling" class="btn btn-light-primary flex-fill"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button>
+                                        @if (Model.BillingId > 0)
+                                        {
+                                            <form asp-action="SubmitBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Submit this billing for approval?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-primary w-100"><i class="ki-outline ki-send fs-3"></i>@Localizer["Submit for approval"]</button></form>
+                                        }
                                     }
-                                }
-                                else if (Model.Status == "Approved")
+                                    else if (Model.Status == ProgressBillingStatuses.Submitted)
+                                    {
+                                        @if (Model.ViewerPreparedIt)
+                                        {
+                                            @* The separation-of-duties refusal, said plainly rather than by omission. *@
+                                            <div class="alert alert-light-warning d-flex align-items-center mb-0 flex-fill py-3">
+                                                <i class="ki-outline ki-information-5 fs-2 me-3"></i>
+                                                <span class="text-gray-800">@Localizer["You cannot approve a billing that you prepared. Another authorized approver must review it."]</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="ApproveBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Approve billing?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-primary w-100"><i class="ki-outline ki-verify fs-3"></i>@Localizer["Approve"]</button></form>
+                                            <form asp-action="ReturnBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Return this billing to the preparer?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-light-warning w-100"><i class="ki-outline ki-arrow-circle-left fs-3"></i>@Localizer["Return"]</button></form>
+                                        }
+                                    }
+                                    else if (Model.Status == ProgressBillingStatuses.Approved)
+                                    {
+                                        <form asp-action="PostBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Post billing? (creates invoice + settlements)"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-primary w-100"><i class="ki-outline ki-cloud-add fs-3"></i>@Localizer["Post"]</button></form>
+                                    }
+                                    else { <span class="badge fs-6 py-3 px-4" style="background:#eaf3ef;color:@brand;"><i class="ki-outline ki-check-circle fs-3 me-1" style="color:@brand;"></i>@Localizer["Posted to the GL"]</span> }
+                                </div>
+
+                                @* ---- WHO AND WHEN ---- *@
+                                @if (Model.BillingId > 0)
                                 {
-                                    <form asp-action="PostBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Post billing? (creates invoice + settlements)"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-primary w-100"><i class="ki-outline ki-cloud-add fs-3"></i>@Localizer["Post"]</button></form>
+                                    <div class="separator my-4"></div>
+                                    <table class="table table-row-dashed align-middle fs-7 my-0">
+                                        <tbody>
+                                            <tr><td class="text-gray-700 w-150px">@Localizer["Prepared by"]</td><td class="fw-semibold text-gray-800">@Model.ActorName(Model.CreatedBy) <span class="text-gray-700">@(Model.CreatedAt?.ToString("yyyy-MM-dd HH:mm"))</span></td></tr>
+                                            @if (Model.UpdatedAt.HasValue)
+                                            { <tr><td class="text-gray-700">@Localizer["Last updated by"]</td><td class="fw-semibold text-gray-800">@Model.ActorName(Model.UpdatedBy) <span class="text-gray-700">@Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")</span></td></tr> }
+                                            @if (Model.SubmittedAt.HasValue)
+                                            { <tr><td class="text-gray-700">@Localizer["Submitted by"]</td><td class="fw-semibold text-gray-800">@Model.ActorName(Model.SubmittedBy) <span class="text-gray-700">@Model.SubmittedAt.Value.ToString("yyyy-MM-dd HH:mm")</span></td></tr> }
+                                            @if (Model.ApprovedAt.HasValue)
+                                            { <tr><td class="text-gray-700">@Localizer["Approved by"]</td><td class="fw-semibold text-gray-800">@Model.ActorName(Model.ApprovedBy) <span class="text-gray-700">@Model.ApprovedAt.Value.ToString("yyyy-MM-dd HH:mm")</span></td></tr> }
+                                            @if (Model.PostedAt.HasValue)
+                                            { <tr><td class="text-gray-700">@Localizer["Posted by"]</td><td class="fw-semibold text-gray-800">@Model.ActorName(Model.PostedBy) <span class="text-gray-700">@Model.PostedAt.Value.ToString("yyyy-MM-dd HH:mm")</span></td></tr> }
+                                        </tbody>
+                                    </table>
                                 }
-                                else { <span class="badge fs-6 py-3 px-4" style="background:#eaf3ef;color:@brand;"><i class="ki-outline ki-check-circle fs-3 me-1" style="color:@brand;"></i>@Localizer["Posted to the GL"]</span> }
-                            </div>
                         </div>
                     </div>
                 </div>

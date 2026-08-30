@@ -127,9 +127,23 @@ public class ReconciliationTests
     // branches, job titles and the shared administrative hierarchy rather than HR, and belong to another
     // owner. The other 91 are pre-existing debt in other modules.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 424;
+    // ----------------------------------------------------------------------------------------------
+    // 424 -> 426 (project billing separation of duties, 2026-08-30). TWO new POSTs on the EXISTING
+    // ProjectController: SubmitBilling and ReturnBilling, the two transitions the billing lifecycle was
+    // missing once the single `billing` right was split into billing-prepare / billing-approve /
+    // billing-post so that separation of duties could be expressed at all.
+    //
+    // THE DEBT FIGURE DOES NOT MOVE, AND NEITHER DOES THE ENTRY LIST. Both endpoints arrive protected -
+    // IProjectsAccessService.CanAsync on a ForProject target before they act - so they were never in the
+    // baseline and there was nothing stale to remove. The integrated candidate produced ZERO CBA004,
+    // which is what distinguishes this increment from the HR one above it: that removed 42 entries,
+    // this removes none. Attribute-protected does not move either, because both authorize in body.
+    //
+    // 426 = 157 + 175 + 94.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 426;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 173;
+    private const int FrozenInBodyProtected = 175;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
     private const int FrozenGaps = 94;

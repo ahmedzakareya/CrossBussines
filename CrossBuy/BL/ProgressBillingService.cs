@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,16 +39,35 @@ namespace CrossBuy.BL
 		public decimal AdvanceRecoveryAmount { get; set; }  // A
 		public decimal NetDue { get; set; }            // W+T−R−A
 		public List<ProjectProgress> BillableMeasurements { get; set; } = new();   // Confirmed & not yet billed
+
+		// ---- lifecycle evidence, for the screen ----
+		// Carried on the preview so the view renders WHO and WHEN without a second query, and so the
+		// decision about what the current user may do next is made in one place rather than in Razor.
+		public int BillingIdOrZero => BillingId;
+		public int? CreatedBy { get; set; }      public DateTime? CreatedAt { get; set; }
+		public int? UpdatedBy { get; set; }      public DateTime? UpdatedAt { get; set; }
+		public int? SubmittedBy { get; set; }    public DateTime? SubmittedAt { get; set; }
+		public int? ApprovedBy { get; set; }     public DateTime? ApprovedAt { get; set; }
+		public int? PostedBy { get; set; }       public DateTime? PostedAt { get; set; }
+		public Dictionary<int, string> ActorNames { get; set; } = new();
+		public string ActorName(int? id) => id is int i && ActorNames.TryGetValue(i, out var n) ? n : "";
+
+		// TRUE when the signed-in viewer prepared this billing. The screen uses it to explain why the
+		// approve button is absent instead of silently omitting it - an unexplained missing control is
+		// indistinguishable from a bug.
+		public bool ViewerPreparedIt { get; set; }
 	}
 
 	public interface IProgressBillingService
 	{
 		Task<List<ProgressBilling>> GetBillingsAsync(int companyId, int projectId);
 		Task<ProgressBilling?> GetAsync(int companyId, int id);
-		Task<BillingPreview> BuildPreviewAsync(int companyId, int projectId, int? progressId, int? billingId, decimal? taxRateOverride);
-		Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int billingId, int progressId, DateTime date, decimal taxRate, string? note, int? userId);
-		Task<(bool ok, string? error)> ApproveAsync(int companyId, int id);
-		Task<(bool ok, string? error)> PostAsync(int companyId, int id, int? userId);
+		Task<BillingPreview> BuildPreviewAsync(int companyId, int projectId, int? progressId, int? billingId, decimal? taxRateOverride, int viewerEmployeeId);
+		Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int billingId, int progressId, DateTime date, decimal taxRate, string? note, int actorEmployeeId);
+		Task<(bool ok, string? error)> SubmitAsync(int companyId, int id, int actorEmployeeId);
+		Task<(bool ok, string? error)> ApproveAsync(int companyId, int id, int actorEmployeeId);
+		Task<(bool ok, string? error)> ReturnAsync(int companyId, int id, int actorEmployeeId);
+		Task<(bool ok, string? error)> PostAsync(int companyId, int id, int actorEmployeeId);
 		Task<(bool ok, string? error)> DeleteAsync(int companyId, int id);
 	}
 
@@ -60,6 +79,10 @@ namespace CrossBuy.BL
 		private readonly IContractService _contract;
 		public ProgressBillingService(CrossDbContext db, IReceivableService ar, IProgressService progress, IContractService contract)
 		{ _db = db; _ar = ar; _progress = progress; _contract = contract; }
+
+		// Surfaced to the user as-is, because "you cannot do that" without the reason is what makes a
+		// workflow control feel like a bug. Public so the view and the tests name the same string.
+		public const string SelfApprovalRefused = "لا يمكنك اعتماد مستخلص أعددتَه بنفسك";
 
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private Task<int?> AccIdAsync(int companyId, string code) =>
@@ -122,7 +145,7 @@ namespace CrossBuy.BL
 			return pv;
 		}
 
-		public async Task<BillingPreview> BuildPreviewAsync(int companyId, int projectId, int? progressId, int? billingId, decimal? taxRateOverride)
+		public async Task<BillingPreview> BuildPreviewAsync(int companyId, int projectId, int? progressId, int? billingId, decimal? taxRateOverride, int viewerEmployeeId)
 		{
 			// billable measurements = Confirmed & not already billed (by any billing)
 			var billedProgressIds = await _db.ProgressBillings.AsNoTracking().Where(b => b.CompanyID == companyId && b.ProjectId == projectId).Select(b => b.ProgressId).ToListAsync();
@@ -138,19 +161,38 @@ namespace CrossBuy.BL
 			decimal taxRate = taxRateOverride ?? existing?.TaxRate ?? 0m;
 			int nextNo = existing?.BillingNo ?? ((await _db.ProgressBillings.Where(b => b.CompanyID == companyId && b.ProjectId == projectId).Select(b => (int?)b.BillingNo).MaxAsync() ?? 0) + 1);
 			var date = existing?.BillingDate ?? DateTime.Today;
-			var status = existing?.Status ?? "Draft";
+			var status = existing?.Status ?? ProgressBillingStatuses.Draft;
 			var note = existing?.Note;
+
+			// Resolve the actor NAMES once, for whichever of the five actors this billing actually has.
+			var actorIds = new[] { existing?.CreatedBy, existing?.UpdatedBy, existing?.SubmittedBy,
+				existing?.ApprovedBy, existing?.PostedBy }
+				.Where(x => x is > 0).Select(x => x!.Value).Distinct().ToList();
+			var actorNames = actorIds.Count == 0
+				? new Dictionary<int, string>()
+				: await _db.Employee.AsNoTracking().Where(e => actorIds.Contains(e.ID))
+					.ToDictionaryAsync(e => e.ID, e => e.FullName ?? "");
 
 			BillingPreview pv;
 			if (pgId > 0) pv = await ComputeAsync(companyId, projectId, pgId, existing?.ID ?? 0, taxRate, note, date, nextNo, status);
 			else { var project = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId); pv = new BillingPreview { Project = project, BillingNo = nextNo, BillingDate = date }; }
 
 			// for the picker: measurements still billable (exclude those already billed, but keep the current billing's own)
+			// lifecycle evidence travels with the preview so the screen can show WHO and WHEN
+			pv.BillingId = existing?.ID ?? 0;
+			pv.CreatedBy = existing?.CreatedBy;     pv.CreatedAt = existing?.CreatedAt;
+			pv.UpdatedBy = existing?.UpdatedBy;     pv.UpdatedAt = existing?.UpdatedAt;
+			pv.SubmittedBy = existing?.SubmittedBy; pv.SubmittedAt = existing?.SubmittedAt;
+			pv.ApprovedBy = existing?.ApprovedBy;   pv.ApprovedAt = existing?.ApprovedAt;
+			pv.PostedBy = existing?.PostedBy;       pv.PostedAt = existing?.PostedAt;
+			pv.ActorNames = actorNames;
+			pv.ViewerPreparedIt = viewerEmployeeId > 0 && existing?.CreatedBy == viewerEmployeeId;
+
 			pv.BillableMeasurements = confirmed.Where(c => !billedProgressIds.Contains(c.ID) || c.ID == existing?.ProgressId).ToList();
 			return pv;
 		}
 
-		public async Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int billingId, int progressId, DateTime date, decimal taxRate, string? note, int? userId)
+		public async Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int billingId, int progressId, DateTime date, decimal taxRate, string? note, int actorEmployeeId)
 		{
 			var project = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
 			if (project == null) return (false, "المشروع غير موجود", 0);
@@ -166,13 +208,23 @@ namespace CrossBuy.BL
 			if (billingId > 0)
 			{
 				hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstOrDefaultAsync(b => b.ID == billingId && b.CompanyID == companyId) ?? throw new InvalidOperationException("المستخلص غير موجود");
-				if (hdr.Status != "Draft") return (false, "لا يمكن تعديل مستخلص معتمد/مرحَّل", 0);
+				// Draft AND Returned are editable - Returned exists so an approver can hand a billing back
+			// without deleting it. Submitted, Approved and Posted are not ordinary drafts.
+			if (!ProgressBillingStatuses.IsEditable(hdr.Status)) return (false, "لا يمكن تعديل مستخلص في هذه الحالة", 0);
+			// CreatedBy is NOT touched here. See the entity comment: rewriting the preparer on edit would
+			// let a preparer become eligible to approve their own billing.
+			hdr.UpdatedBy = actorEmployeeId; hdr.UpdatedAt = DateTime.UtcNow;
 				_db.ProgressBillingLines.RemoveRange(hdr.Lines); hdr.Lines.Clear();
 			}
 			else
 			{
 				int nextNo = (await _db.ProgressBillings.Where(b => b.CompanyID == companyId && b.ProjectId == projectId).Select(b => (int?)b.BillingNo).MaxAsync() ?? 0) + 1;
-				hdr = new ProgressBilling { CompanyID = companyId, ProjectId = projectId, BillingNo = nextNo, Status = "Draft", CreatedAt = DateTime.UtcNow, CreatedBy = userId };
+				hdr = new ProgressBilling
+				{
+					CompanyID = companyId, ProjectId = projectId, BillingNo = nextNo,
+					Status = ProgressBillingStatuses.Draft,
+					CreatedAt = DateTime.UtcNow, CreatedBy = actorEmployeeId,
+				};
 				_db.ProgressBillings.Add(hdr);
 			}
 
@@ -184,27 +236,113 @@ namespace CrossBuy.BL
 			foreach (var l in pv.Lines)
 				hdr.Lines.Add(new ProgressBillingLine { BoqItemId = l.BoqItemId, CumulativeExecutedValue = l.CumulativeExecutedValue, PreviouslyBilledValue = l.PreviouslyBilledValue, PeriodValue = l.PeriodValue });
 
+			// Editing a Returned billing puts it back into Draft: the approver's return is answered, and the
+			// next legal move is Submit again.
+			if (hdr.Status == ProgressBillingStatuses.Returned) hdr.Status = ProgressBillingStatuses.Draft;
+
 			await _db.SaveChangesAsync();
 			return (true, null, hdr.ID);
 		}
 
-		public async Task<(bool ok, string? error)> ApproveAsync(int companyId, int id)
+		// ---- SUBMIT: the preparer hands the billing to an approver ----
+		public async Task<(bool ok, string? error)> SubmitAsync(int companyId, int id, int actorEmployeeId)
 		{
 			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
 			if (hdr == null) return (false, "المستخلص غير موجود");
-			if (hdr.Status != "Draft") return (false, "الحالة لا تسمح بالاعتماد");
+			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Submitted))
+				return (false, "الحالة لا تسمح بالإرسال للاعتماد");
 			if (hdr.GrossWork <= 0) return (false, "لا يوجد عمل لفوترته في هذه الفترة");
-			hdr.Status = "Approved";
+
+			hdr.Status = ProgressBillingStatuses.Submitted;
+			hdr.SubmittedBy = actorEmployeeId; hdr.SubmittedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
 			return (true, null);
 		}
 
-		public async Task<(bool ok, string? error)> PostAsync(int companyId, int id, int? userId)
+		// ---- APPROVE: SEPARATION OF DUTIES LIVES HERE ----
+		//
+		// THE PREPARER MAY NOT APPROVE THEIR OWN BILLING. This is a RECORD-level rule, not a role one:
+		// holding billing-approve says the actor may approve billings in general, and this says they may
+		// not approve THIS one. A role check alone can never express that, because the thing being
+		// compared is the record's own preparer.
+		//
+		// It is enforced in the SERVICE and not in the UI: a hidden button is not a control. The actor is
+		// a parameter resolved from the authenticated context by the caller - never a posted field.
+		public async Task<(bool ok, string? error)> ApproveAsync(int companyId, int id, int actorEmployeeId)
 		{
-			var hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
+			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
 			if (hdr == null) return (false, "المستخلص غير موجود");
-			if (hdr.Status == "Posted") return (false, "المستخلص مُرحَّل بالفعل");   // no double posting
-			if (hdr.Status != "Approved") return (false, "يجب اعتماد المستخلص قبل الترحيل");
+			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Approved))
+				return (false, "الحالة لا تسمح بالاعتماد");
+			if (hdr.GrossWork <= 0) return (false, "لا يوجد عمل لفوترته في هذه الفترة");
+
+			// The rule. A billing with no recorded preparer is refused rather than waved through - an
+			// unknown preparer cannot be shown to be someone other than this approver.
+			if (hdr.CreatedBy == null)
+				return (false, "لا يمكن اعتماد مستخلص بلا مُعِدّ مسجَّل");
+			if (hdr.CreatedBy.Value == actorEmployeeId)
+				return (false, SelfApprovalRefused);
+
+			hdr.Status = ProgressBillingStatuses.Approved;
+			hdr.ApprovedBy = actorEmployeeId; hdr.ApprovedAt = DateTime.UtcNow;
+			await _db.SaveChangesAsync();
+			return (true, null);
+		}
+
+		// ---- RETURN: the approver sends it back instead of approving ----
+		// Returned rather than Rejected: the billing stays alive and editable, which is what actually
+		// happens on a site - a measurement is queried, corrected and resubmitted.
+		public async Task<(bool ok, string? error)> ReturnAsync(int companyId, int id, int actorEmployeeId)
+		{
+			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
+			if (hdr == null) return (false, "المستخلص غير موجود");
+			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Returned))
+				return (false, "الحالة لا تسمح بالإعادة");
+
+			hdr.Status = ProgressBillingStatuses.Returned;
+			hdr.UpdatedBy = actorEmployeeId; hdr.UpdatedAt = DateTime.UtcNow;
+			await _db.SaveChangesAsync();
+			return (true, null);
+		}
+
+		// ---- POST: ONE transaction, or nothing ----
+		//
+		// WHAT WAS BROKEN. This method creates a sales invoice and up to two settlement receipts through
+		// ReceivableService, and each of those opens its OWN ScopedTx. With no ambient transaction here,
+		// they committed separately: an invoice could be committed and the retention receipt then fail,
+		// leaving the invoice in the ledger with the billing still 'Approved' and SalesInvoiceId unset.
+		// The retry passed the status guard and posted a SECOND invoice for the same work.
+		//
+		// ScopedTx.BeginOrJoinAsync is the repository's existing answer and is exactly why BeginOrJoin
+		// exists: opened here, the nested AR calls JOIN this transaction instead of owning one, so the
+		// invoice, both receipts, the back-references and the Posted state share one fate.
+		public async Task<(bool ok, string? error)> PostAsync(int companyId, int id, int actorEmployeeId)
+		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+
+			// The billing row is locked FOR THE LIFE OF THE TRANSACTION before anything is read from it.
+			// Two simultaneous Post clicks would otherwise both read Status='Approved' and both proceed;
+			// UPDLOCK serializes them, so the second sees 'Posted' and refuses. Same pattern as the stock
+			// balance guard in StockService - a pessimistic row lock, not a distributed lock.
+			// SQL Server takes a real row lock; SQLite (tests) has a single writer per connection, so the
+			// race this guards against cannot occur there and the hint would only be a syntax error. Same
+			// IsSqlServer() split the dispatch store uses for its claim query.
+			if (_db.Database.IsSqlServer())
+			{
+				var locked = (await _db.ProgressBillings
+					.FromSqlInterpolated($"SELECT * FROM ProgressBillings WITH (UPDLOCK) WHERE ID = {id} AND CompanyID = {companyId}")
+					.AsTracking().ToListAsync()).FirstOrDefault();
+				if (locked == null) return (false, "المستخلص غير موجود");
+			}
+			else if (!await _db.ProgressBillings.AnyAsync(b => b.ID == id && b.CompanyID == companyId))
+			{
+				return (false, "المستخلص غير موجود");
+			}
+
+			var hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstAsync(b => b.ID == id);
+			if (hdr.Status == ProgressBillingStatuses.Posted) return (false, "المستخلص مُرحَّل بالفعل");   // no double posting
+			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Posted))
+					return (false, "يجب اعتماد المستخلص قبل الترحيل");
 			var project = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == hdr.ProjectId && p.CompanyID == companyId);
 			if (project?.CustomerId == null) return (false, "المشروع بلا عميل — عيّن عميلًا للمشروع أولًا");
 			int customerId = project.CustomerId.Value;
@@ -222,7 +360,7 @@ namespace CrossBuy.BL
 			var invLines = new List<SalesLineInput> {
 				new() { ItemDescription = $"مستخلص #{hdr.BillingNo} - {project.Code}", Qty = 1m, UnitPrice = pv.GrossWork, DiscountAmount = 0m, TaxRate = hdr.TaxRate, RevenueAccountId = rev.Value }
 			};
-			var (iok, ierr, inv) = await _ar.CreateSalesInvoiceAsync(companyId, customerId, hdr.BillingDate, invLines, hdr.Note, userId, projectId: hdr.ProjectId);
+			var (iok, ierr, inv) = await _ar.CreateSalesInvoiceAsync(companyId, customerId, hdr.BillingDate, invLines, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
 			if (!iok || inv == null) return (false, "تعذّر إنشاء فاتورة المستخلص: " + ierr);
 
 			// (2) retention withheld (Dr 1104 / Cr 1102) — settlement receipt, ProjectId-tagged
@@ -231,7 +369,7 @@ namespace CrossBuy.BL
 			{
 				if (acc1104 == null) return (false, "حساب المحتجز (1104) غير مُهيّأ");
 				int before = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId).Select(r => (int?)r.ID).MaxAsync() ?? 0;
-				var (rok, rerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.RetentionAmount, "Retention", acc1104.Value, hdr.Note, userId, projectId: hdr.ProjectId);
+				var (rok, rerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.RetentionAmount, "Retention", acc1104.Value, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
 				if (!rok) return (false, "تعذّر ترحيل المحتجز: " + rerr);
 				retReceiptId = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.ID > before).Select(r => (int?)r.ID).MaxAsync();
 			}
@@ -240,7 +378,7 @@ namespace CrossBuy.BL
 			{
 				if (acc2104 == null) return (false, "حساب المقدّم (2104) غير مُهيّأ");
 				int before = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId).Select(r => (int?)r.ID).MaxAsync() ?? 0;
-				var (aok, aerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.AdvanceRecoveryAmount, "AdvanceRecovery", acc2104.Value, hdr.Note, userId, projectId: hdr.ProjectId);
+				var (aok, aerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.AdvanceRecoveryAmount, "AdvanceRecovery", acc2104.Value, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
 				if (!aok) return (false, "تعذّر ترحيل استرداد المقدّم: " + aerr);
 				advReceiptId = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.ID > before).Select(r => (int?)r.ID).MaxAsync();
 			}
@@ -251,10 +389,12 @@ namespace CrossBuy.BL
 			track.GrossWork = pv.GrossWork; track.TaxAmount = pv.TaxAmount; track.RetentionAmount = pv.RetentionAmount;
 			track.AdvanceRecoveryAmount = pv.AdvanceRecoveryAmount; track.NetDue = pv.NetDue;
 			track.SalesInvoiceId = inv.ID; track.RetentionReceiptId = retReceiptId; track.AdvanceReceiptId = advReceiptId;
-			track.CustomerId = customerId; track.Status = "Posted"; track.PostedAt = DateTime.UtcNow; track.PostedBy = userId;
+			track.CustomerId = customerId; track.Status = ProgressBillingStatuses.Posted;
+			track.PostedAt = DateTime.UtcNow; track.PostedBy = actorEmployeeId;
 			foreach (var l in pv.Lines)
 				track.Lines.Add(new ProgressBillingLine { BoqItemId = l.BoqItemId, CumulativeExecutedValue = l.CumulativeExecutedValue, PreviouslyBilledValue = l.PreviouslyBilledValue, PeriodValue = l.PeriodValue });
 			await _db.SaveChangesAsync();
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
@@ -262,7 +402,11 @@ namespace CrossBuy.BL
 		{
 			var hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
 			if (hdr == null) return (false, "المستخلص غير موجود");
-			if (hdr.Status == "Posted") return (false, "لا يمكن حذف مستخلص مرحَّل");
+			// Tightened to match the state machine: Draft and Returned may be deleted, Submitted and
+			// Approved may not - deleting a billing somebody is approving, or has approved, would erase the
+			// decision along with the document. Posted was already refused.
+			if (!ProgressBillingStatuses.IsEditable(hdr.Status))
+				return (false, "لا يمكن حذف مستخلص في هذه الحالة");
 			_db.ProgressBillingLines.RemoveRange(hdr.Lines);
 			_db.ProgressBillings.Remove(hdr);
 			await _db.SaveChangesAsync();

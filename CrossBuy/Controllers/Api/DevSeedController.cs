@@ -1,4 +1,4 @@
-using CrossBuy.BL;
+﻿using CrossBuy.BL;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Admin;
 using CrossBuy.Models.Context.Accounting;
@@ -21,6 +21,11 @@ namespace CrossBuy.Controllers.Api
 	// which MVC invokes as an implicit action filter. Controller : ControllerBase — every existing endpoint is unaffected.
 	public class DevSeedController : Controller
 	{
+		// Project billing now enforces preparer != approver, so this harness seeds two identities.
+		// Any two distinct employee ids satisfy the record rule; they are seed-local and mean nothing else.
+		private const int SeedPreparer = 1;
+		private const int SeedApprover = 2;
+
 		private readonly UserManager<Users> _um;
 		private readonly CrossDbContext _db;
 		private readonly CrossBuy.BL.ICostCenterService _costCenters;
@@ -9581,19 +9586,20 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			await progress.ConfirmAsync(companyId, m1);
 
 			// billing #1 from m1: W=100,000 · Tax 14% → 14,000 · Retention 10% → 10,000 · Advance recovery 25% → 25,000 · Net 79,000
-			var (sdOk, sdErr, bid) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 14m, "مستخلص 1", null);
+			var (sdOk, sdErr, bid) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 14m, "مستخلص 1", SeedPreparer);
 			if (!sdOk) return BadRequest(new { step = "saveDraft", error = sdErr });
 			var draft = await billing.GetAsync(companyId, bid);
 
 			// double-billing guard: a second billing for the SAME measurement must be blocked
-			var (dupOk, dupErr, _) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 14m, null, null);
+			var (dupOk, dupErr, _) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 14m, null, SeedPreparer);
 			bool dupeBlocked = !dupOk;
 
-			await billing.ApproveAsync(companyId, bid);
-			var (postOk, postErr) = await billing.PostAsync(companyId, bid, null);
+			await billing.SubmitAsync(companyId, bid, SeedPreparer);
+			await billing.ApproveAsync(companyId, bid, SeedApprover);
+			var (postOk, postErr) = await billing.PostAsync(companyId, bid, SeedApprover);
 			if (!postOk) return BadRequest(new { step = "post", error = postErr });
 			// re-post guard
-			var (rePostOk, _) = await billing.PostAsync(companyId, bid, null);
+			var (rePostOk, _) = await billing.PostAsync(companyId, bid, SeedApprover);
 			bool rePostBlocked = !rePostOk;
 
 			var posted = await billing.GetAsync(companyId, bid);
@@ -10231,10 +10237,11 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			// measurement + posted billing (snapshot). A cum 100 → executed 50,000
 			var (_, _, m1) = await progress.SaveMeasurementAsync(companyId, pid, 0, DateTime.Today, "قياس 1", new List<CrossBuy.BL.ProgressRowInput> { new() { BoqItemId = aId, CumulativeQty = 100m } }, null);
 			await progress.ConfirmAsync(companyId, m1);
-			var (bdok, bderr, bid) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 0m, "مستخلص 1", null);
+			var (bdok, bderr, bid) = await billing.SaveDraftAsync(companyId, pid, 0, m1, DateTime.Today, 0m, "مستخلص 1", SeedPreparer);
 			if (!bdok) return BadRequest(new { step = "billingDraft", error = bderr });
-			await billing.ApproveAsync(companyId, bid);
-			var (bpok, bperr) = await billing.PostAsync(companyId, bid, null);
+			await billing.SubmitAsync(companyId, bid, SeedPreparer);
+			await billing.ApproveAsync(companyId, bid, SeedApprover);
+			var (bpok, bperr) = await billing.PostAsync(companyId, bid, SeedApprover);
 			if (!bpok) return BadRequest(new { step = "billingPost", error = bperr });
 			var b1 = await billing.GetAsync(companyId, bid);
 			decimal prevPeriod = b1!.Lines.First().PeriodValue;   // snapshot (should be 50,000)
@@ -14968,15 +14975,16 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 						if (cust != null) { freshPrj.CustomerId = cust; await _db.SaveChangesAsync(); log.Add($"Project: assigned customer #{cust} (needed to post billing)"); }
 					}
 
-					var (bok, berr, bid) = await billing.SaveDraftAsync(companyId, id, 0, mid, DateTime.Today, 14m, "First period billing", null);
+					var (bok, berr, bid) = await billing.SaveDraftAsync(companyId, id, 0, mid, DateTime.Today, 14m, "First period billing", SeedPreparer);
 					if (!bok) log.Add($"Billing: draft failed — {berr}");
 					else
 					{
-						var (aok, aerr) = await billing.ApproveAsync(companyId, bid);
+						await billing.SubmitAsync(companyId, bid, SeedPreparer);
+					var (aok, aerr) = await billing.ApproveAsync(companyId, bid, SeedApprover);
 						if (!aok) log.Add($"Billing #{bid}: approve failed — {aerr}");
 						else
 						{
-							var (pok, perr) = await billing.PostAsync(companyId, bid, null);
+							var (pok, perr) = await billing.PostAsync(companyId, bid, SeedApprover);
 							log.Add(pok ? $"Billing #{bid}: POSTED (invoice created)" : $"Billing #{bid}: approved but post failed — {perr}");
 						}
 					}

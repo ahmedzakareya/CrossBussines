@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 424,
+    "mutating": 426,
     "attributeProtected": 157,
-    "inBodyProtected": 173,
+    "inBodyProtected": 175,
     "gaps": 94
   },
   "rules": [
@@ -1335,6 +1335,14 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Project billing separation of duties, batch 1 (TAB-6 implementation / TAB-1 reconciliation, 2026-08-30)",
+      "mutating": 426,
+      "attributeProtected": 157,
+      "inBodyProtected": 175,
+      "gaps": 94,
+      "note": "TWO new POST endpoints on the EXISTING ProjectController - SubmitBilling and ReturnBilling - so the controller count does not move. Both are protected in body from the moment they land, through IProjectsAccessService.CanAsync on a PermissionTarget.ForProject before they act, with the actor taken from the resolved BusinessContext and every refusal answering identically so the endpoint cannot be used to probe which projects exist. NO BASELINE ENTRY WAS ADDED OR REMOVED, and the integrated candidate produced ZERO CBA004: an endpoint that arrives protected was never in this list, so there was nothing stale to resolve. This increment is therefore purely descriptive - mutating 424 -> 426 and inBodyProtected 173 -> 175, attributeProtected unchanged at 157 because both authorize in body rather than by attribute, and gaps UNCHANGED at 94 with the gap set identical id for id. 157 + 175 + 94 = 426. WHAT THE ENDPOINTS ARE FOR, because the authorization shape is the point of the batch. The single 'billing' right covered preparing, approving and posting, which makes separation of duties impossible to express: holding it once is holding it for the whole lifecycle. It is split into billing-prepare, billing-approve and billing-post. The old 'billing' action is KEPT and unchanged - advance receipt, retention release and subcontractor billing still use it. billing-post carries the same accounting requirement the old single right did: it demands Accounting 'post', which is on the NeverBootstrapOpen list, so no Projects-side bootstrap can imply a ledger effect. Preparing and approving deliberately do NOT demand it, because neither touches the ledger and requiring the posting right to approve would have made the split worthless. Whether a given approver may approve a given billing is a RECORD-level question a module access service cannot answer - it is not given the document - so ProgressBillingService refuses when CreatedBy equals the actor, and refuses a billing with no recorded preparer rather than waving it through, since an unknown preparer cannot be shown to be someone other than this approver. No diagnostic was suppressed, no analyzer rule weakened, no permission loosened and no unrelated debt re-blessed to reach these numbers."
+    },
     {
       "stage": "HR authorization foundation (TAB-2 implementation / TAB-1 reconciliation, 2026-08-30)",
       "mutating": 424,

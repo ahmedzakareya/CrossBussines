@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CrossBuy.Models.Context.Accounting
 {
@@ -15,7 +15,7 @@ namespace CrossBuy.Models.Context.Accounting
 		public int? CustomerId { get; set; }               // from the project (invoice/receipts party)
 		public int BillingNo { get; set; }                 // sequence per project
 		public DateTime BillingDate { get; set; }
-		public string Status { get; set; } = "Draft";      // Draft (edit) / Approved (locked) / Posted (GL created)
+		public string Status { get; set; } = ProgressBillingStatuses.Draft;
 		public decimal GrossWork { get; set; }             // W — period work value
 		public decimal TaxRate { get; set; }
 		public decimal TaxAmount { get; set; }             // T = W × TaxRate
@@ -27,12 +27,60 @@ namespace CrossBuy.Models.Context.Accounting
 		public int? RetentionReceiptId { get; set; }
 		public int? AdvanceReceiptId { get; set; }
 		public string? Note { get; set; }
+		// ---- lifecycle actor evidence ----
+		//
+		// CreatedBy is the PREPARER and is written once. Editing a draft updates UpdatedBy/UpdatedAt and
+		// leaves CreatedBy alone, because the separation-of-duties rule is ApprovedBy != CreatedBy: if an
+		// edit could rewrite CreatedBy, the preparer could make themselves eligible to approve their own
+		// billing by touching it once. That is the whole reason these are two distinct pairs.
 		public DateTime? CreatedAt { get; set; }
 		public int? CreatedBy { get; set; }
+		public DateTime? UpdatedAt { get; set; }
+		public int? UpdatedBy { get; set; }
+		public DateTime? SubmittedAt { get; set; }
+		public int? SubmittedBy { get; set; }
+		public DateTime? ApprovedAt { get; set; }
+		public int? ApprovedBy { get; set; }
 		public DateTime? PostedAt { get; set; }
 		public int? PostedBy { get; set; }
 
 		public List<ProgressBillingLine> Lines { get; set; } = new();
+	}
+
+	// The billing lifecycle. STRINGS, not an enum, because the column is nvarchar(20) and rows written
+	// before this batch already carry these literals - an enum would need a mapping layer to say the same
+	// thing. Draft, Approved and Posted keep their exact historical spelling so existing rows stay legal.
+	public static class ProgressBillingStatuses
+	{
+		public const string Draft = "Draft";          // being prepared; editable
+		public const string Submitted = "Submitted";  // handed to an approver; no longer an ordinary draft
+		public const string Returned = "Returned";    // sent back by an approver; editable again
+		public const string Approved = "Approved";    // authorized to post; locked
+		public const string Posted = "Posted";        // GL effects exist; immutable
+
+		public static readonly IReadOnlyList<string> All =
+			new[] { Draft, Submitted, Returned, Approved, Posted };
+
+		// The ONLY legal moves. Read it as a table rather than scattered if-statements, so the state machine
+		// can be asserted directly by a test instead of inferred from the services that use it.
+		public static readonly IReadOnlyDictionary<string, string[]> LegalNext =
+			new Dictionary<string, string[]>(StringComparer.Ordinal)
+			{
+				[Draft]     = new[] { Submitted },
+				[Submitted] = new[] { Approved, Returned },
+				[Returned]  = new[] { Submitted },
+				[Approved]  = new[] { Posted },
+				[Posted]    = Array.Empty<string>(),   // terminal in this batch; reversal is Product Batch 2
+			};
+
+		public static bool CanMove(string? from, string to) =>
+			from != null && LegalNext.TryGetValue(from, out var next)
+			&& Array.IndexOf(next, to) >= 0;
+
+		// Draft and Returned are the two editable states - Returned exists precisely so an approver can put
+		// a billing back into the preparer's hands without deleting it.
+		public static bool IsEditable(string? status) =>
+			status == Draft || status == Returned;
 	}
 
 	public class ProgressBillingLine

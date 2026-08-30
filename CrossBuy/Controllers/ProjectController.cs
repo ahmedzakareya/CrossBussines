@@ -77,6 +77,9 @@ namespace CrossBuy.Controllers
 		{
 			public bool Ok;
 			public int CompanyId;
+			// The ACTOR, resolved from the authenticated BusinessContext by the gate itself. Actions take
+			// it from here and never from the request, so no posted field can carry an actor id in.
+			public int ActorEmployeeId;
 			public IActionResult? Denied;
 		}
 
@@ -96,6 +99,9 @@ namespace CrossBuy.Controllers
 			var ctx = await _businessContexts.TryGetCurrentAsync();
 			if (ctx == null) return new ProjectGate { Denied = Deny() };
 
+			// No resolved employee means no attributable actor. Refuse rather than record a null one.
+			if (ctx.EmployeeId is not > 0) return new ProjectGate { Denied = Deny() };
+
 			if (projectId <= 0) return new ProjectGate { Denied = Deny() };
 
 			if (!await _projectsAccess.CanAsync(ctx, action, PermissionTarget.ForProject(projectId)))
@@ -106,7 +112,7 @@ namespace CrossBuy.Controllers
 			if (requireAccountingPost && !await _accounting.CanAsync(ctx, "post"))
 				return new ProjectGate { Denied = Deny() };
 
-			return new ProjectGate { Ok = true, CompanyId = scope.CompanyId };
+			return new ProjectGate { Ok = true, CompanyId = scope.CompanyId, ActorEmployeeId = ctx.EmployeeId!.Value };
 		}
 
 
@@ -130,10 +136,13 @@ namespace CrossBuy.Controllers
 			var ctx = await _businessContexts.TryGetCurrentAsync();
 			if (ctx == null) return new ProjectGate { Denied = Deny() };
 
+			// No resolved employee means no attributable actor. Refuse rather than record a null one.
+			if (ctx.EmployeeId is not > 0) return new ProjectGate { Denied = Deny() };
+
 			if (!await _projectsAccess.CanAsync(ctx, action, null))
 				return new ProjectGate { Denied = Deny() };
 
-			return new ProjectGate { Ok = true, CompanyId = scope.CompanyId };
+			return new ProjectGate { Ok = true, CompanyId = scope.CompanyId, ActorEmployeeId = ctx.EmployeeId!.Value };
 		}
 
 		// dropdown data for the project form
@@ -458,16 +467,16 @@ namespace CrossBuy.Controllers
 			// show the editor only when the user explicitly starts a new billing (neu) or opens an existing one (b/m);
 			// otherwise the landing shows the list + a CTA, so «New billing» is a visible action, not a silent refresh.
 			ViewBag.ShowEditor = neu || (b.HasValue && b.Value > 0) || (m.HasValue && m.Value > 0);
-			return View(await _billing.BuildPreviewAsync(gate.CompanyId, id, m, b, taxRate));
+			return View(await _billing.BuildPreviewAsync(gate.CompanyId, id, m, b, taxRate, gate.ActorEmployeeId));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveBilling(int projectId, int billingId, int progressId, DateTime billingDate, decimal taxRate, string? note)
 		{
-			var gate = await GateAsync(ProjectsActions.Billing, projectId);
+			var gate = await GateAsync(ProjectsActions.BillingPrepare, projectId);
 			if (!gate.Ok) return gate.Denied!;
 
-			var (ok, err, sid) = await _billing.SaveDraftAsync(gate.CompanyId, projectId, billingId, progressId, billingDate, taxRate, note, null);
+			var (ok, err, sid) = await _billing.SaveDraftAsync(gate.CompanyId, projectId, billingId, progressId, billingDate, taxRate, note, gate.ActorEmployeeId);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing saved"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId, b = ok ? sid : billingId, m = progressId });
 		}
@@ -475,10 +484,13 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> ApproveBilling(int id, int projectId)
 		{
-			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			// billing-approve, NOT billing-post: approving creates no ledger effect, so it must not demand the
+			// accounting posting right. Whether THIS approver may approve THIS billing (the preparer may not)
+			// is decided by the service against the record - a module right cannot answer that.
+			var gate = await GateAsync(ProjectsActions.BillingApprove, projectId);
 			if (!gate.Ok) return gate.Denied!;
 
-			var (ok, err) = await _billing.ApproveAsync(gate.CompanyId, id);
+			var (ok, err) = await _billing.ApproveAsync(gate.CompanyId, id, gate.ActorEmployeeId);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing approved"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId, b = id });
 		}
@@ -486,10 +498,12 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> PostBilling(int id, int projectId)
 		{
-			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			// billing-post already requires the accounting posting right inside ProjectsAccessService, so the
+			// requireAccountingPost flag would only re-ask the same question.
+			var gate = await GateAsync(ProjectsActions.BillingPost, projectId);
 			if (!gate.Ok) return gate.Denied!;
 
-			var (ok, err) = await _billing.PostAsync(gate.CompanyId, id, null);
+			var (ok, err) = await _billing.PostAsync(gate.CompanyId, id, gate.ActorEmployeeId);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing posted"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId, b = id });
 		}
@@ -497,12 +511,34 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteBilling(int id, int projectId)
 		{
-			var gate = await GateAsync(ProjectsActions.Billing, projectId, requireAccountingPost: true);
+			var gate = await GateAsync(ProjectsActions.BillingPrepare, projectId);
 			if (!gate.Ok) return gate.Denied!;
 
 			var (ok, err) = await _billing.DeleteAsync(gate.CompanyId, id);
 			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing deleted"].Value : err;
 			return RedirectToAction(nameof(Billing), new { id = projectId });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> SubmitBilling(int id, int projectId)
+		{
+			var gate = await GateAsync(ProjectsActions.BillingPrepare, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _billing.SubmitAsync(gate.CompanyId, id, gate.ActorEmployeeId);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing submitted for approval"].Value : err;
+			return RedirectToAction(nameof(Billing), new { id = projectId, b = id });
+		}
+
+		[HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> ReturnBilling(int id, int projectId)
+		{
+			var gate = await GateAsync(ProjectsActions.BillingApprove, projectId);
+			if (!gate.Ok) return gate.Denied!;
+
+			var (ok, err) = await _billing.ReturnAsync(gate.CompanyId, id, gate.ActorEmployeeId);
+			TempData[ok ? "PrjMsg" : "PrjErr"] = ok ? L["Progress billing returned to the preparer"].Value : err;
+			return RedirectToAction(nameof(Billing), new { id = projectId, b = id });
 		}
 
 		// ---- P5-أ: project material issue (actual material cost via StockService) ----

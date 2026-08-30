@@ -38,10 +38,20 @@ namespace CrossBuy.BL
         public const string BudgetView = "budget-view";
         public const string BudgetManage = "budget-manage";
         public const string Billing = "billing";            // progress billing / invoicing a project
+
+        // Project billing split into the three business capabilities of its lifecycle. `billing` above is
+        // KEPT and unchanged: advance receipt, retention release and subcontractor billing still use it, and
+        // this batch is not redesigning those. These three govern PROGRESS BILLING only.
+        //
+        // The split exists because one right covering prepare, approve and post makes separation of duties
+        // impossible to express: holding it once is holding it for the whole lifecycle.
+        public const string BillingPrepare = "billing-prepare";   // create / edit / submit a billing draft
+        public const string BillingApprove = "billing-approve";   // approve or return a submitted billing
+        public const string BillingPost = "billing-post";         // post an approved billing to the GL
         public const string Close = "close";
 
         public static readonly IReadOnlyCollection<string> All = new[]
-        { Read, Create, Edit, Manage, BudgetView, BudgetManage, Billing, Close };
+        { Read, Create, Edit, Manage, BudgetView, BudgetManage, Billing, BillingPrepare, BillingApprove, BillingPost, Close };
     }
 
     // Module roles (PlatformRoleAssignments, Scope = 'Projects'). Distinct from ProjectMemberRoles, which is a
@@ -101,7 +111,38 @@ namespace CrossBuy.BL
             // ledger, so `billing` requires the ACCOUNTING module's own decision as well — it cooperates with
             // AccountingAccessService rather than substituting for it. This is the rule that stops project
             // administration becoming a back door into accounting.
-            if (action == ProjectsActions.Billing)
+            // ---- posting to the ledger: the accounting right is required and is NOT negotiable ----
+        //
+        // `billing-post` carries the same accounting requirement the old single `billing` right carried.
+        // Accounting "post" is on the NeverBootstrapOpen list, so no projects-side bootstrap can imply it -
+        // a company with no Projects roles configured still cannot reach the GL without a real accounting
+        // role. That boundary is deliberately preserved, not relaxed, by this split.
+        if (action == ProjectsActions.BillingPost)
+        {
+            if (!await _accounting.CanAsync(context, "post", null, cancellationToken))
+            {
+                _log.LogInformation(
+                    "Projects: 'billing-post' denied for employee {Employee} - the accounting module refused " +
+                    "'post'. Posting a progress billing creates GL effects, so it requires the accounting right.",
+                    context.EmployeeId);
+                return false;
+            }
+            if (!(admin || finance || bootstrapOpen)) return false;
+            return await ProjectIsInScopeAsync(context, target, requireMembership: false, cancellationToken);
+        }
+
+        // ---- preparing and approving do NOT touch the ledger, so they do not require accounting post ----
+        //
+        // Whether THIS approver may approve THIS billing is a record-level question (the preparer may not
+        // approve their own) and is answered by ProgressBillingService against the billing row. A module
+        // access service cannot answer it: it is not given the document.
+        if (action is ProjectsActions.BillingPrepare or ProjectsActions.BillingApprove)
+        {
+            if (!(admin || finance || bootstrapOpen)) return false;
+            return await ProjectIsInScopeAsync(context, target, requireMembership: false, cancellationToken);
+        }
+
+        if (action == ProjectsActions.Billing)
             {
                 bool accountingSaysYes = await _accounting.CanAsync(context, "post", null, cancellationToken);
                 if (!accountingSaysYes)
