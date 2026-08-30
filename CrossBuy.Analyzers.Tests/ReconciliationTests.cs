@@ -141,9 +141,21 @@ public class ReconciliationTests
     //
     // 426 = 157 + 175 + 94.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 426;
+    // ----------------------------------------------------------------------------------------------
+    // 426 -> 430 (employee onboarding, 2026-08-30), and the CONTROLLER count moves for the first time
+    // in several increments: 47 -> 48. EmployeeOnboardingController is a new surface carrying four
+    // POSTs - Start, CompleteItem, WaiveItem and Complete.
+    //
+    // The debt figure does not move and the entry list does not change. All four resolve the
+    // BusinessContext and ask IHrAccessService for employee-manage before they act, so they arrive
+    // protected, were never in the baseline, and produced ZERO CBA004. Attribute-protected does not
+    // move either, because all four authorize in body.
+    //
+    // 430 = 157 + 179 + 94.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 430;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 175;
+    private const int FrozenInBodyProtected = 179;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
     private const int FrozenGaps = 94;
@@ -169,7 +181,7 @@ public class ReconciliationTests
     // resolves to CrossBuyDev. A GET-only dev harness has nothing for the mutating inventory to measure.
     // +1 for ReportStudioApiController (Report Studio V1). Its five endpoints all authorize in-body, so the
     // controller count and the descriptive totals move together while the debt figure does not.
-    private const int FrozenControllers = 47;
+    private const int FrozenControllers = 48;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

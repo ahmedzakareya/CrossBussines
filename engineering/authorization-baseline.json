@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 426,
+    "mutating": 430,
     "attributeProtected": 157,
-    "inBodyProtected": 175,
+    "inBodyProtected": 179,
     "gaps": 94
   },
   "rules": [
@@ -1335,6 +1335,15 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Employee onboarding (TAB-2 implementation / TAB-1 reconciliation, 2026-08-30)",
+      "mutating": 430,
+      "attributeProtected": 157,
+      "inBodyProtected": 179,
+      "gaps": 94,
+      "controllers": 48,
+      "note": "FOUR new POST endpoints on a NEW controller, EmployeeOnboardingController - Start, CompleteItem, WaiveItem and Complete - so the controller count moves 47 -> 48 alongside the endpoint total. All four are protected in body from the moment they land: each resolves the BusinessContext, refuses when no company resolves, and asks IHrAccessService.CanAsync for 'employee-manage' before it acts, with [ValidateAntiForgeryToken] on every one. The service then re-asks the precise per-employee question, so the controller gate is a coarse pre-check rather than the only check. NO BASELINE ENTRY WAS ADDED OR REMOVED and the integrated candidate produced ZERO CBA004 - an endpoint that arrives protected was never in this list, so nothing was stale. Purely descriptive: mutating 426 -> 430, inBodyProtected 175 -> 179, attributeProtected unchanged at 157 because all four authorize in body rather than by attribute, and gaps UNCHANGED at 94 with the gap set identical id for id. 157 + 179 + 94 = 430. SELF-SERVICE IS DELIBERATELY ASYMMETRIC and none of it is in these four numbers: an employee with no HR role may READ their own onboarding, may not read a colleague's, and may not complete, waive or finish anything. Read paths are not mutating endpoints and this file does not track them. Waiver in particular stays an explicit management operation carrying an actor, a reason and a timestamp - it records who excused a requirement and why, and never marks it complete. No diagnostic was suppressed, no analyzer rule weakened, no permission loosened, and none of the 94 existing gaps was removed to make anything green."
+    },
     {
       "stage": "Project billing separation of duties, batch 1 (TAB-6 implementation / TAB-1 reconciliation, 2026-08-30)",
       "mutating": 426,

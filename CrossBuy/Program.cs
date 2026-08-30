@@ -156,6 +156,11 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     .MapPermission(CrossBuy.BL.Reporting.CrmReportPermissions.View,
         "Admin", "SuperAdmin", "Auditor", "Sales"));
 
+// HR Product Batch 1 — employee onboarding. Appended in TAB-2's own region, next to the module's other
+// registration. The service is scoped because it takes the request's DbContext and BusinessContext.
+builder.Services.AddScoped<CrossBuy.BL.Hr.IReportClockShim, CrossBuy.BL.Hr.SystemOnboardingClock>();
+builder.Services.AddScoped<CrossBuy.BL.Hr.IEmployeeOnboardingService, CrossBuy.BL.Hr.EmployeeOnboardingService>();
+
 // ---- CrossBusiness Workspace (R1–R3) ----
 //
 // ONE line, same reasoning as the Reporting block above: this file is edited by several tabs at once and a

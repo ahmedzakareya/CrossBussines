@@ -478,6 +478,12 @@ namespace CrossBuy.Models.Context
         public DbSet<Reporting.ReportFavorite> ReportFavorites { get; set; }
         public DbSet<Reporting.ReportShare> ReportShares { get; set; }
         public DbSet<Reporting.ReportAsset> ReportAssets { get; set; }
+
+        // HR Product Batch 1 — employee onboarding. Four tables, appended in TAB-2's own region.
+        public DbSet<Hr.EmployeeOnboarding> EmployeeOnboardings { get; set; }
+        public DbSet<Hr.EmployeeOnboardingItem> EmployeeOnboardingItems { get; set; }
+        public DbSet<Hr.OnboardingTemplate> OnboardingTemplates { get; set; }
+        public DbSet<Hr.OnboardingTemplateItem> OnboardingTemplateItems { get; set; }
         public DbSet<Reporting.ReportRun> ReportRuns { get; set; }
         public DbSet<Reporting.ReportArchiveEntry> ReportArchiveEntries { get; set; }
         public DbSet<Reporting.ReportSchedule> ReportSchedules { get; set; }

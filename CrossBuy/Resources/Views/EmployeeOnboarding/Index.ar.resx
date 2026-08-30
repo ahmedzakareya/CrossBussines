@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="A reason is required to waive a requirement." xml:space="preserve">
+    <value>يجب ذكر سبب لاستثناء المتطلب.</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>الإجراء</value>
+  </data>
+  <data name="Assigned person" xml:space="preserve">
+    <value>شخص محدد</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>إغلاق</value>
+  </data>
+  <data name="Complete onboarding" xml:space="preserve">
+    <value>إنهاء الالتحاق</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>مكتمل</value>
+  </data>
+  <data name="Confirm waiver" xml:space="preserve">
+    <value>تأكيد الاستثناء</value>
+  </data>
+  <data name="Department" xml:space="preserve">
+    <value>الإدارة</value>
+  </data>
+  <data name="Document" xml:space="preserve">
+    <value>المستند</value>
+  </data>
+  <data name="Documents on file" xml:space="preserve">
+    <value>المستندات المتوفرة</value>
+  </data>
+  <data name="Due date" xml:space="preserve">
+    <value>تاريخ الاستحقاق</value>
+  </data>
+  <data name="Employee" xml:space="preserve">
+    <value>الموظف</value>
+  </data>
+  <data name="Employee no." xml:space="preserve">
+    <value>رقم الموظف</value>
+  </data>
+  <data name="Employee onboarding" xml:space="preserve">
+    <value>التحاق الموظف</value>
+  </data>
+  <data name="Expires" xml:space="preserve">
+    <value>ينتهي في</value>
+  </data>
+  <data name="HR" xml:space="preserve">
+    <value>الموارد البشرية</value>
+  </data>
+  <data name="In progress" xml:space="preserve">
+    <value>قيد التنفيذ</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>غير نشط</value>
+  </data>
+  <data name="Item completed" xml:space="preserve">
+    <value>تم إكمال المتطلب</value>
+  </data>
+  <data name="Job title" xml:space="preserve">
+    <value>المسمى الوظيفي</value>
+  </data>
+  <data name="Joining date" xml:space="preserve">
+    <value>تاريخ الالتحاق</value>
+  </data>
+  <data name="Line manager" xml:space="preserve">
+    <value>المدير المباشر</value>
+  </data>
+  <data name="Mandatory requirements" xml:space="preserve">
+    <value>المتطلبات الإلزامية</value>
+  </data>
+  <data name="Mark complete" xml:space="preserve">
+    <value>تعليم كمكتمل</value>
+  </data>
+  <data name="Missing or expired" xml:space="preserve">
+    <value>مفقود أو منتهي الصلاحية</value>
+  </data>
+  <data name="No onboarding plan for this employee" xml:space="preserve">
+    <value>لا توجد خطة التحاق لهذا الموظف</value>
+  </data>
+  <data name="Not ready — requirements outstanding" xml:space="preserve">
+    <value>غير جاهز — متطلبات غير مكتملة</value>
+  </data>
+  <data name="On file" xml:space="preserve">
+    <value>متوفر</value>
+  </data>
+  <data name="Onboarding checklist" xml:space="preserve">
+    <value>قائمة متطلبات الالتحاق</value>
+  </data>
+  <data name="Onboarding completed" xml:space="preserve">
+    <value>تم إنهاء الالتحاق</value>
+  </data>
+  <data name="Onboarding started" xml:space="preserve">
+    <value>تم بدء الالتحاق</value>
+  </data>
+  <data name="Optional" xml:space="preserve">
+    <value>اختياري</value>
+  </data>
+  <data name="Overdue" xml:space="preserve">
+    <value>متأخر</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>قيد الانتظار</value>
+  </data>
+  <data name="Ready to work" xml:space="preserve">
+    <value>جاهز للعمل</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>السبب</value>
+  </data>
+  <data name="Required document" xml:space="preserve">
+    <value>مستند مطلوب</value>
+  </data>
+  <data name="Requirement" xml:space="preserve">
+    <value>المتطلب</value>
+  </data>
+  <data name="Requirement waived" xml:space="preserve">
+    <value>تم استثناء المتطلب</value>
+  </data>
+  <data name="Responsible" xml:space="preserve">
+    <value>المسؤول</value>
+  </data>
+  <data name="Some mandatory requirements are still outstanding." xml:space="preserve">
+    <value>ما زالت هناك متطلبات إلزامية غير مكتملة.</value>
+  </data>
+  <data name="Start onboarding" xml:space="preserve">
+    <value>بدء الالتحاق</value>
+  </data>
+  <data name="Start onboarding to build the checklist from the company template." xml:space="preserve">
+    <value>ابدأ الالتحاق لإنشاء قائمة المتطلبات من قالب الشركة.</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Target completion date" xml:space="preserve">
+    <value>تاريخ الإنجاز المستهدف</value>
+  </data>
+  <data name="That onboarding template is not available." xml:space="preserve">
+    <value>قالب الالتحاق غير متاح.</value>
+  </data>
+  <data name="The required document has not been provided, or is not valid." xml:space="preserve">
+    <value>المستند المطلوب غير مرفوع أو غير صالح.</value>
+  </data>
+  <data name="Waive" xml:space="preserve">
+    <value>استثناء</value>
+  </data>
+  <data name="Waive requirement" xml:space="preserve">
+    <value>استثناء متطلب</value>
+  </data>
+  <data name="Waived" xml:space="preserve">
+    <value>مُستثنى</value>
+  </data>
+  <data name="Waiving records who excused this requirement and why. It does not mark it complete." xml:space="preserve">
+    <value>الاستثناء يسجّل من استثنى هذا المتطلب ولماذا، ولا يعني أن المتطلب قد اكتمل.</value>
+  </data>
+  <data name="What remains before this employee is operationally ready" xml:space="preserve">
+    <value>ما تبقّى قبل أن يصبح الموظف جاهزًا للعمل</value>
+  </data>
+  <data name="You are not allowed to perform this action" xml:space="preserve">
+    <value>لا تملك صلاحية تنفيذ هذا الإجراء</value>
+  </data>
+</root>

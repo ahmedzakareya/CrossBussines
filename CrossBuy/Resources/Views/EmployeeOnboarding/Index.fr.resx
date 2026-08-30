@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="A reason is required to waive a requirement." xml:space="preserve">
+    <value>Un motif est requis pour dispenser une exigence.</value>
+  </data>
+  <data name="Action" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Assigned person" xml:space="preserve">
+    <value>Personne désignée</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="Complete onboarding" xml:space="preserve">
+    <value>Terminer l'intégration</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Confirm waiver" xml:space="preserve">
+    <value>Confirmer la dispense</value>
+  </data>
+  <data name="Department" xml:space="preserve">
+    <value>Service</value>
+  </data>
+  <data name="Document" xml:space="preserve">
+    <value>Document</value>
+  </data>
+  <data name="Documents on file" xml:space="preserve">
+    <value>Documents au dossier</value>
+  </data>
+  <data name="Due date" xml:space="preserve">
+    <value>Échéance</value>
+  </data>
+  <data name="Employee" xml:space="preserve">
+    <value>Employé</value>
+  </data>
+  <data name="Employee no." xml:space="preserve">
+    <value>N° d'employé</value>
+  </data>
+  <data name="Employee onboarding" xml:space="preserve">
+    <value>Intégration de l'employé</value>
+  </data>
+  <data name="Expires" xml:space="preserve">
+    <value>Expire le</value>
+  </data>
+  <data name="HR" xml:space="preserve">
+    <value>RH</value>
+  </data>
+  <data name="In progress" xml:space="preserve">
+    <value>En cours</value>
+  </data>
+  <data name="Inactive" xml:space="preserve">
+    <value>Inactif</value>
+  </data>
+  <data name="Item completed" xml:space="preserve">
+    <value>Exigence terminée</value>
+  </data>
+  <data name="Job title" xml:space="preserve">
+    <value>Intitulé du poste</value>
+  </data>
+  <data name="Joining date" xml:space="preserve">
+    <value>Date d'entrée</value>
+  </data>
+  <data name="Line manager" xml:space="preserve">
+    <value>Responsable hiérarchique</value>
+  </data>
+  <data name="Mandatory requirements" xml:space="preserve">
+    <value>Exigences obligatoires</value>
+  </data>
+  <data name="Mark complete" xml:space="preserve">
+    <value>Marquer comme terminé</value>
+  </data>
+  <data name="Missing or expired" xml:space="preserve">
+    <value>Manquant ou expiré</value>
+  </data>
+  <data name="No onboarding plan for this employee" xml:space="preserve">
+    <value>Aucun plan d'intégration pour cet employé</value>
+  </data>
+  <data name="Not ready — requirements outstanding" xml:space="preserve">
+    <value>Non prêt — exigences en attente</value>
+  </data>
+  <data name="On file" xml:space="preserve">
+    <value>Au dossier</value>
+  </data>
+  <data name="Onboarding checklist" xml:space="preserve">
+    <value>Liste d'intégration</value>
+  </data>
+  <data name="Onboarding completed" xml:space="preserve">
+    <value>Intégration terminée</value>
+  </data>
+  <data name="Onboarding started" xml:space="preserve">
+    <value>Intégration démarrée</value>
+  </data>
+  <data name="Optional" xml:space="preserve">
+    <value>Facultatif</value>
+  </data>
+  <data name="Overdue" xml:space="preserve">
+    <value>En retard</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>En attente</value>
+  </data>
+  <data name="Ready to work" xml:space="preserve">
+    <value>Prêt à travailler</value>
+  </data>
+  <data name="Reason" xml:space="preserve">
+    <value>Motif</value>
+  </data>
+  <data name="Required document" xml:space="preserve">
+    <value>Document requis</value>
+  </data>
+  <data name="Requirement" xml:space="preserve">
+    <value>Exigence</value>
+  </data>
+  <data name="Requirement waived" xml:space="preserve">
+    <value>Exigence dispensée</value>
+  </data>
+  <data name="Responsible" xml:space="preserve">
+    <value>Responsable</value>
+  </data>
+  <data name="Some mandatory requirements are still outstanding." xml:space="preserve">
+    <value>Certaines exigences obligatoires sont encore en attente.</value>
+  </data>
+  <data name="Start onboarding" xml:space="preserve">
+    <value>Démarrer l'intégration</value>
+  </data>
+  <data name="Start onboarding to build the checklist from the company template." xml:space="preserve">
+    <value>Démarrez l'intégration pour créer la liste à partir du modèle de l'entreprise.</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Statut</value>
+  </data>
+  <data name="Target completion date" xml:space="preserve">
+    <value>Date d'achèvement cible</value>
+  </data>
+  <data name="That onboarding template is not available." xml:space="preserve">
+    <value>Ce modèle d'intégration n'est pas disponible.</value>
+  </data>
+  <data name="The required document has not been provided, or is not valid." xml:space="preserve">
+    <value>Le document requis n'a pas été fourni, ou n'est pas valide.</value>
+  </data>
+  <data name="Waive" xml:space="preserve">
+    <value>Dispenser</value>
+  </data>
+  <data name="Waive requirement" xml:space="preserve">
+    <value>Dispenser l'exigence</value>
+  </data>
+  <data name="Waived" xml:space="preserve">
+    <value>Dispensé</value>
+  </data>
+  <data name="Waiving records who excused this requirement and why. It does not mark it complete." xml:space="preserve">
+    <value>La dispense enregistre qui a dispensé cette exigence et pourquoi. Elle ne la marque pas comme terminée.</value>
+  </data>
+  <data name="What remains before this employee is operationally ready" xml:space="preserve">
+    <value>Ce qu'il reste avant que cet employé soit opérationnel</value>
+  </data>
+  <data name="You are not allowed to perform this action" xml:space="preserve">
+    <value>Vous n'êtes pas autorisé à effectuer cette action</value>
+  </data>
+</root>

@@ -1,0 +1,361 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@using CrossBuy.BL.Hr
+@using CrossBuy.Models.Context.Hr
+@model CrossBuy.BL.Hr.OnboardingView
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+
+    var emp = (CrossBuy.Controllers.EmployeeOnboardingController.EmployeeHeader)ViewBag.Employee;
+    var today = (DateTime)ViewBag.Today;
+    ViewData["Title"] = Localizer["Employee onboarding"].Value;
+
+    var empName = (isAr ? emp.NameAr : emp.NameEn) ?? emp.NameAr ?? emp.NameEn ?? "";
+    var empTitle = (isAr ? emp.JobTitleAr : emp.JobTitleEn) ?? emp.JobTitleAr ?? emp.JobTitleEn;
+    var empDept = (isAr ? emp.DepartmentAr : emp.DepartmentEn) ?? emp.DepartmentAr ?? emp.DepartmentEn;
+
+    // Model is null when the caller may not read this employee's onboarding, AND when no plan exists
+    // yet. The two render differently for the user only because the START form is harmless: posting it
+    // hits the service, which refuses an unauthorised caller anyway. Nothing here reveals a decision
+    // the service did not already make.
+    var hasPlan = Model != null;
+    var overdue = hasPlan ? Model.OverdueCount(today) : 0;
+
+    // Responsibility is turned into a label HERE rather than in a switch inside the markup: after
+    // `case X:` Razor is in code context, where a bare @Localizer[...] does not compile.
+    Func<string, string> responsibleLabel = code => code switch
+    {
+        OnboardingResponsibility.Hr => Localizer["HR"].Value,
+        OnboardingResponsibility.Manager => Localizer["Line manager"].Value,
+        OnboardingResponsibility.Employee => Localizer["Employee"].Value,
+        _ => Localizer["Assigned person"].Value,
+    };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Employee onboarding"].Value</h1>
+                <span class="text-gray-500 fs-7">@Localizer["What remains before this employee is operationally ready"].Value</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @if (TempData["OnbMsg"] != null)
+            {
+                <div class="alert alert-success d-flex align-items-center py-3 mb-5">
+                    <i class="ki-outline ki-check-circle fs-2 me-3"></i><span>@Localizer[(string)TempData["OnbMsg"]!].Value</span>
+                </div>
+            }
+            @if (TempData["OnbErr"] != null)
+            {
+                <div class="alert alert-danger d-flex align-items-center py-3 mb-5">
+                    <i class="ki-outline ki-information-5 fs-2 me-3"></i><span>@Localizer[(string)TempData["OnbErr"]!].Value</span>
+                </div>
+            }
+
+            @* ============================ EMPLOYEE HEADER ============================ *@
+            <div class="card mb-5">
+                <div class="card-body py-5">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-4">
+                        <div class="d-flex flex-column gap-1">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fs-3 fw-bold text-gray-900">@empName</span>
+                                @if (!emp.IsActive)
+                                {
+                                    <span class="badge badge-light-danger">@Localizer["Inactive"].Value</span>
+                                }
+                            </div>
+                            <div class="d-flex flex-wrap gap-5 text-gray-600 fs-7 mt-1">
+                                <span>
+                                    <span class="text-gray-500">@Localizer["Employee no."].Value:</span>
+                                    <span class="fw-semibold text-gray-800">@emp.Id</span>
+                                </span>
+                                @if (!string.IsNullOrWhiteSpace(empTitle))
+                                {
+                                    <span>
+                                        <span class="text-gray-500">@Localizer["Job title"].Value:</span>
+                                        <span class="fw-semibold text-gray-800">@empTitle</span>
+                                    </span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(empDept))
+                                {
+                                    <span>
+                                        <span class="text-gray-500">@Localizer["Department"].Value:</span>
+                                        <span class="fw-semibold text-gray-800">@empDept</span>
+                                    </span>
+                                }
+                                <span>
+                                    <span class="text-gray-500">@Localizer["Joining date"].Value:</span>
+                                    <span class="fw-semibold text-gray-800">@emp.JoinedOn.ToString("yyyy-MM-dd")</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        @if (hasPlan)
+                        {
+                            @* READINESS IS THE HEADLINE, not a percentage. The operational question is
+                               "can this person start work", and 92% does not answer it. *@
+                            if (Model.IsReady)
+                            {
+                                <div class="d-flex align-items-center gap-2 badge badge-light-success fs-6 px-4 py-3">
+                                    <i class="ki-outline ki-shield-tick fs-2"></i>@Localizer["Ready to work"].Value
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center gap-2 badge badge-light-warning fs-6 px-4 py-3">
+                                    <i class="ki-outline ki-shield-cross fs-2"></i>@Localizer["Not ready — requirements outstanding"].Value
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @if (!hasPlan)
+            {
+                <div class="card">
+                    <div class="card-body text-center py-15">
+                        <i class="ki-outline ki-questionnaire-tablet fs-3x text-gray-400 mb-4 d-block"></i>
+                        <div class="fs-5 fw-semibold text-gray-800 mb-2">@Localizer["No onboarding plan for this employee"].Value</div>
+                        <div class="text-gray-500 fs-7 mb-6">@Localizer["Start onboarding to build the checklist from the company template."].Value</div>
+                        <form method="post" asp-action="Start" asp-route-employeeId="@emp.Id" class="d-inline-flex gap-3 align-items-center justify-content-center flex-wrap">
+                            <input type="date" name="target" class="form-control form-control-sm w-auto" aria-label="@Localizer["Target completion date"].Value" />
+                            <button type="submit" class="btn btn-primary btn-sm">@Localizer["Start onboarding"].Value</button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @* ============================ SUMMARY ============================ *@
+                <div class="row g-5 mb-5">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body py-5">
+                                <div class="text-gray-500 fs-7 mb-2">@Localizer["Mandatory requirements"].Value</div>
+                                <div class="fs-2 fw-bold text-gray-900">
+                                    @Model.MandatoryDone <span class="text-gray-400 fs-4">/ @Model.MandatoryTotal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body py-5">
+                                <div class="text-gray-500 fs-7 mb-2">@Localizer["Documents on file"].Value</div>
+                                <div class="fs-2 fw-bold @(Model.DocumentsPresent < Model.DocumentsRequired ? "text-danger" : "text-gray-900")">
+                                    @Model.DocumentsPresent <span class="text-gray-400 fs-4">/ @Model.DocumentsRequired</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body py-5">
+                                <div class="text-gray-500 fs-7 mb-2">@Localizer["Overdue"].Value</div>
+                                <div class="fs-2 fw-bold @(overdue > 0 ? "text-danger" : "text-gray-900")">@overdue</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100">
+                            <div class="card-body py-5">
+                                <div class="text-gray-500 fs-7 mb-2">@Localizer["Target completion date"].Value</div>
+                                <div class="fs-4 fw-bold @(Model.Plan.TargetCompletionDate.HasValue && Model.Plan.TargetCompletionDate.Value.Date < today.Date && !Model.IsReady ? "text-danger" : "text-gray-900")">
+                                    @(Model.Plan.TargetCompletionDate?.ToString("yyyy-MM-dd") ?? "—")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ============================ CHECKLIST ============================ *@
+                <div class="card">
+                    <div class="card-header align-items-center">
+                        <h3 class="card-title fw-bold text-gray-900">@Localizer["Onboarding checklist"].Value</h3>
+                        <div class="card-toolbar">
+                            @if (Model.Plan.Status == OnboardingStatus.Completed)
+                            {
+                                <span class="badge badge-light-success fs-7">
+                                    @Localizer["Completed"].Value @(Model.Plan.CompletedAt?.ToString("yyyy-MM-dd"))
+                                </span>
+                            }
+                            else if (Model.IsReady)
+                            {
+                                <form method="post" asp-action="Complete" asp-route-employeeId="@emp.Id">
+                                    <input type="hidden" name="onboardingId" value="@Model.Plan.ID" />
+                                    <button type="submit" class="btn btn-success btn-sm">@Localizer["Complete onboarding"].Value</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="table-responsive">
+                            <table class="table table-row-dashed align-middle gy-4">
+                                <thead>
+                                    <tr class="fw-semibold text-gray-500 fs-7 text-uppercase">
+                                        <th class="min-w-250px">@Localizer["Requirement"].Value</th>
+                                        <th class="min-w-125px">@Localizer["Responsible"].Value</th>
+                                        <th class="min-w-100px">@Localizer["Due date"].Value</th>
+                                        <th class="min-w-175px">@Localizer["Document"].Value</th>
+                                        <th class="min-w-100px">@Localizer["Status"].Value</th>
+                                        <th class="min-w-150px text-end">@Localizer["Action"].Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in Model.Requirements.OrderBy(x => x.Item.SortOrder).ThenBy(x => x.Item.ID))
+                                    {
+                                        var it = r.Item;
+                                        var title = (isAr ? it.TitleAr : it.TitleEn);
+                                        if (string.IsNullOrWhiteSpace(title)) { title = !string.IsNullOrWhiteSpace(it.TitleAr) ? it.TitleAr : (!string.IsNullOrWhiteSpace(it.TitleEn) ? it.TitleEn : it.ItemKey); }
+                                        var desc = (isAr ? it.DescriptionAr : it.DescriptionEn);
+                                        var isOverdue = r.IsOverdue(today);
+                                        var settled = OnboardingItemStatus.IsSettled(it.Status);
+                                        var typeName = r.RequiredType == null ? null : (isAr ? r.RequiredType.NameAr : r.RequiredType.NameEn);
+
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold text-gray-900">@title</div>
+                                                @if (!string.IsNullOrWhiteSpace(desc))
+                                                {
+                                                    <div class="text-gray-500 fs-8">@desc</div>
+                                                }
+                                                @if (!it.IsMandatory)
+                                                {
+                                                    <span class="badge badge-light fs-8 mt-1">@Localizer["Optional"].Value</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="text-gray-700 fs-7">@responsibleLabel(it.Responsibility)</span>
+                                            </td>
+                                            <td>
+                                                @if (it.DueDate.HasValue)
+                                                {
+                                                    <span class="fs-7 @(isOverdue ? "text-danger fw-bold" : "text-gray-700")">@it.DueDate.Value.ToString("yyyy-MM-dd")</span>
+                                                    if (isOverdue)
+                                                    {
+                                                        <div class="badge badge-light-danger fs-8 mt-1">@Localizer["Overdue"].Value</div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-gray-400">—</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!r.RequiresDocument)
+                                                {
+                                                    <span class="text-gray-400 fs-8">—</span>
+                                                }
+                                                else
+                                                {
+                                                    <div class="fs-8 text-gray-600">@(typeName ?? Localizer["Required document"].Value)</div>
+                                                    if (r.SatisfyingDocument != null)
+                                                    {
+                                                        <span class="badge badge-light-success fs-8">@Localizer["On file"].Value</span>
+                                                        if (r.SatisfyingDocument.ExpiryDate.HasValue)
+                                                        {
+                                                            <div class="text-gray-500 fs-8 mt-1">
+                                                                @Localizer["Expires"].Value @r.SatisfyingDocument.ExpiryDate.Value.ToString("yyyy-MM-dd")
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        @* MISSING AND EXPIRED READ THE SAME HERE ON PURPOSE: both mean
+                                                           "there is no valid document right now", which is the fact
+                                                           that governs whether the item may be completed. *@
+                                                        <span class="badge badge-light-danger fs-8">@Localizer["Missing or expired"].Value</span>
+                                                    }
+                                                }
+                                            </td>
+                                            <td>
+                                                @switch (it.Status)
+                                                {
+                                                    case OnboardingItemStatus.Completed:
+                                                        <span class="badge badge-light-success fs-8">@Localizer["Completed"].Value</span>
+                                                        break;
+                                                    case OnboardingItemStatus.Waived:
+                                                        <span class="badge badge-light-info fs-8" title="@it.WaiverReason">@Localizer["Waived"].Value</span>
+                                                        break;
+                                                    case OnboardingItemStatus.InProgress:
+                                                        <span class="badge badge-light-primary fs-8">@Localizer["In progress"].Value</span>
+                                                        break;
+                                                    default:
+                                                        <span class="badge badge-light fs-8">@Localizer["Pending"].Value</span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                @if (!settled)
+                                                {
+                                                    <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                                        @* The complete button is offered even when the required document
+                                                           is missing. The SERVER refuses it and says why. Hiding it here
+                                                           would make the screen a second authority on a rule the service
+                                                           owns, and two authorities eventually disagree. *@
+                                                        <form method="post" asp-action="CompleteItem" asp-route-employeeId="@emp.Id" asp-route-itemId="@it.ID">
+                                                            <button type="submit" class="btn btn-sm btn-light-success">@Localizer["Mark complete"].Value</button>
+                                                        </form>
+                                                        @if (it.IsMandatory)
+                                                        {
+                                                            <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#waive-@it.ID">@Localizer["Waive"].Value</button>
+                                                        }
+                                                    </div>
+                                                }
+                                                else if (it.Status == OnboardingItemStatus.Waived && !string.IsNullOrWhiteSpace(it.WaiverReason))
+                                                {
+                                                    <span class="text-gray-500 fs-8">@it.WaiverReason</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-gray-400 fs-8">@(it.CompletedAt?.ToString("yyyy-MM-dd"))</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                @* A waiver needs a stated reason. The service refuses an empty one; the field is
+                   required here too so the user learns that before the round trip, not after. *@
+                @foreach (var r in Model.Requirements.Where(x => x.Item.IsMandatory && !OnboardingItemStatus.IsSettled(x.Item.Status)))
+                {
+                    var it = r.Item;
+                    var title = (isAr ? it.TitleAr : it.TitleEn);
+                    if (string.IsNullOrWhiteSpace(title)) { title = !string.IsNullOrWhiteSpace(it.TitleAr) ? it.TitleAr : (!string.IsNullOrWhiteSpace(it.TitleEn) ? it.TitleEn : it.ItemKey); }
+
+                    <div class="modal fade" id="waive-@it.ID" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form method="post" asp-action="WaiveItem" asp-route-employeeId="@emp.Id" asp-route-itemId="@it.ID" class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">@Localizer["Waive requirement"].Value</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"].Value"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="fw-semibold text-gray-800 mb-3">@title</div>
+                                    <div class="text-gray-600 fs-8 mb-4">@Localizer["Waiving records who excused this requirement and why. It does not mark it complete."].Value</div>
+                                    <label class="form-label required fs-7">@Localizer["Reason"].Value</label>
+                                    <textarea name="reason" class="form-control" rows="3" required maxlength="1000"></textarea>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">@Localizer["Cancel"].Value</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">@Localizer["Confirm waiver"].Value</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
