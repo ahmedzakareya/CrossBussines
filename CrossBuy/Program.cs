@@ -355,6 +355,11 @@ builder.Services.AddSingleton<CrossBuy.BL.Platform.IDocumentStorage>(_ =>
 // SQL BEFORE CODE: deploy/sql/communication_platform_slice_001.sql (14 additive tables, idempotent) is
 // applied first. Re-running it creates nothing, which is how it is meant to behave.
 CrossBuy.BL.Communication.CommunicationPlatformRegistration.AddCommunicationPlatform(builder.Services, builder.Configuration);
+
+// Central Document Platform (TAB-3). ONE registration extension method, per SHF-01. It registers a
+// single scoped service and starts nothing - no hosted service, no timer, no sweep. It depends on the
+// document spine registered above and never re-registers it.
+CrossBuy.BL.Documents.DocumentPlatformRegistration.AddDocumentPlatform(builder.Services);
 builder.Services.AddScoped<CrossBuy.BL.Platform.IPlatformPermissionProvider, CrossBuy.BL.Platform.PlatformPermissionProvider>();
 builder.Services.AddScoped<CrossBuy.BL.Platform.IModulePermissionAdapter, CrossBuy.BL.Platform.DefaultPermissionAdapter>();
 

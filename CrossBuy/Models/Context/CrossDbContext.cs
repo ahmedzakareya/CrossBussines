@@ -412,6 +412,13 @@ namespace CrossBuy.Models.Context
 			// generates the same names and so a test host can materialise the platform from the model alone.
 			Communication.CommunicationModel.Configure(builder);
 
+			// Central Document Platform (TAB-3). Same one-line footprint as the platform above and for the
+			// same reason: every table name, key, length and index lives in a file that work stream owns
+			// outright, so a merge here is a one-line conflict rather than a nine-property one. Kept SEPARATE
+			// from the Communication call because these are not Communication tables - CommunicationSchemaParity
+			// asserts that model maps exactly its own slice, and it was right to fail when they were merged.
+			Documents.PlatformDocumentModel.Configure(builder);
+
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
 
