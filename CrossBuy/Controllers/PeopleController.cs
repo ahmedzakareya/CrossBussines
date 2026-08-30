@@ -90,6 +90,36 @@ namespace CrossBuy.Controllers
 			return mgr.H_Type == 5 ? mgr.H_ObjectID : null;
 		}
 
+		// ────────────────────────────────────────────────────────────────────────────────────────
+		// THE SELF-SERVICE GATE.
+		//
+		// `employee-request` is the capability TAB-1 added for exactly this: "an employee may submit and
+		// manage their own employee-service requests". It is deliberately unlike every other HR action —
+		// HrAccessService answers it `aboutMe` and nothing else, ABOVE the bootstrap branch and above the
+		// role rules, so no HR role widens it and a null target is a refusal. That is why this helper
+		// returns the subject id rather than a bare bool: the caller then has the ONE employee id it is
+		// allowed to act for, and cannot accidentally use another.
+		//
+		// THE SUBJECT COMES FROM THE RESOLVED BusinessContext, never from the form. A posted, routed or
+		// hidden employee id is not identity — it is a parameter, and treating it as identity is how a
+		// self-service endpoint becomes an act-as-anyone endpoint.
+		//
+		// A context with no EmployeeId fails closed here rather than falling back to the company, the
+		// first employee, or 1. There is no self to serve, so there is nothing to authorise.
+		// ────────────────────────────────────────────────────────────────────────────────────────
+		private async Task<int?> SelfServiceSubjectAsync()
+		{
+			var ctx = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			if (ctx is not { CompanyId: > 0 } || ctx.EmployeeId is not > 0) return null;
+
+			bool may = await _hrAccess.CanAsync(
+				ctx, HrActions.EmployeeRequest,
+				PermissionTarget.ForSubjectEmployee(ctx.EmployeeId.Value, ctx.CompanyId),
+				HttpContext.RequestAborted);
+
+			return may ? ctx.EmployeeId.Value : null;
+		}
+
 		private EmployeeViewModel? CurrentEmployee()
 		{
 			var json = HttpContext.Session.GetString("Employee");
@@ -243,7 +273,13 @@ namespace CrossBuy.Controllers
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
 
-			var (ok, error, _) = await _workflow.CreateAsync(emp.ID, leaveTypeId, startDate, endDate, reason);
+			// The request is raised FOR the authenticated employee, and the id used below is the one the
+			// gate returned — not `emp.ID` from the session view-model, so BusinessContext is the single
+			// authority for whose leave this is.
+			var self = await SelfServiceSubjectAsync();
+			if (self == null) { TempData["LeaveErr"] = L["You are not allowed to perform this action"].Value; return RedirectToAction(nameof(Leaves)); }
+
+			var (ok, error, _) = await _workflow.CreateAsync(self.Value, leaveTypeId, startDate, endDate, reason);
 			if (!ok) TempData["LeaveErr"] = error;
 			else TempData["LeaveMsg"] = L["Leave request submitted"].Value;
 			return RedirectToAction(nameof(Leaves));
@@ -317,10 +353,16 @@ namespace CrossBuy.Controllers
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
-			var companyId = await _context.Employee.Where(e => e.ID == emp.ID).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
+
+			var self = await SelfServiceSubjectAsync();
+			if (self == null) { TempData["ReqErr"] = L["You are not allowed to perform this action"].Value; return RedirectToAction(nameof(Requests)); }
+
+			// The company still comes from the employee ROW rather than from the request, and the employee
+			// is the gate's subject. Both halves of the record's ownership are therefore server-derived.
+			var companyId = await _context.Employee.Where(e => e.ID == self.Value).Select(e => e.EmpCompanyID).FirstOrDefaultAsync();
 			var draft = new EmployeeRequest
 			{
-				CompanyID = companyId, EmployeeID = emp.ID, RequestType = requestType == "Permission" ? "Permission" : "Letter",
+				CompanyID = companyId, EmployeeID = self.Value, RequestType = requestType == "Permission" ? "Permission" : "Letter",
 				LetterType = letterType, Addressee = addressee, PermissionDate = permissionDate, Reason = reason,
 				FromTime = TimeSpan.TryParse(fromTime, out var ft) ? ft : (TimeSpan?)null,
 				ToTime = TimeSpan.TryParse(toTime, out var tt) ? tt : (TimeSpan?)null,
@@ -335,6 +377,37 @@ namespace CrossBuy.Controllers
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
+
+			// THE SAME SHAPE AS DecideLeave DIRECTLY ABOVE, and for the same reason: before this, any
+			// signed-in employee could post a decision on any employee request, because the only guard was
+			// the session and the service checked whether the step was current, not whether this caller was
+			// entitled to decide it.
+			//
+			// ON THE ACTION NAME — flagged rather than hidden. `leave-approve` is not a role grant: it is a
+			// RECORD-LEVEL rule that the caller must be a manager of the SUBJECT through the
+			// company-intersected hierarchy, and must not be the subject. That rule is exactly right for
+			// approving a subordinate's letter or permission request. Its NAME is leave-flavoured, and the
+			// HR vocabulary has no general "approve an employee request" action. Reusing it is the correct
+			// authority with an imprecise name; inventing a new one needs HrActions, which is TAB-1's file.
+			// Recorded for TAB-1 in the handoff as a vocabulary-naming decision, not a security gap.
+			var hrContext = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
+			if (hrContext == null) { TempData["ReqErr"] = L["You are not allowed to perform this action"].Value; return RedirectToAction(nameof(Requests)); }
+
+			// SUBJECT FROM THE ROW, never from the body — a posted id is only ever a lookup key.
+			int? subjectEmployeeId = await _context.EmployeeRequests.AsNoTracking()
+				.Where(r => r.ID == id).Select(r => (int?)r.EmployeeID).FirstOrDefaultAsync(HttpContext.RequestAborted);
+			if (subjectEmployeeId == null) { TempData["ReqErr"] = L["Request not found"].Value; return RedirectToAction(nameof(Requests)); }
+
+			bool mayDecide = await _hrAccess.CanAsync(
+				hrContext, HrActions.LeaveApprove,
+				PermissionTarget.ForSubjectEmployee(subjectEmployeeId.Value, hrContext.CompanyId),
+				HttpContext.RequestAborted);
+			if (!mayDecide)
+			{
+				TempData["ReqErr"] = L["You are not allowed to perform this action"].Value;
+				return RedirectToAction(nameof(Requests));
+			}
+
 			var (ok, error) = await _requests.DecideAsync(id, emp.ID, approve, note);
 			TempData[ok ? "ReqMsg" : "ReqErr"] = ok ? (approve ? L["Request approved"].Value : L["Request rejected"].Value) : error;
 			return RedirectToAction(nameof(Requests));
@@ -390,7 +463,21 @@ namespace CrossBuy.Controllers
 		{
 			var emp = CurrentEmployee();
 			if (emp == null) return RedirectToAction("Login", "Account");
-			var (ok, error) = await AprSvc.AcknowledgeAsync(id, emp.ID, comment);
+
+			// `employee-request` authorises the EMPLOYEE SIDE of an appraisal — acknowledging one's own.
+			// It grants nothing on the administrative side: creating cycles, editing somebody else's
+			// appraisal and entering scores all remain under PerformanceManage, which this does not touch.
+			var self = await SelfServiceSubjectAsync();
+			if (self == null) { TempData["ReqErr"] = L["You are not allowed to perform this action"].Value; return RedirectToAction(nameof(MyAppraisals)); }
+
+			// AND THE RECORD MUST BE THEIRS. The capability says "for myself"; this says "and this is
+			// mine". Without the second half, an authorised employee could acknowledge a colleague's
+			// appraisal by id — self-service authority on somebody else's record.
+			bool mine = await _context.Appraisals.AsNoTracking()
+				.AnyAsync(a => a.ID == id && a.EmployeeID == self.Value, HttpContext.RequestAborted);
+			if (!mine) { TempData["ReqErr"] = L["You are not allowed to perform this action"].Value; return RedirectToAction(nameof(MyAppraisals)); }
+
+			var (ok, error) = await AprSvc.AcknowledgeAsync(id, self.Value, comment);
 			TempData[ok ? "ReqMsg" : "ReqErr"] = ok ? L["Acknowledged"].Value : error;
 			return RedirectToAction(nameof(MyAppraisals));
 		}

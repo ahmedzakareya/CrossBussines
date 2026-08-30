@@ -16,11 +16,29 @@ namespace CrossBuy.Controllers.Api
 	{
 		private readonly CrossDbContext _context;
 		private readonly IBusinessContextAccessor _contexts;
+		private readonly CrossBuy.BL.IHrAccessService _hrAccess;
 
-		public HrApiController(CrossDbContext context, IBusinessContextAccessor contexts)
+		public HrApiController(CrossDbContext context, IBusinessContextAccessor contexts,
+			CrossBuy.BL.IHrAccessService hrAccess)
 		{
 			_context = context;
 			_contexts = contexts;
+			_hrAccess = hrAccess;
+		}
+
+		// The authority both job-title mutations share. OrganizationManage is the existing vocabulary
+		// entry whose comment reads "hierarchicals, job titles, org units" — job titles are organisation
+		// administration, which is also why SHF-27 keeps the equivalent MVC actions out of TAB-2's hands
+		// on the shared controller. Here the file is TAB-2's, so the gate is applied rather than deferred.
+		//
+		// JobTitles carries no CompanyID: it is a shared lookup, so there is no tenant predicate to add.
+		// That makes the authority the ONLY control, which is precisely why it must not be missing.
+		private async Task<bool> MayManageOrganisationAsync()
+		{
+			var context = await _contexts.TryGetCurrentAsync(HttpContext?.RequestAborted ?? default);
+			if (context is not { CompanyId: > 0 }) return false;
+			return await _hrAccess.CanAsync(context, CrossBuy.BL.HrActions.OrganizationManage,
+				null, HttpContext?.RequestAborted ?? default);
 		}
 
 		// GET /api/hr/summary — dashboard counts, for the RESOLVED company only.
@@ -91,6 +109,9 @@ namespace CrossBuy.Controllers.Api
 		[HttpPost("jobtitles")]
 		public async Task<IActionResult> CreateJobTitle([FromBody] JobTitleInput m)
 		{
+			if (!await MayManageOrganisationAsync())
+				return NotFound(new { success = false, message = "غير مصرح" });
+
 			if (m == null || (string.IsNullOrWhiteSpace(m.Title) && string.IsNullOrWhiteSpace(m.TitleAr)))
 				return BadRequest(new { success = false, message = "الاسم مطلوب" });
 			var jt = new JobTitle { Title = m.Title ?? "", TitleAr = m.TitleAr ?? "", Description = m.Description ?? "" };
@@ -102,6 +123,9 @@ namespace CrossBuy.Controllers.Api
 		[HttpPut("jobtitles/{id:int}")]
 		public async Task<IActionResult> UpdateJobTitle(int id, [FromBody] JobTitleInput m)
 		{
+			if (!await MayManageOrganisationAsync())
+				return NotFound(new { success = false, message = "غير مصرح" });
+
 			var jt = await _context.JobTitles.FirstOrDefaultAsync(j => j.ID == id);
 			if (jt == null) return NotFound(new { success = false, message = "غير موجود" });
 			jt.Title = m.Title ?? jt.Title;

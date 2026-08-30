@@ -45,7 +45,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveHoliday(int id, string nameAr, string? nameEn, DateTime holidayDate, bool isRecurring, string? notes)
 		{
-			var (ok, err) = await holidayService.SaveAsync(new OfficialHoliday { ID = id, CompanyID = HrCompanyId, NameAr = nameAr, NameEn = nameEn, HolidayDate = holidayDate, IsRecurring = isRecurring, Notes = notes });
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.AttendanceManage);
+			if (!gate.Ok) return HrDenied(nameof(HolidaysList));
+
+			var (ok, err) = await holidayService.SaveAsync(new OfficialHoliday { ID = id, CompanyID = gate.CompanyId, NameAr = nameAr, NameEn = nameEn, HolidayDate = holidayDate, IsRecurring = isRecurring, Notes = notes });
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Holiday saved"].Value : err;
 			return RedirectToAction(nameof(HolidaysList));
 		}
@@ -54,7 +57,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteHoliday(int id)
 		{
-			await holidayService.DeleteAsync(HrCompanyId, id);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.AttendanceManage);
+			if (!gate.Ok) return HrDenied(nameof(HolidaysList));
+
+			await holidayService.DeleteAsync(gate.CompanyId, id);
 			TempData["HrMsg"] = L["Holiday deleted"].Value;
 			return RedirectToAction(nameof(HolidaysList));
 		}
@@ -89,10 +95,13 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveAttendance(int employeeId, DateTime workDate, string? checkIn, string? checkOut, string? source, string? notes)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.AttendanceManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(Attendance));
+
 			DateTime? ci = null, co = null;
 			if (TimeSpan.TryParse(checkIn, out var t1)) ci = workDate.Date + t1;
 			if (TimeSpan.TryParse(checkOut, out var t2)) co = workDate.Date + t2;
-			var (ok, err, _) = await AttSvc.RecordAsync(HrCompanyId, employeeId, workDate, ci, co, source ?? "Manual", notes, null);
+			var (ok, err, _) = await AttSvc.RecordAsync(gate.CompanyId, employeeId, workDate, ci, co, source ?? "Manual", notes, null);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Attendance recorded"].Value : err;
 			return RedirectToAction(nameof(AttendanceEntry), new { year = workDate.Year, month = workDate.Month });
 		}
@@ -182,6 +191,10 @@ namespace CrossBuy.Controllers
 			return new HrGate { Ok = true, CompanyId = scope.CompanyId, EmployeeId = scope.EmployeeId };
 		}
 
+		// The same refusal wording the redirect path puts in TempData, for the actions that answer JSON.
+		// One string, so a denied board drag and a denied page load say the same thing.
+		private string HrDeniedMessage => L["You do not have permission for this HR action."].Value;
+
 		private IActionResult HrDenied(string redirectAction, object? routeValues = null)
 		{
 			// One message for every refusal reason, so a missing right, a foreign employee and a non-existent one
@@ -223,7 +236,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> AddAttachments(string kind, int ownerId, int employeeId, List<Microsoft.AspNetCore.Http.IFormFile>? files)
 		{
-			await DocSvc.AddFilesAsync(HrCompanyId, kind, ownerId, files, WebRoot);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(HrDocuments), new { employeeId });
+
+			await DocSvc.AddFilesAsync(gate.CompanyId, kind, ownerId, files, WebRoot);
 			TempData["HrMsg"] = L["Attachments added"].Value;
 			return RedirectToAction(nameof(HrDocuments), new { employeeId });
 		}
@@ -232,7 +248,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteAttachment(int id, int employeeId)
 		{
-			var (ok, _) = await DocSvc.DeleteAttachmentAsync(HrCompanyId, id, WebRoot);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(HrDocuments), new { employeeId });
+
+			var (ok, _) = await DocSvc.DeleteAttachmentAsync(gate.CompanyId, id, WebRoot);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Attachment deleted"].Value : L["Attachment not found"].Value;
 			return RedirectToAction(nameof(HrDocuments), new { employeeId });
 		}
@@ -241,8 +260,11 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveContract(int id, int employeeId, string contractType, DateTime startDate, DateTime? endDate, string status, string? notes, List<Microsoft.AspNetCore.Http.IFormFile>? files)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(HrDocuments), new { employeeId });
+
 			var (ok, err) = await DocSvc.SaveContractAsync(new EmploymentContract
-			{ ID = id, CompanyID = HrCompanyId, EmployeeID = employeeId, ContractType = contractType, StartDate = startDate, EndDate = endDate, Status = status ?? "Active", Notes = notes }, files, WebRoot);
+			{ ID = id, CompanyID = gate.CompanyId, EmployeeID = employeeId, ContractType = contractType, StartDate = startDate, EndDate = endDate, Status = status ?? "Active", Notes = notes }, files, WebRoot);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Contract saved"].Value : err;
 			return RedirectToAction(nameof(HrDocuments), new { employeeId });
 		}
@@ -251,7 +273,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteContract(int id, int employeeId)
 		{
-			await DocSvc.DeleteContractAsync(HrCompanyId, id);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(HrDocuments), new { employeeId });
+
+			await DocSvc.DeleteContractAsync(gate.CompanyId, id);
 			TempData["HrMsg"] = L["Contract deleted"].Value;
 			return RedirectToAction(nameof(HrDocuments), new { employeeId });
 		}
@@ -260,8 +285,11 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveDocument(int id, int employeeId, string docType, string? docNumber, DateTime? issueDate, DateTime? expiryDate, string? notes, List<Microsoft.AspNetCore.Http.IFormFile>? files)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(HrDocuments), new { employeeId });
+
 			var (ok, err) = await DocSvc.SaveDocumentAsync(new EmployeeDocument
-			{ ID = id, CompanyID = HrCompanyId, EmployeeID = employeeId, DocType = docType, DocNumber = docNumber, IssueDate = issueDate, ExpiryDate = expiryDate, Notes = notes }, files, WebRoot);
+			{ ID = id, CompanyID = gate.CompanyId, EmployeeID = employeeId, DocType = docType, DocNumber = docNumber, IssueDate = issueDate, ExpiryDate = expiryDate, Notes = notes }, files, WebRoot);
 			TempData[ok ? "HrMsg" : "HrErr"] = ok ? L["Document saved"].Value : err;
 			return RedirectToAction(nameof(HrDocuments), new { employeeId });
 		}
@@ -270,7 +298,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> DeleteDocument(int id, int employeeId)
 		{
-			await DocSvc.DeleteDocumentAsync(HrCompanyId, id);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: employeeId);
+			if (!gate.Ok) return HrDenied(nameof(HrDocuments), new { employeeId });
+
+			await DocSvc.DeleteDocumentAsync(gate.CompanyId, id);
 			TempData["HrMsg"] = L["Document deleted"].Value;
 			return RedirectToAction(nameof(HrDocuments), new { employeeId });
 		}
@@ -287,7 +318,10 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> NotifyExpiring(int days)
 		{
-			var count = await DocSvc.NotifyExpiringAsync(HrCompanyId, days);
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage);
+			if (!gate.Ok) return HrDenied(nameof(DocExpiryAlerts));
+
+			var count = await DocSvc.NotifyExpiringAsync(gate.CompanyId, days);
 			TempData["HrMsg"] = string.Format(L["Sent {0} alert(s)"].Value, count);
 			return RedirectToAction(nameof(DocExpiryAlerts), new { days });
 		}
@@ -364,6 +398,9 @@ namespace CrossBuy.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> SaveLeaveTypeEncashable(int id, bool isEncashable)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
+			if (!gate.Ok) return HrDenied(nameof(LeaveTypesList));
+
 			var t = await Db.LeaveTypes.FirstOrDefaultAsync(x => x.ID == id);
 			if (t != null) { t.IsEncashable = isEncashable; await Db.SaveChangesAsync(); TempData["HrMsg"] = L["Encashability updated"].Value; }
 			return RedirectToAction(nameof(LeaveAccrual));
@@ -663,6 +700,9 @@ namespace CrossBuy.Controllers
     [FromBody] LeavePoliciesDto model,
     CancellationToken ct)
         {
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
+			if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
+
             if (model == null)
                 return Json(new { ok = false, message = L["Invalid data"].Value });
 
@@ -707,6 +747,9 @@ namespace CrossBuy.Controllers
 		[HttpPost]
 		public async Task<IActionResult> SaveLeaveType([FromBody] LeaveTypesDto dto)
 		{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
+			if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
+
 			try
 			{
 				await policesService.SaveLeaveType(dto);
@@ -805,6 +848,27 @@ namespace CrossBuy.Controllers
             if (model == null)
                 return Json(new { ok = false, message = L["No data submitted."].Value });
 
+            // POLICY ADMINISTRATION, plus a second gate that closes a real back door.
+            //
+            // PoliciesDto carries LeavePolicies, AttendancePolicies AND SalaryPolicies. SalaryPolicies is
+            // base salary, allowances, overtime rate, late and absence penalties, social-insurance shares
+            // and tax rate — compensation. The dedicated endpoint for it, SaveSalaryPolicy, is already
+            // [ApiPerm(Hr, PayrollManage)], so without the second check below an HR officer holding only
+            // leave-manage could change every employee's salary basis through THIS endpoint while being
+            // refused at the one built for it. A permission that another route walks around is not a
+            // permission.
+            //
+            // payroll-manage is also NeverBootstrapOpen, so this branch stays closed for a company that
+            // has configured no HR role — which is the point of that classification.
+            var gate = await HrGateAsync(CrossBuy.BL.HrActions.LeaveManage);
+            if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
+
+            if (model.SalaryPolicies is { Count: > 0 })
+            {
+                var payroll = await HrGateAsync(CrossBuy.BL.HrActions.PayrollManage);
+                if (!payroll.Ok) return Json(new { ok = false, message = HrDeniedMessage });
+            }
+
             try
             {
                 // Persist
@@ -849,6 +913,9 @@ namespace CrossBuy.Controllers
     [FromBody] AttendancePoliciesDto model,
     CancellationToken ct)
         {
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.AttendanceManage);
+			if (!gate.Ok) return Json(new { ok = false, message = HrDeniedMessage });
+
             if (model == null)
                 return Json(new { ok = false, message = L["Invalid data"].Value });
 
@@ -985,6 +1052,9 @@ namespace CrossBuy.Controllers
 	[ValidateAntiForgeryToken]
  public async Task<IActionResult> SaveEmployee([FromForm] EmployeeViewModel model, [FromForm] Microsoft.AspNetCore.Http.IFormFile ProfileImage, [FromForm] int applicationId = 0)
 	{
+			var gate = await HrGateAsync(CrossBuy.BL.HrActions.EmployeeManage, subjectEmployeeId: model.ID);
+			if (!gate.Ok) return HrDenied(nameof(EmployeesList));
+
       if (model == null)
 			return Json(new { success = false, message = "Invalid data" });
 
@@ -1042,7 +1112,7 @@ namespace CrossBuy.Controllers
 			string? hireError = null;
 			if (applicationId > 0 && saved != null && saved.ID > 0)
 			{
-				var (hok, herr) = await RecruitSvc.HireFromApplicationAsync(HrCompanyId, applicationId, saved.ID);
+				var (hok, herr) = await RecruitSvc.HireFromApplicationAsync(gate.CompanyId, applicationId, saved.ID);
 				if (!hok) hireError = herr;
 			}
 			if (applicationId > 0 && hireError == null)

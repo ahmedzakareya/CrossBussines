@@ -108,6 +108,16 @@ namespace CrossBuy.Tests.Hr
 
         private static IBusinessContextAccessor Unresolved() => StubContextAccessor.Unresolved();
 
+        // HrApiController gained an IHrAccessService when the job-title mutations were gated. Summary does
+        // not consult it, but the constructor requires it, so the tests build the real service the same way
+        // HrBootstrapPolicyTests does — a stub would let a future change to Summary's authority go unnoticed.
+        private static CrossBuy.BL.HrAccessService HrAccess(PlatformTestHost host) =>
+            new(host.Db,
+                new PlatformRoleDirectory(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<PlatformRoleDirectory>.Instance),
+                new OrgHierarchy(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<OrgHierarchy>.Instance),
+                new BootstrapAccessPolicyReader(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<BootstrapAccessPolicyReader>.Instance),
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<CrossBuy.BL.HrAccessService>.Instance);
+
         // The shapes the actions return are anonymous types, so the assertions read them back as JSON.
         // That is deliberate: it asserts on what a CALLER actually receives over the wire, not on an
         // internal DTO a refactor could rename without changing the exposure.
@@ -255,7 +265,7 @@ namespace CrossBuy.Tests.Hr
         public async Task Hr_summary_counts_only_the_resolved_company()
         {
             using var host = SeedTwoCompanies();
-            var api = new HrApiController(host.Db, As(CompanyA, AliceOfA));
+            var api = new HrApiController(host.Db, As(CompanyA, AliceOfA), HrAccess(host));
 
             var json = Json(await api.Summary());
 
@@ -267,7 +277,7 @@ namespace CrossBuy.Tests.Hr
         public async Task Adding_company_B_employees_does_not_change_company_A_summary()
         {
             using var host = SeedTwoCompanies();
-            var api = new HrApiController(host.Db, As(CompanyA, AliceOfA));
+            var api = new HrApiController(host.Db, As(CompanyA, AliceOfA), HrAccess(host));
 
             var before = Json(await api.Summary());
 
@@ -293,7 +303,7 @@ namespace CrossBuy.Tests.Hr
         {
             using var host = SeedTwoCompanies();
             var employees = new EmployeesApiController(host.Db, Unresolved());
-            var hr = new HrApiController(host.Db, Unresolved());
+            var hr = new HrApiController(host.Db, Unresolved(), HrAccess(host));
 
             // Empty, not "everything". An unresolved company is the state a background call or a broken
             // session lands in, and the safe answer there is nothing at all.

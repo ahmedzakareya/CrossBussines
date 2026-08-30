@@ -110,12 +110,29 @@ public class ReconciliationTests
     //
     // 424 = 157 + 131 + 136. The debt is UNCHANGED at 136 and the gap set is identical id for id.
     // ----------------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------
+    // THE DEBT FIGURE MOVED DOWN AGAIN, AND FURTHER THAN IT EVER HAS: 136 -> 94 (HR authorization
+    // foundation, 2026-08-30). Forty-two live HR mutations that carried NO authorization at all now
+    // authorize in body through IHrAccessService.CanAsync before they act, so CBA004 fired on all
+    // forty-two and was resolved by REMOVING their baseline entries - the only direction this list may
+    // move. Nothing was added, nothing was edited, nothing was suppressed.
+    //
+    // Mutating does not move: no endpoint arrived or left. Attribute-protected does not move either -
+    // every one of the forty-two authorizes in BODY, so the whole gain is in-body, 131 -> 173.
+    //
+    // 424 = 157 + 173 + 94.
+    //
+    // The 94 that remain are NOT HR debt. Three HR-registry endpoints are deliberately still listed -
+    // AddHierarchicalItem, AdministrativeBodiesCompany and JobTitle - because they administer companies,
+    // branches, job titles and the shared administrative hierarchy rather than HR, and belong to another
+    // owner. The other 91 are pre-existing debt in other modules.
+    // ----------------------------------------------------------------------------------------------
     private const int FrozenMutating = 424;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 131;
+    private const int FrozenInBodyProtected = 173;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
-    private const int FrozenGaps = 136;
+    private const int FrozenGaps = 94;
 
     // Controllers carrying at least one endpoint the analyzer models. Grew 40 -> 44 with the platform
     // modernization controllers that arrived with the same increment (Reporting, Workspace, Calendar and the
