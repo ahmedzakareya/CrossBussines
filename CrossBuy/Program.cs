@@ -454,6 +454,9 @@ builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 // THIS instance, which is what stops one recipe from consuming different quantities down different
 // routes. Scoped, like every service that reads through the request's CrossDbContext.
 builder.Services.AddScoped<IBomExplosionService, BomExplosionService>();
+// Physical consumption, recorded separately from the payment fact. Scoped like every request-bound
+// service; it writes stock only through StockService and events only through the platform.
+builder.Services.AddScoped<IPosPreparationService, PosPreparationService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IManufService, ManufService>();
 builder.Services.AddScoped<IProcurementService, ProcurementService>();
