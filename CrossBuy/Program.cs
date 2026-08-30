@@ -426,6 +426,11 @@ builder.Services.AddScoped<IFinancialStatementService, FinancialStatementService
 builder.Services.AddScoped<IClosingService, ClosingService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
+// The canonical bill-of-materials explosion. One registration, one implementation: POS RecipeAtSale,
+// the Bundle route, immediate production, work-order planning, MRP and standard costing all resolve
+// THIS instance, which is what stops one recipe from consuming different quantities down different
+// routes. Scoped, like every service that reads through the request's CrossDbContext.
+builder.Services.AddScoped<IBomExplosionService, BomExplosionService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IManufService, ManufService>();
 builder.Services.AddScoped<IProcurementService, ProcurementService>();

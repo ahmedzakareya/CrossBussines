@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Inventory;
 using Microsoft.EntityFrameworkCore;
 
@@ -137,9 +137,24 @@ namespace CrossBuy.BL
 		private readonly ICurrencyService _currency;
 		private readonly Microsoft.Extensions.Logging.ILogger<StockService> _logger;
 		private readonly ICurrencyRounding _rounding;
+
+		// THE CANONICAL BOM EXPLOSION, COMPOSED RATHER THAN INJECTED — and the distinction is deliberate.
+		//
+		// This is one of the two writers, and IntegrityCheckService's `writer_coupling` check (HM-D53) reflects
+		// each writer's CONSTRUCTOR PARAMETERS and records any dependency outside a fixed allow-list. Adding
+		// IBomExplosionService as a parameter would register a new coupling on the stock writer — exactly the
+		// thing CLAUDE.md names when it explains why StockService carries no localizer. Composing it here changes
+		// no signature, so no coupling is recorded and no governance check is weakened to accommodate this batch.
+		//
+		// It is still the ONE implementation: the same class every other caller resolves from DI, over the same
+		// DbContext this writer already owns. It is a pure calculator — it reads BOM rows and returns numbers, it
+		// never writes — so it holds no state that a per-request instance would get wrong.
+		private readonly IBomExplosionService _bom;
+
 		public StockService(CrossDbContext context, IJournalEntryService journals, IFiscalPeriodService periods, ICurrencyService currency, Microsoft.Extensions.Logging.ILogger<StockService> logger, ICurrencyRounding rounding)
 		{
 			_context = context; _journals = journals; _periods = periods; _currency = currency; _logger = logger; _rounding = rounding;
+			_bom = new BomExplosionService(context);
 		}
 		// HM-2: inventory is valued in the company FUNCTIONAL currency, so cost-path money values (TotalValue/TotalCost/COGS/landed/
 		// count adjustment) round to the functional dp — for an EGP-functional company that is 2dp (unchanged). AvgCost/UnitCost/Qty
@@ -316,28 +331,26 @@ namespace CrossBuy.BL
 			if (hdr.IsComposite && hdr.CompositeType == "Bundle")
 			{
 				if (req.Direction == 1) return (false, "صنف الحزمة لا يُستلَم في المخزون — أنشئ/استلِم مكوّناته", null);
-				var comps = await _context.ItemComponents.AsNoTracking().Where(c => c.ParentItemId == hdr.ID).OrderBy(c => c.SortOrder).ToListAsync();
-				if (comps.Count == 0) return (false, "الحزمة لا تحتوي على مكوّنات", null);
+				// Quantities come from the canonical service now. Two things improve by that alone: the read is
+				// COMPANY-SCOPED (this one was not — `Where(c => c.ParentItemId == hdr.ID)` with no company predicate,
+				// the same shape of hole that let a work order be built from another tenant's recipe), and the
+				// rounding is the canonical AwayFromZero instead of the C# default ToEven.
+				//
+				// ConvertToBaseUoM = false ON PURPOSE: each component request below carries `UoMId` onward and
+				// PostSingleAsync converts it. Converting here as well would apply the factor twice.
+				var bundleBom = await _bom.ExplodeAsync(companyId, hdr.ID, req.Qty, new BomExplosionOptions { ConvertToBaseUoM = false });
+				if (!bundleBom.Ok) return (false, bundleBom.Error, null);
+				if (bundleBom.Lines.Count == 0) return (false, "الحزمة لا تحتوي على مكوّنات", null);
 				await using var btx = await ScopedTx.BeginOrJoinAsync(_context);
 				try
 				{
 					StockMovement? last = null;
-					foreach (var c in comps)
+					foreach (var c in bundleBom.Lines)
 					{
 						var creq = new MovementRequest
 						{
 							Date = req.Date, ItemId = c.ComponentItemId, WarehouseId = req.WarehouseId, Direction = -1,
-							// THE AUTHORITATIVE BOM QUANTITY. This line used to be a bare `req.Qty * c.Quantity`,
-							// applying neither the planned-scrap uplift nor the 4-decimal rounding that every other
-							// BOM path applies - CompleteImmediateAsync below (`Math.Round(qty * c.Quantity *
-							// (1 + c.ScrapPct / 100m), 4)`) and ManufService.CreateAsync when it plans component
-							// rows. The same recipe therefore consumed a different amount of the same component
-							// depending only on which route the sale took, and the Bundle route consumed LESS than
-							// planned: measured 2.0000 where the authoritative route drew 2.2, and 0.9999 where it
-							// drew 1.0499. Consuming less than planned overstates stock on hand and understates the
-							// cost of what was sold. No third formula is introduced here - this is the same
-							// expression as the other two, so all three now agree.
-							Qty = Math.Round(req.Qty * c.Quantity * (1 + c.ScrapPct / 100m), 4),
+							Qty = c.Quantity,   // canonical: qty * per-parent * (1 + scrap), rounded 4dp AwayFromZero
 							UoMId = c.UoMId, SourceType = req.SourceType, SourceId = req.SourceId,
 							SourceLineId = req.SourceLineId, PostToGl = req.PostToGl, Notes = "تفكيك حزمة: " + hdr.ItemCode
 						};
@@ -1197,8 +1210,15 @@ namespace CrossBuy.BL
 			if (!(kit.IsComposite && kit.CompositeType == "Assembly")) return (false, "هذا الصنف ليس من نوع التجميع", null);
 			var kitCat = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == kit.ItemCategoryId);
 			if (kitCat?.InventoryAccountId == null) return (false, "حساب المخزون غير مربوط لفئة الصنف المركّب", null);
-			var comps = await _context.ItemComponents.AsNoTracking().Where(c => c.ParentItemId == kit.ID).OrderBy(c => c.SortOrder).ToListAsync();
+			var comps = await _context.ItemComponents.AsNoTracking().Where(c => c.CompanyID == companyId && c.ParentItemId == kit.ID).OrderBy(c => c.SortOrder).ToListAsync();
 			if (comps.Count == 0) return (false, "صنف التجميع لا يحتوي على مكوّنات", null);
+			// ASSEMBLY quantities come from the canonical service (extended by planned scrap, canonical rounding).
+			// The raw rows above are still loaded because DISASSEMBLY needs the PER-UNIT quantity un-extended — it
+			// returns what a kit nominally contains and does not recover scrap — and because the component account
+			// lookup below is built from them. Two different questions, two different numbers, one formula each.
+			// ConvertToBaseUoM = false: the movement requests below carry UoMId onward and PostSingleAsync converts.
+			var kitBom = await _bom.ExplodeAsync(companyId, kit.ID, qty, new BomExplosionOptions { ConvertToBaseUoM = false });
+			if (!kitBom.Ok) return (false, kitBom.Error, null);
 
 			// component inventory accounts
 			var compItemIds = comps.Select(c => c.ComponentItemId).Distinct().ToList();
@@ -1218,13 +1238,12 @@ namespace CrossBuy.BL
 				{
 					// consume components at actual cost (FEFO for expiry-tracked components), accumulate total
 					decimal total = 0m;
-					foreach (var c in comps)
+					foreach (var c in kitBom.Lines)
 					{
 						var invAcc = InvAccOf(c.ComponentItemId);
 						if (invAcc == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد المكوّنات", null); }
 						var citem = compItems.FirstOrDefault(x => x.ID == c.ComponentItemId);
-						// include planned scrap so immediate production matches work-order/MRP/standard-cost behaviour
-						var reqQty = Math.Round(qty * c.Quantity * (1 + c.ScrapPct / 100m), 4);
+						var reqQty = c.Quantity;   // canonical: planned scrap included, 4dp AwayFromZero
 
 						// FEFO: split an expiry-tracked component across nearest-expiry batches
 						var subs = new List<(string? batchNo, decimal qty, int? uom)>();

@@ -118,7 +118,8 @@ namespace CrossBuy.BL
 		private readonly CrossDbContext _db;
 		private readonly IStockService _stock;
 		private readonly IEmployeeCostService _empCost;
-		public ManufService(CrossDbContext db, IStockService stock, IEmployeeCostService empCost) { _db = db; _stock = stock; _empCost = empCost; }
+		private readonly IBomExplosionService _bom;   // the ONE place a bill of materials becomes quantities
+		public ManufService(CrossDbContext db, IStockService stock, IEmployeeCostService empCost, IBomExplosionService bom) { _db = db; _stock = stock; _empCost = empCost; _bom = bom; }
 
 		public async Task<(List<WorkOrderRow> rows, int total)> SearchAsync(int companyId, string? q, string? status, int page, int pageSize)
 		{
@@ -229,8 +230,13 @@ namespace CrossBuy.BL
 			if (rlabor > 0 || roh > 0) { wo.LaborCost = rlabor; wo.OverheadCost = roh; }
 			_db.ManufWorkOrders.Add(wo); await _db.SaveChangesAsync();
 			wo.WoNo = $"WO-{wo.ID:D5}";
-			foreach (var b in bom)
-				_db.ManufWorkOrderComponents.Add(new ManufWorkOrderComponent { CompanyID = companyId, WorkOrderId = wo.ID, ItemId = b.ComponentItemId, PlannedQty = Math.Round(b.Quantity * qty * (1 + b.ScrapPct / 100m), 4), UoMId = b.UoMId });
+			// Planned quantities come from the canonical explosion. ConvertToBaseUoM = false because PlannedQty is
+			// STORED alongside its UoMId and the issue path converts it at PostMovementAsync — converting here too
+			// would apply the factor twice, and the stored row would no longer agree with the unit it names.
+			var planned = await _bom.ExplodeAsync(companyId, itemId, qty, new BomExplosionOptions { ConvertToBaseUoM = false });
+			if (!planned.Ok) return (false, planned.Error, 0);
+			foreach (var b in planned.Lines)
+				_db.ManufWorkOrderComponents.Add(new ManufWorkOrderComponent { CompanyID = companyId, WorkOrderId = wo.ID, ItemId = b.ComponentItemId, PlannedQty = b.Quantity, UoMId = b.UoMId });
 			await _db.SaveChangesAsync();
 			return (true, null, wo.ID);
 		}
@@ -422,31 +428,32 @@ namespace CrossBuy.BL
 			var demands = await _db.ManufPlanDemands.AsNoTracking().Where(d => d.CompanyID == companyId && d.PlanId == planId).ToListAsync();
 			if (demands.Count == 0) return new();
 
-			// preload BOMs for the whole company (component graph) and on-hand per item
-			var allBoms = await _db.ItemComponents.AsNoTracking().Where(c => c.CompanyID == companyId)
-				.Select(c => new { c.ParentItemId, c.ComponentItemId, c.Quantity, c.ScrapPct }).ToListAsync();
-			var bomByParent = allBoms.GroupBy(c => c.ParentItemId).ToDictionary(g => g.Key, g => g.ToList());
+			// ON-HAND per item, which is what the walk nets against as it descends.
 			var onHand = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId)
 				.GroupBy(b => b.ItemId).Select(g => new { ItemId = g.Key, Qty = g.Sum(x => x.QtyOnHand), Val = g.Sum(x => x.TotalValue) })
 				.ToDictionaryAsync(x => x.ItemId, x => x);
 			var available = onHand.ToDictionary(k => k.Key, v => v.Value.Qty);
 
-			var rows = new Dictionary<int, MrpRow>();
-			var level = new Dictionary<int, int>();
-			void Require(int itemId, decimal qty, int depth)
-			{
-				if (depth > 30 || qty <= 0) return;
-				if (!rows.TryGetValue(itemId, out var r)) { r = new MrpRow { ItemId = itemId, IsMake = bomByParent.ContainsKey(itemId) }; rows[itemId] = r; level[itemId] = depth; }
-				if (depth < level[itemId]) level[itemId] = depth;
-				r.Gross += qty;
-				decimal avail = available.TryGetValue(itemId, out var a) ? a : 0m;
-				decimal use = Math.Min(Math.Max(avail, 0m), qty);
-				available[itemId] = avail - use;
-				decimal net = qty - use; r.Net += net;
-				if (net > 0 && bomByParent.TryGetValue(itemId, out var comps))
-					foreach (var c in comps) Require(c.ComponentItemId, c.Quantity * net * (1 + c.ScrapPct / 100m), depth + 1);
-			}
-			foreach (var d in demands) Require(d.ItemId, d.Qty, 0);
+			// THE RECURSION THAT USED TO LIVE HERE NOW LIVES IN IBomExplosionService, unchanged in behaviour.
+			// It was the strongest implementation in the repository, so it BECAME the canonical one rather than
+			// being replaced by a weaker abstraction: gross accumulated per item across all demands, netted against
+			// the RUNNING `available` map as the walk descends, only the NET shortage exploded, scrap applied at
+			// every level, the shallowest depth kept as the item's level, and the same depth cap. What changed is
+			// that quantities are rounded by the canonical policy instead of propagating unrounded.
+			//
+			// ConvertToBaseUoM = false preserves today's MRP exactly. MRP compares against on-hand held in BASE
+			// units while recipe rows may name another unit, so conversion is a real correction — but this method
+			// returns a bare List<MrpRow> with no error channel, and a missing conversion must not silently become
+			// an empty plan. Enabling it belongs with an error channel, and is reported as a follow-up.
+			var req = await _bom.BomRequirementsAsync(companyId,
+				demands.Select(d => (d.ItemId, d.Qty)).ToList(), available,
+				new BomExplosionOptions { Recursive = true, NetAgainstOnHand = true, ConvertToBaseUoM = false });
+			// A malformed bill of materials (a cycle) now yields an EMPTY plan rather than the silently truncated
+			// one the old depth cap produced. An empty plan is visibly wrong to a planner; truncated garbage is not.
+			if (!req.Ok) return new();
+
+			var rows = req.Requirements.ToDictionary(r => r.ItemId, r => new MrpRow
+			{ ItemId = r.ItemId, IsMake = r.IsMakeItem, Gross = r.Gross, Net = r.Net, Level = r.Level });
 
 			// enrich with item code/name/unit-cost
 			var ids = rows.Keys.ToList();
@@ -457,7 +464,7 @@ namespace CrossBuy.BL
 				r.ItemCode = it?.ItemCode ?? ("#" + r.ItemId); r.ItemName = it?.Name ?? "";
 				r.OnHand = onHand.TryGetValue(r.ItemId, out var oh) ? oh.Qty : 0m;
 				r.UnitCost = (onHand.TryGetValue(r.ItemId, out var oh2) && oh2.Qty != 0) ? Math.Round(oh2.Val / oh2.Qty, 4) : 0m;
-				r.Level = level[r.ItemId];
+				// Level already came from the canonical walk (the shallowest depth the item was reached at).
 			}
 			// make-items first, then by level, then code
 			return rows.Values.OrderByDescending(r => r.IsMake).ThenBy(r => r.Level).ThenBy(r => r.ItemCode).ToList();
@@ -485,8 +492,12 @@ namespace CrossBuy.BL
 		public async Task<(decimal material, decimal labor, decimal overhead)> ComputeStandardUnitCostAsync(int companyId, int itemId)
 		{
 			decimal material = 0m;
-			var comps = await _db.ItemComponents.AsNoTracking().Where(c => c.CompanyID == companyId && c.ParentItemId == itemId)
-				.Select(c => new { c.ComponentItemId, c.Quantity, c.ScrapPct }).ToListAsync();
+			// Quantities from the canonical explosion for ONE unit. ConvertToBaseUoM = true here, unlike the paths
+			// that hand a UoMId onward: the unit cost below is derived from StockBalances, which are held in BASE
+			// units, so the quantity must be in base units for the multiplication to mean anything.
+			// Single level, as before — a semi-finished component is valued at its own stock cost, not re-exploded.
+			var std = await _bom.ExplodeAsync(companyId, itemId, 1m);
+			var comps = std.Ok ? std.Lines : Array.Empty<BomLine>() as IReadOnlyList<BomLine>;
 			if (comps.Count > 0)
 			{
 				var ids = comps.Select(c => c.ComponentItemId).Distinct().ToList();
@@ -496,7 +507,7 @@ namespace CrossBuy.BL
 				foreach (var c in comps)
 				{
 					decimal uc = (bals.TryGetValue(c.ComponentItemId, out var b) && b.Qty != 0) ? b.Val / b.Qty : 0m;
-					material += c.Quantity * (1 + c.ScrapPct / 100m) * uc;
+					material += c.Quantity * uc;   // canonical: scrap already applied, 4dp AwayFromZero
 				}
 			}
 			var (labor, overhead) = await ComputeRoutingCostAsync(companyId, itemId, 1);

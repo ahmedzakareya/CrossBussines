@@ -203,12 +203,13 @@ namespace CrossBuy.BL
 		private readonly IJournalEntryService _journals;   // RC-6c: reverse invoice/receipt JEs
 		private readonly IPricingService _pricing;
 		private readonly IManufService _manuf;              // BIS-3: WO completion for method 3
+		private readonly IBomExplosionService _bom;         // the ONE place a recipe becomes quantities
 		private readonly Microsoft.Extensions.Logging.ILogger<PosOrderService> _logger;   // HM-D5-أ 5ب-3: independent app-log channel for non-blocking anomalies
 		private readonly ICurrencyRounding _rounding;
 		private readonly ICurrencyService _currency;
 		private readonly Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> L;
-		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding, ICurrencyService currency, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer)
-		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; _currency = currency; L = localizer; }
+		public PosOrderService(CrossDbContext db, IReceivableService receivables, IPricingService pricing, IStockService stock, IJournalEntryService journals, IManufService manuf, Microsoft.Extensions.Logging.ILogger<PosOrderService> logger, ICurrencyRounding rounding, ICurrencyService currency, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer, IBomExplosionService bom)
+		{ _db = db; _receivables = receivables; _pricing = pricing; _stock = stock; _journals = journals; _manuf = manuf; _logger = logger; _rounding = rounding; _currency = currency; L = localizer; _bom = bom; }
 
 		// HM-D5-أ 5ب-4: TEST-ONLY fault seam (default null ⇒ no-op in production). Set by a dev self-test to force a
 		// failure right before the sync-log commit, proving the whole replay rolls back atomically. Never set in prod.
@@ -290,50 +291,58 @@ namespace CrossBuy.BL
 
 		// BIS-2: sourcing map for an order's items in its branch → per-item method + (for RecipeAtSale) the item's recipe.
 		public class RecipeComp { public int CompId; public decimal Qty; public decimal Scrap; public string Name = ""; }
-		private async Task<(Dictionary<int, string> methodByItem, ILookup<int, RecipeComp> bomByItem)> LoadSourcingAsync(int companyId, int branchId, List<int> itemIds)
+		// The branch's sourcing method per item, plus the display names of the components a RecipeAtSale item
+		// will explode into. The QUANTITIES are no longer computed here — IBomExplosionService owns that, so this
+		// method no longer carries a copy of the scrap formula. Names are still needed because an invoice line
+		// shows a description and the explosion returns ids.
+		private async Task<(Dictionary<int, string> methodByItem, Dictionary<int, string> compNames)> LoadSourcingAsync(int companyId, int branchId, List<int> itemIds)
 		{
 			var method = itemIds.Count == 0 ? new Dictionary<int, string>()
 				: await _db.BranchItemSourcings.AsNoTracking().Where(s => s.BranchId == branchId && s.IsActive && itemIds.Contains(s.ItemId))
 					.ToDictionaryAsync(s => s.ItemId, s => s.Method);
 			var recipeItems = method.Where(kv => kv.Value == "RecipeAtSale").Select(kv => kv.Key).ToList();
-			ILookup<int, RecipeComp> bom = Enumerable.Empty<RecipeComp>().ToLookup(x => 0);
+			var names = new Dictionary<int, string>();
 			if (recipeItems.Count > 0)
 			{
-				var comps = await (from c in _db.ItemComponents.AsNoTracking()
-								   join i in _db.Items.AsNoTracking() on c.ComponentItemId equals i.ID into gi
-								   from i in gi.DefaultIfEmpty()
-								   where c.CompanyID == companyId && recipeItems.Contains(c.ParentItemId)
-								   select new { c.ParentItemId, c.ComponentItemId, c.Quantity, c.ScrapPct, Name = i != null ? i.Name : "" }).ToListAsync();
-				bom = comps.ToLookup(c => c.ParentItemId, c => new RecipeComp { CompId = c.ComponentItemId, Qty = c.Quantity, Scrap = c.ScrapPct, Name = c.Name });
+				names = await (from c in _db.ItemComponents.AsNoTracking()
+							   join i in _db.Items.AsNoTracking() on c.ComponentItemId equals i.ID
+							   where c.CompanyID == companyId && recipeItems.Contains(c.ParentItemId)
+							   select new { i.ID, i.Name })
+					.Distinct().ToDictionaryAsync(x => x.ID, x => x.Name ?? "");
 			}
-			return (method, bom);
+			return (method, names);
 		}
 
 		// BIS-2: emit invoice line(s) for one order line, routed by its branch sourcing method:
-		//  • RecipeAtSale (method 4): parent = REVENUE ONLY (ItemId=null, no stock) + recipe components as 0-price lines
-		//    (ItemId=component, Qty=recipeQty×qty×(1+scrap)) → StockService issues them + COGS (RC-4c pattern). No finished stock.
-		//  • all other methods / no row: parent = deduct the finished item ITSELF (ItemId=finished, WarehouseId=wh) — current behaviour.
+		//  • RecipeAtSale (method 4): parent = REVENUE ONLY (no warehouse ⇒ no stock) + its recipe components as
+		//    0-price stock lines. The component QUANTITIES now come from IBomExplosionService — the same service
+		//    the Bundle route, immediate production, work-order planning, MRP and standard costing use, so one
+		//    recipe can no longer consume different amounts down different routes.
+		//  • all other methods / no row: parent = deduct the finished item ITSELF — unchanged.
 		// Then the line's chosen modifiers backflush as usual (regardless of method).
-		private void AppendSaleLines(Dictionary<int, string> methodByItem, ILookup<int, RecipeComp> bomByItem, ILookup<int, PosOrderLineModifier> modsByLine,
-			PosOrderLine l, decimal qty, decimal discount, int revenue, int? whId, List<SalesLineInput> invLines)
+		//
+		// SINGLE LEVEL, DELIBERATELY. The explosion is called WITHOUT recursion, which preserves exactly today's
+		// behaviour: a component that is itself a made item (a prepared sauce) is CONSUMED from stock, not silently
+		// manufactured mid-sale. Whether a sale should trigger production is a business decision, not something a
+		// cashier's Pay button should take on its own.
+		//
+		// CONSUMPTION TIMING IS UNCHANGED. This still runs only from the pay/return paths; nothing here moves the
+		// moment stock is consumed.
+		private async Task<string?> AppendSaleLinesAsync(int companyId, Dictionary<int, string> methodByItem, Dictionary<int, string> compNames,
+			ILookup<int, PosOrderLineModifier> modsByLine, PosOrderLine l, decimal qty, decimal discount, int revenue, int? whId, List<SalesLineInput> invLines)
 		{
 			methodByItem.TryGetValue(l.ItemId, out var method);
 			if (method == "RecipeAtSale")
 			{
 				// REVENUE ONLY, BUT ATTRIBUTABLE. The parent carries its ItemId so the sale can be traced to the
 				// dish that was sold; WarehouseId stays null, and that is what keeps it revenue-only.
-				// ReceivableService issues stock for lines matching `ItemId != null && WarehouseId != null && Qty > 0`
-				// (ReceivableService.cs:282), so a null warehouse produces NO stock movement for the parent while the
-				// BOM components below — which do carry a warehouse — remain the only things deducted.
-				//
-				// WHY IT MATTERED. With ItemId null the revenue line named no item, so a RecipeAtSale dish was absent
-				// from every item-level sales read while its ingredients carried the whole COGS. Company-level revenue
-				// and COGS are unchanged by this: same amount, same revenue account, same tax, one more populated column.
 				invLines.Add(new SalesLineInput { ItemDescription = l.ItemName, Qty = qty, UnitPrice = l.UnitPrice, DiscountAmount = discount, TaxRate = l.TaxRate, RevenueAccountId = revenue, ItemId = l.ItemId, WarehouseId = null });   // revenue only, still attributable
-				foreach (var c in bomByItem[l.ItemId])
+				var ex = await _bom.ExplodeAsync(companyId, l.ItemId, qty);
+				if (!ex.Ok) return ex.Error;
+				foreach (var c in ex.Lines)
 				{
-					decimal dq = Math.Round(c.Qty * (1 + c.Scrap / 100m) * qty, 4, MidpointRounding.AwayFromZero);
-					if (dq > 0) invLines.Add(new SalesLineInput { ItemDescription = c.Name, Qty = dq, UnitPrice = 0, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = revenue, ItemId = c.CompId, WarehouseId = whId });
+					if (c.Quantity <= 0) continue;
+					invLines.Add(new SalesLineInput { ItemDescription = compNames.TryGetValue(c.ComponentItemId, out var n) ? n : "", Qty = c.Quantity, UnitPrice = 0, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = revenue, ItemId = c.ComponentItemId, WarehouseId = whId });
 				}
 			}
 			else
@@ -341,6 +350,7 @@ namespace CrossBuy.BL
 				invLines.Add(new SalesLineInput { ItemDescription = l.ItemName, Qty = qty, UnitPrice = l.UnitPrice, DiscountAmount = discount, TaxRate = l.TaxRate, RevenueAccountId = revenue, ItemId = l.ItemId, WarehouseId = whId, UoMId = l.UoMId });   // HM-2: carry the sold unit to the stock movement
 			}
 			AppendModifierLines(modsByLine, l.ID, qty, revenue, whId, invLines);
+			return null;
 		}
 
 		// RC-5 (tip): post the gratuity as a STANDALONE liability JE — Dr [drawer if Cash else the method's bank/card account]
@@ -1133,10 +1143,13 @@ namespace CrossBuy.BL
 				: await EnsureWalkInAsync(companyId);
 
 			var modsByLine = await LoadLineModifiersAsync(lines.Select(l => l.ID).ToList());   // RC-4c
-			var (methodByItem, bomByItem) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());   // BIS-2
+			var (methodByItem, compNames) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());   // BIS-2
 			var invLines = new List<SalesLineInput>();
 			foreach (var l in lines)
-				AppendSaleLines(methodByItem, bomByItem, modsByLine, l, l.Qty, l.DiscountAmount, revenue, whId, invLines);   // BIS-2: routes by sourcing method (+RC-4c modifiers)
+			{
+				var bomErr = await AppendSaleLinesAsync(companyId, methodByItem, compNames, modsByLine, l, l.Qty, l.DiscountAmount, revenue, whId, invLines);   // BIS-2: routes by sourcing method (+RC-4c modifiers)
+				if (bomErr != null) return (false, bomErr, null);
+			}
 			if (o.ServiceAmount > 0)
 			{
 				var dv = await DefaultVatRateAsync(companyId);
@@ -1263,10 +1276,13 @@ namespace CrossBuy.BL
 				? (await _db.Customers.FirstOrDefaultAsync(x => x.ID == o.CustomerId && x.CompanyID == companyId) ?? await EnsureWalkInAsync(companyId))
 				: await EnsureWalkInAsync(companyId);
 			var modsByLine = await LoadLineModifiersAsync(lines.Select(l => l.ID).ToList());   // RC-4c
-			var (methodByItem, bomByItem) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());   // BIS-2
+			var (methodByItem, compNames) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());   // BIS-2
 			var invLines = new List<SalesLineInput>();
 			foreach (var l in lines)
-				AppendSaleLines(methodByItem, bomByItem, modsByLine, l, l.Qty, l.DiscountAmount, revenue, whId, invLines);   // BIS-2
+			{
+				var bomErr = await AppendSaleLinesAsync(companyId, methodByItem, compNames, modsByLine, l, l.Qty, l.DiscountAmount, revenue, whId, invLines);   // BIS-2
+				if (bomErr != null) return (false, bomErr, null);
+			}
 			if (o.ServiceAmount > 0) { var dv = await DefaultVatRateAsync(companyId); invLines.Add(new SalesLineInput { ItemDescription = "رسوم خدمة", Qty = 1, UnitPrice = o.ServiceAmount, DiscountAmount = 0, TaxRate = dv, RevenueAccountId = revenue }); }
 			if (o.DeliveryFee > 0) { int delAcct = setting?.DeliveryRevenueAccountId ?? revenue; decimal delTax = (setting?.DeliveryTaxExempt == true) ? 0m : await DefaultVatRateAsync(companyId); invLines.Add(new SalesLineInput { ItemDescription = "رسوم توصيل", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct }); }
 
@@ -1385,7 +1401,7 @@ namespace CrossBuy.BL
 			decimal residual = R(o.GrandTotal - sumBills - deliveryGrand);   // piasters from per-bill rounding → last bill
 
 			var modsByLine = await LoadLineModifiersAsync(lines.Select(l => l.ID).ToList());   // RC-4c
-			var (methodByItem, bomByItem) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());   // BIS-2
+			var (methodByItem, compNames) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());   // BIS-2
 			// HM-1-أ ب-3: ONE ambient transaction wraps ALL split bills (each invoice + COGS + receipt) so a split payment is all-or-nothing.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var invoiceIds = new List<int>();
@@ -1395,7 +1411,8 @@ namespace CrossBuy.BL
 				foreach (var a in bill)
 				{
 					var l = lines.First(x => x.ID == a.LineId); var disc = R(l.DiscountAmount * a.Qty / l.Qty);
-					AppendSaleLines(methodByItem, bomByItem, modsByLine, l, a.Qty, disc, revenue, whId, invLines);   // BIS-2: recipe components split PROPORTIONALLY (+RC-4c modifiers)
+					var bomErr = await AppendSaleLinesAsync(companyId, methodByItem, compNames, modsByLine, l, a.Qty, disc, revenue, whId, invLines);   // BIS-2: recipe components split PROPORTIONALLY (+RC-4c modifiers)
+					if (bomErr != null) return (false, bomErr, new());
 					billSub += R(a.Qty * l.UnitPrice - disc);
 				}
 				if (svcPct > 0) { var svc = R(billSub * svcPct / 100m); if (svc > 0) invLines.Add(new SalesLineInput { ItemDescription = "رسوم خدمة", Qty = 1, UnitPrice = svc, DiscountAmount = 0, TaxRate = vat, RevenueAccountId = revenue, ItemId = null, WarehouseId = null }); }
@@ -1527,7 +1544,7 @@ namespace CrossBuy.BL
 			// BIS-4: build the return lines by MIRRORING the sale (AppendSaleLines) — so a RecipeAtSale (method 4) item returns
 			// its recipe COMPONENTS (never the never-stocked finished), and deduct-itself items return the finished. Same routing,
 			// so the return exactly reverses whatever the sale issued (finished/components + RC-4c modifiers) at their cost.
-			var (methodByItem, bomByItem) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());
+			var (methodByItem, compNames) = await LoadSourcingAsync(companyId, o.BranchId, lines.Select(l => l.ItemId).Distinct().ToList());
 			var retLines = new List<SalesLineInput>();
 			foreach (var a in allocations)
 			{
@@ -1535,7 +1552,10 @@ namespace CrossBuy.BL
 				if (l == null) return (false, "سطر لا يخص هذا الطلب", null);
 				if (a.Qty > l.Qty + 0.0001m) return (false, $"كمية الإرجاع أكبر من المُباع لـ«{l.ItemName}»", null);
 				var disc = R(l.DiscountAmount * a.Qty / (l.Qty == 0 ? 1 : l.Qty));
-				AppendSaleLines(methodByItem, bomByItem, modsByLine, l, a.Qty, disc, revenue, whId, retLines);
+				// The return runs the SAME explosion the sale ran, so it reverses exactly what was issued — one
+				// service, one rounding, symmetric quantities. A second formula here is how a return drifts.
+				var bomErr = await AppendSaleLinesAsync(companyId, methodByItem, compNames, modsByLine, l, a.Qty, disc, revenue, whId, retLines);
+				if (bomErr != null) return (false, bomErr, null);
 			}
 
 			var (rok, rerr, ret) = await _receivables.CreateSalesReturnAsync(companyId, cust.ID, o.InvoiceId, DateTime.Today, retLines, $"مرتجع جزئي — طلب كاشير #{o.ID}", userId, o.CurrencyId);

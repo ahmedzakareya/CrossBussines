@@ -87,6 +87,7 @@ namespace CrossBuy.Tests.SqlServer
 			services.AddScoped<IStockService, StockService>();
 			services.AddScoped<IEmployeeCostService, EmployeeCostService>();
 			services.AddScoped<IEntityRegistry, EntityRegistry>();
+			services.AddScoped<IBomExplosionService, BomExplosionService>();   // the canonical BOM explosion ManufService now resolves
 			services.AddScoped<IBusinessContextAccessor>(_ => new StubContextAccessor(new BusinessContext
 			{
 				CompanyId = companyId, EmployeeId = 1, UserId = "uat-pimfc",
