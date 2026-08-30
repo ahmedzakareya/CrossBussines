@@ -217,7 +217,17 @@ namespace CrossBuy.BL.Platform
                 // List-only screen (no per-id detail view) — BuildUrl returns it unchanged.
                 RouteTemplate = "/Admin/EmployeesList",
                 SupportsSearch = true, SupportsTimeline = false, SupportsComments = false,
-                SupportsFiles = false, SupportsFollowers = false,
+                // SupportsFiles turns on for Employee, and for Employee only in this increment: a family
+                // is onboarded onto the document platform deliberately, one at a time, once something can
+                // actually authorize its documents. For Employee that is now true end to end -
+                // EmployeeDocumentOwnerResolver is registered, this entry is ScopeHr so the resolver reaches
+                // HrAccessService, read maps to employee-view, write to employee-manage, and anything above
+                // Internal additionally demands confidential-view.
+                //
+                // The flag does not grant anything. It declares that the family HAS documents; every
+                // request still goes through IDocumentAccessResolver, where a company mismatch, a relation
+                // whose owner lives in another tenant, and an unresolved BusinessContext each fail closed.
+                SupportsFiles = true, SupportsFollowers = false,
                 // ScopeHr, not ScopeNone. ScopeNone routes to DefaultPermissionAdapter, which grants View
                 // to ANY authenticated caller whose company matched and refuses everything else - the
                 // weakest possible answer, and correct while it was true that "HR has no access service".

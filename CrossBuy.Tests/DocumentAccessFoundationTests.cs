@@ -325,6 +325,55 @@ namespace CrossBuy.Tests
             Assert.Equal(PrivateFilePolicy.Public, PrivateFileGate.PolicyFor("/uploads/chatter-public/x.png"));
         }
 
+        // ---- the Employee family is onboarded, and onboarding is per-family ------------------------
+
+        [Fact]
+        public void Employee_carries_documents_and_the_flag_was_not_turned_on_in_bulk()
+        {
+            using var host = new PlatformTestHost();
+            var registry = new EntityRegistry(host.Db);
+
+            Assert.True(registry.TryGetDefinition(EntityRegistry.Employee, out var employee));
+            Assert.True(employee!.SupportsFiles);
+
+            // ...and it routes to a module that can actually answer, which is the reason the flag could
+            // be turned on at all. ScopeNone would put it back on DefaultPermissionAdapter, where View is
+            // granted to any authenticated same-company caller.
+            Assert.Equal(EntityRegistry.ScopeHr, employee.PermissionScope);
+
+            // ONBOARDING IS DELIBERATE, ONE FAMILY AT A TIME. Every other family that has no document
+            // owner resolver must still be false: a SupportsFiles that drifted true in bulk would invite
+            // callers to attach documents to records the platform cannot authorize.
+            foreach (var code in new[]
+                     {
+                         EntityRegistry.SalesInvoice, EntityRegistry.PurchaseInvoice, EntityRegistry.Quotation,
+                         EntityRegistry.Customer, EntityRegistry.Supplier, EntityRegistry.Project,
+                         EntityRegistry.Item, EntityRegistry.JournalEntry,
+                     })
+            {
+                Assert.True(registry.TryGetDefinition(code, out var d), code);
+                Assert.False(d!.SupportsFiles, code + " gained SupportsFiles without an owner resolver");
+            }
+        }
+
+        [Fact]
+        public async Task The_flag_grants_nothing_on_its_own()
+        {
+            using var host = Seeded();
+            var resolver = Build(host);
+
+            // SupportsFiles says the family HAS documents. It is not an authority, and the proof is that
+            // the cross-company answer is unchanged by it: company B's employee, exact identifier, refused.
+            var decision = await resolver.AuthorizeAsync(
+                Employee(CompanyB, MalloryOfB),
+                new DocumentOwnerRef(EntityRegistry.Employee, AliceOfA),
+                DocumentAction.Download,
+                documentCompanyId: CompanyA);
+
+            Assert.False(decision.Allowed);
+            Assert.Equal(DocumentAccessReasons.CompanyMismatch, decision.ReasonCode);
+        }
+
         // ---- fixture ---------------------------------------------------------------------------------
 
         private static IDocumentAccessResolver Build(PlatformTestHost host)

@@ -171,8 +171,11 @@ exists to someone not allowed to know that.
    `EntityType`, `EntityId`, `Confidentiality`, `StorageKey`.
 2. The secure download/upload endpoints implementing §8.
 3. One `IDocumentOwnerResolver` per family being onboarded.
-4. `SupportsFiles` — still `false` on **every** registry entry, deliberately. Flip it per family as part
-   of onboarding, never in bulk.
+4. `SupportsFiles` — flip it per family as part of onboarding, never in bulk. **Correction to the
+   original text of this ADR, which said the flag was `false` on every entry:** `Task` and
+   `CalendarEvent` already carried it when TAB-4 onboarded them for timeline/comments/files. `Employee`
+   was enabled once its owner resolver, its `ScopeHr` routing and its action map were all in place.
+   Everything else remains `false`.
 5. Business events (`Uploaded`/`Replaced`/`Approved`/`Expired`/`Renewed`/`Archived`), versioning,
    metadata and approvals — all TAB-3's, all through the canonical engines.
 
