@@ -1,4 +1,4 @@
-using CrossBuy.BL.Communication;
+﻿using CrossBuy.BL.Communication;
 using CrossBuy.BL.Platform;
 using CrossBuy.BL.Reporting;
 using CrossBuy.BL.TasksCalendar;
@@ -518,12 +518,27 @@ namespace CrossBuy.BL.Workspace
                     : null,
                 // The MODULE supplied the pair; this only formats it. No navigation framework is
                 // introduced, and Workspace never names a module route itself.
-                Url = "/" + r.Navigation.Controller + "/" + r.Navigation.Action,
+                Url = ApprovalUrl(r.Navigation),
             }).ToList();
 
             // Total is the whole inbox, not the page: From() maps an empty list to the Empty state and
             // keeps the real total, so a capped panel never implies the queue is this short.
             return WorkspacePanel<WorkspaceApprovalItem>.From(items, page.TotalPending);
+        }
+
+        // The module names its own route AND, where the document needs identifying, its own route values.
+        // Workspace still invents nothing - it concatenates what the module supplied. Without this, a silo
+        // whose screen is addressed by id would link to a LIST and the approver would have to hunt for the
+        // document they were sent to act on.
+        private static string ApprovalUrl(CrossBuy.BL.Approvals.ApprovalNavigationTarget nav)
+        {
+            var path = "/" + nav.Controller + "/" + nav.Action;
+            if (nav.RouteValues == null || nav.RouteValues.Count == 0) return path;
+        
+            var query = string.Join("&", nav.RouteValues
+                .Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+                .Select(kv => Uri.EscapeDataString(kv.Key) + "=" + Uri.EscapeDataString(kv.Value!)));
+            return string.IsNullOrEmpty(query) ? path : path + "?" + query;
         }
 
         private static string PickTitle(CrossBuy.BL.Approvals.PendingApprovalRow row)

@@ -1,4 +1,4 @@
-using CrossBuy.Models.Platform;
+﻿using CrossBuy.Models.Platform;
 
 namespace CrossBuy.BL.Approvals
 {
@@ -33,6 +33,7 @@ namespace CrossBuy.BL.Approvals
 		public const string Leave = "Leave";
 		public const string Request = "Request";
 		public const string Inventory = "Inventory";
+		public const string ProjectBilling = "ProjectBilling";   // المستخلص awaiting approval
 	}
 
 	/// <summary>
@@ -43,7 +44,15 @@ namespace CrossBuy.BL.Approvals
 	/// in the controller. Resolving this to a URL stays in the presentation layer: a BL service has no
 	/// IUrlHelper and should not pretend to.
 	/// </summary>
-	public sealed record ApprovalNavigationTarget(string Controller, string Action);
+	/// <summary>
+	/// Where the owning module wants this row opened. RouteValues is OPTIONAL and defaulted, so the three
+	/// silos that need no identifiers are unchanged; project billing needs them because its screen is
+	/// addressed by project AND billing, and the inbox must reach the REAL document rather than a list.
+	/// </summary>
+	public sealed record ApprovalNavigationTarget(
+		string Controller,
+		string Action,
+		IReadOnlyDictionary<string, string?>? RouteValues = null);
 
 	/// <summary>
 	/// One pending approval, as the owning module sees it. Every field is either an identity, a fact, or

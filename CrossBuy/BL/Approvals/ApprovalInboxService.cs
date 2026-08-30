@@ -1,4 +1,4 @@
-using CrossBuy.Models.Platform;
+﻿using CrossBuy.Models.Platform;
 
 namespace CrossBuy.BL.Approvals
 {
@@ -68,14 +68,17 @@ namespace CrossBuy.BL.Approvals
 		private readonly ILeaveWorkflowService _leave;
 		private readonly IEmployeeRequestService _requests;
 		private readonly IInventoryApprovalService _inventory;
+		// The Projects module's own reader. Like the other three, it returns rows THIS caller may act on;
+		// this service still holds no CrossDbContext and still decides no permission of its own.
+		private readonly IProgressBillingService _billing;
 
 		public ApprovalInboxService(
-			ILeaveWorkflowService leave, IEmployeeRequestService requests, IInventoryApprovalService inventory)
+			ILeaveWorkflowService leave, IEmployeeRequestService requests, IInventoryApprovalService inventory, IProgressBillingService billing)
 		{
 			_leave = leave;
 			_requests = requests;
 			_inventory = inventory;
-		}
+		_billing = billing; }
 
 		public async Task<ApprovalInboxPage> GetPendingForCurrentApproverAsync(
 			BusinessContext context, int employeeId, int take = 0,
@@ -97,6 +100,10 @@ namespace CrossBuy.BL.Approvals
 			var (isInventoryManager, inventoryPending) =
 				await _inventory.ApprovalInboxAsync(context, employeeId, cancellationToken);
 
+			// Project billing. The reader has ALREADY applied preparer != approver and billing-approve per
+			// project, so anything it returns is genuinely this caller's to act on.
+			var billingPending = await _billing.PendingApprovalsForAsync(context, cancellationToken);
+
 			var inventoryRows = inventoryPending.Select(a => new PendingApprovalRow
 			{
 				Silo = ApprovalSilos.Inventory,
@@ -109,6 +116,30 @@ namespace CrossBuy.BL.Approvals
 				Navigation = new ApprovalNavigationTarget("Inventory", "Approvals"),
 			}).ToList();
 
+			var billingRows = billingPending.Select(b => new PendingApprovalRow
+			{
+				Silo = ApprovalSilos.ProjectBilling,
+				EntityId = b.BillingId,
+				// The stage IS the discriminator: the same document appears as an approval task, then as a
+				// posting task, and the reader has already proved this caller may do that specific one.
+				ApprovalType = b.Status == CrossBuy.Models.Context.Accounting.ProgressBillingStatuses.Submitted
+					? "ProgressBilling.Approve"
+					: "ProgressBilling.Post",
+				TitleAr = b.Status == CrossBuy.Models.Context.Accounting.ProgressBillingStatuses.Submitted
+					? $"اعتماد مستخلص #{b.BillingNo} - {b.ProjectName}"
+					: $"ترحيل مستخلص #{b.BillingNo} - {b.ProjectName}",
+				TitleEn = b.Status == CrossBuy.Models.Context.Accounting.ProgressBillingStatuses.Submitted
+					? $"Approve progress billing #{b.BillingNo} - {b.ProjectNameEn ?? b.ProjectName}"
+					: $"Post progress billing #{b.BillingNo} - {b.ProjectNameEn ?? b.ProjectName}",
+				RequesterEmployeeId = b.PreparedBy,
+				SubmittedAt = b.SubmittedAt,
+				Status = b.Status,
+				Amount = b.NetDue,
+				// Into the REAL billing screen, not a clone of it.
+				Navigation = new ApprovalNavigationTarget("Project", "Billing",
+					new Dictionary<string, string?> { ["id"] = b.ProjectId.ToString(), ["b"] = b.BillingId.ToString() }),
+			}).ToList();
+
 			// Every silo appears in the counts, including the empty ones: a consumer rendering "Leave (0)"
 			// should not have to know whether a missing key means zero or means the silo does not exist.
 			var countsBySilo = new Dictionary<string, int>
@@ -116,6 +147,7 @@ namespace CrossBuy.BL.Approvals
 				[ApprovalSilos.Leave] = leaveRows.Count,
 				[ApprovalSilos.Request] = requestRows.Count,
 				[ApprovalSilos.Inventory] = inventoryRows.Count,
+				[ApprovalSilos.ProjectBilling] = billingRows.Count,
 			};
 
 			var visibleSilos = new HashSet<string>(StringComparer.Ordinal)
@@ -127,11 +159,14 @@ namespace CrossBuy.BL.Approvals
 				ApprovalSilos.Request,
 			};
 			if (isInventoryManager) visibleSilos.Add(ApprovalSilos.Inventory);
+			// Project billing entitlement is per project, so there is no company-wide flag to ask for: the
+			// silo is visible exactly when the module returned something this caller may approve.
+			if (billingRows.Count > 0) visibleSilos.Add(ApprovalSilos.ProjectBilling);
 
 			// One deterministic order across all three sources. OrderKey carries negated ticks then silo
 			// then negated id, so this is newest-first with a total tiebreak - two rows submitted in the
 			// same tick cannot swap places between requests.
-			var merged = leaveRows.Concat(requestRows).Concat(inventoryRows)
+			var merged = leaveRows.Concat(requestRows).Concat(inventoryRows).Concat(billingRows)
 				.OrderBy(r => r.OrderKey)
 				.ToList();
 

@@ -156,7 +156,9 @@
         "CrossBuy.Tests/Projects*Tests.cs",
         "CrossBuy/BL/ProgressBillingService.cs",
         "CrossBuy/Models/Context/Accounting/ProgressBilling.cs",
-        "CrossBuy/Views/Project/Billing.cshtml"
+        "CrossBuy/Views/Project/Billing.cshtml",
+        "CrossBuy.Tests/ApprovalInboxAggregatorTests.cs",
+        "CrossBuy.Tests/ApprovalCompanyIsolationTests.cs"
       ],
       "mayNotTouch": "Other tabs' trees; approval WRITE paths in module services",
       "status": "APPOINTED for read-only approval inbox (owner ruling); wider Workspace R3 scope still unassigned"

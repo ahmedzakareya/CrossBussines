@@ -58,6 +58,12 @@ namespace CrossBuy.BL
 		public bool ViewerPreparedIt { get; set; }
 	}
 
+	// One Submitted billing that a specific caller is entitled to act on. Deliberately a small read
+	// model rather than the entity: the inbox needs to render and navigate, not to mutate.
+	public sealed record PendingBillingApproval(
+		int BillingId, int BillingNo, int ProjectId, string ProjectCode, string ProjectName, string? ProjectNameEn,
+		int? PreparedBy, DateTime? SubmittedAt, decimal NetDue, string Status);
+
 	public interface IProgressBillingService
 	{
 		Task<List<ProgressBilling>> GetBillingsAsync(int companyId, int projectId);
@@ -69,6 +75,11 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error)> ReturnAsync(int companyId, int id, int actorEmployeeId);
 		Task<(bool ok, string? error)> PostAsync(int companyId, int id, int actorEmployeeId);
 		Task<(bool ok, string? error)> DeleteAsync(int companyId, int id);
+
+		// The inbox reader. Returns the Submitted billings THIS caller may actually approve - the approval
+		// inbox is another entry point into these same rules, never a second workflow.
+		Task<IReadOnlyList<PendingBillingApproval>> PendingApprovalsForAsync(
+			CrossBuy.Models.Platform.BusinessContext context, CancellationToken cancellationToken = default);
 	}
 
 	public class ProgressBillingService : IProgressBillingService
@@ -77,12 +88,59 @@ namespace CrossBuy.BL
 		private readonly IReceivableService _ar;
 		private readonly IProgressService _progress;
 		private readonly IContractService _contract;
-		public ProgressBillingService(CrossDbContext db, IReceivableService ar, IProgressService progress, IContractService contract)
-		{ _db = db; _ar = ar; _progress = progress; _contract = contract; }
+		// The canonical event backbone. It REFUSES to record outside an ambient transaction (ADR-001),
+		// which is why every lifecycle method below now opens a ScopedTx even when its own write is a
+		// single row: the fact and its event have to share one fate, or a rolled-back approval would
+		// still have told the rest of the platform it happened.
+		private readonly CrossBuy.BL.Platform.IBusinessEventService _events;
+		// Asked for billing-approve when building the inbox, so the inbox cannot answer a permission
+		// question the access service owns.
+		private readonly IProjectsAccessService _access;
+		public ProgressBillingService(CrossDbContext db, IReceivableService ar, IProgressService progress, IContractService contract,
+			CrossBuy.BL.Platform.IBusinessEventService events, IProjectsAccessService access)
+		{ _db = db; _ar = ar; _progress = progress; _contract = contract; _events = events; _access = access; }
 
 		// Surfaced to the user as-is, because "you cannot do that" without the reason is what makes a
 		// workflow control feel like a bug. Public so the view and the tests name the same string.
 		public const string SelfApprovalRefused = "لا يمكنك اعتماد مستخلص أعددتَه بنفسك";
+
+		// ---- the lifecycle event ----
+		//
+		// ONE emitter for every transition, so the payload shape and the dedup rule cannot drift between
+		// them. Called INSIDE the caller's ScopedTx and BEFORE its commit, which is the contract the
+		// kernel enforces: an event for a transaction that rolls back is never written.
+		//
+		// THE DEDUP KEY IS THE TRANSITION ITSELF - billing id plus target state. A retry of the same
+		// transition returns the original event id and writes nothing, so a repeated approve or a
+		// concurrent post cannot put two 'Approved' facts into the permanent log.
+		private Task EmitAsync(ProgressBilling hdr, string action, int actorEmployeeId,
+			CancellationToken cancellationToken = default)
+		=> _events.RecordAsync(new CrossBuy.Models.Platform.BusinessEventRecord
+		{
+			EntityCode = CrossBuy.BL.Platform.EntityRegistry.ProjectBilling,
+			EntityId = hdr.ID,
+			EventType = $"{CrossBuy.BL.Platform.EntityRegistry.ProjectBilling}.{action}",
+			PayloadVersion = ProgressBillingEventPayload.Version,
+			Visibility = CrossBuy.Models.Platform.BusinessEventVisibility.Internal,
+			// billing 12 can only be approved once; a second attempt is the same fact, not a new one.
+			DedupKey = $"projectbilling:{hdr.ID}:{action}",
+			Payload = new ProgressBillingEventPayload
+			{
+				BillingId = hdr.ID,
+				BillingNo = hdr.BillingNo,
+				ProjectId = hdr.ProjectId,
+				ProgressId = hdr.ProgressId,
+				CustomerId = hdr.CustomerId,
+				Status = hdr.Status,
+				GrossWork = hdr.GrossWork,
+				NetDue = hdr.NetDue,
+				ActorEmployeeId = actorEmployeeId,
+				// Financial document ids only once they exist - identifiers, never the documents.
+				SalesInvoiceId = hdr.SalesInvoiceId,
+				RetentionReceiptId = hdr.RetentionReceiptId,
+				AdvanceReceiptId = hdr.AdvanceReceiptId,
+			},
+		}, cancellationToken);
 
 		private static decimal R(decimal v) => Math.Round(v, 2, MidpointRounding.AwayFromZero);
 		private Task<int?> AccIdAsync(int companyId, string code) =>
@@ -247,6 +305,7 @@ namespace CrossBuy.BL
 		// ---- SUBMIT: the preparer hands the billing to an approver ----
 		public async Task<(bool ok, string? error)> SubmitAsync(int companyId, int id, int actorEmployeeId)
 		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
 			if (hdr == null) return (false, "المستخلص غير موجود");
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Submitted))
@@ -256,6 +315,8 @@ namespace CrossBuy.BL
 			hdr.Status = ProgressBillingStatuses.Submitted;
 			hdr.SubmittedBy = actorEmployeeId; hdr.SubmittedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
+			await EmitAsync(hdr, ProgressBillingEvents.Submitted, actorEmployeeId);
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
@@ -270,6 +331,7 @@ namespace CrossBuy.BL
 		// a parameter resolved from the authenticated context by the caller - never a posted field.
 		public async Task<(bool ok, string? error)> ApproveAsync(int companyId, int id, int actorEmployeeId)
 		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
 			if (hdr == null) return (false, "المستخلص غير موجود");
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Approved))
@@ -286,6 +348,8 @@ namespace CrossBuy.BL
 			hdr.Status = ProgressBillingStatuses.Approved;
 			hdr.ApprovedBy = actorEmployeeId; hdr.ApprovedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
+			await EmitAsync(hdr, ProgressBillingEvents.Approved, actorEmployeeId);
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
@@ -294,6 +358,7 @@ namespace CrossBuy.BL
 		// happens on a site - a measurement is queried, corrected and resubmitted.
 		public async Task<(bool ok, string? error)> ReturnAsync(int companyId, int id, int actorEmployeeId)
 		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
 			if (hdr == null) return (false, "المستخلص غير موجود");
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Returned))
@@ -302,6 +367,8 @@ namespace CrossBuy.BL
 			hdr.Status = ProgressBillingStatuses.Returned;
 			hdr.UpdatedBy = actorEmployeeId; hdr.UpdatedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
+			await EmitAsync(hdr, ProgressBillingEvents.Returned, actorEmployeeId);
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
@@ -394,8 +461,70 @@ namespace CrossBuy.BL
 			foreach (var l in pv.Lines)
 				track.Lines.Add(new ProgressBillingLine { BoqItemId = l.BoqItemId, CumulativeExecutedValue = l.CumulativeExecutedValue, PreviouslyBilledValue = l.PreviouslyBilledValue, PeriodValue = l.PeriodValue });
 			await _db.SaveChangesAsync();
+			// Inside the financial transaction, before the commit: if any compensation below had failed,
+			// the rollback takes the event with it and nothing was ever told that this billing posted.
+			await EmitAsync(track, ProgressBillingEvents.Posted, actorEmployeeId);
 			await tx.CommitAsync();
 			return (true, null);
+		}
+
+		// ---- WHAT THIS CALLER MAY APPROVE ----
+		//
+		// Two filters, and BOTH matter:
+		//   1. company + Submitted state, from the record;
+		//   2. the caller is not the preparer, and holds billing-approve on that project.
+		//
+		// Filter 2 is applied HERE rather than by the inbox because it is the same rule ApproveAsync
+		// enforces. If the inbox re-derived it, the two could drift and the screen would offer an action
+		// the service then refuses. A billing the caller prepared is not 'shown and disabled' - it is not
+		// their work to do, so it is not in their inbox at all.
+		public async Task<IReadOnlyList<PendingBillingApproval>> PendingApprovalsForAsync(
+			CrossBuy.Models.Platform.BusinessContext context, CancellationToken cancellationToken = default)
+		{
+			if (context == null || context.CompanyId <= 0 || context.EmployeeId is not > 0)
+				return Array.Empty<PendingBillingApproval>();
+			int actor = context.EmployeeId.Value;
+
+			var candidates = await (from b in _db.ProgressBillings.AsNoTracking()
+									join p in _db.Projects.AsNoTracking() on b.ProjectId equals p.ID
+									where b.CompanyID == context.CompanyId
+										&& p.CompanyID == context.CompanyId
+										&& (b.Status == ProgressBillingStatuses.Submitted
+											|| b.Status == ProgressBillingStatuses.Approved)
+									orderby b.SubmittedAt descending, b.ID descending
+									select new PendingBillingApproval(
+										b.ID, b.BillingNo, b.ProjectId, p.Code, p.Name, p.NameEn,
+										b.CreatedBy, b.SubmittedAt, b.NetDue, b.Status))
+							.ToListAsync(cancellationToken);
+
+			if (candidates.Count == 0) return candidates;
+
+			// Authority is asked per (PROJECT, STAGE), once each, not per row.
+			//
+			//   Submitted -> needs billing-approve, AND the caller must not be the preparer. That is the same
+			//                rule ApproveAsync enforces; a billing the caller prepared is not their work to do,
+			//                so it never reaches their inbox at all rather than appearing and then refusing.
+			//   Approved  -> needs billing-post, which ALREADY subsumes the accounting posting right inside
+			//                ProjectsAccessService. Asking for it here satisfies both halves of the rule without
+			//                this reader naming an accounting permission of its own.
+			var allowed = new List<PendingBillingApproval>();
+			var decided = new Dictionary<(int Project, string Stage), bool>();
+			foreach (var c in candidates)
+			{
+				bool approving = c.Status == ProgressBillingStatuses.Submitted;
+				if (approving && (c.PreparedBy == null || c.PreparedBy == actor)) continue;
+
+				var key = (c.ProjectId, c.Status);
+				if (!decided.TryGetValue(key, out var ok))
+				{
+					ok = await _access.CanAsync(context,
+						approving ? ProjectsActions.BillingApprove : ProjectsActions.BillingPost,
+						CrossBuy.Models.Platform.PermissionTarget.ForProject(c.ProjectId), cancellationToken);
+					decided[key] = ok;
+				}
+				if (ok) allowed.Add(c);
+			}
+			return allowed;
 		}
 
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)

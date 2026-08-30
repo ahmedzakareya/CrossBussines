@@ -29,6 +29,7 @@ namespace CrossBuy.BL.Platform
         public const string PosOrder = "PosOrder";
         public const string Employee = "Employee";
         public const string Project = "Project";
+        public const string ProjectBilling = "ProjectBilling";   // المستخلص - the ProgressBilling document
         public const string Item = "Item";
 
         // Tasks & Calendar integration (TAB 4). Onboarded so a task and a calendar event can carry a
@@ -252,6 +253,26 @@ namespace CrossBuy.BL.Platform
                 SupportsFiles = false, SupportsFollowers = false,
                 PermissionScope = ScopeProjects,
                 ListedInRecordPicker = true,
+            },
+            // The progress billing document (المستخلص). CLR type ProgressBilling; the registry CODE is
+            // ProjectBilling because that is the business name, and the event prefix must equal the code.
+            //
+            // SupportsTimeline is the point of this entry: the billing lifecycle - submitted, returned,
+            // approved, posted - is exactly the kind of fact the event backbone exists to carry, and without
+            // a registered code BusinessEventService.RecordAsync refuses the event outright.
+            //
+            // Comments/files/followers stay FALSE: a billing is a financial document, and this batch adds no
+            // conversation or attachment surface for it. Central Documents is a later, separate decision.
+            new EntityDefinition
+            {
+                Code = ProjectBilling,
+                DisplayNameAr = "مستخلص", DisplayNameEn = "Progress billing",
+                Module = "Projects", Icon = "ki-outline ki-bill", Color = "primary",
+                RouteTemplate = "/Project/Billing?b={id}",
+                SupportsSearch = false, SupportsTimeline = true, SupportsComments = false,
+                SupportsFiles = false, SupportsFollowers = false,
+                PermissionScope = ScopeProjects,
+                ListedInRecordPicker = false,
             },
             new EntityDefinition
             {

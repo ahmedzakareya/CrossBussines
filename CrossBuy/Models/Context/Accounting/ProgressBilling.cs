@@ -83,6 +83,41 @@ namespace CrossBuy.Models.Context.Accounting
 			status == Draft || status == Returned;
 	}
 
+	// The lifecycle transitions worth telling the rest of the platform about.
+	//
+	// Save and Edit are deliberately NOT here. An event is a business fact with a consumer; a draft
+	// being edited has neither, and emitting one would bury the four that matter in noise.
+	public static class ProgressBillingEvents
+	{
+		public const string Submitted = "Submitted";
+		public const string Returned = "Returned";
+		public const string Approved = "Approved";
+		public const string Posted = "Posted";
+	}
+
+	// The wire payload. VERSIONED, and deliberately identifiers-and-amounts only: no file paths, no
+	// session data, no EF entities. A consumer that needs the document fetches it through its own
+	// authorization rather than reading it out of an event it was handed.
+	public sealed class ProgressBillingEventPayload
+	{
+		public const int Version = 1;
+
+		public int BillingId { get; init; }
+		public int BillingNo { get; init; }
+		public int ProjectId { get; init; }
+		public int ProgressId { get; init; }
+		public int? CustomerId { get; init; }
+		public string Status { get; init; } = "";
+		public decimal GrossWork { get; init; }
+		public decimal NetDue { get; init; }
+		public int ActorEmployeeId { get; init; }
+
+		// Present only once posting has created them; null on the earlier transitions.
+		public int? SalesInvoiceId { get; init; }
+		public int? RetentionReceiptId { get; init; }
+		public int? AdvanceReceiptId { get; init; }
+	}
+
 	public class ProgressBillingLine
 	{
 		public int ID { get; set; }

@@ -244,13 +244,20 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void No_billing_lifecycle_transition_publishes_a_business_event_yet()
+        public void Every_lifecycle_transition_publishes_through_the_canonical_event_backbone()
         {
             var service = File.ReadAllText(RepoFile("CrossBuy", "BL", "ProgressBillingService.cs"));
 
-            // Batch 2 wires Submitted/Approved/Returned/Posted/Reversed through the canonical Business
-            // Event backbone. The state machine was built so that is an addition, not a rewrite.
-            Assert.DoesNotContain("IBusinessEventService", service);
+            // Batch 2 broke the Batch-1 marker deliberately: the four transitions now emit through the
+            // platform's own IBusinessEventService, and no billing-specific event engine was added.
+            Assert.Contains("IBusinessEventService", service);
+            Assert.Contains("EntityRegistry.ProjectBilling", service);
+            foreach (var action in new[] { "Submitted", "Returned", "Approved", "Posted" })
+                Assert.Contains($"ProgressBillingEvents.{action}", service);
+
+            // The dedup key is the transition itself, which is what makes a retry idempotent in the
+            // permanent event log rather than merely harmless in the database.
+            Assert.Contains("DedupKey", service);
         }
 
         // ---- helpers -------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Security.Claims;
 using CrossBuy.BL;
 using CrossBuy.Controllers;
@@ -614,7 +614,8 @@ namespace CrossBuy.Tests
 			var leave = new LeaveWorkflowService(host.Db, new InboxNoopNotifications(),
 				new InboxStubLeaveDashboard(), Microsoft.Extensions.Logging.Abstractions.NullLogger<LeaveWorkflowService>.Instance);
 			var inbox = new CrossBuy.BL.Approvals.ApprovalInboxService(
-				leave, new EmployeeRequestService(host.Db, new InboxNoopNotifications(), leave), Service(host.Db));
+				leave, new EmployeeRequestService(host.Db, new InboxNoopNotifications(), leave), Service(host.Db),
+				new InboxNoBillingApprovals());
 
 			var controller = new ApprovalsController(
 				new StubEmployees(employeeId), host.Db, new StubLocalizer(), inbox, accessor);

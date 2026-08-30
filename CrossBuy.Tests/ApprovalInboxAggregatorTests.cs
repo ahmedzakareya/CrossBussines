@@ -1,4 +1,4 @@
-using CrossBuy.BL;
+﻿using CrossBuy.BL;
 using CrossBuy.BL.Approvals;
 using CrossBuy.Models.Context.Admin;
 using CrossBuy.Models.Context.Inventory;
@@ -55,7 +55,7 @@ namespace CrossBuy.Tests
 				NullLogger<LeaveWorkflowService>.Instance);
 			var requests = new EmployeeRequestService(host.Db, new NoopNotifications(), leave);
 			var inventory = new InventoryApprovalService(host.Db, null!, null!, null!);
-			return new ApprovalInboxService(leave, requests, inventory);
+			return new ApprovalInboxService(leave, requests, inventory, new InboxNoBillingApprovals());
 		}
 
 		// ---------------------------------------------------------------------------------------------
@@ -390,8 +390,11 @@ namespace CrossBuy.Tests
 				Assert.DoesNotContain("CrossBuy.Models.Context", name);
 			}
 
+			// Four module readers since Batch 2, when project billing joined. The list is a snapshot and grows
+			// as silos are added; the RULE is the loop above, which is untouched — every parameter is still a
+			// module SERVICE, and none of them hands this type a database.
 			Assert.Equal(
-				new[] { "IEmployeeRequestService", "IInventoryApprovalService", "ILeaveWorkflowService" },
+				new[] { "IEmployeeRequestService", "IInventoryApprovalService", "ILeaveWorkflowService", "IProgressBillingService" },
 				constructor.GetParameters().Select(p => p.ParameterType.Name).OrderBy(n => n, StringComparer.Ordinal).ToArray());
 		}
 
@@ -475,5 +478,27 @@ namespace CrossBuy.Tests
 			public Task<int> WorkingDaysAsync(int employeeId, DateTime start, DateTime end)
 				=> Task.FromResult(Math.Max(1, (end.Date - start.Date).Days + 1));
 		}
+	}
+
+	// Project billing joined the inbox in Batch 2. These suites exercise the other three silos, so the
+	// billing reader is stubbed EMPTY rather than seeded - a silo that returns nothing must not change
+	// what the others produce, which is itself worth holding.
+	internal sealed class InboxNoBillingApprovals : CrossBuy.BL.IProgressBillingService
+	{
+		public Task<IReadOnlyList<CrossBuy.BL.PendingBillingApproval>> PendingApprovalsForAsync(
+			CrossBuy.Models.Platform.BusinessContext context, CancellationToken cancellationToken = default)
+			=> Task.FromResult<IReadOnlyList<CrossBuy.BL.PendingBillingApproval>>(Array.Empty<CrossBuy.BL.PendingBillingApproval>());
+
+		private static Exception No([System.Runtime.CompilerServices.CallerMemberName] string m = "")
+			=> new NotImplementedException($"The approval inbox is not expected to call IProgressBillingService.{m}.");
+		public Task<List<CrossBuy.Models.Context.Accounting.ProgressBilling>> GetBillingsAsync(int a, int b) => throw No();
+		public Task<CrossBuy.Models.Context.Accounting.ProgressBilling?> GetAsync(int a, int b) => throw No();
+		public Task<CrossBuy.BL.BillingPreview> BuildPreviewAsync(int a, int b, int? c, int? d, decimal? e, int f) => throw No();
+		public Task<(bool ok, string? error, int id)> SaveDraftAsync(int a, int b, int c, int d, DateTime e, decimal f, string? g, int h) => throw No();
+		public Task<(bool ok, string? error)> SubmitAsync(int a, int b, int c) => throw No();
+		public Task<(bool ok, string? error)> ApproveAsync(int a, int b, int c) => throw No();
+		public Task<(bool ok, string? error)> ReturnAsync(int a, int b, int c) => throw No();
+		public Task<(bool ok, string? error)> PostAsync(int a, int b, int c) => throw No();
+		public Task<(bool ok, string? error)> DeleteAsync(int a, int b) => throw No();
 	}
 }

@@ -207,6 +207,17 @@
                                         </tbody>
                                     </table>
                                 }
+
+                                @* ---- LIFECYCLE TIMELINE ----
+                                   The platform's own business-event timeline, not a billing-specific history table. Every row it
+                                   renders is a canonical Business Event this document emitted inside the transaction that changed
+                                   it, so the timeline cannot show a transition that did not actually commit. *@
+                                @if (Model.BillingId > 0)
+                                {
+                                    ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.ProjectBilling;
+                                    ViewBag.TimelineEntityId = Model.BillingId;
+                                    @await Html.PartialAsync("~/Views/Shared/_DocEventTimeline.cshtml")
+                                }
                         </div>
                     </div>
                 </div>

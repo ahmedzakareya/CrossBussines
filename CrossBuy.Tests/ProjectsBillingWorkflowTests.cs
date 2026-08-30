@@ -141,8 +141,31 @@ namespace CrossBuy.Tests
             await db.SaveChangesAsync();
 
             var ar = new WritingArDouble(host.Db);
-            var billing = new ProgressBillingService(host.Db, ar, Progress(host), Contract(host));
+            var billing = new ProgressBillingService(host.Db, ar, Progress(host), Contract(host), Events(host), Access(host));
             return new Fixture(host, billing, ar, 5, 7);
+        }
+
+        // The REAL event service, not a spy: the claim under test includes that events land inside the
+        // caller's transaction and disappear with a rollback, and only the real one enforces that.
+        private static CrossBuy.BL.Platform.IBusinessEventService Events(PlatformTestHost host)
+            => new CrossBuy.BL.Platform.BusinessEventService(
+                host.Db, host.Registry(), new StubContextAccessor(Ctx(Preparer, CompanyOne)),
+                NullLogger<CrossBuy.BL.Platform.BusinessEventService>.Instance);
+
+        // The REAL access service too, so inbox entitlement is decided by the same policy the
+        // controller asks - a permissive stub would make the authorization tests meaningless.
+        private static IProjectsAccessService Access(PlatformTestHost host)
+        {
+            var http = new Microsoft.AspNetCore.Http.HttpContextAccessor();
+            var accessor = new BusinessContextAccessor(new BusinessContextFactory(
+                http, host.Db, host.Holder, NullLogger<BusinessContextFactory>.Instance));
+            var accounting = new AccountingAccessService(
+                host.Db, http, accessor,
+                new BootstrapAccessPolicyReader(host.Db, NullLogger<BootstrapAccessPolicyReader>.Instance),
+                NullLogger<AccountingAccessService>.Instance);
+            return new ProjectsAccessService(
+                host.Db, new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance),
+                accounting, NullLogger<ProjectsAccessService>.Instance);
         }
 
         private static IProgressService Progress(PlatformTestHost host)
