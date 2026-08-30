@@ -29,7 +29,7 @@ namespace CrossBuy.BL
             BusinessContext context, string action, CancellationToken cancellationToken = default);
     }
 
-    // The HR vocabulary. Eleven actions, each backed by a real operation found in the 47 mutating actions of
+    // The HR vocabulary. Twelve actions, each backed by a real operation found in the 47 mutating actions of
     // AdminController + PeopleController (analysis §3). Nothing speculative.
     public static class HrActions
     {
@@ -45,10 +45,26 @@ namespace CrossBuy.BL
         public const string PerformanceManage = "performance-manage";   // appraisals, training, recruitment
         public const string ConfidentialView = "confidential-view";     // salary/disciplinary/performance detail
 
+        // The one MUTATION an employee may perform with no HR role at all, and only ever about
+        // THEMSELVES: submitting and managing their own employee-service requests — leave requests,
+        // employee requests, acknowledging their own appraisal.
+        //
+        // It exists because four live self-service mutations derive the actor from authenticated identity
+        // and constrain the subject correctly, but had no creditable mutation authority to check. Reusing
+        // an administrative action to authorize them would have been the real defect: leave-manage or
+        // employee-manage would credit a self-service POST with authority over the whole company's HR
+        // records. One reusable capability for the self-service class, not one action per endpoint.
+        //
+        // AUTHORITY, NOT REACH. Holding this NEVER means "may raise a request for anyone" — see
+        // EvaluateAsync, where it is answered self-only, above both the bootstrap branch and the role
+        // rules, so no role and no bootstrap state can widen it.
+        public const string EmployeeRequest = "employee-request";
+
         public static readonly IReadOnlyCollection<string> All = new[]
         {
             Read, EmployeeView, EmployeeManage, AttendanceManage, LeaveManage, LeaveApprove,
             PayrollView, PayrollManage, OrganizationManage, PerformanceManage, ConfidentialView,
+            EmployeeRequest,
         };
     }
 
@@ -112,6 +128,23 @@ namespace CrossBuy.BL
             {
                 // fall through to the role rules below — no self-exemption
             }
+
+            // ---- SELF-SERVICE MUTATION, decided ABOVE bootstrap and ABOVE the role rules ----
+            //
+            // employee-request answers the same on every install: yes about yourself, no about anyone
+            // else. The placement is the security property, not a style choice.
+            //
+            // Below the bootstrap branch it would inherit SubjectIsInScopeAsync(allowTeam: true), so a
+            // company that had simply never configured an HR role would let a manager raise requests for
+            // their whole team — bootstrap compatibility SILENTLY WIDER than the configured answer, which
+            // is backwards. Below the role rules it would let HrManager or HrOfficer raise a request for
+            // anyone in the company, which is the exact reading this capability must never carry.
+            //
+            // So there is no bootstrap variant of this action and no role that grants it. A caller must
+            // name themselves as the subject: a null target is a refusal, because a self-service mutation
+            // that does not say whose record it is has not established self-service at all.
+            if (action == HrActions.EmployeeRequest)
+                return aboutMe;
 
             // ---- BOOTSTRAP-OPEN ----
             if (bootstrapOpen)
@@ -209,6 +242,12 @@ namespace CrossBuy.BL
         {
             if (context == null || context.CompanyId <= 0 || context.EmployeeId is not > 0) return AccessScope.None();
             if (!HrActions.All.Contains(action, StringComparer.Ordinal)) return AccessScope.None();
+
+            // employee-request is Own on EVERY install, before roles and before bootstrap are consulted.
+            // CanAsync answers it self-only, so any wider breadth here would be the two APIs disagreeing
+            // again — the defect closed in 8003212, where the record-shaped answer refused what the
+            // set-shaped answer handed back company-wide.
+            if (action == HrActions.EmployeeRequest) return AccessScope.Own(context.CompanyId);
 
             // Any HR role is company-wide, so the breadth is Company. Otherwise a caller sees themself plus
             // their reports — the same rule CanAsync applies one record at a time.
