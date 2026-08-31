@@ -1,0 +1,264 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@using CrossBuy.BL
+@model CrossBuy.BL.ProjectCloseoutReadiness
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var projectId = (int)ViewBag.ProjectId;
+    var history = ViewBag.History as IReadOnlyList<CrossBuy.Models.Context.Accounting.ProjectCloseout>
+                  ?? Array.Empty<CrossBuy.Models.Context.Accounting.ProjectCloseout>();
+    var current = history.FirstOrDefault(h => h.IsCurrent);
+    ViewData["Title"] = Localizer["Project closeout"].Value;
+
+    // Blocker and warning text is bilingual DATA carried on the item, not UI chrome: the service names
+    // the business reason, and this screen renders whichever language the reader is in. Chrome goes
+    // through Localizer like every other view.
+    string Text(CloseoutItem i) => isAr ? i.TitleAr : i.TitleEn;
+    string Money(decimal v) => v.ToString("N2");
+}
+
+<div class="d-flex flex-column gap-5">
+
+    <div class="card">
+        <div class="card-header align-items-center">
+            <div class="card-title fw-bold fs-4 m-0">
+                <i class="ki-outline ki-check-square fs-2 text-primary me-2" aria-hidden="true"></i>@Localizer["Project closeout"]
+            </div>
+            <div class="card-toolbar">
+                <a class="btn btn-light btn-sm" asp-controller="Project" asp-action="Projects">@Localizer["Back to projects"]</a>
+            </div>
+        </div>
+        <div class="card-body pt-2">
+            @if (TempData["PrjMsg"] != null)
+            {
+                <div class="alert bg-light-success d-flex align-items-center p-4">
+                    <i class="ki-outline ki-check-circle fs-2 text-success me-3" aria-hidden="true"></i>
+                    <span class="fw-semibold fs-7 text-gray-700">@TempData["PrjMsg"]</span>
+                </div>
+            }
+            @if (TempData["PrjErr"] != null)
+            {
+                <div class="alert bg-light-warning d-flex align-items-center p-4">
+                    <i class="ki-outline ki-information-5 fs-2 text-warning me-3" aria-hidden="true"></i>
+                    <span class="fw-semibold fs-7 text-gray-700">@TempData["PrjErr"]</span>
+                </div>
+            }
+
+            @* THE ANSWER, first and unambiguous. A closeout screen exists to say yes or no. *@
+            @if (current != null)
+            {
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <span class="badge badge-light-dark fs-6 py-2 px-3">@Localizer["Closed"]</span>
+                    <span class="text-gray-700 fs-7">@current.ClosedAt.ToString("yyyy-MM-dd")</span>
+                </div>
+                <div class="text-gray-800 fs-7">@current.Reason</div>
+            }
+            else if (Model.IsReady)
+            {
+                <span class="badge badge-light-success fs-6 py-2 px-3">@Localizer["Ready to close"]</span>
+            }
+            else
+            {
+                <span class="badge badge-light-warning fs-6 py-2 px-3">
+                    @Localizer["Not ready"] — @Model.BlockingItems.Count @Localizer["blocking items"]
+                </span>
+            }
+        </div>
+    </div>
+
+    @* ---- what stands in the way. Actionable rows, not a gauge. ---- *@
+    @if (Model.BlockingItems.Count > 0)
+    {
+        <div class="card">
+            <div class="card-header align-items-center">
+                <div class="card-title fw-bold fs-5 m-0">@Localizer["What is blocking the close"]</div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var item in Model.BlockingItems)
+                    {
+                        <div class="d-flex align-items-center justify-content-between border-bottom pb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="ki-outline ki-cross-circle fs-3 text-danger me-3" aria-hidden="true"></i>
+                                <span class="fw-semibold text-gray-800 fs-7">@Text(item)</span>
+                            </div>
+                            <div class="text-end">
+                                @if (item.Amount.HasValue)
+                                {
+                                    <span class="fw-bold text-gray-900 fs-6">@Money(item.Amount.Value)</span>
+                                }
+                                @if (item.Count.HasValue)
+                                {
+                                    <span class="badge badge-light-danger fs-7">@item.Count</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Warnings.Count > 0)
+    {
+        <div class="card">
+            <div class="card-header align-items-center">
+                <div class="card-title fw-bold fs-5 m-0">@Localizer["Worth knowing before closing"]</div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var item in Model.Warnings)
+                    {
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="ki-outline ki-information-5 fs-3 text-warning me-3" aria-hidden="true"></i>
+                                <span class="text-gray-800 fs-7">@Text(item)</span>
+                            </div>
+                            @if (item.Amount.HasValue)
+                            {
+                                <span class="fw-bold text-gray-900 fs-6">@Money(item.Amount.Value)</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ---- what remains financially ---- *@
+    <div class="card">
+        <div class="card-header align-items-center">
+            <div class="card-title fw-bold fs-5 m-0">@Localizer["Financial position"]</div>
+        </div>
+        <div class="card-body pt-2">
+            <div class="row g-4">
+                @{
+                    var figures = new (string Label, string Value, string Tone)[]
+                    {
+                        (Localizer["Contract value"].Value, Money(Model.Financials.ContractValue), "gray-900"),
+                        (Localizer["Billed to date"].Value, Money(Model.Financials.BilledGross), "gray-900"),
+                        (Localizer["Posted net due"].Value, Money(Model.Financials.PostedNetDue), "gray-900"),
+                        (Localizer["Retention withheld"].Value, Money(Model.Financials.RetentionBalance),
+                            Model.Financials.RetentionBalance > 0 ? "danger" : "success"),
+                        (Localizer["Advance outstanding"].Value, Money(Model.Financials.AdvanceBalance),
+                            Model.Financials.AdvanceBalance > 0 ? "danger" : "success"),
+                        (Localizer["Subcontractor retention"].Value, Money(Model.Financials.SubcontractorRetentionBalance),
+                            Model.Financials.SubcontractorRetentionBalance > 0 ? "warning" : "success"),
+                    };
+                }
+                @foreach (var f in figures)
+                {
+                    <div class="col-6 col-lg-4">
+                        <div class="text-muted fs-8 mb-1">@f.Label</div>
+                        <div class="fw-bold fs-4 text-@f.Tone">@f.Value</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ---- what remains operationally ---- *@
+    <div class="card">
+        <div class="card-header align-items-center">
+            <div class="card-title fw-bold fs-5 m-0">@Localizer["Operational position"]</div>
+        </div>
+        <div class="card-body pt-2">
+            <div class="row g-4">
+                <div class="col-6 col-lg-3">
+                    <div class="text-muted fs-8 mb-1">@Localizer["Open tasks"]</div>
+                    <div class="fw-bold fs-4 text-@(Model.Operations.OpenTaskCount > 0 ? "danger" : "success")">@Model.Operations.OpenTaskCount</div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="text-muted fs-8 mb-1">@Localizer["Tasks in total"]</div>
+                    <div class="fw-bold fs-4 text-gray-900">@Model.Operations.TotalTaskCount</div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="text-muted fs-8 mb-1">@Localizer["Posted billings"]</div>
+                    <div class="fw-bold fs-4 text-gray-900">@Model.Financials.PostedBillingCount</div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="text-muted fs-8 mb-1">@Localizer["Last billing"]</div>
+                    <div class="fw-bold fs-4 text-gray-900">
+                        @(Model.Operations.LastBillingDate?.ToString("yyyy-MM-dd") ?? "—")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ---- the decision ---- *@
+    <div class="card">
+        <div class="card-body">
+            @if (current == null)
+            {
+                <form method="post" asp-action="Close" asp-route-id="@projectId">
+                    @Html.AntiForgeryToken()
+                    <label class="form-label fs-7 fw-semibold" for="closeReason">@Localizer["Reason for closing"]</label>
+                    <div class="d-flex align-items-start gap-3">
+                        <input id="closeReason" name="reason" class="form-control form-control-solid"
+                               placeholder="@Localizer["Why is this project being closed?"]" required />
+                        <button type="submit" class="btn btn-primary flex-shrink-0" @(Model.IsReady ? "" : "disabled")>
+                            <i class="ki-outline ki-check fs-4" aria-hidden="true"></i>@Localizer["Close the project"]
+                        </button>
+                    </div>
+                    @* The button is disabled as a courtesy, never as the control: the service re-evaluates
+                       readiness before it writes, so a posted form on a project that stopped being ready
+                       is refused there. *@
+                    @if (!Model.IsReady)
+                    {
+                        <div class="text-muted fs-8 mt-2">@Localizer["Resolve the blocking items above before closing."]</div>
+                    }
+                </form>
+            }
+            else
+            {
+                <form method="post" asp-action="Reopen" asp-route-id="@projectId">
+                    @Html.AntiForgeryToken()
+                    <label class="form-label fs-7 fw-semibold" for="reopenReason">@Localizer["Reason for reopening"]</label>
+                    <div class="d-flex align-items-start gap-3">
+                        <input id="reopenReason" name="reason" class="form-control form-control-solid"
+                               placeholder="@Localizer["Why does this project need to reopen?"]" required />
+                        <button type="submit" class="btn btn-light-warning flex-shrink-0">
+                            <i class="ki-outline ki-arrows-circle fs-4" aria-hidden="true"></i>@Localizer["Reopen the project"]
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+
+    @* ---- the history, because a closeout is a sequence of decisions ---- *@
+    @if (history.Count > 0)
+    {
+        <div class="card">
+            <div class="card-header align-items-center">
+                <div class="card-title fw-bold fs-5 m-0">@Localizer["Closeout history"]</div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle fs-7 mb-0">
+                        <thead>
+                            <tr class="fw-bold text-muted fs-8">
+                                <th>@Localizer["Closed"]</th>
+                                <th>@Localizer["Reason"]</th>
+                                <th>@Localizer["Reopened"]</th>
+                                <th>@Localizer["Reason for reopening"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in history)
+                            {
+                                <tr>
+                                    <td class="text-gray-800">@row.ClosedAt.ToString("yyyy-MM-dd")</td>
+                                    <td class="text-gray-800">@row.Reason</td>
+                                    <td class="text-gray-700">@(row.ReopenedAt?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                    <td class="text-gray-700">@(row.ReopenReason ?? "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,4 +1,4 @@
-﻿using CrossBuy.BL;
+﻿﻿using CrossBuy.BL;
 using CrossBuy.BL.Reporting;   // ADR-037: AddCrossBusinessReporting()
 using CrossBuy.BL.Workspace;   // CrossBusiness Workspace: AddCrossBusinessWorkspace()
 using CrossBuy.Hubs;
@@ -314,6 +314,11 @@ builder.Services.AddScoped<IBoqService, BoqService>();   // Projects & Contracti
 builder.Services.AddScoped<IContractService, ContractService>();   // Projects & Contracting P2 contract (advance/retention)
 builder.Services.AddScoped<IProgressService, ProgressService>();   // Projects & Contracting P3 execution/progress (operational)
 builder.Services.AddScoped<IProgressBillingService, ProgressBillingService>();   // Projects & Contracting P4 progress billing (المستخلص)
+
+// Project closeout. Scoped like every service that reads through the request DbContext. It starts
+// nothing and registers one service: the readiness authority the screen and the close command SHARE,
+// so a project cannot be closed down a path that never asked whether it could be.
+builder.Services.AddScoped<IProjectCloseoutService, ProjectCloseoutService>();
 builder.Services.AddScoped<IProjectMaterialIssueService, ProjectMaterialIssueService>();   // Projects & Contracting P5-أ material issue (actual cost)
 builder.Services.AddScoped<IProjectLaborService, ProjectLaborService>();   // Projects & Contracting P5-ب project labor (actual cost)
 builder.Services.AddScoped<IProjectBudgetService, ProjectBudgetService>();   // Projects & Contracting P6-أ budget-vs-actual report (read-only)

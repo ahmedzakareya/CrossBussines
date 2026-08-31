@@ -171,7 +171,12 @@
         "CrossBuy/Models/Context/Accounting/ProgressBilling.cs",
         "CrossBuy/Views/Project/Billing.cshtml",
         "CrossBuy.Tests/ApprovalInboxAggregatorTests.cs",
-        "CrossBuy.Tests/ApprovalCompanyIsolationTests.cs"
+        "CrossBuy.Tests/ApprovalCompanyIsolationTests.cs",
+        "CrossBuy/BL/ProjectCloseoutService.cs",
+        "CrossBuy/Models/Context/Accounting/ProjectCloseout.cs",
+        "CrossBuy/Controllers/ProjectCloseoutController.cs",
+        "CrossBuy/Views/ProjectCloseout/**",
+        "CrossBuy.Tests/ProjectCloseoutTests.cs"
       ],
       "mayNotTouch": "Other tabs' trees; approval WRITE paths in module services",
       "status": "APPOINTED for read-only approval inbox (owner ruling); wider Workspace R3 scope still unassigned"

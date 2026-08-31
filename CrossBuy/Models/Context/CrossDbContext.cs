@@ -1,4 +1,4 @@
-﻿using CrossBuy.Models.Context.Admin;
+﻿﻿using CrossBuy.Models.Context.Admin;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
@@ -563,6 +563,10 @@ namespace CrossBuy.Models.Context
         public DbSet<Accounting.ProjectProgressLine> ProjectProgressLines { get; set; }    // Projects & Contracting P3 progress (lines)
         public DbSet<Accounting.ProgressBilling> ProgressBillings { get; set; }             // Projects & Contracting P4 progress billing (المستخلص) header
         public DbSet<Accounting.ProgressBillingLine> ProgressBillingLines { get; set; }     // Projects & Contracting P4 progress billing (lines)
+
+        // Project Billing Batch 3 - closeout evidence. Its own table rather than columns on Project:
+        // a project can be closed, reopened and closed again, and columns record only the last of those.
+        public DbSet<Accounting.ProjectCloseout> ProjectCloseouts { get; set; }
         public DbSet<Accounting.ProjectMaterialIssue> ProjectMaterialIssues { get; set; }           // Projects & Contracting P5-أ material issue (header)
         public DbSet<Accounting.ProjectMaterialIssueLine> ProjectMaterialIssueLines { get; set; }   // Projects & Contracting P5-أ material issue (lines)
         public DbSet<Accounting.Subcontract> Subcontracts { get; set; }                             // Projects & Contracting P6-ج subcontract (عقد باطن)

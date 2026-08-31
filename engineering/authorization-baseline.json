@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 434,
+    "mutating": 436,
     "attributeProtected": 157,
-    "inBodyProtected": 183,
+    "inBodyProtected": 185,
     "gaps": 94
   },
   "rules": [
@@ -1335,6 +1335,15 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Project closeout (TAB-1, 2026-08-31)",
+      "mutating": 436,
+      "attributeProtected": 157,
+      "inBodyProtected": 185,
+      "gaps": 94,
+      "controllers": 51,
+      "note": "TWO new POST endpoints on a NEW controller, ProjectCloseoutController - Close and Reopen - so the controller count moves 50 -> 51 alongside the endpoint total. Both are protected in body on arrival: each resolves the BusinessContext and asks IProjectsAccessService for 'close' on a ForProject target, with [ValidateAntiForgeryToken]. NO NEW PROJECTS ACTION WAS INVENTED - 'close' already existed in the vocabulary, answered only for the module role and refused on the membership path, which is exactly the authority freezing a project's financial history should need. THE CONTROLLER GATE IS A SECOND CHECK, NOT THE ONLY ONE. ProjectCloseoutService re-evaluates readiness and re-checks authority before it writes, so 'the button was enabled' can never be the reason a project closed. The controller gate exists because an endpoint whose guard is invisible at the endpoint is one nobody can audit by reading it - and the analyzer, correctly, would not credit it either: CBA001 fired on both endpoints until the gate was stated there. NO BASELINE ENTRY WAS ADDED OR REMOVED and the final candidate produced ZERO CBA004. Purely descriptive - mutating 434 -> 436, inBodyProtected 183 -> 185, attributeProtected unchanged at 157 because both authorize in body, and gaps UNCHANGED at 94 with the gap set identical id for id. 157 + 185 + 94 = 436. WHAT IS NOT IN THIS INCREMENT, and deliberately: financial reversal of a posted progress billing. It is blocked on an AR receipt reversal foundation that is still not landed - IReceivableService publishes CreateReceiptAsync and nothing that undoes one - and posting a billing creates real Receipt rows for retention and advance recovery, so the missing capability is load-bearing for the ordinary case rather than an edge one. Closeout therefore treats an un-reversible posted billing as a WARNING rather than a blocker: a blocker nobody can satisfy is a project that never closes. No diagnostic was suppressed, no analyzer rule weakened, no permission loosened and none of the 94 existing gaps was removed."
+    },
     {
       "stage": "Roster and shift management (TAB-2 implementation / TAB-1 reconciliation, 2026-08-31)",
       "mutating": 434,

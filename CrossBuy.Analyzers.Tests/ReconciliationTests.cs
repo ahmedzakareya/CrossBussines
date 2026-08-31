@@ -165,9 +165,20 @@ public class ReconciliationTests
     //
     // 434 = 157 + 183 + 94.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 434;
+    // ----------------------------------------------------------------------------------------------
+    // 434 -> 436 (project closeout, 2026-08-31). TWO POSTs on a new ProjectCloseoutController: Close
+    // and Reopen. Controllers 50 -> 51.
+    //
+    // The debt figure does not move and the entry list does not change. Both resolve the
+    // BusinessContext and ask for the existing `close` action before acting - no new Projects action
+    // was invented - so they arrive protected and produced ZERO CBA004. Attribute-protected does not
+    // move: both authorize in body.
+    //
+    // 436 = 157 + 185 + 94.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 436;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 183;
+    private const int FrozenInBodyProtected = 185;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
     private const int FrozenGaps = 94;
@@ -197,7 +208,7 @@ public class ReconciliationTests
     // and it is GET-ONLY: content, a historical version, an entity listing and a history. So the
     // controller count is the ONLY figure that moves - mutating stays 430, attribute-protected 157,
     // in-body 179 and the debt 94, all reproduced unchanged by the same run that caught this one.
-    private const int FrozenControllers = 50;
+    private const int FrozenControllers = 51;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));
