@@ -40,6 +40,17 @@ namespace CrossBuy.BL.Platform
         View = 0,
         Download,
         Upload,
+
+        // SUBMIT IS NOT UPLOAD, and the distinction is the whole point of having both.
+        //
+        // Upload is an HR act: someone with authority over the record puts a document on it, and what
+        // they put there is immediately the record. Submit is a person handing IN their own evidence.
+        // It produces something RECEIVED, not something established - a submitted document is not
+        // Active, does not satisfy a requirement, and confers no verification.
+        //
+        // Collapsing the two would mean an employee attaching their own passport scan and having it
+        // count as verified simply because they were the one who attached it.
+        Submit,
         Replace,
         Delete,
         Manage,

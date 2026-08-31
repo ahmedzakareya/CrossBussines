@@ -73,8 +73,15 @@ namespace CrossBuy.Models.Context.Documents
         /// document type — the exact cost the type catalogue exists to avoid.
         public string? Metadata { get; set; }
 
-        /// Draft | Active | Expired | Archived. Archived is how a document leaves circulation; nothing
-        /// in this platform deletes a governed document or its history.
+        /// Draft | Submitted | Active | Expired | Archived.
+        ///
+        /// SUBMITTED IS NOT ACTIVE, and that distinction is the point. A document the subject filed
+        /// themselves has been RECEIVED, not accepted: it is not evidence that HR verified anything, and
+        /// FindValidDocumentAsync deliberately does not count it. Something has to move it to Active,
+        /// and deciding what that something is belongs to whoever owns verification — this platform
+        /// only refuses to pretend the question was already answered.
+        ///
+        /// Archived is how a document leaves circulation; nothing here deletes a governed document.
         public string Status { get; set; } = "Active";
 
         public int CreatedBy { get; set; }
@@ -151,6 +158,15 @@ namespace CrossBuy.Models.Context.Documents
         /// JSON object describing the type-specific metadata keys. Validated on write.
         public string? MetadataSchema { get; set; }
 
+        /// May the SUBJECT of the record submit this type about themselves?
+        ///
+        /// Configuration, not code. "An employee may upload their own passport but not their own
+        /// disciplinary letter" is a policy decision per document type, and putting it here is what
+        /// stops the words Passport and CivilID appearing in a service. Default false: a type is
+        /// HR-only until somebody deliberately opens it, because the safe default for a document
+        /// nobody has classified is that its subject may not file it themselves.
+        public bool SelfServiceAllowed { get; set; }
+
         public bool IsActive { get; set; } = true;
         public int SortOrder { get; set; }
     }
@@ -210,6 +226,7 @@ namespace CrossBuy.Models.Context.Documents
                 e.Property(x => x.AppliesToEntityTypes).HasMaxLength(PathishLength).IsRequired();
                 e.Property(x => x.DefaultConfidentiality).HasMaxLength(VocabularyLength).IsRequired();
                 e.Property(x => x.AllowedExtensions).HasMaxLength(PathishLength);
+                e.Property(x => x.SelfServiceAllowed).HasDefaultValue(false);
 
                 // A code is unique WITHIN its scope: one platform-wide "PASSPORT", and at most one
                 // company override of that code per company.

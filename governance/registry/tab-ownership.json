@@ -39,7 +39,8 @@
         "CrossBuy.Tests/EntityConversationPartialContractTests.cs",
         "CrossBuy.Tests/HrBootstrapPolicyTests.cs",
         "CrossBuy.Tests/DocumentAccessFoundationTests.cs",
-        "CrossBuy.Tests/OnboardingLocalizationTests.cs"
+        "CrossBuy.Tests/OnboardingLocalizationTests.cs",
+        "CrossBuy.Tests/DocumentSubmitContractTests.cs"
       ],
       "mayNotTouch": "Reporting, Communication, Construction trees",
       "status": "Active - B6 closed"
@@ -100,7 +101,8 @@
         "CrossBuy/BL/Documents/**",
         "CrossBuy/Models/Context/Documents/**",
         "CrossBuy.Tests/Communication/PlatformDocumentTests.cs",
-        "CrossBuy/deploy/sql/documents_*.sql"
+        "CrossBuy/deploy/sql/documents_*.sql",
+        "CrossBuy/Controllers/DocumentsController.cs"
       ],
       "mayNotTouch": "Security, Reporting, Construction trees",
       "status": "Active - foundation complete, activation in R2"

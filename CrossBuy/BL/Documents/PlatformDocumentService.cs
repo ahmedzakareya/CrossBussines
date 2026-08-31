@@ -67,6 +67,35 @@ namespace CrossBuy.BL.Documents
         string? DocumentNumber, DateTime? IssueDate, DateTime? EffectiveFrom, DateTime? ExpiryDate,
         string Status, int VersionCount, DateTime CreatedAt);
 
+
+    /// What the platform means by "this record currently has a valid document of this type".
+    ///
+    /// It exists so a consumer never has to reassemble the rule. HR onboarding asking "does this
+    /// employee have a valid passport" must not reimplement company scoping, entity matching, status,
+    /// current-version existence and expiry — five predicates that would drift the moment a sixth is
+    /// added here.
+    public sealed record DocumentValidity(
+        bool IsValid, string ReasonCode, long DocumentId = 0, DateTime? ExpiryDate = null)
+    {
+        public static DocumentValidity No(string code) => new(false, code);
+        public static DocumentValidity Yes(long documentId, DateTime? expiry) =>
+            new(true, DocumentValidityReasons.Valid, documentId, expiry);
+    }
+
+    public static class DocumentValidityReasons
+    {
+        public const string Valid = "valid";
+        /// Refusal to ANSWER, not an answer. Deliberately identical to the code returned when nothing
+        /// matches, so an unauthorized caller cannot tell "you may not ask" from "there is none" and
+        /// use the query to discover that an employee holds a passport.
+        public const string NotFound = "not_found";
+        public const string Expired = "expired";
+        public const string NoCurrentVersion = "no_current_version";
+        public const string NotActive = "not_active";
+        public const string MissingRequiredIssueDate = "missing_required_issue_date";
+        public const string MissingRequiredExpiryDate = "missing_required_expiry_date";
+    }
+
     public interface IPlatformDocumentService
     {
         Task<DocumentResult> UploadAsync(DocumentUploadRequest request, Stream content, CancellationToken ct = default);
@@ -75,6 +104,13 @@ namespace CrossBuy.BL.Documents
         Task<DocumentContent?> OpenVersionAsync(long documentId, int versionNo, CancellationToken ct = default);
         Task<IReadOnlyList<DocumentListItem>> ListForEntityAsync(string entityType, int entityId, CancellationToken ct = default);
         Task<IReadOnlyList<PlatformDocumentVersion>> HistoryAsync(long documentId, CancellationToken ct = default);
+
+        /// "Does this record currently hold a valid document of this type?"
+        /// Authorization first: an unauthorized caller gets the same not_found a caller with no such
+        /// document gets, so the query cannot be used to probe.
+        Task<DocumentValidity> FindValidDocumentAsync(string entityType, int entityId, long documentTypeId, CancellationToken ct = default);
+
+        Task<bool> HasValidDocumentAsync(string entityType, int entityId, long documentTypeId, CancellationToken ct = default);
     }
 
     public sealed class PlatformDocumentService : IPlatformDocumentService
@@ -347,6 +383,95 @@ namespace CrossBuy.BL.Documents
             return await Versions.AsNoTracking().Where(v => v.DocumentId == doc.Id)
                 .OrderBy(v => v.VersionNo).ToListAsync(ct);
         }
+
+
+        // ---- validity -----------------------------------------------------------------------------
+        //
+        // WHAT "VALID" MEANS, stated once so no consumer has to restate it:
+        //
+        //   the document belongs to the RESOLVED company              (company predicate in the query)
+        //   and to this entity type and this entity id                (the relation, not a filename)
+        //   and to this document type                                 (not "a document that looks like one")
+        //   and its Status is Active                                  (Draft/Expired/Archived are not valid)
+        //   and it has a current version                              (a row with no bytes is not a document)
+        //   and, if the TYPE requires dates, they are present         (the catalogue decides, not the caller)
+        //   and it is not past its expiry                             (when an expiry is recorded)
+        //
+        // Nothing here reads a filename or a StorageKey. A document is valid because of what the
+        // platform recorded about it, never because of what a file happens to be called.
+        public async Task<DocumentValidity> FindValidDocumentAsync(
+            string entityType, int entityId, long documentTypeId, CancellationToken ct = default)
+        {
+            var ctx = await ScopeAsync(ct);
+            if (ctx == null) return DocumentValidity.No(DocumentValidityReasons.NotFound);
+            if (entityId <= 0 || documentTypeId <= 0 || string.IsNullOrWhiteSpace(entityType))
+                return DocumentValidity.No(DocumentValidityReasons.NotFound);
+
+            // AUTHORIZE BEFORE READING. "Employee 42 has a passport" is itself sensitive, so an
+            // unauthorized caller is refused with the SAME code an authorized caller gets when there is
+            // no such document — otherwise the query becomes an oracle for what people hold.
+            var decision = await AuthorizeAsync(ctx, entityType, entityId, DocumentAction.View, ctx.CompanyId, null, ct);
+            if (!decision.Allowed) return DocumentValidity.No(DocumentValidityReasons.NotFound);
+
+            var type = await Types.AsNoTracking().FirstOrDefaultAsync(
+                t => t.Id == documentTypeId && (t.CompanyID == null || t.CompanyID == ctx.CompanyId), ct);
+            if (type == null) return DocumentValidity.No(DocumentValidityReasons.NotFound);
+
+            var candidates = await Documents.AsNoTracking()
+                .Where(d => d.CompanyID == ctx.CompanyId
+                            && d.EntityType == entityType
+                            && d.EntityId == entityId
+                            && d.DocumentTypeId == documentTypeId)
+                .OrderByDescending(d => d.Id)
+                .ToListAsync(ct);
+
+            if (candidates.Count == 0) return DocumentValidity.No(DocumentValidityReasons.NotFound);
+
+            // The most specific refusal among the candidates, so a caller learns "expired" rather than a
+            // flat "no" when a document exists but has lapsed — the distinction onboarding needs to tell
+            // "never supplied" from "needs renewing". Ordered newest-first, so the freshest wins.
+            string worst = DocumentValidityReasons.NotFound;
+            foreach (var d in candidates)
+            {
+                var reason = EvaluateOne(d, type, out var confidentialityToCheck);
+                if (reason != DocumentValidityReasons.Valid) { worst = Prefer(worst, reason); continue; }
+
+                // Confidentiality is asked PER DOCUMENT before it is reported as held: a caller who may
+                // see the employee but not confidential material must not learn one exists.
+                var perDoc = await AuthorizeAsync(ctx, entityType, entityId, DocumentAction.View,
+                    d.CompanyID, confidentialityToCheck, ct);
+                if (!perDoc.Allowed) { worst = Prefer(worst, DocumentValidityReasons.NotFound); continue; }
+
+                return DocumentValidity.Yes(d.Id, d.ExpiryDate);
+            }
+            return DocumentValidity.No(worst);
+        }
+
+        public async Task<bool> HasValidDocumentAsync(
+            string entityType, int entityId, long documentTypeId, CancellationToken ct = default)
+            => (await FindValidDocumentAsync(entityType, entityId, documentTypeId, ct)).IsValid;
+
+        private static string EvaluateOne(PlatformDocument d, PlatformDocumentType type, out string confidentiality)
+        {
+            confidentiality = d.Confidentiality;
+            if (!string.Equals(d.Status, "Active", StringComparison.Ordinal))
+                return DocumentValidityReasons.NotActive;
+            if (d.CurrentVersionId == null)
+                return DocumentValidityReasons.NoCurrentVersion;
+            if (type.RequiresIssueDate && d.IssueDate == null)
+                return DocumentValidityReasons.MissingRequiredIssueDate;
+            if (type.RequiresExpiryDate && d.ExpiryDate == null)
+                return DocumentValidityReasons.MissingRequiredExpiryDate;
+            // Expiry is honoured whenever one is RECORDED, even if the type does not demand one: a date
+            // someone took the trouble to enter is a statement about the document, not decoration.
+            if (d.ExpiryDate is DateTime expiry && expiry.Date < DateTime.UtcNow.Date)
+                return DocumentValidityReasons.Expired;
+            return DocumentValidityReasons.Valid;
+        }
+
+        /// "Expired" is more informative than "not_found", so it survives when both occur.
+        private static string Prefer(string current, string candidate)
+            => current == DocumentValidityReasons.NotFound ? candidate : current;
 
         // ---- helpers ---------------------------------------------------------------------------
 

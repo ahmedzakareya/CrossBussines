@@ -181,7 +181,11 @@ public class ReconciliationTests
     // resolves to CrossBuyDev. A GET-only dev harness has nothing for the mutating inventory to measure.
     // +1 for ReportStudioApiController (Report Studio V1). Its five endpoints all authorize in-body, so the
     // controller count and the descriptive totals move together while the debt figure does not.
-    private const int FrozenControllers = 48;
+    // 48 -> 49 (Central Documents secure delivery, 2026-08-31). DocumentsController is a new surface
+    // and it is GET-ONLY: content, a historical version, an entity listing and a history. So the
+    // controller count is the ONLY figure that moves - mutating stays 430, attribute-protected 157,
+    // in-body 179 and the debt 94, all reproduced unchanged by the same run that caught this one.
+    private const int FrozenControllers = 49;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

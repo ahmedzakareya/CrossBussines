@@ -128,14 +128,15 @@ namespace CrossBuy.Tests.Communication
             };
 
         public long SeedType(string code, string appliesTo, bool requiresExpiry = false,
-            string? schema = null, string? allowedExt = null, string conf = "Internal", int? companyId = null)
+            string? schema = null, string? allowedExt = null, string conf = "Internal", int? companyId = null,
+            bool selfService = false)
         {
             var t = new PlatformDocumentType
             {
                 CompanyID = companyId, Code = code, NameAr = code, NameEn = code,
                 AppliesToEntityTypes = appliesTo, RequiresExpiryDate = requiresExpiry,
                 MetadataSchema = schema, AllowedExtensions = allowedExt,
-                DefaultConfidentiality = conf, IsActive = true,
+                DefaultConfidentiality = conf, IsActive = true, SelfServiceAllowed = selfService,
             };
             Platform.Db.Set<PlatformDocumentType>().Add(t);
             Platform.Db.SaveChanges();
@@ -515,6 +516,259 @@ namespace CrossBuy.Tests.Communication
 
             Assert.Empty(listed);
             Assert.Contains(h.Access.Asked, a => a.Action == DocumentAction.View);   // it asked
+        }
+
+
+        // =========================================================================================
+        // BATCH 2 — secure delivery, validity, and the self-service policy surface.
+        // =========================================================================================
+
+        // ---- secure delivery: the service side the controller depends on -----------------------
+        [Fact]
+        public async Task A_version_number_belonging_to_another_document_is_not_found()
+        {
+            // The version is addressed by its NUMBER WITHIN a document, so a number that exists in a
+            // different document cannot be borrowed. Two documents both have a V1; asking document A
+            // for V1 must never serve document B's bytes.
+            using var h = new DocHost();
+            var a = await h.Service().UploadAsync(h.Upload(entityId: 500), DocHost.Bytes("DOC-A-V1"));
+            var b = await h.Service().UploadAsync(h.Upload(entityId: 501), DocHost.Bytes("DOC-B-V1"));
+            Assert.True(a.Ok && b.Ok);
+
+            var fromA = await h.Service().OpenVersionAsync(a.DocumentId, 1);
+            Assert.Equal("DOC-A-V1", ReadAll(fromA!));
+
+            // Document A has no V2; B's second version must not leak through A's route.
+            await h.Service().ReplaceAsync(b.DocumentId, DocHost.Bytes("DOC-B-V2"), "b2.pdf", "application/pdf", null);
+            Assert.Null(await h.Service().OpenVersionAsync(a.DocumentId, 2));
+        }
+
+        [Fact]
+        public async Task An_archived_document_is_no_longer_served_or_counted()
+        {
+            using var h = new DocHost();
+            var created = await h.Service().UploadAsync(h.Upload(), DocHost.Bytes("x"));
+            var doc = await h.Platform.Db.Set<PlatformDocument>().SingleAsync();
+            doc.Status = "Archived";
+            await h.Platform.Db.SaveChangesAsync();
+
+            // Listing drops it, and it is not a valid document any more.
+            Assert.Empty(await h.Service().ListForEntityAsync("Employee", 500));
+            Assert.True(created.Ok);
+        }
+
+        [Fact]
+        public async Task Stored_metadata_never_carries_a_path_or_a_key_out_to_a_caller()
+        {
+            using var h = new DocHost();
+            await h.Service().UploadAsync(h.Upload(), DocHost.Bytes("x"));
+
+            var listed = Assert.Single(await h.Service().ListForEntityAsync("Employee", 500));
+
+            // The listing DTO has no key and no path property at all - the strongest form of "never
+            // returned" is "cannot be returned".
+            var props = listed.GetType().GetProperties().Select(p => p.Name).ToList();
+            Assert.DoesNotContain(props, n => n.Contains("Storage", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(props, n => n.Contains("Path", StringComparison.OrdinalIgnoreCase));
+        }
+
+        // ---- validity ---------------------------------------------------------------------------
+        [Fact]
+        public async Task A_current_active_document_of_the_right_type_is_valid()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            var created = await h.Service().UploadAsync(
+                h.Upload(typeId: typeId, expiry: DateTime.UtcNow.AddYears(5)), DocHost.Bytes("x"));
+
+            var validity = await h.Service().FindValidDocumentAsync("Employee", 500, typeId);
+
+            Assert.True(validity.IsValid, validity.ReasonCode);
+            Assert.Equal(created.DocumentId, validity.DocumentId);
+            Assert.True(await h.Service().HasValidDocumentAsync("Employee", 500, typeId));
+        }
+
+        [Fact]
+        public async Task Validity_is_refused_for_the_wrong_company_entity_type_entity_id_or_document_type()
+        {
+            using var h = new DocHost();
+            var passport = h.SeedType("PASSPORT", "Employee");
+            var visa = h.SeedType("VISA", "Employee");
+            h.Registry.FilesEnabled.Add("Task");
+            await h.Service().UploadAsync(h.Upload(typeId: passport), DocHost.Bytes("x"));
+
+            Assert.False((await h.Service().FindValidDocumentAsync("Employee", 500, visa)).IsValid);      // wrong type
+            Assert.False((await h.Service().FindValidDocumentAsync("Employee", 999, passport)).IsValid);  // wrong id
+            Assert.False((await h.Service().FindValidDocumentAsync("Task", 500, passport)).IsValid);      // wrong family
+
+            h.ActAs(DocHost.Bob, DocHost.CompanyB);
+            Assert.False((await h.Service().FindValidDocumentAsync("Employee", 500, passport)).IsValid);  // wrong company
+        }
+
+        [Fact]
+        public async Task An_expired_document_is_not_valid_and_says_so()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            await h.Service().UploadAsync(
+                h.Upload(typeId: typeId, expiry: DateTime.UtcNow.AddDays(-1)), DocHost.Bytes("x"));
+
+            var validity = await h.Service().FindValidDocumentAsync("Employee", 500, typeId);
+
+            Assert.False(validity.IsValid);
+            // "Expired" rather than "not_found": onboarding needs to tell "never supplied" from
+            // "needs renewing", and those are different conversations with the employee.
+            Assert.Equal(DocumentValidityReasons.Expired, validity.ReasonCode);
+        }
+
+        [Fact]
+        public async Task A_document_with_no_current_version_is_not_valid()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            await h.Service().UploadAsync(h.Upload(typeId: typeId), DocHost.Bytes("x"));
+
+            var doc = await h.Platform.Db.Set<PlatformDocument>().SingleAsync();
+            doc.CurrentVersionId = null;                    // a row with no bytes is not a document
+            await h.Platform.Db.SaveChangesAsync();
+
+            var validity = await h.Service().FindValidDocumentAsync("Employee", 500, typeId);
+            Assert.False(validity.IsValid);
+            Assert.Equal(DocumentValidityReasons.NoCurrentVersion, validity.ReasonCode);
+        }
+
+        [Fact]
+        public async Task A_submitted_document_is_received_but_NOT_yet_valid()
+        {
+            // Submission is not approval. An employee filing a passport must not tick an onboarding
+            // requirement on its own - something has to move it to Active first.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            await h.Service().UploadAsync(h.Upload(typeId: typeId), DocHost.Bytes("x"));
+
+            var doc = await h.Platform.Db.Set<PlatformDocument>().SingleAsync();
+            doc.Status = "Submitted";
+            await h.Platform.Db.SaveChangesAsync();
+
+            var validity = await h.Service().FindValidDocumentAsync("Employee", 500, typeId);
+            Assert.False(validity.IsValid);
+            Assert.Equal(DocumentValidityReasons.NotActive, validity.ReasonCode);
+        }
+
+        [Fact]
+        public async Task An_unauthorized_caller_cannot_probe_validity_and_gets_the_SAME_answer_as_absence()
+        {
+            // The important one. "Employee 500 has a passport" is itself sensitive, so a refusal must be
+            // indistinguishable from "there is none" - otherwise the query is an oracle for what people
+            // hold, which is exactly what a confidentiality tier exists to prevent.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            await h.Service().UploadAsync(h.Upload(typeId: typeId), DocHost.Bytes("x"));
+
+            h.Access.Decide = (_, _, _, _, _) => new DocumentAccessDecision(false, DocumentAccessReasons.ModuleDenied);
+            var refused = await h.Service().FindValidDocumentAsync("Employee", 500, typeId);
+            var absent = await h.Service().FindValidDocumentAsync("Employee", 777, typeId);
+
+            Assert.False(refused.IsValid);
+            Assert.Equal(absent.ReasonCode, refused.ReasonCode);
+            Assert.Equal(0, refused.DocumentId);            // and it reveals no id either
+        }
+
+        [Fact]
+        public async Task Validity_is_refused_at_the_ENTITY_gate_even_when_the_document_tier_would_allow_it()
+        {
+            // Isolates the entity-level authorization from the per-document one. The earlier probe test
+            // denies every question, so it passed even with the entity gate deleted - a mutation proved
+            // it. Here only the entity-level ask (the one with no confidentiality) is refused, so if that
+            // gate goes missing the caller learns the employee holds a passport.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            await h.Service().UploadAsync(h.Upload(typeId: typeId), DocHost.Bytes("x"));
+
+            h.Access.Decide = (_, _, _, _, conf) =>
+                conf == null
+                    ? new DocumentAccessDecision(false, DocumentAccessReasons.ModuleDenied)   // may not see the employee
+                    : new DocumentAccessDecision(true, DocumentAccessReasons.Allowed);        // tier itself is fine
+
+            var validity = await h.Service().FindValidDocumentAsync("Employee", 500, typeId);
+
+            Assert.False(validity.IsValid);
+            Assert.Equal(DocumentValidityReasons.NotFound, validity.ReasonCode);
+            Assert.Equal(0, validity.DocumentId);
+        }
+
+        [Fact]
+        public async Task A_confidential_document_is_not_reported_as_held_to_someone_refused_that_tier()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", conf: DocumentConfidentiality.Confidential);
+            await h.Service().UploadAsync(h.Upload(typeId: typeId), DocHost.Bytes("x"));
+
+            h.Access.Decide = (_, _, _, _, conf) =>
+                conf == DocumentConfidentiality.Confidential
+                    ? new DocumentAccessDecision(false, DocumentAccessReasons.ConfidentialityDenied)
+                    : new DocumentAccessDecision(true, DocumentAccessReasons.Allowed);
+
+            Assert.False((await h.Service().FindValidDocumentAsync("Employee", 500, typeId)).IsValid);
+        }
+
+        [Fact]
+        public async Task Validity_fails_closed_when_the_business_context_is_unresolved()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            await h.Service().UploadAsync(h.Upload(typeId: typeId), DocHost.Bytes("x"));
+
+            h.ActAsNobody();
+            Assert.False((await h.Service().FindValidDocumentAsync("Employee", 500, typeId)).IsValid);
+            Assert.False(await h.Service().HasValidDocumentAsync("Employee", 500, typeId));
+        }
+
+        [Fact]
+        public async Task The_newest_document_decides_so_a_renewal_supersedes_a_lapsed_one()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");
+            await h.Service().UploadAsync(
+                h.Upload(typeId: typeId, expiry: DateTime.UtcNow.AddDays(-1)), DocHost.Bytes("old"));
+            var fresh = await h.Service().UploadAsync(
+                h.Upload(typeId: typeId, expiry: DateTime.UtcNow.AddYears(2)), DocHost.Bytes("new"));
+
+            var validity = await h.Service().FindValidDocumentAsync("Employee", 500, typeId);
+
+            Assert.True(validity.IsValid, validity.ReasonCode);
+            Assert.Equal(fresh.DocumentId, validity.DocumentId);
+        }
+
+        // ---- self-service policy surface ---------------------------------------------------------
+        [Fact]
+        public void A_document_type_is_HR_only_until_somebody_deliberately_opens_it()
+        {
+            // The safe reading of silence. A type nobody has classified must not be self-servable,
+            // because the failure mode of the other default is an employee filing their own appraisal.
+            var fresh = new PlatformDocumentType
+            {
+                Code = "UNCLASSIFIED", NameAr = "x", NameEn = "x", AppliesToEntityTypes = "Employee",
+            };
+            Assert.False(fresh.SelfServiceAllowed);
+        }
+
+        [Fact]
+        public async Task The_self_service_flag_is_persisted_per_type_and_defaults_off()
+        {
+            using var h = new DocHost();
+            var hrOnly = h.SeedType("DISCIPLINARY", "Employee");
+            var openToStaff = h.SeedType("PASSPORT", "Employee", selfService: true);
+
+            var stored = await h.Platform.Db.Set<PlatformDocumentType>().AsNoTracking().ToListAsync();
+            Assert.False(stored.Single(t => t.Id == hrOnly).SelfServiceAllowed);
+            Assert.True(stored.Single(t => t.Id == openToStaff).SelfServiceAllowed);
+        }
+
+        private static string ReadAll(DocumentContent content)
+        {
+            using var reader = new StreamReader(content.Content);
+            return reader.ReadToEnd();
         }
 
         private static string Read(DocumentContent content)

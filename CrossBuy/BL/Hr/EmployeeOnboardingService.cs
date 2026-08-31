@@ -97,6 +97,17 @@ namespace CrossBuy.BL.Hr
         // The document platform exposes its tables through Set<T>() rather than named DbSet
         // properties (PlatformDocumentService does the same), so this follows its convention instead
         // of adding a second way to reach the same tables.
+        // The platform decides what a valid governed document IS. This service used to answer that
+        // question itself and got it wrong in a way nothing caught: its predicate omitted
+        // CurrentVersionId, so a PlatformDocument row with no current version - a document shell with
+        // no file behind it - satisfied an onboarding requirement and reported the employee ready.
+        // It also could not see a DocumentType's own issue/expiry requirements, because those live
+        // with the type rather than the row.
+        //
+        // Five predicates copied into a module drift from the six the platform actually applies. So
+        // the copy is gone and the question is asked of the owner.
+        private readonly CrossBuy.BL.Documents.IPlatformDocumentService _documents;
+
         private DbSet<PlatformDocument> Documents => _db.Set<PlatformDocument>();
         private DbSet<PlatformDocumentType> DocumentTypes => _db.Set<PlatformDocumentType>();
 
@@ -104,12 +115,14 @@ namespace CrossBuy.BL.Hr
         private readonly IReportClockShim _clock;
 
         public EmployeeOnboardingService(CrossDbContext db, IBusinessContextAccessor contexts,
-            IHrAccessService hr, IReportClockShim clock)
+            IHrAccessService hr, IReportClockShim clock,
+            CrossBuy.BL.Documents.IPlatformDocumentService documents)
         {
             _db = db;
             _contexts = contexts;
             _hr = hr;
             _clock = clock;
+                    _documents = documents;
         }
 
         // ----------------------------------------------------------------------------------------
@@ -184,19 +197,28 @@ namespace CrossBuy.BL.Hr
 
             var today = _clock.Today;
 
-            // ONE query for every requirement rather than one per item — an onboarding plan with
-            // twelve document items would otherwise issue twelve round trips per page render.
-            var docs = await Documents.AsNoTracking()
-                .Where(d => d.CompanyID == ctx.CompanyId
-                            && d.EntityType == EntityRegistry.Employee
-                            && d.EntityId == plan.EmployeeID
-                            && d.DocumentTypeId != null
-                            && typeIds.Contains(d.DocumentTypeId!.Value)
-                            && d.Status == "Active"
-                            && (d.ExpiryDate == null || d.ExpiryDate >= today))
-                .ToListAsync(ct);
+            // ONE canonical call per required type. That is more round trips than the single batched
+            // query this replaced, and it is the right trade: the batched query was fast and wrong.
+            // FindValidDocumentAsync applies company, entity type, entity id, document type, Active,
+            // a current version, the type's own issue/expiry requirements and expiry - and it
+            // authorizes the caller before answering, so this loop cannot become a probe either.
+            var validByType = new Dictionary<long, long>();
+            foreach (var typeId in typeIds)
+            {
+                var validity = await _documents.FindValidDocumentAsync(
+                    EntityRegistry.Employee, plan.EmployeeID, typeId, ct);
+                if (validity.IsValid) validByType[typeId] = validity.DocumentId;
+            }
+
+            // The rows themselves, for display only - the VALIDITY decision above is what counts, and
+            // a row is shown only when the platform already said it satisfies.
+            var validIds = validByType.Values.ToList();
+            var docs = validIds.Count == 0
+                ? new List<PlatformDocument>()
+                : await Documents.AsNoTracking().Where(d => validIds.Contains(d.Id)).ToListAsync(ct);
 
             var byType = docs
+                .Where(d => d.DocumentTypeId != null)
                 .GroupBy(d => d.DocumentTypeId!.Value)
                 // Newest wins when several exist: a replaced document is normal for anything that
                 // expires, and the current one is the one that answers.
@@ -391,17 +413,14 @@ namespace CrossBuy.BL.Hr
             return ctx == null ? (null, null) : (ctx, item);
         }
 
+        // Delegates. This method existed as a second, independently drifted copy of the platform's
+        // validity rule - the completion path's copy - so replacing only the resolver's would have
+        // left an employee able to COMPLETE a requirement on a document the platform considers
+        // invalid. companyId is no longer a parameter because it is no longer this service's to
+        // assert: FindValidDocumentAsync resolves the company from the caller's own BusinessContext,
+        // which is the only company that may answer.
         private Task<bool> HasValidDocumentAsync(int companyId, int employeeId, long typeId, CancellationToken ct)
-        {
-            var today = _clock.Today;
-            return Documents.AsNoTracking().AnyAsync(d =>
-                d.CompanyID == companyId
-                && d.EntityType == EntityRegistry.Employee
-                && d.EntityId == employeeId
-                && d.DocumentTypeId == typeId
-                && d.Status == "Active"
-                && (d.ExpiryDate == null || d.ExpiryDate >= today), ct);
-        }
+            => _documents.HasValidDocumentAsync(EntityRegistry.Employee, employeeId, typeId, ct);
     }
 
     // A one-method clock seam so the expiry comparisons above are testable without waiting for a

@@ -56,6 +56,16 @@ namespace CrossBuy.BL.Platform
         {
             DocumentAction.View or DocumentAction.Download => HrActions.EmployeeView,
             DocumentAction.Upload or DocumentAction.Replace or DocumentAction.Delete => HrActions.EmployeeManage,
+
+            // SUBMIT maps to employee-request, the self-service capability - and that mapping is what
+            // makes the whole contract self-only without this file containing a rule about it.
+            // HrAccessService answers employee-request above both the bootstrap branch and the role
+            // rules, purely on whether the target IS the caller. So an employee submits their own
+            // document and nobody else's, no HR role widens it to a colleague, and no company-wide
+            // authority is implied. Submitting also grants nothing further: activating, verifying or
+            // replacing the document are still employee-manage, and reading a confidential one is
+            // still confidential-view.
+            DocumentAction.Submit => HrActions.EmployeeRequest,
             DocumentAction.Manage => HrActions.ConfidentialView,
 
             // A verb this resolver has not classified must not fall through to something permissive.

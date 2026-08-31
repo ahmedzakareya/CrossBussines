@@ -39,7 +39,16 @@ namespace CrossBuy.Tests.Hr
         private const int Manager = 520;  // company A, HrManager  — may waive
         private const int Mallory = 901;  // company B
 
-        private static readonly DateTime Today = new(2026, 6, 15);
+        // ANCHORED TO THE REAL UTC DATE, and that is a consequence of convergence rather than a
+        // preference. Onboarding no longer owns the expiry rule: the platform does, and its rule reads
+        // DateTime.UtcNow.Date inline with no clock seam. A fixture pinned to a fixed date therefore
+        // disagrees with the authority it is testing - a document expiring on that pinned date is, by
+        // the platform's clock, months expired.
+        //
+        // Every date below is relative to this, so the boundary the tests care about - "expires TODAY
+        // is still valid" - still means what it says. The platform having no injectable clock is a real
+        // gap and is reported as such; it is not this batch's to close.
+        private static readonly DateTime Today = DateTime.UtcNow.Date;
 
         private sealed class FixedClock : IReportClockShim
         {
@@ -88,6 +97,81 @@ namespace CrossBuy.Tests.Hr
             UserId = "u" + employeeId, Source = BusinessContextSource.Http,
         };
 
+        // ---- validity convergence ------------------------------------------------------------
+        //
+        // Onboarding used to answer "is this document valid" itself, with five predicates copied from
+        // the platform. The copy had drifted: it never asked for CurrentVersionId. A PlatformDocument
+        // row with no current version is a document SHELL - a record saying a passport exists, with no
+        // file behind it - and onboarding accepted one as satisfying a mandatory requirement, then
+        // reported the employee ready to work.
+        //
+        // Nothing caught it because the test fixture built shells too, so the fixture and the defect
+        // agreed with each other. These tests are the discriminating cases.
+
+        [Fact]
+        public async Task A_document_with_no_current_version_does_not_satisfy_a_requirement()
+        {
+            using var host = Seed();
+            GiveHrRole(host, CompanyA, Officer, HrRoles.HrOfficer);
+            var typeId = AddDocType(host, CompanyA, "PASSPORT");
+            AddTemplate(host, CompanyA, ("collect-passport", true, typeId));
+
+            var svc = Svc(host, Ctx(CompanyA, Officer));
+            var plan = (await svc.StartAsync(Alice, null, null)).Plan!;
+
+            // Right company, right employee, right type, Active, unexpired - and no version. Before the
+            // convergence this completed the requirement.
+            AddDoc(host, CompanyA, EntityRegistry.Employee, Alice, typeId, withVersion: false);
+
+            Assert.False((await svc.CompleteItemAsync(plan.Items.First().ID, null)).Ok);
+
+            // ...and the same document with its version present does satisfy, so the refusal above is
+            // about the missing version and nothing else.
+            AddDoc(host, CompanyA, EntityRegistry.Employee, Alice, typeId);
+            Assert.True((await svc.CompleteItemAsync(plan.Items.First().ID, null)).Ok);
+        }
+
+        [Fact]
+        public async Task A_submitted_document_is_received_evidence_and_does_not_satisfy()
+        {
+            using var host = Seed();
+            GiveHrRole(host, CompanyA, Officer, HrRoles.HrOfficer);
+            var typeId = AddDocType(host, CompanyA, "CONTRACT");
+            AddTemplate(host, CompanyA, ("collect-contract", true, typeId));
+
+            var svc = Svc(host, Ctx(CompanyA, Officer));
+            var plan = (await svc.StartAsync(Alice, null, null)).Plan!;
+
+            // Submitted is a person having handed something IN. It is not verified, so it cannot be
+            // what makes an employee ready - that is the whole reason Submitted is not Active.
+            AddDoc(host, CompanyA, EntityRegistry.Employee, Alice, typeId, status: "Submitted");
+            Assert.False((await svc.CompleteItemAsync(plan.Items.First().ID, null)).Ok);
+        }
+
+        [Fact]
+        public async Task Onboarding_asks_the_platform_rather_than_carrying_its_own_predicate()
+        {
+            var source = System.IO.File.ReadAllText(System.IO.Path.Combine(
+                RepoRoot(), "CrossBuy", "BL", "Hr", "EmployeeOnboardingService.cs"));
+            var code = string.Join("\n", source.Split('\n')
+                .Where(l => !l.TrimStart().StartsWith("//", System.StringComparison.Ordinal)));
+
+            // The copy is gone in BOTH paths - the checklist resolver and the completion check each had
+            // their own, independently drifted, version of the same rule.
+            Assert.DoesNotContain("d.Status == \"Active\"", code, System.StringComparison.Ordinal);
+            Assert.Contains("FindValidDocumentAsync", code, System.StringComparison.Ordinal);
+            Assert.Contains("_documents.HasValidDocumentAsync", code, System.StringComparison.Ordinal);
+        }
+
+        private static string RepoRoot()
+        {
+            var dir = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory);
+            while (dir != null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "CrossBuy.sln")))
+                dir = dir.Parent;
+            Assert.NotNull(dir);
+            return dir!.FullName;
+        }
+
         private static EmployeeOnboardingService Svc(PlatformTestHost host, BusinessContext? ctx)
         {
             var hr = new HrAccessService(host.Db,
@@ -97,7 +181,23 @@ namespace CrossBuy.Tests.Hr
                 NullLogger<HrAccessService>.Instance);
 
             var accessor = ctx == null ? StubContextAccessor.Unresolved() : new StubContextAccessor(ctx);
-            return new EmployeeOnboardingService(host.Db, accessor, hr, new FixedClock());
+
+            // The REAL platform document service, not a stub. Onboarding no longer carries its own
+            // validity predicate, so these tests only mean something if the thing answering is the
+            // thing production asks: a stub here would let the drift this batch removed reappear
+            // without a single test noticing.
+            var documents = new CrossBuy.BL.Documents.PlatformDocumentService(
+                host.Db,
+                accessor,
+                new DocumentAccessResolver(
+                    new IDocumentOwnerResolver[] { new EmployeeDocumentOwnerResolver(host.Db) },
+                    new IModuleAccessService[] { hr },
+                    new EntityRegistry(host.Db),
+                    NullLogger<DocumentAccessResolver>.Instance),
+                new LocalDocumentStorage(System.IO.Path.Combine(System.IO.Path.GetTempPath(),
+                    "cb-onb-" + System.Guid.NewGuid().ToString("n"))),
+                new EntityRegistry(host.Db));
+            return new EmployeeOnboardingService(host.Db, accessor, hr, new FixedClock(), documents);
         }
 
         private static long AddDocType(PlatformTestHost host, int? companyId, string code)
@@ -113,8 +213,18 @@ namespace CrossBuy.Tests.Hr
             return t.Id;
         }
 
+        // A REAL document: a row AND the version that holds its bytes.
+        //
+        // This helper used to create the row alone, leaving CurrentVersionId null - a document shell
+        // with no file behind it. Onboarding accepted those because its own validity predicate never
+        // asked, which is exactly the drift this batch removed. Now that the canonical service
+        // answers, a shell is correctly refused, so the fixture has to build what production builds.
+        //
+        // `withVersion: false` deliberately keeps the old shape available - one test uses it to prove
+        // the shell is refused, which is the whole point.
         private static PlatformDocument AddDoc(PlatformTestHost host, int companyId, string entityType,
-            int entityId, long? typeId, DateTime? expiry = null, string status = "Active")
+            int entityId, long? typeId, DateTime? expiry = null, string status = "Active",
+            bool withVersion = true)
         {
             var d = new PlatformDocument
             {
@@ -123,6 +233,21 @@ namespace CrossBuy.Tests.Hr
                 ExpiryDate = expiry, Status = status, CreatedBy = 1, CreatedAt = Today,
             };
             host.Db.Set<PlatformDocument>().Add(d);
+            host.Db.SaveChanges();
+
+            if (!withVersion) return d;
+
+            var v = new PlatformDocumentVersion
+            {
+                CompanyID = companyId, DocumentId = d.Id, VersionNo = 1,
+                StorageKey = System.Guid.NewGuid().ToString("n"),
+                FileName = "scan.pdf", ContentType = "application/pdf", SizeBytes = 4,
+                UploadedBy = 1, UploadedAt = Today,
+            };
+            host.Db.Set<PlatformDocumentVersion>().Add(v);
+            host.Db.SaveChanges();
+
+            d.CurrentVersionId = v.Id;
             host.Db.SaveChanges();
             return d;
         }
