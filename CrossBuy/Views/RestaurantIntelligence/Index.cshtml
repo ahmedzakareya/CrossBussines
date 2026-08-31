@@ -1,0 +1,197 @@
+@using CrossBuy.Controllers
+@model RestaurantIntelligenceVm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    ViewData["Title"] = Localizer["Restaurant inventory intelligence"].Value;
+    string Q(decimal v) => v.ToString("N4").TrimEnd('0').TrimEnd('.');
+    // Variance is the only number with a direction: over-consumption is the one that costs money.
+    string VarClass(decimal v) => v > 0 ? "text-danger" : (v < 0 ? "text-warning" : "text-success");
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
+                    @Localizer["Restaurant inventory intelligence"]
+                </h1>
+                <span class="text-muted fs-7">@Localizer["What should have been used, what was used, what was wasted, what to reorder"]</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            <form method="get" class="card mb-5">
+                <div class="card-body d-flex flex-wrap align-items-end gap-4 py-4">
+                    <div>
+                        <label class="form-label fs-8 text-muted mb-1">@Localizer["Branch"]</label>
+                        <input type="number" name="branchId" value="@(Model.BranchId > 0 ? Model.BranchId.ToString() : "")"
+                               class="form-control form-control-sm" style="width:9rem" />
+                    </div>
+                    <div>
+                        <label class="form-label fs-8 text-muted mb-1">@Localizer["From"]</label>
+                        <input type="date" name="from" value="@Model.From.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="width:11rem" />
+                    </div>
+                    <div>
+                        <label class="form-label fs-8 text-muted mb-1">@Localizer["To"]</label>
+                        <input type="date" name="to" value="@Model.To.ToString("yyyy-MM-dd")" class="form-control form-control-sm" style="width:11rem" />
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">@Localizer["Show"]</button>
+                </div>
+            </form>
+
+            @* Two sources, resolved differently on purpose. A KEY the controller chose is localised
+               here; TEXT the service produced is already in the reader's language and is printed as
+               it stands. Looking a service sentence up as a key would print the sentence back with a
+               missing-resource marker around it. *@
+            @{ var notice = !string.IsNullOrWhiteSpace(Model.MessageKey)
+                    ? Localizer[Model.MessageKey!].Value
+                    : Model.Message; }
+            @if (!string.IsNullOrWhiteSpace(notice))
+            {
+                <div class="alert alert-light-primary d-flex align-items-center">
+                    <span class="fs-6">@notice</span>
+                </div>
+            }
+            else
+            {
+                <!-- INVENTORY RISK — the two things that stop service, first. -->
+                <div class="row g-5 mb-5">
+                    <div class="col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header min-h-45px">
+                                <h3 class="card-title fs-5 fw-semibold">@Localizer["Replenishment"]</h3>
+                                <div class="card-toolbar"><span class="badge badge-light-primary">@Model.Replenishment.Count</span></div>
+                            </div>
+                            <div class="card-body pt-2">
+                                @if (Model.Replenishment.Count == 0)
+                                {
+                                    <div class="text-muted fs-7">@Localizer["Nothing is at or below its reorder point."]</div>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
+                                            <thead><tr class="text-muted fw-semibold fs-8 text-uppercase">
+                                                <th>@Localizer["Item"]</th><th class="text-end">@Localizer["Available"]</th>
+                                                <th class="text-end">@Localizer["Reorder point"]</th><th class="text-end">@Localizer["Recommended"]</th><th></th>
+                                            </tr></thead>
+                                            <tbody>
+                                            @foreach (var r in Model.Replenishment)
+                                            {
+                                                <tr>
+                                                    <td><span class="fw-semibold">@r.ItemCode</span> <span class="text-muted">@r.ItemName</span></td>
+                                                    <td class="text-end">@Q(r.Available)</td>
+                                                    <td class="text-end text-muted">@Q(r.Threshold)</td>
+                                                    <td class="text-end fw-bold">@Q(r.RecommendedQty)</td>
+                                                    <td>
+                                                        @if (r.IsMakeItem)
+                                                        {
+                                                            <span class="badge badge-light-warning" title="@r.Reason">@Localizer["Make"]</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-muted fs-8 mt-3">@Localizer["A recommendation only — nothing is ordered, transferred or manufactured."]</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header min-h-45px">
+                                <h3 class="card-title fs-5 fw-semibold">@Localizer["Shortages"]</h3>
+                                <div class="card-toolbar"><span class="badge badge-light-danger">@Model.Shortages.Count</span></div>
+                            </div>
+                            <div class="card-body pt-2">
+                                @if (Model.Shortages.Count == 0)
+                                {
+                                    <div class="text-muted fs-7">@Localizer["No shortage was recorded in this period."]</div>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
+                                            <thead><tr class="text-muted fw-semibold fs-8 text-uppercase">
+                                                <th>@Localizer["Item"]</th><th class="text-end">@Localizer["Required"]</th>
+                                                <th class="text-end">@Localizer["Consumed"]</th><th class="text-end">@Localizer["Short"]</th>
+                                                <th class="text-end">@Localizer["Order"]</th>
+                                            </tr></thead>
+                                            <tbody>
+                                            @foreach (var s in Model.Shortages)
+                                            {
+                                                <tr>
+                                                    <td><span class="fw-semibold">@s.ItemCode</span> <span class="text-muted">@s.ItemName</span></td>
+                                                    <td class="text-end">@Q(s.Required)</td>
+                                                    <td class="text-end">@Q(s.Consumed)</td>
+                                                    <td class="text-end fw-bold text-danger">@Q(s.Shortfall)</td>
+                                                    <td class="text-end text-muted">#@s.OrderId</td>
+                                                </tr>
+                                            }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONSUMPTION — the four buckets, with the equation stated so no column is guessed at. -->
+                <div class="card">
+                    <div class="card-header min-h-45px">
+                        <h3 class="card-title fs-5 fw-semibold">@Localizer["Consumption and waste"]</h3>
+                        <div class="card-toolbar"><span class="text-muted fs-8">@Model.From.ToString("yyyy-MM-dd") → @Model.To.ToString("yyyy-MM-dd")</span></div>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (Model.Variance.Count == 0)
+                        {
+                            <div class="text-muted fs-7">@Localizer["Nothing was consumed in this period."]</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle fs-7 gy-2 mb-0">
+                                    <thead><tr class="text-muted fw-semibold fs-8 text-uppercase">
+                                        <th>@Localizer["Item"]</th>
+                                        <th class="text-end">@Localizer["Theoretical"]</th>
+                                        <th class="text-end">@Localizer["Actual"]</th>
+                                        <th class="text-end">@Localizer["Cancelled"]</th>
+                                        <th class="text-end">@Localizer["Wasted"]</th>
+                                        <th class="text-end">@Localizer["Variance"]</th>
+                                        <th class="text-end">%</th>
+                                    </tr></thead>
+                                    <tbody>
+                                    @foreach (var r in Model.Variance)
+                                    {
+                                        <tr>
+                                            <td><span class="fw-semibold">@r.ItemCode</span> <span class="text-muted">@r.ItemName</span></td>
+                                            <td class="text-end">@Q(r.Theoretical)</td>
+                                            <td class="text-end">@Q(r.Actual)</td>
+                                            <td class="text-end text-muted">@(r.CancellationWaste == 0 ? "—" : Q(r.CancellationWaste))</td>
+                                            <td class="text-end text-muted">@(r.ManualWaste == 0 ? "—" : Q(r.ManualWaste))</td>
+                                            <td class="text-end fw-bold @VarClass(r.VarianceQty)">@Q(r.VarianceQty)</td>
+                                            <td class="text-end @VarClass(r.VarianceQty)">@(r.VariancePct.HasValue ? r.VariancePct.Value.ToString("N2") + "%" : "—")</td>
+                                        </tr>
+                                    }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-muted fs-8 mt-3">
+                                @Localizer["Cancelled and wasted quantities are already inside Actual — they are shown so they are not read as unexplained variance."]
+                                <div class="mt-1 font-monospace">@Model.Equation</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

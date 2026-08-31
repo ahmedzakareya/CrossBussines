@@ -196,6 +196,13 @@
       "owner": "Integration Owner - shared development seed harness",
       "changeRule": "Seed data for a tab's OWN feature only, appended as its own block. A tab may add the rows its feature needs and adjust the seed calls that construct them; it may not restructure the harness, reorder another tab's block, or change seed data belonging to a module it does not own. Changes require owner approval (-AllowShared).",
       "reason": "15,000 lines that every module extends as it lands, and the evidence is live rather than theoretical: at the time of this entry the file carried 283 uncommitted lines from one tab while another tab's batch was adding 32 more to a different region. Granting it to whichever tab touched it last would hand that tab every other module's seed data; leaving it unclaimed fails -Strict for everyone. Shared with a narrow per-feature rule is what it actually is."
+    },
+    {
+      "fileId": "SHF-29",
+      "path": "CrossBuy/Controllers/DocumentsController.cs",
+      "owner": "Integration Owner - central document HTTP surface",
+      "changeRule": "The secure delivery and self-service lifecycle endpoints of the CENTRAL document platform. TAB-3 owns the document domain and lands lifecycle behaviour here; the Integration Owner lands the authorization-surface side - the endpoints whose credit depends on AuthorizationSurface.AuthorityTypes, and the refusal mapping that keeps an authorization-shaped refusal indistinguishable from absence (one 404) while an infrastructure failure answers 503. No module-specific behaviour may enter this file: it must never name an employee, an HR action or any other module's vocabulary. Changes require owner approval (-AllowShared).",
+      "reason": "The three self-service endpoints could not compile under CBA001 because they authorize one layer down, through IPlatformDocumentService - which is the whole design of ADR-040 and not a gap. Landing them therefore required a TAB-1 analyzer change and a TAB-1 landing on a TAB-3 file in the same commit. Neither tab can move this file alone without the other's half being wrong, which is what a shared file is."
     }
   ]
 }

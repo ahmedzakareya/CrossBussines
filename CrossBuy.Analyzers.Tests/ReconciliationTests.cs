@@ -176,9 +176,30 @@ public class ReconciliationTests
     //
     // 436 = 157 + 185 + 94.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 436;
+    // ----------------------------------------------------------------------------------------------
+    // 436 -> 439 (Central Documents Batch 3 HTTP surface, 2026-08-31). THREE POSTs on the EXISTING
+    // DocumentsController: submit, verify, reject.
+    //
+    // Controllers 51 -> 52 for an unrelated reason: RestaurantIntelligenceController landed in the same
+    // wave and is READ-ONLY - one GET, no mutating action - so it adds a controller and no endpoint.
+    //
+    // MEASURED, NOT CARRIED. Two handoffs proposed 49 -> 50 and 50 -> 51 for this integration. The
+    // scanner was run against the real candidate instead and answered 51 -> 52.
+    //
+    // The three POSTs authorize IN BODY through IPlatformDocumentService, which asks
+    // IDocumentAccessResolver before it touches a row. CBA001 refused them until those two types were
+    // added to AuthorizationSurface.AuthorityTypes - deliberately, and with the proof written down
+    // there rather than assumed. DocumentAuthorityMemberTests keeps it true: it enumerates the
+    // interface by reflection and drives every member through a recording resolver.
+    //
+    // Debt UNCHANGED at 94, gap set identical id for id, no baseline entry, no suppression. The
+    // declaration reclassified NO existing endpoint - inBody moved by exactly three, gaps by zero.
+    //
+    // 439 = 157 + 188 + 94.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 439;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 185;
+    private const int FrozenInBodyProtected = 188;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
     private const int FrozenGaps = 94;
@@ -208,7 +229,7 @@ public class ReconciliationTests
     // and it is GET-ONLY: content, a historical version, an entity listing and a history. So the
     // controller count is the ONLY figure that moves - mutating stays 430, attribute-protected 157,
     // in-body 179 and the debt 94, all reproduced unchanged by the same run that caught this one.
-    private const int FrozenControllers = 51;
+    private const int FrozenControllers = 52;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

@@ -134,7 +134,54 @@ namespace CrossBuy.Analyzers
             // NOT credited by this addition and remain visible to CBA001. That is the correct outcome: the
             // declared surface records where authorization demonstrably happens, and forcing the count to
             // "all seven" would be exactly the false credit CORRECTION-004 exists to prevent.
-            "IReportAuthorizationService", "ReportAuthorizationService");
+            "IReportAuthorizationService", "ReportAuthorizationService",
+            // The Central Document Platform - the document access spine and the service built on it.
+            //
+            // ADDED BY THE SAME DELIBERATE PROCESS, and only after reading every member. The two are
+            // listed together because they are one boundary seen from two sides: the resolver TAKES the
+            // decision, and the service is the only thing that calls it.
+            //
+            // IDocumentAccessResolver is an authority in the fullest sense in this file. Its single
+            // method runs seven gates in a fixed order and every one of them fails CLOSED:
+            //
+            //   1. a resolved BusinessContext, or company_unresolved - there is no default company;
+            //   2. an employee identity, or no_employee_identity - a worker or system context holds no
+            //      record-level relationship and cannot be judged by a module's record rules;
+            //   3. the document's own company must equal the caller's;
+            //   4. a registered entity family AND a registered owner resolver, or deny - an unclassified
+            //      family is refused rather than assumed harmless;
+            //   5. THE RELATION. The owning record's company is resolved INDEPENDENTLY and must agree
+            //      with the document's. This is the check that makes gate 3 meaningful: a row naming
+            //      company A while pointing at company B's employee passes 3 and is refused here;
+            //   6. the OWNING MODULE decides - a real IModuleAccessService.CanAsync on a target the
+            //      owner resolver builds. The centre supplies no rule of its own;
+            //   7. confidentiality, applied AFTER the record rule and never instead of it - above
+            //      Internal it demands a SECOND CanAsync at the module's manage tier.
+            //
+            // IPlatformDocumentService is credited because EVERY ONE of its eleven members resolves the
+            // context through one private ScopeAsync (which returns null on an unresolved company, an
+            // absent employee, or an exception) and then calls that resolver BEFORE it touches or returns
+            // a row. Verified member by member, not inferred from the class comment: Upload, Replace,
+            // Submit, Verify and Reject each authorize before the first write; OpenCurrent and OpenVersion
+            // share one private AuthorizedVersionAsync so a second entry point cannot skip a step;
+            // ListForEntity, History, FindValidDocument and HasValidDocument authorize BEFORE reading, and
+            // the two collection paths re-ask per document so the confidentiality tier is not lost in a
+            // list.
+            //
+            // WHY A SERVICE AND NOT ONLY THE RESOLVER. The controller is forbidden by ADR-040 to know how
+            // document permission works - a central document endpoint that understood employees would stop
+            // being central, and the confidentiality rules would then be enforced in two places. So the
+            // authorization is one layer down by design, and the analyzer had no way to see it. The
+            // alternatives were a suppression or a baseline entry, and both record a real gap where there
+            // is none.
+            //
+            // THE HAZARD THIS CARRIES, stated plainly: crediting a SERVICE means a future member that
+            // forgot to authorize would be credited too - the CORRECTION-004 shape. That is why
+            // DocumentAuthorityMemberTests drives every member of the interface REFLECTIVELY through a
+            // recording resolver and fails both when a member does not ask and when a member is added that
+            // the table does not cover. The declaration and that test are one unit; neither is safe alone.
+            "IPlatformDocumentService", "PlatformDocumentService",
+            "IDocumentAccessResolver", "DocumentAccessResolver");
 
         /// <summary>
         /// Members of an authority type that are NOT authorization, named individually.

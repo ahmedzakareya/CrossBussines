@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 436,
+    "mutating": 439,
     "attributeProtected": 157,
-    "inBodyProtected": 185,
+    "inBodyProtected": 188,
     "gaps": 94
   },
   "rules": [
@@ -1335,6 +1335,15 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Central Documents Batch 3 HTTP + Restaurant Batch 3 UI, integration wave (TAB-1, 2026-08-31)",
+      "mutating": 439,
+      "attributeProtected": 157,
+      "inBodyProtected": 188,
+      "gaps": 94,
+      "controllers": 52,
+      "note": "MEASURED, NOT CARRIED. Two earlier handoffs proposed controller counts for this integration - 49 -> 50 from the Client Portal batch, and a 50 -> 51 already spent by project closeout. Neither was applied: the scanner was run against the real candidate before and after, and it answered 51 -> 52. The Client Portal figure also named CrossBuy.Tests/ReconciliationTests.cs, a file that does not exist; the frozen constants live in CrossBuy.Analyzers.Tests. A count copied from a report is a guess about a tree somebody else was holding. THREE new mutating endpoints, all on the EXISTING DocumentsController, so the endpoint total moves by three while the controller total moves by one for a different reason (below): Documents/submit, Documents/{id}/verify and Documents/{id}/reject. All three carry [ValidateAntiForgeryToken]; submit also carries [RequestSizeLimit] so the cap applies before the body is read. THEY ARE IN-BODY PROTECTED, AND THAT REQUIRED AN ANALYZER CHANGE RATHER THAN A BASELINE ENTRY. They authorize one layer down, in IPlatformDocumentService, which asks IDocumentAccessResolver before it touches a row - the whole design of ADR-040, in which a central document controller is forbidden to know how document permission works. CBA001 could not see that and refused to compile them. The three ways out were a suppression, a baseline entry, or declaring the two types as authorities; the first two record a real gap where there is none, so the third was taken. THE DECLARATION WAS PROVEN BEFORE IT WAS MADE. IDocumentAccessResolver runs seven gates in a fixed order and every one fails closed: a resolved company, an employee identity, the document's own company, a registered family AND owner resolver, THE RELATION - the owning record's company resolved independently and required to agree, which is what makes the company column mean something - then the owning module's own CanAsync, then confidentiality, which above Internal demands a SECOND CanAsync at the manage tier. IPlatformDocumentService was verified member by member: all eleven resolve the context through one ScopeAsync and call that resolver before they touch or return a row. AND THE PROOF IS NOW A TEST, NOT A READING. Crediting a SERVICE means a future member that forgot to authorize would be credited too, which is the CORRECTION-004 shape exactly. DocumentAuthorityMemberTests enumerates the interface BY REFLECTION and fails when a member is added that it does not drive, then drives every member through a recording resolver and asserts both that it asked and that a refusal stopped it - no row written, no status changed, no blob left behind. DocumentAuthoritySurfaceTests pins the analyzer boundary: the two declared types are credited, an identically-shaped undeclared look-alike is not, IDocumentStorage is not (storing a file is not deciding who may), and a bare POST is still caught. THE CONTROLLER COUNT MOVES FOR A DIFFERENT REASON: RestaurantIntelligenceController, a READ-ONLY screen with one GET and no mutating action at all - so 51 -> 52 controllers with no endpoint of its own in this total. It was integrated with [SessionValidation] and [InvPerm(\"read\")] added; the held version had neither, and would have rendered empty to an anonymous caller, which looks safe and is a data accident rather than an authorization. DEBT UNCHANGED AT 94, and the gap set is identical id for id - no entry added, none removed, no re-bless, no suppression, and the final candidate produced ZERO CBA001/CBA004/CBA006. Attribute-protected does not move: all three new endpoints authorize in body. 157 + 188 + 94 = 439. WHAT THE AUTHORITY DECLARATION DID NOT DO, measured rather than assumed: it reclassified NO existing endpoint. inBodyProtected moved by exactly the three new endpoints and gaps did not move at all, so nothing already in the debt was quietly credited by the new names."
+    },
     {
       "stage": "Project closeout (TAB-1, 2026-08-31)",
       "mutating": 436,

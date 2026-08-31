@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="A recommendation only — nothing is ordered, transferred or manufactured." xml:space="preserve">
+    <value>A recommendation only — nothing is ordered, transferred or manufactured.</value>
+  </data>
+  <data name="Actual" xml:space="preserve">
+    <value>Actual</value>
+  </data>
+  <data name="Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Cancelled and wasted quantities are already inside Actual — they are shown so they are not read as unexplained variance." xml:space="preserve">
+    <value>Cancelled and wasted quantities are already inside Actual — they are shown so they are not read as unexplained variance.</value>
+  </data>
+  <data name="Choose a branch to see inventory intelligence" xml:space="preserve">
+    <value>Choose a branch to see inventory intelligence</value>
+  </data>
+  <data name="Consumed" xml:space="preserve">
+    <value>Consumed</value>
+  </data>
+  <data name="Consumption and waste" xml:space="preserve">
+    <value>Consumption and waste</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Make" xml:space="preserve">
+    <value>Make</value>
+  </data>
+  <data name="No shortage was recorded in this period." xml:space="preserve">
+    <value>No shortage was recorded in this period.</value>
+  </data>
+  <data name="Nothing is at or below its reorder point." xml:space="preserve">
+    <value>Nothing is at or below its reorder point.</value>
+  </data>
+  <data name="Nothing was consumed in this period." xml:space="preserve">
+    <value>Nothing was consumed in this period.</value>
+  </data>
+  <data name="Order" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="Recommended" xml:space="preserve">
+    <value>Recommended</value>
+  </data>
+  <data name="Reorder point" xml:space="preserve">
+    <value>Reorder point</value>
+  </data>
+  <data name="Replenishment" xml:space="preserve">
+    <value>Replenishment</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="Restaurant inventory intelligence" xml:space="preserve">
+    <value>Restaurant inventory intelligence</value>
+  </data>
+  <data name="Short" xml:space="preserve">
+    <value>Short</value>
+  </data>
+  <data name="Shortages" xml:space="preserve">
+    <value>Shortages</value>
+  </data>
+  <data name="Show" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Theoretical" xml:space="preserve">
+    <value>Theoretical</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Variance" xml:space="preserve">
+    <value>Variance</value>
+  </data>
+  <data name="Wasted" xml:space="preserve">
+    <value>Wasted</value>
+  </data>
+  <data name="What should have been used, what was used, what was wasted, what to reorder" xml:space="preserve">
+    <value>What should have been used, what was used, what was wasted, what to reorder</value>
+  </data>
+</root>

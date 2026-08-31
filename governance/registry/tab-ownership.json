@@ -35,6 +35,8 @@
         "CrossBuy/Models/Context/Platform/**",
         "CrossBuy/BL/IntegrityCheckHostedService.cs",
         "CrossBuy/BL/CrmReminderHostedService.cs",
+        "CrossBuy.Tests/DocumentAuthorityMemberTests.cs",
+        "CrossBuy.Tests/DocumentHttpLifecycleTests.cs",
         "CrossBuy.Tests/WriterWorkerGovernanceTests.cs",
         "CrossBuy.Tests/EntityConversationPartialContractTests.cs",
         "CrossBuy.Tests/HrBootstrapPolicyTests.cs",
@@ -132,7 +134,7 @@
     {
       "tabId": "TAB-5",
       "tab": "Tasks and Calendar - UNASSIGNED",
-      "scope": "Task state and rules; calendar events and unified presentation.",
+      "scope": "Task state and rules; calendar events and unified presentation. ALSO the restaurant inventory intelligence surface - actual vs theoretical consumption, waste attribution, replenishment and shortage - which the owner has been directing to this tab (dd112cc, d688886) and which no row claimed at all. The read screen is included; the equations stay in the service and are proven against a SQL probe database, not re-derived in the view. NOTE FOR THE OWNER: the Tab label still reads Tasks and Calendar, which no longer describes the whole of this tab.",
       "ownedPaths": [
         "CrossBuy/BL/TaskService.cs",
         "CrossBuy/BL/TasksAccessService.cs",
@@ -145,7 +147,12 @@
         "CrossBuy/Views/Tasks/**",
         "CrossBuy/Views/Calendar/**",
         "CrossBuy/deploy/sql/tasks_*",
-        "CrossBuy/deploy/sql/calendar.sql"
+        "CrossBuy/deploy/sql/calendar.sql",
+        "CrossBuy/BL/RestaurantInventoryIntelligenceService.cs",
+        "CrossBuy/Controllers/RestaurantIntelligenceController.cs",
+        "CrossBuy/Views/RestaurantIntelligence/**",
+        "CrossBuy.Tests/SqlServer/PimInventoryIntelligenceTests.cs",
+        "CrossBuy.Tests/RestaurantIntelligenceScreenTests.cs"
       ],
       "mayNotTouch": "Other tabs' trees",
       "status": "UNASSIGNED - 2 live hosted services with no owner (R1 action)"

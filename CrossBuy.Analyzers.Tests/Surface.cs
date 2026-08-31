@@ -144,6 +144,62 @@ namespace CrossBuy.BL
         Task<bool> DeleteAsync(int templateId, BusinessContext context);
         Task<bool> SaveAsync(int templateId, BusinessContext context);
     }
+
+    // --- Central Document Platform: the access spine, the service on it, and their neighbours ---
+    public sealed class DocumentAccessDecision { public bool Allowed; public string ReasonCode = ""; }
+    public readonly record struct DocumentOwnerRef(string EntityType, int EntityId);
+    public enum DocumentAction { View, Download, Upload, Submit, Replace, Delete, Manage }
+    public sealed class DocumentResult { public bool Ok; public string ReasonCode = ""; }
+    public sealed class DocumentSubmissionRequest { public string EntityType = ""; public int EntityId; }
+
+    // AUTHORITY. The spine that TAKES the decision.
+    public interface IDocumentAccessResolver
+    {
+        Task<DocumentAccessDecision> AuthorizeAsync(BusinessContext? context, DocumentOwnerRef owner,
+            DocumentAction action, int documentCompanyId, string? confidentiality = null,
+            CancellationToken ct = default);
+    }
+
+    public sealed class DocumentAccessResolver : IDocumentAccessResolver
+    {
+        public Task<DocumentAccessDecision> AuthorizeAsync(BusinessContext? context, DocumentOwnerRef owner,
+            DocumentAction action, int documentCompanyId, string? confidentiality = null,
+            CancellationToken ct = default) => Task.FromResult(new DocumentAccessDecision());
+    }
+
+    // AUTHORITY. Every member calls the resolver before it touches a row - which is why an endpoint that
+    // reaches this service has demonstrably taken an authorization decision.
+    public interface IPlatformDocumentService
+    {
+        Task<DocumentResult> SubmitAsync(DocumentSubmissionRequest request, System.IO.Stream content, CancellationToken ct = default);
+        Task<DocumentResult> VerifyAsync(long documentId, string? note, CancellationToken ct = default);
+        Task<DocumentResult> RejectAsync(long documentId, string note, CancellationToken ct = default);
+    }
+
+    public sealed class PlatformDocumentService : IPlatformDocumentService
+    {
+        public Task<DocumentResult> SubmitAsync(DocumentSubmissionRequest request, System.IO.Stream content, CancellationToken ct = default)
+            => Task.FromResult(new DocumentResult());
+        public Task<DocumentResult> VerifyAsync(long documentId, string? note, CancellationToken ct = default)
+            => Task.FromResult(new DocumentResult());
+        public Task<DocumentResult> RejectAsync(long documentId, string note, CancellationToken ct = default)
+            => Task.FromResult(new DocumentResult());
+    }
+
+    // NOT an authority: it moves bytes. Storing a file is not deciding who may.
+    public interface IDocumentStorage
+    {
+        Task<string> StoreAsync(System.IO.Stream content, string? suggestedName = null, CancellationToken ct = default);
+        Task<bool> DeleteAsync(string key, CancellationToken ct = default);
+    }
+
+    // NOT an authority: identical shape to the spine, undeclared name.
+    public interface IFakeDocumentAccessResolver
+    {
+        Task<DocumentAccessDecision> AuthorizeAsync(BusinessContext? context, DocumentOwnerRef owner,
+            DocumentAction action, int documentCompanyId, string? confidentiality = null,
+            CancellationToken ct = default);
+    }
 }
 """;
 }
