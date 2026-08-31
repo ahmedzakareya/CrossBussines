@@ -73,7 +73,7 @@ namespace CrossBuy.Models.Context.Documents
         /// document type — the exact cost the type catalogue exists to avoid.
         public string? Metadata { get; set; }
 
-        /// Draft | Submitted | Active | Expired | Archived.
+        /// Draft | Submitted | Rejected | Active | Expired | Archived.
         ///
         /// SUBMITTED IS NOT ACTIVE, and that distinction is the point. A document the subject filed
         /// themselves has been RECEIVED, not accepted: it is not evidence that HR verified anything, and
@@ -81,8 +81,23 @@ namespace CrossBuy.Models.Context.Documents
         /// and deciding what that something is belongs to whoever owns verification — this platform
         /// only refuses to pretend the question was already answered.
         ///
+        /// REJECTED IS A STATE, NOT A DELETION. A refused submission must not simply disappear: the
+        /// person who filed it needs to see that it was looked at and why, and the next submission is a
+        /// new VERSION of the same document rather than a fresh mystery row.
+        ///
         /// Archived is how a document leaves circulation; nothing here deletes a governed document.
         public string Status { get; set; } = "Active";
+
+        // ---- lifecycle evidence (batch 3) ----------------------------------------------------------
+        // WHO decided, WHEN, and WHY. Stored on the document rather than inferred from an audit trail,
+        // because "is this verified" is a question the validity rule has to answer on every read, and
+        // reconstructing it from events would make a checklist render depend on an event replay.
+        //
+        // A note is REQUIRED for a rejection and optional for a verification: telling somebody their
+        // passport was refused without saying why is not a decision, it is an obstacle.
+        public int? DecidedBy { get; set; }
+        public DateTime? DecidedAt { get; set; }
+        public string? DecisionNote { get; set; }
 
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -189,6 +204,7 @@ namespace CrossBuy.Models.Context.Documents
                 e.Property(x => x.EntityType).HasMaxLength(CodeLength).IsRequired();
                 e.Property(x => x.Confidentiality).HasMaxLength(VocabularyLength).IsRequired();
                 e.Property(x => x.Status).HasMaxLength(VocabularyLength).IsRequired();
+                e.Property(x => x.DecisionNote).HasMaxLength(PathishLength);
                 e.Property(x => x.DocumentNumber).HasMaxLength(NameLength);
 
                 // The lookup every read performs: "the documents of THIS record, in THIS company".

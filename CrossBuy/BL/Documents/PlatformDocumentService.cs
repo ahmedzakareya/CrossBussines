@@ -53,6 +53,24 @@ namespace CrossBuy.BL.Documents
 
     /// A refusal carries a CODE, never a sentence and never a detail. "not found" and "you may not"
     /// and "another company" are deliberately the same answer: anything else lets a caller probe.
+    /// A self-service submission. Note what it CANNOT carry: no company, no confidentiality, no
+    /// status, no verifier, no decision. Those are not validated away — they are absent, which is a
+    /// stronger guarantee than a check somebody could later relax.
+    public sealed record DocumentSubmissionRequest
+    {
+        public required string EntityType { get; init; }
+        public required int EntityId { get; init; }
+        public required long DocumentTypeId { get; init; }
+        public string? DocumentNumber { get; init; }
+        public DateTime? IssueDate { get; init; }
+        public DateTime? EffectiveFrom { get; init; }
+        public DateTime? ExpiryDate { get; init; }
+        public string? Metadata { get; init; }
+        public required string FileName { get; init; }
+        public required string ContentType { get; init; }
+        public string? Reason { get; init; }
+    }
+
     public sealed record DocumentResult(bool Ok, string ReasonCode, long DocumentId = 0, long VersionId = 0)
     {
         public static DocumentResult Refused(string code) => new(false, code);
@@ -111,6 +129,16 @@ namespace CrossBuy.BL.Documents
         Task<DocumentValidity> FindValidDocumentAsync(string entityType, int entityId, long documentTypeId, CancellationToken ct = default);
 
         Task<bool> HasValidDocumentAsync(string entityType, int entityId, long documentTypeId, CancellationToken ct = default);
+
+        /// Self-service: a person hands in their own evidence. Produces Submitted, never Active.
+        Task<DocumentResult> SubmitAsync(DocumentSubmissionRequest request, Stream content, CancellationToken ct = default);
+
+        /// HR looks at a pending document and accepts it. Requires employee-manage, so the submitter
+        /// cannot verify their own.
+        Task<DocumentResult> VerifyAsync(long documentId, string? note, CancellationToken ct = default);
+
+        /// HR refuses it, with a reason. The document stays, so the person can correct it.
+        Task<DocumentResult> RejectAsync(long documentId, string note, CancellationToken ct = default);
     }
 
     public sealed class PlatformDocumentService : IPlatformDocumentService
@@ -121,9 +149,39 @@ namespace CrossBuy.BL.Documents
         private readonly IDocumentStorage _storage;
         private readonly IEntityRegistry _registry;
 
+        /// THE CLOCK, and deliberately not a bespoke one.
+        ///
+        /// Validity turns on "is the expiry date before today", which was DateTime.UtcNow.Date inline
+        /// and therefore untestable at the boundary that matters: a document expiring TODAY is valid
+        /// and one that expired YESTERDAY is not, and those two cases are a day apart in real time.
+        ///
+        /// .NET 8 ships TimeProvider, so there is no reason to invent IPlatformClock. Production gets
+        /// TimeProvider.System; a test supplies a fixed one. No framework, one dependency, and the
+        /// abstraction is the platform's rather than ours to maintain.
+        private readonly TimeProvider _clock;
+
+        /// THE LIFECYCLE EVENT SEAM, and why it is optional.
+        ///
+        /// Submitted / Verified / Rejected are the three facts about a document that another module has
+        /// a legitimate reason to hear about - an onboarding checklist wants to know the passport
+        /// arrived, without the document platform having to know that onboarding exists. That is what
+        /// the kernel's Business Events are for, so this raises them rather than growing a second
+        /// notification path.
+        ///
+        /// It is NULLABLE because the kernel refuses an event recorded outside an ambient transaction
+        /// (ADR-001) and a document write is not always run inside one host. Absent, the platform still
+        /// works and simply announces nothing - which is honest. Present, the event shares the fate of
+        /// the row: it is recorded inside the same transaction, so there is no state in which the
+        /// document says verified and the timeline disagrees.
+        private readonly IBusinessEventService? _events;
+
         public PlatformDocumentService(CrossDbContext db, IBusinessContextAccessor contexts,
-            IDocumentAccessResolver access, IDocumentStorage storage, IEntityRegistry registry)
-        { _db = db; _contexts = contexts; _access = access; _storage = storage; _registry = registry; }
+            IDocumentAccessResolver access, IDocumentStorage storage, IEntityRegistry registry,
+            TimeProvider? clock = null, IBusinessEventService? events = null)
+        { _db = db; _contexts = contexts; _access = access; _storage = storage; _registry = registry;
+          _clock = clock ?? TimeProvider.System; _events = events; }
+
+        private DateTime UtcNow => _clock.GetUtcNow().UtcDateTime;
 
         private DbSet<PlatformDocument> Documents => _db.Set<PlatformDocument>();
         private DbSet<PlatformDocumentVersion> Versions => _db.Set<PlatformDocumentVersion>();
@@ -206,12 +264,20 @@ namespace CrossBuy.BL.Documents
             if (type?.MaxSizeBytes is long cap && content.CanSeek && content.Length > cap)
                 return DocumentResult.Refused("file_too_large");
 
-            var key = await _storage.StoreAsync(content, request.FileName, ct);
-            var now = DateTime.UtcNow;
+            var stored = await StoreAsync(content, request.FileName, ct);
+            if (stored == null) return DocumentResult.Refused("store_failed");
+            var key = stored.Value;
+            var now = UtcNow;
 
-            using var tx = await _db.Database.BeginTransactionAsync(ct);
+            // BEGIN INSIDE THE TRY. It used to sit outside, and a test found what that costs: if
+            // opening the transaction itself fails — a dropped connection, a disposed context — the
+            // exception escapes before the catch, and the blob written moments earlier is never
+            // compensated. The whole DB phase has to be inside the guarded region, not just the part
+            // that looked risky.
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
             try
             {
+                tx = await _db.Database.BeginTransactionAsync(ct);
                 var doc = new PlatformDocument
                 {
                     CompanyID = ctx.CompanyId,
@@ -238,12 +304,14 @@ namespace CrossBuy.BL.Documents
                 doc.CurrentVersionId = version.Id;
                 await _db.SaveChangesAsync(ct);
                 await tx.CommitAsync(ct);
+                await tx.DisposeAsync();
                 return DocumentResult.Success(doc.Id, version.Id);
             }
             catch (Exception)
             {
-                await tx.RollbackAsync(ct);
-                _db.ChangeTracker.Clear();
+                // Compensated, not merely rolled back: batch 2 recorded that a failed commit here left
+                // the freshly written blob unreferenced on disk. See RollbackAndCompensateAsync.
+                await RollbackAndCompensateAsync(tx, key, ct);
                 return DocumentResult.Refused("store_failed");
             }
         }
@@ -262,12 +330,20 @@ namespace CrossBuy.BL.Documents
                 DocumentAction.Replace, doc.CompanyID, doc.Confidentiality, ct);
             if (!decision.Allowed) return DocumentResult.Refused(decision.ReasonCode);
 
-            var key = await _storage.StoreAsync(content, fileName, ct);
-            var now = DateTime.UtcNow;
+            var stored = await StoreAsync(content, fileName, ct);
+            if (stored == null) return DocumentResult.Refused("store_failed");
+            var key = stored.Value;
+            var now = UtcNow;
 
-            using var tx = await _db.Database.BeginTransactionAsync(ct);
+            // BEGIN INSIDE THE TRY. It used to sit outside, and a test found what that costs: if
+            // opening the transaction itself fails — a dropped connection, a disposed context — the
+            // exception escapes before the catch, and the blob written moments earlier is never
+            // compensated. The whole DB phase has to be inside the guarded region, not just the part
+            // that looked risky.
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
             try
             {
+                tx = await _db.Database.BeginTransactionAsync(ct);
                 // The next number is read inside the transaction and the unique index settles a race,
                 // so two simultaneous renewals cannot both become V2 and lose one another's file.
                 var last = await Versions.AsNoTracking()
@@ -288,12 +364,14 @@ namespace CrossBuy.BL.Documents
                 await _db.SaveChangesAsync(ct);
 
                 await tx.CommitAsync(ct);
+                await tx.DisposeAsync();
                 return DocumentResult.Success(doc.Id, version.Id);
             }
             catch (Exception)
             {
-                await tx.RollbackAsync(ct);
-                _db.ChangeTracker.Clear();
+                // Compensated, not merely rolled back: batch 2 recorded that a failed commit here left
+                // the freshly written blob unreferenced on disk. See RollbackAndCompensateAsync.
+                await RollbackAndCompensateAsync(tx, key, ct);
                 return DocumentResult.Refused("store_failed");
             }
         }
@@ -385,6 +463,407 @@ namespace CrossBuy.BL.Documents
         }
 
 
+
+        // ---- self-service submission ------------------------------------------------------------
+        //
+        // SUBMIT IS NOT UPLOAD. Upload is an HR act authorized by employee-manage: whoever performs it
+        // has authority over the record, so what they attach IS the record. Submit is a person handing
+        // in their own evidence — authorized by employee-request, which HrAccessService answers purely
+        // on whether the target is the caller. So this path is self-only without containing a rule
+        // about selfness, and it produces something RECEIVED rather than something established.
+        //
+        // WHAT THE SUBMITTER CANNOT CHOOSE, and why each one is taken away rather than validated:
+        //   * the employee — the resolver's target IS the caller, so another id simply fails the ask
+        //   * the company — taken from the resolved context, never from the request
+        //   * the confidentiality — forced to the TYPE's default, so nobody files their own payslip
+        //     as Internal or their own passport as Restricted to hide it from HR
+        //   * the status — always Submitted; Active is not reachable from this method at all
+        //   * the decision — DecidedBy/At/Note are untouched here, so a submitter cannot pre-approve
+        public async Task<DocumentResult> SubmitAsync(DocumentSubmissionRequest request, Stream content, CancellationToken ct = default)
+        {
+            // TOTAL BY CONSTRUCTION. Everything below can touch the database, and a service that lets a
+            // raw EF exception reach a controller turns an infrastructure blip into a stack trace on a
+            // page. Every failure leaves through the same door as a policy refusal.
+            try { return await SubmitCoreAsync(request, content, ct); }
+            catch (Exception) { return DocumentResult.Refused("store_failed"); }
+        }
+
+        private async Task<DocumentResult> SubmitCoreAsync(DocumentSubmissionRequest request, Stream content, CancellationToken ct)
+        {
+            var ctx = await ScopeAsync(ct);
+            if (ctx == null) return DocumentResult.Refused(DocumentAccessReasons.CompanyUnresolved);
+            if (request.EntityId <= 0 || string.IsNullOrWhiteSpace(request.EntityType))
+                return DocumentResult.Refused(DocumentAccessReasons.UnknownEntityType);
+            if (!FamilyCarriesDocuments(request.EntityType))
+                return DocumentResult.Refused(DocumentAccessReasons.UnknownEntityType);
+
+            // A submission ALWAYS names a type. An ad-hoc self-submission would have no policy to
+            // enforce — no allow-list, no size cap, no confidentiality default — so it is refused.
+            var type = await Types.AsNoTracking().FirstOrDefaultAsync(
+                t => t.Id == request.DocumentTypeId && t.IsActive
+                     && (t.CompanyID == null || t.CompanyID == ctx.CompanyId), ct);
+            if (type == null) return DocumentResult.Refused("unknown_document_type");
+
+            // The gate that says a person may file this KIND of document about themselves at all.
+            // Configuration, not code: nothing here knows what a passport is.
+            if (!type.SelfServiceAllowed) return DocumentResult.Refused("self_service_not_allowed");
+            if (!AppliesTo(type, request.EntityType)) return DocumentResult.Refused("type_entity_mismatch");
+            if (type.RequiresIssueDate && request.IssueDate == null) return DocumentResult.Refused("issue_date_required");
+            if (type.RequiresExpiryDate && request.ExpiryDate == null) return DocumentResult.Refused("expiry_date_required");
+            if (!ExtensionAllowed(type, request.FileName)) return DocumentResult.Refused("file_type_refused");
+            if (!MetadataValid(type, request.Metadata, out var metadataError)) return DocumentResult.Refused(metadataError);
+
+            // Size is checked BEFORE anything is stored, when the stream can tell us. A cap enforced
+            // after the write has already spent the disk it was meant to protect.
+            if (type.MaxSizeBytes is long cap && content.CanSeek && content.Length > cap)
+                return DocumentResult.Refused("file_too_large");
+
+            // THE authorization. Submit maps to employee-request, so this is where "own employee only"
+            // is decided — by HR's own rule, not by a comparison in this file.
+            var decision = await AuthorizeAsync(ctx, request.EntityType, request.EntityId,
+                DocumentAction.Submit, ctx.CompanyId, type.DefaultConfidentiality, ct);
+            if (!decision.Allowed) return DocumentResult.Refused(decision.ReasonCode);
+
+            // A resubmission is a NEW VERSION of the existing document for this type, not a second
+            // document — otherwise a rejected passport and its correction become two rows and the
+            // validity rule has to guess which one counts.
+            var existing = await Documents.AsNoTracking().FirstOrDefaultAsync(
+                d => d.CompanyID == ctx.CompanyId && d.EntityType == request.EntityType
+                     && d.EntityId == request.EntityId && d.DocumentTypeId == type.Id
+                     && d.Status != "Archived", ct);
+
+            return existing == null
+                ? await CreateSubmittedAsync(ctx, request, type, content, ct)
+                : await ResubmitAsync(ctx, existing.Id, request, content, ct);
+        }
+
+        private async Task<DocumentResult> CreateSubmittedAsync(BusinessContext ctx,
+            DocumentSubmissionRequest request, PlatformDocumentType type, Stream content, CancellationToken ct)
+        {
+            var stored = await StoreAsync(content, request.FileName, ct);
+            if (stored == null) return DocumentResult.Refused("store_failed");
+            var key = stored.Value;
+            var now = UtcNow;
+
+            // BEGIN INSIDE THE TRY. It used to sit outside, and a test found what that costs: if
+            // opening the transaction itself fails — a dropped connection, a disposed context — the
+            // exception escapes before the catch, and the blob written moments earlier is never
+            // compensated. The whole DB phase has to be inside the guarded region, not just the part
+            // that looked risky.
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+            try
+            {
+                tx = await _db.Database.BeginTransactionAsync(ct);
+                var doc = new PlatformDocument
+                {
+                    CompanyID = ctx.CompanyId,
+                    EntityType = request.EntityType,
+                    EntityId = request.EntityId,
+                    DocumentTypeId = type.Id,
+                    // Forced, not chosen. See the header.
+                    Confidentiality = type.DefaultConfidentiality,
+                    DocumentNumber = request.DocumentNumber,
+                    IssueDate = request.IssueDate,
+                    EffectiveFrom = request.EffectiveFrom,
+                    ExpiryDate = request.ExpiryDate,
+                    Metadata = request.Metadata,
+                    Status = "Submitted",
+                    CreatedBy = ctx.EmployeeId!.Value,
+                    CreatedAt = now,
+                };
+                Documents.Add(doc);
+                await _db.SaveChangesAsync(ct);
+
+                var version = NewVersion(doc, 1, key, request.FileName, request.ContentType, content,
+                    request.Reason ?? "submitted", null, ctx, now);
+                Versions.Add(version);
+                await _db.SaveChangesAsync(ct);
+
+                doc.CurrentVersionId = version.Id;
+                await _db.SaveChangesAsync(ct);
+
+                // BEFORE the commit, inside the transaction. If the event cannot be recorded the
+                // document is not submitted either, and the catch below compensates the blob.
+                await RaiseAsync(doc, type, ActionSubmitted, version.Id, ct);
+
+                await tx.CommitAsync(ct);
+                await tx.DisposeAsync();
+                return DocumentResult.Success(doc.Id, version.Id);
+            }
+            catch (Exception)
+            {
+                await RollbackAndCompensateAsync(tx, key, ct);
+                return DocumentResult.Refused("store_failed");
+            }
+        }
+
+        /// A correction. Adds a version and returns the document to Submitted, clearing the previous
+        /// decision — a corrected document has not been judged yet, and leaving a stale "rejected"
+        /// note on it would tell HR the wrong thing about the file in front of them.
+        private async Task<DocumentResult> ResubmitAsync(BusinessContext ctx, long documentId,
+            DocumentSubmissionRequest request, Stream content, CancellationToken ct)
+        {
+            var stored = await StoreAsync(content, request.FileName, ct);
+            if (stored == null) return DocumentResult.Refused("store_failed");
+            var key = stored.Value;
+            var now = UtcNow;
+
+            // BEGIN INSIDE THE TRY. It used to sit outside, and a test found what that costs: if
+            // opening the transaction itself fails — a dropped connection, a disposed context — the
+            // exception escapes before the catch, and the blob written moments earlier is never
+            // compensated. The whole DB phase has to be inside the guarded region, not just the part
+            // that looked risky.
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+            try
+            {
+                tx = await _db.Database.BeginTransactionAsync(ct);
+                var last = await Versions.AsNoTracking().Where(v => v.DocumentId == documentId)
+                    .OrderByDescending(v => v.VersionNo).FirstOrDefaultAsync(ct);
+
+                var doc = await Documents.FirstAsync(d => d.Id == documentId, ct);
+                var version = NewVersion(doc, (last?.VersionNo ?? 0) + 1, key, request.FileName,
+                    request.ContentType, content, request.Reason ?? "resubmitted", last?.Id, ctx, now);
+                Versions.Add(version);
+                await _db.SaveChangesAsync(ct);
+
+                doc.CurrentVersionId = version.Id;
+                doc.Status = "Submitted";
+                doc.DecidedBy = null; doc.DecidedAt = null; doc.DecisionNote = null;
+                // The submitter may correct the dates that came with the new copy; they may not touch
+                // confidentiality, which stays whatever the type decided when the document was created.
+                doc.DocumentNumber = request.DocumentNumber ?? doc.DocumentNumber;
+                doc.IssueDate = request.IssueDate ?? doc.IssueDate;
+                doc.ExpiryDate = request.ExpiryDate ?? doc.ExpiryDate;
+                doc.UpdatedBy = ctx.EmployeeId!.Value;
+                doc.UpdatedAt = now;
+                await _db.SaveChangesAsync(ct);
+
+                var resubmittedType = await Types.AsNoTracking()
+                    .FirstAsync(t => t.Id == doc.DocumentTypeId, ct);
+                await RaiseAsync(doc, resubmittedType, ActionSubmitted, version.Id, ct);
+
+                await tx.CommitAsync(ct);
+                await tx.DisposeAsync();
+                return DocumentResult.Success(doc.Id, version.Id);
+            }
+            catch (Exception)
+            {
+                await RollbackAndCompensateAsync(tx, key, ct);
+                return DocumentResult.Refused("store_failed");
+            }
+        }
+
+        // ---- verification -----------------------------------------------------------------------
+        //
+        // WHY THIS IS NOT THE APPROVAL PLATFORM. I looked: ApprovalInboxService and
+        // InventoryApprovalService model a REQUEST that travels — submitted for approval, routed to a
+        // step, acted on, and the outcome then drives the original transaction. A document
+        // verification has no route and no steps: one person with employee-manage looks at a file and
+        // says yes or no, and the outcome is a property of the document itself rather than of a
+        // travelling request.
+        //
+        // Wrapping that in an approval request would create a second object whose lifecycle has to be
+        // kept in step with the document's, and the first bug would be a verified approval attached to
+        // a document that had since been resubmitted. So verification stays a narrow governed
+        // transition ON the document — and if a deployment later wants multi-step document approval,
+        // the approval platform can drive THIS transition rather than duplicate it.
+        //
+        // Authorization is employee-manage (Replace), NOT Submit: the person who filed a document must
+        // not be able to verify it, and Submit is the only verb their own authority satisfies.
+        public async Task<DocumentResult> VerifyAsync(long documentId, string? note, CancellationToken ct = default)
+            => await DecideAsync(documentId, "Active", note, requireNote: false, ct);
+
+        /// A rejection REQUIRES a reason. Telling somebody their document was refused without saying
+        /// why is not a decision, it is an obstacle — and the person then resubmits the same file.
+        public async Task<DocumentResult> RejectAsync(long documentId, string note, CancellationToken ct = default)
+            => await DecideAsync(documentId, "Rejected", note, requireNote: true, ct);
+
+        private async Task<DocumentResult> DecideAsync(long documentId, string outcome, string? note,
+            bool requireNote, CancellationToken ct)
+        {
+            var ctx = await ScopeAsync(ct);
+            if (ctx == null) return DocumentResult.Refused(DocumentAccessReasons.CompanyUnresolved);
+            if (requireNote && string.IsNullOrWhiteSpace(note)) return DocumentResult.Refused("decision_note_required");
+
+            var doc = await LoadAsync(documentId, ctx, ct);
+            if (doc == null) return DocumentResult.Refused(DocumentAccessReasons.OwnerNotFound);
+
+            // Replace maps to employee-manage. A submitter holds only employee-request, so they cannot
+            // reach this method for their own document — which is the separation that makes a
+            // "verified" status mean something.
+            var decision = await AuthorizeAsync(ctx, doc.EntityType, doc.EntityId,
+                DocumentAction.Replace, doc.CompanyID, doc.Confidentiality, ct);
+            if (!decision.Allowed) return DocumentResult.Refused(decision.ReasonCode);
+
+            // Only a pending document is decidable. Re-verifying an Active one, or judging an Archived
+            // one, are both no-ops dressed as actions.
+            if (!string.Equals(doc.Status, "Submitted", StringComparison.Ordinal)
+                && !string.Equals(doc.Status, "Rejected", StringComparison.Ordinal))
+                return DocumentResult.Refused("not_pending");
+
+            // A document cannot become Active without bytes to be active ABOUT.
+            if (string.Equals(outcome, "Active", StringComparison.Ordinal) && doc.CurrentVersionId == null)
+                return DocumentResult.Refused(DocumentValidityReasons.NoCurrentVersion);
+
+            // A TRANSACTION AROUND A ONE-ROW UPDATE, on purpose. The status change and the event that
+            // announces it must land together: an event saying "verified" with no verified row would
+            // send every subscriber chasing a decision that never happened, and a verified row with no
+            // event would leave onboarding waiting forever. There is no blob here, so nothing to
+            // compensate — the rollback is the whole remedy.
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+            try
+            {
+                tx = await _db.Database.BeginTransactionAsync(ct);
+
+                var tracked = await Documents.FirstAsync(d => d.Id == doc.Id, ct);
+                tracked.Status = outcome;
+                tracked.DecidedBy = ctx.EmployeeId!.Value;
+                tracked.DecidedAt = UtcNow;
+                tracked.DecisionNote = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
+                tracked.UpdatedBy = ctx.EmployeeId!.Value;
+                tracked.UpdatedAt = tracked.DecidedAt;
+                await _db.SaveChangesAsync(ct);
+
+                var type = await Types.AsNoTracking().FirstAsync(t => t.Id == tracked.DocumentTypeId, ct);
+                await RaiseAsync(tracked, type,
+                    string.Equals(outcome, "Active", StringComparison.Ordinal) ? ActionVerified : ActionRejected,
+                    tracked.CurrentVersionId, ct);
+
+                await tx.CommitAsync(ct);
+                await tx.DisposeAsync();
+                return DocumentResult.Success(tracked.Id, tracked.CurrentVersionId ?? 0);
+            }
+            catch (Exception)
+            {
+                if (tx != null)
+                {
+                    try { await tx.RollbackAsync(ct); } catch (Exception) { }
+                    try { await tx.DisposeAsync(); } catch (Exception) { }
+                }
+                try { _db.ChangeTracker.Clear(); } catch (Exception) { }
+                return DocumentResult.Refused("decision_failed");
+            }
+        }
+
+        // ---- lifecycle events -------------------------------------------------------------------
+        //
+        // WHAT THE PAYLOAD MAY SAY, and the reasoning behind every exclusion. The kernel's own rule is
+        // that a payload never carries files, secrets or unrestricted employee data, and a document is
+        // made almost entirely of things that fail that test:
+        //
+        //   StorageKey  - EXCLUDED. It is the one value that must never travel, because a subscriber
+        //                 that learned it would be holding a handle the access resolver never issued.
+        //   file path / bytes / file name - EXCLUDED. A payload is not a delivery channel, and a name
+        //                 like "termination-letter.pdf" leaks the content it names.
+        //   DocumentNumber - EXCLUDED. This is the passport or civil-ID number itself. It is the most
+        //                 sensitive field on the row and it has no business in an event log.
+        //   DecisionNote - EXCLUDED. A rejection reason is free text a human typed about a person; the
+        //                 event says a decision happened, and the document says what it was.
+        //
+        // What is left is the shape of the fact: which document, of which type, in which state. That is
+        // enough for a subscriber to react and to come back through the authorized read path for more,
+        // which is exactly the amount of trust an event deserves.
+        //
+        // THE EVENT IS ADDRESSED TO THE OWNING ENTITY, not to the document. The employee is what the
+        // permission model, the timeline and every subscriber already understand; a document id as the
+        // subject would be a second addressing scheme nobody else speaks. The type code travels so a
+        // consumer can tell a passport from a contract WITHOUT hardcoding either - it reads the code it
+        // was configured with.
+        //
+        // VISIBILITY IS THE DOCUMENT'S CONFIDENTIALITY. The two vocabularies happen to coincide, but
+        // the mapping is written out rather than cast, because a silent numeric coincidence between an
+        // access classification and an event classification is not something to bet a Restricted
+        // medical document on. Anything unrecognised becomes Restricted - the narrowest, not the
+        // default.
+        private async Task RaiseAsync(PlatformDocument doc, PlatformDocumentType type, string action,
+            long? versionId, CancellationToken ct)
+        {
+            if (_events == null) return;
+
+            await _events.RecordAsync(new BusinessEventRecord
+            {
+                EntityCode = doc.EntityType,
+                EntityId = doc.EntityId,
+                EventType = BusinessEventTypes.Build(doc.EntityType, action),
+                Visibility = VisibilityFor(doc.Confidentiality),
+                // Per document, per version, per action: a resubmission is a new fact because the
+                // version changed, while a retried commit of the SAME write is not.
+                DedupKey = $"platformdoc:{doc.Id}:v{versionId ?? 0}:{action}",
+                Payload = new
+                {
+                    documentId = doc.Id,
+                    documentTypeId = doc.DocumentTypeId,
+                    documentTypeCode = type.Code,
+                    status = doc.Status,
+                    issueDate = doc.IssueDate,
+                    expiryDate = doc.ExpiryDate,
+                    decidedBy = doc.DecidedBy,
+                    hasDecisionNote = !string.IsNullOrWhiteSpace(doc.DecisionNote),
+                },
+            }, ct);
+        }
+
+        private static string VisibilityFor(string? confidentiality) => confidentiality switch
+        {
+            DocumentConfidentiality.Internal => BusinessEventVisibility.Internal,
+            DocumentConfidentiality.Confidential => BusinessEventVisibility.Confidential,
+            DocumentConfidentiality.Restricted => BusinessEventVisibility.Restricted,
+            DocumentConfidentiality.System => BusinessEventVisibility.System,
+            _ => BusinessEventVisibility.Restricted,
+        };
+
+        /// The three actions, named once. "Document" prefixes each because the event is addressed to the
+        /// EMPLOYEE: "Employee.Submitted" would be a fact about the person, not about their file.
+        private const string ActionSubmitted = "DocumentSubmitted";
+        private const string ActionVerified = "DocumentVerified";
+        private const string ActionRejected = "DocumentRejected";
+
+        // ---- storage compensation ----------------------------------------------------------------
+        //
+        // THE FILESYSTEM AND SQL ARE NOT ONE TRANSACTION, and batch 2 recorded the consequence
+        // honestly: bytes land first, so a failed DB commit left an unreferenced blob behind.
+        //
+        // The write order is deliberate and stays. The alternative — row first, bytes second — would
+        // leave a version row pointing at bytes that never arrived, and a document that 404s forever
+        // is worse than a file nobody can reach. So the exposure is closed by COMPENSATION instead.
+        //
+        // WHAT MAKES THE DELETE SAFE: the key being removed was generated moments earlier inside this
+        // method and has not been committed to any version row — the transaction that would have
+        // referenced it has just been rolled back. Nothing else can hold it, because a StorageKey is
+        // generated per store and never reused. A committed version's blob is therefore unreachable
+        // from here by construction, not by a check.
+        private async Task<StorageKey?> StoreAsync(Stream content, string? fileName, CancellationToken ct)
+        {
+            try { return await _storage.StoreAsync(content, fileName, ct); }
+            catch (Exception) { return null; }
+        }
+
+        private async Task RollbackAndCompensateAsync(
+            Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx, StorageKey key, CancellationToken ct)
+        {
+            // THE BLOB GOES FIRST, and that ordering is the fix for a bug a test found. Tidying the DB
+            // first looks natural, but ChangeTracker.Clear() throws on a disposed context — so on the
+            // one failure this method exists for, the cleanup died before reaching the delete and the
+            // orphan survived. Compensation must not depend on the database still being alive: the
+            // whole reason we are here is that it is not.
+            //
+            // Safe because the key was generated moments ago inside the calling method and no committed
+            // version row references it — the transaction that would have has just failed. A StorageKey
+            // is generated per store and never reused, so a committed blob is unreachable from here by
+            // construction rather than by a check.
+            //
+            // Best effort and silent: a failed cleanup must not become a message that names a
+            // StorageKey. An orphan is housekeeping, not the caller's business.
+            try { await _storage.DeleteAsync(key, ct); } catch (Exception) { }
+
+            if (tx != null)
+            {
+                try { await tx.RollbackAsync(ct); } catch (Exception) { /* the connection is already lost */ }
+                try { await tx.DisposeAsync(); } catch (Exception) { }
+            }
+            try { _db.ChangeTracker.Clear(); } catch (Exception) { /* disposed context */ }
+        }
+
         // ---- validity -----------------------------------------------------------------------------
         //
         // WHAT "VALID" MEANS, stated once so no consumer has to restate it:
@@ -451,7 +930,7 @@ namespace CrossBuy.BL.Documents
             string entityType, int entityId, long documentTypeId, CancellationToken ct = default)
             => (await FindValidDocumentAsync(entityType, entityId, documentTypeId, ct)).IsValid;
 
-        private static string EvaluateOne(PlatformDocument d, PlatformDocumentType type, out string confidentiality)
+        private string EvaluateOne(PlatformDocument d, PlatformDocumentType type, out string confidentiality)
         {
             confidentiality = d.Confidentiality;
             if (!string.Equals(d.Status, "Active", StringComparison.Ordinal))
@@ -464,7 +943,10 @@ namespace CrossBuy.BL.Documents
                 return DocumentValidityReasons.MissingRequiredExpiryDate;
             // Expiry is honoured whenever one is RECORDED, even if the type does not demand one: a date
             // someone took the trouble to enter is a statement about the document, not decoration.
-            if (d.ExpiryDate is DateTime expiry && expiry.Date < DateTime.UtcNow.Date)
+            // STRICTLY BEFORE today. A document whose expiry IS today is still valid: a passport does
+            // not stop being a passport at midnight of its printed date, and treating it as expired
+            // would refuse somebody on the last day they were entitled to be accepted.
+            if (d.ExpiryDate is DateTime expiry && expiry.Date < UtcNow.Date)
                 return DocumentValidityReasons.Expired;
             return DocumentValidityReasons.Valid;
         }

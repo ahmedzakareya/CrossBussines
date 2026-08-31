@@ -1,4 +1,6 @@
+using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CrossBuy.BL.Documents
 {
@@ -31,6 +33,19 @@ namespace CrossBuy.BL.Documents
         public static IServiceCollection AddDocumentPlatform(IServiceCollection services)
         {
             services.AddScoped<IPlatformDocumentService, PlatformDocumentService>();
+
+            // THE CLOCK, registered with TryAdd rather than Add.
+            //
+            // Validity asks "is the expiry date before today", so the platform needs a clock it can be
+            // tested against. The container COULD supply nothing and let the constructor's default take
+            // over, but that leaves a production behaviour resting on how the DI container treats an
+            // optional parameter - a detail no reader of this platform should have to know.
+            //
+            // TryAdd, because the clock is the application's to own, not the document platform's. If
+            // any tab ever registers a real one - a test clock, an offset clock for a deployment in
+            // another timezone - theirs is already there and this line does nothing. It supplies the
+            // obvious default; it does not claim the seam.
+            services.TryAddSingleton(TimeProvider.System);
             return services;
         }
     }
