@@ -1,0 +1,552 @@
+@using CrossBuy.BL.Hr
+@using CrossBuy.Models.Context.Hr
+@using CrossBuy.Models.Context.Admin
+@model CrossBuy.BL.Hr.RosterView
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    ViewData["Title"] = Localizer["Roster"].Value;
+
+    var periods = (List<RosterPeriod>)ViewBag.Periods;
+    var selected = (RosterPeriod?)ViewBag.Selected;
+    var mayManage = (bool)ViewBag.MayManage;
+    var today = (DateTime)ViewBag.Today;
+    var shifts = (List<WorkShift>)ViewBag.Shifts;
+    var branches = ViewBag.Branches as IEnumerable<dynamic>;
+    int? branchFilter = ViewBag.BranchFilter;
+    int? employeeFilter = ViewBag.EmployeeFilter;
+
+    string PeriodName(RosterPeriod p) => (isAr ? p.NameAr : p.NameEn) is { Length: > 0 } n ? n : (p.NameAr ?? p.NameEn ?? "#" + p.ID);
+    string ShiftName(WorkShift? s) => s == null ? "" : ((isAr ? s.NameAr : s.NameEn) is { Length: > 0 } n ? n : s.Code);
+
+    // The grid's rows are EMPLOYEES and its columns are DATES. That is the shape a scheduler reads:
+    // "who is on, and is anybody's week empty". A list of assignment rows would be a database table
+    // wearing a page, and would answer neither question at a glance.
+    var days = selected == null
+        ? new List<DateTime>()
+        : Enumerable.Range(0, Math.Min(31, (selected.EndDate.Date - selected.StartDate.Date).Days + 1))
+                    .Select(i => selected.StartDate.Date.AddDays(i)).ToList();
+
+    var visible = Model?.Assignments
+        .Where(a => branchFilter == null || a.BranchID == branchFilter)
+        .Where(a => employeeFilter == null || a.EmployeeID == employeeFilter)
+        .ToList() ?? new List<RosterAssignment>();
+
+    var employeeRows = visible
+        .GroupBy(a => a.EmployeeID)
+        .Select(g => new
+        {
+            EmployeeId = g.Key,
+            Name = (isAr ? g.First().Employee?.FullName : g.First().Employee?.FullNameEn)
+                   ?? g.First().Employee?.FullName ?? ("#" + g.Key),
+            Items = g.ToList(),
+        })
+        .OrderBy(r => r.Name)
+        .ToList();
+
+    var errCode = TempData["RosterErr"] as string;
+    var msgCode = TempData["RosterMsg"] as string;
+
+    // Service codes become sentences here, so the service stays free of a localizer and an API caller
+    // keeps the machine code.
+    string Say(string? code) => code switch
+    {
+        "period_created" => Localizer["Roster period created."].Value,
+        "assignment_added" => Localizer["Shift assigned."].Value,
+        "assignment_cancelled" => Localizer["Assignment cancelled."].Value,
+        "period_published" => Localizer["Roster published."].Value,
+        "conflicts_detected" => Localizer["This roster cannot be published while conflicts remain unresolved."].Value,
+        "reason_required_for_published_change" => Localizer["Changing a published roster requires a reason."].Value,
+        "date_outside_period" => Localizer["That date falls outside the roster period."].Value,
+        "shift_not_in_company" => Localizer["That shift does not belong to this company."].Value,
+        "shift_inactive" => Localizer["That shift is no longer active."].Value,
+        "branch_not_in_company" => Localizer["That branch does not belong to this company."].Value,
+        "invalid_period_range" => Localizer["The period must end on or after it starts."].Value,
+        "period_closed" => Localizer["This roster period is closed."].Value,
+        _ => Localizer["You are not allowed to perform this action"].Value,
+    };
+
+    string ConflictText(RosterConflict c) => c.Kind switch
+    {
+        RosterConflictKind.OverlappingAssignment => Localizer["Overlaps another shift"].Value,
+        RosterConflictKind.ApprovedLeave => Localizer["Falls on approved leave"].Value,
+        RosterConflictKind.EmployeeCompanyMismatch => Localizer["Employee is not in this company"].Value,
+        RosterConflictKind.BranchCompanyMismatch => Localizer["Branch is not in this company"].Value,
+        RosterConflictKind.InactiveEmployee => Localizer["Employee is inactive"].Value,
+        RosterConflictKind.InvalidTimeRange => Localizer["The shift times are invalid"].Value,
+        RosterConflictKind.DuplicateAssignment => Localizer["Duplicate assignment"].Value,
+        _ => Localizer["Conflict"].Value,
+    };
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Roster"]</h1>
+                <span class="text-gray-500 fs-7">@Localizer["Who is expected to work, where, and under which shift"]</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a asp-action="Mine" class="btn btn-sm btn-light">@Localizer["My schedule"]</a>
+                @if (mayManage)
+                {
+                    <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#new-period">
+                        @Localizer["New period"]
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @if (msgCode != null)
+            {
+                <div class="alert alert-success d-flex align-items-center py-3 mb-5">
+                    <i class="ki-outline ki-check-circle fs-2 me-3"></i><span>@Say(msgCode)</span>
+                </div>
+            }
+            @if (errCode != null)
+            {
+                <div class="alert alert-danger d-flex align-items-center py-3 mb-5">
+                    <i class="ki-outline ki-information-5 fs-2 me-3"></i><span>@Say(errCode)</span>
+                </div>
+            }
+
+            @if (selected == null)
+            {
+                <div class="card">
+                    <div class="card-body text-center py-15">
+                        <i class="ki-outline ki-calendar-8 fs-3x text-gray-400 mb-4 d-block"></i>
+                        <div class="fs-5 fw-semibold text-gray-800 mb-2">@Localizer["No roster period yet"]</div>
+                        <div class="text-gray-500 fs-7">@Localizer["Create a period to start scheduling shifts."]</div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @* ===================== PERIOD NAVIGATION + STATE ===================== *@
+                <div class="card mb-5">
+                    <div class="card-body py-4">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-4">
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <form method="get" asp-action="Index" class="d-flex align-items-center gap-2">
+                                    <select name="periodId" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                                        @foreach (var p in periods)
+                                        {
+                                            <option value="@p.ID" selected="@(p.ID == selected.ID)">
+                                                @PeriodName(p) — @p.StartDate.ToString("yyyy-MM-dd") … @p.EndDate.ToString("yyyy-MM-dd")
+                                            </option>
+                                        }
+                                    </select>
+                                </form>
+
+                                @if (selected.IsPublished)
+                                {
+                                    <span class="badge badge-light-success fs-7 px-3 py-2">
+                                        <i class="ki-outline ki-check-circle fs-6 me-1"></i>@Localizer["Published"]
+                                        @if (selected.PublishedAt.HasValue)
+                                        {
+                                            <span class="text-gray-500 ms-1">@selected.PublishedAt.Value.ToString("yyyy-MM-dd")</span>
+                                        }
+                                    </span>
+                                }
+                                else if (selected.Status == RosterPeriodStatus.Closed)
+                                {
+                                    <span class="badge badge-light fs-7 px-3 py-2">@Localizer["Closed"]</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-light-warning fs-7 px-3 py-2">
+                                        <i class="ki-outline ki-pencil fs-6 me-1"></i>@Localizer["Draft"]
+                                    </span>
+                                }
+                            </div>
+
+                            @* Coverage at a glance: how many shifts, how many hours, how many problems. *@
+                            <div class="d-flex align-items-center gap-6 flex-wrap">
+                                <div class="text-center">
+                                    <div class="fs-4 fw-bold text-gray-900">@(Model?.ScheduledCount ?? 0)</div>
+                                    <div class="text-gray-500 fs-8">@Localizer["Shifts"]</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="fs-4 fw-bold text-gray-900">@(((Model?.ScheduledMinutes ?? 0) / 60.0).ToString("0.#"))</div>
+                                    <div class="text-gray-500 fs-8">@Localizer["Scheduled hours"]</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="fs-4 fw-bold @((Model?.BlockingConflictCount ?? 0) > 0 ? "text-danger" : "text-gray-900")">
+                                        @(Model?.Conflicts.Count ?? 0)
+                                    </div>
+                                    <div class="text-gray-500 fs-8">@Localizer["Conflicts"]</div>
+                                </div>
+
+                                @if (mayManage && !selected.IsPublished && selected.Status != RosterPeriodStatus.Closed)
+                                {
+                                    <form method="post" asp-action="Publish" asp-route-periodId="@selected.ID">
+                                        @* Offered even with conflicts outstanding. The SERVER refuses and says why —
+                                           hiding the button would make the screen an authority on a rule the service
+                                           owns, and the two would drift. *@
+                                        <button type="submit" class="btn btn-sm btn-primary">@Localizer["Publish roster"]</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ===================== FILTERS ===================== *@
+                <form method="get" asp-action="Index" class="card mb-5">
+                    <div class="card-body py-3 d-flex flex-wrap align-items-end gap-3">
+                        <input type="hidden" name="periodId" value="@selected.ID" />
+                        <div>
+                            <label class="form-label fs-8 text-gray-500 mb-1">@Localizer["Branch"]</label>
+                            <select name="branchId" class="form-select form-select-sm w-auto">
+                                <option value="">@Localizer["All branches"]</option>
+                                @if (branches != null)
+                                {
+                                    foreach (var b in branches)
+                                    {
+                                        <option value="@b.ID" selected="@(branchFilter == (int)b.ID)">@(isAr ? b.NameAr : b.Name)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label fs-8 text-gray-500 mb-1">@Localizer["Employee"]</label>
+                            <select name="employeeId" class="form-select form-select-sm w-auto">
+                                <option value="">@Localizer["Everyone"]</option>
+                                @foreach (var r in employeeRows)
+                                {
+                                    <option value="@r.EmployeeId" selected="@(employeeFilter == r.EmployeeId)">@r.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-light-primary">@Localizer["Apply"]</button>
+                        @if (branchFilter != null || employeeFilter != null)
+                        {
+                            <a asp-action="Index" asp-route-periodId="@selected.ID" class="btn btn-sm btn-light">@Localizer["Clear"]</a>
+                        }
+                    </div>
+                </form>
+
+                @* ===================== THE GRID: employees down, dates across ===================== *@
+                <div class="card mb-5">
+                    <div class="card-header align-items-center">
+                        <h3 class="card-title fw-bold text-gray-900">@Localizer["Roster grid"]</h3>
+                        @if (mayManage && selected.Status != RosterPeriodStatus.Closed)
+                        {
+                            <div class="card-toolbar">
+                                <button type="button" class="btn btn-sm btn-light-primary" data-bs-toggle="modal" data-bs-target="#assign">
+                                    @Localizer["Assign shift"]
+                                </button>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-body pt-0">
+                        @if (employeeRows.Count == 0)
+                        {
+                            <div class="text-center text-gray-500 fs-7 py-10">@Localizer["Nobody is scheduled in this period yet."]</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle gy-2 mb-0" style="min-width: 900px;">
+                                    <thead>
+                                        <tr class="fw-semibold text-gray-500 fs-8">
+                                            <th class="min-w-150px bg-light">@Localizer["Employee"]</th>
+                                            @foreach (var d in days)
+                                            {
+                                                var isToday = d == today.Date;
+                                                var weekend = d.DayOfWeek is DayOfWeek.Friday or DayOfWeek.Saturday;
+                                                <th class="text-center @(isToday ? "bg-light-primary" : weekend ? "bg-light" : "")" style="min-width:64px;">
+                                                    <div class="fs-8 text-gray-500">@d.ToString("ddd")</div>
+                                                    <div class="fw-bold @(isToday ? "text-primary" : "text-gray-800")">@d.Day</div>
+                                                </th>
+                                            }
+                                            <th class="text-center bg-light min-w-70px">@Localizer["Hours"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in employeeRows)
+                                        {
+                                            <tr>
+                                                <td class="fw-semibold text-gray-900 fs-7 bg-light">@row.Name</td>
+                                                @foreach (var d in days)
+                                                {
+                                                    var cell = row.Items.Where(a => a.WorkDate.Date == d).ToList();
+                                                    <td class="text-center p-1 @(d == today.Date ? "bg-light-primary" : "")">
+                                                        @foreach (var a in cell)
+                                                        {
+                                                            var conflicts = Model!.ConflictsFor(a.ID);
+                                                            var cancelled = a.Status == RosterAssignmentStatus.Cancelled;
+                                                            var cls = cancelled ? "badge-light text-decoration-line-through"
+                                                                    : conflicts.Count > 0 ? "badge-light-danger" : "badge-light-primary";
+                                                            var tip = string.Join(" · ",
+                                                                new[] { a.PlannedStart.ToString("HH:mm") + "–" + a.PlannedEnd.ToString("HH:mm") }
+                                                                .Concat(conflicts.Select(ConflictText)));
+
+                                                            <div class="badge @cls d-block mb-1 px-2 py-1" title="@tip">
+                                                                <div class="fw-bold fs-8">@ShiftName(a.Shift)</div>
+                                                                <div class="fs-9 opacity-75">
+                                                                    @a.PlannedStart.ToString("HH:mm")–@a.PlannedEnd.ToString("HH:mm")
+                                                                    @if (a.PlannedStart.Date != a.PlannedEnd.Date)
+                                                                    {
+                                                                        @* An overnight shift ends tomorrow, and saying so in the cell
+                                                                           stops "22:00–06:00" reading as an eight-hour typo. *@
+                                                                        <span class="ms-1" title="@Localizer["Ends the next day"]">+1</span>
+                                                                    }
+                                                                </div>
+                                                                @if (conflicts.Count > 0)
+                                                                {
+                                                                    <div class="fs-9 fw-bold">
+                                                                        <i class="ki-outline ki-information-5 fs-8"></i>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                            @if (mayManage && !cancelled && selected.Status != RosterPeriodStatus.Closed)
+                                                            {
+                                                                <button type="button" class="btn btn-icon btn-sm btn-light-danger"
+                                                                        style="width:18px;height:18px;"
+                                                                        data-bs-toggle="modal" data-bs-target="#cancel-@a.ID"
+                                                                        title="@Localizer["Cancel assignment"]">
+                                                                    <i class="ki-outline ki-cross fs-9"></i>
+                                                                </button>
+                                                            }
+                                                        }
+                                                    </td>
+                                                }
+                                                <td class="text-center fw-bold text-gray-800 fs-7 bg-light">
+                                                    @((row.Items.Where(a => a.Status == RosterAssignmentStatus.Planned).Sum(a => a.PlannedMinutes) / 60.0).ToString("0.#"))
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* ===================== CONFLICTS, LISTED AND ACTIONABLE ===================== *@
+                @if (Model != null && Model.Conflicts.Count > 0)
+                {
+                    <div class="card">
+                        <div class="card-header align-items-center">
+                            <h3 class="card-title fw-bold text-danger">
+                                @Localizer["Conflicts"] (@Model.Conflicts.Count)
+                            </h3>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div class="text-gray-600 fs-8 mb-4">
+                                @Localizer["Nothing here is resolved automatically. Each conflict names the rows involved so it can be fixed deliberately."]
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle gy-3 mb-0">
+                                    <thead>
+                                        <tr class="fw-semibold text-gray-500 fs-8 text-uppercase">
+                                            <th>@Localizer["Employee"]</th>
+                                            <th>@Localizer["Date"]</th>
+                                            <th>@Localizer["Conflict"]</th>
+                                            <th>@Localizer["Details"]</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var c in Model.Conflicts.OrderBy(x => x.WorkDate).ThenBy(x => x.EmployeeID))
+                                        {
+                                            var who = Model.Assignments.FirstOrDefault(a => a.EmployeeID == c.EmployeeID)?.Employee;
+                                            <tr>
+                                                <td class="fw-semibold text-gray-800 fs-7">
+                                                    @((isAr ? who?.FullName : who?.FullNameEn) ?? who?.FullName ?? ("#" + c.EmployeeID))
+                                                </td>
+                                                <td class="fs-7 text-gray-700">@c.WorkDate.ToString("yyyy-MM-dd")</td>
+                                                <td>
+                                                    <span class="badge @(c.IsBlocking ? "badge-light-danger" : "badge-light-warning") fs-8">
+                                                        @ConflictText(c)
+                                                    </span>
+                                                </td>
+                                                <td class="fs-8 text-gray-600">
+                                                    @if (c.ConflictingAssignmentID is int other)
+                                                    {
+                                                        <span>@Localizer["Clashes with assignment"] #@other</span>
+                                                    }
+                                                    else if (c.LeaveRequestID is int leave)
+                                                    {
+                                                        <span>@Localizer["Leave request"] #@leave</span>
+                                                    }
+                                                    else if (c.BranchID is int branch)
+                                                    {
+                                                        <span>@Localizer["Branch"] #@branch</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@* ===================== DIALOGS ===================== *@
+@if (mayManage)
+{
+    <div class="modal fade" id="new-period" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="post" asp-action="CreatePeriod" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@Localizer["New roster period"]</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
+                </div>
+                <div class="modal-body d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label required fs-7">@Localizer["Name (Arabic)"]</label>
+                        <input name="nameAr" class="form-control form-control-sm" required maxlength="200" />
+                    </div>
+                    <div>
+                        <label class="form-label required fs-7">@Localizer["Name (English)"]</label>
+                        <input name="nameEn" class="form-control form-control-sm" required maxlength="200" />
+                    </div>
+                    <div class="d-flex gap-3">
+                        <div class="flex-grow-1">
+                            <label class="form-label required fs-7">@Localizer["Start date"]</label>
+                            <input type="date" name="start" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="flex-grow-1">
+                            <label class="form-label required fs-7">@Localizer["End date"]</label>
+                            <input type="date" name="end" class="form-control form-control-sm" required />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label fs-7">@Localizer["Branch"]</label>
+                        <select name="branchId" class="form-select form-select-sm">
+                            <option value="">@Localizer["Whole company"]</option>
+                            @if (branches != null)
+                            {
+                                foreach (var b in branches)
+                                {
+                                    <option value="@b.ID">@(isAr ? b.NameAr : b.Name)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
+                    <button type="submit" class="btn btn-primary btn-sm">@Localizer["Create"]</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (selected != null)
+    {
+        <div class="modal fade" id="assign" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form method="post" asp-action="Assign" asp-route-periodId="@selected.ID" class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@Localizer["Assign shift"]</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
+                    </div>
+                    <div class="modal-body d-flex flex-column gap-3">
+                        <div>
+                            <label class="form-label required fs-7">@Localizer["Employee id"]</label>
+                            <input type="number" name="employeeId" class="form-control form-control-sm" required min="1" />
+                        </div>
+                        <div>
+                            <label class="form-label required fs-7">@Localizer["Work date"]</label>
+                            <input type="date" name="workDate" class="form-control form-control-sm" required
+                                   min="@selected.StartDate.ToString("yyyy-MM-dd")" max="@selected.EndDate.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div>
+                            <label class="form-label required fs-7">@Localizer["Shift"]</label>
+                            <select name="shiftId" class="form-select form-select-sm" required>
+                                @foreach (var s in shifts)
+                                {
+                                    <option value="@s.ID">
+                                        @ShiftName(s) — @s.StartTime.ToString(@"hh\:mm")–@s.EndTime.ToString(@"hh\:mm")
+                                        @(s.CrossesMidnight ? " (+1)" : "")
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label fs-7">@Localizer["Branch"]</label>
+                            <select name="branchId" class="form-select form-select-sm">
+                                <option value="">@Localizer["Period default"]</option>
+                                @if (branches != null)
+                                {
+                                    foreach (var b in branches)
+                                    {
+                                        <option value="@b.ID">@(isAr ? b.NameAr : b.Name)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        @if (selected.IsPublished)
+                        {
+                            <div>
+                                @* The period is already published, so this is a change to a commitment. *@
+                                <label class="form-label required fs-7">@Localizer["Reason for changing a published roster"]</label>
+                                <textarea name="reason" class="form-control form-control-sm" rows="2" required maxlength="1000"></textarea>
+                            </div>
+                        }
+                        <div>
+                            <label class="form-label fs-7">@Localizer["Note"]</label>
+                            <input name="note" class="form-control form-control-sm" maxlength="1000" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">@Localizer["Cancel"]</button>
+                        <button type="submit" class="btn btn-primary btn-sm">@Localizer["Assign"]</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @foreach (var a in visible.Where(x => x.Status == RosterAssignmentStatus.Planned))
+        {
+            <div class="modal fade" id="cancel-@a.ID" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form method="post" asp-action="CancelAssignment" asp-route-assignmentId="@a.ID" class="modal-content">
+                        <input type="hidden" name="periodId" value="@selected.ID" />
+                        <div class="modal-header">
+                            <h5 class="modal-title">@Localizer["Cancel assignment"]</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@Localizer["Close"]"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="fw-semibold text-gray-800 mb-1">
+                                @((isAr ? a.Employee?.FullName : a.Employee?.FullNameEn) ?? a.Employee?.FullName)
+                            </div>
+                            <div class="text-gray-600 fs-8 mb-4">
+                                @a.WorkDate.ToString("yyyy-MM-dd") · @ShiftName(a.Shift)
+                                · @a.PlannedStart.ToString("HH:mm")–@a.PlannedEnd.ToString("HH:mm")
+                            </div>
+                            @if (selected.IsPublished)
+                            {
+                                <label class="form-label required fs-7">@Localizer["Reason for changing a published roster"]</label>
+                                <textarea name="reason" class="form-control form-control-sm" rows="2" required maxlength="1000"></textarea>
+                                <div class="text-gray-500 fs-9 mt-2">
+                                    @Localizer["The assignment is kept and marked cancelled, and the change is recorded against it."]
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-gray-500 fs-8">@Localizer["This period is still a draft, so no reason is required."]</div>
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">@Localizer["Close"]</button>
+                            <button type="submit" class="btn btn-danger btn-sm">@Localizer["Cancel assignment"]</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+    }
+}

@@ -2,9 +2,9 @@
   "schema": 1,
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
-    "mutating": 430,
+    "mutating": 434,
     "attributeProtected": 157,
-    "inBodyProtected": 179,
+    "inBodyProtected": 183,
     "gaps": 94
   },
   "rules": [
@@ -1335,6 +1335,15 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Roster and shift management (TAB-2 implementation / TAB-1 reconciliation, 2026-08-31)",
+      "mutating": 434,
+      "attributeProtected": 157,
+      "inBodyProtected": 183,
+      "gaps": 94,
+      "controllers": 50,
+      "note": "FOUR new POST endpoints on a NEW controller, RosterController - CreatePeriod, Assign, CancelAssignment and Publish - so the controller count moves 49 -> 50 alongside the endpoint total. All four are protected in body on arrival: each resolves the BusinessContext and asks IHrAccessService for 'attendance-manage' before it acts, with [ValidateAntiForgeryToken] on every one. NO NEW HR ACTION WAS INVENTED - rostering is workforce-time administration, which is what attendance-manage already means, and inventing roster-manage would have created a second vocabulary for one job. NO BASELINE ENTRY WAS ADDED OR REMOVED and the integrated candidate produced ZERO CBA004: endpoints that arrive protected were never in this list. Purely descriptive - mutating 430 -> 434, inBodyProtected 179 -> 183, attributeProtected unchanged at 157 because all four authorize in body, and gaps UNCHANGED at 94 with the gap set identical id for id. 157 + 183 + 94 = 434. THE CONTROLLER DELTA IS +1 FROM 49, NOT FROM 48. The candidate was measured by its author against dd112cc, before DocumentsController landed and moved the count; re-measuring on the current base is what caught it, and copying the author's constants would have frozen a number that was already stale. READ PATHS ARE NOT IN THESE FIGURES. An employee reads their OWN published roster with no attendance authority - the service takes the employee from the resolved BusinessContext rather than a parameter, and queries published assignments only, so a draft schedule is invisible and a colleague's is unreachable. GETs are not mutating endpoints and this file does not track them. A BOOTSTRAP NOTE, RECORDED RATHER THAN CHANGED: attendance-manage is bootstrap-open, so on an install with no HR roles configured roster management is exactly as open as attendance administration already is. That is inherited posture, not new exposure, and reusing the existing action is what kept it from becoming a new decision. Making rostering less open than attendance would need a NeverBootstrapOpen entry plus a new action - a deliberate owner change, not a side effect of this batch. Carried forward as HR ATTENDANCE/ROSTER BOOTSTRAP POLICY REVIEW. No diagnostic was suppressed, no analyzer rule weakened, no permission loosened and none of the 94 existing gaps was removed."
+    },
     {
       "stage": "Employee onboarding (TAB-2 implementation / TAB-1 reconciliation, 2026-08-30)",
       "mutating": 430,

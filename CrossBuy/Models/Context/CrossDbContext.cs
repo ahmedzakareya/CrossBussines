@@ -484,6 +484,12 @@ namespace CrossBuy.Models.Context
         public DbSet<Hr.EmployeeOnboardingItem> EmployeeOnboardingItems { get; set; }
         public DbSet<Hr.OnboardingTemplate> OnboardingTemplates { get; set; }
         public DbSet<Hr.OnboardingTemplateItem> OnboardingTemplateItems { get; set; }
+
+        // HR Product Batch 2 — roster / shift management. Four tables, same TAB-2 region.
+        public DbSet<Hr.WorkShift> WorkShifts { get; set; }
+        public DbSet<Hr.RosterPeriod> RosterPeriods { get; set; }
+        public DbSet<Hr.RosterAssignment> RosterAssignments { get; set; }
+        public DbSet<Hr.RosterAssignmentRevision> RosterAssignmentRevisions { get; set; }
         public DbSet<Reporting.ReportRun> ReportRuns { get; set; }
         public DbSet<Reporting.ReportArchiveEntry> ReportArchiveEntries { get; set; }
         public DbSet<Reporting.ReportSchedule> ReportSchedules { get; set; }

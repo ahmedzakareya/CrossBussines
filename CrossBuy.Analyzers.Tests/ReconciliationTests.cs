@@ -153,9 +153,21 @@ public class ReconciliationTests
     //
     // 430 = 157 + 179 + 94.
     // ----------------------------------------------------------------------------------------------
-    private const int FrozenMutating = 430;
+    // ----------------------------------------------------------------------------------------------
+    // 430 -> 434 (roster and shift management, 2026-08-31). FOUR POSTs on a new RosterController:
+    // CreatePeriod, Assign, CancelAssignment and Publish. Controllers 49 -> 50.
+    //
+    // The debt figure does not move and the entry list does not change. All four resolve the
+    // BusinessContext and ask for attendance-manage before acting - no new HR action was invented,
+    // because rostering IS workforce-time administration - so they arrive protected, were never in
+    // the baseline, and produced ZERO CBA004. Attribute-protected does not move: all four authorize
+    // in body.
+    //
+    // 434 = 157 + 183 + 94.
+    // ----------------------------------------------------------------------------------------------
+    private const int FrozenMutating = 434;
     private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 179;
+    private const int FrozenInBodyProtected = 183;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
     private const int FrozenGaps = 94;
@@ -185,7 +197,7 @@ public class ReconciliationTests
     // and it is GET-ONLY: content, a historical version, an entity listing and a history. So the
     // controller count is the ONLY figure that moves - mutating stays 430, attribute-protected 157,
     // in-body 179 and the debt 94, all reproduced unchanged by the same run that caught this one.
-    private const int FrozenControllers = 49;
+    private const int FrozenControllers = 50;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

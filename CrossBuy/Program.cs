@@ -154,12 +154,24 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     .MapPermission(CrossBuy.BL.Reporting.InventoryReportPermissions.Cost,
         "Admin", "SuperAdmin")
     .MapPermission(CrossBuy.BL.Reporting.CrmReportPermissions.View,
-        "Admin", "SuperAdmin", "Auditor", "Sales"));
+        "Admin", "SuperAdmin", "Auditor", "Sales")
+    //   roster.reports.view              the roster schedule and planned-vs-actual datasets
+    //
+    // HrManager and HrOfficer are the operational roles for their own module's registers, mapped for
+    // the same reason Accountant and Storekeeper are above. There is no second (cost/confidential)
+    // tier here because a schedule and the hours worked against it are the same sensitivity — if
+    // payroll money ever reaches this data it needs its own tier, and that is a payroll decision.
+    .MapPermission(CrossBuy.BL.Reporting.RosterReportPermissions.View,
+        "Admin", "SuperAdmin", "Auditor", "HrManager", "HrOfficer"));
 
 // HR Product Batch 1 — employee onboarding. Appended in TAB-2's own region, next to the module's other
 // registration. The service is scoped because it takes the request's DbContext and BusinessContext.
 builder.Services.AddScoped<CrossBuy.BL.Hr.IReportClockShim, CrossBuy.BL.Hr.SystemOnboardingClock>();
 builder.Services.AddScoped<CrossBuy.BL.Hr.IEmployeeOnboardingService, CrossBuy.BL.Hr.EmployeeOnboardingService>();
+
+// HR Product Batch 2 — roster / shift management. Same TAB-2 region; scoped for the same reason.
+builder.Services.AddScoped<CrossBuy.BL.Hr.IRosterClock, CrossBuy.BL.Hr.SystemRosterClock>();
+builder.Services.AddScoped<CrossBuy.BL.Hr.IRosterService, CrossBuy.BL.Hr.RosterService>();
 
 // ---- CrossBusiness Workspace (R1–R3) ----
 //

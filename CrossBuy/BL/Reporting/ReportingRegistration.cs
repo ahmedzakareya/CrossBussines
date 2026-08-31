@@ -164,6 +164,10 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, CrmLeadsDataSource>();
             services.AddScoped<IReportDataSource, CrmOpportunitiesDataSource>();
 
+            // HR Product Batch 2 — roster. Two data sources, no new engine and no second store.
+            services.AddScoped<IReportDataSource, RosterScheduleDataSource>();
+            services.AddScoped<IReportDataSource, RosterPlannedVsActualDataSource>();
+
             services.AddScoped<IReportDataSourceRegistry, ReportDataSourceRegistry>();
 
             // ---- dataset layer (ADR-037 §Dataset) --------------------------------------------------------
@@ -190,6 +194,14 @@ namespace CrossBuy.BL.Reporting
             foreach (var crm in CrmDatasets.All())
             {
                 var definition = crm;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+
+            // HR Product Batch 2 — the two roster datasets, registered exactly like the modules above
+            // so they reach Studio, widgets and scheduling with no new execution path.
+            foreach (var roster in HrRosterDatasets.All())
+            {
+                var definition = roster;
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
             }
 

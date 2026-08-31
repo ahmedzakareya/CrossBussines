@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence><xsd:element name="value" type="xsd:string" minOccurs="0" /></xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence><xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" /></xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="All branches" xml:space="preserve">
+    <value>All branches</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Assign" xml:space="preserve">
+    <value>Assign</value>
+  </data>
+  <data name="Assign shift" xml:space="preserve">
+    <value>Assign shift</value>
+  </data>
+  <data name="Assignment cancelled." xml:space="preserve">
+    <value>Assignment cancelled.</value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Branch is not in this company" xml:space="preserve">
+    <value>Branch is not in this company</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Cancel assignment" xml:space="preserve">
+    <value>Cancel assignment</value>
+  </data>
+  <data name="Changing a published roster requires a reason." xml:space="preserve">
+    <value>Changing a published roster requires a reason.</value>
+  </data>
+  <data name="Clashes with assignment" xml:space="preserve">
+    <value>Clashes with assignment</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>Closed</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>Conflict</value>
+  </data>
+  <data name="Conflicts" xml:space="preserve">
+    <value>Conflicts</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Create a period to start scheduling shifts." xml:space="preserve">
+    <value>Create a period to start scheduling shifts.</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Duplicate assignment" xml:space="preserve">
+    <value>Duplicate assignment</value>
+  </data>
+  <data name="Earlier" xml:space="preserve">
+    <value>Earlier</value>
+  </data>
+  <data name="Employee" xml:space="preserve">
+    <value>Employee</value>
+  </data>
+  <data name="Employee id" xml:space="preserve">
+    <value>Employee id</value>
+  </data>
+  <data name="Employee is inactive" xml:space="preserve">
+    <value>Employee is inactive</value>
+  </data>
+  <data name="Employee is not in this company" xml:space="preserve">
+    <value>Employee is not in this company</value>
+  </data>
+  <data name="End date" xml:space="preserve">
+    <value>End date</value>
+  </data>
+  <data name="Ends the next day" xml:space="preserve">
+    <value>Ends the next day</value>
+  </data>
+  <data name="Everyone" xml:space="preserve">
+    <value>Everyone</value>
+  </data>
+  <data name="Falls on approved leave" xml:space="preserve">
+    <value>Falls on approved leave</value>
+  </data>
+  <data name="Hours" xml:space="preserve">
+    <value>Hours</value>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="Leave request" xml:space="preserve">
+    <value>Leave request</value>
+  </data>
+  <data name="My schedule" xml:space="preserve">
+    <value>My schedule</value>
+  </data>
+  <data name="Name (Arabic)" xml:space="preserve">
+    <value>Name (Arabic)</value>
+  </data>
+  <data name="Name (English)" xml:space="preserve">
+    <value>Name (English)</value>
+  </data>
+  <data name="New period" xml:space="preserve">
+    <value>New period</value>
+  </data>
+  <data name="New roster period" xml:space="preserve">
+    <value>New roster period</value>
+  </data>
+  <data name="No published shifts in this period" xml:space="preserve">
+    <value>No published shifts in this period</value>
+  </data>
+  <data name="No roster period yet" xml:space="preserve">
+    <value>No roster period yet</value>
+  </data>
+  <data name="Nobody is scheduled in this period yet." xml:space="preserve">
+    <value>Nobody is scheduled in this period yet.</value>
+  </data>
+  <data name="Note" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Nothing here is resolved automatically. Each conflict names the rows involved so it can be fixed deliberately." xml:space="preserve">
+    <value>Nothing here is resolved automatically. Each conflict names the rows involved so it can be fixed deliberately.</value>
+  </data>
+  <data name="Overlaps another shift" xml:space="preserve">
+    <value>Overlaps another shift</value>
+  </data>
+  <data name="Period default" xml:space="preserve">
+    <value>Period default</value>
+  </data>
+  <data name="Publish roster" xml:space="preserve">
+    <value>Publish roster</value>
+  </data>
+  <data name="Published" xml:space="preserve">
+    <value>Published</value>
+  </data>
+  <data name="Reason for changing a published roster" xml:space="preserve">
+    <value>Reason for changing a published roster</value>
+  </data>
+  <data name="Roster" xml:space="preserve">
+    <value>Roster</value>
+  </data>
+  <data name="Roster grid" xml:space="preserve">
+    <value>Roster grid</value>
+  </data>
+  <data name="Roster period created." xml:space="preserve">
+    <value>Roster period created.</value>
+  </data>
+  <data name="Roster published." xml:space="preserve">
+    <value>Roster published.</value>
+  </data>
+  <data name="Scheduled hours" xml:space="preserve">
+    <value>Scheduled hours</value>
+  </data>
+  <data name="Shift" xml:space="preserve">
+    <value>Shift</value>
+  </data>
+  <data name="Shift assigned." xml:space="preserve">
+    <value>Shift assigned.</value>
+  </data>
+  <data name="Shifts" xml:space="preserve">
+    <value>Shifts</value>
+  </data>
+  <data name="Shifts appear here once your roster is published." xml:space="preserve">
+    <value>Shifts appear here once your roster is published.</value>
+  </data>
+  <data name="Start date" xml:space="preserve">
+    <value>Start date</value>
+  </data>
+  <data name="That branch does not belong to this company." xml:space="preserve">
+    <value>That branch does not belong to this company.</value>
+  </data>
+  <data name="That date falls outside the roster period." xml:space="preserve">
+    <value>That date falls outside the roster period.</value>
+  </data>
+  <data name="That shift does not belong to this company." xml:space="preserve">
+    <value>That shift does not belong to this company.</value>
+  </data>
+  <data name="That shift is no longer active." xml:space="preserve">
+    <value>That shift is no longer active.</value>
+  </data>
+  <data name="The assignment is kept and marked cancelled, and the change is recorded against it." xml:space="preserve">
+    <value>The assignment is kept and marked cancelled, and the change is recorded against it.</value>
+  </data>
+  <data name="The period must end on or after it starts." xml:space="preserve">
+    <value>The period must end on or after it starts.</value>
+  </data>
+  <data name="The shift times are invalid" xml:space="preserve">
+    <value>The shift times are invalid</value>
+  </data>
+  <data name="This period is still a draft, so no reason is required." xml:space="preserve">
+    <value>This period is still a draft, so no reason is required.</value>
+  </data>
+  <data name="This roster cannot be published while conflicts remain unresolved." xml:space="preserve">
+    <value>This roster cannot be published while conflicts remain unresolved.</value>
+  </data>
+  <data name="This roster period is closed." xml:space="preserve">
+    <value>This roster period is closed.</value>
+  </data>
+  <data name="Who is expected to work, where, and under which shift" xml:space="preserve">
+    <value>Who is expected to work, where, and under which shift</value>
+  </data>
+  <data name="Whole company" xml:space="preserve">
+    <value>Whole company</value>
+  </data>
+  <data name="Work date" xml:space="preserve">
+    <value>Work date</value>
+  </data>
+  <data name="You are not allowed to perform this action" xml:space="preserve">
+    <value>You are not allowed to perform this action</value>
+  </data>
+</root>

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence><xsd:element name="value" type="xsd:string" minOccurs="0" /></xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence><xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" /></xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="All branches" xml:space="preserve">
+    <value>كل الفروع</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>تطبيق</value>
+  </data>
+  <data name="Assign" xml:space="preserve">
+    <value>إسناد</value>
+  </data>
+  <data name="Assign shift" xml:space="preserve">
+    <value>إسناد مناوبة</value>
+  </data>
+  <data name="Assignment cancelled." xml:space="preserve">
+    <value>تم إلغاء الإسناد.</value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>الفرع</value>
+  </data>
+  <data name="Branch is not in this company" xml:space="preserve">
+    <value>الفرع لا ينتمي لهذه الشركة</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>إلغاء</value>
+  </data>
+  <data name="Cancel assignment" xml:space="preserve">
+    <value>إلغاء الإسناد</value>
+  </data>
+  <data name="Changing a published roster requires a reason." xml:space="preserve">
+    <value>تعديل جدول منشور يتطلب ذكر سبب.</value>
+  </data>
+  <data name="Clashes with assignment" xml:space="preserve">
+    <value>يتعارض مع الإسناد</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>مسح</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>إغلاق</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>مغلقة</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>تعارض</value>
+  </data>
+  <data name="Conflicts" xml:space="preserve">
+    <value>التعارضات</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>إنشاء</value>
+  </data>
+  <data name="Create a period to start scheduling shifts." xml:space="preserve">
+    <value>أنشئ فترة لبدء جدولة المناوبات.</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>التاريخ</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>التفاصيل</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>مسودة</value>
+  </data>
+  <data name="Duplicate assignment" xml:space="preserve">
+    <value>إسناد مكرر</value>
+  </data>
+  <data name="Earlier" xml:space="preserve">
+    <value>السابق</value>
+  </data>
+  <data name="Employee" xml:space="preserve">
+    <value>الموظف</value>
+  </data>
+  <data name="Employee id" xml:space="preserve">
+    <value>رقم الموظف</value>
+  </data>
+  <data name="Employee is inactive" xml:space="preserve">
+    <value>الموظف غير نشط</value>
+  </data>
+  <data name="Employee is not in this company" xml:space="preserve">
+    <value>الموظف لا ينتمي لهذه الشركة</value>
+  </data>
+  <data name="End date" xml:space="preserve">
+    <value>تاريخ النهاية</value>
+  </data>
+  <data name="Ends the next day" xml:space="preserve">
+    <value>ينتهي في اليوم التالي</value>
+  </data>
+  <data name="Everyone" xml:space="preserve">
+    <value>الجميع</value>
+  </data>
+  <data name="Falls on approved leave" xml:space="preserve">
+    <value>يقع ضمن إجازة معتمدة</value>
+  </data>
+  <data name="Hours" xml:space="preserve">
+    <value>الساعات</value>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>التالي</value>
+  </data>
+  <data name="Leave request" xml:space="preserve">
+    <value>طلب الإجازة</value>
+  </data>
+  <data name="My schedule" xml:space="preserve">
+    <value>جدولي</value>
+  </data>
+  <data name="Name (Arabic)" xml:space="preserve">
+    <value>الاسم (عربي)</value>
+  </data>
+  <data name="Name (English)" xml:space="preserve">
+    <value>الاسم (إنجليزي)</value>
+  </data>
+  <data name="New period" xml:space="preserve">
+    <value>فترة جديدة</value>
+  </data>
+  <data name="New roster period" xml:space="preserve">
+    <value>فترة جدولة جديدة</value>
+  </data>
+  <data name="No published shifts in this period" xml:space="preserve">
+    <value>لا توجد مناوبات منشورة في هذه الفترة</value>
+  </data>
+  <data name="No roster period yet" xml:space="preserve">
+    <value>لا توجد فترة جدولة بعد</value>
+  </data>
+  <data name="Nobody is scheduled in this period yet." xml:space="preserve">
+    <value>لم تتم جدولة أي موظف في هذه الفترة بعد.</value>
+  </data>
+  <data name="Note" xml:space="preserve">
+    <value>ملاحظة</value>
+  </data>
+  <data name="Nothing here is resolved automatically. Each conflict names the rows involved so it can be fixed deliberately." xml:space="preserve">
+    <value>لا يُحل أي تعارض تلقائيًا. كل تعارض يذكر السجلات المعنية ليُعالج بشكل مقصود.</value>
+  </data>
+  <data name="Overlaps another shift" xml:space="preserve">
+    <value>يتداخل مع مناوبة أخرى</value>
+  </data>
+  <data name="Period default" xml:space="preserve">
+    <value>افتراضي الفترة</value>
+  </data>
+  <data name="Publish roster" xml:space="preserve">
+    <value>نشر الجدول</value>
+  </data>
+  <data name="Published" xml:space="preserve">
+    <value>منشور</value>
+  </data>
+  <data name="Reason for changing a published roster" xml:space="preserve">
+    <value>سبب تعديل جدول منشور</value>
+  </data>
+  <data name="Roster" xml:space="preserve">
+    <value>جدول المناوبات</value>
+  </data>
+  <data name="Roster grid" xml:space="preserve">
+    <value>شبكة الجدول</value>
+  </data>
+  <data name="Roster period created." xml:space="preserve">
+    <value>تم إنشاء فترة الجدولة.</value>
+  </data>
+  <data name="Roster published." xml:space="preserve">
+    <value>تم نشر الجدول.</value>
+  </data>
+  <data name="Scheduled hours" xml:space="preserve">
+    <value>الساعات المجدولة</value>
+  </data>
+  <data name="Shift" xml:space="preserve">
+    <value>المناوبة</value>
+  </data>
+  <data name="Shift assigned." xml:space="preserve">
+    <value>تم إسناد المناوبة.</value>
+  </data>
+  <data name="Shifts" xml:space="preserve">
+    <value>المناوبات</value>
+  </data>
+  <data name="Shifts appear here once your roster is published." xml:space="preserve">
+    <value>تظهر المناوبات هنا بعد نشر جدولك.</value>
+  </data>
+  <data name="Start date" xml:space="preserve">
+    <value>تاريخ البداية</value>
+  </data>
+  <data name="That branch does not belong to this company." xml:space="preserve">
+    <value>هذا الفرع لا ينتمي لهذه الشركة.</value>
+  </data>
+  <data name="That date falls outside the roster period." xml:space="preserve">
+    <value>هذا التاريخ خارج فترة الجدولة.</value>
+  </data>
+  <data name="That shift does not belong to this company." xml:space="preserve">
+    <value>هذه المناوبة لا تنتمي لهذه الشركة.</value>
+  </data>
+  <data name="That shift is no longer active." xml:space="preserve">
+    <value>هذه المناوبة لم تعد نشطة.</value>
+  </data>
+  <data name="The assignment is kept and marked cancelled, and the change is recorded against it." xml:space="preserve">
+    <value>يُحتفظ بالإسناد ويُعلَّم كملغى، ويُسجَّل التغيير عليه.</value>
+  </data>
+  <data name="The period must end on or after it starts." xml:space="preserve">
+    <value>يجب أن تنتهي الفترة في تاريخ بدايتها أو بعده.</value>
+  </data>
+  <data name="The shift times are invalid" xml:space="preserve">
+    <value>أوقات المناوبة غير صالحة</value>
+  </data>
+  <data name="This period is still a draft, so no reason is required." xml:space="preserve">
+    <value>هذه الفترة ما زالت مسودة، فلا حاجة لذكر سبب.</value>
+  </data>
+  <data name="This roster cannot be published while conflicts remain unresolved." xml:space="preserve">
+    <value>لا يمكن نشر هذا الجدول ما دامت هناك تعارضات دون حل.</value>
+  </data>
+  <data name="This roster period is closed." xml:space="preserve">
+    <value>فترة الجدولة هذه مغلقة.</value>
+  </data>
+  <data name="Who is expected to work, where, and under which shift" xml:space="preserve">
+    <value>من المتوقع أن يعمل، وأين، وتحت أي مناوبة</value>
+  </data>
+  <data name="Whole company" xml:space="preserve">
+    <value>الشركة بالكامل</value>
+  </data>
+  <data name="Work date" xml:space="preserve">
+    <value>تاريخ العمل</value>
+  </data>
+  <data name="You are not allowed to perform this action" xml:space="preserve">
+    <value>لا تملك صلاحية تنفيذ هذا الإجراء</value>
+  </data>
+</root>

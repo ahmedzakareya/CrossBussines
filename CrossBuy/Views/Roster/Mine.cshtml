@@ -1,0 +1,121 @@
+@using CrossBuy.Models.Context.Hr
+@model IReadOnlyList<CrossBuy.Models.Context.Hr.RosterAssignment>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    var from = (DateTime)ViewBag.From;
+    var to = (DateTime)ViewBag.To;
+    var today = (DateTime)ViewBag.Today;
+    ViewData["Title"] = Localizer["My schedule"].Value;
+
+    string ShiftName(WorkShift? s) => s == null ? "" :
+        ((isAr ? s.NameAr : s.NameEn) is { Length: > 0 } n ? n : s.Code);
+
+    // FOUR WEEKS, drawn as weeks. An employee reads their roster to answer "when am I next on" and
+    // "am I free on the 14th" — questions a calendar shape answers and a sorted list does not.
+    var weeks = Enumerable.Range(0, 4)
+        .Select(w => Enumerable.Range(0, 7).Select(d => from.AddDays(w * 7 + d)).ToList())
+        .ToList();
+
+    var byDay = Model.GroupBy(a => a.WorkDate.Date).ToDictionary(g => g.Key, g => g.ToList());
+    var totalHours = Model.Sum(a => a.PlannedMinutes) / 60.0;
+}
+
+<div class="d-flex flex-column flex-column-fluid">
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+        <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
+            <div class="page-title d-flex flex-column justify-content-center gap-1">
+                <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["My schedule"]</h1>
+                <span class="text-gray-500 fs-7">
+                    @from.ToString("yyyy-MM-dd") … @to.ToString("yyyy-MM-dd")
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-center">
+                    <div class="fs-4 fw-bold text-gray-900">@totalHours.ToString("0.#")</div>
+                    <div class="text-gray-500 fs-8">@Localizer["Scheduled hours"]</div>
+                </div>
+                <a asp-action="Mine" asp-route-from="@from.AddDays(-28).ToString("yyyy-MM-dd")"
+                   class="btn btn-sm btn-icon btn-light" title="@Localizer["Earlier"]">
+                    <i class="ki-outline ki-left fs-4"></i>
+                </a>
+                <a asp-action="Mine" asp-route-from="@from.AddDays(28).ToString("yyyy-MM-dd")"
+                   class="btn btn-sm btn-icon btn-light" title="@Localizer["Later"]">
+                    <i class="ki-outline ki-right fs-4"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="kt_app_content" class="app-content flex-column-fluid">
+        <div class="app-container container-fluid">
+
+            @if (Model.Count == 0)
+            {
+                <div class="card">
+                    <div class="card-body text-center py-15">
+                        <i class="ki-outline ki-calendar-tick fs-3x text-gray-400 mb-4 d-block"></i>
+                        <div class="fs-5 fw-semibold text-gray-800 mb-2">@Localizer["No published shifts in this period"]</div>
+                        @* A DRAFT ROSTER IS NOT MENTIONED HERE, deliberately. Only published periods
+                           reach this screen, and hinting that an unpublished one exists would leak a
+                           working document the employee is not entitled to plan around. *@
+                        <div class="text-gray-500 fs-7">@Localizer["Shifts appear here once your roster is published."]</div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle mb-0" style="min-width:700px;">
+                                <thead>
+                                    <tr class="fw-semibold text-gray-500 fs-8 text-center">
+                                        @foreach (var d in weeks[0])
+                                        {
+                                            <th style="width:14.28%;">@d.ToString("ddd")</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var week in weeks)
+                                    {
+                                        <tr>
+                                            @foreach (var day in week)
+                                            {
+                                                var isToday = day.Date == today.Date;
+                                                byDay.TryGetValue(day.Date, out var items);
+                                                <td class="align-top p-2 @(isToday ? "bg-light-primary" : "")" style="height:92px;">
+                                                    <div class="fs-8 mb-1 @(isToday ? "text-primary fw-bold" : "text-gray-500")">
+                                                        @day.Day
+                                                    </div>
+                                                    @if (items != null)
+                                                    {
+                                                        foreach (var a in items)
+                                                        {
+                                                            <div class="badge badge-light-primary d-block mb-1 px-2 py-1 text-start">
+                                                                <div class="fw-bold fs-8">@ShiftName(a.Shift)</div>
+                                                                <div class="fs-9 opacity-75">
+                                                                    @a.PlannedStart.ToString("HH:mm")–@a.PlannedEnd.ToString("HH:mm")
+                                                                    @if (a.PlannedStart.Date != a.PlannedEnd.Date)
+                                                                    {
+                                                                        <span class="ms-1" title="@Localizer["Ends the next day"]">+1</span>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

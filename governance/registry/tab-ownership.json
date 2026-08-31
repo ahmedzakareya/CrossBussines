@@ -40,7 +40,9 @@
         "CrossBuy.Tests/HrBootstrapPolicyTests.cs",
         "CrossBuy.Tests/DocumentAccessFoundationTests.cs",
         "CrossBuy.Tests/OnboardingLocalizationTests.cs",
-        "CrossBuy.Tests/DocumentSubmitContractTests.cs"
+        "CrossBuy.Tests/DocumentSubmitContractTests.cs",
+        "CrossBuy.Tests/RosterLocalizationTests.cs",
+        "docs/handoff/**"
       ],
       "mayNotTouch": "Reporting, Communication, Construction trees",
       "status": "Active - B6 closed"
@@ -70,7 +72,11 @@
         "CrossBuy/BL/Hr/EmployeeOnboardingService.cs",
         "CrossBuy/Controllers/EmployeeOnboardingController.cs",
         "CrossBuy/Models/Context/Hr/EmployeeOnboarding.cs",
-        "CrossBuy/Views/EmployeeOnboarding/**"
+        "CrossBuy/Views/EmployeeOnboarding/**",
+        "CrossBuy/BL/Hr/RosterService.cs",
+        "CrossBuy/Controllers/RosterController.cs",
+        "CrossBuy/Models/Context/Hr/Roster.cs",
+        "CrossBuy/Views/Roster/**"
       ],
       "mayNotTouch": "Security, Communication, Construction trees",
       "status": "Active - foundation complete, activation in R2"
