@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence><xsd:element name="value" type="xsd:string" minOccurs="0" /></xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence><xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" /></xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Actual" xml:space="preserve">
+    <value>الفعلي</value>
+  </data>
+  <data name="Approved leave" xml:space="preserve">
+    <value>إجازة معتمدة</value>
+  </data>
+  <data name="Earlier" xml:space="preserve">
+    <value>السابق</value>
+  </data>
+  <data name="Early" xml:space="preserve">
+    <value>انصراف مبكر</value>
+  </data>
+  <data name="Ends the next day" xml:space="preserve">
+    <value>ينتهي في اليوم التالي</value>
+  </data>
+  <data name="Late" xml:space="preserve">
+    <value>تأخير</value>
+  </data>
+  <data name="Later" xml:space="preserve">
+    <value>التالي</value>
+  </data>
+  <data name="Measured against your published roster" xml:space="preserve">
+    <value>مُحتسب مقابل جدول المناوبات المنشور</value>
+  </data>
+  <data name="Measured against your standard working hours" xml:space="preserve">
+    <value>مُحتسب مقابل ساعات العمل المعتادة</value>
+  </data>
+  <data name="My schedule" xml:space="preserve">
+    <value>جدولي</value>
+  </data>
+  <data name="No attendance recorded" xml:space="preserve">
+    <value>لا يوجد حضور مسجّل</value>
+  </data>
+  <data name="No published shifts in this period" xml:space="preserve">
+    <value>لا توجد مناوبات منشورة في هذه الفترة</value>
+  </data>
+  <data name="Overtime candidate — not a payroll decision" xml:space="preserve">
+    <value>دقائق إضافية مرشحة — ليست قرار رواتب</value>
+  </data>
+  <data name="Scheduled hours" xml:space="preserve">
+    <value>الساعات المجدولة</value>
+  </data>
+  <data name="Shifts appear here once your roster is published." xml:space="preserve">
+    <value>تظهر المناوبات هنا بعد نشر جدولك.</value>
+  </data>
+  <data name="m" xml:space="preserve">
+    <value>د</value>
+  </data>
+</root>

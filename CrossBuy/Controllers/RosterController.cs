@@ -106,6 +106,15 @@ namespace CrossBuy.Controllers
             ViewBag.From = start;
             ViewBag.To = end;
             ViewBag.Today = _clock.Today;
+
+            // HR-B3: the same window, MEASURED. PlannedVsActualAsync gates on the caller's own
+            // identity exactly as MyScheduleAsync does; the employee id comes from BusinessContext,
+            // so there is no parameter here a request could use to name somebody else.
+            var ctx = await _contexts.TryGetCurrentAsync(ct);
+            ViewBag.Actuals = ctx?.EmployeeId is int me
+                ? await _roster.PlannedVsActualAsync(start, end, me, ct)
+                : (IReadOnlyList<CrossBuy.BL.Hr.PlannedVsActual>)Array.Empty<CrossBuy.BL.Hr.PlannedVsActual>();
+
             return View(await _roster.MyScheduleAsync(start, end, ct));
         }
 

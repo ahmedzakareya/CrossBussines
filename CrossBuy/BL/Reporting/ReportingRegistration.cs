@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 
 namespace CrossBuy.BL.Reporting
 {
@@ -167,6 +168,17 @@ namespace CrossBuy.BL.Reporting
             // HR Product Batch 2 — roster. Two data sources, no new engine and no second store.
             services.AddScoped<IReportDataSource, RosterScheduleDataSource>();
             services.AddScoped<IReportDataSource, RosterPlannedVsActualDataSource>();
+
+            // HR-B3: the planned-vs-actual data source asks the canonical attendance authority what
+            // an employee was expected to work, rather than carrying a second copy of the formula.
+            // That makes the resolver a dependency of REPORTING, so reporting must be able to supply
+            // it — Program.cs also registers it, and a module whose graph only stands up because the
+            // host happened to register something first is a graph that breaks the moment anyone
+            // builds it in isolation. TryAdd so the host's registration still wins if present.
+            //
+            // The DI validation test caught exactly this, which is why it exists.
+            services.TryAddScoped<CrossBuy.BL.Hr.IAttendanceBaselineResolver,
+                                  CrossBuy.BL.Hr.AttendanceBaselineResolver>();
 
             services.AddScoped<IReportDataSourceRegistry, ReportDataSourceRegistry>();
 

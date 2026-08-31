@@ -29,7 +29,9 @@ namespace CrossBuy.BL
 	{
 		private readonly CrossDbContext _db;
 		private readonly IHolidayService _holidays;
-		public AttendanceService(CrossDbContext db, IHolidayService holidays) { _db = db; _holidays = holidays; }
+		private readonly CrossBuy.BL.Hr.IAttendanceBaselineResolver _baselines;
+		public AttendanceService(CrossDbContext db, IHolidayService holidays, CrossBuy.BL.Hr.IAttendanceBaselineResolver baselines)
+		{ _db = db; _holidays = holidays; _baselines = baselines; }
 
 		public async Task<AttendancePolicies?> PolicyForAsync(int employeeId)
 		{
@@ -65,29 +67,29 @@ namespace CrossBuy.BL
 			bool isRest = policy != null && !IsWorkDay(policy, day);
 			bool onLeave = await OnApprovedLeaveAsync(employeeId, day);
 
-			int late = 0, early = 0, ot = 0; decimal worked = 0; string status;
-			if (isHoliday) status = "Holiday";
-			else if (isRest) status = "RestDay";
-			else if (onLeave) status = "Leave";
-			else if (checkIn == null) status = "Absent";
-			else
-			{
-				if (policy != null)
-				{
-					var grace = TimeSpan.FromMinutes(policy.AllowedGraceMinutes);
-					var lateSpan = checkIn.Value.TimeOfDay - (policy.WorkStartTime + grace);
-					late = lateSpan.TotalMinutes > 0 ? (int)Math.Round(lateSpan.TotalMinutes) : 0;
-					if (checkOut != null)
-					{
-						var otSpan = checkOut.Value.TimeOfDay - policy.WorkEndTime;
-						ot = otSpan.TotalMinutes > 0 ? (int)Math.Round(otSpan.TotalMinutes) : 0;
-						var earlySpan = policy.WorkEndTime - checkOut.Value.TimeOfDay;
-						early = earlySpan.TotalMinutes > 0 ? (int)Math.Round(earlySpan.TotalMinutes) : 0;
-					}
-				}
-				if (checkOut != null) worked = Math.Round((decimal)(checkOut.Value - checkIn.Value).TotalHours, 2);
-				status = late > 0 ? "Late" : "Present";
-			}
+			// HR-B3: the baseline and the arithmetic are no longer decided here.
+			//
+			// WHAT THIS REPLACES. The previous block computed lateness as
+			//     checkIn.TimeOfDay - (policy.WorkStartTime + grace)
+			// which consulted the POLICY even when a published roster said otherwise, and compared
+			// TIMES OF DAY rather than instants. An employee correctly rostered 22:00-06:00 was
+			// recorded as fourteen hours late and eleven hours early, and those numbers then reached
+			// the monthly summary as fact.
+			//
+			// The resolver answers what the employee was actually expected to work (published roster
+			// first, attendance policy otherwise) and AttendanceMath does the subtraction. Reporting
+			// and planned-vs-actual call the same two, so there is exactly one formula in the system.
+			//
+			// Grace, the holiday/rest/leave precedence and the Status vocabulary are all unchanged —
+			// only the baseline they are applied to is corrected.
+			var baseline = await _baselines.ResolveAsync(companyId, employeeId, day);
+			var computed = CrossBuy.BL.Hr.AttendanceMath.Compute(
+				baseline, checkIn, checkOut, isHoliday, isRest, onLeave);
+
+			int late = computed.LateMinutes, early = computed.EarlyLeaveMinutes;
+			int ot = computed.OvertimeCandidateMinutes;
+			decimal worked = computed.WorkedHours;
+			string status = computed.Status;
 
 			var rec = await _db.AttendanceRecords.FirstOrDefaultAsync(r => r.CompanyID == companyId && r.EmployeeID == employeeId && r.WorkDate == day);
 			if (rec == null)

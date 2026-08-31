@@ -108,7 +108,11 @@ namespace CrossBuy.Tests.Hr
                 NullLogger<HrAccessService>.Instance);
 
             var accessor = ctx == null ? StubContextAccessor.Unresolved() : new StubContextAccessor(ctx);
-            return new RosterService(host.Db, accessor, hr, new FixedClock());
+            // HR-B3: the roster service now consults the canonical attendance baseline resolver for
+            // planned-vs-actual, so it takes one. The REAL resolver, not a stub — these tests assert
+            // on the numbers it produces, and a stub would only prove the stub.
+            return new RosterService(host.Db, accessor, hr, new FixedClock(),
+                new AttendanceBaselineResolver(host.Db));
         }
 
         private static int AddShift(PlatformTestHost host, int companyId, string code,

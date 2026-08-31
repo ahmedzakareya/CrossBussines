@@ -19,6 +19,13 @@
         .ToList();
 
     var byDay = Model.GroupBy(a => a.WorkDate.Date).ToDictionary(g => g.Key, g => g.ToList());
+
+    // HR-B3: planned vs actual for the same window, from the canonical attendance authority. The
+    // question an employee actually opens this page with is "was I marked late, and against what" —
+    // and until this batch the answer was measured against the wrong baseline for anyone on nights.
+    var actuals = (ViewBag.Actuals as IReadOnlyList<CrossBuy.BL.Hr.PlannedVsActual>)
+                  ?? (IReadOnlyList<CrossBuy.BL.Hr.PlannedVsActual>)Array.Empty<CrossBuy.BL.Hr.PlannedVsActual>();
+    var actualByDay = actuals.GroupBy(a => a.WorkDate.Date).ToDictionary(g => g.Key, g => g.First());
     var totalHours = Model.Sum(a => a.PlannedMinutes) / 60.0;
 }
 
@@ -104,6 +111,63 @@
                                                                     }
                                                                 </div>
                                                             </div>
+                                                        }
+
+                                                        @* WHAT ACTUALLY HAPPENED, directly under what was planned.
+                                                           Rendered only when there is a clock reading or a real
+                                                           finding: an ordinary day worked on time adds a line that
+                                                           says nothing, and a grid full of those hides the days that
+                                                           matter. *@
+                                                        @if (actualByDay.TryGetValue(day.Date, out var act))
+                                                        {
+                                                            if (act.OnApprovedLeave)
+                                                            {
+                                                                <div class="badge badge-light-info d-block px-2 py-1 text-start fs-9">
+                                                                    @Localizer["Approved leave"]
+                                                                </div>
+                                                            }
+                                                            else if (act.IsAbsent)
+                                                            {
+                                                                <div class="badge badge-light-danger d-block px-2 py-1 text-start fs-9">
+                                                                    @Localizer["No attendance recorded"]
+                                                                </div>
+                                                            }
+                                                            else if (act.ActualIn.HasValue)
+                                                            {
+                                                                @* WHICH BASELINE judged this day. Carried as a tooltip
+                                                                   rather than a visible label: it matters when somebody
+                                                                   disputes a late mark, and clutters the grid otherwise. *@
+                                                                <div class="text-gray-700 fs-9 px-1"
+                                                                     title="@(act.BaselineSource == CrossBuy.BL.Hr.AttendanceBaselineSource.Roster
+                                                                              ? Localizer["Measured against your published roster"].Value
+                                                                              : Localizer["Measured against your standard working hours"].Value)">
+                                                                    <div>
+                                                                        @Localizer["Actual"]
+                                                                        @act.ActualIn.Value.ToString("HH:mm")@(act.ActualOut.HasValue ? "–" + act.ActualOut.Value.ToString("HH:mm") : "")
+                                                                        @if (act.ActualOut.HasValue && act.ActualIn.Value.Date != act.ActualOut.Value.Date)
+                                                                        {
+                                                                            <span title="@Localizer["Ends the next day"]">+1</span>
+                                                                        }
+                                                                    </div>
+                                                                    @if (act.LateMinutes > 0)
+                                                                    {
+                                                                        <div class="text-danger">@Localizer["Late"] @act.LateMinutes@Localizer["m"]</div>
+                                                                    }
+                                                                    @if (act.EarlyDepartureMinutes > 0)
+                                                                    {
+                                                                        <div class="text-danger">@Localizer["Early"] @act.EarlyDepartureMinutes@Localizer["m"]</div>
+                                                                    }
+                                                                    @if (act.OvertimeCandidateMinutes > 0)
+                                                                    {
+                                                                        @* A CANDIDATE, and the wording says so. Whether
+                                                                           these minutes are paid is a payroll decision
+                                                                           this screen deliberately does not make. *@
+                                                                        <div class="text-gray-600" title="@Localizer["Overtime candidate — not a payroll decision"]">
+                                                                            +@act.OvertimeCandidateMinutes@Localizer["m"]
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            }
                                                         }
                                                     }
                                                 </td>

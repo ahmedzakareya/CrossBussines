@@ -173,6 +173,11 @@ builder.Services.AddScoped<CrossBuy.BL.Hr.IEmployeeOnboardingService, CrossBuy.B
 builder.Services.AddScoped<CrossBuy.BL.Hr.IRosterClock, CrossBuy.BL.Hr.SystemRosterClock>();
 builder.Services.AddScoped<CrossBuy.BL.Hr.IRosterService, CrossBuy.BL.Hr.RosterService>();
 
+// HR Product Batch 3 — the canonical attendance baseline. AttendanceService now depends on it: it is
+// what decides whether a published roster or the attendance policy defines an employee's planned
+// window, and it is deliberately the only thing in the system that decides that.
+builder.Services.AddScoped<CrossBuy.BL.Hr.IAttendanceBaselineResolver, CrossBuy.BL.Hr.AttendanceBaselineResolver>();
+
 // ---- CrossBusiness Workspace (R1–R3) ----
 //
 // ONE line, same reasoning as the Reporting block above: this file is edited by several tabs at once and a

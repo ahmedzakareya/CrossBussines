@@ -173,6 +173,14 @@ namespace CrossBuy.BL.Reporting
                 },
                 new ReportDatasetField
                 {
+                    // WHICH AUTHORITY defined the planned window — Roster, Policy or None. Without it
+                    // "why is this person 40 minutes late" has no answer anybody can check.
+                    Key = "BaselineSource", TitleAr = "مصدر الخطة", TitleEn = "Baseline source",
+                    Groupable = true, WidthMm = 26,
+                    SupportedAggregates = new[] { ReportAggregate.Count },
+                },
+                new ReportDatasetField
+                {
                     Key = "PlannedHours", TitleAr = "الساعات المخططة", TitleEn = "Planned hours",
                     Type = ReportFieldType.Decimal, Format = "0.00", WidthMm = 26,
                     SupportedAggregates = new[] { ReportAggregate.Sum, ReportAggregate.Average },
@@ -207,6 +215,13 @@ namespace CrossBuy.BL.Reporting
                 {
                     Key = "IsAbsent", TitleAr = "غياب", TitleEn = "Absent",
                     Type = ReportFieldType.Boolean, Groupable = true, WidthMm = 20,
+                },
+                new ReportDatasetField
+                {
+                    // The reason an absence is NOT unexplained. Reported beside IsAbsent rather than
+                    // folded into it, so "away with permission" and "did not appear" stay distinct.
+                    Key = "OnApprovedLeave", TitleAr = "إجازة معتمدة", TitleEn = "Approved leave",
+                    Type = ReportFieldType.Boolean, Groupable = true, WidthMm = 24,
                 },
                 new ReportDatasetField
                 {
@@ -317,7 +332,10 @@ namespace CrossBuy.BL.Reporting
     public sealed class RosterPlannedVsActualDataSource : IReportDataSource
     {
         private readonly CrossDbContext _db;
-        public RosterPlannedVsActualDataSource(CrossDbContext db) { _db = db; }
+        private readonly CrossBuy.BL.Hr.IAttendanceBaselineResolver _baselines;
+        public RosterPlannedVsActualDataSource(CrossDbContext db,
+            CrossBuy.BL.Hr.IAttendanceBaselineResolver baselines)
+        { _db = db; _baselines = baselines; }
 
         public string Key => RosterDatasetCodes.PlannedVsActual;
 
@@ -334,59 +352,84 @@ namespace CrossBuy.BL.Reporting
             var to = query.Parameters.GetDate("ToDate") ?? DateTime.Today;
             var employeeId = query.Parameters.GetInt("EmployeeId");
 
-            var planned = await _db.Set<RosterAssignment>().AsNoTracking()
-                .Where(a => a.CompanyID == context.CompanyId
-                         && a.Status == RosterAssignmentStatus.Planned
-                         && a.Period!.Status == RosterPeriodStatus.Published
-                         && a.WorkDate >= from.Date && a.WorkDate <= to.Date
-                         && (employeeId == null || a.EmployeeID == employeeId.Value))
-                .Select(a => new
-                {
-                    a.EmployeeID, a.WorkDate, a.PlannedStart, a.PlannedEnd,
-                    NameAr = a.Employee!.FullName, NameEn = a.Employee.FullNameEn,
-                })
-                .ToListAsync(cancellationToken);
+            // HR-B3: NO FORMULA LIVES HERE ANY MORE.
+            //
+            // This data source previously re-derived lateness, early leave, overtime and absence from
+            // planned and actual instants — a second implementation of arithmetic AttendanceService
+            // also had, and the two had already drifted: this one ignored the employer's grace period
+            // and never consulted the attendance policy when no roster existed. A report that
+            // disagrees with the screen it reports on is worse than no report.
+            //
+            // It now asks IAttendanceBaselineResolver what the employee was expected to work and
+            // AttendanceMath what that means against the clock — the same two the recording path and
+            // the roster screen use. The rows below are a projection, not a calculation.
+            var employeeIds = await EmployeesInScopeAsync(context.CompanyId, from, to, employeeId, cancellationToken);
+            if (employeeIds.Count == 0) return builder.Build(totalRowCount: 0);
 
-            // The join key is (CompanyID, EmployeeID, WorkDate) — the natural key both sides already
-            // carry, which is why nothing was added to AttendanceRecord and nothing is written to it.
+            var baselines = await _baselines.ResolveManyAsync(
+                context.CompanyId, employeeIds, from, to, cancellationToken);
+
             var actual = await _db.AttendanceRecords.AsNoTracking()
                 .Where(r => r.CompanyID == context.CompanyId
                          && r.WorkDate >= from.Date && r.WorkDate <= to.Date
-                         && (employeeId == null || r.EmployeeID == employeeId.Value))
+                         && employeeIds.Contains(r.EmployeeID))
                 .Select(r => new { r.EmployeeID, r.WorkDate, r.CheckIn, r.CheckOut })
                 .ToListAsync(cancellationToken);
-
-            bool isAr = System.Globalization.CultureInfo.CurrentUICulture
-                .TwoLetterISOLanguageName == "ar";
 
             var actualBy = actual
                 .GroupBy(r => (r.EmployeeID, r.WorkDate.Date))
                 .ToDictionary(g => g.Key, g => g.First());
 
-            var emitted = new List<object?[]>();
+            // Approved leave, read from HR Leave and nowhere else (Status == 1 is approved).
+            var leave = await _db.LeaveRequests.AsNoTracking()
+                .Where(l => employeeIds.Contains(l.EmployeeID)
+                         && l.Status == 1
+                         && l.StartDate.Date <= to.Date && l.EndDate.Date >= from.Date)
+                .Select(l => new { l.EmployeeID, l.StartDate, l.EndDate })
+                .ToListAsync(cancellationToken);
 
-            foreach (var p in planned)
-            {
-                actualBy.TryGetValue((p.EmployeeID, p.WorkDate.Date), out var act);
-                emitted.Add(Row(
-                    p.WorkDate, (isAr ? p.NameAr : p.NameEn) ?? p.NameAr, p.EmployeeID,
-                    p.PlannedStart, p.PlannedEnd, act?.CheckIn, act?.CheckOut, unrostered: false));
-            }
+            bool isAr = System.Globalization.CultureInfo.CurrentUICulture
+                .TwoLetterISOLanguageName == "ar";
 
-            // Attendance with no plan: reported with zero planned hours and flagged, never dropped.
-            var plannedKeys = planned.Select(p => (p.EmployeeID, p.WorkDate.Date)).ToHashSet();
             var names = await _db.Employee.AsNoTracking()
-                .Where(e => e.EmpCompanyID == context.CompanyId)
+                .Where(e => e.EmpCompanyID == context.CompanyId && employeeIds.Contains(e.ID))
                 .Select(e => new { e.ID, e.FullName, e.FullNameEn })
                 .ToDictionaryAsync(e => e.ID, cancellationToken);
 
-            foreach (var kv in actualBy)
+            var emitted = new List<object?[]>();
+
+            foreach (var kv in baselines)
             {
-                if (plannedKeys.Contains(kv.Key)) continue;
-                names.TryGetValue(kv.Key.Item1, out var who);
-                emitted.Add(Row(
-                    kv.Key.Item2, (isAr ? who?.FullName : who?.FullNameEn) ?? who?.FullName,
-                    kv.Key.Item1, null, null, kv.Value.CheckIn, kv.Value.CheckOut, unrostered: true));
+                var (empId, day) = kv.Key;
+                var baseline = kv.Value;
+                actualBy.TryGetValue((empId, day), out var act);
+
+                // Neither a plan nor a clock-in is not a row — otherwise every employee's every
+                // weekend fills the report.
+                if (!baseline.HasPlan && act == null) continue;
+
+                bool onLeave = leave.Any(l => l.EmployeeID == empId
+                                           && l.StartDate.Date <= day && l.EndDate.Date >= day);
+
+                var c = CrossBuy.BL.Hr.AttendanceMath.Compute(
+                    baseline, act?.CheckIn, act?.CheckOut, onApprovedLeave: onLeave);
+
+                names.TryGetValue(empId, out var who);
+                emitted.Add(new object?[]
+                {
+                    day,
+                    (isAr ? who?.FullName : who?.FullNameEn) ?? who?.FullName,
+                    empId,
+                    c.Source,
+                    Math.Round((c.ExpectedMinutes ?? 0) / 60m, 2),
+                    Math.Round(c.WorkedMinutes / 60m, 2),
+                    c.LateMinutes,
+                    c.EarlyLeaveMinutes,
+                    c.OvertimeCandidateMinutes,
+                    c.IsAbsent,
+                    c.OnApprovedLeave,
+                    baseline.Source == CrossBuy.BL.Hr.AttendanceBaselineSource.Roster ? false : act != null && !baseline.HasPlan,
+                });
             }
 
             int cap = query.MaxRows > 0 ? query.MaxRows : HrRosterDatasets.MaxRows;
@@ -402,34 +445,26 @@ namespace CrossBuy.BL.Reporting
             return builder.Build(totalRowCount: total);
         }
 
-        private static object?[] Row(DateTime workDate, string? name, int employeeId,
-            DateTime? plannedStart, DateTime? plannedEnd, DateTime? actualIn, DateTime? actualOut,
-            bool unrostered)
+        // Everyone rostered in the window, plus everyone with attendance in it. The union is what
+        // makes both an absence and an unrostered day visible.
+        private async Task<List<int>> EmployeesInScopeAsync(int companyId, DateTime from, DateTime to,
+            int? employeeId, CancellationToken ct)
         {
-            int plannedMinutes = plannedStart.HasValue && plannedEnd.HasValue
-                ? (int)(plannedEnd.Value - plannedStart.Value).TotalMinutes : 0;
-            int actualMinutes = actualIn.HasValue && actualOut.HasValue
-                ? (int)(actualOut.Value - actualIn.Value).TotalMinutes : 0;
+            var rostered = await _db.Set<RosterAssignment>().AsNoTracking()
+                .Where(a => a.CompanyID == companyId
+                         && a.Status == RosterAssignmentStatus.Planned
+                         && a.Period!.Status == RosterPeriodStatus.Published
+                         && a.WorkDate >= from.Date && a.WorkDate <= to.Date
+                         && (employeeId == null || a.EmployeeID == employeeId.Value))
+                .Select(a => a.EmployeeID).Distinct().ToListAsync(ct);
 
-            int late = plannedStart.HasValue && actualIn.HasValue && actualIn.Value > plannedStart.Value
-                ? (int)(actualIn.Value - plannedStart.Value).TotalMinutes : 0;
-            int early = plannedEnd.HasValue && actualOut.HasValue && actualOut.Value < plannedEnd.Value
-                ? (int)(plannedEnd.Value - actualOut.Value).TotalMinutes : 0;
-            int overtime = plannedEnd.HasValue && actualOut.HasValue && actualOut.Value > plannedEnd.Value
-                ? (int)(actualOut.Value - plannedEnd.Value).TotalMinutes : 0;
+            var attended = await _db.AttendanceRecords.AsNoTracking()
+                .Where(r => r.CompanyID == companyId
+                         && r.WorkDate >= from.Date && r.WorkDate <= to.Date
+                         && (employeeId == null || r.EmployeeID == employeeId.Value))
+                .Select(r => r.EmployeeID).Distinct().ToListAsync(ct);
 
-            // Absent requires a PLAN. Somebody who was never rostered cannot be absent from a shift
-            // that was never promised — which is why IsUnrostered is a separate column rather than a
-            // second meaning loaded onto this one.
-            bool absent = plannedStart.HasValue && actualIn == null;
-
-            return new object?[]
-            {
-                workDate, name, employeeId,
-                Math.Round(plannedMinutes / 60m, 2),
-                Math.Round(actualMinutes / 60m, 2),
-                late, early, overtime, absent, unrostered,
-            };
+            return rostered.Union(attended).ToList();
         }
     }
 }
