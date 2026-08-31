@@ -38,7 +38,11 @@ namespace CrossBuy.Tests.SqlServer
 	{
 		private const int Co = 1;
 		private const int Foreign = 2;
-		private static readonly DateTime D = new(2026, 8, 30);
+		/// The business date is TODAY, never a literal. The code under test records at "now"
+		/// (PosPreparationService dates its movement DateTime.Today, PayAsync stamps ClosedAt = UtcNow),
+		/// so a pinned date stops matching the day after it is written — which is exactly how four of
+		/// these tests rotted. The fiscal period below is derived from it for the same reason.
+		private static readonly DateTime D = DateTime.Today;
 
 		private readonly UatSqlProbeFixture _sql;
 		private readonly ITestOutputHelper _out;
@@ -125,9 +129,9 @@ namespace CrossBuy.Tests.SqlServer
 
 			foreach (var c in new[] { Co, Foreign })
 			{
-				var fy = new FiscalYear { CompanyID = c, Name = "2026", StartDate = new DateTime(2026, 1, 1), EndDate = new DateTime(2026, 12, 31), Status = "Open" };
+				var fy = new FiscalYear { CompanyID = c, Name = D.Year.ToString(), StartDate = new DateTime(D.Year, 1, 1), EndDate = new DateTime(D.Year, 12, 31), Status = "Open" };
 				db.FiscalYears.Add(fy); await db.SaveChangesAsync();
-				db.FiscalPeriods.Add(new FiscalPeriod { FiscalYearId = fy.ID, PeriodNo = 8, StartDate = new DateTime(2026, 8, 1), EndDate = new DateTime(2026, 8, 31), Status = "Open" });
+				db.FiscalPeriods.Add(new FiscalPeriod { FiscalYearId = fy.ID, PeriodNo = (byte)D.Month, StartDate = new DateTime(D.Year, D.Month, 1), EndDate = new DateTime(D.Year, D.Month, DateTime.DaysInMonth(D.Year, D.Month)), Status = "Open" });
 			}
 			await db.SaveChangesAsync();
 
@@ -242,7 +246,7 @@ namespace CrossBuy.Tests.SqlServer
 			await SellPizzaAsync(sp, _brDispatch, 1m);
 
 			var v = await sp.GetRequiredService<IRestaurantInventoryIntelligenceService>()
-				.VarianceAsync(Co, _brDispatch, D, D);
+				.VarianceAsync(Co, _brDispatch, D.AddDays(-1), D.AddDays(1));
 			Assert.True(v.Ok, v.Error);
 			_out.WriteLine($"[V] {v.Equation}");
 			foreach (var r in v.Rows)
@@ -272,7 +276,7 @@ namespace CrossBuy.Tests.SqlServer
 			await SellPizzaAsync(sp, _brDispatch, 1m);                        // sold
 			await SellPizzaAsync(sp, _brDispatch, 1m, cancelAfterPrep: true); // cooked, then cancelled
 
-			var v = await sp.GetRequiredService<IRestaurantInventoryIntelligenceService>().VarianceAsync(Co, _brDispatch, D, D);
+			var v = await sp.GetRequiredService<IRestaurantInventoryIntelligenceService>().VarianceAsync(Co, _brDispatch, D.AddDays(-1), D.AddDays(1));
 			Assert.True(v.Ok, v.Error);
 			var flour = Row(v, _flour);
 			_out.WriteLine($"[C] flour theo={flour.Theoretical} actual={flour.Actual} cancelWaste={flour.CancellationWaste} " +
@@ -298,7 +302,7 @@ namespace CrossBuy.Tests.SqlServer
 			await using var sp = Graph();
 			await SellPizzaAsync(sp, _brDispatch, 1m);
 
-			var v = await sp.GetRequiredService<IRestaurantInventoryIntelligenceService>().VarianceAsync(Co, _brDispatch, D, D);
+			var v = await sp.GetRequiredService<IRestaurantInventoryIntelligenceService>().VarianceAsync(Co, _brDispatch, D.AddDays(-1), D.AddDays(1));
 			Assert.True(v.Ok, v.Error);
 			var sauce = Row(v, _sauce);
 			_out.WriteLine($"[S] sauce theo={sauce.Theoretical} actual={sauce.Actual}; tomato rows={v.Rows.Count(r => r.ItemId == _tomato)}");
@@ -360,7 +364,7 @@ namespace CrossBuy.Tests.SqlServer
 				new List<WriteOffLineInput> { new() { ItemId = _flour, Qty = 3m, Reason = "Expired" } }, "chef-1");
 			Assert.True(wok, werr);
 
-			var v = await sp.GetRequiredService<IRestaurantInventoryIntelligenceService>().VarianceAsync(Co, _brDispatch, D, D);
+			var v = await sp.GetRequiredService<IRestaurantInventoryIntelligenceService>().VarianceAsync(Co, _brDispatch, D.AddDays(-1), D.AddDays(1));
 			var flour = Row(v, _flour);
 			_out.WriteLine($"[M] flour theo={flour.Theoretical} actual={flour.Actual} manual={flour.ManualWaste} variance={flour.VarianceQty}");
 			Assert.Equal(0.5m, flour.Theoretical);
