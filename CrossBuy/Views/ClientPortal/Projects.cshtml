@@ -1,0 +1,39 @@
+@model IReadOnlyList<CrossBuy.BL.Portal.PortalProject>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Projects";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<h1 class="fs-3 fw-bold mb-4">@(isAr ? "مشاريعي" : "My Projects")</h1>
+<div class="cbp-card">
+@if (!Model.Any())
+{
+    <div class="cbp-empty">@(isAr ? "لا توجد مشاريع." : "No projects yet.")</div>
+}
+else
+{
+    <table class="cbp-table">
+        <thead><tr>
+            <th>@(isAr ? "المشروع" : "Project")</th>
+            <th>@(isAr ? "الموقع" : "Location")</th>
+            <th>@(isAr ? "البداية" : "Start")</th>
+            <th>@(isAr ? "النهاية" : "End")</th>
+            <th>@(isAr ? "الحالة" : "Status")</th>
+        </tr></thead>
+        <tbody>
+        @foreach (var p in Model)
+        {
+            @* No budget, no contract value, no retention. The DTO does not carry them, so this
+               template could not show them even by mistake. *@
+            <tr>
+                <td class="fw-semibold">@p.Name</td>
+                <td>@(p.Location ?? "—")</td>
+                <td>@(p.StartDate?.ToString("yyyy/MM/dd") ?? "—")</td>
+                <td>@(p.EndDate?.ToString("yyyy/MM/dd") ?? "—")</td>
+                <td><span class="cbp-badge cbp-badge-muted">@(p.Status ?? "—")</span></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+</div>

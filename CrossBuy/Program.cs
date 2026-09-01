@@ -388,6 +388,11 @@ builder.Services.AddSingleton<CrossBuy.BL.Platform.IDocumentStorage>(_ =>
 // applied first. Re-running it creates nothing, which is how it is meant to behave.
 CrossBuy.BL.Communication.CommunicationPlatformRegistration.AddCommunicationPlatform(builder.Services, builder.Configuration);
 
+// Client Portal (TAB-3). ONE registration extension method, per SHF-01. It registers the external
+// identity resolver and the scoped read service - and deliberately no internal access service, so
+// the container cannot hand a portal request the means to answer an employee question.
+CrossBuy.BL.Portal.PortalRegistration.AddClientPortal(builder.Services);
+
 // Central Document Platform (TAB-3). ONE registration extension method, per SHF-01. It registers a
 // single scoped service and starts nothing - no hosted service, no timer, no sweep. It depends on the
 // document spine registered above and never re-registers it.

@@ -1,0 +1,107 @@
+@model CrossBuy.BL.Portal.PortalHome
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Home";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+@*
+    The home answers the three questions a client actually signs in to ask: is anything waiting on
+    me, what is running, and what do I owe.
+
+    It is NOT the internal Workspace Attention panel. That surface aggregates staff work — approvals,
+    assignments, escalations — and pointing it at an external user would expose the internal operating
+    rhythm of the business. These four numbers are computed from the client's own scope only.
+*@
+<div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-4">
+    <h1 class="fs-3 fw-bold m-0">@Model.CustomerName</h1>
+    <div style="color: var(--cbp-muted);">@(isAr ? "نظرة عامة على حسابك" : "Your account at a glance")</div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="cbp-card">
+            <div class="cbp-stat-value">@Model.QuotationsAwaitingResponse</div>
+            <div class="cbp-stat-label">@(isAr ? "عروض بانتظار ردك" : "Quotations awaiting your response")</div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-4">
+        <div class="cbp-card">
+            <div class="cbp-stat-value">@Model.ActiveProjects</div>
+            <div class="cbp-stat-label">@(isAr ? "مشاريع جارية" : "Active projects")</div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="cbp-card">
+            <div class="cbp-stat-value">@Model.OutstandingAmount.ToString("N2")</div>
+            <div class="cbp-stat-label">
+                @(isAr ? "المستحق" : "Outstanding") · @Model.OutstandingInvoices @(isAr ? "فاتورة" : "invoice(s)")
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-6">
+        <div class="cbp-card h-100">
+            <div class="d-flex align-items-baseline justify-content-between mb-3">
+                <div class="fw-bold fs-5">@(isAr ? "أحدث عروض الأسعار" : "Recent quotations")</div>
+                <a href="@Url.Action("Quotations", "ClientPortal")" style="color: var(--cbp-blue); font-weight:600;">@(isAr ? "الكل" : "View all")</a>
+            </div>
+            @if (!Model.RecentQuotations.Any())
+            {
+                <div class="cbp-empty">@(isAr ? "لا توجد عروض أسعار." : "No quotations yet.")</div>
+            }
+            else
+            {
+                <table class="cbp-table">
+                    <tbody>
+                    @foreach (var q in Model.RecentQuotations)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@q.Number</td>
+                            <td>@q.Date.ToString("yyyy/MM/dd")</td>
+                            <td class="text-end fw-bold">@q.Total.ToString("N2")</td>
+                            <td><span class="cbp-badge @(q.AwaitingResponse ? "cbp-badge-open" : "cbp-badge-muted")">@(q.AwaitingResponse ? (isAr ? "بانتظار ردك" : "Awaiting you") : q.Status)</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="cbp-card h-100">
+            <div class="d-flex align-items-baseline justify-content-between mb-3">
+                <div class="fw-bold fs-5">@(isAr ? "أحدث الفواتير" : "Recent invoices")</div>
+                <a href="@Url.Action("Invoices", "ClientPortal")" style="color: var(--cbp-blue); font-weight:600;">@(isAr ? "الكل" : "View all")</a>
+            </div>
+            @if (!Model.RecentInvoices.Any())
+            {
+                <div class="cbp-empty">@(isAr ? "لا توجد فواتير." : "No invoices yet.")</div>
+            }
+            else
+            {
+                <table class="cbp-table">
+                    <tbody>
+                    @foreach (var i in Model.RecentInvoices)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@i.Number</td>
+                            <td>@i.Date.ToString("yyyy/MM/dd")</td>
+                            <td class="text-end">@i.Total.ToString("N2")</td>
+                            <td class="text-end fw-bold">@i.Outstanding.ToString("N2")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@*
+    "My Documents" is deliberately absent from the navigation and from this page. The Central Document
+    Platform's secure delivery is still landing (Document Batch 2), and a portal document surface must
+    consume that rather than a legacy attachment path. Adding a placeholder tile would have invited the
+    quickest wiring available, which is exactly the legacy path this must not use.
+*@

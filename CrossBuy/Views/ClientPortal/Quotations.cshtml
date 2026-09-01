@@ -1,0 +1,43 @@
+@model IReadOnlyList<CrossBuy.BL.Portal.PortalQuotation>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Quotations";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+<h1 class="fs-3 fw-bold mb-4">@(isAr ? "عروض الأسعار" : "Quotations")</h1>
+<div class="cbp-card">
+@if (!Model.Any())
+{
+    <div class="cbp-empty">@(isAr ? "لا توجد عروض أسعار." : "No quotations yet.")</div>
+}
+else
+{
+    <table class="cbp-table">
+        <thead><tr>
+            <th>@(isAr ? "الرقم" : "Number")</th>
+            <th>@(isAr ? "التاريخ" : "Date")</th>
+            <th>@(isAr ? "صالح حتى" : "Valid until")</th>
+            <th class="text-end">@(isAr ? "الإجمالي" : "Total")</th>
+            <th>@(isAr ? "الحالة" : "Status")</th>
+        </tr></thead>
+        <tbody>
+        @foreach (var q in Model)
+        {
+            <tr>
+                <td class="fw-semibold">@q.Number</td>
+                <td>@q.Date.ToString("yyyy/MM/dd")</td>
+                <td>@(q.ValidUntil?.ToString("yyyy/MM/dd") ?? "—")</td>
+                <td class="text-end fw-bold">@q.Total.ToString("N2")</td>
+                <td>
+                    @* AwaitingResponse is the only thing a client needs to act on, so it is the only
+                       status given emphasis. Everything else is stated plainly. *@
+                    <span class="cbp-badge @(q.AwaitingResponse ? "cbp-badge-open" : "cbp-badge-muted")">
+                        @(q.AwaitingResponse ? (isAr ? "بانتظار ردك" : "Awaiting your response") : q.Status)
+                    </span>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+</div>

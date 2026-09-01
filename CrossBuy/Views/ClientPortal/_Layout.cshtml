@@ -1,0 +1,94 @@
+@*
+    CLIENT PORTAL SHELL — deliberately NOT the internal layout.
+
+    _LayoutBackend carries the ERP: module menu, company switcher, notification bell, workspace
+    attention, the lot. Reusing it for an external client would have been the fastest way to build
+    this screen and the fastest way to leak the shape of the business — a customer does not need to
+    know that Manufacturing exists, and a menu entry they cannot open is still information.
+
+    So this is its own shell: one nav, five customer words, no module vocabulary. Simpler than the
+    internal product on purpose, because a client signs in occasionally to answer one question.
+
+    CrossBusiness Blue, from the same brand tokens the internal product uses, so it reads as the same
+    company without inheriting the same chrome.
+*@
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var dir = isAr ? "rtl" : "ltr";
+    string Nav(string action) =>
+        string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), action, StringComparison.OrdinalIgnoreCase)
+            ? "cbp-nav-link active" : "cbp-nav-link";
+}
+<!DOCTYPE html>
+<html lang="@(isAr ? "ar" : "en")" dir="@dir">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] — CrossBusiness</title>
+    <link rel="stylesheet" href="~/Backend-assets/plugins/global/plugins.bundle.css" />
+    <link rel="stylesheet" href="~/Backend-assets/css/style.bundle.css" />
+    <style>
+        /* CrossBusiness Blue. Tokens rather than literals so the palette stays one decision. */
+        :root {
+            --cbp-blue: #13433a;          /* the product's primary */
+            --cbp-blue-dark: #0e332c;
+            --cbp-blue-light: #e9f1ee;
+            --cbp-ink: #071437;
+            --cbp-muted: #78829d;
+            --cbp-line: #dbdfe9;
+            --cbp-surface: #ffffff;
+            --cbp-canvas: #f9f9f9;
+        }
+        body { background: var(--cbp-canvas); color: var(--cbp-ink); }
+        .cbp-top { background: var(--cbp-blue); color: #fff; }
+        .cbp-brand { font-weight: 700; letter-spacing: .2px; }
+        /* Logical properties, so RTL mirrors without a second stylesheet. */
+        .cbp-nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+        .cbp-nav-link {
+            color: rgba(255,255,255,.82); padding: .55rem .9rem; border-radius: .5rem;
+            text-decoration: none; font-weight: 600; font-size: .95rem;
+        }
+        .cbp-nav-link:hover { color: #fff; background: rgba(255,255,255,.12); }
+        .cbp-nav-link.active { color: var(--cbp-blue); background: #fff; }
+        .cbp-card {
+            background: var(--cbp-surface); border: 1px solid var(--cbp-line);
+            border-radius: .75rem; padding: 1.25rem;
+        }
+        .cbp-stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+        .cbp-stat-label { color: var(--cbp-muted); font-size: .85rem; }
+        .cbp-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+        .cbp-table th {
+            text-align: start; font-size: .78rem; text-transform: uppercase; color: var(--cbp-muted);
+            border-bottom: 2px solid var(--cbp-blue); padding: .6rem .5rem;
+        }
+        .cbp-table td { padding: .7rem .5rem; border-bottom: 1px dashed #eef1f6; }
+        .cbp-badge { border-radius: 999px; padding: .2rem .6rem; font-size: .75rem; font-weight: 700; }
+        .cbp-badge-open { background: var(--cbp-blue-light); color: var(--cbp-blue); }
+        .cbp-badge-muted { background: #f2f4f7; color: #475467; }
+        .cbp-empty { color: var(--cbp-muted); text-align: center; padding: 2.5rem 1rem; }
+        @@media (max-width: 640px) { .cbp-nav-link { padding: .5rem .65rem; font-size: .88rem; } }
+    </style>
+</head>
+<body>
+    <header class="cbp-top">
+        <div class="container py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="cbp-brand fs-4">CrossBusiness</div>
+            <nav class="cbp-nav">
+                @* Customer language only. No module names, no internal terminology. *@
+                <a class="@Nav("Index")" href="@Url.Action("Index", "ClientPortal")">@(isAr ? "الرئيسية" : "Home")</a>
+                <a class="@Nav("Quotations")" href="@Url.Action("Quotations", "ClientPortal")">@(isAr ? "عروض الأسعار" : "Quotations")</a>
+                <a class="@Nav("Projects")" href="@Url.Action("Projects", "ClientPortal")">@(isAr ? "مشاريعي" : "My Projects")</a>
+                <a class="@Nav("Invoices")" href="@Url.Action("Invoices", "ClientPortal")">@(isAr ? "الفواتير والمدفوعات" : "Invoices & Payments")</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container py-4">
+        @RenderBody()
+    </main>
+
+    <footer class="container py-4 text-center" style="color: var(--cbp-muted); font-size: .85rem;">
+        © @DateTime.UtcNow.Year CrossBusiness
+    </footer>
+</body>
+</html>

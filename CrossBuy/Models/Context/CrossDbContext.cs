@@ -437,6 +437,10 @@ namespace CrossBuy.Models.Context
 			// asserts that model maps exactly its own slice, and it was right to fail when they were merged.
 			Documents.PlatformDocumentModel.Configure(builder);
 
+			// Client Portal (TAB-3). One line, same as the platforms above: the external identity table
+			// is mapped in a file that work stream owns, so this shared file stays a list of calls.
+			Portal.PortalModel.Configure(builder);
+
 			CrossBuy.BL.Platform.CompanyQueryFilters.Apply(builder, this);
 		}
 

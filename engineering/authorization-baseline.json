@@ -1336,6 +1336,15 @@
   ],
   "frozenBaselineHistory": [
     {
+      "stage": "Client Portal integration, central convergence (TAB-1, 2026-09-01)",
+      "mutating": 439,
+      "attributeProtected": 156,
+      "inBodyProtected": 189,
+      "gaps": 94,
+      "controllers": 53,
+      "note": "CONTROLLERS ONLY: 52 -> 53. ClientPortalController is READ-ONLY - five GET actions and not one mutating endpoint - so the endpoint total, both protected categories and the debt are all UNCHANGED. 156 + 189 + 94 = 439, exactly as before. MEASURED, AND THE CARRIED FIGURE WAS WRONG. TAB-3's handoff proposed 49 -> 50 for this same controller and named CrossBuy.Tests/ReconciliationTests.cs, a file that does not exist; the constants live in CrossBuy.Analyzers.Tests. Three controllers landed between that report and this integration, so the delta was measured against the real candidate instead. IT ADDS NO GAP AND NEEDS NO ATTRIBUTE. The portal is an EXTERNAL boundary with its own identity: PortalContext is deliberately not a BusinessContext and cannot become one, PortalRegistration hands the container no internal authority, and every read scopes TWICE - company AND customer - so the same customer id in another company is a different business. Fifteen tests hold that, including that a draft quotation is not yet the customer's business and that only posted invoices are shown, so a client is never told they owe a draft. No baseline entry, no re-bless, no suppression; zero CBA001/CBA004/CBA006."
+    },
+    {
       "stage": "Accounting period close and financial control foundation (TAB-1 integration of TAB-6, 2026-09-01)",
       "mutating": 439,
       "attributeProtected": 156,

@@ -1,0 +1,20 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "No portal access";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+@*
+    An authenticated user with no PortalUser link lands here.
+
+    It says "not available", not "you have no invoices" and not an empty dashboard. A working-looking
+    portal with nothing in it is indistinguishable from a real customer whose account is quiet, and a
+    person seeing that would reasonably conclude their data was lost.
+*@
+<div class="cbp-card text-center">
+    <div class="fs-3 fw-bold mb-2">@(isAr ? "لا يوجد وصول إلى البوابة" : "Portal access is not available")</div>
+    <div style="color: var(--cbp-muted);">
+        @(isAr
+            ? "هذا الحساب غير مرتبط بعميل. يرجى التواصل مع مسؤول الحساب لديك."
+            : "This sign-in is not linked to a customer account. Please contact your account manager.")
+    </div>
+</div>

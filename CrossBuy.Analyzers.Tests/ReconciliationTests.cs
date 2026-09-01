@@ -246,7 +246,13 @@ public class ReconciliationTests
     // and it is GET-ONLY: content, a historical version, an entity listing and a history. So the
     // controller count is the ONLY figure that moves - mutating stays 430, attribute-protected 157,
     // in-body 179 and the debt 94, all reproduced unchanged by the same run that caught this one.
-    private const int FrozenControllers = 52;
+    // 52 -> 53 (Client Portal, central convergence 2026-09-01). ClientPortalController is READ-ONLY:
+    // five GETs, no mutating action, so this is the one frozen number that moves. The endpoint total,
+    // both protected categories and the debt are unchanged - 439 = 156 + 189 + 94, as before.
+    //
+    // TAB-3 carried 49 -> 50 for this same controller. Three controllers landed in between, so it was
+    // measured rather than applied.
+    private const int FrozenControllers = 53;
 
     private static readonly Lazy<AuthorizationInventoryResult> Inventory = new(() =>
         AuthorizationInventory.Build(RealSourceCompilation.Value, CancellationToken.None));

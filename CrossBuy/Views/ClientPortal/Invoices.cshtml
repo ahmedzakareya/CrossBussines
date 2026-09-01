@@ -1,0 +1,44 @@
+@model IReadOnlyList<CrossBuy.BL.Portal.PortalInvoice>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Invoices & Payments";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var outstanding = Model.Where(i => i.Outstanding > 0).Sum(i => i.Outstanding);
+}
+<h1 class="fs-3 fw-bold mb-4">@(isAr ? "الفواتير والمدفوعات" : "Invoices & Payments")</h1>
+<div class="cbp-card mb-4 d-flex flex-wrap align-items-baseline gap-4">
+    <div>
+        <div class="cbp-stat-value">@outstanding.ToString("N2")</div>
+        <div class="cbp-stat-label">@(isAr ? "المبلغ المستحق" : "Outstanding")</div>
+    </div>
+</div>
+<div class="cbp-card">
+@if (!Model.Any())
+{
+    <div class="cbp-empty">@(isAr ? "لا توجد فواتير." : "No invoices yet.")</div>
+}
+else
+{
+    <table class="cbp-table">
+        <thead><tr>
+            <th>@(isAr ? "الرقم" : "Number")</th>
+            <th>@(isAr ? "التاريخ" : "Date")</th>
+            <th class="text-end">@(isAr ? "الإجمالي" : "Total")</th>
+            <th class="text-end">@(isAr ? "المدفوع" : "Paid")</th>
+            <th class="text-end">@(isAr ? "المستحق" : "Outstanding")</th>
+        </tr></thead>
+        <tbody>
+        @foreach (var i in Model)
+        {
+            <tr>
+                <td class="fw-semibold">@i.Number</td>
+                <td>@i.Date.ToString("yyyy/MM/dd")</td>
+                <td class="text-end">@i.Total.ToString("N2")</td>
+                <td class="text-end">@i.Paid.ToString("N2")</td>
+                <td class="text-end fw-bold">@i.Outstanding.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+</div>
