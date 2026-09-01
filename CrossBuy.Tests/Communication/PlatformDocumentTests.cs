@@ -9,6 +9,7 @@ using CrossBuy.BL.Documents;
 using CrossBuy.BL.Platform;
 using CrossBuy.Models.Context.Communication;
 using CrossBuy.Models.Context.Documents;
+using CrossBuy.Models.Context.Tasks;
 using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -140,7 +141,7 @@ namespace CrossBuy.Tests.Communication
 
         public long SeedType(string code, string appliesTo, bool requiresExpiry = false,
             string? schema = null, string? allowedExt = null, string conf = "Internal", int? companyId = null,
-            bool selfService = false, long? maxBytes = null)
+            bool selfService = false, long? maxBytes = null, int? warningDays = null)
         {
             var t = new PlatformDocumentType
             {
@@ -148,6 +149,7 @@ namespace CrossBuy.Tests.Communication
                 AppliesToEntityTypes = appliesTo, RequiresExpiryDate = requiresExpiry,
                 MetadataSchema = schema, AllowedExtensions = allowedExt,
                 DefaultConfidentiality = conf, IsActive = true, SelfServiceAllowed = selfService, MaxSizeBytes = maxBytes,
+                ExpiryWarningDays = warningDays,
             };
             Platform.Db.Set<PlatformDocumentType>().Add(t);
             Platform.Db.SaveChanges();
@@ -1366,6 +1368,578 @@ namespace CrossBuy.Tests.Communication
             Assert.True(submit.Ok, submit.ReasonCode);
             h.ActAs(DocHost.Bob, DocHost.CompanyA);
             Assert.True((await ServiceAt(h, Today).VerifyAsync(submit.DocumentId, "ok")).Ok);
+        }
+
+        // =========================================================================================
+        // BATCH 4 — expiry, renewal, and the convergence onto the task platform.
+        // =========================================================================================
+
+        private static DocumentExpiryProjection ProjectionAt(DocHost h, DateTime utc, RecordingEvents? events = null)
+            => new(h.Platform.Db, new FixedClock(utc), events);
+
+        /// An Active document with an expiry date, created the way the platform creates one.
+        private static async Task<long> ActiveWithExpiryAsync(DocHost h, long typeId, DateTime expiry,
+            string number = "P-1", int entityId = 500)
+        {
+            var req = h.Upload(typeId: typeId, expiry: expiry, entityId: entityId) with { DocumentNumber = number };
+            var r = await ServiceAt(h, Today).UploadAsync(req, DocHost.Bytes("V1"));
+            Assert.True(r.Ok, r.ReasonCode);
+            return r.DocumentId;
+        }
+
+        private static Task<List<TaskItem>> TasksAsync(DocHost h)
+            => h.Platform.Db.Set<TaskItem>().AsNoTracking().ToListAsync();
+
+        /// Asks THE canonical rule about a stored document, at a given date. Deliberately the same
+        /// entry point the projection uses, so these tests and the worker cannot be proving different
+        /// things about the same document.
+        private static async Task<DocumentLifecycle> StateOf(DocHost h, long documentId, DateTime at)
+        {
+            var doc = await h.Platform.Db.Set<PlatformDocument>().AsNoTracking().SingleAsync(d => d.Id == documentId);
+            var type = doc.DocumentTypeId == null ? null
+                : await h.Platform.Db.Set<PlatformDocumentType>().AsNoTracking()
+                    .SingleAsync(t => t.Id == doc.DocumentTypeId);
+            return PlatformDocumentService.EvaluateAt(doc, type, at);
+        }
+
+        // ---- the clock boundary, now including the warning window ------------------------------
+        [Fact]
+        public async Task The_expiring_soon_boundary_is_inclusive_at_both_ends()
+        {
+            // A 30-day policy that first warned at 29 days would not be what anybody configuring "30"
+            // means, and one that stopped warning on the last day would go quiet exactly when it
+            // mattered most. Both ends are inclusive, and both ends are asserted.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            var type = await h.Platform.Db.Set<PlatformDocumentType>().AsNoTracking().SingleAsync(t => t.Id == typeId);
+
+            DocumentLifecycleState StateFor(int daysOut)
+            {
+                var doc = new PlatformDocument
+                {
+                    Id = 1, CompanyID = DocHost.CompanyA, EntityType = "Employee", EntityId = 500,
+                    Status = "Active", CurrentVersionId = 7, ExpiryDate = Today.Date.AddDays(daysOut),
+                };
+                return PlatformDocumentService.EvaluateAt(doc, type, Today).State;
+            }
+
+            Assert.Equal(DocumentLifecycleState.Valid, StateFor(31));          // one day outside
+            Assert.Equal(DocumentLifecycleState.ExpiringSoon, StateFor(30));   // first day of notice
+            Assert.Equal(DocumentLifecycleState.ExpiringSoon, StateFor(1));
+            Assert.Equal(DocumentLifecycleState.ExpiringSoon, StateFor(0));    // expires TODAY - still valid
+            Assert.Equal(DocumentLifecycleState.Expired, StateFor(-1));        // yesterday
+        }
+
+        [Fact]
+        public async Task Expiring_soon_still_counts_as_valid()
+        {
+            // The distinction the whole batch rests on. A passport three weeks from expiry is something
+            // to act on and NOT a reason to refuse the person holding it.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(10));
+
+            var validity = await ServiceAt(h, Today).FindValidDocumentAsync("Employee", 500, typeId);
+            Assert.True(validity.IsValid);
+
+            var life = await StateOf(h, validity.DocumentId, Today);
+            Assert.Equal(DocumentLifecycleState.ExpiringSoon, life.State);
+            Assert.True(life.CountsAsValid);
+            Assert.Equal(10, life.DaysRemaining);
+        }
+
+        [Fact]
+        public async Task An_unconfigured_type_still_warns_on_the_platform_default()
+        {
+            // NULL must not mean "never warn". A type nobody got round to configuring going silent is
+            // the failure this default exists to prevent.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee");   // no warningDays
+            var id = await ActiveWithExpiryAsync(h, typeId, Today.AddDays(DocumentExpiryPolicy.DefaultWarningDays - 1));
+
+            var life = await StateOf(h, id, Today);
+            Assert.Equal(DocumentLifecycleState.ExpiringSoon, life.State);
+            Assert.Equal(DocumentExpiryPolicy.DefaultWarningDays, life.WarningDays);
+        }
+
+        [Fact]
+        public async Task The_lead_time_is_the_TYPES_and_nothing_is_hardcoded()
+        {
+            // Two types, one date. If any document kind were special-cased in platform code, these two
+            // would not be able to disagree.
+            using var h = new DocHost();
+            var patient = h.SeedType("CONTRACT", "Employee", warningDays: 90);
+            var brief = h.SeedType("GATEPASS", "Employee", warningDays: 3);
+
+            var far = await ActiveWithExpiryAsync(h, patient, Today.AddDays(45), number: "C-1");
+            var near = await ActiveWithExpiryAsync(h, brief, Today.AddDays(45), number: "G-1", entityId: 501);
+
+            Assert.Equal(DocumentLifecycleState.ExpiringSoon, (await StateOf(h, far, Today)).State);
+            Assert.Equal(DocumentLifecycleState.Valid, (await StateOf(h, near, Today)).State);
+        }
+
+        [Fact]
+        public async Task The_SAME_document_changes_state_only_because_the_clock_moved()
+        {
+            // Determinism: nothing is stored, so the answer is a pure function of the date.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 7);
+            var id = await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5));
+
+            Assert.Equal(DocumentLifecycleState.ExpiringSoon, (await StateOf(h, id, Today)).State);
+            Assert.Equal(DocumentLifecycleState.Valid, (await StateOf(h, id, Today.AddDays(-30))).State);
+            Assert.Equal(DocumentLifecycleState.Expired, (await StateOf(h, id, Today.AddDays(6))).State);
+        }
+
+        // ---- the projection: tasks --------------------------------------------------------------
+        [Fact]
+        public async Task An_expiring_document_produces_ONE_task_linked_by_entity_identity()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(10));
+
+            var summary = await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+            Assert.Equal(1, summary.TasksCreated);
+
+            var task = Assert.Single(await TasksAsync(h));
+            // ENTITY IDENTITY, not title matching.
+            Assert.Equal("Employee", task.EntityType);
+            Assert.Equal(500, task.EntityId);
+            Assert.Equal(DocHost.CompanyA, task.CompanyId);
+            // THE LINE THAT MAKES ATTENTION WORK: due on the expiry date, so it becomes DueToday and
+            // then OverdueTask without a second sweep.
+            Assert.Equal(Today.AddDays(10).Date, task.DueDate!.Value.Date);
+            Assert.Equal("New", task.Status);
+            Assert.Equal(0, task.CreatedByEmployeeId);   // system-created, by the platform's convention
+        }
+
+        [Fact]
+        public async Task Running_the_projection_twice_creates_no_second_task()
+        {
+            // §8. Re-running must converge, or every tick would add a row and the dashboard would fill
+            // with copies of one piece of work.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(10));
+
+            Assert.Equal(1, (await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA)).TasksCreated);
+            Assert.Equal(0, (await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA)).TasksCreated);
+            Assert.Equal(0, (await ProjectionAt(h, Today.AddDays(1)).RunAsync(DocHost.CompanyA)).TasksCreated);
+            Assert.Equal(0, (await ProjectionAt(h, Today.AddDays(11)).RunAsync(DocHost.CompanyA)).TasksCreated);
+
+            Assert.Single(await TasksAsync(h));
+        }
+
+        [Fact]
+        public async Task Crossing_into_expiry_does_not_open_a_SECOND_task_it_becomes_overdue()
+        {
+            // One piece of work, not two. The task created while the document was merely expiring is
+            // the same task that is now overdue - which is what Workspace Attention promotes for free.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(2));
+
+            await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+            await ProjectionAt(h, Today.AddDays(5)).RunAsync(DocHost.CompanyA);   // now expired
+
+            var task = Assert.Single(await TasksAsync(h));
+            Assert.True(task.DueDate < Today.AddDays(5));   // overdue by derivation, never stored
+            Assert.Equal("New", task.Status);
+        }
+
+        [Fact]
+        public async Task A_document_still_far_from_expiry_produces_nothing()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(200));
+
+            var summary = await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+            Assert.Equal(0, summary.TasksCreated);
+            Assert.Empty(await TasksAsync(h));
+        }
+
+        [Fact]
+        public async Task A_submitted_document_is_not_swept_only_an_ACTIVE_one_is()
+        {
+            // A document awaiting verification is already somebody's work. Warning that it is about to
+            // expire would be a second task about a document that has not been accepted yet.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", selfService: true, warningDays: 30);
+            var r = await ServiceAt(h, Today).SubmitAsync(
+                Submission(typeId, expiry: Today.AddDays(5)), DocHost.Bytes("scan"));
+            Assert.True(r.Ok, r.ReasonCode);
+
+            Assert.Equal(0, (await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA)).TasksCreated);
+            Assert.Empty(await TasksAsync(h));
+        }
+
+        // ---- confidentiality ---------------------------------------------------------------------
+        [Fact]
+        public async Task A_confidential_documents_task_names_neither_the_type_nor_the_number()
+        {
+            // §10. Workspace Attention copies the task title VERBATIM onto a dashboard, so the title is
+            // readable by everyone the TASK reaches - which is not the set the DOCUMENT reaches.
+            using var h = new DocHost();
+            var typeId = h.SeedType("DISCIPLINARY", "Employee", warningDays: 30,
+                conf: DocumentConfidentiality.Restricted);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5), number: "SECRET-NUMBER-9911");
+
+            await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+            var task = Assert.Single(await TasksAsync(h));
+
+            var text = task.Title + "|" + task.TitleEn + "|" + (task.Description ?? "");
+            Assert.DoesNotContain("DISCIPLINARY", text);
+            Assert.DoesNotContain("SECRET-NUMBER-9911", text);
+            Assert.DoesNotContain("passport.pdf", text);
+            // It still says enough to be actionable, and the link says the rest to whoever may see it.
+            Assert.Contains("renewal", task.TitleEn!, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal("Employee", task.EntityType);
+        }
+
+        [Fact]
+        public async Task An_internal_documents_task_MAY_name_its_type()
+        {
+            // The other direction, so the previous test is proved to be about confidentiality rather
+            // than about the title always being vague.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5));
+
+            await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+            var task = Assert.Single(await TasksAsync(h));
+            Assert.Contains("PASSPORT", task.TitleEn!);
+        }
+
+        // ---- company isolation --------------------------------------------------------------------
+        [Fact]
+        public async Task The_projection_never_sees_or_writes_another_companys_work()
+        {
+            using var h = new DocHost();
+            var mine = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, mine, Today.AddDays(5));
+
+            // A document belonging to company B, seeded directly so the arrangement is unambiguous.
+            h.Platform.Db.Set<PlatformDocument>().Add(new PlatformDocument
+            {
+                CompanyID = DocHost.CompanyB, EntityType = "Employee", EntityId = 900,
+                DocumentTypeId = mine, Status = "Active", Confidentiality = DocumentConfidentiality.Internal,
+                ExpiryDate = Today.AddDays(5), CurrentVersionId = 1, CreatedBy = 1, CreatedAt = Today,
+            });
+            await h.Platform.Db.SaveChangesAsync();
+
+            var summary = await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+            Assert.Equal(1, summary.TasksCreated);
+
+            var task = Assert.Single(await TasksAsync(h));
+            Assert.Equal(DocHost.CompanyA, task.CompanyId);
+            Assert.Equal(500, task.EntityId);       // mine, not company B's employee 900
+        }
+
+        [Fact]
+        public async Task A_projection_told_no_company_processes_nothing()
+        {
+            // There is no fallback to company 1 anywhere in this platform.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5));
+
+            Assert.Equal(0, (await ProjectionAt(h, Today).RunAsync(0)).TasksCreated);
+            Assert.Equal(0, (await ProjectionAt(h, Today).RunAsync(-1)).TasksCreated);
+            Assert.Empty(await TasksAsync(h));
+        }
+
+        // ---- events ---------------------------------------------------------------------------
+        [Fact]
+        public async Task Each_expiry_transition_is_announced_ONCE_however_often_the_worker_runs()
+        {
+            // §9. A polling producer that re-announced every cycle would make its own events worthless.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(3));
+
+            var events = new RecordingEvents(h.Platform.Db);
+            await ProjectionAt(h, Today, events).RunAsync(DocHost.CompanyA);
+            await ProjectionAt(h, Today.AddDays(1), events).RunAsync(DocHost.CompanyA);
+
+            // Twice through the warning window, and the key is identical both times, so the kernel
+            // deduplicates. Two distinct DAYS, one fact.
+            Assert.Equal(2, events.Records.Count);
+            Assert.All(events.Records, r => Assert.Equal("Employee.DocumentExpiringSoon", r.EventType));
+            Assert.Single(events.Records.Select(r => r.DedupKey).Distinct());
+
+            // Crossing into expiry is a DIFFERENT fact, so it gets its own key.
+            await ProjectionAt(h, Today.AddDays(10), events).RunAsync(DocHost.CompanyA);
+            Assert.Equal("Employee.DocumentExpired", events.Records.Last().EventType);
+            Assert.Equal(2, events.Records.Select(r => r.DedupKey).Distinct().Count());
+            Assert.All(events.InsideTransaction, Assert.True);
+        }
+
+        [Fact]
+        public async Task An_expiry_event_leaks_neither_the_key_the_name_nor_the_number()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(3), number: "P9911SECRET");
+
+            var events = new RecordingEvents(h.Platform.Db);
+            await ProjectionAt(h, Today, events).RunAsync(DocHost.CompanyA);
+
+            var storageKey = h.Storage.Blobs.Keys.Single().ToString();
+            var json = PayloadJson(Assert.Single(events.Records));
+            Assert.DoesNotContain(storageKey, json);
+            Assert.DoesNotContain("P9911SECRET", json);
+            Assert.DoesNotContain("passport.pdf", json);
+            Assert.Contains("daysRemaining", json);
+        }
+
+        [Fact]
+        public async Task A_restricted_documents_expiry_event_stays_restricted()
+        {
+            // The visibility mapping is shared with the submission producer, so it cannot drift - and
+            // this asserts the projection actually uses it.
+            using var h = new DocHost();
+            var typeId = h.SeedType("MEDICAL", "Employee", warningDays: 30,
+                conf: DocumentConfidentiality.Restricted);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(3));
+
+            var events = new RecordingEvents(h.Platform.Db);
+            await ProjectionAt(h, Today, events).RunAsync(DocHost.CompanyA);
+            Assert.Equal(BusinessEventVisibility.Restricted, Assert.Single(events.Records).Visibility);
+        }
+
+        // ---- renewal ----------------------------------------------------------------------------
+        [Fact]
+        public async Task A_renewal_keeps_the_OLD_instrument_on_the_old_version()
+        {
+            // §2/§5. The failure this closes: renewing used to overwrite the number and dates, so
+            // nothing remembered which passport the first scan was OF.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", selfService: true, warningDays: 30);
+
+            var first = await ServiceAt(h, Today).SubmitAsync(
+                Submission(typeId, expiry: Today.AddDays(5)) with { DocumentNumber = "OLD-111" },
+                DocHost.Bytes("OLD SCAN"));
+            Assert.True(first.Ok, first.ReasonCode);
+            h.ActAs(DocHost.Bob, DocHost.CompanyA);
+            Assert.True((await ServiceAt(h, Today).VerifyAsync(first.DocumentId, "ok")).Ok);
+
+            // The renewal: a genuinely different passport.
+            h.ActAs(DocHost.Alice, DocHost.CompanyA);
+            var renewal = await ServiceAt(h, Today).SubmitAsync(
+                Submission(typeId, expiry: Today.AddYears(5)) with { DocumentNumber = "NEW-222" },
+                DocHost.Bytes("NEW SCAN"));
+            Assert.True(renewal.Ok, renewal.ReasonCode);
+            Assert.Equal(first.DocumentId, renewal.DocumentId);   // same governed document
+
+            var versions = await h.Platform.Db.Set<PlatformDocumentVersion>().AsNoTracking()
+                .Where(v => v.DocumentId == first.DocumentId).OrderBy(v => v.VersionNo).ToListAsync();
+            Assert.Equal(2, versions.Count);
+
+            // V1 still says exactly what the expired passport said.
+            Assert.Equal("OLD-111", versions[0].DocumentNumber);
+            Assert.Equal(Today.AddDays(5).Date, versions[0].ExpiryDate!.Value.Date);
+            // V2 is the new instrument.
+            Assert.Equal("NEW-222", versions[1].DocumentNumber);
+            Assert.Equal(Today.AddYears(5).Date, versions[1].ExpiryDate!.Value.Date);
+            // And the old bytes are still readable.
+            Assert.Equal("OLD SCAN", Read((await ServiceAt(h, Today).OpenVersionAsync(first.DocumentId, 1))!));
+            Assert.Equal(2, h.Storage.Blobs.Count);
+        }
+
+        [Fact]
+        public async Task A_rejected_renewal_does_not_activate_and_does_not_destroy_the_old_one()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", selfService: true, warningDays: 30);
+
+            var first = await ServiceAt(h, Today).SubmitAsync(
+                Submission(typeId, expiry: Today.AddDays(5)) with { DocumentNumber = "OLD-111" },
+                DocHost.Bytes("OLD"));
+            h.ActAs(DocHost.Bob, DocHost.CompanyA);
+            await ServiceAt(h, Today).VerifyAsync(first.DocumentId, "ok");
+
+            h.ActAs(DocHost.Alice, DocHost.CompanyA);
+            await ServiceAt(h, Today).SubmitAsync(
+                Submission(typeId, expiry: Today.AddYears(5)) with { DocumentNumber = "NEW-222" },
+                DocHost.Bytes("BLURRY"));
+
+            h.ActAs(DocHost.Bob, DocHost.CompanyA);
+            Assert.True((await ServiceAt(h, Today).RejectAsync(first.DocumentId, "illegible")).Ok);
+
+            var doc = await h.Platform.Db.Set<PlatformDocument>().AsNoTracking().SingleAsync();
+            Assert.Equal("Rejected", doc.Status);
+            // NOT valid: a refused renewal must not quietly count as cover.
+            Assert.False((await ServiceAt(h, Today).FindValidDocumentAsync("Employee", 500, typeId)).IsValid);
+            // The history is intact, both versions and both blobs.
+            Assert.Equal(2, await h.Platform.Db.Set<PlatformDocumentVersion>().CountAsync());
+            Assert.Equal(2, h.Storage.Blobs.Count);
+        }
+
+        [Fact]
+        public async Task A_verified_renewal_becomes_the_canonical_valid_document()
+        {
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", selfService: true, warningDays: 30);
+
+            var first = await ServiceAt(h, Today).SubmitAsync(
+                Submission(typeId, expiry: Today.AddDays(2)) with { DocumentNumber = "OLD-111" },
+                DocHost.Bytes("OLD"));
+            h.ActAs(DocHost.Bob, DocHost.CompanyA);
+            await ServiceAt(h, Today).VerifyAsync(first.DocumentId, "ok");
+
+            // A month later the old one has expired and cover has genuinely lapsed.
+            var later = Today.AddDays(30);
+            Assert.False((await ServiceAt(h, later).FindValidDocumentAsync("Employee", 500, typeId)).IsValid);
+
+            h.ActAs(DocHost.Alice, DocHost.CompanyA);
+            await ServiceAt(h, later).SubmitAsync(
+                Submission(typeId, expiry: later.AddYears(5)) with { DocumentNumber = "NEW-222" },
+                DocHost.Bytes("NEW"));
+            // Submitted is still not cover.
+            Assert.False((await ServiceAt(h, later).FindValidDocumentAsync("Employee", 500, typeId)).IsValid);
+
+            h.ActAs(DocHost.Bob, DocHost.CompanyA);
+            Assert.True((await ServiceAt(h, later).VerifyAsync(first.DocumentId, "renewed")).Ok);
+
+            var validity = await ServiceAt(h, later).FindValidDocumentAsync("Employee", 500, typeId);
+            Assert.True(validity.IsValid);
+            Assert.Equal(later.AddYears(5).Date, validity.ExpiryDate!.Value.Date);
+        }
+
+        [Fact]
+        public async Task Onboarding_validity_follows_the_renewal_without_HR_owning_a_date_rule()
+        {
+            // §11. HR asks the canonical question and nothing else; the answer moves with the document
+            // through expiry and renewal.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", selfService: true, warningDays: 30);
+            var svcNow = ServiceAt(h, Today);
+
+            var first = await svcNow.SubmitAsync(
+                Submission(typeId, expiry: Today.AddDays(10)) with { DocumentNumber = "OLD" },
+                DocHost.Bytes("OLD"));
+            h.ActAs(DocHost.Bob, DocHost.CompanyA);
+            await svcNow.VerifyAsync(first.DocumentId, "ok");
+
+            Assert.True(await ServiceAt(h, Today).HasValidDocumentAsync("Employee", 500, typeId));
+            // Inside the warning window it is STILL satisfied - expiring is not expired.
+            Assert.True(await ServiceAt(h, Today.AddDays(5)).HasValidDocumentAsync("Employee", 500, typeId));
+            // Past it, the requirement lapses.
+            Assert.False(await ServiceAt(h, Today.AddDays(11)).HasValidDocumentAsync("Employee", 500, typeId));
+
+            var later = Today.AddDays(11);
+            h.ActAs(DocHost.Alice, DocHost.CompanyA);
+            await ServiceAt(h, later).SubmitAsync(
+                Submission(typeId, expiry: later.AddYears(2)) with { DocumentNumber = "NEW" },
+                DocHost.Bytes("NEW"));
+            h.ActAs(DocHost.Bob, DocHost.CompanyA);
+            await ServiceAt(h, later).VerifyAsync(first.DocumentId, "renewed");
+
+            Assert.True(await ServiceAt(h, later).HasValidDocumentAsync("Employee", 500, typeId));
+        }
+
+        [Fact]
+        public async Task A_renewed_document_may_warn_again_on_its_NEW_expiry_date()
+        {
+            // The bug a document-only dedup key would have caused: after renewal the document would go
+            // silent forever, exactly once it started mattering again.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", selfService: true, warningDays: 30);
+            var id = await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5));
+
+            Assert.Equal(1, (await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA)).TasksCreated);
+
+            // Renewed to a date that is itself inside the window of a much later "today".
+            var doc = await h.Platform.Db.Set<PlatformDocument>().FirstAsync(d => d.Id == id);
+            doc.ExpiryDate = Today.AddDays(400);
+            await h.Platform.Db.SaveChangesAsync();
+
+            var later = Today.AddDays(380);
+            Assert.Equal(1, (await ProjectionAt(h, later).RunAsync(DocHost.CompanyA)).TasksCreated);
+            Assert.Equal(2, (await TasksAsync(h)).Count);   // one per instrument, not one per document
+        }
+
+        // ---- authorization ------------------------------------------------------------------------
+
+
+
+        [Fact]
+        public async Task An_unauthorized_caller_still_cannot_discover_the_document_behind_an_expiry_task()
+        {
+            // §10/§14. The follow-up task is the only thing expiry makes newly visible, and it is
+            // reachable by whoever the TASK platform shows it to - a wider set than the document's
+            // readers. So the guarantee that matters is that the task discloses nothing: the canonical
+            // document query still refuses this caller, and the task carries no way around it.
+            using var h = new DocHost();
+            var typeId = h.SeedType("MEDICAL", "Employee", warningDays: 30,
+                conf: DocumentConfidentiality.Restricted);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5), number: "N-9911");
+            await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+
+            var task = Assert.Single(await TasksAsync(h));
+            h.Access.Decide = (_, _, _, _, _) =>
+                new DocumentAccessDecision(false, DocumentAccessReasons.ConfidentialityDenied);
+
+            // The document is still not discoverable, and the answer is the same one a caller with no
+            // such document gets.
+            var validity = await ServiceAt(h, Today).FindValidDocumentAsync("Employee", 500, typeId);
+            Assert.False(validity.IsValid);
+            Assert.Equal(DocumentValidityReasons.NotFound, validity.ReasonCode);
+            Assert.Empty(await ServiceAt(h, Today).ListForEntityAsync("Employee", 500));
+
+            // And the row this caller CAN see says nothing it should not.
+            var text = task.Title + "|" + task.TitleEn;
+            Assert.DoesNotContain("MEDICAL", text);
+            Assert.DoesNotContain("N-9911", text);
+        }
+
+        [Fact]
+        public async Task The_rules_default_assignee_is_who_the_task_is_routed_to()
+        {
+            // WHO OWNS AUTOMATIC WORK is a deployment's answer, not the document platform's. The task
+            // platform already asks it - TaskAutoRule.DefaultAssigneeEmployeeId - so this reads it
+            // rather than guessing an HR manager, which would be exactly the module-specific knowledge
+            // a central platform must not carry.
+            //
+            // THE CAVEAT THIS TEST EXISTS TO MAKE EXPLICIT: My Work is scoped "mine" by employee, so an
+            // UNASSIGNED task (assignee 0, the platform's convention for system work awaiting routing)
+            // reaches nobody's Attention until a manager routes it. Configuring this rule is what makes
+            // the expiry warning land in a person's dashboard on its own.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5));
+
+            h.Platform.Db.Set<TaskAutoRule>().Add(new TaskAutoRule
+            {
+                CompanyId = DocHost.CompanyA, RuleType = DocumentExpiryProjection.RuleType,
+                IsActive = true, DefaultAssigneeEmployeeId = DocHost.Bob, CreatedAt = Today,
+            });
+            await h.Platform.Db.SaveChangesAsync();
+
+            await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA);
+            Assert.Equal(DocHost.Bob, Assert.Single(await TasksAsync(h)).AssigneeEmployeeId);
+        }
+
+        [Fact]
+        public async Task A_deployment_can_turn_the_rule_OFF_and_nothing_is_created()
+        {
+            // Absent means on - a platform that tracked nothing until somebody found a settings page
+            // would be worse than useless. Inactive means off, and that is respected.
+            using var h = new DocHost();
+            var typeId = h.SeedType("PASSPORT", "Employee", warningDays: 30);
+            await ActiveWithExpiryAsync(h, typeId, Today.AddDays(5));
+
+            h.Platform.Db.Set<TaskAutoRule>().Add(new TaskAutoRule
+            {
+                CompanyId = DocHost.CompanyA, RuleType = DocumentExpiryProjection.RuleType,
+                IsActive = false, CreatedAt = Today,
+            });
+            await h.Platform.Db.SaveChangesAsync();
+
+            Assert.Equal(0, (await ProjectionAt(h, Today).RunAsync(DocHost.CompanyA)).TasksCreated);
+            Assert.Empty(await TasksAsync(h));
         }
 
         private static string Read(DocumentContent content)

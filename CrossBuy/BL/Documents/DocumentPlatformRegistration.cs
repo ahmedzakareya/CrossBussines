@@ -19,9 +19,11 @@ namespace CrossBuy.BL.Documents
     // So the document platform gets its own entry point, which is also exactly what SHF-01 asks for:
     // "ONE registration extension method per platform". Program.cs gains one line and no knowledge.
     //
-    // IT REGISTERS ONE SERVICE AND STARTS NOTHING. No hosted service, no timer, no background sweep.
-    // An expiry worker, when it exists, belongs behind the canonical worker governance and is a
-    // separate decision from making documents storable.
+    // IT NOW STARTS ONE WORKER, and the earlier note here said it started none. That note was written
+    // when there was nothing periodic to run and it promised that an expiry worker, "when it exists,
+    // belongs behind the canonical worker governance". It exists, and it does: DocumentExpiryHostedService
+    // uses IWorkerCompanyScope, WorkerCompanyRunner and WorkerScope.ForCompany like every other worker
+    // in the product, suppresses itself on a certification runtime, and waits for IWorkerGate.
     // =============================================================================================
     public static class DocumentPlatformRegistration
     {
@@ -46,6 +48,24 @@ namespace CrossBuy.BL.Documents
             // another timezone - theirs is already there and this line does nothing. It supplies the
             // obvious default; it does not claim the seam.
             services.TryAddSingleton(TimeProvider.System);
+
+            // ---- expiry and renewal (batch 4) --------------------------------------------------
+            //
+            // The projection is scoped, because it runs inside a per-company worker scope and reads the
+            // context-bound DbContext that scope resolves.
+            services.AddScoped<IDocumentExpiryProjection, DocumentExpiryProjection>();
+
+            // THE WORKER REGISTERS HERE, and that is not a convenience - it is what keeps Program.cs
+            // out of this batch entirely. Program.cs is SHF-01 shared and already calls
+            // AddDocumentPlatform exactly once; a platform that needed a second line there for every
+            // capability it grew would make every batch a shared-file negotiation. The header above
+            // said this platform "registers one service and starts nothing", and that is no longer
+            // true, so it says so plainly instead of quietly drifting.
+            //
+            // It is a hosted service and therefore starts on boot. It suppresses itself on a
+            // certification runtime and waits for the worker gate before its first pass, so a host that
+            // should not be writing does not write.
+            services.AddHostedService<DocumentExpiryHostedService>();
             return services;
         }
     }

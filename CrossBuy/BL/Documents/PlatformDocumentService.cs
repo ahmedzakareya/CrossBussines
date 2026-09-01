@@ -100,6 +100,86 @@ namespace CrossBuy.BL.Documents
             new(true, DocumentValidityReasons.Valid, documentId, expiry);
     }
 
+    /// THE OPERATIONAL STATES, which are a superset of "is it valid".
+    ///
+    /// Validity answers one question - may this document be relied on TODAY - and onboarding needs
+    /// exactly that. Operations needs more: a passport that expires in three weeks is perfectly valid
+    /// and somebody should already be renewing it. Both answers come out of ONE evaluation, because the
+    /// moment they come out of two the day the second one disagrees is only a matter of time.
+    public enum DocumentLifecycleState
+    {
+        /// No document, or the caller may not be told whether there is one.
+        Missing = 0,
+        /// Filed, awaiting a decision. Includes a renewal awaiting verification.
+        Submitted = 1,
+        /// Looked at and refused. The document still exists and can be corrected.
+        Rejected = 2,
+        /// Not yet filed.
+        Draft = 3,
+        /// Out of circulation.
+        Archived = 4,
+        /// Active, but missing something its type demands, or with no bytes.
+        Incomplete = 5,
+        /// Active, in date, and not near its expiry - or with no expiry at all.
+        Valid = 6,
+        /// Active and STILL VALID, but inside its type's warning window.
+        ExpiringSoon = 7,
+        /// Past its expiry date. Not valid.
+        Expired = 8,
+    }
+
+    /// The full answer, from the one evaluator. `ReasonCode` is the validity vocabulary, unchanged, so
+    /// every existing caller keeps its exact behaviour.
+    public sealed record DocumentLifecycle(
+        DocumentLifecycleState State,
+        string ReasonCode,
+        long DocumentId = 0,
+        DateTime? ExpiryDate = null,
+        int? DaysRemaining = null,
+        int WarningDays = 0)
+    {
+        /// ExpiringSoon IS valid. Saying otherwise would refuse somebody on a document they still hold,
+        /// which is the same mistake as treating an expiry date as a deadline that has already passed.
+        public bool CountsAsValid =>
+            State is DocumentLifecycleState.Valid or DocumentLifecycleState.ExpiringSoon;
+
+        public bool NeedsAttention =>
+            State is DocumentLifecycleState.ExpiringSoon or DocumentLifecycleState.Expired;
+    }
+
+    // A READ API FOR THIS - "give me every document of this employee's with its state" - is written and
+    // deliberately NOT landed in this batch. Its only consumers are the documents workspace (§13) and the
+    // reporting datasets (§14), and both live behind paths this tab does not own, so it would have landed
+    // as dead code.
+    //
+    // That matters more than usual here. IPlatformDocumentService is a DECLARED AUTHORITY in the
+    // analyzer's surface, credited because every one of its members was verified to authorize, and
+    // DocumentAuthorityMemberTests reflectively fails the moment a member is added that its table does not
+    // cover. Widening that interface is therefore a governance act, not an edit - and doing it for members
+    // nothing can call yet would spend somebody else's guarantee for no delivered behaviour. It goes with
+    // the UI, as one unit, in the handoff.
+
+    /// The lead-time policy, resolved in ONE place.
+    public static class DocumentExpiryPolicy
+    {
+        /// Used when a type has not configured its own. NOT zero and NOT "never": a type nobody has got
+        /// round to configuring must still give notice, because the failure it prevents - a document
+        /// expiring in silence - is much worse than a warning that came earlier than someone wanted.
+        public const int DefaultWarningDays = 30;
+
+        /// Clamped at both ends. A negative lead time would mean warning AFTER expiry, which is what
+        /// the Expired state is for; an absurd one would put every document in the window forever and
+        /// the warning would stop meaning anything.
+        public const int MaxWarningDays = 365;
+
+        public static int WarningDaysFor(int? configured)
+        {
+            if (configured is not int days) return DefaultWarningDays;
+            if (days < 0) return 0;
+            return days > MaxWarningDays ? MaxWarningDays : days;
+        }
+    }
+
     public static class DocumentValidityReasons
     {
         public const string Valid = "valid";
@@ -139,6 +219,7 @@ namespace CrossBuy.BL.Documents
 
         /// HR refuses it, with a reason. The document stays, so the person can correct it.
         Task<DocumentResult> RejectAsync(long documentId, string note, CancellationToken ct = default);
+
     }
 
     public sealed class PlatformDocumentService : IPlatformDocumentService
@@ -297,7 +378,9 @@ namespace CrossBuy.BL.Documents
                 Documents.Add(doc);
                 await _db.SaveChangesAsync(ct);
 
-                var version = NewVersion(doc, 1, key, request.FileName, request.ContentType, content, request.Reason, null, ctx, now);
+                var version = NewVersion(doc, 1, key, request.FileName, request.ContentType, content,
+                    request.Reason, null, ctx, now,
+                    doc.DocumentNumber, doc.IssueDate, doc.ExpiryDate);
                 Versions.Add(version);
                 await _db.SaveChangesAsync(ct);
 
@@ -350,8 +433,12 @@ namespace CrossBuy.BL.Documents
                     .Where(v => v.DocumentId == doc.Id)
                     .OrderByDescending(v => v.VersionNo).FirstOrDefaultAsync(ct);
 
+                // A REPLACEMENT IS NOT A RENEWAL. The bytes change - a better scan of the same
+                // passport - and the instrument does not, so the new version records the SAME number
+                // and dates the document already carries.
                 var version = NewVersion(doc, (last?.VersionNo ?? 0) + 1, key, fileName, contentType,
-                    content, reason, last?.Id, ctx, now);
+                    content, reason, last?.Id, ctx, now,
+                    doc.DocumentNumber, doc.IssueDate, doc.ExpiryDate);
                 Versions.Add(version);
                 await _db.SaveChangesAsync(ct);
 
@@ -575,7 +662,8 @@ namespace CrossBuy.BL.Documents
                 await _db.SaveChangesAsync(ct);
 
                 var version = NewVersion(doc, 1, key, request.FileName, request.ContentType, content,
-                    request.Reason ?? "submitted", null, ctx, now);
+                    request.Reason ?? "submitted", null, ctx, now,
+                    doc.DocumentNumber, doc.IssueDate, doc.ExpiryDate);
                 Versions.Add(version);
                 await _db.SaveChangesAsync(ct);
 
@@ -584,7 +672,7 @@ namespace CrossBuy.BL.Documents
 
                 // BEFORE the commit, inside the transaction. If the event cannot be recorded the
                 // document is not submitted either, and the catch below compensates the blob.
-                await RaiseAsync(doc, type, ActionSubmitted, version.Id, ct);
+                await RaiseAsync(doc, type, DocumentEvents.Submitted, version.Id, ct);
 
                 await tx.CommitAsync(ct);
                 await tx.DisposeAsync();
@@ -621,8 +709,21 @@ namespace CrossBuy.BL.Documents
                     .OrderByDescending(v => v.VersionNo).FirstOrDefaultAsync(ct);
 
                 var doc = await Documents.FirstAsync(d => d.Id == documentId, ct);
+
+                // THIS IS THE RENEWAL PATH, and it is the same path as a correction on purpose - see
+                // the renewal decision in the header. What arrives may be a corrected scan of the SAME
+                // passport or a brand-new passport; the platform cannot tell and does not need to,
+                // because both are "the next version of this governed document".
+                //
+                // The instrument the NEW version carries is resolved BEFORE anything is written, so the
+                // version row and the document row cannot disagree about which passport this is.
+                var newNumber = request.DocumentNumber ?? doc.DocumentNumber;
+                var newIssue = request.IssueDate ?? doc.IssueDate;
+                var newExpiry = request.ExpiryDate ?? doc.ExpiryDate;
+
                 var version = NewVersion(doc, (last?.VersionNo ?? 0) + 1, key, request.FileName,
-                    request.ContentType, content, request.Reason ?? "resubmitted", last?.Id, ctx, now);
+                    request.ContentType, content, request.Reason ?? "resubmitted", last?.Id, ctx, now,
+                    newNumber, newIssue, newExpiry);
                 Versions.Add(version);
                 await _db.SaveChangesAsync(ct);
 
@@ -631,16 +732,20 @@ namespace CrossBuy.BL.Documents
                 doc.DecidedBy = null; doc.DecidedAt = null; doc.DecisionNote = null;
                 // The submitter may correct the dates that came with the new copy; they may not touch
                 // confidentiality, which stays whatever the type decided when the document was created.
-                doc.DocumentNumber = request.DocumentNumber ?? doc.DocumentNumber;
-                doc.IssueDate = request.IssueDate ?? doc.IssueDate;
-                doc.ExpiryDate = request.ExpiryDate ?? doc.ExpiryDate;
+                //
+                // THE PREVIOUS VERSION KEEPS ITS OWN NUMBER AND DATES. That is what makes this a
+                // renewal rather than an overwrite: the document row moves on to the current
+                // instrument, and V1 still says exactly what the expired passport said.
+                doc.DocumentNumber = newNumber;
+                doc.IssueDate = newIssue;
+                doc.ExpiryDate = newExpiry;
                 doc.UpdatedBy = ctx.EmployeeId!.Value;
                 doc.UpdatedAt = now;
                 await _db.SaveChangesAsync(ct);
 
                 var resubmittedType = await Types.AsNoTracking()
                     .FirstAsync(t => t.Id == doc.DocumentTypeId, ct);
-                await RaiseAsync(doc, resubmittedType, ActionSubmitted, version.Id, ct);
+                await RaiseAsync(doc, resubmittedType, DocumentEvents.Submitted, version.Id, ct);
 
                 await tx.CommitAsync(ct);
                 await tx.DisposeAsync();
@@ -726,7 +831,7 @@ namespace CrossBuy.BL.Documents
 
                 var type = await Types.AsNoTracking().FirstAsync(t => t.Id == tracked.DocumentTypeId, ct);
                 await RaiseAsync(tracked, type,
-                    string.Equals(outcome, "Active", StringComparison.Ordinal) ? ActionVerified : ActionRejected,
+                    string.Equals(outcome, "Active", StringComparison.Ordinal) ? DocumentEvents.Verified : DocumentEvents.Rejected,
                     tracked.CurrentVersionId, ct);
 
                 await tx.CommitAsync(ct);
@@ -775,48 +880,15 @@ namespace CrossBuy.BL.Documents
         // access classification and an event classification is not something to bet a Restricted
         // medical document on. Anything unrecognised becomes Restricted - the narrowest, not the
         // default.
-        private async Task RaiseAsync(PlatformDocument doc, PlatformDocumentType type, string action,
-            long? versionId, CancellationToken ct)
-        {
-            if (_events == null) return;
-
-            await _events.RecordAsync(new BusinessEventRecord
-            {
-                EntityCode = doc.EntityType,
-                EntityId = doc.EntityId,
-                EventType = BusinessEventTypes.Build(doc.EntityType, action),
-                Visibility = VisibilityFor(doc.Confidentiality),
-                // Per document, per version, per action: a resubmission is a new fact because the
-                // version changed, while a retried commit of the SAME write is not.
-                DedupKey = $"platformdoc:{doc.Id}:v{versionId ?? 0}:{action}",
-                Payload = new
-                {
-                    documentId = doc.Id,
-                    documentTypeId = doc.DocumentTypeId,
-                    documentTypeCode = type.Code,
-                    status = doc.Status,
-                    issueDate = doc.IssueDate,
-                    expiryDate = doc.ExpiryDate,
-                    decidedBy = doc.DecidedBy,
-                    hasDecisionNote = !string.IsNullOrWhiteSpace(doc.DecisionNote),
-                },
-            }, ct);
-        }
-
-        private static string VisibilityFor(string? confidentiality) => confidentiality switch
-        {
-            DocumentConfidentiality.Internal => BusinessEventVisibility.Internal,
-            DocumentConfidentiality.Confidential => BusinessEventVisibility.Confidential,
-            DocumentConfidentiality.Restricted => BusinessEventVisibility.Restricted,
-            DocumentConfidentiality.System => BusinessEventVisibility.System,
-            _ => BusinessEventVisibility.Restricted,
-        };
+        /// Delegates to DocumentEvents, which is the ONE payload policy - shared with the expiry
+        /// projection so the two producers cannot drift about what may be said or how loudly.
+        private Task RaiseAsync(PlatformDocument doc, PlatformDocumentType? type, string action,
+            long? versionId, CancellationToken ct, int? versionNo = null)
+            => DocumentEvents.RaiseAsync(_events, doc, type, action,
+                DocumentEvents.LifecycleKey(doc.Id, versionId, action), ct, versionNo);
 
         /// The three actions, named once. "Document" prefixes each because the event is addressed to the
         /// EMPLOYEE: "Employee.Submitted" would be a fact about the person, not about their file.
-        private const string ActionSubmitted = "DocumentSubmitted";
-        private const string ActionVerified = "DocumentVerified";
-        private const string ActionRejected = "DocumentRejected";
 
         // ---- storage compensation ----------------------------------------------------------------
         //
@@ -930,25 +1002,94 @@ namespace CrossBuy.BL.Documents
             string entityType, int entityId, long documentTypeId, CancellationToken ct = default)
             => (await FindValidDocumentAsync(entityType, entityId, documentTypeId, ct)).IsValid;
 
+        /// THE CANONICAL EVALUATOR. Every date predicate in the document platform is in this method,
+        /// and there is deliberately no second one anywhere - not in the worker, not in a report, not
+        /// in a view, not in onboarding. `EvaluateOne` below is a projection of this, which is why
+        /// validity and operational status cannot drift apart: they are the same computation.
+        ///
+        /// `type` is nullable because an ad-hoc document has no catalogue entry. A document with no type
+        /// still expires if somebody recorded an expiry date - the date is a statement about the
+        /// document, and having no type is not a reason to ignore it.
+        /// The instance form: evaluates against THIS service's clock.
+        private DocumentLifecycle EvaluateLifecycle(PlatformDocument d, PlatformDocumentType? type)
+            => EvaluateAt(d, type, UtcNow.Date);
+
+        /// THE CANONICAL EVALUATOR, exposed statically so the expiry projection and its worker use the
+        /// SAME rule rather than a sympathetic copy of it.
+        ///
+        /// `today` is a parameter rather than a clock read, which is what makes one rule serve a
+        /// request-scoped service and a background sweep without either of them owning the calendar.
+        /// It is the only reason this is public: nothing outside the platform should be computing a
+        /// document's state, and now nothing has to.
+        public static DocumentLifecycle EvaluateAt(PlatformDocument d, PlatformDocumentType? type, DateTime today)
+        {
+            today = today.Date;
+            var warningDays = DocumentExpiryPolicy.WarningDaysFor(type?.ExpiryWarningDays);
+
+            DocumentLifecycle At(DocumentLifecycleState state, string reason, int? days = null)
+                => new(state, reason, d.Id, d.ExpiryDate, days, warningDays);
+
+            if (!string.Equals(d.Status, "Active", StringComparison.Ordinal))
+            {
+                // NOT ACTIVE is one validity answer but several operational ones. The reason code stays
+                // exactly what it always was, so no existing caller changes behaviour; the STATE is what
+                // lets an operator tell "awaiting verification" from "refused".
+                var state = d.Status switch
+                {
+                    "Submitted" => DocumentLifecycleState.Submitted,
+                    "Rejected" => DocumentLifecycleState.Rejected,
+                    "Draft" => DocumentLifecycleState.Draft,
+                    "Archived" => DocumentLifecycleState.Archived,
+                    // Including a stored "Expired". The platform does not WRITE that status - expiry is
+                    // derived from the date, and a worker that stamped it would create a second source
+                    // of truth that goes stale between ticks - but a legacy row carrying it is read
+                    // honestly rather than silently treated as active.
+                    "Expired" => DocumentLifecycleState.Expired,
+                    _ => DocumentLifecycleState.Incomplete,
+                };
+                return At(state, DocumentValidityReasons.NotActive);
+            }
+
+            if (d.CurrentVersionId == null)
+                return At(DocumentLifecycleState.Incomplete, DocumentValidityReasons.NoCurrentVersion);
+            if (type != null && type.RequiresIssueDate && d.IssueDate == null)
+                return At(DocumentLifecycleState.Incomplete, DocumentValidityReasons.MissingRequiredIssueDate);
+            if (type != null && type.RequiresExpiryDate && d.ExpiryDate == null)
+                return At(DocumentLifecycleState.Incomplete, DocumentValidityReasons.MissingRequiredExpiryDate);
+
+            // Expiry is honoured whenever one is RECORDED, even if the type does not demand one: a date
+            // someone took the trouble to enter is a statement about the document, not decoration.
+            if (d.ExpiryDate is DateTime expiry)
+            {
+                // ONE subtraction, and every boundary in the platform is decided by it.
+                //
+                // STRICTLY NEGATIVE IS EXPIRED. A document whose expiry IS today has days == 0 and is
+                // still valid: a passport does not stop being a passport at midnight of its printed
+                // date, and treating it as expired would refuse somebody on the last day they were
+                // entitled to be accepted.
+                //
+                // The warning window is INCLUSIVE at both ends: days == 0 (expires today) and
+                // days == warningDays (the first day of notice) are both ExpiringSoon. An exclusive
+                // upper bound would mean a 30-day policy first warns at 29 days, which is not what
+                // anybody configuring "30" means.
+                int days = (expiry.Date - today).Days;
+                if (days < 0)
+                    return At(DocumentLifecycleState.Expired, DocumentValidityReasons.Expired, days);
+                if (days <= warningDays)
+                    return At(DocumentLifecycleState.ExpiringSoon, DocumentValidityReasons.Valid, days);
+                return At(DocumentLifecycleState.Valid, DocumentValidityReasons.Valid, days);
+            }
+
+            return At(DocumentLifecycleState.Valid, DocumentValidityReasons.Valid);
+        }
+
+        /// The validity projection of the evaluator above. Kept as its own method because every existing
+        /// caller asks the validity question, and because a caller that only needs a yes/no should not
+        /// have to know the operational vocabulary exists.
         private string EvaluateOne(PlatformDocument d, PlatformDocumentType type, out string confidentiality)
         {
             confidentiality = d.Confidentiality;
-            if (!string.Equals(d.Status, "Active", StringComparison.Ordinal))
-                return DocumentValidityReasons.NotActive;
-            if (d.CurrentVersionId == null)
-                return DocumentValidityReasons.NoCurrentVersion;
-            if (type.RequiresIssueDate && d.IssueDate == null)
-                return DocumentValidityReasons.MissingRequiredIssueDate;
-            if (type.RequiresExpiryDate && d.ExpiryDate == null)
-                return DocumentValidityReasons.MissingRequiredExpiryDate;
-            // Expiry is honoured whenever one is RECORDED, even if the type does not demand one: a date
-            // someone took the trouble to enter is a statement about the document, not decoration.
-            // STRICTLY BEFORE today. A document whose expiry IS today is still valid: a passport does
-            // not stop being a passport at midnight of its printed date, and treating it as expired
-            // would refuse somebody on the last day they were entitled to be accepted.
-            if (d.ExpiryDate is DateTime expiry && expiry.Date < UtcNow.Date)
-                return DocumentValidityReasons.Expired;
-            return DocumentValidityReasons.Valid;
+            return EvaluateLifecycle(d, type).ReasonCode;
         }
 
         /// "Expired" is more informative than "not_found", so it survives when both occur.
@@ -963,9 +1104,18 @@ namespace CrossBuy.BL.Documents
             => Documents.AsNoTracking().FirstOrDefaultAsync(
                 d => d.Id == documentId && d.CompanyID == ctx.CompanyId, ct);
 
+        /// THE INSTRUMENT IS PASSED IN, not read off `doc`, and that is deliberate.
+        ///
+        /// Reading it from the document would make this method's correctness depend on WHERE it is
+        /// called relative to the statements that move the document's dates. In the renewal path the
+        /// version is created before those statements run, so a `doc`-reading version would have
+        /// recorded the OLD passport's number against the NEW passport's bytes - history that is worse
+        /// than no history, because it looks authoritative. An explicit parameter makes each call site
+        /// say what the version IS.
         private static PlatformDocumentVersion NewVersion(PlatformDocument doc, int versionNo, StorageKey key,
             string fileName, string contentType, Stream content, string? reason, long? replaces,
-            BusinessContext ctx, DateTime now)
+            BusinessContext ctx, DateTime now,
+            string? documentNumber, DateTime? issueDate, DateTime? expiryDate)
             => new()
             {
                 CompanyID = doc.CompanyID,
@@ -977,6 +1127,9 @@ namespace CrossBuy.BL.Documents
                 SizeBytes = content.CanSeek ? content.Length : 0,
                 Reason = reason,
                 ReplacesVersionId = replaces,
+                DocumentNumber = documentNumber,
+                IssueDate = issueDate,
+                ExpiryDate = expiryDate,
                 UploadedBy = ctx.EmployeeId!.Value,
                 UploadedAt = now,
             };

@@ -134,6 +134,25 @@ namespace CrossBuy.Models.Context.Documents
         /// The version this one replaced, so a renewal chain is walkable in both directions.
         public long? ReplacesVersionId { get; set; }
 
+        /// THE INSTRUMENT THIS VERSION IS, and the reason these three are here rather than only on the
+        /// document.
+        ///
+        /// A renewal replaces a passport with a DIFFERENT passport: new number, new issue date, new
+        /// expiry. The document row can only hold one set of those, and it has to hold the CURRENT
+        /// one - otherwise the validity rule would have to walk versions to find out whether the
+        /// employee is covered today, and that rule is deliberately a single-row read.
+        ///
+        /// So before these columns existed, renewing overwrote the old passport's number and dates and
+        /// nothing anywhere remembered them. The blob survived; the identity of the document it was a
+        /// scan OF did not. That is precisely the "pretend the renewal never happened" failure - except
+        /// backwards: it pretended the OLD document never happened.
+        ///
+        /// Each version now records what it was. Nullable, because a version created before this slice
+        /// genuinely does not know, and inventing a date for it would be worse than admitting that.
+        public string? DocumentNumber { get; set; }
+        public DateTime? IssueDate { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+
         public int UploadedBy { get; set; }
         public DateTime UploadedAt { get; set; }
     }
@@ -182,6 +201,24 @@ namespace CrossBuy.Models.Context.Documents
         /// nobody has classified is that its subject may not file it themselves.
         public bool SelfServiceAllowed { get; set; }
 
+        /// HOW MUCH WARNING THIS KIND OF DOCUMENT DESERVES, in days before its expiry date.
+        ///
+        /// This is the one thing the type model could NOT already express, and I looked for a way to
+        /// avoid the column. `RequiresExpiryDate` answers whether an expiry date is DEMANDED, which is
+        /// a different question - a document with a date volunteered for a type that does not require
+        /// one still expires. `MetadataSchema` is a JSON blob, but it describes the keys a DOCUMENT may
+        /// carry and is validated against document metadata on write; putting type policy in it would
+        /// make one field mean two unrelated things. Nothing else on the type holds a number.
+        ///
+        /// A passport wants months of notice because renewing one takes months. A gate pass wants a
+        /// week. That difference is a business decision per type, so it is configuration - which is
+        /// also what keeps the words Passport and GatePass out of the platform's code.
+        ///
+        /// NULL means the platform default, NOT "never warn". A type whose lead time nobody has got
+        /// round to configuring must still give notice, because the alternative failure is a passport
+        /// expiring in silence - see DocumentExpiryPolicy.DefaultWarningDays.
+        public int? ExpiryWarningDays { get; set; }
+
         public bool IsActive { get; set; } = true;
         public int SortOrder { get; set; }
     }
@@ -225,6 +262,7 @@ namespace CrossBuy.Models.Context.Documents
                 e.Property(x => x.FileName).HasMaxLength(NameLength).IsRequired();
                 e.Property(x => x.ContentType).HasMaxLength(NameLength).IsRequired();
                 e.Property(x => x.Reason).HasMaxLength(PathishLength);
+                e.Property(x => x.DocumentNumber).HasMaxLength(NameLength);
 
                 // One row per (document, version). The DATABASE settles a concurrent double-replace, so
                 // two simultaneous renewals cannot both claim V2 and silently lose one of the files.
