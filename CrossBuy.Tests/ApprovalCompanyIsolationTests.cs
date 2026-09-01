@@ -57,8 +57,15 @@ namespace CrossBuy.Tests
 		// stock/procurement/notification are never reached by the inbox read, so they are deliberately
 		// null: a stub would imply this path may call them, and a NullReferenceException would be a
 		// louder, more useful failure than a stub quietly absorbing a call.
+		//
+		// The context accessor is null for the same reason, and the reason is worth stating because it is
+		// the one argument a reader would expect to matter here: ApprovalInboxAsync takes the
+		// BusinessContext as a PARAMETER and reads the company from it. The accessor backs
+		// CurrentCompanyIdAsync, which only the submission and approve/reject paths use. A stub accessor
+		// here would quietly supply a SECOND source of company identity, and a test whose subject is
+		// company isolation must have exactly one — the one it passes in.
 		private static IInventoryApprovalService Service(CrossBuy.Models.Context.CrossDbContext db)
-			=> new InventoryApprovalService(db, null!, null!, null!);
+			=> new InventoryApprovalService(db, null!, null!, null!, null!);
 
 		private static BusinessContext Context(int companyId, int? employeeId) => new()
 		{

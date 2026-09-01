@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Inventory;
 using Microsoft.EntityFrameworkCore;
@@ -32,34 +32,60 @@ namespace CrossBuy.BL
 
 	public class InventoryApprovalService : IInventoryApprovalService
 	{
-		private const int CompanyId = 1;
 		private readonly CrossDbContext _db;
 		private readonly IStockService _stock;
 		private readonly IProcurementService _proc;
 		private readonly INotificationService _notify;
-		public InventoryApprovalService(CrossDbContext db, IStockService stock, IProcurementService proc, INotificationService notify)
-		{ _db = db; _stock = stock; _proc = proc; _notify = notify; }
+		private readonly CrossBuy.BL.Platform.IBusinessContextAccessor _context;
+
+		public InventoryApprovalService(CrossDbContext db, IStockService stock, IProcurementService proc,
+			INotificationService notify, CrossBuy.BL.Platform.IBusinessContextAccessor context)
+		{ _db = db; _stock = stock; _proc = proc; _notify = notify; _context = context; }
+
+		// STAGE 1 BATCH A — `private const int CompanyId = 1` removed. It meant an approval raised by a
+		// company-2 user was stored under company 1, notified company 1's managers, and on approval REPLAYED
+		// its held stock/PO command into company 1.
+		//
+		// The replacement is deliberately split, because the two directions carry very different risk:
+		//
+		//   * READS and NEW SUBMISSIONS resolve the company from the BusinessContext. An unresolved context
+		//     throws rather than defaulting — a threshold check or an approval queue for "no company" is
+		//     meaningless.
+		//   * APPROVE / REJECT use the APPROVAL ROW'S OWN CompanyID. That is the honest source: the payload was
+		//     captured under that company's warehouses and vendors, so replaying it anywhere else would be a
+		//     cross-company command execution. It also makes this change provably behaviour-preserving on
+		//     existing data, where every row's CompanyID is already 1.
+		//
+		// No stock or GL calculation is altered: the same StockService/ProcurementService methods receive the
+		// same payload; only the company argument now comes from the row instead of a constant.
+		private async Task<int> CurrentCompanyIdAsync(CancellationToken cancellationToken = default)
+		{
+			var context = await _context.GetCurrentAsync(cancellationToken);   // throws when unresolved
+			return context.CompanyId;
+		}
 
 		public async Task<bool> RequiresApprovalAsync(decimal amount)
 		{
-			var th = await _db.InventorySettings.AsNoTracking().Where(s => s.CompanyID == CompanyId).Select(s => s.ApprovalThreshold).FirstOrDefaultAsync();
+			int companyId = await CurrentCompanyIdAsync();
+			var th = await _db.InventorySettings.AsNoTracking().Where(s => s.CompanyID == companyId).Select(s => s.ApprovalThreshold).FirstOrDefaultAsync();
 			return th > 0 && Math.Abs(amount) >= th;
 		}
 
 		public async Task<int> SubmitAsync(string docType, decimal amount, object payload, int? requestedBy)
 		{
+			int companyId = await CurrentCompanyIdAsync();
 			var ap = new InventoryApproval
 			{
-				CompanyID = CompanyId, DocType = docType, Amount = Math.Round(amount, 2), PayloadJson = JsonSerializer.Serialize(payload),
+				CompanyID = companyId, DocType = docType, Amount = Math.Round(amount, 2), PayloadJson = JsonSerializer.Serialize(payload),
 				Status = "Pending", RequestedByEmployeeId = requestedBy, RequestedAt = DateTime.UtcNow
 			};
 			_db.InventoryApprovals.Add(ap);
 			await _db.SaveChangesAsync();
 
-			// notify all inventory managers except the requester (SoD)
+			// notify all inventory managers except the requester (SoD) — in THIS company
 			int reqId = requestedBy ?? -1;
 			var managers = await _db.InventoryUserRoles.AsNoTracking()
-				.Where(r => r.CompanyID == CompanyId && r.Role == "InventoryManager" && r.EmployeeId != reqId)
+				.Where(r => r.CompanyID == companyId && r.Role == "InventoryManager" && r.EmployeeId != reqId)
 				.Select(r => r.EmployeeId).Distinct().ToListAsync();
 			foreach (var m in managers)
 				await _notify.NotifyAsync(m, "طلب اعتماد مخزون", "Inventory approval request",
@@ -67,8 +93,11 @@ namespace CrossBuy.BL
 			return ap.ID;
 		}
 
-		public Task<List<InventoryApproval>> PendingAsync() =>
-			_db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == CompanyId && a.Status == "Pending").OrderBy(a => a.ID).ToListAsync();
+		public async Task<List<InventoryApproval>> PendingAsync()
+		{
+			int companyId = await CurrentCompanyIdAsync();
+			return await _db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == companyId && a.Status == "Pending").OrderBy(a => a.ID).ToListAsync();
+		}
 
 		// =============================================================================================
 		// APPROVAL INBOX — the company-isolated read that ApprovalsController.Index consumes.
@@ -125,12 +154,18 @@ namespace CrossBuy.BL
 			return (true, pending);
 		}
 
-		public Task<List<InventoryApproval>> RecentAsync(int take = 50) =>
-			_db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == CompanyId).OrderByDescending(a => a.ID).Take(take).ToListAsync();
+		public async Task<List<InventoryApproval>> RecentAsync(int take = 50)
+		{
+			int companyId = await CurrentCompanyIdAsync();
+			return await _db.InventoryApprovals.AsNoTracking().Where(a => a.CompanyID == companyId).OrderByDescending(a => a.ID).Take(take).ToListAsync();
+		}
 
 		public async Task<(bool ok, string? error)> ApproveAsync(int id, int approverEmp, string? note)
 		{
-			var ap = await _db.InventoryApprovals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == CompanyId);
+			// Scoped to the approver's company so an id from another company reads as "not found" — the same
+			// answer as a genuinely missing row, so an approver cannot probe another company's queue.
+			int companyId = await CurrentCompanyIdAsync();
+			var ap = await _db.InventoryApprovals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == companyId);
 			if (ap == null) return (false, "الطلب غير موجود");
 			if (ap.Status != "Pending") return (false, "تمت معالجة الطلب من قبل");
 			if (ap.RequestedByEmployeeId == approverEmp) return (false, "فصل المهام: لا يمكن لمنشئ المستند اعتماده");  // SoD
@@ -145,28 +180,28 @@ namespace CrossBuy.BL
 					case "PurchaseOrder":
 						{
 							var p = JsonSerializer.Deserialize<PoApprovalPayload>(ap.PayloadJson ?? "{}", opts)!;
-							var (ok, e, po) = await _proc.CreatePurchaseOrderAsync(CompanyId, p.VendorId, p.WarehouseId, p.OrderDate, p.ExpectedDate, p.Notes, p.Lines, null);
+							var (ok, e, po) = await _proc.CreatePurchaseOrderAsync(ap.CompanyID, p.VendorId, p.WarehouseId, p.OrderDate, p.ExpectedDate, p.Notes, p.Lines, null);
 							if (!ok) { err = e; } else resultNo = po?.OrderNo;
 							break;
 						}
 					case "StockTransfer":
 						{
 							var p = JsonSerializer.Deserialize<TransferApprovalPayload>(ap.PayloadJson ?? "{}", opts)!;
-							var (ok, e, tr) = await _stock.TransferAsync(CompanyId, p.FromWarehouseId, p.ToWarehouseId, p.Date, p.Notes, p.Lines, null);
+							var (ok, e, tr) = await _stock.TransferAsync(ap.CompanyID, p.FromWarehouseId, p.ToWarehouseId, p.Date, p.Notes, p.Lines, null);
 							if (!ok) { err = e; } else resultNo = tr?.TransferNo;
 							break;
 						}
 					case "StockCount":
 						{
 							var p = JsonSerializer.Deserialize<CountApprovalPayload>(ap.PayloadJson ?? "{}", opts)!;
-							var (ok, e, cnt) = await _stock.PostCountAsync(CompanyId, p.WarehouseId, p.CountDate, p.Notes, p.Lines, null);
+							var (ok, e, cnt) = await _stock.PostCountAsync(ap.CompanyID, p.WarehouseId, p.CountDate, p.Notes, p.Lines, null);
 							if (!ok) { err = e; } else resultNo = cnt?.CountNo;
 							break;
 						}
 					case "WriteOff":
 						{
 							var p = JsonSerializer.Deserialize<WriteOffApprovalPayload>(ap.PayloadJson ?? "{}", opts)!;
-							var (ok, e, no, _, _) = await _stock.WriteOffAsync(CompanyId, p.WarehouseId, p.WriteOffDate, p.Reason, p.Notes, p.Lines, null);
+							var (ok, e, no, _, _) = await _stock.WriteOffAsync(ap.CompanyID, p.WarehouseId, p.WriteOffDate, p.Reason, p.Notes, p.Lines, null);
 							if (!ok) { err = e; } else resultNo = no;
 							break;
 						}
@@ -185,7 +220,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> RejectAsync(int id, int approverEmp, string? note)
 		{
-			var ap = await _db.InventoryApprovals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == CompanyId);
+			// Same company scoping as ApproveAsync — another company's id must read as "not found".
+			int companyId = await CurrentCompanyIdAsync();
+			var ap = await _db.InventoryApprovals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == companyId);
 			if (ap == null) return (false, "الطلب غير موجود");
 			if (ap.Status != "Pending") return (false, "تمت معالجة الطلب من قبل");
 			if (ap.RequestedByEmployeeId == approverEmp) return (false, "فصل المهام: لا يمكن لمنشئ المستند رفضه");

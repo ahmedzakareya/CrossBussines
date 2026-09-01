@@ -54,7 +54,9 @@ namespace CrossBuy.Tests
 			var leave = new LeaveWorkflowService(host.Db, new NoopNotifications(), new StubLeaveDashboard(),
 				NullLogger<LeaveWorkflowService>.Instance);
 			var requests = new EmployeeRequestService(host.Db, new NoopNotifications(), leave);
-			var inventory = new InventoryApprovalService(host.Db, null!, null!, null!);
+			// Null accessor: the aggregator only reaches ApprovalInboxAsync, which takes the
+			// BusinessContext as a parameter. See ApprovalCompanyIsolationTests.Service.
+			var inventory = new InventoryApprovalService(host.Db, null!, null!, null!, null!);
 			return new ApprovalInboxService(leave, requests, inventory, new InboxNoBillingApprovals());
 		}
 
