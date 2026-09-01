@@ -58,7 +58,7 @@ namespace CrossBuy.Tests
 		// null: a stub would imply this path may call them, and a NullReferenceException would be a
 		// louder, more useful failure than a stub quietly absorbing a call.
 		private static IInventoryApprovalService Service(CrossBuy.Models.Context.CrossDbContext db)
-			=> new InventoryApprovalService(db, null!, null!, null!);
+			=> new InventoryApprovalService(db, null!, null!, null!, null!);
 
 		private static BusinessContext Context(int companyId, int? employeeId) => new()
 		{

@@ -54,7 +54,7 @@ namespace CrossBuy.Tests
 			var leave = new LeaveWorkflowService(host.Db, new NoopNotifications(), new StubLeaveDashboard(),
 				NullLogger<LeaveWorkflowService>.Instance);
 			var requests = new EmployeeRequestService(host.Db, new NoopNotifications(), leave);
-			var inventory = new InventoryApprovalService(host.Db, null!, null!, null!);
+			var inventory = new InventoryApprovalService(host.Db, null!, null!, null!, null!);
 			return new ApprovalInboxService(leave, requests, inventory, new InboxNoBillingApprovals());
 		}
 
