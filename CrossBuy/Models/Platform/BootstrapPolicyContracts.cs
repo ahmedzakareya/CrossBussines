@@ -89,7 +89,7 @@ namespace CrossBuy.Models.Platform
 
         public static readonly IReadOnlyList<Entry> All = new[]
         {
-            // ---- Accounting: 4 ----
+            // ---- Accounting: 6 ----
             new Entry("Accounting", "post",
                 "Posts to the general ledger. The two-writers rule makes JournalEntryService the only writer; " +
                 "bootstrap must not decide who may invoke it."),
@@ -99,6 +99,12 @@ namespace CrossBuy.Models.Platform
                 "Gates AssignAccRole/RemoveAccRole (AccountingController:1586), so it grants SECURITY, and it is " +
                 "PlatformOpsAttribute's fallback authority, so it exposes platform operations. Both halves of the " +
                 "matrix's 'where it grants security or exposes PlatformOps'."),
+            new Entry("Accounting", "period-close",
+                "Seals a fiscal period against further posting. A company that has configured nothing must not " +
+                "be able to freeze its own ledger."),
+            new Entry("Accounting", "period-reopen",
+                "RE-ADMITS posting to a sealed period - the single control that stands between a closed month " +
+                "and a late unauthorized entry. Never bootstrap, under any configuration."),
             new Entry("Accounting", "currency-override",
                 "Issues a document in a currency other than the branch's, which moves the recorded amount."),
 

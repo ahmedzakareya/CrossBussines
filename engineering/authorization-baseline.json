@@ -3,8 +3,8 @@
   "generatedBy": "engineering/generate-authorization-baseline.py",
   "frozenBaseline": {
     "mutating": 439,
-    "attributeProtected": 157,
-    "inBodyProtected": 188,
+    "attributeProtected": 156,
+    "inBodyProtected": 189,
     "gaps": 94
   },
   "rules": [
@@ -1335,6 +1335,15 @@
     }
   ],
   "frozenBaselineHistory": [
+    {
+      "stage": "Accounting period close and financial control foundation (TAB-1 integration of TAB-6, 2026-09-01)",
+      "mutating": 439,
+      "attributeProtected": 156,
+      "inBodyProtected": 189,
+      "gaps": 94,
+      "controllers": 52,
+      "note": "NO NEW ENDPOINT AND NO NEW CONTROLLER. The mutating total does not move and neither does the controller count: this increment RECLASSIFIES exactly one existing endpoint, AccountingController.SetPeriodStatus, from attribute-protected to in-body protected. 156 + 189 + 94 = 439. WHY THE RECLASSIFICATION IS A STRENGTHENING AND NOT A LOSS. The action carried [AccPerm(\"manage\")]. That is the ROLE-MANAGEMENT right - it is what gates AssignAccRole and RemoveAccRole on the same controller - so sealing a month required the power to grant accounting roles, which is both more privilege than the job needs and the wrong kind of it. The attribute is gone and the endpoint now resolves the required authority FROM THE REQUESTED TRANSITION - AccountingActions.PeriodReopen for a move back to Open, AccountingActions.PeriodClose otherwise - and asks AccountingAccessService at the boundary before doing anything. Both actions are new, both are separate from 'manage', and BOTH ARE ON NeverBootstrapOpen, so a company that has configured nothing cannot freeze its own ledger or re-admit posting to a sealed month. Reopen is ChiefAccountant only; close is ChiefAccountant or Accountant. THE BOUNDARY CHECK IS NOT THE POLICY. AccountingPeriodControlService re-asks the same authority before it writes, resolves the company from the period's OWN fiscal year rather than the request, gates on readiness, requires a reason to reopen, and writes an audit row inside the transaction. The controller check exists because an endpoint whose guard is invisible at the endpoint is one nobody can audit by reading it - and CBA001 would not credit it either. WHAT ELSE THIS INCREMENT CLOSED, found by re-proving the chokepoint on current master rather than trusting the candidate's report: StockService.PeriodGuardAsync tested the LITERAL \"Closed\". That guard is not a duplicate and must not be deleted - a same-branch transfer moves stock and posts no journal, so it never reaches the GL writer and the chokepoint there cannot see it - but testing a literal meant SoftClosed blocked GL postings while admitting stock movements, so inventory valuation could move inside a period finance believed was sealing. It now asks AccountingPeriodStatuses.BlocksPosting. TWO ENFORCEMENT POINTS WERE NECESSARY; TWO DEFINITIONS WERE THE DEFECT. DEBT UNCHANGED AT 94 and the gap set is identical id for id - no entry added, none removed, no re-bless, no suppression, ZERO CBA001/CBA004/CBA006 on the final candidate. The one endpoint that moved category did not move into the debt; it moved from a broad attribute to a narrower in-body authority, which is the direction this baseline exists to encourage."
+    },
     {
       "stage": "Central Documents Batch 3 HTTP + Restaurant Batch 3 UI, integration wave (TAB-1, 2026-08-31)",
       "mutating": 439,

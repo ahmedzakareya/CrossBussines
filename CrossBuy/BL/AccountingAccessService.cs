@@ -30,6 +30,15 @@ namespace CrossBuy.BL
 		Task<string> RoleLabelAsync(bool isAr);
 	}
 
+	// The two period-control actions, named once so a caller cannot misspell a permission into a silent
+	// deny. The other five accounting actions predate this and remain bare strings; they are not renamed
+	// here because that would touch every existing call site for no behavioural gain.
+	public static class AccountingActions
+	{
+		public const string PeriodClose = "period-close";     // Open -> SoftClosed -> Closed
+		public const string PeriodReopen = "period-reopen";   // Closed/SoftClosed -> Open, with a recorded reason
+	}
+
 	public class AccountingAccessService : IAccountingAccessService, IModuleAccessService
 	{
 		private readonly CrossDbContext _db;
@@ -50,7 +59,8 @@ namespace CrossBuy.BL
 		public string Scope => EntityRegistry.ScopeAccounting;
 
 		public IReadOnlyCollection<string> Actions { get; } =
-			new[] { "read", "post", "pay", "manage", "currency-override" };
+			new[] { "read", "post", "pay", "manage", "currency-override",
+				AccountingActions.PeriodClose, AccountingActions.PeriodReopen };
 
 		// ---------------------------------------------------------------------------------------------
 		// Canonical, session-free. This is the implementation; everything else delegates here.
@@ -112,6 +122,12 @@ namespace CrossBuy.BL
 					"pay" => chief || acct || cashier,        // receipts, payments, bank/cash transfers
 					"manage" => chief,                       // period close, year-end, posting rules, roles, approvals
 					"currency-override" => chief || acct,    // issue a document in a currency other than the branch's
+					// Period control. SEPARATE from "manage" deliberately: manage gates AssignAccRole, so binding the
+					// period close to it would force every person who may close a month to also hold the power to grant
+					// accounting roles - more privilege than the job needs, and the wrong kind.
+					AccountingActions.PeriodClose => chief || acct,
+					// Reopen is strictly stronger than close: it RE-ADMITS posting to a period that was sealed.
+					AccountingActions.PeriodReopen => chief,
 					_ => false                               // Auditor (or unknown role) → read-only
 				};
 

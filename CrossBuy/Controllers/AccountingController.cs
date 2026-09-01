@@ -515,13 +515,58 @@ namespace CrossBuy.Controllers
 			return View(list);
 		}
 
+		// ROUTED THROUGH THE GOVERNED CONTROL SERVICE.
+		//
+		// This action used to call FiscalPeriodService.SetStatusAsync(id, status), which took no company
+		// and no actor - so this screen could close ANOTHER company's period, over an out-of-balance
+		// journal, with nothing recorded. It was also gated on AccPerm("manage"), the ROLE-MANAGEMENT
+		// right, so sealing a month required the power to grant accounting roles.
+		//
+		// The authority now lives in the service (period-close / period-reopen, both NeverBootstrapOpen),
+		// which also resolves the company from the period's own fiscal year, gates on readiness, and
+		// writes the audit row. Nothing about posting, stock, journals, receivables or payments changes
+		// here - this is the same screen, asking a governed service instead of an ungoverned setter.
 		[SessionValidation]
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-			[CrossBuy.Models.AccPerm("manage")]
-		public async Task<IActionResult> SetPeriodStatus(int id, string status)
+		public async Task<IActionResult> SetPeriodStatus(int id, string status, string? reason, bool overrideWarnings = false)
 		{
-			var (ok, err) = await _periods.SetStatusAsync(id, status);
+			// Same service-locator pattern this controller already uses for BusinessContexts, so the
+			// constructor is untouched - the smallest possible edit to a shared file.
+			var __periodControl = HttpContext.RequestServices.GetService(typeof(IAccountingPeriodControlService))
+				as IAccountingPeriodControlService;
+			var ctx = BusinessContexts == null ? null : await BusinessContexts.TryGetCurrentAsync();
+			if (__periodControl == null) ctx = null;
+			if (ctx == null)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Periods));
+			}
+
+			// The required authority depends on the requested transition, so it is resolved from the status
+			// and asked AT THE BOUNDARY. The POLICY still lives in one place - AccountingAccessService decides
+			// which roles hold period-close and period-reopen - and the control service asks again before it
+			// writes. This call is the boundary refusal, not a second copy of the rule.
+			var __required = status == CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.Open
+				? AccountingActions.PeriodReopen
+				: AccountingActions.PeriodClose;
+			var __accounting = HttpContext.RequestServices.GetService(typeof(AccountingAccessService)) as AccountingAccessService;
+			if (__accounting == null || !await __accounting.CanAsync(ctx, __required))
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Periods));
+			}
+
+			var (ok, err) = status switch
+			{
+				CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.SoftClosed
+					=> await __periodControl!.SoftCloseAsync(ctx, id),
+				CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.Closed
+					=> await __periodControl!.CloseAsync(ctx, id, overrideWarnings),
+				CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.Open
+					=> await __periodControl!.ReopenAsync(ctx, id, reason ?? ""),
+				_ => (false, L["Invalid status"].Value),
+			};
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The period status was updated"].Value : err;
 			return RedirectToAction(nameof(Periods));
 		}

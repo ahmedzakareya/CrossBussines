@@ -302,6 +302,11 @@ builder.Services.AddScoped<CrossBuy.BL.Platform.IModuleAccessService>(sp => sp.G
 // by scope, so it adds no permission rule of its own and cannot drift from the MVC screens decisions.
 builder.Services.AddScoped<IAccountingApiAuthorization, AccountingApiAuthorization>();
 
+// Accounting period control (close / soft-close / reopen). The posting GUARD already lives in
+// JournalEntryService, the platform's only GL writer; this is the governed control around it -
+// company-scoped, actor-recorded, readiness-gated, with its own history.
+builder.Services.AddScoped<IAccountingPeriodControlService, AccountingPeriodControlService>();
+
 // Projects authorization (Phase 3C-1). ProjectsAccessService needs the role directory and the
 // accounting service, both already registered above, so this adds only the Projects surface.
 builder.Services.AddScoped<ProjectsAccessService>();

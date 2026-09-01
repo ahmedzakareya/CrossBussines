@@ -5564,7 +5564,16 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 			int beforeCount = await _db.StockMovements.CountAsync(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID);
 
-			await periods.SetStatusAsync(period.ID, "Closed");
+			// [DevOnly] DIAGNOSTIC. This endpoint exists to PROVE the posting guard blocks stock and GL
+			// movements in a closed period, so it has to fabricate a closed period and put it back.
+			//
+			// It sets the row directly rather than calling the governed control service, deliberately: the
+			// governed path demands authority, readiness and an audit row, none of which a diagnostic
+			// should manufacture. A test harness moving a row is test infrastructure; the same move behind
+			// a business API would be the bypass this batch closes.
+			var __p = await _db.FiscalPeriods.FirstAsync(x => x.ID == period.ID);
+			__p.Status = CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.Closed;
+			await _db.SaveChangesAsync();
 			var attempts = new List<object>();
 			void rec(string op, bool ok, string? err) => attempts.Add(new { op, ok, blocked = !ok && (err ?? "").Contains("مقفول"), error = err });
 			try
@@ -5591,7 +5600,11 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 					rec("Assemble", r7.ok, r7.error);
 				}
 			}
-			finally { await periods.SetStatusAsync(period.ID, "Open"); }
+			finally
+			{
+				__p.Status = CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.Open;
+				await _db.SaveChangesAsync();
+			}
 
 			int afterCount = await _db.StockMovements.CountAsync(m => m.CompanyID == company && m.ItemId == item.ID && m.WarehouseId == wh.ID);
 

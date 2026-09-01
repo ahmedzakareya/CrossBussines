@@ -181,13 +181,24 @@ namespace CrossBuy.BL
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
-		// period guard: every stock document is rejected if its date falls in a Closed period —
-		// applied at method entry so even movements that post NO GL (e.g. same-branch transfers) are blocked.
+		// PERIOD GUARD: every stock document is rejected if its date falls in a period that blocks
+		// posting. Applied at method entry so even movements that post NO GL — a same-branch transfer,
+		// for instance — are blocked. That is why this guard exists ALONGSIDE the one in
+		// JournalEntryService rather than being replaced by it: those movements never reach the GL
+		// writer, so the chokepoint there cannot see them.
+		//
+		// IT ASKS THE CANONICAL PREDICATE, and that is the whole of this change. It used to test the
+		// literal "Closed", which meant SoftClosed — the state a controller puts a month into while it
+		// finishes closing — still admitted stock movements. Inventory valuation could therefore move
+		// inside a period finance believed was sealing, and the GL guard would not have noticed because
+		// a same-branch transfer posts no journal. Two enforcement POINTS are necessary; two
+		// DEFINITIONS of "blocks posting" were the defect.
 		private async Task<string?> PeriodGuardAsync(int companyId, DateTime date)
 		{
 			var p = await _periods.ResolveAsync(companyId, date);
 			if (p == null) return "لا توجد فترة مالية تشمل تاريخ الحركة";
-			if (p.Status == "Closed") return "الفترة المالية مقفولة — لا يمكن الترحيل فيها";
+			if (CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.BlocksPosting(p.Status))
+				return "الفترة المالية مقفولة — لا يمكن الترحيل فيها";
 			return null;
 		}
 

@@ -79,6 +79,54 @@ namespace CrossBuy.Models.Context.Accounting
 		public byte PeriodNo { get; set; }                // 1..13
 		public DateTime StartDate { get; set; }
 		public DateTime EndDate { get; set; }
-		public string Status { get; set; } = "Open";      // Open/SoftClosed/Closed
+		public string Status { get; set; } = AccountingPeriodStatuses.Open;
+
+		// ---- close / reopen evidence ----
+		//
+		// A period's state is a FINANCIAL CONTROL, so who moved it and when is part of the record rather
+		// than a trail beside it. Reopen additionally carries a reason: closing is routine and explains
+		// itself, but re-admitting posting to a closed period never does.
+		public int? ClosedBy { get; set; }
+		public DateTime? ClosedAt { get; set; }
+		public int? ReopenedBy { get; set; }
+		public DateTime? ReopenedAt { get; set; }
+		public string? ReopenReason { get; set; }
+	}
+
+	// The period lifecycle.
+	//
+	// SoftClosed is the EXISTING name for the middle state - it is already in the model comment, already
+	// accepted by FiscalPeriodService.SetStatusAsync, and already written to rows. The brief calls that
+	// state "Closing"; introducing a second spelling beside a live one would give the system two
+	// vocabularies for one thing, so the existing name is kept and given meaning instead.
+	public static class AccountingPeriodStatuses
+	{
+		public const string Open = "Open";              // ordinary posting permitted
+		public const string SoftClosed = "SoftClosed";  // "Closing": ordinary posting refused, still reversible without a reopen
+		public const string Closed = "Closed";          // posting refused; only a recorded reopen re-admits it
+
+		public static readonly IReadOnlyList<string> All = new[] { Open, SoftClosed, Closed };
+
+		// The single fact every posting path depends on. Expressed once, here, so a caller cannot
+		// accidentally test for one closed state and miss the other.
+		public static bool BlocksPosting(string? status) =>
+			status == SoftClosed || status == Closed;
+
+		public static bool IsKnown(string? status) => status != null && All.Contains(status, StringComparer.Ordinal);
+	}
+
+	// Every close, soft-close and reopen, kept as rows rather than as the latest values on the period.
+	// A period that was closed, reopened, corrected and closed again has a story, and the control is only
+	// worth having if that story survives.
+	public class AccountingPeriodAudit
+	{
+		public int ID { get; set; }
+		public int CompanyID { get; set; }
+		public int FiscalPeriodId { get; set; }
+		public string FromStatus { get; set; } = "";
+		public string ToStatus { get; set; } = "";
+		public int ActorEmployeeId { get; set; }
+		public DateTime OccurredAt { get; set; }
+		public string? Reason { get; set; }
 	}
 }

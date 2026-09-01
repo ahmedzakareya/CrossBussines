@@ -131,7 +131,7 @@
       "fileId": "SHF-19",
       "path": "CrossBuy/Controllers/AccountingController.cs",
       "owner": "Module surface - integration owner unblock only",
-      "changeRule": "Company-context remediation of named read paths only. No posting, stock, journal, receivable or payment behaviour may change under this entry.",
+      "changeRule": "Company-context remediation of named read paths, AND the SetPeriodStatus action only. SetPeriodStatus may route to IAccountingPeriodControlService and ask AccountingActions.PeriodClose / PeriodReopen at the boundary - it may hold no close condition, readiness rule or authority rule of its own; the policy lives in AccountingAccessService and the control service, which both re-ask before writing. No posting, stock, journal, receivable or payment behaviour may change under this entry. Changes require owner approval (-AllowShared).",
       "reason": "Invoice read paths still resolve company from a compile-time constant while the product surface above them is company-scoped; the legacy business modules have no tab, so the screens cannot be fixed by their owner."
     },
     {

@@ -202,6 +202,24 @@ namespace CrossBuy.Models.Context
 				}
 			}
 
+			// ---- Accounting period control: close/reopen evidence and its history ----
+			// Migrations are disabled here, so deploy/sql/accounting_period_control.sql is what actually
+			// creates these. This mapping exists so the MODEL states the same widths the script declares -
+			// without it the strings are unbounded on SQLite, where the tests run, and a close that produced
+			// an over-long reason would pass every test and fail on SQL Server at month end.
+			builder.Entity<Accounting.AccountingPeriodAudit>(e =>
+			{
+				e.ToTable("AccountingPeriodAudits");
+				e.Property(x => x.FromStatus).HasMaxLength(20).IsRequired();
+				e.Property(x => x.ToStatus).HasMaxLength(20).IsRequired();
+				e.Property(x => x.Reason).HasMaxLength(500);
+				e.HasIndex(x => new { x.CompanyID, x.FiscalPeriodId, x.OccurredAt })
+					.HasDatabaseName("IX_AccountingPeriodAudits_ByPeriod");
+			});
+
+			builder.Entity<Accounting.FiscalPeriod>(e =>
+				e.Property(x => x.ReopenReason).HasMaxLength(500));
+
 			// ---- Platform Kernel slice 1: BusinessEvents + BusinessEventDispatch ----
 			// The real structure ships as an idempotent script (deploy/sql/platform_business_events.sql)
 			// because migrations are disabled in this project. This mapping exists so EF generates the same
@@ -552,6 +570,7 @@ namespace CrossBuy.Models.Context
         public DbSet<Accounting.FxRevaluationRun> FxRevaluationRuns { get; set; }
         public DbSet<Accounting.FiscalYear> FiscalYears { get; set; }
         public DbSet<Accounting.FiscalPeriod> FiscalPeriods { get; set; }
+        public DbSet<Accounting.AccountingPeriodAudit> AccountingPeriodAudits { get; set; }   // period close/reopen history
         public DbSet<Accounting.JournalEntry> JournalEntries { get; set; }
         public DbSet<Accounting.JournalEntryLine> JournalEntryLines { get; set; }
         public DbSet<Accounting.NumberSequence> NumberSequences { get; set; }

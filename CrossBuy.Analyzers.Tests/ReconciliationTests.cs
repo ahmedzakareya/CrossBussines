@@ -197,9 +197,26 @@ public class ReconciliationTests
     //
     // 439 = 157 + 188 + 94.
     // ----------------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------------
+    // Accounting period close (TAB-1 integration of TAB-6, 2026-09-01). NO NEW ENDPOINT, NO NEW
+    // CONTROLLER: the total stays at 439 and the controller count at 52.
+    //
+    // ONE endpoint changes CATEGORY. AccountingController.SetPeriodStatus loses [AccPerm("manage")] -
+    // the ROLE-MANAGEMENT right, which gated AssignAccRole on the same file, so sealing a month used to
+    // require the power to grant accounting roles - and gains an in-body check that resolves the needed
+    // authority from the requested transition: period-reopen to re-open, period-close otherwise. Both
+    // are new actions, separate from `manage`, and both are NeverBootstrapOpen.
+    //
+    // attributeProtected 157 -> 156, inBodyProtected 188 -> 189. A move between two PROTECTED
+    // categories, onto a narrower authority - not a step toward the debt.
+    //
+    // Debt UNCHANGED at 94, gap set identical id for id, no baseline entry, no suppression.
+    //
+    // 439 = 156 + 189 + 94.
+    // ----------------------------------------------------------------------------------------------
     private const int FrozenMutating = 439;
-    private const int FrozenAttributeProtected = 157;
-    private const int FrozenInBodyProtected = 188;
+    private const int FrozenAttributeProtected = 156;
+    private const int FrozenInBodyProtected = 189;
 
     /// <summary>The enforced invariant. This one may only ever shrink - and here it did.</summary>
     private const int FrozenGaps = 94;

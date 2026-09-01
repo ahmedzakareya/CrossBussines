@@ -23,8 +23,19 @@ namespace CrossBuy.BL
 		/// All periods of a company (with year name), ordered.
 		Task<List<FiscalPeriodRow>> ListAsync(int companyId);
 
-		/// Change a period status: Open / SoftClosed / Closed.
-		Task<(bool ok, string? error)> SetStatusAsync(int periodId, string status);
+		// RETIRED: SetStatusAsync.
+		//
+		// It took NO company and NO actor - it loaded the period by id alone - so a chief accountant in
+		// company 1 could close company 2's period, and nothing recorded who did it, when, or why. It
+		// also answered no readiness question, so a period could be sealed over an out-of-balance journal.
+		//
+		// It is REMOVED rather than narrowed. Of the three period states, two block posting, so every
+		// transition this method could still legally perform is a governed one - narrowing it would have
+		// left an inert method that only looked like a way to change a period.
+		//
+		// Close, soft-close and reopen now live on IAccountingPeriodControlService, which resolves the
+		// company from the period's own fiscal year, demands period-close/period-reopen authority, gates
+		// on readiness, requires a reason to reopen, and writes an audit row for every transition.
 	}
 
 	public class FiscalPeriodService : IFiscalPeriodService
@@ -66,17 +77,6 @@ namespace CrossBuy.BL
 					PeriodNo = p.PeriodNo, StartDate = p.StartDate, EndDate = p.EndDate, Status = p.Status,
 				})
 				.OrderBy(p => p.YearName).ThenBy(p => p.PeriodNo).ToList();
-		}
-
-		public async Task<(bool ok, string? error)> SetStatusAsync(int periodId, string status)
-		{
-			if (status != "Open" && status != "SoftClosed" && status != "Closed")
-				return (false, "حالة غير صحيحة");
-			var p = await _context.FiscalPeriods.FirstOrDefaultAsync(x => x.ID == periodId);
-			if (p == null) return (false, "الفترة غير موجودة");
-			p.Status = status;
-			await _context.SaveChangesAsync();
-			return (true, null);
 		}
 	}
 }

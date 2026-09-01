@@ -261,7 +261,12 @@ namespace CrossBuy.BL
 			// fiscal period must exist and not be Closed
 			var period = await _periods.ResolveAsync(entry.CompanyID, entry.EntryDate);
 			if (period == null) return (false, "لا توجد فترة مالية تشمل تاريخ القيد");
-			if (period.Status == "Closed") return (false, "الفترة المالية مقفولة — لا يمكن الترحيل فيها");
+			// BlocksPosting, not a literal: SoftClosed was accepted by FiscalPeriodService.SetStatusAsync and
+			// honoured by NOTHING, so the middle state existed in name only and a soft-closed period still took
+			// postings. One predicate now answers for both closed states, so a future caller cannot test for one
+			// and miss the other.
+			if (AccountingPeriodStatuses.BlocksPosting(period.Status))
+				return (false, "الفترة المالية مقفولة — لا يمكن الترحيل فيها");
 			entry.FiscalPeriodId = period.ID;
 
 			// reserve the entry number (per company per fiscal year). In Isolated mode this opens a short-lived separate
