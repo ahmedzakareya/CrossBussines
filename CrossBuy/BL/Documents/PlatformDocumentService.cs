@@ -80,10 +80,23 @@ namespace CrossBuy.BL.Documents
 
     public sealed record DocumentContent(Stream Content, string FileName, string ContentType);
 
+    /// The authorized listing row - and, since Batch 4, the LIFECYCLE that goes with it.
+    ///
+    /// Lifecycle is carried here rather than offered as a separate read for a governance reason, not a
+    /// convenience one. IPlatformDocumentService is a declared authority in
+    /// AuthorizationSurface.AuthorityTypes; every member is credited because every member was verified
+    /// to authorize, and DocumentAuthorityMemberTests fails when one is added that its table does not
+    /// cover. Widening that interface is a governance act. ListForEntityAsync ALREADY gates the entity
+    /// once and re-asks per document, so the row a caller is entitled to see can carry its own state
+    /// without any new member and without spending that guarantee.
+    ///
+    /// It also removes the reason a screen would ever compare a date: the state, the days remaining and
+    /// the type's warning window arrive already computed, by the one evaluator.
     public sealed record DocumentListItem(
         long Id, string EntityType, int EntityId, long? DocumentTypeId, string Confidentiality,
         string? DocumentNumber, DateTime? IssueDate, DateTime? EffectiveFrom, DateTime? ExpiryDate,
-        string Status, int VersionCount, DateTime CreatedAt);
+        string Status, int VersionCount, DateTime CreatedAt,
+        DocumentLifecycle? Lifecycle = null);
 
 
     /// What the platform means by "this record currently has a valid document of this type".
@@ -520,6 +533,14 @@ namespace CrossBuy.BL.Documents
                             && d.Status != "Archived")
                 .OrderByDescending(d => d.Id).ToListAsync(ct);
 
+            // The catalogue entries for these rows, in ONE query rather than one per document: the
+            // warning window is the TYPE's, so the evaluator needs it, and a per-row lookup inside the
+            // loop would turn a listing into N+1 round trips.
+            var typeIds = rows.Where(r => r.DocumentTypeId != null).Select(r => r.DocumentTypeId!.Value).Distinct().ToList();
+            var types = typeIds.Count == 0
+                ? new Dictionary<long, PlatformDocumentType>()
+                : await Types.AsNoTracking().Where(t => typeIds.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
+
             // Confidentiality is re-asked PER DOCUMENT: "may view the employee" is not "may view every
             // document about the employee", which is the whole point of the tier.
             var visible = new List<DocumentListItem>();
@@ -528,8 +549,18 @@ namespace CrossBuy.BL.Documents
                 var perDoc = await AuthorizeAsync(ctx, d.EntityType, d.EntityId, DocumentAction.View, d.CompanyID, d.Confidentiality, ct);
                 if (!perDoc.Allowed) continue;
                 var count = await Versions.AsNoTracking().CountAsync(v => v.DocumentId == d.Id, ct);
+
+                // THE CANONICAL EVALUATOR, not a second opinion. A screen that received only
+                // ExpiryDate would have to decide for itself what "expiring" means, and the two
+                // boundaries this platform exists to get right - expiring TODAY is still valid, and the
+                // window is the type's rather than a constant - are exactly the two a hand-written
+                // comparison gets wrong.
+                PlatformDocumentType? type = null;
+                if (d.DocumentTypeId is long tid) types.TryGetValue(tid, out type);
+
                 visible.Add(new DocumentListItem(d.Id, d.EntityType, d.EntityId, d.DocumentTypeId, d.Confidentiality,
-                    d.DocumentNumber, d.IssueDate, d.EffectiveFrom, d.ExpiryDate, d.Status, count, d.CreatedAt));
+                    d.DocumentNumber, d.IssueDate, d.EffectiveFrom, d.ExpiryDate, d.Status, count, d.CreatedAt,
+                    EvaluateLifecycle(d, type)));
             }
             return visible;
         }

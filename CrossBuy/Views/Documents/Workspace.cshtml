@@ -1,0 +1,138 @@
+@using CrossBuy.BL.Documents
+@using CrossBuy.Controllers
+@model DocumentWorkspaceVm
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+    ViewData["Title"] = Localizer["Documents"].Value;
+
+    // THIS VIEW COMPARES NO DATES. Every row arrives with the state the platform computed, from the
+    // one evaluator, so the two rules that are easy to get wrong — a document expiring TODAY is still
+    // valid, and the warning window belongs to the document's TYPE rather than being a constant —
+    // are already settled. A `@if (doc.ExpiryDate < DateTime.Now)` here would silently become the
+    // system's second date rule, and DocumentLifecycleUiTests fails if one appears.
+    //
+    // What is left is presentation: which word, which colour, which icon for a state the service named.
+    string StateLabel(DocumentLifecycleState s) => s switch
+    {
+        DocumentLifecycleState.Valid => Localizer["Valid"].Value,
+        DocumentLifecycleState.ExpiringSoon => Localizer["Expiring soon"].Value,
+        DocumentLifecycleState.Expired => Localizer["Expired"].Value,
+        DocumentLifecycleState.Submitted => Localizer["Awaiting verification"].Value,
+        DocumentLifecycleState.Rejected => Localizer["Rejected"].Value,
+        DocumentLifecycleState.Draft => Localizer["Draft"].Value,
+        DocumentLifecycleState.Archived => Localizer["Archived"].Value,
+        DocumentLifecycleState.Incomplete => Localizer["Incomplete"].Value,
+        _ => Localizer["Not held"].Value,
+    };
+
+    string StateTone(DocumentLifecycleState s) => s switch
+    {
+        DocumentLifecycleState.Valid => "success",
+        DocumentLifecycleState.ExpiringSoon => "warning",
+        DocumentLifecycleState.Expired => "danger",
+        DocumentLifecycleState.Submitted => "primary",
+        DocumentLifecycleState.Rejected => "danger",
+        _ => "secondary",
+    };
+
+    var needsAttention = Model.Documents.Where(d => d.Lifecycle is { NeedsAttention: true }).ToList();
+}
+
+<div class="d-flex flex-column gap-5">
+
+    <div class="card">
+        <div class="card-header align-items-center">
+            <div class="card-title fw-bold fs-4 m-0">
+                <i class="ki-outline ki-folder fs-2 text-primary me-2" aria-hidden="true"></i>@Localizer["Documents"]
+            </div>
+            <div class="card-toolbar">
+                <span class="badge badge-light fs-7">@Model.EntityType #@Model.EntityId</span>
+            </div>
+        </div>
+        <div class="card-body pt-2">
+            @if (Model.Documents.Count == 0)
+            {
+                @* One shape for "there are none" and "you may not see them". The listing already refuses
+                   per document, so a caller cannot tell an empty record from a restricted one — which is
+                   the same refusal shape the download and verify routes use. *@
+                <div class="text-muted fs-7">@Localizer["No documents are held for this record."]</div>
+            }
+            else if (needsAttention.Count > 0)
+            {
+                <div class="alert bg-light-warning d-flex align-items-center p-4 mb-0">
+                    <i class="ki-outline ki-information-5 fs-2 text-warning me-3" aria-hidden="true"></i>
+                    <span class="fw-semibold fs-7 text-gray-700">
+                        @needsAttention.Count @Localizer["documents need renewing"]
+                    </span>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex align-items-center">
+                    <i class="ki-outline ki-check-circle fs-2 text-success me-3" aria-hidden="true"></i>
+                    <span class="fw-semibold fs-7 text-gray-700">@Localizer["Nothing needs renewing."]</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (Model.Documents.Count > 0)
+    {
+        <div class="card">
+            <div class="card-body pt-4">
+                <div class="table-responsive">
+                    <table class="table table-row-dashed align-middle fs-7 mb-0">
+                        <thead>
+                            <tr class="fw-bold text-muted fs-8">
+                                <th>@Localizer["State"]</th>
+                                <th>@Localizer["Document"]</th>
+                                <th>@Localizer["Issued"]</th>
+                                <th>@Localizer["Expires"]</th>
+                                <th>@Localizer["Days remaining"]</th>
+                                <th>@Localizer["Versions"]</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doc in Model.Documents)
+                            {
+                                var life = doc.Lifecycle;
+                                <tr>
+                                    <td>
+                                        @if (life != null)
+                                        {
+                                            <span class="badge badge-light-@StateTone(life.State) fs-8">@StateLabel(life.State)</span>
+                                        }
+                                    </td>
+                                    <td class="text-gray-800">
+                                        @* The NUMBER is deliberately not shown: for most types it is the
+                                           passport or civil-id number itself, and a listing is not the
+                                           place for it. The type and the version identify the row. *@
+                                        <span class="fw-semibold">@(doc.DocumentTypeId?.ToString() ?? "—")</span>
+                                        <span class="text-muted ms-2">@doc.Confidentiality</span>
+                                    </td>
+                                    <td class="text-gray-700">@(doc.IssueDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                    <td class="text-gray-700">@(doc.ExpiryDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                                    <td class="text-gray-700">
+                                        @* Printed, never derived. The service counted these days. *@
+                                        @(life?.DaysRemaining?.ToString() ?? "—")
+                                    </td>
+                                    <td class="text-gray-700">@doc.VersionCount</td>
+                                    <td class="text-end">
+                                        @* Both links go through the AUTHORIZED routes. Nothing here is a
+                                           static path, and no StorageKey is ever rendered — a URL is not
+                                           an authorization, which is the rule this whole surface exists
+                                           to enforce. *@
+                                        <a class="btn btn-sm btn-light" href="/Documents/@doc.Id/content">@Localizer["Open"]</a>
+                                        <a class="btn btn-sm btn-light" href="/Documents/@doc.Id/history">@Localizer["History"]</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

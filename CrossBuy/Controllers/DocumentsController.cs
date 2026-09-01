@@ -73,6 +73,34 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> ForEntity(string entityType, int entityId, CancellationToken ct = default)
             => Json(await _documents.ListForEntityAsync(entityType, entityId, ct));
 
+        // GET /Documents/workspace/{entityType}/{entityId} — the governed lifecycle screen.
+        //
+        // ONE GET, and it renders what the service already decided. Every row it shows carries the
+        // canonical DocumentLifecycle, so the view has nothing to compute: the two boundaries this
+        // platform exists to get right - a document expiring TODAY is still valid, and the warning
+        // window belongs to the TYPE rather than being a constant - are settled before the model
+        // reaches Razor. A `@if (doc.ExpiryDate < DateTime.Now)` in a view would quietly become the
+        // system's second date rule, and a test asserts there is not one.
+        //
+        // AUTHORIZATION IS ListForEntityAsync's, unchanged: it gates the entity once and re-asks per
+        // document, so a Restricted row is ABSENT from the model rather than rendered as hidden. This
+        // action adds no rule of its own, which is why it needs no new authority member.
+        //
+        // STAYS GENERIC. The route names an entity type and an id, never an employee - a central
+        // document screen that knew about HR would stop being central, and the next family to want
+        // documents would need a second one.
+        [HttpGet("workspace/{entityType}/{entityId:int}")]
+        public async Task<IActionResult> Workspace(string entityType, int entityId, CancellationToken ct = default)
+        {
+            var model = new DocumentWorkspaceVm
+            {
+                EntityType = entityType,
+                EntityId = entityId,
+                Documents = await _documents.ListForEntityAsync(entityType, entityId, ct),
+            };
+            return View(model);
+        }
+
         // GET /Documents/{id}/history — the version history, metadata only.
         [HttpGet("{id:long}/history")]
         public async Task<IActionResult> History(long id, CancellationToken ct = default)
@@ -235,5 +263,15 @@ namespace CrossBuy.Controllers
                 if (char.IsControl(c) || c == ';' || c == ',' || c == '"') return false;
             return true;
         }
+    }
+
+    /// What the lifecycle screen renders. It carries NO dates it has to interpret: every row already
+    /// holds the state the platform computed, so the view is a rendering and not a second opinion.
+    public sealed class DocumentWorkspaceVm
+    {
+        public string EntityType { get; set; } = "";
+        public int EntityId { get; set; }
+        public IReadOnlyList<CrossBuy.BL.Documents.DocumentListItem> Documents { get; set; }
+            = System.Array.Empty<CrossBuy.BL.Documents.DocumentListItem>();
     }
 }
