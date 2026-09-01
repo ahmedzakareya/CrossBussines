@@ -239,5 +239,16 @@ machine, absent in a later clone" symptom §9 asks about. It is pre-existing, wa
 convergence, and is recorded as engineering debt rather than inherited quietly. Every number above
 is from the **clean-clone** suite, which is the honest control.
 
-**Final canonical HEAD: `8afcbcf`** — reproducible from a pristine worktree, which is how every
-figure in this table was produced.
+**The tree every figure above was produced from: `8afcbcf`**, archived out to a pristine worktree.
+
+**Final canonical HEAD: one commit later**, because a report cannot contain its own hash. That last
+commit adds `docs/integration/*.md` and **nothing else** — the code, tests, governance registry and
+baseline of the final HEAD are byte-identical to the gated tree, which is asserted rather than
+asked to be believed:
+
+```
+git diff --stat 8afcbcf..HEAD -- . ':(exclude)docs/integration'   ->   empty
+```
+
+So the gate results hold for the final HEAD without re-running them, and re-running them from a
+pristine worktree of the final HEAD reproduces them exactly.
