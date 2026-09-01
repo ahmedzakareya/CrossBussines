@@ -30,7 +30,7 @@ notes is invisible to a declaration scan.
 **Totals:** DESIGN-INTENTIONAL 10 · TEST-ONLY 1 · DEV-ONLY 1 · DEFECT 0 remaining (1 fixed) ·
 UNKNOWN 4.
 
-## The defect that was fixed
+## The defect — real, and fixed by its owner, not by this batch
 
 `BL/InventoryApprovalService.cs` — a hardcoded company across **twelve** call sites, five of them
 writes: the approval row, and on approval a purchase order, a stock transfer, a stock count and a
@@ -41,11 +41,18 @@ ledger.
 It hid well because half the class had already been migrated — `ApprovalInboxAsync` takes a
 `BusinessContext` — so the file *read* as company-aware.
 
-Fixed by resolving through the canonical `IRequestCompanyResolver` inside the service, with **no
-public signature change** (`InventoryController` is SHF-26, whose rule forbids approval behaviour
-changing under it). Unknown company is an error: reads answer empty, writes refuse.
-`InventoryApprovalCompanyResolutionTests` holds all eight properties, and the mutation that restores
-the fallback to 1 fails three of them.
+This batch wrote a fix, then **withdrew it**. Fast-forwarding surfaced that the file is dirty in the
+shared tree and that another tab had already fixed the same defect, independently and better.
+
+Where mine resolved every path through `IRequestCompanyResolver`, theirs splits the two directions:
+reads and new submissions resolve from the `BusinessContext` and **throw** when it is unresolved,
+while **approve/reject use the approval row's own `CompanyID`**. That second half is the part I had
+not thought through — the payload was captured under that company's warehouses and vendors, so
+replaying it against a resolved-now company would be a cross-company command execution. Using the
+row also makes the change provably behaviour-preserving on existing data.
+
+The fix is therefore **complete and awaiting landing as foreign WIP**, not open. What this batch
+contributes is the ownership: `SHF-32` gives the file an owner it never had.
 
 ## The four UNKNOWNs
 

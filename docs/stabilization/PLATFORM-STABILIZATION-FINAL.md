@@ -6,19 +6,19 @@
 
 ## 1. Fixed defects
 
-### `InventoryApprovalService` resolved every caller to company 1
-A hardcoded company across **twelve** call sites, five of them writes: the approval row, and on
-approval a purchase order, a stock transfer, a stock count and a write-off. Registered in
-`Program.cs`, injected into `InventoryController` — a production HTTP path. A manager in company 41
-who approved a write-off created it in **company 1's** stock and ledger.
+### `InventoryApprovalService` — found, fixed by its owner, my duplicate withdrawn
+A recovered test (`Stage1ContextTests`) found a hardcoded company across **twelve** call sites, five
+of them writes, on a production HTTP path: a manager in company 41 who approved a write-off created
+it in **company 1's** stock and ledger.
 
-It hid because half the class had already been migrated (`ApprovalInboxAsync` takes a
-`BusinessContext`), so the file read as company-aware. **A half-finished migration hides better than
-an unstarted one.**
+I wrote a fix and then withdrew it. Fast-forwarding revealed the file is dirty in the shared tree
+and another tab had already fixed the same defect **better**: they split reads/submissions (resolve
+from `BusinessContext`, throw when unresolved) from approve/reject (**use the approval row's own
+`CompanyID`**, because the payload was captured under that company's warehouses and vendors). I had
+not considered the replay direction; mine would have replayed a payload against the approver's
+company. Landing mine would have destroyed theirs and replaced it with the weaker design.
 
-Fixed by resolving through the canonical `IRequestCompanyResolver` inside the service, with no public
-signature change — `InventoryController` is SHF-26, whose rule forbids approval behaviour changing
-under it. Unknown company is an error: reads answer empty, writes refuse.
+**Net effect of this batch on that defect: the finding and the ownership entry, not the code.**
 
 ### Two recovered guards were themselves defective
 * `Slice3WorkerCompanyTests` scanned worker source for the constant that was **removed** and matched
@@ -87,7 +87,7 @@ Twelve required mutations, each applied to the stabilization candidate and rever
 
 | # | Mutation | Killed by |
 |---|---|---|
-| 1 | company fallback restored to 1 | `InventoryApprovalCompanyResolutionTests` × 3 |
+| 1 | company fallback restored to 1 | proven on the withdrawn fix (3 tests); **the surviving proof belongs to the owning tab's version** |
 | 2 | worker company scope removed | **compilation fails** — the runner call is asserted by name |
 | 3 | adapter ignores supplied `BusinessContext` | **NOT KILLED** — see below |
 | 4 | GL period predicate → literal `"Closed"` | `PeriodPostingChokepointTests`, `AccountingPeriodCloseTests` |
