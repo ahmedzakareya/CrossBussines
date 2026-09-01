@@ -4,21 +4,21 @@ Every test file present on the development machine and absent from canonical Git
 classification. Mechanical facts (size, hash, namespace, class, test count, non-hermetic flags)
 were extracted by script; the classification is the judgement.
 
-**Total machine-only files: 106.** `A + B + C + D + E = 67 + 0 + 2 + 0 + 37 = 106`.
+**Total machine-only files: 106.** `A + B + C + D + E = 66 + 0 + 2 + 0 + 38 = 106`.
 
 ## Totals
 
 | Class | Files | Test methods | Meaning |
 |---|---|---|---|
-| **A — recovered** | 67 | 929 | protects behaviour canonical HEAD has; compiles; passes |
+| **A — recovered** | 66 | 918 | protects behaviour canonical HEAD has; compiles; passes |
 | **B — duplicate** | 0 | 0 | measured, not assumed: no machine-only file declares a class name that already exists in tracked tests |
 | **C — obsolete** | 2 | 22 | targets a superseded implementation |
 | **D — experimental** | 0 | 0 | measured: none is a prototype, benchmark or generated artifact |
-| **E — blocked** | 37 | 447 | valid-looking, but blocked on untracked production code, signature drift, or an unsatisfied contract |
+| **E — blocked** | 38 | 458 | valid-looking, but blocked on untracked production code, signature drift, or an unsatisfied contract |
 
-## Class A — recovered (67)
+## Class A — recovered (66)
 
-Committed in `ccdda6b` and `1bc6b20`. They add **1222 tests**: 2540 -> 3762, zero failures.
+Committed in `ccdda6b`. They add **1200 tests**: 2540 -> 3740, zero failures.
 
 ## Class C — obsolete (2)
 
@@ -30,7 +30,7 @@ make them compile is exactly what the brief forbids. `SqlServerFixture.cs` was r
 15-line factory for that store: the other 604 lines are generic probe infrastructure nineteen
 recovered suites depend on, and losing them with it would have been the worse trade.
 
-## Class E — blocked (37)
+## Class E — blocked (38)
 
 ### E1 — untracked production slice (5 files, 68 tests)
 
@@ -65,7 +65,13 @@ the owning tab commits the slice, or these are reclassified obsolete.**
 still exists; only the wiring moved. These are the strongest remaining recovery candidates and were
 left for a batch that can adapt 13 call sites carefully rather than quickly.
 
-### E3 — compiles, but the asserted contract is not met today (19 files)
+### E3 — compiles, but the asserted contract is not met today (20 files)
+
+`Stage1ContextTests` is the newest entry and the most instructive. It PASSES against a tree where
+InventoryApprovalService is fixed and FAILS against canonical HEAD, because the fix exists only as
+foreign working-tree work. It found the defect, and it stays out until the owning tab lands their
+version — a test that is right about a fix nobody has committed is blocked, not green.
+
 
 * `AccessDeniedGuardTests.cs` (9 tests)
 * `B6BootstrapConversionTests.cs` (24 tests)

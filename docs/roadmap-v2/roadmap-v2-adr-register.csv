@@ -1,0 +1,45 @@
+AdrId,Title,Area,Owner,Status
+ADR-001,Transactional Business Events,Platform Kernel,Platform,Accepted
+ADR-002,Entity Registry,Platform Kernel,Platform,Accepted
+ADR-003,Dispatch State Per Consumer,Platform Kernel,Platform,Accepted
+ADR-004,Business Event Visibility,Platform Kernel,Platform,Accepted
+ADR-005,Legacy Timeline Adapters,Platform Kernel,Platform,Accepted
+ADR-006,Notification Projection,Platform Kernel,Platform,Accepted
+ADR-007,SQL Server Dispatch Locking,Platform Kernel,Platform,Accepted
+ADR-008,Operator Dispatch Retry,Platform Kernel,Platform,Accepted
+ADR-009,Platform Operations Authorization,Core Security,First Tab,Accepted
+ADR-010,Session-Free Permission Evaluation,Core Security,First Tab,Accepted
+ADR-011,RESERVED - unused,-,Integration Owner,Available
+ADR-012,Deployment Manifest and Schema History,Deployment,Integration Owner,Accepted - superseded in part by ADR-039
+ADR-013,Single Worker Process,Platform Kernel,Platform,Accepted
+ADR-014,RESERVED - unused,-,Integration Owner,Available
+ADR-015,RESERVED - unused,-,Integration Owner,Available
+ADR-016,Reproducible Architecture Evidence,Governance,First Tab,Accepted
+ADR-017,RESERVED - unused,-,Integration Owner,Available
+ADR-018,RESERVED - unused,-,Integration Owner,Available
+ADR-019,RESERVED - unused,-,Integration Owner,Available
+ADR-020,RESERVED - unused,-,Integration Owner,Available
+ADR-021,RESERVED - unused,-,Integration Owner,Available
+ADR-022,BusinessContext Resolution Policy,Core Security,First Tab,Accepted
+ADR-023,Company Isolation Bypass,Core Security,First Tab,Accepted
+ADR-024,Pilot Company Isolation,Core Security,First Tab,Accepted
+ADR-025,Accounting API Security Policy,Core Security,First Tab,Accepted
+ADR-026,Shared Platform RBAC,Core Security,First Tab,Accepted
+ADR-027,HR Permission Model,Core Security,First Tab,Accepted
+ADR-028,Projects Permission Model,Core Security,First Tab,Accepted
+ADR-029,Tasks and Communication Permission Models,Core Security,First Tab,Accepted
+ADR-030,Communication Platform Architecture,Communication,Third Tab,Accepted - RETAINED
+ADR-031,Universal Collaboration Surface,Communication,Third Tab,Accepted - RETAINED
+ADR-032,Mention Resolution,Communication,Third Tab,Accepted - RETAINED
+ADR-033,Communication Visibility and Thread Permissions,Communication,Third Tab,Accepted - RETAINED
+ADR-034,"Notification Channels, Templates, Preferences",Communication,Third Tab,Accepted - RETAINED
+ADR-035,"Comment History, Soft Delete, Audit",Communication,Third Tab,Accepted - RETAINED
+ADR-036,Timeline Aggregation,Communication,Third Tab,Accepted - RETAINED
+ADR-037,Reporting Platform Architecture,Reporting,Second Tab,Accepted - CONFIRMED as the Reporting ADR
+ADR-038,RESERVED - Parallel execution model (worktrees + integration branch),Governance,Integration Owner,Reserved for R1
+ADR-039,RESERVED - Canonical SQL root and PlatformSchemaHistory,Deployment,Integration Owner,Reserved for R1
+ADR-040,RESERVED - Master Data ownership register,Master Data,Integration Owner,Reserved for R6
+ADR-041,RESERVED - ExternalPrincipalContext,Core Security,First Tab,Reserved for R11 - required by D-13
+ADR-042,RESERVED - CrossBusiness Workspace architecture and delegation rule,Product,To be assigned,Reserved for R3
+ADR-043,RESERVED - CrossBusiness Blue visual identity and rollout,Product,Integration Owner,Reserved for R3 - required by D-36/D-37
+ADR-044,"RESERVED - Entity registration declarations (privacy, retention, audit)",Communication,Third Tab,Reserved for R2 - required by D-05/D-06/D-07

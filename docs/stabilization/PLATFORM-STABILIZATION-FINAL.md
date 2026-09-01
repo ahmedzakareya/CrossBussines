@@ -31,17 +31,16 @@ fix teaches people to delete the documentation.**
 
 ## 2. Recovered tests
 
-**66 suites + 1 new regression suite, 1 230 tests.** Clean-clone execution goes 2 540 → **3 770**,
-zero failures. Full evidence in `CLEAN-CLONE-TEST-PROOF.md`; per-file classification in
+**66 suites, 1 200 tests.** Clean-clone execution goes 2 540 → **3 740**, zero failures. Full evidence in `CLEAN-CLONE-TEST-PROOF.md`; per-file classification in
 `MISSING-TEST-INVENTORY.md`.
 
 ```
 Original machine-only test files : 106
-  Class A recovered              :  67
+  Class A recovered              :  66
   Class B duplicate/superseded   :   0   (measured: no name collision with tracked tests)
   Class C obsolete               :   2
   Class D experimental/local     :   0   (measured: none is scratch or generated)
-  Class E owner-decision/blocked :  37
+  Class E owner-decision/blocked :  38
                                   ----
                                    106  ✅
 ```
@@ -53,7 +52,7 @@ Nothing was bent to make it pass, and nothing was committed to inflate a count.
 * **Obsolete (2)** — target the superseded `CrossBuy.BL.Comm` outbox. Canonical HEAD uses
   `CommNotificationDispatcher` instead. Resurrecting the old store to make them compile is exactly
   what the brief forbids.
-* **Blocked (37)** — 5 need an untracked Construction production slice; 13 need constructor-call
+* **Blocked (38)** — 5 need an untracked Construction production slice; 13 need constructor-call
   adaptation after signature drift; 19 compile and run but assert contracts canonical HEAD does not
   meet, most notably `AccessDeniedGuardTests` (needs an untracked view) and
   `CompanyDefaultParameterGuardTests` (needs the untracked `DevSeedFixture.cs`).
