@@ -204,5 +204,40 @@ Landing a branch whose owner is still working on it, and whose handoffs are open
 
 ## 11. Build / test gates and final HEAD
 
-Recorded from a **pristine worktree created from the final candidate HEAD** — see the closing
-section of the batch report for the exact figures.
+Run **serially**, from a pristine tree archived out of the final HEAD. One test process; no
+parallel runs sharing a mutable database.
+
+| Gate | Result |
+|---|---|
+| Debug build | **Build succeeded** · 0 errors · 377 warnings |
+| Release build | **Build succeeded** · 0 errors · 372 warnings |
+| TestRun build | **Build succeeded** · 0 errors · 377 warnings |
+| `CrossBuy.Analyzers.Tests` (analyzer + reconciliation + authority surface) | **111 / 111** |
+| `CrossBuy.Tests` (full) | **2540 passed · 0 failed · 6 skipped** |
+| CBA001–CBA006 | all **0** (CBA002 configured `suggestion`, emits nothing) |
+| Ownership `-Strict` | **PASS** per half |
+
+Named suites, so nothing hides inside a total:
+
+```
+DocumentLifecycleUiTests        10/10     DocumentAuthorityMemberTests    25/25
+DocumentHttpLifecycleTests      33/33     PlatformDocumentTests           90/90
+ClientPortalSecurityTests       15/15     AccountingPeriodCloseTests      33/33
+PeriodPostingChokepointTests    14/14     HrBootstrapPolicyTests          29/29
+WorkspaceAttentionTests         19/19     WorkspaceMyWorkTests            15/15
+WorkspaceApprovalsPanelTests    13/13     TaskEscalationRuleTests         24/24
+ApprovalCompanyIsolationTests   20/20     CrmCompanyIsolationTests        19/19
+```
+
+The **6 skips are externally gated and named individually** in `FINAL-OPEN-HANDOFFS.md` §D. They
+are skips for a missing external Python ML service, not failures anybody stopped looking at.
+
+**One thing the gates revealed and this report will not hide.** `CrossBuy.Tests` holds **226 test
+files on this machine and 120 in HEAD** — 106 have never been committed. A clean clone therefore
+runs a strictly smaller suite than the shared tree does, which is exactly the "existed on another
+machine, absent in a later clone" symptom §9 asks about. It is pre-existing, was not caused by this
+convergence, and is recorded as engineering debt rather than inherited quietly. Every number above
+is from the **clean-clone** suite, which is the honest control.
+
+**Final canonical HEAD: `8afcbcf`** — reproducible from a pristine worktree, which is how every
+figure in this table was produced.

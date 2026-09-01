@@ -75,6 +75,18 @@ A deployment using both stores has two expiry mechanisms with different behaviou
 documents are migrated. This is a product fact, not a defect introduced here. The platform side is
 the one with a policy, an idempotency key and an audit trail.
 
+### A8. 106 test files are not in the repository
+`CrossBuy.Tests` holds **226** `.cs` files on the integration machine and **120** in HEAD. A clean
+clone runs 2540 tests; this machine's tree has almost twice the files.
+
+This is the concrete form of the "work existed on another machine and was absent in a later clone"
+symptom. Every figure in `FINAL-CONVERGENCE-STATE.md` is deliberately from the clean-clone suite,
+because that is the only honest control — but the gap itself is real debt and someone has to decide,
+file by file, which of the 106 are worth committing and which are scratch.
+
+Not caused by this convergence; not repairable inside it without committing 106 files nobody
+reviewed.
+
 ---
 
 ## B. Product decisions
