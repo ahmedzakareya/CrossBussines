@@ -1,0 +1,323 @@
+{
+  "$comment": "Reserve an ADR number here BEFORE writing the document.",
+  "adrs": [
+    {
+      "adrId": "ADR-001",
+      "title": "Transactional Business Events",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-002",
+      "title": "Entity Registry",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-003",
+      "title": "Dispatch State Per Consumer",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-004",
+      "title": "Business Event Visibility",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-005",
+      "title": "Legacy Timeline Adapters",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-006",
+      "title": "Notification Projection",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-007",
+      "title": "SQL Server Dispatch Locking",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-008",
+      "title": "Operator Dispatch Retry",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-009",
+      "title": "Platform Operations Authorization",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-010",
+      "title": "Session-Free Permission Evaluation",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-011",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-012",
+      "title": "Deployment Manifest and Schema History",
+      "area": "Deployment",
+      "owner": "Integration Owner",
+      "status": "Accepted - superseded in part by ADR-039"
+    },
+    {
+      "adrId": "ADR-013",
+      "title": "Single Worker Process",
+      "area": "Platform Kernel",
+      "owner": "Platform",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-014",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-015",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-016",
+      "title": "Reproducible Architecture Evidence",
+      "area": "Governance",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-017",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-018",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-019",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-020",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-021",
+      "title": "RESERVED - unused",
+      "area": "-",
+      "owner": "Integration Owner",
+      "status": "Available"
+    },
+    {
+      "adrId": "ADR-022",
+      "title": "BusinessContext Resolution Policy",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-023",
+      "title": "Company Isolation Bypass",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-024",
+      "title": "Pilot Company Isolation",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-025",
+      "title": "Accounting API Security Policy",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-026",
+      "title": "Shared Platform RBAC",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-027",
+      "title": "HR Permission Model",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-028",
+      "title": "Projects Permission Model",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-029",
+      "title": "Tasks and Communication Permission Models",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Accepted"
+    },
+    {
+      "adrId": "ADR-030",
+      "title": "Communication Platform Architecture",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Accepted - RETAINED"
+    },
+    {
+      "adrId": "ADR-031",
+      "title": "Universal Collaboration Surface",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Accepted - RETAINED"
+    },
+    {
+      "adrId": "ADR-032",
+      "title": "Mention Resolution",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Accepted - RETAINED"
+    },
+    {
+      "adrId": "ADR-033",
+      "title": "Communication Visibility and Thread Permissions",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Accepted - RETAINED"
+    },
+    {
+      "adrId": "ADR-034",
+      "title": "Notification Channels, Templates, Preferences",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Accepted - RETAINED"
+    },
+    {
+      "adrId": "ADR-035",
+      "title": "Comment History, Soft Delete, Audit",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Accepted - RETAINED"
+    },
+    {
+      "adrId": "ADR-036",
+      "title": "Timeline Aggregation",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Accepted - RETAINED"
+    },
+    {
+      "adrId": "ADR-037",
+      "title": "Reporting Platform Architecture",
+      "area": "Reporting",
+      "owner": "Second Tab",
+      "status": "Accepted - CONFIRMED as the Reporting ADR"
+    },
+    {
+      "adrId": "ADR-038",
+      "title": "RESERVED - Parallel execution model (worktrees + integration branch)",
+      "area": "Governance",
+      "owner": "Integration Owner",
+      "status": "Reserved for R1"
+    },
+    {
+      "adrId": "ADR-039",
+      "title": "RESERVED - Canonical SQL root and PlatformSchemaHistory",
+      "area": "Deployment",
+      "owner": "Integration Owner",
+      "status": "Reserved for R1"
+    },
+    {
+      "adrId": "ADR-040",
+      "title": "RESERVED - Master Data ownership register",
+      "area": "Master Data",
+      "owner": "Integration Owner",
+      "status": "Reserved for R6"
+    },
+    {
+      "adrId": "ADR-041",
+      "title": "RESERVED - ExternalPrincipalContext",
+      "area": "Core Security",
+      "owner": "First Tab",
+      "status": "Reserved for R11 - required by D-13"
+    },
+    {
+      "adrId": "ADR-042",
+      "title": "RESERVED - CrossBusiness Workspace architecture and delegation rule",
+      "area": "Product",
+      "owner": "To be assigned",
+      "status": "Reserved for R3"
+    },
+    {
+      "adrId": "ADR-043",
+      "title": "RESERVED - CrossBusiness Blue visual identity and rollout",
+      "area": "Product",
+      "owner": "Integration Owner",
+      "status": "Reserved for R3 - required by D-36/D-37"
+    },
+    {
+      "adrId": "ADR-044",
+      "title": "RESERVED - Entity registration declarations (privacy, retention, audit)",
+      "area": "Communication",
+      "owner": "Third Tab",
+      "status": "Reserved for R2 - required by D-05/D-06/D-07"
+    }
+  ],
+  "available": [
+    "ADR-011",
+    "ADR-014",
+    "ADR-015",
+    "ADR-017",
+    "ADR-018",
+    "ADR-019",
+    "ADR-020",
+    "ADR-021"
+  ]
+}

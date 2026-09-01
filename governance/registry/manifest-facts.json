@@ -1,0 +1,15 @@
+{
+  "$comment": "Snapshot of the authored registry at R1 design time, so a gate can detect that manifest.json has moved without anyone noticing.",
+  "generator": "CrossBuy/deploy/scan-sql-manifest.ps1",
+  "manifest": "CrossBuy/deploy/sql/manifest.json",
+  "totalScripts": 115,
+  "guarded": 92,
+  "guardedByPredicate": 7,
+  "review": 1,
+  "notDeployable": 1,
+  "noMutation": 14,
+  "excluded": 3,
+  "duplicateNames": 4,
+  "duplicateNamesIdentical": 0,
+  "perScriptFields": "path, name, bytes, encoding, sha256, rank, guards, mutations, unguardedBatches, idempotency, reviewVerdict, reviewEvidence, excludedFromDeploy, excludedReason"
+}
