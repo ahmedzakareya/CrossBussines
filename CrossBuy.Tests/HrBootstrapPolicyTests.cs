@@ -143,19 +143,34 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public async Task The_real_table_actually_classifies_two_HR_actions_and_not_all_of_them()
+        public async Task The_real_table_actually_classifies_four_HR_actions_and_not_all_of_them()
         {
             using var host = new PlatformTestHost();
             var reader = Real(host);
 
             // Without this the theory above could pass vacuously against an empty table - every action
-            // "not never-open" and nothing proved. Two, and exactly the sensitive two.
+            // "not never-open" and nothing proved. Four, and exactly the sensitive four.
+            //
+            // employee-manage and attendance-manage joined the original pair in the bootstrap management
+            // hardening. The count is asserted as an exact SET rather than a number so that adding a
+            // fifth is a deliberate edit here, and so that this test keeps refusing the two readings
+            // that would defeat it: an empty table, and a table that closed everything.
             var closed = new List<string>();
             foreach (var action in HrActions.All)
                 if (await reader.IsNeverBootstrapOpenAsync(EntityRegistry.ScopeHr, action)) closed.Add(action);
 
-            Assert.Equal(new[] { HrActions.PayrollManage, HrActions.ConfidentialView }.OrderBy(x => x),
+            Assert.Equal(
+                new[]
+                {
+                    HrActions.PayrollManage, HrActions.ConfidentialView,
+                    HrActions.EmployeeManage, HrActions.AttendanceManage,
+                }.OrderBy(x => x),
                 closed.OrderBy(x => x));
+
+            // ...and NOT all of them, which is the other half of the name. Self-service and the read
+            // tier stay open or bootstrap stops being a bootstrap.
+            Assert.False(await reader.IsNeverBootstrapOpenAsync(EntityRegistry.ScopeHr, HrActions.EmployeeRequest));
+            Assert.False(await reader.IsNeverBootstrapOpenAsync(EntityRegistry.ScopeHr, HrActions.Read));
         }
 
         // ---- fail-closed ---------------------------------------------------------------------------

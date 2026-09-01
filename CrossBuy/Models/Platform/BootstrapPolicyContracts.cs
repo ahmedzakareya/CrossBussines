@@ -140,6 +140,24 @@ namespace CrossBuy.Models.Platform
                 "projects is not a right over the ledger'). Closes transitively once Accounting.post closes, and is " +
                 "listed explicitly so the transitive closure is asserted rather than assumed."),
 
+            // ---- HR management hardening: 2 ----
+            //
+            // These two are NOT "already excluded". They are the two that bootstrap DID grant, and
+            // closing them is what this section records. employee-manage was reachable about one's OWN
+            // record under bootstrap-open, which Central Documents turned into a real hole: Replace
+            // resolves to it, so a self-service submitter could verify their own submission and the
+            // separation between filing a document and approving it disappeared.
+            new Entry("Hr", "employee-manage",
+                "Administers employee records, contracts and documents. Central Documents resolves " +
+                "DocumentAction.Replace to this action, so under bootstrap it let a self-service submitter " +
+                "verify their own submission - the separation between filing a document and approving it " +
+                "disappeared. Self-service is unaffected: employee-request is answered self-only ABOVE the " +
+                "bootstrap branch and never depended on this."),
+            new Entry("Hr", "attendance-manage",
+                "Administers attendance records, policies, holidays and the roster those records are judged " +
+                "against. Editing what somebody was supposed to work changes what their attendance means, so " +
+                "bootstrap must not decide who may do it. An employee still reads their own attendance and " +
+                "roster through employee-view, which is self-served above the bootstrap branch."),
             // ---- Already excluded by Mechanism B — PRESERVE, do not widen: 4 ----
             new Entry("Hr", "payroll-manage",
                 "Already excluded by HrAccessService under bootstrap-open. Listed so a refactor cannot widen it."),

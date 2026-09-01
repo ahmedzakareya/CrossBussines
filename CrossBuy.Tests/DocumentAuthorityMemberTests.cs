@@ -230,29 +230,30 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public async Task On_a_BOOTSTRAP_OPEN_company_the_same_caller_reaches_the_manage_tier_and_that_is_recorded()
+        public async Task On_a_BOOTSTRAP_OPEN_company_the_same_caller_no_longer_reaches_the_manage_tier()
         {
-            // NOT A REGRESSION AND NOT AN ENDORSEMENT — a fact worth pinning where somebody will read it.
+            // THE HOLE THIS TEST ONCE PINNED IS NOW SHUT, and the history is kept rather than deleted.
             //
-            // A company that has configured no HR role runs bootstrap-open, where HrAccessService grants
-            // employee-manage to a caller about their OWN record. Separation of submitter from verifier
-            // therefore does not hold on such a company, and it does not hold for any other HR write
-            // either: bootstrap-open is a compatibility mode, not a permission model.
+            // This test used to assert the OPPOSITE: that on a company with no HR role configured,
+            // bootstrap-open granted employee-manage about one's own record, so a self-service submitter
+            // could verify their own submission and separation of submitter from verifier did not hold.
+            // The comment that stood here asked that closing it "announce itself as a deliberate change
+            // to this assertion rather than passing unnoticed" — this is that announcement.
             //
-            // It is pinned here so the weakness cannot be discovered as a surprise, and so that closing
-            // it later — by adding ("Hr","employee-manage") to NeverBootstrapOpen — announces itself as a
-            // deliberate change to this assertion rather than passing unnoticed.
+            // ("Hr","employee-manage") is now on NeverBootstrapOpen, so the bootstrap branch refuses it
+            // before it can reach SubjectIsInScopeAsync. A company that genuinely needs HR administration
+            // assigns a real HR role; the explicit path below is unchanged and still works.
             using var host = RealHr();          // no HR role assigned anywhere: bootstrap-open
             var resolver = BuildRealResolver(host);
 
             var alice = Ctx(CompanyA, Alice);
             var own = new DocumentOwnerRef(EntityRegistry.Employee, Alice);
 
-            Assert.True((await resolver.AuthorizeAsync(alice, own, DocumentAction.Replace, CompanyA)).Allowed);
+            Assert.False((await resolver.AuthorizeAsync(alice, own, DocumentAction.Replace, CompanyA)).Allowed);
 
-            // AND THE LIMIT OF IT, which is why this is a narrower hole than it first looks: a document
-            // type whose default tier is above Internal demands confidential-view, and confidential-view
-            // is on NeverBootstrapOpen — so bootstrap never confers it, about oneself or anyone else.
+            // Confidential was ALREADY refused here before the hardening, because confidential-view has
+            // always been on NeverBootstrapOpen. Kept so the stricter tier cannot quietly regress to
+            // Internal's behaviour now that the two agree.
             Assert.False((await resolver.AuthorizeAsync(
                 alice, own, DocumentAction.Replace, CompanyA, DocumentConfidentiality.Confidential)).Allowed);
         }
