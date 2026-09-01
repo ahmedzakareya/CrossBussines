@@ -100,3 +100,58 @@ No new mutating endpoint, no new gap. Safety scan of every changed file: no prod
 string, no Azure host, no credential, no token, no absolute developer path, no scratch path.
 
 F-1 remains `F1-UNRESOLVED` and was not reopened. AI was not touched.
+
+---
+
+## §25 LAUNCH NOTE — TASK MANAGEMENT + WORKFLOW + ESCALATION
+
+Evidence only. Nothing below was started.
+
+**Entities · services · controllers (canonical HEAD)**
+`Models/Context/Tasks/TaskEcosystem.cs` · `BL/TaskService.cs` · `BL/TasksAccessService.cs` ·
+`BL/TaskGeneratorService.cs` + `TaskGeneratorHostedService.cs` · `BL/TaskScheduleMatcher.cs` +
+`TaskScheduleMatchHostedService.cs` · `BL/TaskLinkResolver.cs` · `BL/TaskCostService.cs` ·
+`BL/TasksCalendar/**` (incl. `TaskNotificationService`, `CalendarSchedulingService`,
+`TaskChecklistAndTemplateService`) · `Controllers/TasksController.cs` ·
+`Controllers/CalendarController.cs`.
+
+**MyWork / Attention** — Workspace composes Attention from five existing sources;
+`WorkspaceAttentionTests` (19) and `WorkspaceMyWorkTests` (15) hold the composition and the `"mine"`
+employee scoping. Document expiry already converges through this taxonomy. **No sixth source
+exists, and none may be added.**
+
+**Assignment routing** — `TaskAutoRule.DefaultAssigneeEmployeeId` is the platform's assignment
+authority; Central Documents already routes through it instead of guessing an HR manager.
+
+**Manager hierarchy** — `IOrgHierarchy`, consumed by `HrAccessService` and `CrmAccessService`.
+
+**Overdue / escalation today** — `TaskEscalationRuleTests` (24) covers the rule engine;
+`WorkspaceAgendaOverdueTests` and `WorkspaceAgendaPagingAndOverdueTests` cover overdue surfacing;
+`AbandonedClaimRecoveryTests` + `SqlServer/AbandonedClaimReaperConcurrencyTests` cover claim
+recovery. There is **no scheduled escalation runner** distinct from the generator worker.
+
+**Integrations present** — Calendar (`CalendarService`, conflict + scheduling rules); approvals
+(`ApprovalInboxService` and the SHF-14/15 module readers); communication and notification
+(`ICommNotificationDispatcher`, `TaskNotificationService`); files and comments
+(`_EntityConversation`, the Central Document platform); Business Events (`BusinessEventService`,
+`EntityRegistry`, dispatch worker).
+
+**Company isolation and permissions** — `TasksAccessService`, `WorkerCompanyScope` for both task
+hosted services, `SqlServer/TaskScopeQuerySqlTests` for the query shape.
+
+**Missing backend** — (a) no declared workflow *state machine*: transitions live inside
+`TaskService`; (b) no scheduled escalation runner; (c) `TasksCalendarTransitionAndEventTests` is
+still **blocked** (constructor-signature drift), so transition/event coverage is not in a clean
+clone; (d) the Employee company-gate deviation in CARRIED DEBT #1 sits under any task assignment
+that resolves an employee.
+
+**Missing screens** — no workflow designer, no escalation console.
+
+**Proposed first slice** — *make the task transition a declared model.* Extract the transitions
+already implemented in `TaskService` into an explicit state machine with one canonical predicate,
+recover `TasksCalendarTransitionAndEventTests` against it, and change no behaviour. It is the same
+shape as the accounting `BlocksPosting` work: one definition, one guarded chokepoint, a mutation
+that dies. It adds no table, no worker, no screen, and it unblocks the transition coverage
+everything after it depends on.
+
+**Not started.**
