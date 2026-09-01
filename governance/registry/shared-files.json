@@ -203,6 +203,13 @@
       "owner": "Integration Owner - central document HTTP surface",
       "changeRule": "The secure delivery and self-service lifecycle endpoints of the CENTRAL document platform. TAB-3 owns the document domain and lands lifecycle behaviour here; the Integration Owner lands the authorization-surface side - the endpoints whose credit depends on AuthorizationSurface.AuthorityTypes, and the refusal mapping that keeps an authorization-shaped refusal indistinguishable from absence (one 404) while an infrastructure failure answers 503. No module-specific behaviour may enter this file: it must never name an employee, an HR action or any other module's vocabulary. Changes require owner approval (-AllowShared).",
       "reason": "The three self-service endpoints could not compile under CBA001 because they authorize one layer down, through IPlatformDocumentService - which is the whole design of ADR-040 and not a gap. Landing them therefore required a TAB-1 analyzer change and a TAB-1 landing on a TAB-3 file in the same commit. Neither tab can move this file alone without the other's half being wrong, which is what a shared file is."
+    },
+    {
+      "fileId": "SHF-30",
+      "path": "CrossBuy/BL/Documents/PlatformDocumentService.cs",
+      "owner": "Integration Owner - declared-authority surface only",
+      "changeRule": "TAB-3 owns the document domain and everything this service DOES. The Integration Owner owns one narrow thing about it: its PUBLIC MEMBER SET, because IPlatformDocumentService is declared in AuthorizationSurface.AuthorityTypes and CBA001 credits every endpoint that reaches it. Adding, removing or renaming a public member is therefore a governance act and needs the coverage in DocumentAuthorityMemberTests moved in the same change. Read models the members already return may be extended under this entry when doing so avoids widening the interface. No lifecycle rule, storage behaviour, authorization decision or validity semantics may change under it. Changes require owner approval (-AllowShared).",
+      "reason": "Batch 4 needed a lifecycle read for the documents screen. TAB-3 wrote the two members and correctly refused to land them, because widening a declared authority is not an edit its own tab can make alone. The resolution went the other way - ListForEntityAsync already authorizes per document, so its row carries the lifecycle and no member was added - but the coupling is permanent: this file is a product domain whose public shape is a security contract, and the two halves have different owners."
     }
   ]
 }
