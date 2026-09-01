@@ -4,19 +4,19 @@ Every test file present on the development machine and absent from canonical Git
 classification. Mechanical facts (size, hash, namespace, class, test count, non-hermetic flags)
 were extracted by script; the classification is the judgement.
 
-**Total machine-only files: 106.** `A + B + C + D + E = 66 + 0 + 2 + 0 + 38 = 106`.
+**Total machine-only files: 106.** `A + B + C + D + E = 67 + 0 + 2 + 0 + 37 = 106`.
 
 ## Totals
 
 | Class | Files | Test methods | Meaning |
 |---|---|---|---|
-| **A — recovered** | 66 | 918 | protects behaviour canonical HEAD has; compiles; passes |
+| **A — recovered** | 67 | 940 | protects behaviour canonical HEAD has; compiles; passes |
 | **B — duplicate** | 0 | 0 | measured, not assumed: no machine-only file declares a class name that already exists in tracked tests |
 | **C — obsolete** | 2 | 22 | targets a superseded implementation |
 | **D — experimental** | 0 | 0 | measured: none is a prototype, benchmark or generated artifact |
-| **E — blocked** | 38 | 458 | valid-looking, but blocked on untracked production code, signature drift, or an unsatisfied contract |
+| **E — blocked** | 37 | 436 | valid-looking, but blocked on untracked production code, signature drift, or an unsatisfied contract |
 
-## Class A — recovered (66)
+## Class A — recovered (67)
 
 Committed in `ccdda6b`. They add **1200 tests**: 2540 -> 3740, zero failures.
 
@@ -30,7 +30,7 @@ make them compile is exactly what the brief forbids. `SqlServerFixture.cs` was r
 15-line factory for that store: the other 604 lines are generic probe infrastructure nineteen
 recovered suites depend on, and losing them with it would have been the worse trade.
 
-## Class E — blocked (38)
+## Class E — blocked (37)
 
 ### E1 — untracked production slice (5 files, 68 tests)
 
@@ -67,10 +67,21 @@ left for a batch that can adapt 13 call sites carefully rather than quickly.
 
 ### E3 — compiles, but the asserted contract is not met today (20 files)
 
-`Stage1ContextTests` is the newest entry and the most instructive. It PASSES against a tree where
-InventoryApprovalService is fixed and FAILS against canonical HEAD, because the fix exists only as
-foreign working-tree work. It found the defect, and it stays out until the owning tab lands their
-version — a test that is right about a fix nobody has committed is blocked, not green.
+`Stage1ContextTests` was the newest entry and the most instructive. It PASSED against a tree where
+InventoryApprovalService is fixed and FAILED against canonical HEAD, because the fix existed only as
+foreign working-tree work. It found the defect, and it stayed out until the owning tab's version
+landed — a test that is right about a fix nobody has committed is blocked, not green.
+
+> **RECLASSIFIED E → A on 2026-09-01 (qualification closure).** The blocker was the missing
+> production fix, and that fix is now in canonical Git (`123a898`, the foreign tab's implementation
+> landed with provenance). Re-evaluated rather than waved through: it compiles against canonical
+> HEAD, all **22** tests pass, it holds no absolute path, no environment read, no HTTP call, no
+> sleep and no wall-clock literal, and no tracked suite declares its class name. Its seven frozen
+> assertions are per-case expectations, not stale platform-wide counts. It is now tracked
+> authoritative coverage. The earlier classification is preserved above rather than rewritten, so
+> the transition is auditable.
+
+The E3 heading above counts 20 as originally measured; **19 remain blocked.**
 
 
 * `AccessDeniedGuardTests.cs` (9 tests)
