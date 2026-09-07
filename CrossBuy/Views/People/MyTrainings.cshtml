@@ -9,8 +9,8 @@
     string stName(string s) => s switch { "Attended" => Localizer["Attended"].Value, "Completed" => Localizer["Completed"].Value, "Cancelled" => Localizer["Cancelled"].Value, _ => Localizer["Planned"].Value };
     // brand-safe status styling (green family + gray; no blue/mint/yellow)
     string stStyle(string s) => s switch {
-        "Completed" => "background:#eaf3ef;color:#13433a;",
-        "Attended"  => "background:#e9f1ee;color:#1f6253;",
+        "Completed" => "background:#E7F0FF;color:#0E4A9E;",
+        "Attended"  => "background:#E7F0FF;color:#145DBF;",
         "Cancelled" => "background:#f2f4f7;color:#98a2b3;",
         _            => "background:#f2f4f7;color:#475467;" };
 }
@@ -20,7 +20,7 @@
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Course"]</th><th>@Localizer["Provider"]</th><th class="text-center">@Localizer["Hours"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@Localizer["Score"]</th><th class="pe-4">@Localizer["Certificate"]</th></tr></thead>
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Course"]</th><th>@Localizer["Provider"]</th><th class="text-center">@Localizer["Hours"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@Localizer["Score"]</th><th class="pe-4">@Localizer["Certificate"]</th></tr></thead>
             <tbody class="fw-semibold text-gray-700">
             @if (!Model.Any()) { <tr><td colspan="6" class="text-center text-muted py-8">@Localizer["No trainings"]</td></tr> }
             @foreach (var e in Model)

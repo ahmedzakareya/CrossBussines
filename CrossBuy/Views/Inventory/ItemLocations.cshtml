@@ -23,7 +23,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
             <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
-                <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-7"><div class="text-muted fs-7">@Localizer["Per item: default Section (required) and Rack (optional). Purely locational — never affects valuation or GL."]</div>
                 @if (fWh != null && sections.Count == 0) { <div class="text-danger fs-7 mt-2">@Localizer["No sections defined for this warehouse. Add them first from Warehouse sections/racks."] <a href="@Url.Action("WarehouseSections","Inventory", new { warehouseId = fWh })">@SR["Add"]</a></div> }
             </div>
@@ -36,7 +36,7 @@
         {
             <div class="card"><div class="card-header align-items-center py-5"><div class="card-title"><div class="d-flex align-items-center position-relative my-1"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="s" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3" id="t">
-                <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th style="width:260px" class="required">@Localizer["Default section"]</th><th style="width:260px">@Localizer["Rack (optional)"]</th></tr></thead>
+                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th style="width:260px" class="required">@Localizer["Default section"]</th><th style="width:260px">@Localizer["Rack (optional)"]</th></tr></thead>
                 <tbody class="fw-semibold text-gray-700">
                 @foreach (var r in rows)
                 {

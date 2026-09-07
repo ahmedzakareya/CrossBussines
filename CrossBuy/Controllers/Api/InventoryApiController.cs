@@ -70,7 +70,7 @@ namespace CrossBuy.Controllers.Api
 			var whs = (await _warehouses.GetWarehousesAsync(CompanyId)).ToDictionary(w => w.ID, w => w);
 			var balances = await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == CompanyId && b.ItemId == item.ID).ToListAsync();
 			var units = await _items.GetUnitsAsync(CompanyId);
-			string uName(int id) => units.FirstOrDefault(u => u.ID == id) is { } u ? (IsAr ? u.Name : u.NameEn) : "";
+			string uName(int id) => units.FirstOrDefault(u => u.ID == id) is { } u ? (IsAr ? u.Name : DisplayName.Or(u.NameEn, u.Name)) : "";
 			var convs = await _db.UoMConversions.AsNoTracking().Where(x => x.ItemId == item.ID).ToListAsync();
 			var unitList = new List<object> { new { id = item.BaseUoMId, name = uName(item.BaseUoMId), factor = 1m } };
 			foreach (var cv in convs) unitList.Add(new { id = cv.FromUoMId, name = uName(cv.FromUoMId), factor = cv.Factor });

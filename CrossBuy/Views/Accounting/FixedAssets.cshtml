@@ -10,7 +10,7 @@
     var ccs = ViewBag.CostCenters as List<CostCenter> ?? new();
     var funding = ViewBag.FundingAccounts as List<AccountNode> ?? new();
     // brand-safe: green active / amber fully-depreciated / gray disposed (no mint/yellow)
-    string StatusStyle(string s) => s switch { "Active" => "background:#eaf3ef;color:#13433a;", "FullyDepreciated" => "background:#fef3e2;color:#b96a00;", _ => "background:#f2f4f7;color:#475467;" };
+    string StatusStyle(string s) => s switch { "Active" => "background:#E7F0FF;color:#0E4A9E;", "FullyDepreciated" => "background:#fef3e2;color:#b96a00;", _ => "background:#f2f4f7;color:#475467;" };
     string StatusName(string s) => s switch { "Active" => SR["Active"].Value, "FullyDepreciated" => Localizer["Fully dep."].Value, "Disposed" => Localizer["Disposed"].Value, _ => s };
 }
 <div class="d-flex flex-column flex-column-fluid">
@@ -26,7 +26,7 @@
                 <input type="text" id="s" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search..."]" autocomplete="off" />
             </div></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" id="t" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                     <th class="ps-4">@SR["Number"]</th><th>@Localizer["Asset"]</th><th>@Localizer["Acquired"]</th>
                     <th class="text-end">@Localizer["Cost"]</th><th class="text-end">@Localizer["Accum. dep."]</th>
                     <th class="text-end">@Localizer["Net book value"]</th><th class="text-center">@SR["Status"]</th><th class="text-center pe-4">@Localizer["Open"]</th>
@@ -39,7 +39,7 @@
                         <td class="text-muted">@a.AcquisitionDate.ToString("yyyy/MM/dd")</td>
                         <td class="text-end fw-bold">@a.Cost.ToString("N2")</td>
                         <td class="text-end text-muted">@a.AccumulatedDepreciation.ToString("N2")</td>
-                        <td class="text-end fw-bold" style="color:#13433a;">@a.NetBookValue.ToString("N2")</td>
+                        <td class="text-end fw-bold" style="color:#0E4A9E;">@a.NetBookValue.ToString("N2")</td>
                         <td class="text-center"><span class="badge fw-bold" style="@StatusStyle(a.Status)">@StatusName(a.Status)</span></td>
                         <td class="text-center pe-4"><a href="@Url.Action("FixedAssetDetail","Accounting", new { id = a.ID })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-6"></i></a></td>
                     </tr>
@@ -73,7 +73,7 @@
                 <div class="col-md-6 mb-2"><label class="fw-semibold fs-6 mb-2">@Localizer["Cost center"]</label>
                     <select name="costCenterId" class="form-select form-select-solid"><option value="">—</option>@foreach (var cc in ccs) { <option value="@cc.ID">@(isAr ? cc.Name : (string.IsNullOrEmpty(cc.NameEn) ? cc.Name : cc.NameEn))</option> }</select></div>
                 <div class="col-md-6 mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Funded from"]</label>
-                    <select name="fundingAccountId" class="form-select form-select-solid" required><option value="">@Localizer["Select"]</option>@foreach (var f in funding) { <option value="@f.Id">@f.Code — @(isAr ? f.Name : f.NameEn)</option> }</select></div>
+                    <select name="fundingAccountId" class="form-select form-select-solid" required><option value="">@Localizer["Select"]</option>@foreach (var f in funding) { <option value="@f.Id">@f.Code — @(isAr ? f.Name : DisplayName.Or(f.NameEn, f.Name))</option> }</select></div>
             </div>
             <div class="mb-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
         </div>

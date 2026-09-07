@@ -285,13 +285,20 @@ namespace CrossBuy.BL
 
 			// HM-2 COUNTED: a barcode registered on more than one item across Items.Barcode + ItemBarcodes (no cross-table
 			// uniqueness is enforced, so a scan would be ambiguous — the scan path rejects it; this surfaces the data).
+			// Stage 1 Batch B / B5 — COMPANY SCOPE ADDED. This read is raw SQL, and raw SQL is NOT covered by B2's
+			// global query filters: EF applies a filter to LINQ over an entity, never to a scalar SqlQueryRaw. As
+			// written, it scanned `Items` and `ItemBarcodes` across EVERY company, so on a multi-company install the
+			// number reported to one company counted another company's barcodes — a wrong count and a cross-company
+			// read in one. The check stays COUNTED (Ok = true), so scoping it changes the number, never a verdict.
 			int barcodeDup = await _db.Database.SqlQueryRaw<int>(@"
 				SELECT COUNT(*) AS Value FROM (
 					SELECT bc FROM (
-						SELECT Barcode AS bc, ID AS itm FROM Items WHERE Barcode IS NOT NULL AND Barcode<>''
+						SELECT i.Barcode AS bc, i.ID AS itm FROM Items i
+							WHERE i.CompanyID = {0} AND i.Barcode IS NOT NULL AND i.Barcode<>''
 						UNION ALL SELECT b.Barcode, b.ItemId FROM ItemBarcodes b
+							JOIN Items i2 ON b.ItemId = i2.ID WHERE i2.CompanyID = {0}
 					) a GROUP BY bc HAVING COUNT(DISTINCT itm) > 1
-				) d").FirstAsync();
+				) d", companyId).FirstAsync();
 			res.Add(new IntegrityCheck { Key = "barcode_cross_table_dup", NameAr = "باركود مكرّر على أكثر من صنف عبر الجدولين (معدودة، HM-2)", NameEn = "Barcode registered on >1 item across tables (counted)",
 				Expected = 0, Actual = barcodeDup, Ok = true, Note = $"count={barcodeDup}", Detail = "/Inventory/Items" });
 

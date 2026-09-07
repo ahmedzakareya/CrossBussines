@@ -54,7 +54,7 @@
                                 <div class="col-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Sort"]</label><input type="number" name="sort" value="0" class="form-control form-control-solid form-control-sm" /></div>
                                 <div class="col-1"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i></button></div>
                             </form>
-                            <table class="table table-row-dashed align-middle fs-7"><thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>EN</th><th></th></tr></thead>
+                            <table class="table table-row-dashed align-middle fs-7"><thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>EN</th><th></th></tr></thead>
                             <tbody>@foreach (var a in areas) {
                                 <tr><td class="fw-bold">@a.Code @if (!a.IsActive) { <span class="badge badge-light-danger">@Localizer["Off"]</span> }</td><td>@a.Name</td><td class="text-muted">@(string.IsNullOrWhiteSpace(a.NameEn) ? "—" : a.NameEn)</td>
                                 <td class="text-end"><form asp-action="DeleteDiningArea" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete area?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@a.ID" /><input type="hidden" name="branchId" value="@fB" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form></td></tr>
@@ -74,7 +74,7 @@
                                 <div class="col-2"><label class="fw-semibold fs-8 mb-1">@SR["Type"]</label><select name="stationType" class="form-select form-select-solid form-select-sm">@foreach (var t in stTypes) { <option value="@t.Item1">@t.Item2</option> }</select></div>
                                 <div class="col-2"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i></button></div>
                             </form>
-                            <table class="table table-row-dashed align-middle fs-7"><thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>EN</th><th>@SR["Type"]</th><th></th></tr></thead>
+                            <table class="table table-row-dashed align-middle fs-7"><thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Code"]</th><th>@SR["Name"]</th><th>EN</th><th>@SR["Type"]</th><th></th></tr></thead>
                             <tbody>@foreach (var s in stations) {
                                 <tr><td class="fw-bold">@s.Code</td><td>@s.Name</td><td class="text-muted">@(string.IsNullOrWhiteSpace(s.NameEn) ? "—" : s.NameEn)</td><td><span class="badge badge-light-primary">@s.StationType</span></td>
                                 <td class="text-end"><form asp-action="DeleteStation" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete station?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@s.ID" /><input type="hidden" name="branchId" value="@fB" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form></td></tr>

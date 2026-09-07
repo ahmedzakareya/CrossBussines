@@ -38,7 +38,7 @@ namespace CrossBuy.Controllers.Api
 			var userId = CurrentUserId;
 			if (string.IsNullOrEmpty(userId)) return Unauthorized();
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(userId);
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var d = await _dashboard.BuildAsync(emp.ID);
 			return Ok(new
@@ -85,7 +85,7 @@ namespace CrossBuy.Controllers.Api
 			var userId = CurrentUserId;
 			if (string.IsNullOrEmpty(userId)) return Unauthorized();
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(userId);
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var docs = await _context.Attachments.AsNoTracking()
 				.Where(a => a.EmployeeID == emp.ID)
@@ -108,7 +108,7 @@ namespace CrossBuy.Controllers.Api
 			var userId = CurrentUserId;
 			if (string.IsNullOrEmpty(userId)) return Unauthorized();
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(userId);
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var reqs = await _context.LeaveRequests.AsNoTracking()
 				.Include(r => r.LeaveType)
@@ -157,7 +157,7 @@ namespace CrossBuy.Controllers.Api
 			if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(userId);
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var jobTitle = emp.JobTitleID.HasValue
 				? await _context.JobTitles.AsNoTracking().FirstOrDefaultAsync(j => j.ID == emp.JobTitleID.Value)
@@ -219,7 +219,7 @@ namespace CrossBuy.Controllers.Api
 			if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(userId);
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var all = await _context.Hierarchicals.AsNoTracking().ToListAsync();
 			var typeNames = await _context.HierarchicalTypes.AsNoTracking()
@@ -326,7 +326,7 @@ namespace CrossBuy.Controllers.Api
 			if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(userId);
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var nodes = emp.EmpCompanyID.HasValue
 				? await _structureService.GetByCompanyAsync(emp.EmpCompanyID.Value)

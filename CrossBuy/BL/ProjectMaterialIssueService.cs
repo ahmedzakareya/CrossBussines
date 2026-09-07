@@ -51,16 +51,16 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int issueId, DateTime date, int warehouseId, string? note, List<MaterialLineInput> rows, int? userId)
 		{
 			var prj = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
-			if (prj == null) return (false, "المشروع غير موجود", 0);
-			if (warehouseId <= 0 || !await _db.Warehouses.AnyAsync(w => w.ID == warehouseId && w.CompanyID == companyId)) return (false, "اختر مخزنًا صحيحًا", 0);
+			if (prj == null) return (false, "Project not found", 0);
+			if (warehouseId <= 0 || !await _db.Warehouses.AnyAsync(w => w.ID == warehouseId && w.CompanyID == companyId)) return (false, "Choose a valid warehouse", 0);
 			var clean = (rows ?? new()).Where(r => r.ItemId > 0 && r.Qty > 0).ToList();
-			if (clean.Count == 0) return (false, "أضف صنفًا واحدًا على الأقل بكمية أكبر من صفر", 0);
+			if (clean.Count == 0) return (false, "Add at least one item with a quantity greater than zero", 0);
 
 			ProjectMaterialIssue hdr;
 			if (issueId > 0)
 			{
-				hdr = await _db.ProjectMaterialIssues.Include(x => x.Lines).FirstOrDefaultAsync(x => x.ID == issueId && x.CompanyID == companyId) ?? throw new InvalidOperationException("الأذن غير موجود");
-				if (hdr.Status != "Draft") return (false, "لا يمكن تعديل أذن مرحّل", 0);
+				hdr = await _db.ProjectMaterialIssues.Include(x => x.Lines).FirstOrDefaultAsync(x => x.ID == issueId && x.CompanyID == companyId) ?? throw new InvalidOperationException("Issue note not found");
+				if (hdr.Status != "Draft") return (false, "A posted issue note cannot be edited", 0);
 				_db.ProjectMaterialIssueLines.RemoveRange(hdr.Lines); hdr.Lines.Clear();
 			}
 			else
@@ -79,11 +79,11 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> PostAsync(int companyId, int id, int? userId)
 		{
 			var hdr = await _db.ProjectMaterialIssues.Include(x => x.Lines).FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (hdr == null) return (false, "الأذن غير موجود");
-			if (hdr.Status == "Posted") return (false, "الأذن مرحّل بالفعل");   // no double posting
-			if (hdr.Lines.Count == 0) return (false, "لا أصناف في الأذن");
+			if (hdr == null) return (false, "Issue note not found");
+			if (hdr.Status == "Posted") return (false, "The issue note is already posted");   // no double posting
+			if (hdr.Lines.Count == 0) return (false, "The issue note has no items");
 			var costAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == ProjectCostAccountCode).Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (costAcc == null) return (false, $"حساب تكلفة التنفيذ ({ProjectCostAccountCode}) غير مُهيّأ");
+			if (costAcc == null) return (false, $"The execution cost account ({ProjectCostAccountCode}) is not configured");
 
 			// StockService.PostMovementAsync manages its own transaction per movement — do NOT open an outer one.
 			// Pre-validate availability so we don't post a partial voucher (functional-currency, non-negative warehouses).
@@ -91,7 +91,7 @@ namespace CrossBuy.BL
 			{
 				var (whQty, _, _) = await _stock.GetBalanceAsync(companyId, l.ItemId, hdr.WarehouseId);
 				var allowNeg = await _db.Warehouses.AsNoTracking().Where(w => w.ID == hdr.WarehouseId).Select(w => w.AllowNegativeStock).FirstOrDefaultAsync();
-				if (!allowNeg && whQty < l.Qty) return (false, $"الرصيد غير كافٍ للصنف #{l.ItemId}: المتاح {whQty:0.##}، المطلوب {l.Qty:0.##}");
+				if (!allowNeg && whQty < l.Qty) return (false, $"Insufficient stock for item #{l.ItemId}: available {whQty:0.##}, required {l.Qty:0.##}");
 			}
 			foreach (var l in hdr.Lines)
 			{
@@ -100,9 +100,9 @@ namespace CrossBuy.BL
 					Date = hdr.IssueDate, ItemId = l.ItemId, WarehouseId = hdr.WarehouseId, Direction = -1, Qty = l.Qty,
 					SourceType = "ProjectIssue", SourceId = hdr.ID, SourceLineId = l.ID,
 					ProjectId = hdr.ProjectId, CounterAccountOverride = costAcc.Value, PostToGl = true,
-					Notes = $"صرف مواد للمشروع — أذن {hdr.IssueNo}"
+					Notes = $"Material issue to the project — note {hdr.IssueNo}"
 				}, userId?.ToString());
-				if (!mok || mv == null) return (false, $"تعذّر صرف الصنف #{l.ItemId}: {merr}");
+				if (!mok || mv == null) return (false, $"Could not issue item #{l.ItemId}: {merr}");
 				l.UnitCost = mv.UnitCost; l.TotalCost = mv.TotalCost; l.StockMovementId = mv.ID;
 			}
 			hdr.Status = "Posted"; hdr.PostedAt = DateTime.UtcNow; hdr.PostedBy = userId;
@@ -113,8 +113,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)
 		{
 			var hdr = await _db.ProjectMaterialIssues.Include(x => x.Lines).FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (hdr == null) return (false, "الأذن غير موجود");
-			if (hdr.Status == "Posted") return (false, "لا يمكن حذف أذن مرحّل");
+			if (hdr == null) return (false, "Issue note not found");
+			if (hdr.Status == "Posted") return (false, "A posted issue note cannot be deleted");
 			_db.ProjectMaterialIssueLines.RemoveRange(hdr.Lines);
 			_db.ProjectMaterialIssues.Remove(hdr);
 			await _db.SaveChangesAsync();

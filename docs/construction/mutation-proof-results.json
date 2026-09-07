@@ -1,0 +1,54 @@
+{
+  "marker": "MUTATION-PROOF-C1",
+  "leftover_markers": [],
+  "mutations": [
+    {
+      "id": "C-01",
+      "title": "restore delete-and-reinsert BOQ behaviour",
+      "file": "CrossBuy/BL/BoqService.cs",
+      "test": "Previously_billed_work_cannot_become_billable_again_after_a_boq_edit",
+      "baseline_passed": 1,
+      "baseline_failed": 0,
+      "mutated_passed": 0,
+      "mutated_failed": 1,
+      "restored_sha_identical": true,
+      "after_restore_passed": 1,
+      "after_restore_failed": 0,
+      "sha_before": "0fa7702bdc075519287702882b8f47e655deeba28e17bd963672040166ca2d26",
+      "sha_after": "0fa7702bdc075519287702882b8f47e655deeba28e17bd963672040166ca2d26",
+      "proven": true
+    },
+    {
+      "id": "C-02",
+      "title": "remove the subcontract certification cap",
+      "file": "CrossBuy/BL/Construction/SubcontractScopeService.cs",
+      "test": "Certification_beyond_assigned_quantity_is_hard_blocked",
+      "baseline_passed": 1,
+      "baseline_failed": 0,
+      "mutated_passed": 0,
+      "mutated_failed": 1,
+      "restored_sha_identical": true,
+      "after_restore_passed": 1,
+      "after_restore_failed": 0,
+      "sha_before": "dde5cf6f90041a57ba3a2ad098f0b7ba7766527162d67ccd7151d63da8465183",
+      "sha_after": "dde5cf6f90041a57ba3a2ad098f0b7ba7766527162d67ccd7151d63da8465183",
+      "proven": true
+    },
+    {
+      "id": "C-03",
+      "title": "reproduce a certificate from today's BOQ instead of its snapshot",
+      "file": "CrossBuy/BL/Construction/CommercialRevisionService.cs",
+      "test": "A_posted_certificate_reproduces_the_rate_it_was_certified_at",
+      "baseline_passed": 1,
+      "baseline_failed": 0,
+      "mutated_passed": 0,
+      "mutated_failed": 1,
+      "restored_sha_identical": true,
+      "after_restore_passed": 1,
+      "after_restore_failed": 0,
+      "sha_before": "48d58fc7a0f9781411bf007184a3179b2d9829002af8f778f39914e89d586fdb",
+      "sha_after": "48d58fc7a0f9781411bf007184a3179b2d9829002af8f778f39914e89d586fdb",
+      "proven": true
+    }
+  ]
+}

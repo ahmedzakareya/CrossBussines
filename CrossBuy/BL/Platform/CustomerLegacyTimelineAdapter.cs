@@ -111,10 +111,10 @@ namespace CrossBuy.BL.Platform
 
         private static (string ar, string en, string icon) ActivityKind(string? type) => type switch
         {
-            "Call" => ("مكالمة", "Call", "ki-outline ki-phone"),
-            "Meeting" => ("اجتماع", "Meeting", "ki-outline ki-calendar-tick"),
-            "Email" => ("بريد", "Email", "ki-outline ki-sms"),
-            _ => ("مهمة", "Task", "ki-outline ki-check-square"),
+            "Call" => ("Call", "Call", "ki-outline ki-phone"),
+            "Meeting" => ("Meeting", "Meeting", "ki-outline ki-calendar-tick"),
+            "Email" => ("Email", "Email", "ki-outline ki-sms"),
+            _ => ("Task", "Task", "ki-outline ki-check-square"),
         };
     }
 }

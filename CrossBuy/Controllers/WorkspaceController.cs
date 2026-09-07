@@ -41,9 +41,9 @@ namespace CrossBuy.Controllers
         //
         // Consumes IWorkspaceAgendaService — never a Task or Calendar table. `days` is clamped inside the
         // service, so a crafted value cannot turn this into an unbounded scan.
-        public async Task<IActionResult> Agenda(int days = 7, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> Agenda(int days = 7, int page = 1, CancellationToken cancellationToken = default)
         {
-            var panel = await _workspace.GetAgendaAsync(days, cancellationToken);
+            var panel = await _workspace.GetAgendaAsync(days, page, cancellationToken);
             ViewBag.Days = days;
             ViewBag.Capabilities = await _workspace.GetCapabilitiesAsync(cancellationToken);
             return View(panel);

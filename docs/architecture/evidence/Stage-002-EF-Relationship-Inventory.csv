@@ -1,0 +1,56 @@
+principal_entity,dependent_entity,foreign_key_columns,required,ef_delete_behavior,sql_server_result,production_behavior,classification,recommended_action
+Branch,Employee,BranchID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+BusinessEvent,BusinessEventDispatch,EventId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+CommercialRevision,CommercialRevisionLine,CommercialRevisionId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Companies,Branch,CompanyID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Companies,Companies,ParentCompany,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Companies,Employee,EmpCompanyID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+CompanyType,Companies,CompanyTypeId,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+CountriesLookup,Branch,CountryID,required,Cascade,REJECTED SQL 1785 multiple cascade paths,FK enforced by hand-written SQL where present,EF DDL generation issue only,OnDelete(NoAction) to match the database
+CountriesLookup,Companies,CountryID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+CountriesLookup,Employee,CountryID,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+DeliveryNote,DeliveryNoteLine,DeliveryNoteId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+DepreciationRun,DepreciationLine,DepreciationRunId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Employee,LeaveApprovalStep,ApproverEmployeeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Employee,LeaveRequest,EmployeeID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Employee,Notification,RecipientEmployeeID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Employee,PolicyAssignments,EmployeeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+EmployeeRequest,EmployeeRequestStep,EmployeeRequestID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+GoodsReceipt,GoodsReceiptLine,GoodsReceiptId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Hierarchical,Hierarchical,H_Parent,optional,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+HierarchicalType,Hierarchical,H_Type,optional,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+IdentityRole,IdentityRoleClaim`1,RoleId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+IdentityRole,IdentityUserRole`1,RoleId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+JobApplication,ApplicationDocument,ApplicationID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+JobTitle,Employee,JobTitleID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+JournalEntry,JournalEntryLine,JournalEntryId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+LandedCost,LandedCostCharge,LandedCostId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+LeaveRequest,LeaveApprovalStep,LeaveRequestID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+LeaveTypes,LeavePolicies,LeaveTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+LeaveTypes,LeaveRequest,LeaveTypeID,required,Restrict,accepted,FK enforced by hand-written SQL where present,matches intent,none
+Policies,AttendancePolicies,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Policies,LeavePolicies,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Policies,PolicyAssignments,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Policies,SalaryPolicies,LeavePolicyTypeID,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PriceList,PriceListLine,PriceListId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+ProgressBilling,ProgressBillingLine,BillingId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+ProjectMaterialIssue,ProjectMaterialIssueLine,IssueId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+ProjectProgress,ProjectProgressLine,ProgressId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PurchaseInvoice,PurchaseInvoiceLine,PurchaseInvoiceId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PurchaseOrder,PurchaseOrderLine,PurchaseOrderId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+PurchaseReturn,PurchaseReturnLine,PurchaseReturnId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Quotation,QuotationLine,QuotationId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+SalaryPolicies,Employee,SalaryPoliciesID,optional,ClientSetNull,accepted,FK enforced by hand-written SQL where present,matches intent,none
+SalesInvoice,SalesInvoiceLine,SalesInvoiceId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+SalesOrder,SalesOrderLine,SalesOrderId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+SalesReturn,SalesReturnLine,SalesReturnId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+StockCount,StockCountLine,StockCountId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+StockTransfer,StockTransferLine,StockTransferId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+StockWriteOff,StockWriteOffLine,StockWriteOffId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+TaskTemplate,TaskTemplateItem,TaskTemplateId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Users,Employee,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Users,IdentityUserClaim`1,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Users,IdentityUserLogin`1,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Users,IdentityUserRole`1,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+Users,IdentityUserToken`1,UserId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none
+VariationOrder,VariationOrderLine,VariationOrderId,required,Cascade,accepted,FK enforced by hand-written SQL where present,EF default cascade - model authority only,none

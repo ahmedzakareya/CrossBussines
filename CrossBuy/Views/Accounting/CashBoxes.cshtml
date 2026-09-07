@@ -18,9 +18,9 @@
         <div class="card">
             <div class="card-header border-0 pt-6"><div class="card-title"><div class="d-flex align-items-center position-relative my-1"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" class="form-control form-control-solid w-300px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Cash box"]</th><th class="text-center pe-4">@SR["Status"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Cash box"]</th><th class="text-center pe-4">@SR["Status"]</th></tr></thead>
                 <tbody>
-                @foreach (var c in Model) { <tr class="r" data-s="@c.Name @c.NameEn" style="border-bottom:1px dashed #eef1f6;"><td class="ps-4 fw-semibold text-gray-800">@(isAr ? c.Name : (c.NameEn ?? c.Name))</td><td class="text-center pe-4"><span class="badge fw-bold" style="@(c.IsActive?"background:#eaf3ef;color:#13433a;":"background:#f2f4f7;color:#475467;")">@(c.IsActive?SR["Active"]:SR["Inactive"])</span></td></tr> }
+                @foreach (var c in Model) { <tr class="r" data-s="@c.Name @c.NameEn" style="border-bottom:1px dashed #eef1f6;"><td class="ps-4 fw-semibold text-gray-800">@(isAr ? c.Name : (c.NameEn ?? c.Name))</td><td class="text-center pe-4"><span class="badge fw-bold" style="@(c.IsActive?"background:#E7F0FF;color:#0E4A9E;":"background:#f2f4f7;color:#475467;")">@(c.IsActive?SR["Active"]:SR["Inactive"])</span></td></tr> }
                 @if (Model.Count == 0) { <tr><td colspan="2" class="text-center text-muted py-10">@Localizer["No cash boxes"]</td></tr> }
                 </tbody>
             </table></div></div>
@@ -33,7 +33,7 @@
         <div class="modal-body py-6 px-8">
             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Name"]</label><input name="name" class="form-control form-control-solid" required /></div>
             <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" /></div>
-            <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["GL account"]</label><select name="glAccountId" class="form-select form-select-solid" required><option value="0">@Localizer["Select"]</option>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
+            <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["GL account"]</label><select name="glAccountId" class="form-select form-select-solid" required><option value="0">@Localizer["Select"]</option>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))</option> }</select></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
     </form>

@@ -60,7 +60,7 @@
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3></div>
             <div class="card-body pt-2"><div class="table-responsive">
                 <table class="table table-row-bordered align-middle gy-3">
-                    <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>#</th><th>@SR["Item"]</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@SR["Price"]</th><th class="text-end">@Localizer["Disc"]</th><th class="text-end">@Localizer["Tax%"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>#</th><th>@SR["Item"]</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@SR["Price"]</th><th class="text-end">@Localizer["Disc"]</th><th class="text-end">@Localizer["Tax%"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
                     <tbody>
                     @foreach (var l in Model.Lines.OrderBy(x => x.LineNo))
                     {

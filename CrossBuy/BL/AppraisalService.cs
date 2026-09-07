@@ -40,7 +40,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveCycleAsync(AppraisalCycle dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم الدورة مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Cycle name is required");
 			if (dto.ID > 0)
 			{
 				var e = await _db.AppraisalCycles.FirstOrDefaultAsync(c => c.ID == dto.ID && c.CompanyID == dto.CompanyID);
@@ -72,12 +72,12 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveTemplateAsync(AppraisalTemplate dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم النموذج مطلوب", 0);
-			if (dto.Criteria == null || dto.Criteria.Count == 0) return (false, "أضف معيارًا واحدًا على الأقل", 0);
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Template name is required", 0);
+			if (dto.Criteria == null || dto.Criteria.Count == 0) return (false, "Add at least one criterion", 0);
 			AppraisalTemplate entity;
 			if (dto.ID > 0)
 			{
-				entity = await _db.AppraisalTemplates.FirstOrDefaultAsync(t => t.ID == dto.ID && t.CompanyID == dto.CompanyID) ?? throw new InvalidOperationException("النموذج غير موجود");
+				entity = await _db.AppraisalTemplates.FirstOrDefaultAsync(t => t.ID == dto.ID && t.CompanyID == dto.CompanyID) ?? throw new InvalidOperationException("Template not found");
 				_db.AppraisalCriteria.RemoveRange(_db.AppraisalCriteria.Where(c => c.TemplateId == entity.ID));
 			}
 			else { entity = new AppraisalTemplate { CompanyID = dto.CompanyID, CreatedAt = DateTime.UtcNow }; _db.AppraisalTemplates.Add(entity); }
@@ -117,14 +117,14 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> CreateAppraisalAsync(int companyId, int cycleId, int templateId, int employeeId, int managerId, int? userId)
 		{
-			if (cycleId <= 0 || templateId <= 0 || employeeId <= 0) return (false, "الدورة والنموذج والموظف مطلوبة", 0);
+			if (cycleId <= 0 || templateId <= 0 || employeeId <= 0) return (false, "The cycle, the template and the employee are all required", 0);
 			var cycle = await _db.AppraisalCycles.AsNoTracking().FirstOrDefaultAsync(c => c.ID == cycleId && c.CompanyID == companyId);
-			if (cycle == null) return (false, "الدورة غير موجودة", 0);
-			if (cycle.Status == "Closed") return (false, "الدورة مقفلة", 0);
+			if (cycle == null) return (false, "Cycle not found", 0);
+			if (cycle.Status == "Closed") return (false, "The cycle is closed", 0);
 			if (await _db.Appraisals.AnyAsync(a => a.CompanyID == companyId && a.CycleId == cycleId && a.EmployeeID == employeeId))
-				return (false, "يوجد تقييم لهذا الموظف في هذه الدورة", 0);
+				return (false, "This employee already has an appraisal in this cycle", 0);
 			var criteria = await _db.AppraisalCriteria.AsNoTracking().Where(c => c.TemplateId == templateId).OrderBy(c => c.SortOrder).ToListAsync();
-			if (criteria.Count == 0) return (false, "النموذج بلا معايير", 0);
+			if (criteria.Count == 0) return (false, "The template has no criteria", 0);
 
 			var appr = new Appraisal { CompanyID = companyId, CycleId = cycleId, TemplateId = templateId, EmployeeID = employeeId, ManagerEmployeeID = managerId, Status = 0, CreatedAt = DateTime.UtcNow, CreatedBy = userId };
 			_db.Appraisals.Add(appr); await _db.SaveChangesAsync();
@@ -152,8 +152,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SaveScoresAsync(int companyId, int id, Dictionary<int, decimal> scores, Dictionary<int, string?> notes, string? managerComment)
 		{
 			var appr = await _db.Appraisals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == companyId);
-			if (appr == null) return (false, "التقييم غير موجود");
-			if (appr.Status == 2) return (false, "التقييم مُقَرّ ولا يمكن تعديله");
+			if (appr == null) return (false, "Appraisal not found");
+			if (appr.Status == 2) return (false, "The appraisal is acknowledged and cannot be edited");
 			var lines = await _db.AppraisalLines.Where(l => l.AppraisalId == id).ToListAsync();
 			foreach (var l in lines)
 			{
@@ -171,8 +171,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SubmitAsync(int companyId, int id)
 		{
 			var appr = await _db.Appraisals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == companyId);
-			if (appr == null) return (false, "التقييم غير موجود");
-			if (appr.Status != 0) return (false, "تم إرسال التقييم مسبقًا");
+			if (appr == null) return (false, "Appraisal not found");
+			if (appr.Status != 0) return (false, "The appraisal has already been sent");
 			appr.TotalScore = await ComputeScoreAsync(id, appr.TemplateId);
 			appr.Status = 1; appr.SubmittedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
@@ -186,7 +186,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> AcknowledgeAsync(int id, int employeeId, string? comment)
 		{
 			var appr = await _db.Appraisals.FirstOrDefaultAsync(a => a.ID == id && a.EmployeeID == employeeId);
-			if (appr == null) return (false, "التقييم غير موجود");
+			if (appr == null) return (false, "Appraisal not found");
 			if (appr.Status != 1) return (false, appr.Status == 2 ? "تم الإقرار مسبقًا" : "التقييم لم يُرسَل بعد");
 			appr.Status = 2; appr.EmployeeComment = comment; appr.AcknowledgedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();

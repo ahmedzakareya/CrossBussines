@@ -64,8 +64,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> TransferAsync(int companyId, int fromGlAccountId, int toGlAccountId, decimal amount, DateTime date, string? notes, int? userId)
 		{
-			if (fromGlAccountId == toGlAccountId) return (false, "لا يمكن التحويل لنفس الحساب");
-			if (amount <= 0) return (false, "المبلغ يجب أن يكون أكبر من صفر");
+			if (fromGlAccountId == toGlAccountId) return (false, "You cannot transfer to the same account");
+			if (amount <= 0) return (false, "The amount must be greater than zero");
 			var (ok, err, _) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "Transfer",
@@ -74,7 +74,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = toGlAccountId, Debit = R(amount), Credit = 0, Description = "تحويل وارد" },
-					new() { AccountId = fromGlAccountId, Debit = 0, Credit = R(amount), Description = "تحويل صادر" },
+					new() { AccountId = fromGlAccountId, Debit = 0, Credit = R(amount), Description = "Outgoing transfer" },
 				},
 			}, userId);
 			return (ok, err);
@@ -107,7 +107,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? reconId)> ReconcileAsync(int companyId, int bankAccountId, DateTime statementDate, decimal statementBalance, List<int> clearedLineIds)
 		{
 			var (bank, bookBalance, lines) = await GetReconciliationViewAsync(companyId, bankAccountId, statementDate);
-			if (bank == null) return (false, "الحساب البنكي غير موجود", null);
+			if (bank == null) return (false, "Bank account not found", null);
 
 			var cleared = (clearedLineIds ?? new()).ToHashSet();
 			var clearedBalance = R(bank.OpeningBalance + lines.Where(l => cleared.Contains(l.LineId)).Sum(l => l.Debit - l.Credit));

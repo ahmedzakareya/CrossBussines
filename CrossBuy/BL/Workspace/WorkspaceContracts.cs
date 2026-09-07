@@ -67,6 +67,11 @@ namespace CrossBuy.BL.Workspace
 
         public int? Total { get; init; }
 
+        // Set only by a paged panel. Null on every other panel, which is how a view tells "one page of
+        // many" from "everything there is" without guessing from Items.Count.
+        public int? Page { get; init; }
+        public int? PageSize { get; init; }
+
         // For PartiallyAvailable: which contributing sources failed, so the UI can name what is missing rather
         // than saying "some data".
         public IReadOnlyList<string> MissingSources { get; init; } = Array.Empty<string>();
@@ -286,7 +291,7 @@ namespace CrossBuy.BL.Workspace
         public string? DeepLink { get; init; }
         public WorkspaceTone Tone { get; init; }
 
-        public string TypeLabel(bool arabic) => arabic ? TypeLabelAr : TypeLabelEn;
+        public string TypeLabel(bool arabic) => arabic ? TypeLabelAr : DisplayName.Or(TypeLabelEn, TypeLabelAr);
     }
 
     // ---- ATTENTION ------------------------------------------------------------------------------
@@ -349,7 +354,7 @@ namespace CrossBuy.BL.Workspace
         /// inferred from list position in a test.
         public required int Rank { get; init; }
 
-        public string ReasonLabel(bool arabic) => arabic ? ReasonLabelAr : ReasonLabelEn;
+        public string ReasonLabel(bool arabic) => arabic ? ReasonLabelAr : DisplayName.Or(ReasonLabelEn, ReasonLabelAr);
         public string Source(bool arabic) => arabic ? SourceAr : SourceEn;
     }
 
@@ -373,6 +378,19 @@ namespace CrossBuy.BL.Workspace
         public required string EntityLabel { get; init; }
         public string? Excerpt { get; init; }
         public string? MentionedBy { get; init; }
+
+        /// The sender's photo, straight from CommActorDto.AvatarUrl (Employee.ProfileImage).
+        /// It was always in the pipeline; this projection used to drop it, which is the only
+        /// reason the screen could not show a face. Null is normal - render initials.
+        public string? MentionedByAvatarUrl { get; init; }
+
+        /// For the initials fallback, so a row without a photo still gets a stable mark.
+        public int MentionedByEmployeeId { get; init; }
+
+        /// Whether THIS recipient has read it. CommMentionHistoryItemDto.ReadAt carried it all
+        /// along; dropping it is why read and unread rendered identically on a screen whose
+        /// entire purpose is telling them apart.
+        public bool IsRead { get; init; }
         public string? ViaKind { get; init; }
         public DateTime? At { get; init; }
         public string? Url { get; init; }
@@ -551,8 +569,10 @@ namespace CrossBuy.BL.Workspace
         Task<WorkspacePanel<WorkspaceMention>> GetMentionsAsync(
             int take = 20, CancellationToken cancellationToken = default);
 
+        // `page` is 1-based. The page SIZE is the Workspace's own decision and is not a parameter: a
+        // caller that could choose it could ask for the 200-row page this screen used to render.
         Task<WorkspacePanel<WorkspaceAgendaRow>> GetAgendaAsync(
-            int days = 7, CancellationToken cancellationToken = default);
+            int days = 7, int page = 1, CancellationToken cancellationToken = default);
 
         Task<WorkspacePanel<WorkspaceReportLink>> GetReportsAsync(
             CancellationToken cancellationToken = default);

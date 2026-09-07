@@ -21,12 +21,12 @@
         <div class="card mb-5"><div class="card-body py-5"><div class="row g-5">
             <div class="col-md-4"><div class="fs-7 text-muted">@SR["Customer"]</div><div class="fw-bold fs-5">@(cust == null ? "—" : (isAr ? cust.Name : (cust.NameEn ?? cust.Name)))</div></div>
             <div class="col-md-3"><div class="fs-7 text-muted">@SR["Date"]</div><div class="fw-bold fs-5">@Model.InvoiceDate.ToString("yyyy/MM/dd")</div></div>
-            <div class="col-md-2"><div class="fs-7 text-muted">@SR["Status"]</div><div><span class="badge fw-bold" style="@(Model.Status == "Posted" ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@Model.Status</span></div></div>
+            <div class="col-md-2"><div class="fs-7 text-muted">@SR["Status"]</div><div><span class="badge fw-bold" style="@(Model.Status == "Posted" ? "background:#E7F0FF;color:#0E4A9E;" : "background:#f2f4f7;color:#475467;")">@Model.Status</span></div></div>
             <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["E-Invoice"]</div><div>@(string.IsNullOrEmpty(Model.EtaStatus) ? Localizer["Not sent"].Value : Model.EtaStatus)</div></div>
         </div></div></div>
         <div class="card"><div class="card-body">
             <div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@SR["Price"]</th><th class="text-end">@Localizer["Disc"]</th><th class="text-end">@Localizer["Tax%"]</th><th class="text-end pe-4">@SR["Total"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@SR["Price"]</th><th class="text-end">@Localizer["Disc"]</th><th class="text-end">@Localizer["Tax%"]</th><th class="text-end pe-4">@SR["Total"]</th></tr></thead>
                 <tbody>
                 @foreach (var l in Model.Lines.OrderBy(x => x.LineNo))
                 {

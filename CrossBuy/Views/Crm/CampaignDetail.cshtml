@@ -88,7 +88,7 @@
         <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Campaign members"] (@members.Count)</div></div>
             <div class="card-body">
                 <div class="table-responsive"><table class="table table-row-bordered align-middle gy-2">
-                    <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@Localizer["Member"]</th><th>@SR["Type"]</th><th style="width:180px">@SR["Status"]</th><th>@Localizer["RespondedOn"]</th><th class="text-end" style="width:60px"></th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Member"]</th><th>@SR["Type"]</th><th style="width:180px">@SR["Status"]</th><th>@Localizer["RespondedOn"]</th><th class="text-end" style="width:60px"></th></tr></thead>
                     <tbody>
                     @foreach (var m in members)
                     {

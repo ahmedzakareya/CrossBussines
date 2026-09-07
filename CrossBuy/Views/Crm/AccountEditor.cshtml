@@ -64,7 +64,7 @@
                         <div class="col-md-3 d-flex align-items-end gap-2"><div class="form-check form-switch"><input type="hidden" name="isPrimary" value="false" /><input class="form-check-input" type="checkbox" name="isPrimary" value="true" id="prim"><label class="form-check-label fw-semibold ms-1 fs-8" for="prim">@Localizer["Primary"]</label></div><button class="btn btn-primary btn-sm"><i class="ki-outline ki-plus fs-4"></i></button></div>
                     </form>
                     <div class="table-responsive"><table class="table table-row-bordered align-middle gy-2">
-                        <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@SR["Name"]</th><th>@Localizer["Title"]</th><th>@SR["Phone"]</th><th>@SR["Email"]</th><th class="text-center">@Localizer["Primary"]</th><th class="text-end"></th></tr></thead>
+                        <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Name"]</th><th>@Localizer["Title"]</th><th>@SR["Phone"]</th><th>@SR["Email"]</th><th class="text-center">@Localizer["Primary"]</th><th class="text-end"></th></tr></thead>
                         <tbody>
                         @{ var cIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"; }
                         @foreach (var c in Model.Contacts)

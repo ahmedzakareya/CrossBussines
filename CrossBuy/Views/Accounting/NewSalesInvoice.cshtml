@@ -62,7 +62,7 @@
                 <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" value="@(isEdit ? edit!.Notes : "")" /></div>
             </div></div></div>
             <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
-            <div class="card-body"><div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+            <div class="card-body"><div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                 <th style="min-width:200px">@Localizer["Item (stock)"]</th><th style="min-width:130px">@SR["Warehouse"]</th><th style="min-width:170px">@SR["Description"]</th><th style="width:90px">@Localizer["Qty"]</th><th style="width:120px">@SR["Price"]</th><th style="width:110px">@Localizer["Disc"]</th><th style="width:90px">@Localizer["Tax%"]</th><th style="min-width:180px">@Localizer["Revenue acct"]</th><th class="text-end" style="width:120px">@SR["Total"]</th><th style="width:40px"></th>
             </tr></thead><tbody id="rows"></tbody><tfoot>
                 <tr class="fw-bold"><td colspan="8" class="text-end">@Localizer["Sub / Tax / Total"]</td><td class="text-end" id="tot">0.00</td><td></td></tr>
@@ -74,9 +74,9 @@
 <partial name="~/Views/Shared/_QuickAdd.cshtml" />
 @section Scripts {
 <script>
-var REV=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(revAccts.Select(a=>new{id=a.Id,code=a.Code,name=(isAr?a.Name:a.NameEn)})));
+var REV=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(revAccts.Select(a=>new{id=a.Id,code=a.Code,name=(isAr?a.Name:DisplayName.Or(a.NameEn, a.Name))})));
 var ITEMS=[]; var itemPickUrl='@Url.Action("ItemPickData","Inventory")';
-var WH=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(invWh.Select(w=>new{iD=w.ID,code=w.Code,name=(isAr?w.Name:w.NameEn)})));
+var WH=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(invWh.Select(w=>new{iD=w.ID,code=w.Code,name=(isAr?w.Name:DisplayName.Or(w.NameEn, w.Name))})));
 function opts(){var o='';REV.forEach(function(a){o+='<option value="'+a.id+'">'+a.code+' — '+a.name+'</option>';});return o;}
 function iopts(){return '<option value="">@Localizer["— None —"]</option>';}
 function wopts(){var o='<option value="">—</option>';WH.forEach(function(w){o+='<option value="'+w.iD+'">'+w.code+'</option>';});return o;}

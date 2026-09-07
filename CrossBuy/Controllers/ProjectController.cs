@@ -838,11 +838,14 @@ namespace CrossBuy.Controllers
 			// from the employee row, so a tampered form post cannot add somebody who is not in this list.
 			// SelectListItem and not an anonymous type: views compile into their own assembly, so a `dynamic`
 			// over an anonymous type declared here throws RuntimeBinderException at render time.
-			ViewBag.Employees = await _db.Employee.AsNoTracking()
+			ViewBag.Employees = (await _db.Employee.AsNoTracking()
 				.Where(e => e.EmpCompanyID == gate.CompanyId && e.IsActive)
-				.OrderBy(e => e.FullName)
-				.Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(e.FullName, e.ID.ToString()))
-				.ToListAsync();
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+				.ToListAsync())
+				.Select(e => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem(
+					CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn, e.ID), e.ID.ToString()))
+				.OrderBy(i => i.Text, StringComparer.CurrentCulture)
+				.ToList();
 
 			ViewBag.Roles = ProjectMemberRoles.All;
 			ViewBag.CanManage = ctx != null

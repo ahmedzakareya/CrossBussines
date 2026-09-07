@@ -60,7 +60,7 @@ namespace CrossBuy.Controllers
 			// through a convenience dictionary, which is exactly where they hide.
 			ViewBag.Names = await Db.Employee.AsNoTracking()
 				.Where(e => empIds.Contains(e.ID) && e.EmpCompanyID == gate.CompanyId)
-				.ToDictionaryAsync(e => e.ID, e => e.FullName);
+				.ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
 			var cycles = await AprSvc.GetCyclesAsync(gate.CompanyId);
 			ViewBag.CycleNames = cycles.ToDictionary(c => c.ID, c => c.Name);
 			return View(list);
@@ -163,7 +163,7 @@ namespace CrossBuy.Controllers
 			ViewBag.Criteria = tpl?.Criteria ?? new List<AppraisalCriterion>();
 			ViewBag.Names = await Db.Employee.AsNoTracking()
 				.Where(e => (e.ID == appr.EmployeeID || e.ID == appr.ManagerEmployeeID) && e.EmpCompanyID == gate.CompanyId)
-				.ToDictionaryAsync(e => e.ID, e => e.FullName);
+				.ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
 			return View(appr);
 		}
 

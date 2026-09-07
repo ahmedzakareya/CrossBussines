@@ -20,15 +20,15 @@
     <title>@Localizer["People Portal"] - CrossBuy</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+    <link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
-    <link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
+    <link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     @if (isAr)
     {
-        <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
-        <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
-	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -41,9 +41,9 @@
     }
     else
     {
-        <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
-        <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
-	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     }
 </head>
 
@@ -68,7 +68,7 @@
                             <i class="ki-outline ki-abstract-14 fs-2"></i>
                         </div>
                         <a href="@Url.Action("Profile", "People")" class="app-sidebar-logo">
-                            <img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" />
+                            <img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" asp-append-version="true" />
                         </a>
                         <span class="badge badge-light-primary fw-bold fs-7 ms-3 d-none d-md-inline-flex align-items-center">
                             <i class="ki-outline ki-profile-user fs-6 me-1 text-primary"></i>@Localizer["People Portal"]
@@ -113,7 +113,7 @@
                                             <img alt="Logo" src="@avatar" />
                                         </div>
                                         <div class="d-flex flex-column">
-                                            <div class="fw-bold d-flex align-items-center fs-5">@(isAr ? employee?.FullName : employee?.FullNameEn)</div>
+                                            <div class="fw-bold d-flex align-items-center fs-5">@(isAr ? employee?.FullName : DisplayName.Or(employee?.FullNameEn, employee?.FullName))</div>
                                             <span class="fw-semibold text-muted fs-7">@employee?.Email</span>
                                         </div>
                                     </div>
@@ -259,11 +259,11 @@
     </div>
 
     <script>var hostUrl = "~/Backend-assets/";</script>
-    <script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
-    <script src="~/Backend-assets/js/scripts.bundle.js"></script>
-    <script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js"></script>
-    <script src="~/Backend-assets/js/widgets.bundle.js"></script>
-    <script src="~/assets/js/app.ajax.js"></script>
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+    <script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
+    <script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js" asp-append-version="true"></script>
+    <script src="~/Backend-assets/js/widgets.bundle.js" asp-append-version="true"></script>
+    <script src="~/assets/js/app.ajax.js" asp-append-version="true"></script>
     <script src="~/Backend-assets/js/crossbuy-confirm.js" asp-append-version="true"></script>
     @await Html.PartialAsync("_CbToastr")
     <!--begin::Notifications (SignalR)-->
@@ -282,7 +282,7 @@
                 '#ppl_toasts{position:fixed;top:80px;inset-inline-end:20px;z-index:3000;display:flex;flex-direction:column;gap:10px;width:340px;max-width:90vw}' +
                 '.ppl-toast{display:flex;align-items:flex-start;gap:12px;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.13);padding:14px 16px;transition:opacity .2s}' +
                 '.ppl-toast .ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;font-size:18px;font-weight:700}' +
-                '.ppl-toast.success .ic{background:#2f9e6e}.ppl-toast.info .ic{background:#1f6253}.ppl-toast.warning .ic{background:#d4a017}.ppl-toast.error .ic{background:#D9214E}' +
+                '.ppl-toast.success .ic{background:#2f9e6e}.ppl-toast.info .ic{background:#145DBF}.ppl-toast.warning .ic{background:#F59E0B}.ppl-toast.error .ic{background:#D9214E}' +
                 '.ppl-toast .tt{font-weight:700;color:#181C32;font-size:14px}.ppl-toast .ms{color:#5E6278;font-size:12.5px;margin-top:2px}' +
                 '.ppl-toast .cl{cursor:pointer;color:#99A1B7;font-size:20px;line-height:1;background:none;border:0;padding:0}';
             document.head.appendChild(style);

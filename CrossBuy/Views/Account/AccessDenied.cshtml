@@ -1,0 +1,63 @@
+@using System.Globalization
+@{
+    // Inventory shell = THE visual authority. Same declaration every governed platform screen makes, so this
+    // page inherits the one approved shell, its RTL/LTR handling and its Metronic vocabulary rather than
+    // introducing a second look for the one screen a user hits when something goes wrong.
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+
+    // Platform-only sidebar: this screen belongs to no module, so it must not borrow a module's menu. Passing
+    // an empty category list leaves _MainMenu's prepended Platform category and nothing else - the same thing
+    // the Workspace screens do.
+    ViewBag.SidebarMenu = new List<CrossBuy.Models.Menu.MenuCategory>();
+
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = arabic ? "لا تملك صلاحية الوصول" : "Access denied";
+}
+
+@* The card names NO resource, permission, role or module - see AccountController.AccessDenied for why.
+   There is deliberately no ReturnUrl rendered anywhere on this page. *@
+<div class="d-flex flex-column flex-column-fluid">
+    <div class="app-container container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                <div class="card shadow-sm my-10">
+                    <div class="card-body text-center py-15 px-10">
+
+                        <i class="ki-outline ki-shield-cross fs-5x text-warning mb-8"></i>
+
+                        <h1 class="fw-bold text-gray-900 fs-2qx mb-4">
+                            @(arabic ? "لا تملك صلاحية الوصول" : "Access denied")
+                        </h1>
+
+                        <div class="fw-semibold fs-5 text-gray-600 mb-3">
+                            @(arabic
+                                ? "حسابك لا يملك الصلاحية اللازمة لفتح هذه الشاشة."
+                                : "Your account does not have permission to open this screen.")
+                        </div>
+
+                        @* Says the screen EXISTS and the refusal was deliberate. Without this the user cannot
+                           tell a permission problem from a broken link, which is the confusion the missing
+                           destination used to create. *@
+                        <div class="text-gray-500 fs-6 mb-10">
+                            @(arabic
+                                ? "الشاشة موجودة، لكن الوصول إليها مقيَّد. إن كنت تحتاجها لعملك، اطلب من مسؤول النظام منحك الصلاحية."
+                                : "The screen exists, but access to it is restricted. If you need it for your work, ask your system administrator to grant you permission.")
+                        </div>
+
+                        <div class="d-flex flex-center flex-wrap gap-3">
+                            <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                                <i class="ki-outline ki-home-2 fs-4 me-1"></i>
+                                @(arabic ? "الصفحة الرئيسية" : "Go to home")
+                            </a>
+                            <a href="@Url.Action("Index", "Workspace")" class="btn btn-light-primary">
+                                <i class="ki-outline ki-element-11 fs-4 me-1"></i>
+                                @(arabic ? "مساحة العمل" : "Workspace")
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -166,9 +166,9 @@ namespace CrossBuy.BL
 			// answer as a genuinely missing row, so an approver cannot probe another company's queue.
 			int companyId = await CurrentCompanyIdAsync();
 			var ap = await _db.InventoryApprovals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == companyId);
-			if (ap == null) return (false, "الطلب غير موجود");
-			if (ap.Status != "Pending") return (false, "تمت معالجة الطلب من قبل");
-			if (ap.RequestedByEmployeeId == approverEmp) return (false, "فصل المهام: لا يمكن لمنشئ المستند اعتماده");  // SoD
+			if (ap == null) return (false, "Order not found");
+			if (ap.Status != "Pending") return (false, "The request has already been processed");
+			if (ap.RequestedByEmployeeId == approverEmp) return (false, "Segregation of duties: the person who created the document cannot approve it");  // SoD
 
 			// execute the held operation
 			string? resultNo = null; string? err = null;
@@ -205,11 +205,11 @@ namespace CrossBuy.BL
 							if (!ok) { err = e; } else resultNo = no;
 							break;
 						}
-					default: err = "نوع مستند غير معروف"; break;
+					default: err = "Unknown document type"; break;
 				}
 			}
 			catch (Exception ex) { err = ex.Message; }
-			if (err != null) return (false, "تعذّر تنفيذ المستند المعتمَد: " + err);
+			if (err != null) return (false, "Could not execute the approved document: " + err);
 
 			ap.Status = "Approved"; ap.DecidedByEmployeeId = approverEmp; ap.DecidedAt = DateTime.UtcNow; ap.DecisionNote = note; ap.ResultDocNo = resultNo;
 			await _db.SaveChangesAsync();
@@ -223,9 +223,9 @@ namespace CrossBuy.BL
 			// Same company scoping as ApproveAsync — another company's id must read as "not found".
 			int companyId = await CurrentCompanyIdAsync();
 			var ap = await _db.InventoryApprovals.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == companyId);
-			if (ap == null) return (false, "الطلب غير موجود");
-			if (ap.Status != "Pending") return (false, "تمت معالجة الطلب من قبل");
-			if (ap.RequestedByEmployeeId == approverEmp) return (false, "فصل المهام: لا يمكن لمنشئ المستند رفضه");
+			if (ap == null) return (false, "Order not found");
+			if (ap.Status != "Pending") return (false, "The request has already been processed");
+			if (ap.RequestedByEmployeeId == approverEmp) return (false, "Segregation of duties: the person who created the document cannot reject it");
 			ap.Status = "Rejected"; ap.DecidedByEmployeeId = approverEmp; ap.DecidedAt = DateTime.UtcNow; ap.DecisionNote = note;
 			await _db.SaveChangesAsync();
 			if (ap.RequestedByEmployeeId != null)
@@ -235,7 +235,7 @@ namespace CrossBuy.BL
 
 		private static string DocTypeName(string t) => t switch
 		{
-			"PurchaseOrder" => "أمر شراء", "StockTransfer" => "تحويل بين الفروع", "StockCount" => "تسوية جرد", "WriteOff" => "إعدام مخزون", _ => t
+			"PurchaseOrder" => "Purchase order", "StockTransfer" => "Inter-branch transfer", "StockCount" => "Stock-count adjustment", "WriteOff" => "Stock write-off", _ => t
 		};
 	}
 }

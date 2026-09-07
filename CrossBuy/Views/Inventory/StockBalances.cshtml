@@ -21,7 +21,7 @@
                 <div class="col-md-5"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (code / name / barcode)"]</label>
                     <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
                 <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Warehouse"]</label>
-                    <select id="f_wh" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["All warehouses"]"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                    <select id="f_wh" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["All warehouses"]"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
                 <div class="col-md-3"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Filter"]</label>
                     <div class="form-check form-switch form-check-custom form-check-solid mt-2"><input class="form-check-input" type="checkbox" id="f_instock" /><label class="form-check-label fs-7 ms-2" for="f_instock">@Localizer["With stock only"]</label></div></div>
                 <div class="col-md-1"><button type="button" id="f_reset" class="btn btn-light w-100" title="@SR["Reset"]"><i class="ki-outline ki-arrows-circle fs-3"></i></button></div>
@@ -41,7 +41,7 @@
             <div class="card-body pt-0">
                 <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-4" id="t">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                         <th class="min-w-200px">@SR["Item"]</th>
                         <th class="min-w-120px">@SR["Warehouse"]</th>
                         <th class="text-end min-w-90px">@Localizer["On hand"]</th>

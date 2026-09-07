@@ -15,14 +15,14 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card"><div class="card-body pt-6"><div class="table-responsive">
             <table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Name"]</th><th class="text-center">@Localizer["Default"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4">@SR["Edit"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Name"]</th><th class="text-center">@Localizer["Default"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4">@SR["Edit"]</th></tr></thead>
                 <tbody>
                 @foreach (var p in pipelines)
                 {
                     <tr style="border-bottom:1px dashed #eef1f6;">
                         <td class="ps-4 fw-bold text-gray-900"><a href="@Url.Action("PipelineEditor","Crm", new { id = p.ID })" class="text-gray-900 text-hover-primary">@(isAr ? p.Name : (p.NameEn ?? p.Name))</a></td>
-                        <td class="text-center">@if (p.IsDefault) { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@Localizer["Default"]</span> }</td>
-                        <td class="text-center"><span class="badge fw-bold" style="@(p.IsActive?"background:#eaf3ef;color:#13433a;":"background:#f2f4f7;color:#475467;")">@(p.IsActive?SR["Active"].Value:SR["Inactive"].Value)</span></td>
+                        <td class="text-center">@if (p.IsDefault) { <span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@Localizer["Default"]</span> }</td>
+                        <td class="text-center"><span class="badge fw-bold" style="@(p.IsActive?"background:#E7F0FF;color:#0E4A9E;":"background:#f2f4f7;color:#475467;")">@(p.IsActive?SR["Active"].Value:SR["Inactive"].Value)</span></td>
                         <td class="text-end pe-4"><a href="@Url.Action("PipelineEditor","Crm", new { id = p.ID })" class="btn btn-sm btn-icon btn-light-primary"><i class="ki-outline ki-pencil fs-5"></i></a></td>
                     </tr>
                 }

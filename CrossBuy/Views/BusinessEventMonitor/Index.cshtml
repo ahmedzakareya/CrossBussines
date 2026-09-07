@@ -17,7 +17,7 @@
     string d(DateTime? v) => v?.ToString("yyyy-MM-dd") ?? "";
 }
 @section Styles {
-    <link href="~/Backend-assets/css/crossbusiness-platform-views.css" rel="stylesheet" type="text/css" />
+    <link href="~/Backend-assets/css/crossbusiness-platform-views.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 }
 @functions {
     // localized display for a coded value via SharedResources (SR); falls back to the raw code when unmapped
@@ -230,7 +230,7 @@
                 <div class="table-responsive">
                     <table class="table table-row-bordered align-middle gy-3 mb-0">
                         <thead>
-                            <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" class="border-bottom border-2 border-primary">
+                            <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" class="border-bottom border-2 border-primary" style="border-bottom:2px solid #0E4A9E;">
                                 <th class="ps-4 min-w-200px">@Localizer["Event"]</th>
                                 <th class="min-w-125px">@Localizer["Entity"]</th>
                                 <th class="text-center">@Localizer["Co."]</th>

@@ -58,7 +58,7 @@
                     </div>
                 </div>
                 <div class="col-xl-4">
-                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background:linear-gradient(135deg,#1f6253 0%,#13433a 100%)">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background:linear-gradient(135deg,#145DBF 0%,#0E4A9E 100%)">
                         <div class="card-header pt-5">
                             <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@SR["Open pipeline value"]</span></h3>
                             <div class="card-toolbar"><a href="@Url.Action("Pipeline","Crm")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a></div>
@@ -93,11 +93,11 @@
                     var alert = Model.OpenTickets > 0;
                     var od = Model.OverdueActivities > 0;
                     var stats = new (string label, string value, string raw, string icon, string bg, string fg, string href, string sub)[] {
-                        (SR["Active leads"].Value, Model.LeadCount.ToString(), Raw(Model.LeadCount), "ki-user-square", "#eaf3ef", "#13433a", Url.Action("Leads","Crm"), SR["Leads"].Value),
-                        (SR["Open opportunities"].Value, Model.OpenOppCount.ToString(), Raw(Model.OpenOppCount), "ki-chart-line-up", "#eaf3ef", "#13433a", Url.Action("Opportunities","Crm"), Money(Model.OpenValue)),
-                        (SR["Won value"].Value, Money(Model.WonValue), Raw(Model.WonValue), "ki-medal-star", "#eaf3ef", "#13433a", Url.Action("Opportunities","Crm"), Model.WonCount + " " + SR["Won"].Value),
+                        (SR["Active leads"].Value, Model.LeadCount.ToString(), Raw(Model.LeadCount), "ki-user-square", "#E7F0FF", "#0E4A9E", Url.Action("Leads","Crm"), SR["Leads"].Value),
+                        (SR["Open opportunities"].Value, Model.OpenOppCount.ToString(), Raw(Model.OpenOppCount), "ki-chart-line-up", "#E7F0FF", "#0E4A9E", Url.Action("Opportunities","Crm"), Money(Model.OpenValue)),
+                        (SR["Won value"].Value, Money(Model.WonValue), Raw(Model.WonValue), "ki-medal-star", "#E7F0FF", "#0E4A9E", Url.Action("Opportunities","Crm"), Model.WonCount + " " + SR["Won"].Value),
                         (SR["Open activities"].Value, Model.OpenActivities.ToString(), Raw(Model.OpenActivities), "ki-check-square", od?"#fdeaea":"#fef3e2", od?"#d92d20":"#b96a00", Url.Action("Activities","Crm"), od?SR["Overdue"].Value:SR["Activities"].Value),
-                        (SR["Open tickets"].Value, Model.OpenTickets.ToString(), Raw(Model.OpenTickets), "ki-questionnaire-tablet", alert?"#fdeaea":"#eaf3ef", alert?"#d92d20":"#13433a", Url.Action("Tickets","Crm"), SR["Tickets"].Value),
+                        (SR["Open tickets"].Value, Model.OpenTickets.ToString(), Raw(Model.OpenTickets), "ki-questionnaire-tablet", alert?"#fdeaea":"#E7F0FF", alert?"#d92d20":"#0E4A9E", Url.Action("Tickets","Crm"), SR["Tickets"].Value),
                         (SR["Accounts"].Value, Model.AccountCount.ToString(), Raw(Model.AccountCount), "ki-briefcase", "#f2f4f7", "#475467", Url.Action("Accounts","Crm"), SR["Contacts"].Value+" "+Model.ContactCount),
                     };
                 }
@@ -134,18 +134,86 @@
                             @if (Model.Pipeline.Count == 0) { <div class="text-center text-muted py-15">@SR["No opportunities yet"]</div> }
                             else
                             {
-                                var barColors = new[] { "primary", "info", "warning", "success", "dark", "danger" };
-                                decimal maxAmt = Model.Pipeline.Max(p => p.Amount);
-                                var i = 0;
-                                foreach (var p in Model.Pipeline)
+                                @* THE REAL ORDER. The service groups by stage, so the stages arrive sorted
+                                   BY NAME - Lost, Negotiation, Proposal, Prospecting, Qualification, Won -
+                                   and the card presented that as a pipeline: it opened with LOST and closed
+                                   with WON, with the four real stages shuffled in between. *@
+                                var order = new[] { "Prospecting", "Qualification", "Proposal", "Negotiation" };
+                                var flow = order
+                                    .Select(s => Model.Pipeline.FirstOrDefault(x => x.Stage == s))
+                                    .Where(x => x != null)
+                                    .ToList();
+                                var won = Model.Pipeline.FirstOrDefault(x => x.Stage == "Won");
+                                var lost = Model.Pipeline.FirstOrDefault(x => x.Stage == "Lost");
+
+                                @* Measured against the largest IN-FLIGHT stage, not the overall maximum:
+                                   with Won or Lost in the denominator a healthy funnel renders as four
+                                   short stubs and the shape disappears. *@
+                                decimal peak = flow.Count > 0 ? flow.Max(x => x!.Amount) : 0m;
+                                var openTotal = flow.Sum(x => x!.Amount);
+                                var openCount = flow.Sum(x => x!.Count);
+
+                                <div class="d-flex flex-stack mb-5">
+                                    <span class="text-gray-500 fw-semibold fs-7">@SR["Open pipeline value"]</span>
+                                    <span class="text-gray-900 fw-bold fs-5" dir="ltr"
+                                          style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@openTotal.ToString("N0")</span>
+                                </div>
+
+                                @foreach (var p in flow)
                                 {
-                                    var bc = p.Stage == "Won" ? "success" : (p.Stage == "Lost" ? "danger" : barColors[i % barColors.Length]); i++;
-                                    var pct = maxAmt > 0 ? (int)Math.Round(100m * p.Amount / maxAmt) : 0;
-                                    <div class="d-flex flex-stack mb-2">
-                                        <span class="text-gray-800 fw-semibold flex-grow-1"><span class="badge badge-circle badge-light-@bc me-2">@p.Count</span>@nm(p.Stage)</span>
-                                        <span class="text-gray-900 fw-bold">@p.Amount.ToString("N0")</span>
+                                    var pct = peak > 0 ? (int)Math.Round(100m * p!.Amount / peak) : 0;
+                                    <div class="d-flex align-items-center mb-4">
+                                        @* The COUNT rides in the gutter, so the name and its amount own the
+                                           line between them. *@
+                                        <span class="badge badge-circle badge-light-primary fw-bold me-3 flex-shrink-0"
+                                              dir="ltr" style="unicode-bidi:isolate">@p!.Count</span>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="d-flex flex-stack mb-2">
+                                                <span class="text-gray-800 fw-semibold fs-7 text-truncate me-3">@nm(p.Stage)</span>
+                                                <span class="text-gray-900 fw-bold fs-7 flex-shrink-0" dir="ltr"
+                                                      style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@p.Amount.ToString("N0")</span>
+                                            </div>
+                                            @* ONE FILL for everything in flight. A stage is a position, not a
+                                               state - the rotation put a black bar and an amber bar mid-funnel
+                                               and neither meant anything. The LENGTH carries the amount. *@
+                                            <div class="progress h-8px bg-light-primary">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width:@(pct)%"
+                                                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"
+                                                     aria-label="@nm(p.Stage)"></div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="progress h-6px mb-4 bg-light-@bc"><div class="progress-bar bg-@bc" style="width:@(pct)%"></div></div>
+                                }
+
+                                @* THE TWO EXITS, kept apart from the funnel. Won and Lost are not stages an
+                                   opportunity sits in - they are where it ended - and listing them among the
+                                   stages made the longest bar on the card belong to a stage no deal is in
+                                   any more. These two keep their colour, because here it says something. *@
+                                @if (won != null || lost != null)
+                                {
+                                    <div class="separator separator-dashed my-5"></div>
+                                    <div class="row g-3">
+                                        @foreach (var o in new[] { won, lost })
+                                        {
+                                            if (o == null) { continue; }
+                                            var tone = o.Stage == "Won" ? "success" : "danger";
+                                            var icon = o.Stage == "Won" ? "ki-check-circle" : "ki-cross-circle";
+                                            <div class="col-6">
+                                                <div class="border border-gray-300 border-dashed rounded p-4 h-100">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="ki-outline @icon fs-3 text-@tone me-2"></i>
+                                                        <span class="text-gray-500 fw-semibold fs-7">@nm(o.Stage)</span>
+                                                    </div>
+                                                    <div class="d-flex flex-stack">
+                                                        <span class="text-gray-900 fw-bold fs-4" dir="ltr"
+                                                              style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@o.Amount.ToString("N0")</span>
+                                                        <span class="badge badge-light-@tone fw-bold" dir="ltr"
+                                                              style="unicode-bidi:isolate">@o.Count</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
                                 }
                             }
                         </div>
@@ -162,17 +230,23 @@
                         </div>
                         <div class="card-body pt-2">
                             @if (Model.RecentLeads.Count == 0) { <div class="text-center text-muted py-15">@SR["No leads yet"]</div> }
-                            @foreach (var l in Model.RecentLeads)
-                            {
-                                <div class="d-flex align-items-center mb-5">
-                                    <div class="symbol symbol-35px me-3"><span class="symbol-label bg-light-@statusColor(l.Status)"><i class="ki-outline ki-user fs-5 text-@statusColor(l.Status)"></i></span></div>
-                                    <div class="d-flex flex-column flex-grow-1 me-2">
-                                        <span class="text-gray-900 fw-bold fs-7 text-truncate mw-150px">@l.Name</span>
-                                        <span class="badge badge-light-@statusColor(l.Status) fs-8 fw-semibold w-fit-content mt-1">@nm(l.Status)</span>
+                            @* The theme's .timeline: the line, an icon carrying the status colour, and
+                               the STATUS above the NAME. This is the shape chosen from the two options. *@
+                            <div class="timeline">
+                                @foreach (var l in Model.RecentLeads)
+                                {
+                                    <div class="timeline-item align-items-center mb-7">
+                                        <div class="timeline-line mt-1 mb-n6 mb-sm-n7"></div>
+                                        <div class="timeline-icon">
+                                            <i class="ki-outline ki-user fs-2 text-@statusColor(l.Status)"></i>
+                                        </div>
+                                        <div class="timeline-content m-0">
+                                            <span class="fs-6 fw-semibold d-block text-@statusColor(l.Status)">@nm(l.Status)</span>
+                                            <span class="fs-6 fw-bold text-gray-800">@l.Name</span>
+                                        </div>
                                     </div>
-                                    <span class="badge badge-light-secondary fw-bold" title="@SR["Score"]">@l.Score</span>
-                                </div>
-                            }
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -190,13 +264,48 @@
                             </h3>
                         </div>
                         <div class="card-body pt-2">
-                            @if (Model.TopAccounts.Count == 0) { <div class="text-center text-muted py-10">—</div> }
-                            @{ var ai = 0; var ac = new[] { "success", "primary", "warning", "info", "dark" }; }
-                            @foreach (var a in Model.TopAccounts)
+                            @if (Model.TopAccounts.Count == 0)
                             {
-                                var c = ac[ai % ac.Length]; ai++;
-                                <div class="d-flex flex-stack mb-2"><span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@a.Name</span><span class="text-gray-900 fw-bold">@a.Value.ToString("N0")</span></div>
-                                <div class="progress h-6px mb-4 bg-light-@c"><div class="progress-bar bg-@c" style="width:@(a.Pct)%"></div></div>
+                                <div class="text-center text-gray-500 fw-semibold py-10">@SR["No open opportunities yet"]</div>
+                            }
+                            else
+                            {
+                                @* A RANK IS NOT A STATE. The bars rotated success / primary / warning /
+                                   info / dark, so the top account came out GREEN, the third AMBER and the
+                                   fifth BLACK - a colour scale laid over a list that is ALREADY sorted.
+                                   The order is the rank; a number says it exactly, and the bar length
+                                   carries the value. One fill for all five. *@
+                                var rank = 0;
+                                var openAll = Model.OpenValue;
+                                foreach (var a in Model.TopAccounts)
+                                {
+                                    rank++;
+                                    @* Pct is share of the LARGEST account, which is what makes the five
+                                       bars comparable. Share of the whole open pipeline is a different
+                                       fact and the more useful one, so it is stated as the context. *@
+                                    var share = openAll > 0 ? Math.Round(100m * a.Value / openAll, 1) : 0m;
+                                    <div class="d-flex align-items-center mb-4">
+                                        <span class="badge badge-circle badge-light-primary fw-bold me-3 flex-shrink-0"
+                                              dir="ltr" style="unicode-bidi:isolate">@rank</span>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="d-flex flex-stack mb-2">
+                                                <span class="text-gray-800 fw-semibold fs-7 text-truncate me-3">@a.Name</span>
+                                                <span class="text-gray-900 fw-bold fs-7 flex-shrink-0" dir="ltr"
+                                                      style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@Money(a.Value)</span>
+                                            </div>
+                                            <div class="progress h-8px bg-light-primary mb-1">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width:@(a.Pct)%"
+                                                     aria-valuenow="@a.Pct" aria-valuemin="0" aria-valuemax="100"
+                                                     aria-label="@a.Name"></div>
+                                            </div>
+                                            @* The fraction is isolated as one run: an unisolated "12.5%" splits
+                                               around the sign on an RTL line and reads as "%12.5" or worse. *@
+                                            <span class="text-gray-500 fw-semibold fs-8" dir="ltr"
+                                                  style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@share%</span>
+                                            <span class="text-gray-500 fw-semibold fs-8">@SR["of open pipeline"]</span>
+                                        </div>
+                                    </div>
+                                }
                             }
                         </div>
                     </div>

@@ -14,6 +14,16 @@ BEGIN
 END
 GO
 
+-- 1b) BinLocations gets the English twin of Name. A section or rack is named by hand when it is
+--     created, so the Arabic name was the only one stored and /Inventory/WarehouseSections showed it
+--     on the English UI too. NULL-able: a location with no English name falls back to the Arabic one
+--     at read time, which beats a blank label next to a code.
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.BinLocations') AND name = N'NameEn')
+BEGIN
+    ALTER TABLE dbo.BinLocations ADD NameEn NVARCHAR(150) NULL;
+END
+GO
+
 -- 2) ItemCategory gets a Kind discriminator (Category root / Group child). Existing rows default to Category (= root, still valid).
 IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'dbo.ItemCategories') AND name = N'Kind')
 BEGIN

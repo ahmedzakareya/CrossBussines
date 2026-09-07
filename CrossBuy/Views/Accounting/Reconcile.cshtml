@@ -14,8 +14,8 @@
 }
 <style>
     /* selected (cleared) row highlight */
-    #reconTable tbody tr.recon-selected { background: #eaf3ef !important; }
-    #reconTable tbody tr.recon-selected td:first-child { box-shadow: inset 3px 0 0 #13433a; }
+    #reconTable tbody tr.recon-selected { background: #E7F0FF !important; }
+    #reconTable tbody tr.recon-selected td:first-child { box-shadow: inset 3px 0 0 #0E4A9E; }
     #reconTable tbody tr { cursor: pointer; }
     /* inset first/last column so content doesn't hug the edges */
     #reconTable > :not(caption) > * > *:first-child { padding-inline-start: 1.25rem; }
@@ -58,18 +58,18 @@
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-wrap gap-6 mb-5">
-                            <div class="border border-gray-300 border-dashed rounded py-3 px-5"><div class="fs-7 text-muted">@Localizer["Cleared balance"]</div><div class="fs-3 fw-bold" id="clearedBal" style="color:#13433a;">@bank.OpeningBalance.ToString("N2")</div></div>
+                            <div class="border border-gray-300 border-dashed rounded py-3 px-5"><div class="fs-7 text-muted">@Localizer["Cleared balance"]</div><div class="fs-3 fw-bold" id="clearedBal" style="color:#0E4A9E;">@bank.OpeningBalance.ToString("N2")</div></div>
                             <div class="border border-gray-300 border-dashed rounded py-3 px-5"><div class="fs-7 text-muted">@Localizer["Difference"]</div><div class="fs-3 fw-bold" id="diff">0.00</div></div>
                         </div>
                         <div class="table-responsive"><table class="table table-row-dashed align-middle gy-3 mb-0" id="reconTable" style="font-variant-numeric:tabular-nums;">
-                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th style="width:60px" class="text-center">@Localizer["Cleared"]</th><th>@Localizer["Entry No"]</th><th>@SR["Date"]</th><th>@SR["Description"]</th><th class="text-end">@SR["Debit"]</th><th class="text-end">@SR["Credit"]</th></tr></thead>
+                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th style="width:60px" class="text-center">@Localizer["Cleared"]</th><th>@Localizer["Entry No"]</th><th>@SR["Date"]</th><th>@SR["Description"]</th><th class="text-end">@SR["Debit"]</th><th class="text-end">@SR["Credit"]</th></tr></thead>
                             <tbody>
                             @if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-10">@Localizer["No transactions up to this date"]</td></tr> }
                             @foreach (var l in Model)
                             {
                                 <tr>
                                     <td class="text-center"><div class="form-check form-check-custom form-check-solid form-check-sm d-inline-flex"><input type="checkbox" class="form-check-input clr" name="clearedLineIds" value="@l.LineId" data-amt="@((l.Debit - l.Credit).ToString(System.Globalization.CultureInfo.InvariantCulture))" @(l.Cleared ? "checked" : "") /></div></td>
-                                    <td><span class="badge fs-8 fw-bold" style="background:#e9f1ee;color:#13433a;">@l.EntryNo</span></td>
+                                    <td><span class="badge fs-8 fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@l.EntryNo</span></td>
                                     <td class="text-muted">@l.Date.ToString("yyyy/MM/dd")</td>
                                     <td class="text-gray-700">@l.Description</td>
                                     <td class="text-end @(l.Debit>0?"fw-bold":"text-muted")">@l.Debit.ToString("N2")</td>

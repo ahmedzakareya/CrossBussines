@@ -56,11 +56,56 @@
     string MetricColor(WorkspaceTone tone) => tone switch
     {
         WorkspaceTone.Ok => "success",
-        WorkspaceTone.Warn => "warning",
+        WorkspaceTone.Warn => "warning-strong",   @* not the pale yellow - see crossbuy-brand.css *@
         WorkspaceTone.Critical => "danger",
         _ => "primary",
     };
 
+    @* A PRIORITY IS A RAMP, not one grey. Urgent, High and Low all rendered as plain
+       `badge-light`, so three levels came out in one identical colour. Same rule as the rest of
+       the app: danger = attention, warning = approaching, secondary = normal. *@
+    @* THE FIVE REAL STATES. The service collapses tone - overdue becomes Critical and everything
+       else becomes Warn - so "waiting on your approval", "due today" and "flagged urgent" arrived
+       here already indistinguishable. WorkspaceAttentionItem carries the Reason enum itself, so
+       the row reads that instead of the flattened tone. *@
+    @* SEVERITY, NOT CATEGORY. Colouring by reason alone painted the whole column one red, because
+       every row on this screen genuinely IS overdue - the reason was constant, so the colour was
+       too, and a stripe that never varies tells the reader nothing.
+
+       What DOES vary among eight overdue rows is the priority the business put on them. So the bar
+       answers "how bad is this one", combining both facts:
+
+         danger          missed AND flagged urgent/high - deal with these first
+         warning-strong  missed at normal priority, or flagged urgent but not yet late
+         info            somebody else is blocked waiting on this person
+         secondary       a mention: normal until it is read
+
+       An overdue row is never grey, whatever its priority - being late is the fact that put it on
+       this card, and demoting it to neutral would hide the thing the card exists to show. *@
+    string SeverityColor(WorkspaceAttentionReason r, string? priority) => r switch
+    {
+        WorkspaceAttentionReason.OverdueTask =>
+            priority == "Urgent" || priority == "High" ? "danger" : "warning-strong",
+        WorkspaceAttentionReason.UrgentTask => "warning-strong",
+        WorkspaceAttentionReason.DueToday => "warning-strong",
+        WorkspaceAttentionReason.ApprovalWaiting => "info",
+        _ => "secondary",
+    };
+
+    string PriorityColor(string? p) => p switch
+    {
+        "Urgent" => "danger",
+        "High" => "warning-strong",
+        _ => "secondary",
+    };
+
+    @* THE "@" NEVER REACHES THE READER. CommBodyPolicy.Excerpt has already flattened
+       `@[Ahmed Zakareya](employee:5)` to `@Ahmed Zakareya` upstream, so what is left here is the
+       bare sign - authoring syntax with nothing behind it. Stripped at render, NOT in Excerpt
+       itself, because that string also feeds notification templates and the comment timeline. *@
+    string NoAt(string? s) => string.IsNullOrEmpty(s)
+        ? ""
+        : System.Text.RegularExpressions.Regex.Replace(s, @"@(?=[^\s@])", "");
     string MetricIcon(WorkspaceTone tone) => tone switch
     {
         WorkspaceTone.Ok => "ki-check-circle",
@@ -215,12 +260,13 @@
            Metronic vocabulary only, and the SAME card/table/badge components the panels below already
            use. No new design language, no new stylesheet, no bespoke class.
            ================================================================================================ *@
+        <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
+        <div class="col-xl-8">
         <!--begin::Attention-->
-        <div class="card card-flush mb-5 mb-xl-10" id="attention" aria-busy="false">
+        <div class="card card-flush h-lg-100" id="attention" aria-busy="false">
             <div class="card-header pt-7">
                 <h3 class="card-title align-items-start flex-column">
-                    <span class="card-label fw-bold text-gray-900">
-                        <i class="ki-outline ki-abstract-23 fs-3 text-danger me-2"></i>@Localizer["What requires my attention?"]
+                    <span class="card-label fw-bold text-gray-900">@Localizer["What requires my attention?"]
                     </span>
                     @if (Model.Attention.HasItems)
                     {
@@ -244,32 +290,43 @@
                     <div class="table-responsive">
                         <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                             <thead>
-                                <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
                                     <th class="w-150px">@Localizer["Reason"]</th>
                                     <th>@Localizer["Item"]</th>
-                                    <th class="w-125px">@Localizer["Source"]</th>
+
                                     <th class="text-end w-125px">@Localizer["When"]</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var item in Model.Attention.Items)
                                 {
-                                    var tone = MetricColor(item.Tone);
+                                    var tone = SeverityColor(item.Reason, item.Priority);
                                     <tr>
                                         <td>
                                             <span class="badge badge-light-@tone fs-8 fw-bold text-gray-800">@item.ReasonLabel(arabic)</span>
                                         </td>
                                         <td class="min-w-200px">
-                                            @* The destination comes from the panel the row was composed
-                                               from, which got it from the owning module. *@
-                                            <a class="fw-bold text-gray-900 text-hover-primary"
-                                               href="@(item.Url ?? Url.Action("Index", "Workspace"))">@item.Title</a>
-                                            @if (!string.IsNullOrWhiteSpace(item.Priority) && item.Priority != "Normal")
-                                            {
-                                                <span class="badge badge-light fs-8 ms-2">@item.Priority</span>
-                                            }
+                                            @* ACCOUNTING'S ROW SHAPE: a 4px bar on the leading edge carrying
+                                               the row's tone, the title bold, and the source as a grey
+                                               sub-line - so the row reads as one object instead of four
+                                               separate cells. `ps-5` and `start-0` are logical, so the bar
+                                               moves to the right-hand edge under RTL on its own. *@
+                                            <div class="position-relative ps-5">
+                                                <div class="position-absolute start-0 top-0 w-4px h-100 rounded-2 bg-@tone"></div>
+                                                @* The destination comes from the panel the row was composed
+                                                   from, which got it from the owning module. *@
+                                                <a class="d-block fw-bold text-gray-900 text-hover-primary"
+                                                   href="@(item.Url ?? Url.Action("Index", "Workspace"))">@item.Title</a>
+                                                <span class="fs-7 text-muted fw-semibold d-block">
+                                                    @item.Source(arabic)
+                                                    @if (!string.IsNullOrWhiteSpace(item.Priority) && item.Priority != "Normal")
+                                                    {
+                                                        <span class="badge badge-light-@PriorityColor(item.Priority) fs-8 ms-2 fw-bold text-gray-800">@item.Priority</span>
+                                                    }
+                                                </span>
+                                            </div>
                                         </td>
-                                        <td class="text-gray-700 fw-semibold">@item.Source(arabic)</td>
+
                                         <td class="text-end text-gray-700 fw-semibold">
                                             @if (item.AgeDays is > 0)
                                             {
@@ -300,6 +357,86 @@
             </div>
         </div>
         <!--end::Attention-->
+        </div>
+
+        @* THE SAME FIGURES, A DIFFERENT VESSEL. This was a solid blue card that restated the four
+           numbers the KPI tiles print directly underneath it. Accounting carries figures like these
+           in plain label/value rows with dashed separators and one emphasised line (its VAT and
+           Fixed Assets cards) - which holds the same content without competing with the tiles and
+           without needing a sparkline to stop it reading as hollow. *@
+        <div class="col-xl-4">
+            <div class="card card-flush h-lg-100">
+                <div class="card-header pt-7">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-900">@Localizer["My workload"]</span>
+                        <span class="text-gray-500 mt-1 fw-semibold fs-7">@Model.CompanyName</span>
+                    </h3>
+                    <div class="card-toolbar">
+                        <a href="@Url.Action("Agenda","Workspace")" class="btn btn-sm btn-light">@Localizer["View all"]</a>
+                    </div>
+                </div>
+                <div class="card-body pt-2 d-flex flex-column">
+                    @foreach (var m in Model.Metrics)
+                    {
+                        <div class="d-flex flex-stack py-2">
+                            <span class="text-gray-600 fw-semibold">@m.Label(arabic)</span>
+                            @* Isolated and tabular: a figure on an Arabic line reorders around its
+                               neighbours without it, and the column twitches as digits change. *@
+                            <span class="fw-bold text-@(MetricColor(m.Tone) == "secondary" ? "gray-900" : MetricColor(m.Tone))"
+                                  dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@m.Value</span>
+                        </div>
+                        <div class="separator separator-dashed my-1"></div>
+                    }
+                    <div class="d-flex flex-stack py-2">
+                        <span class="text-gray-800 fw-bold">@Shared["Approvals"]</span>
+                        <span class="fw-bold fs-4 text-@(Model.PendingApprovals > 0 ? "danger" : "gray-900")"
+                              dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@Model.PendingApprovals</span>
+                    </div>
+
+                    @* ACCOUNTING'S "EXPENSE DISTRIBUTION" SHAPE, answering something this page could
+                       not answer before: WHERE the work demanding attention comes from. Computed from
+                       the rows on screen - and the sub-line says exactly that, because this panel is
+                       capped like every other one here and a percentage of a capped list would
+                       otherwise read as a percentage of everything. *@
+                    @if (Model.Attention.Items.Count > 0)
+                    {
+                        var bySource = Model.Attention.Items
+                            .GroupBy(i => i.Source(arabic))
+                            .Select(g => new { Name = g.Key, Count = g.Count() })
+                            .OrderByDescending(g => g.Count)
+                            .ToList();
+                        var shown = Model.Attention.Items.Count;
+
+                        <div class="separator separator-dashed my-4"></div>
+                        <div class="fw-bold text-gray-800 fs-7 mb-1">@Localizer["By source"]</div>
+                        <div class="text-gray-500 fw-semibold fs-8 mb-3">
+                            @Localizer["Of the {0} rows shown", shown]
+                        </div>
+                        @foreach (var s in bySource)
+                        {
+                            var pct = (int)Math.Round(100m * s.Count / shown);
+                            <div class="d-flex flex-stack mb-2">
+                                <span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@s.Name</span>
+                                <span class="text-gray-900 fw-bold me-3" dir="ltr"
+                                      style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@s.Count</span>
+                            </div>
+                            <div class="d-flex align-items-center w-100 mb-4">
+                                @* ONE FILL. A source is a name, not a state - rotating colours here would
+                                   spend a semantic family per module and say nothing. The LENGTH carries
+                                   the share. *@
+                                <div class="progress h-6px w-100 me-2 bg-light-primary">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width:@(pct)%"
+                                         aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100" aria-label="@s.Name"></div>
+                                </div>
+                                <span class="text-gray-500 fw-semibold fs-8" dir="ltr"
+                                      style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@pct%</span>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+        </div>
 
         @if (Model.Metrics.Count > 0)
         {
@@ -369,8 +506,7 @@
                 <div class="card card-flush mb-5 mb-xl-10" id="my-work" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-check-square fs-3 text-primary me-2"></i>@Localizer["My Work"]
+                            <span class="card-label fw-bold text-gray-900">@Localizer["My Work"]
                             </span>
                         </h3>
                         @if (Model.Capabilities.Tasks)
@@ -390,7 +526,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
                                             <th>@Localizer["Work item"]</th>
                                             <th>@Localizer["Status"]</th>
                                             <th class="text-end">@Localizer["Due"]</th>
@@ -439,8 +575,7 @@
                 <div class="card card-flush mb-5 mb-xl-10" id="approvals" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-check-square fs-3 text-primary me-2" aria-hidden="true"></i>@Shared["Approvals"]
+                            <span class="card-label fw-bold text-gray-900">@Shared["Approvals"]
                                 @if (Model.PendingApprovals > 0)
                                 {
                                     <span class="badge badge-light-primary fs-8 ms-2">@Model.PendingApprovals</span>
@@ -460,7 +595,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
                                             <th>@Localizer["Type"]</th>
                                             <th>@Localizer["Details"]</th>
                                             <th class="text-end">@Localizer["When"]</th>
@@ -511,8 +646,7 @@
                 <div class="card card-flush mb-5 mb-xl-10" id="agenda" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-calendar fs-3 text-primary me-2"></i>@Localizer["Unified Agenda"]
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Unified Agenda"]
                             </span>
                         </h3>
                         @if (Model.Capabilities.Agenda)
@@ -532,7 +666,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
                                             <th>@Localizer["Agenda item"]</th>
                                             <th>@Localizer["Type"]</th>
                                             <th class="text-end">@Localizer["When"]</th>
@@ -571,8 +705,7 @@
                 <div class="card card-flush" id="activity" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-time fs-3 text-primary me-2"></i>@Localizer["Recent Activity"]
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Recent Activity"]
                             </span>
                         </h3>
                     </div>
@@ -586,7 +719,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                     <thead>
-                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                        <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
                                             <th>@Localizer["Activity"]</th>
                                             <th>@Localizer["Details"]</th>
                                             <th class="text-end">@Localizer["When"]</th>
@@ -627,8 +760,7 @@
                 <div class="card card-flush mb-5 mb-xl-10" id="notifications" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-notification-bing fs-3 text-primary me-2"></i>@Localizer["Notifications"]
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Notifications"]
                                 @if (Model.UnreadNotifications > 0)
                                 {
                                     <span class="badge badge-light-danger fs-8 ms-2 text-gray-800">@Model.UnreadNotifications</span>
@@ -677,8 +809,7 @@
                 <div class="card card-flush mb-5 mb-xl-10" id="mentions" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-messages fs-3 text-primary me-2"></i>@Localizer["Mentions"]
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Mentions"]
                                 @if (Model.UnreadMentions > 0)
                                 {
                                     <span class="badge badge-light-danger fs-8 ms-2 text-gray-800">@Model.UnreadMentions</span>
@@ -702,7 +833,7 @@
                                         {
                                             <tr>
                                                 <td>
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(mention.Url ?? Url.Action("Mentions", "Workspace"))">@(mention.Excerpt ?? mention.EntityLabel)</a>
+                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(mention.Url ?? Url.Action("Mentions", "Workspace"))">@(mention.Excerpt == null ? mention.EntityLabel : NoAt(mention.Excerpt))</a>
                                                     <div class="text-gray-700 fs-7">@mention.MentionedBy · <span class="badge badge-light-primary fs-8">@mention.EntityLabel</span></div>
                                                 </td>
                                                 <td class="text-end text-gray-700 fw-semibold">@Ago(mention.At)</td>
@@ -724,8 +855,7 @@
                 <div class="card card-flush mb-5 mb-xl-10" id="favourite-reports" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-star fs-3 text-warning me-2"></i>@Localizer["Favourite Reports"]
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Favourite Reports"]
                             </span>
                         </h3>
                         @if (Model.Capabilities.Reporting)
@@ -775,8 +905,7 @@
                 <div class="card card-flush" id="recent-reports" aria-busy="false">
                     <div class="card-header pt-7">
                         <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bold text-gray-900">
-                                <i class="ki-outline ki-chart-simple fs-3 text-primary me-2"></i>@Localizer["Recent Reports"]
+                            <span class="card-label fw-bold text-gray-900">@Localizer["Recent Reports"]
                             </span>
                         </h3>
                     </div>

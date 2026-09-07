@@ -1,5 +1,6 @@
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Inventory;
+using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL
@@ -85,7 +86,7 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error)> CancelAsync(int companyId, int id, DateTime date, string? userId);
 		// بند3: labor lines by source
 		Task<List<ManufWorkOrderLabor>> GetLaborAsync(int companyId, int workOrderId);
-		Task<(bool ok, string? error, int laborId)> AddLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal? ratePerHourOverride, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId);
+		Task<(bool ok, string? error, int laborId)> AddLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal? ratePerHourOverride, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId, string? workerNameEn = null);
 		Task<(bool ok, string? error)> RemoveLaborAsync(int companyId, int laborId, DateTime date, string? userId);
 		Task<(bool ok, string? error, decimal unitCost)> CompleteAsync(int companyId, int id, DateTime date, string? userId);
 		// بند5: partial/final production at standard cost (computes the std unit cost, then StockService posts + variance).
@@ -102,7 +103,7 @@ namespace CrossBuy.BL
 		Task<List<ManufPlan>> GetPlansAsync(int companyId);
 		Task<ManufPlan?> GetPlanAsync(int companyId, int id);
 		Task<List<ManufPlanDemand>> GetPlanDemandsAsync(int companyId, int planId);
-		Task<(bool ok, string? error, int id)> CreatePlanAsync(int companyId, string name, DateTime? planDate, string? userId);
+		Task<(bool ok, string? error, int id)> CreatePlanAsync(int companyId, string name, string? nameEn, DateTime? planDate, string? userId);
 		Task<(bool ok, string? error)> AddDemandAsync(int companyId, int planId, int itemId, decimal qty, DateTime? dueDate);
 		Task<(bool ok, string? error)> RemoveDemandAsync(int companyId, int demandId);
 		Task<(bool ok, string? error)> DeletePlanAsync(int companyId, int id);
@@ -118,8 +119,62 @@ namespace CrossBuy.BL
 		private readonly CrossDbContext _db;
 		private readonly IStockService _stock;
 		private readonly IEmployeeCostService _empCost;
+		private readonly CrossBuy.BL.Platform.IBusinessEventService _events;   // Platform Kernel: durable business facts (in-transaction)
 		private readonly IBomExplosionService _bom;   // the ONE place a bill of materials becomes quantities
-		public ManufService(CrossDbContext db, IStockService stock, IEmployeeCostService empCost, IBomExplosionService bom) { _db = db; _stock = stock; _empCost = empCost; _bom = bom; }
+		public ManufService(CrossDbContext db, IStockService stock, IEmployeeCostService empCost, CrossBuy.BL.Platform.IBusinessEventService events, IBomExplosionService bom) { _db = db; _stock = stock; _empCost = empCost; _events = events; _bom = bom; }
+
+		// ---------------------------------------------------------------------------------------------
+		// Platform Kernel slice 2 — work-order event helpers.
+		//
+		// The staged lifecycle methods below (Release/Cancel/Complete/ProducePartial) delegate to StockService,
+		// which is the SOLE stock + GL writer and owns its own ScopedTx. Rather than edit that writer, each
+		// wrapper here opens an OUTER ScopedTx: BeginOrJoinAsync makes StockService's inner transaction JOIN it
+		// (becoming a no-op on commit), so the business fact and its event commit together while StockService
+		// stays untouched. This is exactly what ScopedTx's own-or-join design exists for.
+		//
+		// It also closes a real gap: CancelWorkOrderAsync has an early-return path (nothing issued → no GL)
+		// that commits with NO transaction of its own. The outer transaction covers that path too.
+		// ---------------------------------------------------------------------------------------------
+		private async Task<string?> ItemLabelAsync(int companyId, int itemId, CancellationToken ct = default) =>
+			await _db.Items.AsNoTracking()
+				.Where(i => i.ID == itemId && i.CompanyID == companyId)
+				.Select(i => (i.ItemCode ?? "") + " — " + i.Name)
+				.FirstOrDefaultAsync(ct);
+
+		// Records a work-order lifecycle fact. dedupKey is set for transitions that can only happen once.
+		private async Task RecordWorkOrderEventAsync(
+			int companyId, ManufWorkOrder wo, string eventType, string? oldStatus,
+			decimal? producedBefore = null, string[]? changedFields = null, string? dedupKey = null)
+		{
+			await _events.RecordAsync(new BusinessEventRecord
+			{
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.ManufWorkOrder,
+				EntityId = wo.ID,
+				EventType = eventType,
+				PayloadVersion = ManufWorkOrderEventPayload.Version,
+				Visibility = BusinessEventVisibility.Internal,
+				DedupKey = dedupKey,
+				Payload = new ManufWorkOrderEventPayload
+				{
+					WorkOrderNumber = wo.WoNo,
+					ItemId = wo.ItemId,
+					ItemName = await ItemLabelAsync(companyId, wo.ItemId),
+					PlannedQuantity = wo.Qty,
+					CompletedQuantityBefore = producedBefore,
+					CompletedQuantityAfter = wo.ProducedQty,
+					OldStatus = oldStatus,
+					NewStatus = wo.Status,
+					PlannedStartDate = wo.PlannedStart,
+					PlannedEndDate = wo.PlannedEnd,
+					ChangedFields = changedFields,
+				},
+			});
+		}
+
+		// Re-reads the order AFTER a StockService call so the event carries the committed state, not the
+		// pre-call snapshot. AsNoTracking would fight the tracked instance StockService just mutated.
+		private Task<ManufWorkOrder?> ReloadAsync(int companyId, int id) =>
+			_db.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == id);
 
 		public async Task<(List<WorkOrderRow> rows, int total)> SearchAsync(int companyId, string? q, string? status, int page, int pageSize)
 		{
@@ -167,9 +222,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> CreateAsync(int companyId, int itemId, decimal qty, int warehouseId, DateTime? start, DateTime? end, decimal labor, decimal overhead, string? notes, string? userId, string? modeOverride = null)
 		{
-			if (itemId <= 0) return (false, "اختر الصنف المُصنَّع", 0);
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", 0);
-			if (warehouseId <= 0) return (false, "اختر المخزن", 0);
+			if (itemId <= 0) return (false, "Choose the manufactured item", 0);
+			if (qty <= 0) return (false, "Quantity must be greater than zero", 0);
+			if (warehouseId <= 0) return (false, "Choose the warehouse", 0);
 			// ===== COMPANY BOUNDARY. Every authoritative input is validated as belonging to `companyId`
 			// BEFORE anything is written. =====
 			//
@@ -196,17 +251,17 @@ namespace CrossBuy.BL
 				.Where(i => i.ID == itemId && i.CompanyID == companyId)
 				.Select(i => new { i.ProductionMethod })
 				.FirstOrDefaultAsync();
-			if (prod == null) return (false, "الصنف المُصنَّع غير موجود", 0);
+			if (prod == null) return (false, "The manufactured item was not found", 0);
 
 			var warehouseOwned = await _db.Warehouses.AsNoTracking()
 				.AnyAsync(w => w.ID == warehouseId && w.CompanyID == companyId);
-			if (!warehouseOwned) return (false, "المخزن غير موجود", 0);
+			if (!warehouseOwned) return (false, "Warehouse not found", 0);
 
 			// The recipe is now company-scoped, so a foreign BOM is not merely rejected later - it is never read.
 			var bom = await _db.ItemComponents.AsNoTracking()
 				.Where(c => c.ParentItemId == itemId && c.CompanyID == companyId)
 				.OrderBy(c => c.SortOrder).ToListAsync();
-			if (bom.Count == 0) return (false, "هذا الصنف ليس له قائمة مواد (BOM) — أضف مكوّناته أولًا", 0);
+			if (bom.Count == 0) return (false, "This item has no bill of materials — add its components first", 0);
 			// Every component the plan will reference must be ours too. A BOM row inside our own recipe can
 			// still name a foreign component id, and those ids are what get stamped onto ManufWorkOrderComponents
 			// and later consumed as stock - so this is checked before a single row is written, not at consumption.
@@ -214,7 +269,7 @@ namespace CrossBuy.BL
 			var ownedComponentCount = await _db.Items.AsNoTracking()
 				.CountAsync(i => componentIds.Contains(i.ID) && i.CompanyID == companyId);
 			if (ownedComponentCount != componentIds.Count)
-				return (false, "قائمة المواد تحتوي على مكوّن لا ينتمي لهذه الشركة", 0);
+				return (false, "The bill of materials contains a component that does not belong to this company", 0);
 
 			// stamp the production mode from the item (overridable later); only OrderBased uses staged WO lifecycle
 			var prodMethod = prod.ProductionMethod;
@@ -228,6 +283,10 @@ namespace CrossBuy.BL
 			// 4-2: if the item has a routing, compute time-based labor/overhead and use it (overrides manual entry)
 			var (rlabor, roh) = await ComputeRoutingCostAsync(companyId, itemId, qty);
 			if (rlabor > 0 || roh > 0) { wo.LaborCost = rlabor; wo.OverheadCost = roh; }
+			// Platform Kernel slice 2: creation writes the order, its number and its component rows in three
+			// SaveChanges calls that previously had no transaction between them. One ScopedTx now makes the
+			// whole creation — and its event — atomic.
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			_db.ManufWorkOrders.Add(wo); await _db.SaveChangesAsync();
 			wo.WoNo = $"WO-{wo.ID:D5}";
 			// Planned quantities come from the canonical explosion. ConvertToBaseUoM = false because PlannedQty is
@@ -238,16 +297,27 @@ namespace CrossBuy.BL
 			foreach (var b in planned.Lines)
 				_db.ManufWorkOrderComponents.Add(new ManufWorkOrderComponent { CompanyID = companyId, WorkOrderId = wo.ID, ItemId = b.ComponentItemId, PlannedQty = b.Quantity, UoMId = b.UoMId });
 			await _db.SaveChangesAsync();
+
+			await RecordWorkOrderEventAsync(companyId, wo, CrossBuy.BL.Platform.ManufWorkOrderEvents.Created,
+				oldStatus: null, dedupKey: $"ManufWorkOrder.Created:{wo.ID}");
+
+			await tx.CommitAsync();
 			return (true, null, wo.ID);
 		}
 
 		public async Task<(bool ok, string? error)> SaveHeaderAsync(int companyId, int id, decimal qty, DateTime? start, DateTime? end, decimal labor, decimal overhead, string? notes)
 		{
 			var wo = await _db.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == id);
-			if (wo == null) return (false, "غير موجود");
-			if (wo.Status != "Draft") return (false, "لا يمكن التعديل بعد الإصدار");
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر");
+			if (wo == null) return (false, "Not found");
+			if (wo.Status != "Draft") return (false, "It cannot be edited after release");
+			if (qty <= 0) return (false, "Quantity must be greater than zero");
+
+			// Snapshot before mutation for the change summary.
+			var beforeQty = wo.Qty; var beforeStart = wo.PlannedStart; var beforeEnd = wo.PlannedEnd;
+			var beforeLabor = wo.LaborCost; var beforeOverhead = wo.OverheadCost; var beforeNotes = wo.Notes;
+
 			var ratio = wo.Qty > 0 ? qty / wo.Qty : 1m;
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			wo.Qty = qty; wo.PlannedStart = start; wo.PlannedEnd = end; wo.LaborCost = labor < 0 ? 0 : labor; wo.OverheadCost = overhead < 0 ? 0 : overhead; wo.Notes = notes;
 			// rescale component planned quantities to the new qty
 			if (ratio != 1m)
@@ -256,61 +326,167 @@ namespace CrossBuy.BL
 				foreach (var c in comps) c.PlannedQty = Math.Round(c.PlannedQty * ratio, 4);
 			}
 			await _db.SaveChangesAsync();
+
+			var changed = new List<string>();
+			if (beforeQty != wo.Qty) changed.Add(nameof(wo.Qty));
+			if (beforeStart != wo.PlannedStart) changed.Add(nameof(wo.PlannedStart));
+			if (beforeEnd != wo.PlannedEnd) changed.Add(nameof(wo.PlannedEnd));
+			if (beforeLabor != wo.LaborCost) changed.Add(nameof(wo.LaborCost));
+			if (beforeOverhead != wo.OverheadCost) changed.Add(nameof(wo.OverheadCost));
+			if (beforeNotes != wo.Notes) changed.Add(nameof(wo.Notes));
+
+			// No DedupKey: a draft order may be edited repeatedly, and each edit is its own fact.
+			await RecordWorkOrderEventAsync(companyId, wo, CrossBuy.BL.Platform.ManufWorkOrderEvents.Updated,
+				oldStatus: wo.Status, changedFields: changed.Count > 0 ? changed.ToArray() : null);
+
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
 		public async Task<(bool ok, string? error)> SetStatusAsync(int companyId, int id, string status)
 		{
 			var wo = await _db.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == id);
-			if (wo == null) return (false, "غير موجود");
-			if (wo.Status == "Completed") return (false, "أمر التشغيل مكتمل");
-			if (status == "Released" && wo.Status != "Draft") return (false, "الحالة غير صالحة");
-			if (status != "Released" && status != "Cancelled") return (false, "حالة غير مدعومة");
+			if (wo == null) return (false, "Not found");
+			if (wo.Status == "Completed") return (false, "The work order is complete");
+			if (status == "Released" && wo.Status != "Draft") return (false, "Invalid status");
+			if (status != "Released" && status != "Cancelled") return (false, "Unsupported status");
+
+			// The guards above are the REAL transition rules. An event is recorded only past them, so a
+			// rejected transition (Released from a non-Draft order, an unsupported status, a completed order)
+			// produces no event at all.
+			var oldStatus = wo.Status;
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			wo.Status = status; await _db.SaveChangesAsync();
+
+			await RecordWorkOrderEventAsync(companyId, wo,
+				status == "Released"
+					? CrossBuy.BL.Platform.ManufWorkOrderEvents.Released
+					: CrossBuy.BL.Platform.ManufWorkOrderEvents.Cancelled,
+				oldStatus: oldStatus,
+				// Each of these transitions can only happen once per order (the guards block a repeat), so the
+				// key is pinned — a retried command cannot double-record it.
+				dedupKey: $"ManufWorkOrder.{status}:{wo.ID}");
+
+			await tx.CommitAsync();
 			return (true, null);
 		}
 
-		// staged lifecycle (route to StockService — the sole stock + GL writer)
-		public Task<(bool ok, string? error)> ReleaseAsync(int companyId, int id, DateTime date, string? userId)
-			=> _stock.ReleaseWorkOrderAsync(companyId, id, date, userId);
-		public Task<(bool ok, string? error)> CancelAsync(int companyId, int id, DateTime date, string? userId)
-			=> _stock.CancelWorkOrderAsync(companyId, id, date, userId);
+		// staged lifecycle (route to StockService — the sole stock + GL writer).
+		// Platform Kernel slice 2 wraps each one in an OUTER ScopedTx that StockService's own transaction joins,
+		// so the stock/GL work and the event commit together without editing the writer.
+		public async Task<(bool ok, string? error)> ReleaseAsync(int companyId, int id, DateTime date, string? userId)
+		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			var before = await ReloadAsync(companyId, id);
+			var oldStatus = before?.Status;
+
+			var (ok, error) = await _stock.ReleaseWorkOrderAsync(companyId, id, date, userId);
+			if (!ok) return (false, error);   // not committed → the outer transaction rolls everything back
+
+			var wo = await ReloadAsync(companyId, id);
+			if (wo != null)
+				await RecordWorkOrderEventAsync(companyId, wo, CrossBuy.BL.Platform.ManufWorkOrderEvents.Released,
+					oldStatus: oldStatus, dedupKey: $"ManufWorkOrder.Released:{id}");
+
+			await tx.CommitAsync();
+			return (true, null);
+		}
+
+		public async Task<(bool ok, string? error)> CancelAsync(int companyId, int id, DateTime date, string? userId)
+		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			var before = await ReloadAsync(companyId, id);
+			var oldStatus = before?.Status;
+
+			var (ok, error) = await _stock.CancelWorkOrderAsync(companyId, id, date, userId);
+			if (!ok) return (false, error);
+
+			var wo = await ReloadAsync(companyId, id);
+			if (wo != null)
+				await RecordWorkOrderEventAsync(companyId, wo, CrossBuy.BL.Platform.ManufWorkOrderEvents.Cancelled,
+					oldStatus: oldStatus, dedupKey: $"ManufWorkOrder.Cancelled:{id}");
+
+			await tx.CommitAsync();
+			return (true, null);
+		}
 
 		// بند3: labor lines
 		public Task<List<ManufWorkOrderLabor>> GetLaborAsync(int companyId, int workOrderId) =>
 			_db.ManufWorkOrderLabor.AsNoTracking().Where(l => l.CompanyID == companyId && l.WorkOrderId == workOrderId).OrderBy(l => l.ID).ToListAsync();
 
 		// resolves the employee hour-rate (explicit field → salary fallback → BLOCK) then posts via StockService
-		public async Task<(bool ok, string? error, int laborId)> AddLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal? ratePerHourOverride, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId)
+		public async Task<(bool ok, string? error, int laborId)> AddLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal? ratePerHourOverride, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId, string? workerNameEn = null)
 		{
 			decimal rate = ratePerHourOverride ?? 0m;
 			if (sourceType == "Employee")
 			{
-				if (employeeId == null || employeeId <= 0) return (false, "اختر الموظف", 0);
+				if (employeeId == null || employeeId <= 0) return (false, "Choose the employee", 0);
 				if (rate <= 0)
 				{
 					// TM-4: single source of truth for the hourly cost (extracted to IEmployeeCostService; no duplication)
 					rate = await _empCost.HourlyCostAsync(companyId, employeeId.Value);
-					if (rate <= 0) return (false, "لا يوجد «سعر ساعة تصنيع» للموظف ولا راتب قابل للاشتقاق — حدّد سعر الساعة على الموظف، أو اربط لائحة راتب واضبط الساعات المعيارية في إعدادات الرواتب.", 0);
+					if (rate <= 0) return (false, "The employee has no manufacturing hourly rate and no salary to derive one from — set an hourly rate on the employee, or link a salary policy and set the standard hours in the payroll settings.", 0);
 				}
 			}
-			else if (rate <= 0) return (false, "أدخل سعر الساعة", 0);   // External / Applied
+			else if (rate <= 0) return (false, "Enter the hourly rate", 0);   // External / Applied
 			// currency/exchangeRate matter for External foreign-currency lines only; StockService converts to functional
-			return await _stock.AddWorkOrderLaborAsync(companyId, workOrderId, sourceType, employeeId, workerName, hours, rate, whtCodeId, externalCreditAccountId, currencyId, exchangeRate, date, userId);
+			return await _stock.AddWorkOrderLaborAsync(companyId, workOrderId, sourceType, employeeId, workerName, hours, rate, whtCodeId, externalCreditAccountId, currencyId, exchangeRate, date, userId, workerNameEn);
 		}
 
 		public Task<(bool ok, string? error)> RemoveLaborAsync(int companyId, int laborId, DateTime date, string? userId)
 			=> _stock.RemoveWorkOrderLaborAsync(companyId, laborId, date, userId);
 
-		public Task<(bool ok, string? error, decimal unitCost)> CompleteAsync(int companyId, int id, DateTime date, string? userId)
-			=> _stock.CompleteWorkOrderAsync(companyId, id, date, userId);
+		public async Task<(bool ok, string? error, decimal unitCost)> CompleteAsync(int companyId, int id, DateTime date, string? userId)
+		{
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			var before = await ReloadAsync(companyId, id);
+			var oldStatus = before?.Status;
+			var producedBefore = before?.ProducedQty;
+
+			var (ok, error, unitCost) = await _stock.CompleteWorkOrderAsync(companyId, id, date, userId);
+			if (!ok) return (false, error, 0);
+
+			var wo = await ReloadAsync(companyId, id);
+			if (wo != null)
+				await RecordWorkOrderEventAsync(companyId, wo, CrossBuy.BL.Platform.ManufWorkOrderEvents.Completed,
+					oldStatus: oldStatus, producedBefore: producedBefore,
+					dedupKey: $"ManufWorkOrder.Completed:{id}");
+
+			await tx.CommitAsync();
+			return (true, null, unitCost);
+		}
 
 		public async Task<(bool ok, string? error, decimal produced)> ProducePartialAsync(int companyId, int id, decimal qty, bool finalize, DateTime date, string? userId)
 		{
 			var wo = await _db.ManufWorkOrders.AsNoTracking().FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == id);
-			if (wo == null) return (false, "أمر التشغيل غير موجود", 0);
+			if (wo == null) return (false, "Work order not found", 0);
 			var (m, l, o) = await ComputeStandardUnitCostAsync(companyId, wo.ItemId);
-			return await _stock.ProducePartialAsync(companyId, id, qty, m + l + o, finalize, date, userId);
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
+			var oldStatus = wo.Status;
+			var producedBefore = wo.ProducedQty;
+
+			var (ok, error, produced) = await _stock.ProducePartialAsync(companyId, id, qty, m + l + o, finalize, date, userId);
+			if (!ok) return (false, error, 0);
+
+			var after = await ReloadAsync(companyId, id);
+			if (after != null)
+			{
+				// Which fact this is depends on the OUTCOME, not the caller's flag: finalize only completes the
+				// order when the whole quantity is done, so the status after the call is the authority.
+				bool completed = after.Status == "Completed";
+				await RecordWorkOrderEventAsync(companyId, after,
+					completed
+						? CrossBuy.BL.Platform.ManufWorkOrderEvents.Completed
+						: CrossBuy.BL.Platform.ManufWorkOrderEvents.Produced,
+					oldStatus: oldStatus, producedBefore: producedBefore,
+					// Completion happens once, so it is pinned. A partial production legitimately repeats and
+					// each one is its own fact, so it is not.
+					dedupKey: completed ? $"ManufWorkOrder.Completed:{id}" : null);
+			}
+
+			await tx.CommitAsync();
+			return (true, null, produced);
 		}
 
 		// ---- 4-2: work centers + routing ----
@@ -319,17 +495,23 @@ namespace CrossBuy.BL
 
 		public async Task<List<(int id, string name)>> WorkCentersForPickAsync(int companyId)
 		{
-			var rows = await _db.ManufWorkCenters.AsNoTracking().Where(w => w.CompanyID == companyId && w.IsActive).OrderBy(w => w.Name).Select(w => new { w.ID, w.Code, w.Name }).ToListAsync();
-			return rows.Select(r => (r.ID, string.IsNullOrWhiteSpace(r.Code) ? r.Name : $"{r.Code} — {r.Name}")).ToList();
+			var rows = await _db.ManufWorkCenters.AsNoTracking().Where(w => w.CompanyID == companyId && w.IsActive).OrderBy(w => w.Name).Select(w => new { w.ID, w.Code, w.Name, w.NameEn }).ToListAsync();
+			// The picker label follows the reader's language, falling back to the Arabic name when
+			// the English one was never filled in -- a blank option is worse than one in Arabic.
+			return rows.Select(r =>
+			{
+				var name = DisplayName.Of(r.Name, r.NameEn);
+				return (r.ID, string.IsNullOrWhiteSpace(r.Code) ? name : $"{r.Code} — {name}");
+			}).ToList();
 		}
 
 		public async Task<(bool ok, string? error)> SaveWorkCenterAsync(int companyId, ManufWorkCenter dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم مركز العمل مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Work centre name is required");
 			ManufWorkCenter e;
-			if (dto.ID > 0) { e = await _db.ManufWorkCenters.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
+			if (dto.ID > 0) { e = await _db.ManufWorkCenters.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == dto.ID) ?? throw new InvalidOperationException("Not found"); }
 			else { e = new ManufWorkCenter { CompanyID = companyId, CreatedAt = DateTime.UtcNow }; _db.ManufWorkCenters.Add(e); }
-			e.Code = dto.Code; e.Name = dto.Name.Trim(); e.CostPerHour = dto.CostPerHour < 0 ? 0 : dto.CostPerHour; e.OverheadPerHour = dto.OverheadPerHour < 0 ? 0 : dto.OverheadPerHour; e.IsActive = dto.IsActive;
+			e.Code = dto.Code; e.Name = dto.Name.Trim(); e.NameEn = string.IsNullOrWhiteSpace(dto.NameEn) ? null : dto.NameEn.Trim(); e.CostPerHour = dto.CostPerHour < 0 ? 0 : dto.CostPerHour; e.OverheadPerHour = dto.OverheadPerHour < 0 ? 0 : dto.OverheadPerHour; e.IsActive = dto.IsActive;
 			await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -339,12 +521,12 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveRoutingOpAsync(int companyId, ManufRoutingOp dto)
 		{
-			if (dto.ItemId <= 0) return (false, "اختر الصنف");
-			if (dto.WorkCenterId <= 0) return (false, "اختر مركز العمل");
+			if (dto.ItemId <= 0) return (false, "Choose the item");
+			if (dto.WorkCenterId <= 0) return (false, "Choose the work centre");
 			ManufRoutingOp e;
-			if (dto.ID > 0) { e = await _db.ManufRoutingOps.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
+			if (dto.ID > 0) { e = await _db.ManufRoutingOps.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == dto.ID) ?? throw new InvalidOperationException("Not found"); }
 			else { e = new ManufRoutingOp { CompanyID = companyId, ItemId = dto.ItemId, CreatedAt = DateTime.UtcNow }; _db.ManufRoutingOps.Add(e); }
-			e.Seq = dto.Seq <= 0 ? 1 : dto.Seq; e.WorkCenterId = dto.WorkCenterId; e.OperationName = dto.OperationName;
+			e.Seq = dto.Seq <= 0 ? 1 : dto.Seq; e.WorkCenterId = dto.WorkCenterId; e.OperationName = dto.OperationName; e.OperationNameEn = string.IsNullOrWhiteSpace(dto.OperationNameEn) ? null : dto.OperationNameEn.Trim();
 			e.SetupMins = dto.SetupMins < 0 ? 0 : dto.SetupMins; e.RunMinsPerUnit = dto.RunMinsPerUnit < 0 ? 0 : dto.RunMinsPerUnit;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -353,7 +535,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteRoutingOpAsync(int companyId, int id)
 		{
 			var e = await _db.ManufRoutingOps.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == id);
-			if (e == null) return (false, "غير موجود");
+			if (e == null) return (false, "Not found");
 			_db.ManufRoutingOps.Remove(e); await _db.SaveChangesAsync(); return (true, null);
 		}
 
@@ -386,10 +568,10 @@ namespace CrossBuy.BL
 		public Task<List<ManufPlanDemand>> GetPlanDemandsAsync(int companyId, int planId) =>
 			_db.ManufPlanDemands.AsNoTracking().Where(d => d.CompanyID == companyId && d.PlanId == planId).OrderBy(d => d.ID).ToListAsync();
 
-		public async Task<(bool ok, string? error, int id)> CreatePlanAsync(int companyId, string name, DateTime? planDate, string? userId)
+		public async Task<(bool ok, string? error, int id)> CreatePlanAsync(int companyId, string name, string? nameEn, DateTime? planDate, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(name)) return (false, "اسم الخطة مطلوب", 0);
-			var p = new ManufPlan { CompanyID = companyId, Name = name.Trim(), PlanDate = planDate ?? DateTime.UtcNow, Status = "Draft", CreatedBy = userId, CreatedAt = DateTime.UtcNow };
+			if (string.IsNullOrWhiteSpace(name)) return (false, "Plan name is required", 0);
+			var p = new ManufPlan { CompanyID = companyId, Name = name.Trim(), NameEn = string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(), PlanDate = planDate ?? DateTime.UtcNow, Status = "Draft", CreatedBy = userId, CreatedAt = DateTime.UtcNow };
 			_db.ManufPlans.Add(p); await _db.SaveChangesAsync();
 			return (true, null, p.ID);
 		}
@@ -397,10 +579,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> AddDemandAsync(int companyId, int planId, int itemId, decimal qty, DateTime? dueDate)
 		{
 			var plan = await _db.ManufPlans.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == planId);
-			if (plan == null) return (false, "الخطة غير موجودة");
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر");
+			if (plan == null) return (false, "Plan not found");
+			if (qty <= 0) return (false, "Quantity must be greater than zero");
 			var hasBom = await _db.ItemComponents.AnyAsync(c => c.ParentItemId == itemId);
-			if (!hasBom) return (false, "اختر صنفًا مُصنَّعًا له قائمة مواد (BOM)");
+			if (!hasBom) return (false, "Choose a manufactured item that has a bill of materials");
 			_db.ManufPlanDemands.Add(new ManufPlanDemand { CompanyID = companyId, PlanId = planId, ItemId = itemId, Qty = qty, DueDate = dueDate, CreatedAt = DateTime.UtcNow });
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -409,14 +591,14 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> RemoveDemandAsync(int companyId, int demandId)
 		{
 			var d = await _db.ManufPlanDemands.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == demandId);
-			if (d == null) return (false, "غير موجود");
+			if (d == null) return (false, "Not found");
 			_db.ManufPlanDemands.Remove(d); await _db.SaveChangesAsync(); return (true, null);
 		}
 
 		public async Task<(bool ok, string? error)> DeletePlanAsync(int companyId, int id)
 		{
 			var p = await _db.ManufPlans.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == id);
-			if (p == null) return (false, "غير موجود");
+			if (p == null) return (false, "Not found");
 			_db.ManufPlanDemands.RemoveRange(_db.ManufPlanDemands.Where(d => d.CompanyID == companyId && d.PlanId == id));
 			_db.ManufPlans.Remove(p); await _db.SaveChangesAsync(); return (true, null);
 		}
@@ -473,14 +655,14 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int created)> GeneratePlanWorkOrdersAsync(int companyId, int planId, int warehouseId, string? userId)
 		{
 			var plan = await _db.ManufPlans.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == planId);
-			if (plan == null) return (false, "الخطة غير موجودة", 0);
+			if (plan == null) return (false, "Plan not found", 0);
 			var rows = await RunMrpAsync(companyId, planId);
 			var makeShortages = rows.Where(r => r.IsMake && r.Net > 0).ToList();
-			if (makeShortages.Count == 0) return (false, "لا توجد نواقص تصنيع تتطلب أوامر تشغيل", 0);
+			if (makeShortages.Count == 0) return (false, "There are no manufacturing shortages that require work orders", 0);
 			int created = 0;
 			foreach (var r in makeShortages)
 			{
-				var (ok, _, _) = await CreateAsync(companyId, r.ItemId, r.Net, warehouseId, null, null, 0, 0, $"من خطة: {plan.Name}", userId);
+				var (ok, _, _) = await CreateAsync(companyId, r.ItemId, r.Net, warehouseId, null, null, 0, 0, $"From plan: {plan.Name}", userId);
 				if (ok) created++;
 			}
 			plan.Status = "Generated"; await _db.SaveChangesAsync();

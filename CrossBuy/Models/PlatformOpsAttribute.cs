@@ -70,7 +70,7 @@ namespace CrossBuy.Models
                 return;
             }
             if (context.Controller is Controller c)
-                c.TempData["PlatformErr"] = "ليست لديك صلاحية الوصول إلى شاشات تشغيل المنصّة";
+                c.TempData["PlatformErr"] = "You do not have permission to open the platform operations screens";
             context.Result = new RedirectToActionResult("Index", "Home", null);
         }
     }

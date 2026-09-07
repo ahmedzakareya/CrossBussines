@@ -5,7 +5,7 @@
 @{
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     // brand-safe status palette: green = active/completed, red = cancelled, gray = planned/other (no mint)
-    string stStyle(string s) => s switch { "Active" or "Completed" => "background:#eaf3ef;color:#13433a;", "Cancelled" => "background:#fdeaea;color:#d92d20;", _ => "background:#f2f4f7;color:#475467;" };
+    string stStyle(string s) => s switch { "Active" or "Completed" => "background:#E7F0FF;color:#0E4A9E;", "Cancelled" => "background:#fdeaea;color:#d92d20;", _ => "background:#f2f4f7;color:#475467;" };
     string nm(string s) => s switch { "Planned" => Localizer["Planned"].Value, "Active" => SR["Active"].Value, "Completed" => Localizer["Completed"].Value, "Cancelled" => Localizer["Cancelled"].Value, _ => s };
 }
 @foreach (var c in Model)
@@ -18,7 +18,7 @@
         <td class="text-end text-muted">@c.Budget.ToString("N0")</td>
         <td class="text-center">@c.Leads</td>
         <td class="text-center">@c.Opps</td>
-        <td class="text-center"><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@c.Won</span></td>
+        <td class="text-center"><span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@c.Won</span></td>
         <td class="text-end fw-bold">@c.WonValue.ToString("N0")</td>
         <td class="text-end fw-bold" style="color:@(c.RoiPct == null ? "#a1a5b7" : (c.RoiPct >= 0 ? "#1f7d57" : "#d92d20"))">@(c.RoiPct == null ? "—" : (c.RoiPct + "%"))</td>
         <td class="text-center"><span class="badge fw-bold" style="@stStyle(c.Status)">@nm(c.Status)</span></td>

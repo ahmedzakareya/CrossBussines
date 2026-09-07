@@ -23,10 +23,10 @@
 
         <!--begin::KPIs-->
         <div class="row g-4 mb-5">
-            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><i class="ki-outline ki-dollar fs-3x mb-3" style="color:#13433a;"></i><div class="fs-2 fw-bold text-gray-900" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalRevenue)">@Model.TotalRevenue.ToString("N0")</div><div class="fs-7 text-muted">@Localizer["Net revenue (ex-tax)"]</div></div></div></div>
-            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><i class="ki-outline ki-chart-pie-simple fs-3x mb-3" style="color:#13433a;"></i><div class="fs-2 fw-bold text-gray-900" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalMargin)">@Model.TotalMargin.ToString("N0")</div><div class="fs-7 text-muted">@Localizer["Gross margin"] · <span class="fw-bold" style="color:@(totalMarginPct>=0?"#1f7d57":"#d92d20")">@totalMarginPct%</span></div></div></div></div>
+            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><i class="ki-outline ki-dollar fs-3x mb-3" style="color:#0E4A9E;"></i><div class="fs-2 fw-bold text-gray-900" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalRevenue)">@Model.TotalRevenue.ToString("N0")</div><div class="fs-7 text-muted">@Localizer["Net revenue (ex-tax)"]</div></div></div></div>
+            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><i class="ki-outline ki-chart-pie-simple fs-3x mb-3" style="color:#0E4A9E;"></i><div class="fs-2 fw-bold text-gray-900" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalMargin)">@Model.TotalMargin.ToString("N0")</div><div class="fs-7 text-muted">@Localizer["Gross margin"] · <span class="fw-bold" style="color:@(totalMarginPct>=0?"#1f7d57":"#d92d20")">@totalMarginPct%</span></div></div></div></div>
             <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><i class="ki-outline ki-wallet fs-3x mb-3" style="color:#b96a00;"></i><div class="fs-2 fw-bold text-gray-900" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalOutstanding)">@Model.TotalOutstanding.ToString("N0")</div><div class="fs-7 text-muted">@Localizer["Total outstanding"]</div></div></div></div>
-            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><i class="ki-outline ki-profile-user fs-3x mb-3" style="color:#13433a;"></i><div class="fs-2 fw-bold text-gray-900" data-kt-countup="true" data-kt-countup-value="@Model.ActiveCustomers">@Model.ActiveCustomers</div><div class="fs-7 text-muted">@Localizer["Customers with sales"]</div></div></div></div>
+            <div class="col-md-3"><div class="card card-flush h-100"><div class="card-body py-6 text-center"><i class="ki-outline ki-profile-user fs-3x mb-3" style="color:#0E4A9E;"></i><div class="fs-2 fw-bold text-gray-900" data-kt-countup="true" data-kt-countup-value="@Model.ActiveCustomers">@Model.ActiveCustomers</div><div class="fs-7 text-muted">@Localizer["Customers with sales"]</div></div></div></div>
         </div>
         <!--end::KPIs-->
 
@@ -36,13 +36,13 @@
                 @if (Model.Segments.Count == 0) { <div class="text-center text-muted py-6">@SR["NoData"]</div> }
                 else {
                     <div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Segment"]</th><th class="text-center">@SR["Customers"]</th><th class="text-end">@Localizer["Revenue"]</th><th class="text-end">@Localizer["Margin"]</th><th class="text-end">@Localizer["Margin %"]</th><th class="text-end pe-4">@Localizer["Outstanding"]</th></tr></thead>
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Segment"]</th><th class="text-center">@SR["Customers"]</th><th class="text-end">@Localizer["Revenue"]</th><th class="text-end">@Localizer["Margin"]</th><th class="text-end">@Localizer["Margin %"]</th><th class="text-end pe-4">@Localizer["Outstanding"]</th></tr></thead>
                         <tbody>
                         @foreach (var s in Model.Segments)
                         {
                             var mp = s.Revenue != 0 ? Math.Round(s.Margin / s.Revenue * 100, 1) : 0;
                             var segNoCost = s.Revenue != 0 && s.Margin == s.Revenue;   // HM-10 slice B: cogs=0 ⇒ show "cost not posted", not 100% (display only)
-                            <tr style="border-bottom:1px dashed #eef1f6;"><td class="ps-4">@if (string.IsNullOrEmpty(s.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@s.Segment</span> }</td><td class="text-center">@s.Customers</td><td class="text-end fw-bold">@s.Revenue.ToString("N2")</td><td class="text-end">@s.Margin.ToString("N2")</td><td class="text-end fw-bold" style="color:@(mp>=0?"#1f7d57":"#d92d20")">@if (segNoCost) { <span class="badge badge-light-warning fs-8">@SR["Cost not posted"]</span> } else { <span>@mp%</span> }</td><td class="text-end text-muted pe-4">@s.Outstanding.ToString("N2")</td></tr>
+                            <tr style="border-bottom:1px dashed #eef1f6;"><td class="ps-4">@if (string.IsNullOrEmpty(s.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@s.Segment</span> }</td><td class="text-center">@s.Customers</td><td class="text-end fw-bold">@s.Revenue.ToString("N2")</td><td class="text-end">@s.Margin.ToString("N2")</td><td class="text-end fw-bold" style="color:@(mp>=0?"#1f7d57":"#d92d20")">@if (segNoCost) { <span class="badge badge-light-warning fs-8">@SR["Cost not posted"]</span> } else { <span>@mp%</span> }</td><td class="text-end text-muted pe-4">@s.Outstanding.ToString("N2")</td></tr>
                         }
                         </tbody>
                     </table></div>
@@ -56,7 +56,7 @@
             <div class="card-title"><div class="d-flex align-items-center position-relative my-1"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="s" class="form-control form-control-solid w-250px ps-12" placeholder="@Localizer["Search customer"]" autocomplete="off" /></div></div>
         </div>
             <div class="card-body pt-2"><div class="table-responsive"><table class="table align-middle gy-3" id="t" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                     <th class="ps-4">@SR["Customer"]</th><th>@Localizer["Segment"]</th><th class="text-end">@Localizer["Revenue"]</th><th class="text-end">@Localizer["COGS"]</th><th class="text-end">@Localizer["Margin"]</th><th class="text-end">@Localizer["Margin %"]</th><th class="text-end">@Localizer["Outstanding"]</th><th class="text-center">@Localizer["Invoices"]</th><th class="text-end">@Localizer["Avg"]</th><th class="pe-4">@Localizer["Last"]</th>
                 </tr></thead>
                 <tbody>
@@ -64,7 +64,7 @@
                 {
                     <tr class="rr" data-s="@r.Name @r.Segment" style="border-bottom:1px dashed #eef1f6;">
                         <td class="ps-4 fw-semibold text-gray-800"><a href="@Url.Action("CustomerStatement","Accounting", new { id = r.CustomerId })" class="text-gray-800 text-hover-primary">@r.Name</a></td>
-                        <td>@if (string.IsNullOrEmpty(r.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@r.Segment</span> }</td>
+                        <td>@if (string.IsNullOrEmpty(r.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@r.Segment</span> }</td>
                         <td class="text-end fw-bold">@r.Revenue.ToString("N2")</td>
                         <td class="text-end text-muted">@r.Cogs.ToString("N2")</td>
                         <td class="text-end fw-bold" style="color:@(r.Margin>=0?"#1f7d57":"#d92d20")">@r.Margin.ToString("N2")</td>

@@ -37,14 +37,14 @@ namespace CrossBuy.BL
 		{
 			var t = await _db.TaskItems.AsNoTracking().FirstOrDefaultAsync(x => x.ID == taskId && x.CompanyId == companyId);
 			var dto = new TaskBillingDto();
-			if (t == null) { dto.Reason = "المهمة غير موجودة"; return dto; }
+			if (t == null) { dto.Reason = "Task not found"; return dto; }
 			dto.IsBillable = t.IsBillable; dto.BillRate = t.BillRate; dto.CustomerId = t.CustomerId;
 			if (t.CustomerId != null) dto.CustomerName = await _db.Customers.AsNoTracking().Where(c => c.ID == t.CustomerId).Select(c => c.Name).FirstOrDefaultAsync();
 			dto.BillableHours = await UninvoicedHoursAsync(companyId, taskId);
 			dto.Amount = Math.Round(dto.BillableHours * (t.BillRate ?? 0m), 2);
-			if (!t.IsBillable) dto.Reason = "المهمة غير قابلة للفوترة";
-			else if (t.CustomerId == null || !(t.BillRate > 0)) dto.Reason = "حدّد العميل وسعر ساعة الفوترة";
-			else if (dto.BillableHours <= 0) dto.Reason = "لا ساعات قابلة للفوترة (غير مفوترة)";
+			if (!t.IsBillable) dto.Reason = "The task is not billable";
+			else if (t.CustomerId == null || !(t.BillRate > 0)) dto.Reason = "Set the customer and the billing hourly rate";
+			else if (dto.BillableHours <= 0) dto.Reason = "There are no billable (unbilled) hours";
 			else dto.CanInvoice = true;
 			return dto;
 		}
@@ -52,27 +52,27 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? invoiceId)> GenerateInvoiceAsync(int companyId, int taskId, int? userId)
 		{
 			var t = await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == taskId && x.CompanyId == companyId);
-			if (t == null) return (false, "المهمة غير موجودة", null);
-			if (!t.IsBillable) return (false, "المهمة غير قابلة للفوترة", null);
-			if (t.CustomerId == null || t.CustomerId <= 0) return (false, "يجب تحديد العميل", null);
-			if (!(t.BillRate > 0)) return (false, "يجب تحديد سعر ساعة الفوترة", null);
+			if (t == null) return (false, "Task not found", null);
+			if (!t.IsBillable) return (false, "The task is not billable", null);
+			if (t.CustomerId == null || t.CustomerId <= 0) return (false, "A customer must be selected", null);
+			if (!(t.BillRate > 0)) return (false, "A billing hourly rate must be set", null);
 
 			var entries = await _db.TimesheetEntries.Where(e => e.CompanyId == companyId && e.TaskId == taskId && e.Hours > 0 && e.InvoicedInvoiceId == null).ToListAsync();
 			decimal hours = entries.Sum(e => e.Hours);
-			if (hours <= 0) return (false, "لا ساعات قابلة للفوترة", null);
+			if (hours <= 0) return (false, "There are no billable hours", null);
 
 			int revenue = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
-			if (revenue == 0) return (false, "لا يوجد حساب إيراد (4101)", null);
+			if (revenue == 0) return (false, "There is no revenue account (4101)", null);
 			decimal vat = await _db.TaxCodes.AsNoTracking().Where(x => x.CompanyID == companyId && x.Kind == "VAT" && x.IsDefault && x.IsActive).Select(x => (decimal?)x.Rate).FirstOrDefaultAsync() ?? 0m;
 
 			var line = new SalesLineInput
 			{
-				ItemDescription = $"{t.Title} — {hours:0.##} ساعة عمل",
+				ItemDescription = $"{t.Title} — {hours:0.##} work hour(s)",
 				Qty = hours, UnitPrice = t.BillRate!.Value, DiscountAmount = 0, TaxRate = vat,
 				RevenueAccountId = revenue, ItemId = null, WarehouseId = null   // service line → no stock, no COGS
 			};
-			var (ok, err, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, t.CustomerId.Value, DateTime.Today, new List<SalesLineInput> { line }, $"فوترة مهمة #{t.ID}", userId, null, null, null);
-			if (!ok || inv == null) return (false, err ?? "تعذّر إنشاء الفاتورة", null);
+			var (ok, err, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, t.CustomerId.Value, DateTime.Today, new List<SalesLineInput> { line }, $"Billing for task #{t.ID}", userId, null, null, null);
+			if (!ok || inv == null) return (false, err ?? "Could not create the invoice", null);
 
 			// stamp the billed entries → they can't be billed again (double-billing guard)
 			foreach (var e in entries) e.InvoicedInvoiceId = inv.ID;

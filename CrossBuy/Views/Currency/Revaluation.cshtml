@@ -70,7 +70,7 @@
                 <div class="table-responsive">
                     <table class="table table-row-bordered align-middle gy-5 mb-0">
                         <thead class="border-bottom border-gray-200 fs-7 fw-bold text-uppercase text-muted bg-lighten">
-                            <tr>
+                            <tr style="border-bottom:2px solid #0E4A9E;">
                                 <th class="ps-9">@SR["Type"]</th><th>@Localizer["Party"]</th><th class="text-center">@Localizer["Cur"]</th>
                                 <th class="text-end">@Localizer["Foreign bal."]</th><th class="text-end">@Localizer["Book base"]</th>
                                 <th class="text-center">@Localizer["Closing rate"]</th><th class="text-end">@Localizer["Revalued"]</th><th class="text-end pe-9">@Localizer["Diff"]</th>
@@ -87,7 +87,7 @@
                                 <td class="text-end text-muted">@Money(l.BookBase)</td>
                                 <td class="text-center">@l.ClosingRate.ToString("0.####")</td>
                                 <td class="text-end text-gray-800">@Money(l.RevaluedBase)</td>
-                                <td class="text-end pe-9 fw-bold @(l.Diff>=0?"":"text-danger")" style="@(l.Diff>=0?"color:#13433a":"")">@Money(l.Diff)</td>
+                                <td class="text-end pe-9 fw-bold @(l.Diff>=0?"":"text-danger")" style="@(l.Diff>=0?"color:#0E4A9E":"")">@Money(l.Diff)</td>
                             </tr>
                         }
                         @if (!Model.HasAny) { <tr><td colspan="8" class="text-center text-muted py-10">@Localizer["No open foreign balances at this date"]</td></tr> }
@@ -112,7 +112,7 @@
                 <div class="table-responsive">
                     <table class="table table-row-bordered align-middle gy-5 mb-0">
                         <thead class="border-bottom border-gray-200 fs-7 fw-bold text-uppercase text-muted bg-lighten">
-                            <tr><th class="ps-9">#</th><th>@Localizer["As-of"]</th><th class="text-center">@Localizer["Rate"]</th><th class="text-end">@Localizer["AR diff"]</th><th class="text-end">@Localizer["AP diff"]</th><th class="text-center pe-9">@Localizer["JE / Reversal"]</th></tr>
+                            <tr style="border-bottom:2px solid #0E4A9E;"><th class="ps-9">#</th><th>@Localizer["As-of"]</th><th class="text-center">@Localizer["Rate"]</th><th class="text-end">@Localizer["AR diff"]</th><th class="text-end">@Localizer["AP diff"]</th><th class="text-center pe-9">@Localizer["JE / Reversal"]</th></tr>
                         </thead>
                         <tbody class="fs-6 fw-semibold text-gray-700">
                         @foreach (var h in history)

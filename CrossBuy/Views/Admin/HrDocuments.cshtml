@@ -106,14 +106,14 @@
 
                     @if (attention == 0)
                     {
-                        <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#eaf3ef;border-color:#13433a !important;">
-                            <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#13433a;"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
+                        <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                            <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-shield-tick fs-2x text-white"></i></span></span>
                             <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                                 <div class="mb-3 mb-md-0 fw-semibold pe-5">
                                     <h4 class="text-gray-900 fw-bold mb-1">@Localizer["All contracts & documents are valid"]</h4>
                                     <div class="fs-6 text-gray-700">@Localizer["Nothing is expired or expiring within the next 60 days."]</div>
                                 </div>
-                                <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#13433a;color:#fff;"><i class="ki-outline ki-check fs-6 text-white me-1"></i>@SR["Active"]</span>
+                                <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#0E4A9E;color:#fff;"><i class="ki-outline ki-check fs-6 text-white me-1"></i>@SR["Active"]</span>
                             </div>
                         </div>
                     }
@@ -148,7 +148,7 @@
                             <div class="table-responsive">
                                 <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
                                     <thead>
-                                        <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                        <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                                             <th class="ps-4">@SR["Type"]</th>
                                             <th>@SR["From"]</th>
                                             <th>@SR["To"]</th>
@@ -161,7 +161,7 @@
                                         {
                                             var expired = c.EndDate.HasValue && c.EndDate.Value.Date < DateTime.Today && c.Status != "Terminated";
                                             <tr style="border-bottom:1px dashed #eef1f6;">
-                                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:#1f6253;">@ctName(c.ContractType)</span></td>
+                                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@ctName(c.ContractType)</span></td>
                                                 <td>@c.StartDate.ToString("yyyy-MM-dd")</td>
                                                 <td>@(c.EndDate?.ToString("yyyy-MM-dd") ?? Localizer["Open"].Value)</td>
                                                 <td>@if (c.Status == "Terminated") { <span class="badge badge-light-dark">@Localizer["Terminated"]</span> } else if (expired) { <span class="badge badge-light-danger">@Localizer["Expired"]</span> } else { <span class="badge badge-light-primary">@SR["Active"]</span> }</td>
@@ -205,7 +205,7 @@
                             <div class="table-responsive">
                                 <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
                                     <thead>
-                                        <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                        <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                                             <th class="ps-4">@SR["Type"]</th>
                                             <th>@SR["Number"]</th>
                                             <th>@Localizer["Expiry"]</th>
@@ -218,7 +218,7 @@
                                             var exp = d.ExpiryDate.HasValue && d.ExpiryDate.Value.Date < DateTime.Today;
                                             var soon = d.ExpiryDate.HasValue && !exp && d.ExpiryDate.Value.Date <= DateTime.Today.AddDays(60);
                                             <tr style="border-bottom:1px dashed #eef1f6;">
-                                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:#1f6253;">@dtName(d.DocType)</span></td>
+                                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@dtName(d.DocType)</span></td>
                                                 <td class="@(string.IsNullOrEmpty(d.DocNumber) ? "text-gray-300" : "")">@(string.IsNullOrEmpty(d.DocNumber) ? "—" : d.DocNumber)</td>
                                                 <td>@if (d.ExpiryDate.HasValue) { <span class="@(exp ? "badge badge-light-danger" : soon ? "badge badge-light-secondary" : "")">@d.ExpiryDate.Value.ToString("yyyy-MM-dd")</span> } else { <span class="text-gray-300">—</span> }</td>
                                                 <td class="text-end pe-4">

@@ -121,14 +121,14 @@ namespace CrossBuy.BL
         // One refusal for every reason a caller may not act on a period: no such period, another
         // company's period, or no authority. They must be indistinguishable, or a period id becomes a
         // probe for what exists in other companies.
-        public const string Refused = "لا تملك صلاحية تنفيذ هذا الإجراء على هذه الفترة";
-        public const string ReasonRequired = "سبب إعادة الفتح مطلوب";
+        public const string Refused = "You do not have permission to perform this action on this period";
+        public const string ReasonRequired = "A reason for reopening is required";
 
         /// The width deploy/sql/accounting_period_control.sql declares for both reason columns. Stated
         /// here so the code that WRITES them knows the limit, rather than discovering it as a
         /// truncation error while somebody is closing a month.
         public const int ReasonMaxLength = 500;
-        public const string ReasonTooLong = "سبب إعادة الفتح طويل جداً";
+        public const string ReasonTooLong = "The reopening reason is too long";
 
         private readonly CrossDbContext _db;
         private readonly AccountingAccessService _accounting;
@@ -316,7 +316,7 @@ namespace CrossBuy.BL
             if (period == null) return (false, Refused);
 
             var from = period.Status;
-            if (from == target) return (false, "الفترة في هذه الحالة بالفعل");
+            if (from == target) return (false, "The period is already in this status");
 
             // Closing over known problems is the failure this control exists to prevent.
             string? overrideNote = null;
@@ -327,13 +327,13 @@ namespace CrossBuy.BL
                 // BLOCKING is never overridable. An out-of-balance posted journal frozen into a closed
                 // period is not a judgement call.
                 if (readiness.HasBlocking)
-                    return (false, "لا يمكن الإقفال: توجد استثناءات مالية مانعة");
+                    return (false, "Cannot close: there are blocking financial exceptions");
 
                 // Warnings refuse the close UNLESS the caller says so, and saying so is recorded.
                 if (readiness.HasWarnings)
                 {
                     if (!overrideWarnings)
-                        return (false, "لا يمكن الإقفال: توجد تحذيرات - يلزم تجاوز صريح");
+                        return (false, "Cannot close: there are warnings — an explicit override is required");
                     // SUMMARISED to fit the column, and it says so. Unlike the reopen reason this is a
                     // list this code generated, so shortening it loses no testimony - but silently
                     // dropping codes would, which is why the count of the dropped ones travels.
@@ -414,9 +414,9 @@ namespace CrossBuy.BL
                 .FirstOrDefaultAsync(ct);
 
             if (target == null)
-                return (false, today, "لا توجد فترة مالية مفتوحة لتاريخ اليوم - تعذّر ترحيل قيد التسوية");
+                return (false, today, "There is no open fiscal period for today's date — the adjustment entry could not be posted");
             if (AccountingPeriodStatuses.BlocksPosting(target.Status))
-                return (false, today, "الفترة المالية الحالية مقفولة - تعذّر ترحيل قيد التسوية");
+                return (false, today, "The current fiscal period is closed — the adjustment entry could not be posted");
 
             // The ORIGINAL period's state is deliberately not consulted. Refusing to compensate because
             // the original month is closed would be exactly backwards: a closed month is the normal case
@@ -427,7 +427,7 @@ namespace CrossBuy.BL
         /// "تجاوز تحذيرات: a, b, c" - as many codes as fit, then how many were left out.
         public static string FitWarnings(IEnumerable<string> codes)
         {
-            const string prefix = "تجاوز تحذيرات: ";
+            const string prefix = "Warnings overridden: ";
             var all = codes.ToList();
             var kept = new List<string>();
             int used = prefix.Length;
@@ -444,7 +444,7 @@ namespace CrossBuy.BL
 
             var text = prefix + string.Join(", ", kept);
             int dropped = all.Count - kept.Count;
-            if (dropped > 0) text += $" (+{dropped} أخرى)";
+            if (dropped > 0) text += $" (+{dropped} more)";
             return text.Length > ReasonMaxLength ? text[..ReasonMaxLength] : text;
         }
 

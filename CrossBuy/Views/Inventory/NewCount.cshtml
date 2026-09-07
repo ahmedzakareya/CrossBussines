@@ -26,7 +26,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
             <div class="col-md-4"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
-                <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select to load items"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select to load items"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@Localizer["Count date"]</label><input type="text" name="countDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
             <div class="col-md-5"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
         </div></div></div>
@@ -40,7 +40,7 @@
             <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Items & counted quantities"]</h3></div>
             <div class="card-body">
                 <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 mb-5"><span class="fs-8 text-gray-700">@Localizer["Expiry-tracked items are counted per batch. A batch you do not tick is treated as NOT counted — left untouched and reported as uncounted (its stock is never zeroed)."]</span></div>
-                <div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+                <div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                 <th style="width:44px"></th><th style="min-width:260px">@SR["Item"]</th><th>@Localizer["Batch"]</th><th class="text-end" style="width:120px">@Localizer["Book qty"]</th><th class="text-end" style="width:130px">@Localizer["Counted"]</th><th class="text-end" style="width:110px">@Localizer["Diff"]</th>
             </tr></thead><tbody id="rows">
                 @foreach (var b in book)

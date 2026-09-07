@@ -21,7 +21,8 @@
     // Escalation is DERIVED — there is no column to read. Null-tolerant so a Detail rendered by an older
     // action degrades to "no escalation" instead of throwing.
     var esc = ViewBag.Escalation as TaskEscalationStatus;
-    ViewData["Title"] = t?.Title ?? T("مهمة", "Task");
+    ViewData["Title"] = t == null ? T("مهمة", "Task").ToString()
+        : CrossBuy.BL.DisplayName.Of(t.Title, t.TitleEn);
 
     Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "info" };
     Func<string, string> pl = p => p switch { "Low" => T("منخفضة", "Low"), "High" => T("عالية", "High"), "Urgent" => T("عاجلة", "Urgent"), _ => T("متوسطة", "Medium") };
@@ -35,14 +36,24 @@
 <!--begin::Toolbar-->
 <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
     <div class="page-title d-flex flex-column justify-content-center gap-1">
-        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@t?.Title</h1>
+        @* The reference page leads its heading with the record's own icon. *@
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-2">
+            <span class="symbol symbol-30px"><span class="symbol-label bg-light-primary">
+                <i class="ki-outline ki-check-square fs-4 text-primary"></i></span></span>
+            @(t == null ? "" : CrossBuy.BL.DisplayName.Of(t.Title, t.TitleEn))</h1>
         <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
             <li class="breadcrumb-item text-muted">@SR["Tasks"]</li>
             <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
             <li class="breadcrumb-item text-muted">#@t?.ID</li>
         </ul>
     </div>
-    <a href="/Tasks/Board" class="btn btn-sm btn-light"><i class="ki-outline ki-element-11 fs-2"></i>@T("اللوحة", "Board")</a>
+    <div class="d-flex align-items-center gap-2">
+        @* The printable read-only view of this same task. It sits next to Board because both are
+           ways of LOOKING at the work rather than changing it. *@
+        <a href="/Tasks/Summary/@t?.ID" class="btn btn-sm btn-light-primary">
+            <i class="ki-outline ki-clipboard fs-2"></i>@T("الملخّص", "Summary")</a>
+        <a href="/Tasks/Board" class="btn btn-sm btn-light"><i class="ki-outline ki-element-11 fs-2"></i>@T("اللوحة", "Board")</a>
+    </div>
 </div></div>
 <!--end::Toolbar-->
 
@@ -52,10 +63,22 @@
 
     @if (blocking != null && blocking.IsBlocked)
     {
-        <div class="alert alert-danger d-flex align-items-center py-3 mb-5">
-            <i class="ki-outline ki-lock-2 fs-2 text-danger me-3"></i>
-            <span>@T("هذه المهمة محجوبة حتى تنتهي:", "This task is blocked until these finish:")
-                <span class="fw-semibold">@string.Join("، ", blocking.BlockedByTitles)</span></span>
+        @* The notice form from /Accounting/JournalEntry, in DANGER rather than brand blue:
+           the colour follows the state, and this state is "cannot proceed". Same shape as the
+           journal page's description block - dashed border, icon tile, heading, body, chip. *@
+        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5">
+            <span class="symbol symbol-45px me-5"><span class="symbol-label bg-danger">
+                <i class="ki-outline ki-lock-2 fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                    <h4 class="text-gray-900 fw-bold mb-1">@T("محجوبة", "Blocked")</h4>
+                    <div class="fs-6 text-gray-700">@T("لا تبدأ قبل انتهاء:", "Cannot start until these finish:")
+                        <span class="fw-bold">@string.Join("، ", blocking.BlockedByTitles)</span></div>
+                </div>
+                <span class="badge badge-danger fs-7 fw-bold px-4 py-2 flex-shrink-0">
+                    <i class="ki-outline ki-abstract-26 fs-6 text-white me-1"></i>@blocking.BlockedByTitles.Count
+                    @T("مهمة سابقة", "predecessor(s)")</span>
+            </div>
         </div>
     }
 
@@ -63,9 +86,15 @@
     {
         @* The escalation banner names WHO now owns the chase and WHEN it happened. "Escalated" on its own is
            a dead end, exactly as "Blocked" would be. *@
-        <div class="alert alert-danger d-flex align-items-center py-3 mb-5" data-cb-escalated="1">
-            <i class="ki-outline ki-arrow-up-right fs-2 text-danger me-3"></i>
-            <span>
+        @* Same form, same reason: an escalation is a state, not a validation message.
+           data-cb-escalated is preserved - it is read from outside this view. *@
+        <div class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-6 mb-5" data-cb-escalated="1">
+            <span class="symbol symbol-45px me-5"><span class="symbol-label bg-danger">
+                <i class="ki-outline ki-arrow-up-right fs-2x text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+              <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                <h4 class="text-gray-900 fw-bold mb-1">@T("مُصعَّدة", "Escalated")</h4>
+                <div class="fs-6 text-gray-700">
                 @if (!string.IsNullOrWhiteSpace(esc.ManagerName))
                 {
                     @T("صُعِّدت هذه المهمة إلى المدير المباشر:", "This task was escalated to the direct manager:")
@@ -80,20 +109,41 @@
                     <text> — </text>
                     <span class="fw-semibold">@esc.EscalatedAtUtc.Value.ToString("yyyy-MM-dd HH:mm")</span>
                 }
-            </span>
+                </div>
+              </div>
+            </div>
         </div>
     }
     else if (esc != null && esc.State == TaskEscalationState.EscalationPending)
     {
-        <div class="alert alert-warning d-flex align-items-center py-3 mb-5" data-cb-escalation-pending="1">
-            <i class="ki-outline ki-time fs-2 text-warning me-3"></i>
-            <span>@T("متأخرة بما يستوجب التصعيد إلى المدير المباشر في الدورة القادمة.",
-                     "Overdue long enough to be escalated to the direct manager on the next sweep.")</span>
+        @* THE SAME NOTICE SHAPE AS THE ESCALATED BANNER ABOVE IT. This was a bare Bootstrap
+           `alert-warning`, so two states of the SAME fact - "about to escalate" and "escalated" -
+           were drawn as two unrelated components on one screen.
+
+           And the tone is warning-STRONG, not `warning`: Metronic's pale yellow (#FFC700 on
+           #FFF8DD) does not hold 4.5:1 on white, which is why --cb-warning-strong exists. The
+           meaning is unchanged - this IS a caution, one step below the danger of an actual
+           escalation - only the value it resolves to. *@
+        <div class="notice d-flex cb-notice-warn rounded border border-dashed p-6 mb-5" data-cb-escalation-pending="1">
+            <span class="symbol symbol-45px me-5 flex-shrink-0">
+                <span class="symbol-label cb-notice-warn-tile">
+                    <i class="ki-outline ki-time fs-2x text-white"></i>
+                </span>
+            </span>
+            <div class="d-flex flex-column fw-semibold align-self-center">
+                <h4 class="text-gray-900 fw-bold mb-1">@T("على وشك التصعيد", "About to escalate")</h4>
+                <div class="fs-6 text-gray-700">
+                    @T("متأخرة بما يستوجب التصعيد إلى المدير المباشر في الدورة القادمة.",
+                      "Overdue long enough to be escalated to the direct manager on the next sweep.")
+                </div>
+            </div>
         </div>
     }
 
+
     <div class="row g-5">
         <div class="col-lg-4">
+
             <div class="card card-flush mb-5">
                 <div class="card-header py-4"><h3 class="card-title fw-bold text-gray-900">@T("التفاصيل", "Details")</h3></div>
                 <div class="card-body pt-0">
@@ -113,12 +163,24 @@
                         <span class="text-muted fs-7">@T("التصعيد", "Escalation")</span>
                         @{
                             var escState = esc?.State ?? TaskEscalationState.NotDue;
+                            @* COLOUR CARRIES THE STATE, so it has to say the same thing the list says.
+                               Tasks/Index paints an overdue row "danger"; this page painted the same
+                               state "warning", so a task shown red in the list went amber on its own
+                               page. Overdue is now danger in both.
+
+                               EscalationPending stays amber ON PURPOSE: it warns about something that
+                               has not happened yet. If it went red too, nothing would separate "about
+                               to escalate" from "escalated".
+
+                               NotDue leaves green. Green means success in this palette and "not due
+                               yet" is not a success - it is the quiet default, so it takes the neutral
+                               chip, the same one Low priority uses. *@
                             var escBadge = escState switch
                             {
                                 TaskEscalationState.Escalated => "danger",
+                                TaskEscalationState.Overdue => "danger",
                                 TaskEscalationState.EscalationPending => "warning",
-                                TaskEscalationState.Overdue => "warning",
-                                _ => "success",
+                                _ => "secondary",
                             };
                             var escLabel = escState switch
                             {
@@ -130,9 +192,35 @@
                         }
                         <span class="badge badge-light-@escBadge fs-8" data-cb-escalation-state="@escState">@escLabel</span>
                     </div>
+                    @* THE LOGGED TIME. It was nowhere on this page, so the only way to reach the
+                       log was a kebab menu on the list - which is why three recorded timer runs
+                       looked like none. The figure is the button: a number you cannot open is
+                       barely better than no number. *@
+                    <div class="d-flex flex-stack py-2">
+                        <span class="text-muted fs-7">@T("الوقت المسجّل", "Logged time")</span>
+                        @{
+                            var logged = t?.ActualHours ?? 0m;
+                            var est = t?.EstimatedHours;
+                        }
+                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-3 fs-7 fw-semibold"
+                                onclick="cbOpenTimeLog()">
+                            <span dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">
+                                @logged.ToString("0.##")@(est.HasValue && est.Value > 0 ? " / " + est.Value.ToString("0.##") : "")</span>
+                            <span class="text-muted ms-1">@T("س", "h")</span>
+                            <i class="ki-outline ki-eye fs-6 ms-1"></i>
+                        </button>
+                    </div>
                     <div class="d-flex flex-stack py-2">
                         <span class="text-muted fs-7">@T("قائمة التحقق", "Checklist")</span>
-                        <span class="fs-7 fw-semibold" id="cbClProgress">@doneCount / @checklist.Count (@pct%)</span>
+                        @* dir="ltr" and an isolate: "0 / 3 (0%)" was rendering as "(0%) 3 / 0" on the
+                           Arabic page, because a bidi run reorders a bare fraction. The digits are one
+                           isolated run now, and the renderer keeps them in step with the list. *@
+                        <span class="fs-7 fw-semibold" id="cbClProgress" dir="ltr"
+                              style="unicode-bidi:isolate">@doneCount / @checklist.Count (@pct%)</span>
+                    </div>
+                    <div class="progress h-6px bg-light-primary mb-2">
+                        <div class="progress-bar bg-primary" id="cbClBar" role="progressbar"
+                             style="width:@pct%" aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
             </div>
@@ -143,7 +231,7 @@
                 <div class="card-header py-4">
                     <ul class="nav nav-tabs nav-line-tabs fs-7 fw-semibold border-0" role="tablist">
                         <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#cbTabChecklist">@T("قائمة التحقق", "Checklist")</a></li>
-                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cbTabDeps">@T("الاعتماديات", "Dependencies")</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cbTabDeps" onclick="cbLoadDeps()">@T("الاعتماديات", "Dependencies")</a></li>
                         <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cbTabComments" onclick="cbLoadComments()">@T("التعليقات", "Comments")</a></li>
                         <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#cbTabActivity" onclick="cbLoadActivity()">@T("السجل", "Activity")</a></li>
                     </ul>
@@ -152,91 +240,100 @@
                     <div class="tab-content">
 
                         <div class="tab-pane fade show active" id="cbTabChecklist">
-                            <div class="d-flex gap-2 mb-4">
-                                <input type="text" id="cbClNew" class="form-control form-control-sm form-control-solid" placeholder="@T("بند جديد", "New item")" />
-                                <button type="button" class="btn btn-sm btn-primary" onclick="cbClAdd()"><i class="ki-outline ki-plus fs-4"></i>@T("إضافة", "Add")</button>
+                            @* ONE bounded frame, as the comment composer is: the field and its action
+                               share a border instead of standing as two loose controls of different
+                               heights. The button does not shrink and its label stays on one line -
+                               it was stretching to the row height and stacking its own icon. *@
+                            @* BOTH LANGUAGES, in one frame. Each box carries its own dir, so an
+                               Arabic line does not lay out right-to-left inside the English box and
+                               the reverse. English is optional: blank stores NULL and the reader
+                               falls back to the Arabic line rather than being blocked here. *@
+                            <div class="border border-gray-300 rounded mb-4">
+                                <div class="d-flex align-items-center">
+                                    <input type="text" id="cbClNew" dir="auto"
+                                           class="form-control border-0 bg-transparent shadow-none px-4"
+                                           placeholder="@T("بند جديد (عربي)", "New item (Arabic)")" />
+                                    <button type="button" class="btn btn-sm btn-primary m-2 flex-shrink-0 text-nowrap"
+                                            onclick="cbClAdd()">
+                                        <i class="ki-outline ki-plus fs-5"></i>@T("إضافة", "Add")</button>
+                                </div>
+                                <div class="border-top border-gray-300">
+                                    <input type="text" id="cbClNewEn" dir="auto"
+                                           class="form-control form-control-sm border-0 bg-transparent shadow-none px-4"
+                                           placeholder="@T("English (اختياري)", "English (optional)")" />
+                                </div>
                             </div>
-                            <div id="cbClList">
-                                @foreach (var c in checklist)
-                                {
-                                    <div class="d-flex align-items-center py-2 border-bottom border-gray-300" data-cb-cl="@c.ID">
-                                        <div class="form-check form-check-custom form-check-sm me-3">
-                                            <input class="form-check-input" type="checkbox" @(c.IsDone ? "checked" : "")
-                                                   onchange="cbClToggle(@c.ID, this.checked)" />
-                                        </div>
-                                        <span class="flex-grow-1 fs-7 @(c.IsDone ? "text-muted text-decoration-line-through" : "text-gray-900")">@c.Title</span>
-                                        <button type="button" class="btn btn-icon btn-sm btn-light-danger" onclick="cbClRemove(@c.ID)">
-                                            <i class="ki-outline ki-trash fs-5"></i>
-                                        </button>
-                                    </div>
-                                }
-                                @if (checklist.Count == 0)
-                                {
-                                    <div class="text-muted text-center fs-7 py-8">@T("لا بنود بعد", "No items yet")</div>
-                                }
+                            <div id="cbClError" class="d-none mb-4"></div>
+                            <div id="cbClPane" class="position-relative">
+                                <div id="cbClList">
+                                    <div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="tab-pane fade" id="cbTabDeps">
-                            <div class="row g-2 mb-4">
-                                <div class="col-md-6">
-                                    <input type="number" id="cbDepOther" class="form-control form-control-sm form-control-solid" placeholder="@T("رقم المهمة", "Task number")" />
-                                </div>
-                                <div class="col-md-3">
-                                    <select id="cbDepDir" class="form-select form-select-sm form-select-solid">
-                                        <option value="pred">@T("تنتظر تلك المهمة", "Waits for that task")</option>
-                                        <option value="succ">@T("تلك المهمة تنتظرها", "That task waits for this")</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <button type="button" class="btn btn-sm btn-primary w-100" onclick="cbDepAdd()">@T("ربط", "Link")</button>
+                            <div class="border border-gray-300 rounded mb-4 p-3">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-5">
+                                        <input type="number" id="cbDepOther" class="form-control form-control-sm form-control-solid"
+                                               placeholder="@T("رقم المهمة", "Task number")" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select id="cbDepDir" class="form-select form-select-sm form-select-solid">
+                                            <option value="pred">@T("تنتظر تلك المهمة", "Waits for that task")</option>
+                                            <option value="succ">@T("تلك المهمة تنتظرها", "That task waits for this")</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-sm btn-primary w-100 text-nowrap"
+                                                onclick="cbDepAdd()">@T("ربط", "Link")</button>
+                                    </div>
                                 </div>
                             </div>
-                            <div id="cbDepError" class="alert alert-danger py-3 d-none fs-7"></div>
-                            <div id="cbDepList">
-                                @foreach (var d in deps)
-                                {
-                                    var otherIsPredecessor = d.SuccessorTaskId == t!.ID;
-                                    <div class="d-flex align-items-center py-2 border-bottom border-gray-300">
-                                        <i class="ki-outline @(otherIsPredecessor ? "ki-arrow-left" : "ki-arrow-right") fs-4 text-muted me-2"></i>
-                                        <span class="flex-grow-1 fs-7">
-                                            <span class="text-muted">@(otherIsPredecessor ? T("تنتظر", "waits for") : T("يعتمد عليها", "is needed by"))</span>
-                                            <a href="/Tasks/Detail?id=@(otherIsPredecessor ? d.PredecessorTaskId : d.SuccessorTaskId)" class="fw-semibold ms-1">
-                                                @(otherIsPredecessor ? d.PredecessorTitle : d.SuccessorTitle)
-                                            </a>
-                                        </span>
-                                        @if (d.IsBlocking)
-                                        {
-                                            <span class="badge badge-light-danger fs-8 me-2">@T("حاجبة", "Blocking")</span>
-                                        }
-                                        <button type="button" class="btn btn-icon btn-sm btn-light-danger" onclick="cbDepRemove(@d.Id)">
-                                            <i class="ki-outline ki-trash fs-5"></i>
-                                        </button>
-                                    </div>
-                                }
-                                @if (deps.Count == 0)
-                                {
-                                    <div class="text-muted text-center fs-7 py-8">@T("لا اعتماديات", "No dependencies")</div>
-                                }
+                            @* The cycle refusal names the offending chain, so it stays INLINE and next to
+                               the control that caused it - a toast would scroll away from the graph the
+                               author has to fix. *@
+                            <div id="cbDepError" class="d-none mb-4"></div>
+                            <div id="cbDepPane" class="position-relative">
+                                <div id="cbDepList">
+                                    <div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div>
+                                </div>
                             </div>
                         </div>
 
                         <div class="tab-pane fade" id="cbTabComments">
-                            <div class="d-flex gap-2 mb-2">
-                                <input type="text" id="cbCommentBody" class="form-control form-control-sm form-control-solid" placeholder="@T("اكتب تعليقًا", "Write a comment")" />
-                                <button type="button" id="cbCommentSend" class="btn btn-sm btn-primary" onclick="cbCommentAdd()">@T("إرسال", "Send")</button>
+                            @* ONE composer, not three loose controls. A textarea (a comment is not a
+                               single line), the picked files as removable chips inside the same frame,
+                               and the actions on one footer row. Ctrl/Cmd+Enter sends. *@
+                            <div class="border border-gray-300 rounded mb-4" id="cbComposer">
+                                <textarea id="cbCommentBody" rows="2"
+                                          class="form-control border-0 bg-transparent shadow-none px-4 pt-3" style="resize:none"
+                                          placeholder="@T("اكتب تعليقًا…", "Write a comment…")"></textarea>
+                                <div id="cbFileChips" class="d-flex flex-wrap gap-2 px-4 pb-1"></div>
+                                <div class="d-flex flex-stack border-top border-gray-300 px-3 py-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="file" id="cbCommentFiles" multiple class="d-none" />
+                                        <button type="button" class="btn btn-sm btn-icon btn-light-primary"
+                                                title="@T("إرفاق ملفات", "Attach files")"
+                                                onclick="document.getElementById('cbCommentFiles').click()">
+                                            <i class="ki-outline ki-paper-clip fs-4"></i></button>
+                                        <span id="cbFileHint" class="text-muted fs-8"></span>
+                                    </div>
+                                    <button type="button" id="cbCommentSend" class="btn btn-sm btn-primary" disabled
+                                            onclick="cbCommentAdd()">
+                                        <i class="ki-outline ki-send fs-5"></i>@T("إرسال", "Send")</button>
+                                </div>
+                                @* Inside the composer box: it is positioned against it, so the menu
+                                   follows the frame as the textarea grows. *@
+                                <div id="cbAtMenu" class="cb-at-menu d-none" role="listbox"></div>
                             </div>
-                            @* Attachments are part of the comment, not a separate upload: they share the
-                               comment's transaction, so a file never survives a comment that failed. *@
-                            <div class="d-flex align-items-center gap-2 mb-4">
-                                <input type="file" id="cbCommentFiles" multiple class="form-control form-control-sm form-control-solid" />
-                                <span class="text-muted fs-8 text-nowrap">@T("مرفقات (اختياري)", "Attachments (optional)")</span>
+                            <div id="cbCommentPane" class="position-relative">
+                                <div id="cbCommentList"><div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div></div>
                             </div>
-                            <div id="cbCommentList"><div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div></div>
                         </div>
 
                         <div class="tab-pane fade" id="cbTabActivity">
-                            <div id="cbActivityList"><div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div></div>
+                            @await Html.PartialAsync("_TaskActivity", t!.ID)
                         </div>
 
                     </div>
@@ -267,49 +364,199 @@
                 return d.innerHTML;
             }
 
+            // THE HOUSE REFUSAL NOTICE - the /Accounting/JournalEntry form this page already uses
+            // for Blocked and Escalated: dashed border, icon tile, heading, body. Written once here
+            // so a refusal in the checklist and a refusal in the dependencies cannot drift apart.
+            //
+            // The colour follows the KIND: danger with a lock for "you may not", warning for "that
+            // will not work" - which is the author's to fix and keeps its exact wording, because the
+            // cycle refusal names the chain that has to change.
+            window.cbShowRefusal = function (boxId, res) {
+                var box = document.getElementById(boxId); if (!box) return;
+                var denied = res && res.code === "forbidden";
+                var tone = denied ? "danger" : "warning";
+                var icon = denied ? "ki-lock-2" : "ki-information-5";
+                var head = denied
+                    ? "@T("ليست لديك صلاحية", "You do not have permission")"
+                    : "@T("تعذّر تنفيذ الطلب", "The request could not be completed")";
+                box.innerHTML =
+                    '<div class="notice d-flex bg-light-' + tone + ' rounded border-' + tone +
+                        ' border border-dashed p-6">' +
+                        '<span class="symbol symbol-45px me-5"><span class="symbol-label bg-' + tone + '">' +
+                            '<i class="ki-outline ' + icon + ' fs-2x text-white"></i></span></span>' +
+                        '<div class="d-flex flex-grow-1 flex-column min-w-0">' +
+                            '<h4 class="text-gray-900 fw-bold mb-1">' + head + '</h4>' +
+                            '<div class="fs-6 text-gray-700 cb-feed-body">' + esc(res && res.error ? res.error : "") + '</div>' +
+                        '</div>' +
+                    '</div>';
+                box.classList.remove("d-none");
+            };
+            window.cbClearRefusal = function (boxId) {
+                var box = document.getElementById(boxId); if (!box) return;
+                box.innerHTML = ""; box.classList.add("d-none");
+            };
+
             // ---- checklist ---------------------------------------------------------------------
+            // ONE renderer. A mutation has to redraw the list anyway, so drawing it here and only
+            // here is what keeps a row from having two definitions that can drift apart.
+            function cbClRow(c) {
+                var text = c.done
+                    ? "text-muted text-decoration-line-through"
+                    : "text-gray-900";
+                return '<div class="cb-row d-flex align-items-center gap-3 px-2 py-3">' +
+                    '<div class="form-check form-check-custom form-check-sm">' +
+                        '<input class="form-check-input" type="checkbox" ' + (c.done ? "checked " : "") +
+                              'onchange="cbClToggle(' + c.id + ', this.checked)">' +
+                    '</div>' +
+                    '<span class="flex-grow-1 fs-6 ' + text + '">' + esc(c.title) + '</span>' +
+                    '<button type="button" class="cb-row-del btn btn-icon btn-sm btn-active-light-danger text-gray-500"' +
+                        ' onclick="cbClRemove(' + c.id + ')" title="@T("حذف", "Delete")">' +
+                        '<i class="ki-outline ki-trash fs-5"></i></button>' +
+                '</div>';
+            }
+
+            window.cbLoadChecklist = function () {
+                var box = document.getElementById('cbClList'); if (!box) return Promise.resolve();
+                return fetch('/Tasks/ChecklistList?taskId=' + encodeURIComponent(taskId))
+                    .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+                    .then(function (rows) {
+                        rows = rows || [];
+                        box.innerHTML = rows.length
+                            ? rows.map(cbClRow).join('')
+                            : '<div class="text-muted text-center fs-7 py-8">@T("لا بنود بعد", "No items yet")</div>';
+                        // The sidebar figure comes from THESE rows, so it cannot fall out of step with
+                        // the list the way a server-rendered count did between reloads.
+                        var done = rows.filter(function (c) { return c.done; }).length;
+                        var pct = rows.length ? Math.round(done * 100 / rows.length) : 0;
+                        var lbl = document.getElementById('cbClProgress');
+                        if (lbl) lbl.textContent = done + " / " + rows.length + " (" + pct + "%)";
+                        var bar = document.getElementById('cbClBar');
+                        if (bar) { bar.style.width = pct + "%"; bar.setAttribute("aria-valuenow", pct); }
+                    })
+                    .catch(function () {
+                        box.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل قائمة التحقق", "Could not load the checklist")</div>';
+                    });
+            };
+
             window.cbClAdd = function () {
                 var input = document.getElementById('cbClNew');
+                var inputEn = document.getElementById('cbClNewEn');
                 var title = input.value.trim();
-                if (!title) { return; }
-                post('/Tasks/ChecklistAdd', { taskId: taskId, title: title })
-                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+                // The ARABIC line is the required one, because it is the column the reader falls back
+                // to. An English-only item would render blank for an Arabic reader.
+                if (!title) { input.focus(); return; }
+                cbBusy('cbClPane', true);
+                post('/Tasks/ChecklistAdd', {
+                    taskId: taskId, title: title, titleEn: (inputEn ? inputEn.value.trim() : "")
+                })
+                    .then(function (r) {
+                        if (!r.ok) { cbShowRefusal("cbClError", r); return; }
+                        cbClearRefusal("cbClError");
+                        input.value = "";
+                        if (inputEn) inputEn.value = "";
+                        return cbLoadChecklist();
+                    })
+                    .catch(function () { CB.toast.error("@T("تعذّر إضافة البند", "Could not add the item")"); })
+                    .then(function () { cbBusy('cbClPane', false); input.focus(); });
             };
+
             window.cbClToggle = function (id, done) {
+                cbBusy('cbClPane', true);
                 post('/Tasks/ChecklistToggle', { id: id, done: done })
-                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+                    .then(function (r) { if (!r.ok) { cbShowRefusal("cbClError", r); } return cbLoadChecklist(); })
+                    .catch(function () { CB.toast.error("@T("تعذّر تحديث البند", "Could not update the item")"); })
+                    .then(function () { cbBusy('cbClPane', false); });
             };
+
             window.cbClRemove = function (id) {
-                post('/Tasks/ChecklistRemove', { id: id })
-                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+                // It was deleting on a single click with no way back.
+                CB.confirmDelete().then(function (yes) {
+                    if (!yes) return;
+                    cbBusy('cbClPane', true);
+                    return post('/Tasks/ChecklistRemove', { id: id })
+                        .then(function (r) { if (!r.ok) { cbShowRefusal("cbClError", r); } return cbLoadChecklist(); })
+                        .catch(function () { CB.toast.error("@T("تعذّر حذف البند", "Could not delete the item")"); })
+                        .then(function () { cbBusy('cbClPane', false); });
+                });
             };
 
             // ---- dependencies ------------------------------------------------------------------
-            window.cbDepAdd = function () {
-                var other = parseInt(document.getElementById('cbDepOther').value || '0', 10);
-                var err = document.getElementById('cbDepError');
-                err.classList.add('d-none');
-                if (!other) { return; }
+            function cbDepRow(d) {
+                var arrow = d.otherIsPredecessor ? "ki-arrow-left" : "ki-arrow-right";
+                var word = d.otherIsPredecessor
+                    ? "@T("تنتظر", "waits for")"
+                    : "@T("يعتمد عليها", "is needed by")";
+                return '<div class="cb-row d-flex align-items-center gap-2 px-2 py-3">' +
+                    '<i class="ki-outline ' + arrow + ' fs-4 text-muted flex-shrink-0"></i>' +
+                    '<span class="flex-grow-1 fs-7 min-w-0">' +
+                        '<span class="text-muted">' + word + '</span> ' +
+                        '<a href="/Tasks/Detail?id=' + d.otherId + '" class="fw-semibold">' +
+                            esc(d.otherTitle) + '</a>' +
+                    '</span>' +
+                    (d.isBlocking
+                        ? '<span class="badge badge-light-danger fs-8">@T("حاجبة", "Blocking")</span>'
+                        : '') +
+                    '<button type="button" class="cb-row-del btn btn-icon btn-sm btn-active-light-danger text-gray-500"' +
+                        ' onclick="cbDepRemove(' + d.id + ')" title="@T("إلغاء الربط", "Unlink")">' +
+                        '<i class="ki-outline ki-trash fs-5"></i></button>' +
+                '</div>';
+            }
 
-                var waitsForOther = document.getElementById('cbDepDir').value === 'pred';
+            window.cbLoadDeps = function () {
+                var box = document.getElementById('cbDepList'); if (!box) return Promise.resolve();
+                return fetch('/Tasks/DependencyList?taskId=' + encodeURIComponent(taskId))
+                    .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+                    .then(function (rows) {
+                        rows = rows || [];
+                        box.innerHTML = rows.length
+                            ? rows.map(cbDepRow).join('')
+                            : '<div class="text-muted text-center fs-7 py-8">@T("لا اعتماديات", "No dependencies")</div>';
+                    })
+                    .catch(function () {
+                        box.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل الاعتماديات", "Could not load the dependencies")</div>';
+                    });
+            };
+
+            window.cbDepAdd = function () {
+                var other = parseInt(document.getElementById('cbDepOther').value || "0", 10);
+                cbClearRefusal("cbDepError");
+                if (!other) { document.getElementById('cbDepOther').focus(); return; }
+
+                var waitsForOther = document.getElementById('cbDepDir').value === "pred";
+                cbBusy('cbDepPane', true);
                 post('/Tasks/DependencyAdd', {
                     predecessorTaskId: waitsForOther ? other : taskId,
                     successorTaskId: waitsForOther ? taskId : other,
-                    kind: 'FinishToStart', lagDays: 0
+                    kind: "FinishToStart", lagDays: 0
                 }).then(function (r) {
-                    if (r.ok) { location.reload(); }
-                    else {
-                        // The cycle refusal names the offending chain. Show it as written — a generic
-                        // "could not link" would leave the user with no way to fix the graph.
-                        err.textContent = r.error; err.classList.remove('d-none');
+                    if (!r.ok) {
+                        // Shown as written and INLINE, next to the control that caused it: the cycle
+                        // refusal names the offending chain, and a toast that scrolls away would leave
+                        // the author with no way to fix the graph.
+                        cbShowRefusal("cbDepError", r);
+                        return;
                     }
-                });
-            };
-            window.cbDepRemove = function (id) {
-                post('/Tasks/DependencyRemove', { id: id })
-                    .then(function (r) { if (r.ok) { location.reload(); } else { alert(r.error); } });
+                    document.getElementById('cbDepOther').value = "";
+                    return cbLoadDeps();
+                })
+                    .catch(function () { CB.toast.error("@T("تعذّر إضافة الاعتمادية", "Could not add the dependency")"); })
+                    .then(function () { cbBusy('cbDepPane', false); });
             };
 
+            window.cbDepRemove = function (id) {
+                CB.confirmDelete({ title: "@T("إلغاء الربط", "Unlink")" }).then(function (yes) {
+                    if (!yes) return;
+                    cbBusy('cbDepPane', true);
+                    return post('/Tasks/DependencyRemove', { id: id })
+                        .then(function (r) { if (!r.ok) { cbShowRefusal("cbDepError", r); } return cbLoadDeps(); })
+                        .catch(function () { CB.toast.error("@T("تعذّر إلغاء الربط", "Could not unlink")"); })
+                        .then(function () { cbBusy('cbDepPane', false); });
+                });
+            };
+
+            // The checklist tab is the one that opens, so it loads at once; the others load on their
+            // first show, which is what keeps four queries off a page view that only reads the details.
+            cbLoadChecklist();
             // ---- comments: the PLATFORM endpoint, entityType=Task -------------------------------
             // The Communication Platform is OPTIONAL. When it is not activated the endpoint answers 503 with
             // code "communication_unavailable" — a state of its own, not an empty list and not an error. It is
@@ -324,6 +571,7 @@
                 var filesEl = document.getElementById('cbCommentFiles');
                 var btn = document.getElementById('cbCommentSend');
                 if (input) { input.disabled = true; input.placeholder = '@T("غير متاحة", "Unavailable")'; }
+                if (btn) { btn.dataset.forcedOff = '1'; }   // cbSyncSend must not undo this
                 if (filesEl) { filesEl.disabled = true; }
                 if (btn) { btn.disabled = true; }
             }
@@ -341,24 +589,63 @@
                         return r.ok ? r.json() : [];
                     })
                     .then(function (rows) {
+                        cbCommentBusy(false);
                         if (rows === null) { return; }
                         if (!rows || rows.length === 0) {
                             box.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا تعليقات", "No comments")</div>';
                             return;
                         }
+                        // NEWEST FIRST. Sorted here rather than in the query: ListAsync belongs to the
+                        // Communication module and reversing it there would change every other caller.
+                        rows = rows.slice().sort(function (a, b) {
+                            return cbDate(b.createdAt) - cbDate(a.createdAt);
+                        });
                         box.innerHTML = rows.map(function (c) {
-                            var files = (c.attachments || []).map(function (a) {
-                                return '<a class="badge badge-light-primary fs-8 me-1 mb-1 d-inline-block" href="' +
-                                    encodeURI(a.url) + '" download><i class="ki-outline ki-paper-clip fs-8 me-1"></i>' +
-                                    esc(a.fileName) + '</a>';
-                            }).join('');
-                            return '<div class="d-flex flex-column py-3 border-bottom border-gray-300">' +
-                                '<div class="d-flex flex-stack"><span class="fw-semibold fs-7 text-gray-900">' + esc(c.author) + '</span>' +
-                                '<span class="text-muted fs-8">' + esc(c.createdAt) + (c.editedAt ? ' · @T("مُعدّل", "edited")' : '') + '</span></div>' +
-                                (c.body ? '<span class="fs-7 text-gray-800 mt-1">' + esc(c.body) + '</span>' : '') +
-                                (files ? '<div class="mt-2">' + files + '</div>' : '') +
-                                '</div>';
+                            // A FEED SHOWS THE PICTURE. Image attachments render as media; anything
+                            // else stays a chip, because there is nothing to show. Both open the viewer.
+                            var media = '', chips = '';
+                            (c.attachments || []).forEach(function (a) {
+                                var ct = a.contentType || '';
+                                var isImg = /^image\//.test(ct) || a.previewKind === 'Image';
+                                var args = [JSON.stringify(a.url), JSON.stringify(a.fileName),
+                                            JSON.stringify(ct), JSON.stringify(a.previewKind || ''),
+                                            (a.canInline === false ? 'false' : (a.canInline === true ? 'true' : 'undefined')),
+                                            JSON.stringify(a.previewReason || '')].join(',');
+                                if (isImg) {
+                                    media += '<div class="cb-feed-media mt-2 border border-gray-300 cursor-pointer"' +
+                                        ' onclick=\'cbOpenAttachment(' + args + ')\' title="' + esc(a.fileName) + '">' +
+                                        '<img src="' + encodeURI(a.url) + '" alt="' + esc(a.fileName) + '">' +
+                                    '</div>';
+                                } else {
+                                    var ic = /pdf/.test(ct) ? 'ki-document' : 'ki-paper-clip';
+                                    chips += '<button type="button" class="btn btn-sm btn-light py-1 px-3 me-1 mt-2"' +
+                                        ' onclick=\'cbOpenAttachment(' + args + ')\'>' +
+                                        '<i class="ki-outline ' + ic + ' fs-6 me-1"></i>' + esc(a.fileName) +
+                                        '<span class="text-muted fs-9 ms-2">' + cbSize(a.sizeBytes) + '</span></button>';
+                                }
+                            });
+                            var av = c.authorAvatar
+                                ? '<div class="symbol symbol-circle symbol-45px flex-shrink-0">' +
+                                      '<img src="' + encodeURI(c.authorAvatar) + '" alt="' + esc(c.author) + '">' +
+                                  '</div>'
+                                : '';
+                            // ONE header line: name · relative time, the exact stamp on hover.
+                            return '<div class="cb-feed-item d-flex gap-3 px-2 py-4">' + av +
+                                '<div class="flex-grow-1 min-w-0">' +
+                                    '<div class="d-flex align-items-center flex-wrap gap-1">' +
+                                        '<span class="fw-bold fs-6 text-gray-900">' + esc(c.author) + '</span>' +
+                                        '<span class="text-muted fs-7">·</span>' +
+                                        '<span class="text-muted fs-7" title="' + esc(cbWhen(c.createdAt)) + '">' + cbAgo(c.createdAt) + '</span>' +
+                                        (c.editedAt ? '<span class="text-muted fs-8 ms-1">(@T("مُعدّل", "edited"))</span>' : '') +
+                                    '</div>' +
+                                    (c.body ? '<div class="fs-6 text-gray-800 mt-1 cb-feed-body cb-clamp">' + cbBodyHtml(c) + '</div>' +
+                                              '<button type="button" class="cb-more text-primary fs-8 mt-1 d-none" onclick="cbToggleMore(this)">' +
+                                                  '@T("عرض المزيد", "read more")</button>' : '') +
+                                    media + (chips ? '<div>' + chips + '</div>' : '') +
+                                '</div>' +
+                            '</div>';
                         }).join('');
+                        cbWireMore(box);   // decide the toggles once the rows are laid out
                     })
                     .catch(function () { box.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل التعليقات", "Could not load comments")</div>'; });
             };
@@ -371,38 +658,557 @@
                 for (var i = 0; i < filesEl.files.length; i++) { body.append('files', filesEl.files[i]); }
                 body.append('__RequestVerificationToken', tok());
 
+                cbCommentBusy(true);
                 fetch('/Tasks/TaskCommentAdd', { method: 'POST', body: body })
                     .then(function (r) { return r.json(); })
                     .then(function (res) {
                         // Same 503 contract as the loader: an inactive platform disables the composer rather
                         // than reporting a failure the user could retry their way out of.
                         if (res && res.unavailable) { cbCommentsUnavailable(res.error); return; }
-                        if (res && res.ok) { input.value = ''; filesEl.value = ''; cbLoadComments(); }
-                        else { alert((res && res.error) || '@T("تعذّر إضافة التعليق", "Could not add the comment")'); }
+                        if (res && res.ok) { input.value = ''; cbClearFiles(); cbLoadComments(); }
+                        else { cbCommentBusy(false); CB.toast.error((res && res.error) || '@T("تعذّر إضافة التعليق", "Could not add the comment")'); }
                     })
-                    .catch(function () { alert('@T("تعذّر الاتصال بالخادم", "Could not reach the server")'); });
+                    .catch(function () { cbCommentBusy(false); CB.toast.error('@T("تعذّر الاتصال بالخادم", "Could not reach the server")'); });
             };
 
             // ---- activity: the PLATFORM timeline, entityType=Task -------------------------------
-            window.cbLoadActivity = function () {
-                var box = document.getElementById('cbActivityList');
-                fetch('/PlatformTimeline/List?entityType=Task&entityId=' + taskId + '&take=50')
-                    .then(function (r) { return r.ok ? r.json() : []; })
-                    .then(function (rows) {
-                        if (!rows || rows.length === 0) {
-                            box.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا سجل بعد", "No activity yet")</div>';
-                            return;
-                        }
-                        box.innerHTML = rows.map(function (i) {
-                            return '<div class="d-flex align-items-start py-3 border-bottom border-gray-300">' +
-                                '<i class="ki-outline ki-abstract-26 fs-4 text-muted me-3 mt-1"></i>' +
-                                '<div class="flex-grow-1"><div class="fs-7 fw-semibold text-gray-900">' + esc(i.title) + '</div>' +
-                                (i.description ? '<div class="fs-8 text-muted">' + esc(i.description) + '</div>' : '') +
-                                '<div class="fs-8 text-muted">' + esc(i.actorName) + ' · ' + esc(i.createdAt) + '</div></div></div>';
-                        }).join('');
-                    })
-                    .catch(function () { box.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل السجل", "Could not load the activity")</div>'; });
-            };
+            // yyyy-MM-dd HH:mm assembled from PARTS, not from toLocaleString(). The shared
+            // _DocEventTimeline partial still uses toLocaleString, which this project already
+            // found reorders under bidi on an RTL page ("PM 12:11:56 ,8/31/2026") - see the note
+            // in _NotificationBell.cshtml. /Notifications/Index uses this same format.
+            // RELATIVE, for the feed. Digits plus a one-letter unit and assembled from parts, so
+            // bidi cannot reorder it; the absolute value goes on the title attribute.
+            // A MENTION IS SHOWN AS A NAME. The stored body keeps the token - it is the authored text
+            // and what the audit reads - so the substitution happens at render time, AFTER escaping,
+            // which is why the patterns below run over already-escaped HTML and inject no attribute.
+            //
+            // The labelled form carries its own name. The bare "@@employee:12" form does not, so it is
+            // matched against the mention rows the API now sends, whose labels were frozen when the
+            // mention was made. An unmatched token is left as plain text rather than guessed at.
+            function cbBodyHtml(c) {
+                var html = esc(c.body || "");
+                function chip(label) { return '<span class="cb-mention">' + label + '</span>'; }
+                var rows = c.mentions || [];
+                // The label the SERVER resolved, frozen when the mention was made. Matched on kind plus
+                // id so it cannot be confused with another token in the same comment.
+                function resolved(kind, key) {
+                    var hit = rows.filter(function (r) {
+                        return String(r.kind || "").toLowerCase() === String(kind).toLowerCase()
+                            && (String(r.targetId || "") === key || String(r.targetKey || "") === key);
+                    })[0];
+                    return hit && hit.label ? esc(hit.label) : null;
+                }
+                html = html.replace(/@@\[([^\]]{1,80})\]\((employee|team|department|role):([^)\s]{1,40})\)/gi,
+                    function (m, label, kind, key) {
+                        // The typed label is the FALLBACK, never the preference - see the comment above.
+                        return chip(resolved(kind, key) || label);
+                    });
+                html = html.replace(/@@(employee|team|department|role):([A-Za-z0-9_.\-]{1,40})/gi,
+                    function (m, kind, key) {
+                        // No label of its own, so an unresolved token stays plain text rather than
+                        // being guessed at.
+                        var name = resolved(kind, key);
+                        return name ? chip(name) : m;
+                    });
+                return html;
+            }
+            // A STAMP WITH NO ZONE IS UTC. The platform writes DateTime.UtcNow; EF returns it
+            // Kind=Unspecified, so it serialises without a "Z" and new Date() would read it as local
+            // time - which is why a comment posted a second ago read "3س" in a UTC+3 office. A stamp
+            // that does carry a zone is left exactly as it is.
+            function cbDate(iso) {
+                if (!iso) return new Date(NaN);
+                var s = String(iso);
+                return new Date(/[zZ]$|[+\-]\d{2}:?\d{2}$/.test(s) ? s : s + "Z");
+            }
+            function cbAgo(iso) {
+                try {
+                    var d = cbDate(iso); if (isNaN(d.getTime())) return "";
+                    var s = Math.floor((Date.now() - d.getTime()) / 1000); if (s < 0) s = 0;
+                    if (s < 60) return "@T("الآن", "now")";
+                    var m = Math.floor(s / 60); if (m < 60) return m + "@T("د", "m")";
+                    var h = Math.floor(m / 60); if (h < 24) return h + "@T("س", "h")";
+                    var dd = Math.floor(h / 24); if (dd < 100) return dd + "@T("ي", "d")";
+                    return cbWhen(iso);
+                } catch (e) { return ""; }
+            }
+            function cbWhen(iso) {
+                try {
+                    var d = cbDate(iso);
+                    if (isNaN(d.getTime())) return "";
+                    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+                    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
+                           " " + p(d.getHours()) + ":" + p(d.getMinutes());
+                } catch (e) { return ""; }
+            }
+
         })();
     </script>
+
+    @* Attachment helpers, the read-more toggle and the viewer live HERE, not in the view body.
+       A <script> appended to the body of this view is parsed into the DOM but never executed -
+       verified with a marker as its first statement, which never ran - while this section does
+       execute. The modals themselves stay in the body; they are markup. *@
+    <script>
+(function () {
+    function esc2(v) {
+        return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    // Show the toggle ONLY when the text really overflows its clamp. Measured per element:
+    // a character count cannot tell, because the same length wraps differently per script.
+    window.cbWireMore = function (root) {
+        (root || document).querySelectorAll(".cb-clamp").forEach(function (el) {
+            var btn = el.nextElementSibling;
+            if (!btn || !btn.classList.contains("cb-more")) return;
+            // The threshold is HALF A LINE, not a pixel. A -webkit-box clamp rounds its own box,
+            // so a single short word measures scrollHeight 23 against clientHeight 21 - enough to
+            // pass a 1px test, which is why "read more" turned up on a three-letter comment.
+            // Nothing shorter than half a line of real text can trip this.
+            var cs = getComputedStyle(el);
+            var lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 14) * 1.5;
+            var hidden = (el.scrollHeight - el.clientHeight) < Math.max(6, lh / 2);
+            btn.classList.toggle("d-none", hidden);
+            if (hidden) { el.classList.add("cb-clamp"); btn.textContent = cbMoreLabel(false); }
+        });
+    };
+    // Wrapping changes with the width, so the decision is re-taken after a resize settles.
+    var cbMoreTimer;
+    window.addEventListener("resize", function () {
+        clearTimeout(cbMoreTimer);
+        cbMoreTimer = setTimeout(function () { window.cbWireMore(document); }, 180);
+    });
+    function cbMoreLabel(open) {
+        return open ? @Html.Raw(Json.Serialize(T("عرض أقل", "show less")))
+                    : @Html.Raw(Json.Serialize(T("عرض المزيد", "read more")));
+    }
+    window.cbToggleMore = function (btn) {
+        var el = btn.previousElementSibling;
+        var open = el.classList.toggle("cb-clamp") === false;
+        btn.textContent = cbMoreLabel(open);
+    };
+    window.cbSize = function (n) {
+        n = Number(n) || 0;
+        if (n < 1024) return n + " B";
+        if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+        return (n / 1048576).toFixed(1) + " MB";
+    };
+    // A spinner over THIS pane only - never the page.
+    // A veil over ONE section, so a change to a list never blanks the page. Taking the pane by id
+    // is what lets the checklist, the dependencies and the comments share the single definition.
+    window.cbBusy = function (paneId, on) {
+        var pane = document.getElementById(paneId); if (!pane) return;
+        var el = document.getElementById(paneId + "Busyveil");
+        if (on) {
+            if (el) return;
+            el = document.createElement("div");
+            el.id = paneId + "Busyveil";
+            el.setAttribute("aria-hidden", "true");
+            el.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
+                "background:rgba(255,255,255,.65);z-index:5;border-radius:.625rem;";
+            el.innerHTML = '<span class="spinner-border text-primary" role="status"></span>';
+            pane.appendChild(el); pane.setAttribute("aria-busy", "true");
+        } else if (el) { el.remove(); pane.removeAttribute("aria-busy"); }
+    };
+    window.cbCommentBusy = function (on) { cbBusy("cbCommentPane", on); };
+    // THE PICKED FILES LIVE HERE. A FileList cannot be edited, so removing one file means
+    // rebuilding input.files from this array through a DataTransfer - the only supported way.
+    var cbPicked = [];
+    function cbSyncPicker() {
+        var dt = new DataTransfer();
+        cbPicked.forEach(function (f) { dt.items.add(f); });
+        var el = document.getElementById("cbCommentFiles");
+        if (el) el.files = dt.files;
+    }
+    function cbRenderChips() {
+        var box = document.getElementById("cbFileChips");
+        var hint = document.getElementById("cbFileHint");
+        if (!box) return;
+        box.innerHTML = cbPicked.map(function (f, idx) {
+            var isImg = /^image\//.test(f.type);
+            return '<span class="badge badge-light-primary d-inline-flex align-items-center gap-2 fs-8 py-2">' +
+                '<i class="ki-outline ' + (isImg ? "ki-picture" : "ki-file") + ' fs-6"></i>' +
+                '<span class="text-truncate" style="max-width:180px">' + esc2(f.name) + '</span>' +
+                '<span class="text-muted fs-9">' + cbSize(f.size) + '</span>' +
+                '<i class="ki-outline ki-cross fs-7 cursor-pointer" onclick="cbRemoveFile(' + idx + ')"></i>' +
+            '</span>';
+        }).join("");
+        if (hint) hint.textContent = cbPicked.length
+            ? @Html.Raw(Json.Serialize(T("اضغط الملف للمعاينة", "click a file to preview")))
+            : "";
+        cbSyncSend();
+    }
+    window.cbRemoveFile = function (i) { cbPicked.splice(i, 1); cbSyncPicker(); cbRenderChips(); };
+    window.cbClearFiles = function () { cbPicked = []; cbSyncPicker(); cbRenderChips(); };
+    // Send stays disabled until there is something to send - no dead click.
+    window.cbSyncSend = function () {
+        var b = document.getElementById("cbCommentSend");
+        var ta = document.getElementById("cbCommentBody");
+        if (!b || !ta || b.dataset.forcedOff === "1") return;
+        b.disabled = !(ta.value.trim().length || cbPicked.length);
+    };
+    var ta0 = document.getElementById("cbCommentBody");
+    if (ta0) {
+        ta0.addEventListener("input", cbSyncSend);
+        // The field is multi-line now, so Enter must keep inserting a newline.
+        ta0.addEventListener("keydown", function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); cbCommentAdd(); }
+        });
+    }
+    // PREVIEW BEFORE ATTACHING, from the local File objects - nothing is uploaded yet.
+    // ONE entry point for "these files are being attached", whatever produced them: the file dialog,
+    // or a paste. Anything else would be a second copy of the preview flow, free to drift from it.
+    window.cbAcceptFiles = function (added) {
+        added = [].slice.call(added || []).filter(Boolean);
+        if (!added.length) return;
+        cbPicked = cbPicked.concat(added);
+        cbSyncPicker();
+        cbRenderChips();
+        document.getElementById("cbPreUploadBody").innerHTML = cbPicked.map(function (f) {
+            var isImg = /^image\//.test(f.type);
+            var media = isImg
+                ? '<img src="' + URL.createObjectURL(f) + '" class="rounded mw-100 d-block mx-auto" style="max-height:320px" alt="">'
+                : '<div class="symbol symbol-50px d-block mx-auto"><span class="symbol-label bg-light-primary">' +
+                  '<i class="ki-outline ki-file fs-2x text-primary"></i></span></div>';
+            return '<div class="border border-gray-300 border-dashed rounded p-4 mb-3">' +
+                '<div class="d-flex align-items-center gap-2 mb-3 min-w-0">' +
+                    '<i class="ki-outline ' + (isImg ? "ki-picture" : "ki-file") + ' fs-5 text-primary flex-shrink-0"></i>' +
+                    '<div class="min-w-0">' +
+                        '<div class="fw-bold text-gray-900 text-truncate" title="' + esc2(f.name) + '">' + esc2(f.name) + '</div>' +
+                        '<div class="text-muted fs-7">' + esc2(f.type || "-") + ' · ' + cbSize(f.size) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                media +
+            '</div>';
+        }).join("");
+        new bootstrap.Modal(document.getElementById("cbPreUploadModal")).show();
+    };
+    var picker = document.getElementById("cbCommentFiles");
+    if (picker) picker.addEventListener("change", function () { cbAcceptFiles(picker.files); });
+
+    // PASTE AN IMAGE STRAIGHT IN. A screenshot on the clipboard has no name of its own, so one is
+    // built from the timestamp and the real MIME subtype - the upload path stores what it is handed,
+    // and "image.png" repeated would make every pasted shot indistinguishable in File Manager.
+    // Only FILES are claimed: an ordinary text paste must still fall through untouched, so
+    // preventDefault runs only when something was actually taken.
+    var taPaste = document.getElementById("cbCommentBody");
+    if (taPaste) taPaste.addEventListener("paste", function (e) {
+        var dtf = e.clipboardData && e.clipboardData.files;
+        var grabbed = dtf && dtf.length ? [].slice.call(dtf) : [];
+        if (!grabbed.length && e.clipboardData && e.clipboardData.items) {
+            // Older engines expose the bitmap only through items[].getAsFile().
+            grabbed = [].slice.call(e.clipboardData.items)
+                .filter(function (it) { return it.kind === "file"; })
+                .map(function (it) { return it.getAsFile(); })
+                .filter(Boolean);
+        }
+        if (!grabbed.length) return;
+        e.preventDefault();
+        var stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+        cbAcceptFiles(grabbed.map(function (f, n) {
+            if (f.name && f.name !== "image.png" && f.name !== "blob") return f;
+            var ext = (f.type || "image/png").split("/")[1] || "png";
+            return new File([f], "paste-" + stamp + (grabbed.length > 1 ? "-" + (n + 1) : "") + "." + ext,
+                            { type: f.type || "image/png" });
+        }));
+    });
+    // VIEWER. Only inline what the platform said may be inlined; everything else downloads.
+    // contentType is what decides, because it is in the API response TODAY. previewKind and
+    // canInline only refine it; gating on them alone meant the modal never opened until the
+    // app restarted, which is the bug this fixes.
+    window.cbOpenAttachment = function (url, name, contentType, kind, canInline, reason) {
+        var isImage = /^image\//.test(contentType || "") || kind === "Image";
+        var refused = (canInline === false);   // an EXPLICIT refusal, not merely absent
+        if (!isImage || refused) {
+            if (refused && reason) CB.toast.info(reason);
+            window.open(url, "_blank", "noopener");
+            return;
+        }
+        document.getElementById("cbViewerTitle").textContent = name;
+        document.getElementById("cbViewerOpen").href = url;
+        var dl = document.getElementById("cbViewerDownload"); dl.href = url; dl.setAttribute("download", name);
+        document.getElementById("cbViewerBody").innerHTML =
+            '<img src="' + esc2(url) + '" class="rounded mw-100" style="max-height:72vh" alt="' + esc2(name) + '">';
+        new bootstrap.Modal(document.getElementById("cbViewerModal")).show();
+    };
+
+    // =========================================================================================
+    // @@-MENTION PICKER. It inserts the platform grammar and nothing more - see the file header
+    // of CommMentionService for what happens to the token afterwards, including why the author
+    // never gets a notification for their own mention.
+    // =========================================================================================
+    var cbAt = { items: [], idx: 0, from: -1, to: -1, timer: null, seq: 0 };
+
+    function cbAtClose() {
+        var m = document.getElementById("cbAtMenu");
+        if (m) m.classList.add("d-none");
+        cbAt.items = []; cbAt.from = -1; cbAt.to = -1;
+    }
+
+    function cbAtRender() {
+        var m = document.getElementById("cbAtMenu");
+        if (!m) return;
+        if (!cbAt.items.length) { cbAtClose(); return; }
+        m.innerHTML = cbAt.items.map(function (it, i) {
+            var face = it.avatar
+                ? '<img src="' + encodeURI(it.avatar) + '" alt="">'
+                : '<span class="cb-at-fallback">' + esc2((it.name || "?").trim().charAt(0)) + '</span>';
+            return '<div class="cb-at-item' + (i === cbAt.idx ? " active" : "") + '" role="option" data-i="' + i + '">' +
+                face + '<span class="text-gray-900 fs-7 text-truncate">' + esc2(it.name) + '</span></div>';
+        }).join("");
+        m.classList.remove("d-none");
+    }
+
+    // The token under the caret, or null. Anchored to a word boundary, so the domain of an e-mail
+    // address typed mid-sentence does not open the picker.
+    function cbAtToken(ta) {
+        var upto = ta.value.slice(0, ta.selectionStart);
+        var m = /(?:^|[\s(\[])@@([^\s@@\]]{0,30})$/.exec(upto);
+        if (!m) return null;
+        return { q: m[1], from: upto.length - m[1].length - 1, to: ta.selectionStart };
+    }
+
+    function cbAtInsert(ta, item) {
+        if (!ta || !item || cbAt.from < 0) return;
+        var before = ta.value.slice(0, cbAt.from);
+        var after = ta.value.slice(cbAt.to);
+        // Brackets are stripped from the name: they are the grammar's own delimiters, and a person
+        // called "Ali (Sales)" would otherwise close the token early and mention nobody.
+        var token = "@@[" + String(item.name).replace(/[\[\]()]/g, "") + "](employee:" + item.id + ") ";
+        ta.value = before + token + after;
+        var caret = (before + token).length;
+        ta.setSelectionRange(caret, caret);
+        cbAtClose();
+        ta.focus();
+        cbSyncSend();
+    }
+
+    var taAt = document.getElementById("cbCommentBody");
+    if (taAt) {
+        taAt.addEventListener("input", function () {
+            var tok = cbAtToken(taAt);
+            if (!tok) { cbAtClose(); return; }
+            cbAt.from = tok.from; cbAt.to = tok.to;
+            clearTimeout(cbAt.timer);
+            // Debounced, and each reply carries its request number: a slow answer for "a" must not
+            // land on top of the list for "ahm" typed after it.
+            var seq = ++cbAt.seq;
+            cbAt.timer = setTimeout(function () {
+                fetch("/Tasks/MentionSearch?q=" + encodeURIComponent(tok.q))
+                    .then(function (r) { return r.ok ? r.json() : []; })
+                    .then(function (list) {
+                        if (seq !== cbAt.seq) return;   // a stale answer
+                        cbAt.items = list || []; cbAt.idx = 0;
+                        cbAtRender();
+                    })
+                    .catch(cbAtClose);
+            }, 160);
+        });
+
+        taAt.addEventListener("keydown", function (e) {
+            if (!cbAt.items.length) return;   // menu closed: every key keeps its normal meaning
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
+                cbAt.idx = (cbAt.idx + (e.key === "ArrowDown" ? 1 : -1) + cbAt.items.length) % cbAt.items.length;
+                cbAtRender();
+            } else if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                cbAtInsert(taAt, cbAt.items[cbAt.idx]);
+            } else if (e.key === "Escape") {
+                e.preventDefault(); cbAtClose();
+            }
+        }, true);   // capture: ahead of the Ctrl+Enter send handler
+        taAt.addEventListener("blur", function () { setTimeout(cbAtClose, 150); });
+    }
+
+    var atMenu = document.getElementById("cbAtMenu");
+    if (atMenu) atMenu.addEventListener("mousedown", function (e) {
+        // mousedown, not click: the textarea's blur would close the menu before a click landed.
+        var row = e.target.closest(".cb-at-item");
+        if (!row) return;
+        e.preventDefault();
+        cbAtInsert(document.getElementById("cbCommentBody"), cbAt.items[+row.dataset.i]);
+    });
+
+    // ---- THE TIME LOG --------------------------------------------------------------------
+    // Fetched on open, into the modal, with the section-scoped veil - no page load, and a
+    // refusal wears the house notice rather than an alert.
+    window.cbOpenTimeLog = function () {
+        var box = document.getElementById("cbTimeLogBody"); if (!box) return;
+        // taskId lives in the scope of the other script block, so it is read from the DOM        // here - the hidden field is the one thing both blocks can see.
+        var tid = (document.getElementById("cbTaskId") || {}).value;
+        new bootstrap.Modal(document.getElementById("cbTimeLogModal")).show();
+        box.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div>';
+        cbBusy("cbTimeLogPane", true);
+        fetch("/Tasks/TimesheetLines?taskId=" + encodeURIComponent(tid),
+              { headers: { "X-Requested-With": "fetch" } })
+            .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+            .then(function (res) {
+                var rows = (res && res.lines) || [];
+                if (!rows.length) {
+                    box.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا وقت مسجّل على هذه المهمة", "No time logged on this task")</div>';
+                    return;
+                }
+                // NEWEST FIRST, and a total - the question behind "where is the log" is almost
+                // always "how much", so the sum is on screen rather than left to be added up.
+                var total = 0;
+                var body = rows.map(function (l) {
+                    total += Number(l.hours) || 0;
+                    return '<div class="cb-row d-flex align-items-center gap-3 px-2 py-3">' +
+                        '<span class="badge badge-light-primary fs-8 fw-bold">' +
+                            '<span class="cb-glyph me-2"></span>' +
+                            esc2(l.source || "") + '</span>' +
+                        '<span class="flex-grow-1 fs-7 text-gray-900 min-w-0 text-truncate">' +
+                            esc2(l.employeeName || "") + '</span>' +
+                        '<span class="text-muted fs-8" dir="ltr" style="unicode-bidi:isolate">' +
+                            esc2(l.workDate || "") + '</span>' +
+                        '<span class="fw-bold fs-6 text-gray-900" dir="ltr"' +
+                            ' style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">' +
+                            (Number(l.hours) || 0).toFixed(2) + '</span>' +
+                        '<span class="text-muted fs-8">@T("س", "h")</span>' +
+                    '</div>';
+                }).join("");
+                box.innerHTML = body +
+                    '<div class="d-flex flex-stack border-top border-gray-300 mt-2 pt-3 px-2">' +
+                        '<span class="text-muted fs-7">@T("الإجمالي", "Total")</span>' +
+                        '<span class="fw-bold fs-4 text-primary" dir="ltr"' +
+                            ' style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">' +
+                            total.toFixed(2) + ' <span class="fs-7 text-muted">@T("س", "h")</span></span>' +
+                    '</div>';
+            })
+            .catch(function () {
+                cbShowRefusal("cbTimeLogBody", { error: "@T("تعذّر تحميل سجل الوقت", "Could not load the time log")" });
+            })
+            .then(function () { cbBusy("cbTimeLogPane", false); });
+    };
+})();
+    </script>
 }
+
+@* ATTACHMENT MODALS. Two, because they answer different questions: what am I about to
+   attach, and what is in this file. Both are plain Bootstrap modals - the same component
+   the task editor on the list screen already uses. *@
+@* THE TIME LOG. Read-only: this screen shows what was recorded, it does not edit it - the
+   entries belong to the timesheet, and an edit here would need its own approval story. *@
+<div class="modal fade" id="cbTimeLogModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header py-4">
+        <h3 class="modal-title fs-5">@T("سجل الوقت", "Time log")</h3>
+        <div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal">
+            <i class="ki-outline ki-cross fs-1"></i></div>
+      </div>
+      <div class="modal-body pt-2" id="cbTimeLogPane">
+        <div id="cbTimeLogBody">
+            <div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* A feed reads as one column: a hairline between items and a tint on hover, instead of a
+   hard border drawn around every row. *@
+<style>
+    .cb-feed-item { border-bottom: 1px solid var(--bs-gray-200); transition: background-color .12s ease; }
+    .cb-feed-item:last-child { border-bottom: 0; }
+    .cb-feed-item:hover { background-color: var(--bs-gray-100); border-radius: .5rem; }
+    /* ONE SIZE FOR EVERY IMAGE. Each preview was scaling to its own aspect ratio, so a wide
+       screenshot and a tall one came out different sizes and the column looked ragged. The frame
+       is fixed and the image covers it; the full, uncropped picture is one click away in the
+       viewer, which is what a feed does. */
+    .cb-feed-media {
+        width: 100%;
+        max-width: 480px;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border-radius: .5rem;
+    }
+    .cb-feed-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* Each paragraph still renders in its own direction - Arabic reads right-to-left inside the
+       line - but the LINE always starts on the column edge, so the name, the body and the media
+       share one edge instead of the body jumping to the far side. */
+    /* `start` was not enough: under unicode-bidi:plaintext it resolves against the PARAGRAPH's
+       own direction, so an Arabic body still aligned right while the English name above it
+       aligned left. Alignment must follow the DOCUMENT, so it is stated per document direction;
+       the paragraph keeps rendering in its own direction, which is the part that must be auto. */
+    .cb-feed-body { unicode-bidi: plaintext; white-space: pre-wrap; overflow-wrap: anywhere; }
+    html[dir="rtl"] .cb-feed-body, [dir="rtl"] .cb-feed-body { text-align: right; }
+    html:not([dir="rtl"]) .cb-feed-body { text-align: left; }
+
+
+    /* READ MORE. Four lines, then a toggle - and only when it really overflows. */
+    .cb-clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .cb-more { background: none; border: 0; padding: 0; font-weight: 600; }
+
+    /* ONE row treatment for every list on this card - checklist, dependencies, feed: a hairline
+       between rows and a tint on hover, never a border drawn around each one, and none under the
+       last row. The delete stays quiet until the row is pointed at: it was a filled danger block
+       on every line, which made destroying a row the loudest thing on the screen. */
+    .cb-row { border-bottom: 1px solid var(--bs-gray-200); transition: background-color .12s ease; }
+    .cb-row:last-child { border-bottom: 0; }
+    .cb-row:hover { background-color: var(--bs-gray-100); border-radius: .5rem; }
+    .cb-row-del { opacity: .4; transition: opacity .12s ease; }
+    .cb-row:hover .cb-row-del, .cb-row-del:focus-visible { opacity: 1; }
+
+    /* A MENTION READS AS A NAME, not as its token. The author types (or picks) "@@[Ali](employee:7)";
+       leaving that on screen would show the reader the machinery. Brand tokens only - the chip must
+       stay legible on the feed ground and in either theme. */
+    /* .cb-mention now lives in crossbuy-brand.css - a second screen renders mentions too, and a
+       class defined in one page's <style> block is unreachable from the other. */
+
+    /* THE PICKER. Anchored to the composer, not to the page, so it follows the box when the
+       textarea grows; inset-inline-start keeps it on the reading edge in both directions. */
+    #cbComposer { position: relative; }
+    .cb-at-menu {
+        position: absolute; z-index: 1056;   /* above the composer, below a Bootstrap modal (1055) */
+        inset-inline-start: .75rem; inset-inline-end: auto;
+        min-width: 260px; max-width: 360px; max-height: 264px; overflow-y: auto;
+        background: var(--bs-body-bg); border: 1px solid var(--bs-gray-300);
+        border-radius: .475rem; box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.12);
+        padding: .25rem;
+    }
+    .cb-at-item { display: flex; align-items: center; gap: .5rem; padding: .35rem .5rem;
+        border-radius: .375rem; cursor: pointer; }
+    .cb-at-item.active, .cb-at-item:hover { background: var(--cb-brand-surface); }
+    .cb-at-item img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .cb-at-fallback { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--cb-brand-surface); color: var(--cb-brand-ink); font-weight: 600; font-size: 11px; }
+</style>
+
+<div class="modal fade" id="cbPreUploadModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header py-4">
+        <h3 class="fw-bold m-0">@T("معاينة قبل الإرفاق", "Preview before attaching")</h3>
+        <div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+      </div>
+      <div class="modal-body pt-2" id="cbPreUploadBody"></div>
+      <div class="modal-footer py-4">
+        <button type="button" class="btn btn-sm btn-light" onclick="cbClearFiles()" data-bs-dismiss="modal">@T("إلغاء المرفقات", "Clear attachments")</button>
+        <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal">@T("تم", "Keep them")</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="cbViewerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <div class="modal-header py-4">
+        <h3 class="fw-bold m-0 text-truncate" id="cbViewerTitle"></h3>
+        <div class="d-flex align-items-center gap-2">
+          <a id="cbViewerOpen" class="btn btn-sm btn-light-primary" target="_blank" rel="noopener">
+            <i class="ki-outline ki-exit-right-corner fs-5"></i>@T("افتح في صفحة", "Open in a page")</a>
+          <a id="cbViewerDownload" class="btn btn-sm btn-light" download>
+            <i class="ki-outline ki-cloud-download fs-5"></i>@SR["Download"]</a>
+          <div class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+        </div>
+      </div>
+      <div class="modal-body pt-2 text-center" id="cbViewerBody"></div>
+    </div>
+  </div>
+</div>
+
+

@@ -173,7 +173,7 @@ namespace CrossBuy.BL
 				decimal prevExec = ExecValue(1m, boqValue, 0m, prevMan ?? 0m);
 				model.Lines.Add(new ProgressLineView
 				{
-					BoqItemId = null, Description = "المشروع (بلا BOQ)", BoqQty = 0m, UnitPrice = 0m, BoqValue = boqValue,
+					BoqItemId = null, Description = "Project (no BOQ)", BoqQty = 0m, UnitPrice = 0m, BoqValue = boqValue,
 					PrevCumulativeQty = 0m, PrevExecutedValue = prevExec, CumulativeQty = 0m, ManualPercent = man,
 					Percent = man.HasValue ? Math.Min(Math.Max(man.Value, 0m), 100m) : 0m, ExecutedValue = exec, PeriodValue = R(exec - prevExec)
 				});
@@ -189,14 +189,14 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int id)> SaveMeasurementAsync(int companyId, int projectId, int measurementId, DateTime date, string? note, List<ProgressRowInput> rows, int? userId)
 		{
 			var project = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
-			if (project == null) return (false, "المشروع غير موجود", 0);
+			if (project == null) return (false, "Project not found", 0);
 
 			ProjectProgress hdr;
 			if (measurementId > 0)
 			{
 				hdr = await _db.ProjectProgresses.Include(p => p.Lines).FirstOrDefaultAsync(p => p.ID == measurementId && p.CompanyID == companyId && p.ProjectId == projectId)
-					?? throw new InvalidOperationException("القياس غير موجود");
-				if (hdr.Status != "Draft") return (false, "لا يمكن تعديل قياس مؤكَّد", 0);
+					?? throw new InvalidOperationException("Measurement not found");
+				if (hdr.Status != "Draft") return (false, "A confirmed measurement cannot be edited", 0);
 				_db.ProjectProgressLines.RemoveRange(hdr.Lines);
 				hdr.Lines.Clear();
 			}
@@ -205,7 +205,7 @@ namespace CrossBuy.BL
 				// a new measurement's date must not precede the latest CONFIRMED measurement
 				var lastConfirmed = await _db.ProjectProgresses.Where(p => p.CompanyID == companyId && p.ProjectId == projectId && p.Status == "Confirmed")
 					.OrderByDescending(p => p.MeasurementNo).Select(p => (DateTime?)p.MeasurementDate).FirstOrDefaultAsync();
-				if (lastConfirmed.HasValue && date.Date < lastConfirmed.Value.Date) return (false, "تاريخ القياس لا يسبق آخر قياس مؤكَّد", 0);
+				if (lastConfirmed.HasValue && date.Date < lastConfirmed.Value.Date) return (false, "The measurement date cannot precede the last confirmed measurement", 0);
 				int nextNo = (await _db.ProjectProgresses.Where(p => p.CompanyID == companyId && p.ProjectId == projectId).Select(p => (int?)p.MeasurementNo).MaxAsync() ?? 0) + 1;
 				hdr = new ProjectProgress { CompanyID = companyId, ProjectId = projectId, MeasurementNo = nextNo, Status = "Draft", CreatedAt = DateTime.UtcNow, CreatedBy = userId };
 				_db.ProjectProgresses.Add(hdr);
@@ -256,7 +256,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> ConfirmAsync(int companyId, int id)
 		{
 			var hdr = await _db.ProjectProgresses.FirstOrDefaultAsync(p => p.ID == id && p.CompanyID == companyId);
-			if (hdr == null) return (false, "القياس غير موجود");
+			if (hdr == null) return (false, "Measurement not found");
 			hdr.Status = "Confirmed";
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -265,8 +265,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)
 		{
 			var hdr = await _db.ProjectProgresses.Include(p => p.Lines).FirstOrDefaultAsync(p => p.ID == id && p.CompanyID == companyId);
-			if (hdr == null) return (false, "القياس غير موجود");
-			if (hdr.Status != "Draft") return (false, "لا يمكن حذف قياس مؤكَّد");
+			if (hdr == null) return (false, "Measurement not found");
+			if (hdr.Status != "Draft") return (false, "A confirmed measurement cannot be deleted");
 			_db.ProjectProgressLines.RemoveRange(hdr.Lines);
 			_db.ProjectProgresses.Remove(hdr);
 			await _db.SaveChangesAsync();

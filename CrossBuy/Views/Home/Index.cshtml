@@ -6,7 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
 
 <div class="text-center">
+    @* The second heading was a scaffold artifact: it printed the SAME greeting again from a
+       "Welcome (Arabic)" key whose English resource still held "مرحبا", so an English page
+       showed a duplicate title in Arabic. One localized greeting is the whole heading. *@
     <h1 class="display-4">@Localizer["Welcome"]</h1>
-    <h1 class="display-4" style="font-family:Cairo">@Localizer["Welcome (Arabic)"]</h1>
     <p>@Localizer["Learn about"] <a href="https://learn.microsoft.com/aspnet/core">@Localizer["building Web apps with ASP.NET Core"]</a>.</p>
 </div>

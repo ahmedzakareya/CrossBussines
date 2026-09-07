@@ -35,7 +35,7 @@
                             <div class="col-12 d-flex justify-content-end"><button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div>
                         </form>
                         <div class="table-responsive"><table class="table table-row-dashed align-middle gy-2">
-                            <thead><tr class="fw-bold fs-8 text-muted text-uppercase"><th>@SR["Item"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Due"]</th><th></th></tr></thead>
+                            <thead><tr class="fw-bold fs-8 text-muted text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Item"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Due"]</th><th></th></tr></thead>
                             <tbody>
                             @if (!demands.Any()) { <tr><td colspan="4" class="text-center text-muted py-5">@Localizer["Add an item to the demand."]</td></tr> }
                             @foreach (var d in demands)
@@ -56,7 +56,7 @@
                         {
                             <div class="d-flex align-items-center gap-2">
                                 <form asp-action="GeneratePlanWorkOrders" method="post" class="d-flex align-items-center gap-2" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Create work orders for all manufactured shortages?"]">@Html.AntiForgeryToken()<input type="hidden" name="planId" value="@plan?.ID" />
-                                    <select name="warehouseId" class="form-select form-select-sm form-select-solid w-150px" required>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select>
+                                    <select name="warehouseId" class="form-select form-select-sm form-select-solid w-150px" required>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select>
                                     <button class="btn btn-sm btn-success"><i class="ki-outline ki-check fs-3"></i>@Localizer["Generate WOs"]</button>
                                 </form>
                             </div>
@@ -69,7 +69,7 @@
                             <div><span class="text-muted fs-8 d-block">@Localizer["To buy"]</span><span class="fs-3 fw-bold text-warning">@buyShort</span></div>
                         </div>
                         <div class="table-responsive"><table class="table table-row-bordered align-middle gy-2">
-                            <thead><tr class="fw-bold fs-8 text-muted text-uppercase"><th>@SR["Item"]</th><th>@SR["Type"]</th><th class="text-end">@Localizer["Gross"]</th><th class="text-end">@Localizer["On hand"]</th><th class="text-end">@Localizer["Net"]</th></tr></thead>
+                            <thead><tr class="fw-bold fs-8 text-muted text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Item"]</th><th>@SR["Type"]</th><th class="text-end">@Localizer["Gross"]</th><th class="text-end">@Localizer["On hand"]</th><th class="text-end">@Localizer["Net"]</th></tr></thead>
                             <tbody>
                             @if (!mrp.Any()) { <tr><td colspan="5" class="text-center text-muted py-6">@Localizer["Add a demand to see requirements."]</td></tr> }
                             @foreach (var r in mrp)

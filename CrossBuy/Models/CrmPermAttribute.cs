@@ -50,7 +50,7 @@ namespace CrossBuy.Models
 
 		private static void Deny(ActionExecutingContext context)
 		{
-			if (context.Controller is Controller c) c.TempData["CrmErr"] = "ليست لديك صلاحية لتنفيذ هذا الإجراء";
+			if (context.Controller is Controller c) c.TempData["CrmErr"] = "You do not have permission to perform this action";
 			context.Result = new RedirectToActionResult("Index", "Crm", null);
 		}
 	}

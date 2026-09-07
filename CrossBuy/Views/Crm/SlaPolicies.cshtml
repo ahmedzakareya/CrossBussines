@@ -7,7 +7,7 @@
     var priorities = new[] { ("Urgent", Localizer["Urgent"].Value), ("High", Localizer["High"].Value), ("Normal", Localizer["Normal"].Value), ("Low", Localizer["Low"].Value) };
     string prNm(string p) => priorities.FirstOrDefault(x => x.Item1 == p).Item2 ?? p;
     // brand-safe priority colours (match the Tickets screen): red urgent / amber high / green normal / gray low
-    string prStyle(string p) => p switch { "Urgent" => "background:#fdeaea;color:#d92d20;", "High" => "background:#fef3e2;color:#b96a00;", "Low" => "background:#f2f4f7;color:#475467;", _ => "background:#eaf3ef;color:#13433a;" };
+    string prStyle(string p) => p switch { "Urgent" => "background:#fdeaea;color:#d92d20;", "High" => "background:#fef3e2;color:#b96a00;", "Low" => "background:#f2f4f7;color:#475467;", _ => "background:#E7F0FF;color:#0E4A9E;" };
     string mins(int m) => m >= 60 ? (m / 60) + Localizer["hUnit"].Value + (m % 60 > 0 ? " " + (m % 60) + Localizer["mUnit"].Value : "") : m + Localizer["mUnit"].Value;
 }
 <div class="d-flex flex-column flex-column-fluid">
@@ -46,7 +46,7 @@
         <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Policies"] (@policies.Count)</div></div>
             <div class="card-body">
                 <div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Name"]</th><th class="text-center">@Localizer["Priority"]</th><th class="text-center">@Localizer["First response"]</th><th class="text-center">@Localizer["Resolution"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Name"]</th><th class="text-center">@Localizer["Priority"]</th><th class="text-center">@Localizer["First response"]</th><th class="text-center">@Localizer["Resolution"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
                     <tbody>
                     @foreach (var p in policies)
                     {
@@ -55,7 +55,7 @@
                             <td class="text-center"><span class="badge fw-bold" style="@prStyle(p.Priority)">@prNm(p.Priority)</span></td>
                             <td class="text-center">@mins(p.FirstResponseMins)</td>
                             <td class="text-center">@mins(p.ResolutionMins)</td>
-                            <td class="text-center"><span class="badge fw-bold" style="@(p.IsActive ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@(p.IsActive ? SR["Active"].Value : Localizer["Off"].Value)</span></td>
+                            <td class="text-center"><span class="badge fw-bold" style="@(p.IsActive ? "background:#E7F0FF;color:#0E4A9E;" : "background:#f2f4f7;color:#475467;")">@(p.IsActive ? SR["Active"].Value : Localizer["Off"].Value)</span></td>
                             <td class="text-end pe-4"><button class="btn btn-sm btn-icon btn-light-primary" onclick="slaEdit(this)" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></button></td>
                         </tr>
                     }

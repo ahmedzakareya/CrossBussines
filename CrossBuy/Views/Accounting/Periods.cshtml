@@ -4,7 +4,7 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
-    string BadgeStyle(string s) => s switch { "Open" => "background:#e9f1ee;color:#13433a;", "SoftClosed" => "background:#f1f3f7;color:#7e8299;", "Closed" => "background:#e4e6ef;color:#3f4254;", _ => "background:#f1f3f7;color:#7e8299;" };
+    string BadgeStyle(string s) => s switch { "Open" => "background:#E7F0FF;color:#0E4A9E;", "SoftClosed" => "background:#f1f3f7;color:#7e8299;", "Closed" => "background:#e4e6ef;color:#3f4254;", _ => "background:#f1f3f7;color:#7e8299;" };
     string Txt(string s) => s switch { "Open" => Localizer["Open"].Value, "SoftClosed" => Localizer["Soft-closed"].Value, "Closed" => Localizer["Closed"].Value, _ => s };
 }
 
@@ -36,8 +36,8 @@
                 <div class="card-body pt-0 pb-4">
                     <div class="table-responsive">
                         <table class="table table-row-dashed align-middle gy-4 mb-0" id="pTable" style="font-variant-numeric:tabular-nums;">
-                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
-                                <tr>
+                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                <tr style="border-bottom:2px solid #0E4A9E;">
                                     <th>@Localizer["Year"]</th>
                                     <th>@Localizer["Period"]</th>
                                     <th>@SR["From"]</th>
@@ -59,7 +59,7 @@
                                             <div class="d-flex gap-2 justify-content-center">
                                                 @if (p.Status != "Open")
                                                 {
-                                                    <form asp-action="SetPeriodStatus" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="status" value="Open" /><button class="btn btn-sm py-1 px-3" style="background:#e9f1ee;color:#13433a;">@Localizer["Reopen"]</button></form>
+                                                    <form asp-action="SetPeriodStatus" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id" /><input type="hidden" name="status" value="Open" /><button class="btn btn-sm py-1 px-3" style="background:#E7F0FF;color:#0E4A9E;">@Localizer["Reopen"]</button></form>
                                                 }
                                                 @if (p.Status != "SoftClosed")
                                                 {

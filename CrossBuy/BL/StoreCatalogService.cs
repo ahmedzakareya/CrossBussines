@@ -24,10 +24,11 @@ namespace CrossBuy.BL
 		// featured-categories carousel = the ItemCategories flagged for the storefront (have an icon)
 		public async Task<List<StoreCategoryVM>> GetCategoriesAsync(int companyId)
 		{
+			var arabic = DisplayName.IsArabic;   // captured per call: the culture must not be frozen into a cached query
 			var list = await _db.ItemCategories.AsNoTracking()
 				.Where(c => c.CompanyID == companyId && c.IsActive && c.StoreIcon != null)
 				.OrderBy(c => c.ID)
-				.Select(c => new StoreCategoryVM { Id = c.ID, Name = c.Name, Icon = c.StoreIcon, ItemsCount = c.StoreItemsCount ?? 0 })
+				.Select(c => new StoreCategoryVM { Id = c.ID, Name = arabic ? c.Name : ((c.NameEn != null && c.NameEn != "") ? c.NameEn : c.Name), Icon = c.StoreIcon, ItemsCount = c.StoreItemsCount ?? 0 })
 				.ToListAsync();
 			foreach (var c in list) c.Token = _ids.Protect(c.Id);   // encrypt Id for the URL (in memory — can't run in SQL)
 			return list;
@@ -36,6 +37,7 @@ namespace CrossBuy.BL
 		// products = storefront Items (ItemCode STORE-*), with the category name + the display extras
 		public async Task<List<StoreProductVM>> GetProductsAsync(int companyId)
 		{
+			var arabic = DisplayName.IsArabic;   // captured per call: the culture must not be frozen into a cached query
 			var list = await (from p in _db.Items.AsNoTracking()
 				 where p.CompanyID == companyId && p.IsActive && p.ItemCode.StartsWith("STORE-")
 				 join c in _db.ItemCategories.AsNoTracking() on p.ItemCategoryId equals c.ID into cj
@@ -44,8 +46,8 @@ namespace CrossBuy.BL
 				 select new StoreProductVM
 				 {
 					 Id = p.ID,
-					 Name = p.Name,
-					 Category = c != null ? c.Name : null,
+					 Name = arabic ? p.Name : ((p.NameEn != null && p.NameEn != "") ? p.NameEn : p.Name),
+					 Category = c == null ? null : (arabic ? c.Name : ((c.NameEn != null && c.NameEn != "") ? c.NameEn : c.Name)),
 					 Price = p.SalesPrice ?? 0,
 					 OldPrice = p.StoreOldPrice,
 					 DefaultImage = p.ImagePath,

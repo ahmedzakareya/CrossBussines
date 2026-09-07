@@ -22,17 +22,17 @@
             <div class="card-body p-9">
                 <div class="d-flex flex-wrap flex-sm-nowrap align-items-center">
                     <div class="symbol symbol-100px symbol-circle me-7 mb-4">
-                        <img src="@img" alt="@Model.FullName" style="object-fit:cover;" />
+                        <img src="@img" alt="@CrossBuy.BL.EmployeeNames.Of(Model.FullName, Model.FullNameEn)" style="object-fit:cover;" />
                     </div>
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
                             <span class="text-gray-900 fw-bold fs-2">@(isAr ? Model.FullName : (string.IsNullOrWhiteSpace(Model.FullNameEn) ? Model.FullName : Model.FullNameEn))</span>
-                            <span class="badge fw-bold fs-8 px-2 py-1" style="background:#e9f1ee;color:#13433a;">@(isAr ? "احترافي" : "Professional")</span>
+                            <span class="badge fw-bold fs-8 px-2 py-1" style="background:#E7F0FF;color:#0E4A9E;">@(isAr ? "احترافي" : "Professional")</span>
                         </div>
                         <div class="d-flex flex-wrap gap-4 text-muted fw-semibold fs-6">
-                            @if (!string.IsNullOrWhiteSpace(job)) { <span class="d-flex align-items-center"><i class="ki-outline ki-briefcase fs-5 me-1" style="color:#13433a;"></i>@job</span> }
-                            @if (!string.IsNullOrWhiteSpace(branch)) { <span class="d-flex align-items-center"><i class="ki-outline ki-geolocation fs-5 me-1" style="color:#13433a;"></i>@branch</span> }
-                            <span class="d-flex align-items-center"><i class="ki-outline ki-sms fs-5 me-1" style="color:#13433a;"></i>@V(Model.Email)</span>
+                            @if (!string.IsNullOrWhiteSpace(job)) { <span class="d-flex align-items-center"><i class="ki-outline ki-briefcase fs-5 me-1" style="color:#0E4A9E;"></i>@job</span> }
+                            @if (!string.IsNullOrWhiteSpace(branch)) { <span class="d-flex align-items-center"><i class="ki-outline ki-geolocation fs-5 me-1" style="color:#0E4A9E;"></i>@branch</span> }
+                            <span class="d-flex align-items-center"><i class="ki-outline ki-sms fs-5 me-1" style="color:#0E4A9E;"></i>@V(Model.Email)</span>
                         </div>
                     </div>
                 </div>

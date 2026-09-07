@@ -9,7 +9,7 @@
     var name = isAr ? (ViewBag.NameAr ?? ViewBag.NameEn) : (ViewBag.NameEn ?? ViewBag.NameAr);
     string nm(string? a, string? b) => (isAr ? a : b)?.Trim().Length > 0 ? (isAr ? a : b)! : (b ?? a ?? "-");
     var palette = new[] { "primary", "success", "warning", "info", "danger" };
-    var barHex = new[] { "#13433a", "#0d9edc", "#f6c000", "#7239ea", "#f1416c" };
+    var barHex = new[] { "#0E4A9E", "#0d9edc", "#f6c000", "#7239ea", "#f1416c" };
     var recent = ViewBag.Recent as List<LeaveRequest> ?? new List<LeaveRequest>();
     var leaveDays = ViewBag.LeaveDays as HashSet<int> ?? new HashSet<int>();
     DateTime now = ViewBag.Now ?? DateTime.UtcNow;
@@ -49,13 +49,13 @@
         <div class="app-container container-fluid">
 
             <!--begin::Total requests + trend-->
-            <div class="card mb-6" style="background:linear-gradient(135deg,#13433a,#1f6253);border:0;">
+            <div class="card mb-6" style="background:linear-gradient(135deg,#0E4A9E,#145DBF);border:0;">
                 <div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-6">
                     <div class="flex-shrink-0">
                         <div class="text-white-50 fw-semibold fs-6 mb-1">@Localizer["Total requests"]</div>
                         <div class="d-flex align-items-end gap-3">
                             <span class="text-white fw-bold" style="font-size:3rem;line-height:1;">@Model.Total</span>
-                            <span class="badge mb-2 fw-bold" style="background:#fff;color:#13433a;"><i class="ki-outline ki-arrow-@(Model.PctChange >= 0 ? "up" : "down") fs-7 me-1" style="color:#13433a;"></i>@Math.Abs(Model.PctChange)%</span>
+                            <span class="badge mb-2 fw-bold" style="background:#fff;color:#0E4A9E;"><i class="ki-outline ki-arrow-@(Model.PctChange >= 0 ? "up" : "down") fs-7 me-1" style="color:#0E4A9E;"></i>@Math.Abs(Model.PctChange)%</span>
                         </div>
                         <div class="text-white-50 fs-8 mt-1">@Localizer["vs last month"]</div>
                     </div>
@@ -148,7 +148,7 @@
                             {
                                 <div class="table-responsive">
                                 <table class="table align-middle table-row-dashed fs-7 gy-3">
-                                    <thead><tr class="text-muted fw-bold fs-8 text-uppercase">
+                                    <thead><tr class="text-muted fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                                         <th>@SR["Type"]</th><th>@SR["From"]</th><th>@SR["To"]</th><th>@Localizer["Days"]</th><th class="text-end">@SR["Status"]</th>
                                     </tr></thead>
                                     <tbody>
@@ -223,13 +223,13 @@
                                     var isLeave = leaveDays.Contains(day);
                                     var isToday = day == now.Day;
                                     var cls = isLeave ? "text-white" : (isToday ? "text-white" : "text-gray-700");
-                                    var bg = isLeave ? "background:#13433a;" : (isToday ? "background:#1f6253;" : "");
+                                    var bg = isLeave ? "background:#0E4A9E;" : (isToday ? "background:#145DBF;" : "");
                                     <span class="d-inline-flex align-items-center justify-content-center rounded-circle fw-semibold fs-7 @cls" style="width:36px;height:36px;@bg">@day</span>
                                 }
                             </div>
                             <div class="d-flex flex-wrap gap-5 mt-5 pt-4 border-top border-gray-200 fs-8 fw-semibold text-gray-700">
-                                <span class="d-flex align-items-center"><span class="d-inline-block rounded-circle me-2" style="width:14px;height:14px;background:#13433a;"></span>@Localizer["Leave days"]</span>
-                                <span class="d-flex align-items-center"><span class="d-inline-block rounded-circle me-2" style="width:14px;height:14px;background:#1f6253;"></span>@Localizer["Today"]</span>
+                                <span class="d-flex align-items-center"><span class="d-inline-block rounded-circle me-2" style="width:14px;height:14px;background:#0E4A9E;"></span>@Localizer["Leave days"]</span>
+                                <span class="d-flex align-items-center"><span class="d-inline-block rounded-circle me-2" style="width:14px;height:14px;background:#145DBF;"></span>@Localizer["Today"]</span>
                             </div>
                         </div>
                     </div>
@@ -271,7 +271,7 @@
                         chart: { type: 'donut', width: 320, fontFamily: FF },
                         series: [@Html.Raw(donutSeries)],
                         labels: [@Html.Raw(donutLabels)],
-                        colors: ['#1f6253', '#2f9e6e', '#d4a017', '#22CCE2', '#1f6253'],
+                        colors: ['#145DBF', '#2f9e6e', '#F59E0B', '#22CCE2', '#145DBF'],
                         legend: { position: 'bottom', fontSize: '13px', fontFamily: FF },
                         dataLabels: { enabled: true, style: { fontFamily: FF }, formatter: function (v) { return Math.round(v) + '%'; } },
                         tooltip: { style: { fontFamily: FF } },

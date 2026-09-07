@@ -27,7 +27,7 @@ namespace CrossBuy.Controllers
 		// in HM-0. "Weight" reuses the existing key; the rest are the hypermarket-specific keys.
 		public static readonly (string key, string ar, string en)[] Capabilities = new[]
 		{
-			("Weight",        "الوزن",            "Weight"),
+			("Weight",        "Weight",            "Weight"),
 			("BarcodeMulti",  "باركود متعدّد",     "Multi-barcode"),
 			("ExpiryControl", "ضبط الصلاحية",      "Expiry control"),
 			("Promotions",    "العروض",           "Promotions"),

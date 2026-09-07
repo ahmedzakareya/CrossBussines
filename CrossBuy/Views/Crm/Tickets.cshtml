@@ -21,9 +21,9 @@
             string Raw(decimal v) => v.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
             // (value, raw, label, sub, icon, bg-tint, fg-color)
             var cards = new (int value, string label, string sub, string icon, string bg, string fg)[] {
-                (s.open, Localizer["Open tickets"].Value, Localizer["Active"].Value, "ki-questionnaire-tablet", "#eaf3ef", "#13433a"),
-                (s.breachedFr, Localizer["First-response breached"].Value, s.breachedFr > 0 ? Localizer["Breached"].Value : Localizer["On track"].Value, "ki-timer", s.breachedFr > 0 ? "#fdeaea" : "#eaf3ef", s.breachedFr > 0 ? "#d92d20" : "#13433a"),
-                (s.breachedRes, Localizer["Resolution breached"].Value, s.breachedRes > 0 ? Localizer["Breached"].Value : Localizer["On track"].Value, "ki-shield-cross", s.breachedRes > 0 ? "#fdeaea" : "#eaf3ef", s.breachedRes > 0 ? "#d92d20" : "#13433a"),
+                (s.open, Localizer["Open tickets"].Value, Localizer["Active"].Value, "ki-questionnaire-tablet", "#E7F0FF", "#0E4A9E"),
+                (s.breachedFr, Localizer["First-response breached"].Value, s.breachedFr > 0 ? Localizer["Breached"].Value : Localizer["On track"].Value, "ki-timer", s.breachedFr > 0 ? "#fdeaea" : "#E7F0FF", s.breachedFr > 0 ? "#d92d20" : "#0E4A9E"),
+                (s.breachedRes, Localizer["Resolution breached"].Value, s.breachedRes > 0 ? Localizer["Breached"].Value : Localizer["On track"].Value, "ki-shield-cross", s.breachedRes > 0 ? "#fdeaea" : "#E7F0FF", s.breachedRes > 0 ? "#d92d20" : "#0E4A9E"),
             };
         }
         <div class="row g-3 g-xl-5 mb-5">
@@ -57,7 +57,7 @@
         <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
             <div class="card-toolbar"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">#</th><th>@Localizer["Subject"]</th><th>@SR["Account"]</th><th class="text-center">@Localizer["Priority"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">SLA</th><th>@Localizer["Created"]</th><th class="text-end pe-4">@Localizer["Open"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">#</th><th>@Localizer["Subject"]</th><th>@SR["Account"]</th><th class="text-center">@Localizer["Priority"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">SLA</th><th>@Localizer["Created"]</th><th class="text-end pe-4">@Localizer["Open"]</th></tr></thead>
                 <tbody id="rows"></tbody>
             </table></div>
                 <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>

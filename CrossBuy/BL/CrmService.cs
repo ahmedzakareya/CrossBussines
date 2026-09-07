@@ -298,11 +298,11 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveLeadAsync(int companyId, Lead dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم العميل المحتمل مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Lead name is required");
 			Lead e;
 			if (dto.ID > 0)
 			{
-				e = await _context.Leads.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود");
+				e = await _context.Leads.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == dto.ID) ?? throw new InvalidOperationException("Not found");
 			}
 			else
 			{
@@ -366,8 +366,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int accountId)> ConvertLeadToAccountAsync(int companyId, int leadId, string? userId)
 		{
 			var lead = await _context.Leads.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == leadId);
-			if (lead == null) return (false, "العميل المحتمل غير موجود", 0);
-			if (lead.AccountId.HasValue) return (false, "تم تحويله لحساب بالفعل", lead.AccountId.Value);
+			if (lead == null) return (false, "Lead not found", 0);
+			if (lead.AccountId.HasValue) return (false, "It has already been converted to an account", lead.AccountId.Value);
 			var acc = new CrmAccount
 			{
 				CompanyID = companyId, Name = string.IsNullOrWhiteSpace(lead.Company) ? lead.Name : lead.Company!, Phone = lead.Phone, Email = lead.Email,
@@ -458,7 +458,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> UpdateOpportunityStageAsync(int companyId, int id, string stage)
 		{
 			var o = await _context.Opportunities.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == id);
-			if (o == null) return (false, "الفرصة غير موجودة");
+			if (o == null) return (false, "Opportunity not found");
 			var pid = o.PipelineId ?? await GetDefaultPipelineIdAsync(companyId);
 			var st = await ResolveStageAsync(companyId, pid, stage, null);
 			bool becameWon;
@@ -469,7 +469,7 @@ namespace CrossBuy.BL
 			}
 			else   // no configured pipeline → legacy stage-name behavior
 			{
-				if (string.IsNullOrWhiteSpace(stage)) return (false, "مرحلة غير صحيحة");
+				if (string.IsNullOrWhiteSpace(stage)) return (false, "Invalid stage");
 				becameWon = stage == "Won" && o.Stage != "Won";
 				o.Stage = stage; o.Probability = stage == "Won" ? 100 : (stage == "Lost" ? 0 : o.Probability);
 			}
@@ -506,7 +506,7 @@ namespace CrossBuy.BL
 		}
 		public async Task<(bool ok, string? error, int id)> SavePipelineAsync(int companyId, CrmPipeline dto, List<CrmPipelineStage> stages)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم خط الأنابيب مطلوب", 0);
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Pipeline name is required", 0);
 			CrmPipeline e;
 			if (dto.ID > 0) { e = await _context.CrmPipelines.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); _context.CrmPipelineStages.RemoveRange(_context.CrmPipelineStages.Where(s => s.PipelineId == e.ID)); }
 			else { e = new CrmPipeline { CompanyID = companyId, CreatedAt = DateTime.UtcNow }; _context.CrmPipelines.Add(e); }
@@ -527,7 +527,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SaveOpportunityProductsAsync(int companyId, int oppId, List<OpportunityProduct> lines)
 		{
 			var opp = await _context.Opportunities.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == oppId);
-			if (opp == null) return (false, "الفرصة غير موجودة");
+			if (opp == null) return (false, "Opportunity not found");
 			_context.OpportunityProducts.RemoveRange(_context.OpportunityProducts.Where(p => p.CompanyID == companyId && p.OpportunityId == oppId));
 			decimal total = 0;
 			foreach (var l in (lines ?? new()).Where(l => l.ItemId != null || !string.IsNullOrWhiteSpace(l.ItemDescription)))
@@ -546,13 +546,13 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? quotationId)> ConvertOpportunityToQuotationAsync(int companyId, int oppId, string? userId)
 		{
 			var opp = await _context.Opportunities.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == oppId);
-			if (opp == null) return (false, "الفرصة غير موجودة", null);
-			if (opp.QuotationId.HasValue) return (false, "تم إنشاء عرض سعر لهذه الفرصة بالفعل", opp.QuotationId);
-			if (opp.AccountId == null) return (false, "اربط الفرصة بحساب أولًا", null);
+			if (opp == null) return (false, "Opportunity not found", null);
+			if (opp.QuotationId.HasValue) return (false, "A quotation has already been created for this opportunity", opp.QuotationId);
+			if (opp.AccountId == null) return (false, "Link the opportunity to an account first", null);
 			var products = await _context.OpportunityProducts.AsNoTracking().Where(p => p.CompanyID == companyId && p.OpportunityId == oppId).ToListAsync();
-			if (products.Count == 0) return (false, "أضف بنودًا للفرصة قبل التحويل لعرض سعر", null);
+			if (products.Count == 0) return (false, "Add lines to the opportunity before converting it to a quotation", null);
 			var custId = await EnsureAccountCustomerAsync(companyId, opp.AccountId.Value);
-			if (custId == null) return (false, "تعذّر ربط الحساب بعميل مالي", null);
+			if (custId == null) return (false, "Could not link the account to a financial customer", null);
 
 			var lines = products.Select(p => new SoLineInput
 			{
@@ -560,7 +560,7 @@ namespace CrossBuy.BL
 				DiscountAmount = R2(p.Qty * p.UnitPrice * p.DiscountPercent / 100m), TaxRate = 0
 			}).ToList();
 
-			var (ok, err, q) = await _selling.CreateQuotationAsync(companyId, custId.Value, null, DateTime.Today, null, $"من فرصة CRM: {opp.Title}", lines, userId);
+			var (ok, err, q) = await _selling.CreateQuotationAsync(companyId, custId.Value, null, DateTime.Today, null, $"From CRM opportunity: {opp.Title}", lines, userId);
 			if (!ok) return (false, err, null);
 			opp.QuotationId = q!.ID;
 			await _context.SaveChangesAsync();
@@ -574,7 +574,7 @@ namespace CrossBuy.BL
 			{
 				await _notify.NotifyRoleAsync(companyId, "acc", new[] { "ChiefAccountant", "Accountant" },
 					"فرصة بيعية رابحة 🎉", "Opportunity won 🎉",
-					$"تم ربح الفرصة «{o.Title}» بقيمة {o.Amount:N2}", $"Opportunity \"{o.Title}\" won ({o.Amount:N2})",
+					$"Opportunity «{o.Title}» was won, worth {o.Amount:N2}", $"Opportunity \"{o.Title}\" won ({o.Amount:N2})",
 					"opportunity_won", o.ID);
 			}
 			catch { /* notifications never block the business flow */ }
@@ -596,9 +596,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveOpportunityAsync(int companyId, Opportunity dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Title)) return (false, "عنوان الفرصة مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Title)) return (false, "Opportunity title is required");
 			Opportunity e;
-			if (dto.ID > 0) { e = await _context.Opportunities.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
+			if (dto.ID > 0) { e = await _context.Opportunities.FirstOrDefaultAsync(o => o.CompanyID == companyId && o.ID == dto.ID) ?? throw new InvalidOperationException("Not found"); }
 			else { e = new Opportunity { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() }; _context.Opportunities.Add(e); }
 			var prevStageId = e.StageId; var prevStage = e.Stage;
 			var pid = dto.PipelineId ?? e.PipelineId ?? await GetDefaultPipelineIdAsync(companyId);
@@ -656,7 +656,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveCampaignAsync(int companyId, Campaign dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم الحملة مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Campaign name is required");
 			Campaign e;
 			if (dto.ID > 0) { e = await _context.Campaigns.FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ID == dto.ID) ?? throw new InvalidOperationException("غير موجودة"); }
 			else { e = new Campaign { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() }; _context.Campaigns.Add(e); }
@@ -774,7 +774,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveListAsync(int companyId, CrmMarketingList dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم القائمة مطلوب", 0);
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "List name is required", 0);
 			CrmMarketingList e;
 			if (dto.ID > 0) { e = await _context.CrmMarketingLists.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.ID == dto.ID) ?? throw new InvalidOperationException("غير موجودة"); }
 			else { e = new CrmMarketingList { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = Me() }; _context.CrmMarketingLists.Add(e); }
@@ -841,10 +841,10 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveSlaPolicyAsync(int companyId, CrmSlaPolicy dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم السياسة مطلوب");
-			if (dto.FirstResponseMins <= 0 || dto.ResolutionMins <= 0) return (false, "المدد يجب أن تكون أكبر من صفر");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Policy name is required");
+			if (dto.FirstResponseMins <= 0 || dto.ResolutionMins <= 0) return (false, "The durations must be greater than zero");
 			CrmSlaPolicy e;
-			if (dto.ID > 0) { e = await _context.CrmSlaPolicies.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == dto.ID) ?? throw new InvalidOperationException("غير موجودة"); }
+			if (dto.ID > 0) { e = await _context.CrmSlaPolicies.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == dto.ID) ?? throw new InvalidOperationException("Not found"); }
 			else { e = new CrmSlaPolicy { CompanyID = companyId, CreatedAt = DateTime.UtcNow }; _context.CrmSlaPolicies.Add(e); }
 			e.Name = dto.Name.Trim(); e.Priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority;
 			e.FirstResponseMins = dto.FirstResponseMins; e.ResolutionMins = dto.ResolutionMins; e.IsActive = dto.IsActive;
@@ -887,7 +887,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveTicketAsync(int companyId, CrmTicket dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Subject)) return (false, "عنوان التذكرة مطلوب", 0);
+			if (string.IsNullOrWhiteSpace(dto.Subject)) return (false, "Ticket title is required", 0);
 			var priority = string.IsNullOrWhiteSpace(dto.Priority) ? "Normal" : dto.Priority;
 			CrmTicket e;
 			if (dto.ID > 0)
@@ -957,7 +957,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveScoringRuleAsync(int companyId, CrmScoringRule dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم القاعدة مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Rule name is required");
 			CrmScoringRule e;
 			if (dto.ID > 0) { e = await _context.CrmScoringRules.FirstOrDefaultAsync(r => r.CompanyID == companyId && r.ID == dto.ID) ?? throw new InvalidOperationException("غير موجودة"); }
 			else { e = new CrmScoringRule { CompanyID = companyId, CreatedAt = DateTime.UtcNow }; _context.CrmScoringRules.Add(e); }
@@ -1097,9 +1097,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveActivityAsync(int companyId, Activity dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Subject)) return (false, "موضوع النشاط مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Subject)) return (false, "Activity subject is required");
 			Activity e;
-			if (dto.ID > 0) { e = await _context.Activities.FirstOrDefaultAsync(a => a.CompanyID == companyId && a.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
+			if (dto.ID > 0) { e = await _context.Activities.FirstOrDefaultAsync(a => a.CompanyID == companyId && a.ID == dto.ID) ?? throw new InvalidOperationException("Not found"); }
 			else { e = new Activity { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() }; _context.Activities.Add(e); }
 			e.Type = string.IsNullOrWhiteSpace(dto.Type) ? "Task" : dto.Type; e.Subject = dto.Subject.Trim(); e.SubjectEn = string.IsNullOrWhiteSpace(dto.SubjectEn) ? null : dto.SubjectEn.Trim();
 			e.DueDate = dto.DueDate; e.Done = dto.Done; e.LeadId = dto.LeadId; e.OpportunityId = dto.OpportunityId; e.CustomerId = dto.CustomerId; e.Notes = dto.Notes;
@@ -1176,7 +1176,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveAccountAsync(int companyId, CrmAccount dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم الحساب مطلوب", 0);
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Account name is required", 0);
 			CrmAccount e;
 			if (dto.ID > 0) { e = await _context.CrmAccounts.FirstOrDefaultAsync(a => a.CompanyID == companyId && a.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
 			else { e = new CrmAccount { CompanyID = companyId, CreatedAt = DateTime.UtcNow, CreatedBy = userId, OwnerEmployeeId = dto.OwnerEmployeeId ?? Me() }; _context.CrmAccounts.Add(e); }
@@ -1200,8 +1200,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveContactAsync(int companyId, CrmContact dto)
 		{
-			if (dto.AccountId <= 0) return (false, "الحساب مطلوب");
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم جهة الاتصال مطلوب");
+			if (dto.AccountId <= 0) return (false, "Account is required");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Contact name is required");
 			CrmContact e;
 			if (dto.ID > 0) { e = await _context.CrmContacts.FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ID == dto.ID) ?? throw new InvalidOperationException("غير موجود"); }
 			else { e = new CrmContact { CompanyID = companyId, AccountId = dto.AccountId, CreatedAt = DateTime.UtcNow, OwnerEmployeeId = Me() }; _context.CrmContacts.Add(e); }

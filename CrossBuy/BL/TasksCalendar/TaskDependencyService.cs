@@ -77,15 +77,15 @@ namespace CrossBuy.BL.TasksCalendar
 			int companyId, int predecessorTaskId, int successorTaskId, string kind, int lagDays,
 			int? actorEmployeeId, CancellationToken ct = default)
 		{
-			if (companyId <= 0) return (false, "الشركة غير محددة (unresolved company)", 0);
+			if (companyId <= 0) return (false, "Unresolved company", 0);
 
 			// A task cannot wait for itself. Caught first because it is the one case the graph walk
 			// below would report as a cycle with a confusing single-element path.
 			if (predecessorTaskId == successorTaskId)
-				return (false, "المهمة لا تعتمد على نفسها (a task cannot depend on itself)", 0);
+				return (false, "A task cannot depend on itself", 0);
 
 			if (!TaskDependencyKinds.IsKnown(kind))
-				return (false, "نوع اعتمادية غير معروف (unknown dependency kind)", 0);
+				return (false, "Unknown dependency kind", 0);
 
 			// BOTH tasks must exist in THIS company. Read as a pair so a cross-company id cannot be
 			// smuggled in as one half of the edge.
@@ -93,17 +93,17 @@ namespace CrossBuy.BL.TasksCalendar
 				.Where(t => t.CompanyId == companyId && (t.ID == predecessorTaskId || t.ID == successorTaskId))
 				.Select(t => t.ID).ToListAsync(ct);
 			if (tasks.Count != 2)
-				return (false, "إحدى المهمتين غير موجودة في هذه الشركة (a task was not found in this company)", 0);
+				return (false, "One of the two tasks was not found in this company", 0);
 
 			if (await _db.TaskDependencies.AnyAsync(
 					d => d.CompanyId == companyId && d.PredecessorTaskId == predecessorTaskId
 					     && d.SuccessorTaskId == successorTaskId, ct))
-				return (false, "هذه الاعتمادية موجودة بالفعل (this dependency already exists)", 0);
+				return (false, "This dependency already exists", 0);
 
 			var (wouldCycle, path) = await WouldCreateCycleAsync(companyId, predecessorTaskId, successorTaskId, ct);
 			if (wouldCycle)
 				return (false,
-					"هذه الاعتمادية تُنشئ حلقة مغلقة: " + string.Join(" → ", path) +
+					"This dependency would create a cycle: " + string.Join(" → ", path) +
 					$" (this dependency would create a cycle: {string.Join(" -> ", path)})", 0);
 
 			var edge = new TaskDependency
@@ -125,7 +125,7 @@ namespace CrossBuy.BL.TasksCalendar
 		{
 			var edge = await _db.TaskDependencies
 				.FirstOrDefaultAsync(d => d.ID == id && d.CompanyId == companyId, ct);
-			if (edge == null) return (false, "الاعتمادية غير موجودة (dependency not found)");
+			if (edge == null) return (false, "Dependency not found");
 
 			_db.TaskDependencies.Remove(edge);
 			await _db.SaveChangesAsync(ct);
@@ -206,7 +206,7 @@ namespace CrossBuy.BL.TasksCalendar
 						   .Distinct().ToList();
 			var tasks = await _db.TaskItems.AsNoTracking()
 				.Where(t => t.CompanyId == companyId && ids.Contains(t.ID))
-				.Select(t => new { t.ID, t.Title, t.Status })
+				.Select(t => new { t.ID, t.Title, t.TitleEn, t.Status })
 				.ToDictionaryAsync(t => t.ID, ct);
 
 			return edges.Select(e =>
@@ -217,10 +217,18 @@ namespace CrossBuy.BL.TasksCalendar
 				{
 					Id = e.ID,
 					PredecessorTaskId = e.PredecessorTaskId,
-					PredecessorTitle = p?.Title ?? $"#{e.PredecessorTaskId}",
+					// THE READER'S LANGUAGE. TaskItems.TitleEn exists and is populated; both of this
+					// service's projections read only Title, so the Blocked notice and the Dependencies
+					// tab printed Arabic titles on the English page. The #id fallback stays for a link
+					// whose other end is gone - a name is better than a number, and a number beats blank.
+					PredecessorTitle = p == null
+						? $"#{e.PredecessorTaskId}"
+						: CrossBuy.BL.DisplayName.Of(p.Title, p.TitleEn),
 					PredecessorStatus = p?.Status ?? "",
 					SuccessorTaskId = e.SuccessorTaskId,
-					SuccessorTitle = s?.Title ?? $"#{e.SuccessorTaskId}",
+					SuccessorTitle = s == null
+						? $"#{e.SuccessorTaskId}"
+						: CrossBuy.BL.DisplayName.Of(s.Title, s.TitleEn),
 					Kind = e.Kind,
 					LagDays = e.LagDays,
 					// Only Finish-to-Start gates today, and only while the predecessor is not Done.
@@ -258,8 +266,11 @@ namespace CrossBuy.BL.TasksCalendar
 			var predecessorIds = edges.Select(e => e.PredecessorTaskId).Distinct().ToList();
 			var open = await _db.TaskItems.AsNoTracking()
 				.Where(t => t.CompanyId == companyId && predecessorIds.Contains(t.ID) && t.Status != "Done")
-				.Select(t => new { t.ID, t.Title })
-				.ToDictionaryAsync(t => t.ID, t => t.Title, ct);
+				.Select(t => new { t.ID, t.Title, t.TitleEn })
+				// Materialised BEFORE the resolve: DisplayName.Of reads CurrentUICulture, which EF
+				// cannot translate into SQL. Resolving inside the query would either throw or
+				// silently drop to client evaluation.
+				.ToDictionaryAsync(t => t.ID, t => CrossBuy.BL.DisplayName.Of(t.Title, t.TitleEn), ct);
 
 			foreach (var id in taskIds.Distinct())
 			{

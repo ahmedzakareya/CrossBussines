@@ -65,7 +65,9 @@ namespace CrossBuy.BL
 
 	public class LandedChargeInput
 	{
+		// A charge line is typed in by hand, so it carries both descriptions or just the Arabic one.
 		public string? Description { get; set; }
+		public string? DescriptionEn { get; set; }
 		public decimal Amount { get; set; }
 		public int AccountId { get; set; }
 	}
@@ -117,7 +119,9 @@ namespace CrossBuy.BL
 		// Module 4 (staged): cancel a work order — if materials/labor were posted (WIP>0), reverse them, clearing WIP.
 		Task<(bool ok, string? error)> CancelWorkOrderAsync(int companyId, int workOrderId, DateTime date, string? userId);
 		// Module 4 (بند3): add a labor line (Employee→Cr 520101 reclass | External→Cr cash/payable+WHT | Applied→Cr 520108) → Dr WIP.
-		Task<(bool ok, string? error, int laborId)> AddWorkOrderLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal ratePerHour, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId);
+		// workerNameEn is OPTIONAL and trails the parameter it belongs beside: an external labour line is
+		// hand-typed, so it carries both names or just the Arabic one.
+		Task<(bool ok, string? error, int laborId)> AddWorkOrderLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal ratePerHour, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId, string? workerNameEn = null);
 		// Module 4 (بند3): remove a labor line — reverse its JE (Dr source / Cr WIP), reducing WipBalance.
 		Task<(bool ok, string? error)> RemoveWorkOrderLaborAsync(int companyId, int laborId, DateTime date, string? userId);
 		// ---- rack-level stock (BinStock) — QUANTITY only, no value/GL ----
@@ -196,9 +200,9 @@ namespace CrossBuy.BL
 		private async Task<string?> PeriodGuardAsync(int companyId, DateTime date)
 		{
 			var p = await _periods.ResolveAsync(companyId, date);
-			if (p == null) return "لا توجد فترة مالية تشمل تاريخ الحركة";
+			if (p == null) return "No fiscal period covers the movement date";
 			if (CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.BlocksPosting(p.Status))
-				return "الفترة المالية مقفولة — لا يمكن الترحيل فيها";
+				return "The fiscal period is closed — posting into it is not allowed";
 			return null;
 		}
 
@@ -261,7 +265,7 @@ namespace CrossBuy.BL
 			if (uomId == null || uomId == item.BaseUoMId) return (qty, null);
 			var conv = await _context.UoMConversions.AsNoTracking()
 				.FirstOrDefaultAsync(c => c.ItemId == item.ID && c.FromUoMId == uomId && c.ToUoMId == item.BaseUoMId);
-			if (conv == null) return (0m, "لا يوجد تحويل وحدة معرَّف لهذا الصنف من الوحدة المطلوبة إلى الوحدة الأساس — تعذّر الخصم.");
+			if (conv == null) return (0m, "No unit conversion is defined for this item from the requested unit to the base unit — the deduction could not be made.");
 			return (R4(qty * conv.Factor), null);
 		}
 
@@ -299,7 +303,7 @@ namespace CrossBuy.BL
 				// selling it unbatched (which would bypass expiry). Genuinely-zero stock falls through to the normal path.
 				decimal onHand0 = await _context.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == item.ID && b.WarehouseId == warehouseId).Select(b => (decimal?)b.QtyOnHand).FirstOrDefaultAsync() ?? 0m;
 				if (onHand0 > 0)
-					return (true, $"الصنف ({item.ItemCode}) به رصيد غير مرتبط بدفعات ({onHand0:0.##}) — لا يمكن صرفه بنظام الصلاحية؛ يلزم تصحيح البيانات بإدخال الدفعات", none);
+					return (true, $"Item ({item.ItemCode}) has stock not linked to any batch ({onHand0:0.##}) — it cannot be issued under expiry tracking; correct the data by entering the batches", none);
 				return (false, null, none);
 			}
 			var batchIds = perBatch.Select(p => p.BatchId).ToList();
@@ -315,13 +319,13 @@ namespace CrossBuy.BL
 			if (validQty < neededBase)
 			{
 				var expiredQty = avail.Where(p => p.Expired).Sum(p => p.Qty);
-				var hint = expiredQty > 0 ? $" (مستبعَد {expiredQty:0.##} من دفعات منتهية)" : "";
+				var hint = expiredQty > 0 ? $" (excluding {expiredQty:0.##} from expired batches)" : "";
 				// HM-D8: if the item ALSO holds unbatched physical stock beyond the batched total, the "available" figure
 				// undercounts — say so, so the shortfall reads as a data problem, not a genuine stock-out.
 				decimal batchedTotal = avail.Sum(p => p.Qty);
 				decimal onHand = await _context.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == item.ID && b.WarehouseId == warehouseId).Select(b => (decimal?)b.QtyOnHand).FirstOrDefaultAsync() ?? 0m;
-				if (onHand > batchedTotal) hint += $" (+ {onHand - batchedTotal:0.##} غير مرتبط بدفعات — يلزم تصحيح البيانات)";
-				return (true, $"الرصيد الصالح غير كافٍ: المتاح {validQty:0.##}، المطلوب {neededBase:0.##}{hint}", none);
+				if (onHand > batchedTotal) hint += $" (+ {onHand - batchedTotal:0.##} not linked to any batch — the data needs correcting)";
+				return (true, $"Insufficient valid stock: available {validQty:0.##}, required {neededBase:0.##}{hint}", none);
 			}
 			var alloc = new List<(string batchNo, decimal qtyBase)>();
 			decimal rem = neededBase;
@@ -331,17 +335,17 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, StockMovement? movement)> PostMovementAsync(int companyId, MovementRequest req, string? userId)
 		{
-			if (req.Qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", null);
-			if (req.Direction != 1 && req.Direction != -1) return (false, "اتجاه الحركة غير صحيح", null);
+			if (req.Qty <= 0) return (false, "Quantity must be greater than zero", null);
+			if (req.Direction != 1 && req.Direction != -1) return (false, "Invalid movement direction", null);
 			{ var pErr = await PeriodGuardAsync(companyId, req.Date); if (pErr != null) return (false, pErr, null); }
 
 			var hdr = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == req.ItemId && i.CompanyID == companyId);
-			if (hdr == null) return (false, "الصنف غير موجود", null);
+			if (hdr == null) return (false, "Item not found", null);
 
 			// ===== Bundle composite: explode into components (the bundle itself holds no stock) =====
 			if (hdr.IsComposite && hdr.CompositeType == "Bundle")
 			{
-				if (req.Direction == 1) return (false, "صنف الحزمة لا يُستلَم في المخزون — أنشئ/استلِم مكوّناته", null);
+				if (req.Direction == 1) return (false, "A bundle item is not received into stock — create/receive its components instead", null);
 				// Quantities come from the canonical service now. Two things improve by that alone: the read is
 				// COMPANY-SCOPED (this one was not — `Where(c => c.ParentItemId == hdr.ID)` with no company predicate,
 				// the same shape of hole that let a work order be built from another tenant's recipe), and the
@@ -351,7 +355,7 @@ namespace CrossBuy.BL
 				// PostSingleAsync converts it. Converting here as well would apply the factor twice.
 				var bundleBom = await _bom.ExplodeAsync(companyId, hdr.ID, req.Qty, new BomExplosionOptions { ConvertToBaseUoM = false });
 				if (!bundleBom.Ok) return (false, bundleBom.Error, null);
-				if (bundleBom.Lines.Count == 0) return (false, "الحزمة لا تحتوي على مكوّنات", null);
+				if (bundleBom.Lines.Count == 0) return (false, "The bundle has no components", null);
 				await using var btx = await ScopedTx.BeginOrJoinAsync(_context);
 				try
 				{
@@ -363,16 +367,16 @@ namespace CrossBuy.BL
 							Date = req.Date, ItemId = c.ComponentItemId, WarehouseId = req.WarehouseId, Direction = -1,
 							Qty = c.Quantity,   // canonical: qty * per-parent * (1 + scrap), rounded 4dp AwayFromZero
 							UoMId = c.UoMId, SourceType = req.SourceType, SourceId = req.SourceId,
-							SourceLineId = req.SourceLineId, PostToGl = req.PostToGl, Notes = "تفكيك حزمة: " + hdr.ItemCode
+							SourceLineId = req.SourceLineId, PostToGl = req.PostToGl, Notes = "Bundle breakdown: " + hdr.ItemCode
 						};
 						var (ok, err, mv) = await PostSingleAsync(companyId, creq, userId);
-						if (!ok) { await btx.RollbackAsync(); return (false, $"تعذّر صرف مكوّن الحزمة: {err}", null); }
+						if (!ok) { await btx.RollbackAsync(); return (false, $"Could not issue the bundle component: {err}", null); }
 						last = mv;
 					}
 					await btx.CommitAsync();
 					return (true, null, last);
 				}
-				catch (Exception ex) { await btx.RollbackAsync(); return (false, "خطأ أثناء تفكيك الحزمة: " + ex.Message, null); }
+				catch (Exception ex) { await btx.RollbackAsync(); return (false, "Error while breaking down the bundle: " + ex.Message, null); }
 			}
 
 			// ===== HM-D8: FORCE a batch on the batch-capable USER input paths for expiry-tracked items — else the stock is
@@ -387,7 +391,7 @@ namespace CrossBuy.BL
 			// covers PostOpeningStockAsync, which reaches PostSingleAsync directly.
 			if (hdr.TrackExpiry && req.Direction == -1 && req.SourceType == "StockWriteOff"
 				&& string.IsNullOrWhiteSpace(req.BatchNo) && string.IsNullOrWhiteSpace(req.SerialNo))
-				return (false, $"الصنف ({hdr.ItemCode}) يُتتبَّع بالصلاحية — يجب تحديد رقم الدفعة المراد إعدامها", null);
+				return (false, $"Item ({hdr.ItemCode}) is expiry-tracked — specify the batch number to be written off", null);
 
 			// ===== FEFO: auto-pick nearest-expiry batches on issue for expiry-tracked items =====
 			// Triggers only when the caller didn't name a batch/serial. Allocates the issue across batches
@@ -396,7 +400,7 @@ namespace CrossBuy.BL
 			{
 				var (needBase, cerr) = await ToBaseAsync(hdr, req.UoMId, req.Qty);
 				if (cerr != null) return (false, cerr, null);
-				if (needBase <= 0) return (false, "تعذّر تحويل الكمية إلى الوحدة الأساسية", null);
+				if (needBase <= 0) return (false, "Could not convert the quantity to the base unit", null);
 
 				var (applicable, ferr, alloc) = await FefoAllocateAsync(companyId, hdr, req.WarehouseId, needBase, req.Date);
 				if (applicable)
@@ -423,7 +427,7 @@ namespace CrossBuy.BL
 						await ftx.CommitAsync();
 						return (true, null, last);
 					}
-					catch (Exception ex) { await ftx.RollbackAsync(); return (false, "خطأ أثناء صرف FEFO: " + ex.Message, null); }
+					catch (Exception ex) { await ftx.RollbackAsync(); return (false, "Error during FEFO issue: " + ex.Message, null); }
 				}
 				// not applicable (no batch-tracked stock / not expiry) → fall through to the normal movement
 			}
@@ -437,7 +441,7 @@ namespace CrossBuy.BL
 				await stx.CommitAsync();
 				return (true, null, mv);
 			}
-			catch (Exception ex) { await stx.RollbackAsync(); return (false, "خطأ أثناء ترحيل الحركة: " + ex.Message, null); }
+			catch (Exception ex) { await stx.RollbackAsync(); return (false, "Error while posting the movement: " + ex.Message, null); }
 		}
 
 		// single-item movement WITHOUT opening its own transaction (the caller owns it)
@@ -446,9 +450,9 @@ namespace CrossBuy.BL
 			int __fdp = await FunctionalDpAsync(companyId);   // HM-2: cost values round to the functional currency dp
 			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			var item = await _context.Items.FirstOrDefaultAsync(i => i.ID == req.ItemId && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف غير موجود", null);
+			if (item == null) return (false, "Item not found", null);
 			var wh = await _context.Warehouses.FirstOrDefaultAsync(w => w.ID == req.WarehouseId && w.CompanyID == companyId);
-			if (wh == null) return (false, "المخزن غير موجود", null);
+			if (wh == null) return (false, "Warehouse not found", null);
 
 			// ===== HM-D8 / HM-16: FORCE a batch (+expiry) on INBOUND user-entry for expiry-tracked items — the single
 			// choke point (PostOpeningStockAsync, the GRN receipt [ProcurementService posts SourceType="Receipt"], manual
@@ -461,10 +465,10 @@ namespace CrossBuy.BL
 			var inboundEntrySources = new HashSet<string> { "OpeningStock", "Opening", "Receipt", "Adjustment" };
 			if (item.TrackExpiry && req.Direction == 1 && inboundEntrySources.Contains(req.SourceType ?? "")
 				&& string.IsNullOrWhiteSpace(req.BatchNo) && string.IsNullOrWhiteSpace(req.SerialNo))
-				return (false, $"الصنف ({item.ItemCode}) يُتتبَّع بالصلاحية — يجب إدخال رقم الدفعة", null);
+				return (false, $"Item ({item.ItemCode}) is expiry-tracked — a batch number is required", null);
 			if (item.TrackExpiry && req.Direction == 1 && inboundEntrySources.Contains(req.SourceType ?? "")
 				&& !string.IsNullOrWhiteSpace(req.BatchNo) && req.Expiry == null)
-				return (false, $"الصنف ({item.ItemCode}) يُتتبَّع بالصلاحية — يجب تحديد تاريخ الصلاحية للدفعة عند الإدخال", null);
+				return (false, $"Item ({item.ItemCode}) is expiry-tracked — an expiry date is required for the batch on receipt", null);
 
 			var cat = await _context.ItemCategories.FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId && c.CompanyID == companyId);
 
@@ -473,7 +477,7 @@ namespace CrossBuy.BL
 
 			var (qtyBase, cerr2) = await ToBaseAsync(item, req.UoMId, req.Qty);
 			if (cerr2 != null) return (false, cerr2, null);
-			if (qtyBase <= 0) return (false, "تعذّر تحويل الكمية إلى الوحدة الأساسية", null);
+			if (qtyBase <= 0) return (false, "Could not convert the quantity to the base unit", null);
 
 			var batchId = await ResolveBatchAsync(companyId, item.ID, req.BatchNo, req.Expiry);
 
@@ -482,7 +486,7 @@ namespace CrossBuy.BL
 			{
 				var exp = await _context.StockBatches.Where(b => b.ID == batchId).Select(b => b.ExpiryDate).FirstOrDefaultAsync();
 				if (exp != null && exp.Value.Date < req.Date.Date)
-					return (false, $"الدفعة {req.BatchNo} منتهية الصلاحية ({exp:yyyy-MM-dd}) — لا يمكن صرفها", null);
+					return (false, $"Batch {req.BatchNo} has expired ({exp:yyyy-MM-dd}) — it cannot be issued", null);
 			}
 
 			// ===== concurrency: pessimistically lock the balance row for the life of the caller's transaction.
@@ -512,7 +516,7 @@ namespace CrossBuy.BL
 					// Reloading would silently wipe it; leaving it keeps the original bug. HARD FAIL (the caller's tx rolls back).
 					System.Threading.Interlocked.Increment(ref LockReadGuardTrips);
 					_logger?.LogError("HM-D6 guard: StockBalance lock-read found a PENDING {State} entity (company {Company} item {Item} wh {Wh}) — aborting to avoid a lost update", entry.State, companyId, item.ID, wh.ID);
-					return (false, $"تعذّر ترحيل الحركة: رصيد الصنف ({item.ItemCode}) يحمل تعديلًا غير محفوظ لحظة القراءة المقفولة — أُلغيت العملية لمنع تحديث ضائع", null);
+					return (false, $"Could not post the movement: the balance of item ({item.ItemCode}) carried an unsaved change at the moment of the locked read — the operation was cancelled to prevent a lost update", null);
 				}
 				// refresh the tracked instance to the LOCKED DB truth (identity map may hold a stale value from an earlier read
 				// in this context that another transaction has since changed). We hold UPDLOCK, so this reads our locked row.
@@ -535,7 +539,7 @@ namespace CrossBuy.BL
 				else                      // ===== OUT =====
 				{
 					if (bal.QtyOnHand < qtyBase && !wh.AllowNegativeStock)
-						return (false, $"الرصيد غير كافٍ: المتاح {bal.QtyOnHand:0.##}، المطلوب {qtyBase:0.##}", null);
+						return (false, $"Insufficient stock: available {bal.QtyOnHand:0.##}, required {qtyBase:0.##}", null);
 
 					if (method == "FIFO")
 					{
@@ -637,12 +641,12 @@ namespace CrossBuy.BL
 		// no stock movement, no GL, warehouse total unchanged. Guards source availability + valid bins.
 		public async Task<(bool ok, string? error)> RelocateBinAsync(int companyId, int warehouseId, int itemId, int fromBinId, int toBinId, decimal qty, string? userId)
 		{
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر");
-			if (fromBinId == toBinId) return (false, "الموقع المصدر والوجهة متطابقان");
+			if (qty <= 0) return (false, "Quantity must be greater than zero");
+			if (fromBinId == toBinId) return (false, "The source and destination locations are the same");
 			var bins = await _context.BinLocations.AsNoTracking().Where(b => b.WarehouseId == warehouseId && (b.ID == fromBinId || b.ID == toBinId)).Select(b => b.ID).ToListAsync();
-			if (!bins.Contains(fromBinId) || !bins.Contains(toBinId)) return (false, "موقع غير صالح لهذا المخزن");
+			if (!bins.Contains(fromBinId) || !bins.Contains(toBinId)) return (false, "Invalid location for this warehouse");
 			var from = await _context.BinStocks.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.WarehouseId == warehouseId && x.BinLocationId == fromBinId && x.ItemId == itemId);
-			if (from == null || from.QtyOnHand < qty) return (false, "الكمية المتاحة في الموقع المصدر غير كافية");
+			if (from == null || from.QtyOnHand < qty) return (false, "The quantity available at the source location is not enough");
 			await AdjustBinStockAsync(companyId, warehouseId, fromBinId, itemId, -qty, DateTime.UtcNow);
 			await AdjustBinStockAsync(companyId, warehouseId, toBinId, itemId, qty, DateTime.UtcNow);
 			return (true, null);
@@ -652,14 +656,14 @@ namespace CrossBuy.BL
 		// warehouse balance (Σ located <= StockBalance.QtyOnHand). Real financial variances go through write-off/adjustment.
 		public async Task<(bool ok, string? error)> SetBinCountAsync(int companyId, int warehouseId, int binLocationId, int itemId, decimal countedQty, string? userId)
 		{
-			if (countedQty < 0) return (false, "الكمية لا يمكن أن تكون سالبة");
+			if (countedQty < 0) return (false, "Quantity cannot be negative");
 			var bin = await _context.BinLocations.AsNoTracking().AnyAsync(b => b.ID == binLocationId && b.WarehouseId == warehouseId);
-			if (!bin) return (false, "موقع غير صالح لهذا المخزن");
+			if (!bin) return (false, "Invalid location for this warehouse");
 			var (whQty, _, _) = await GetBalanceAsync(companyId, itemId, warehouseId);
 			var thisBin = await _context.BinStocks.FirstOrDefaultAsync(x => x.CompanyID == companyId && x.WarehouseId == warehouseId && x.BinLocationId == binLocationId && x.ItemId == itemId);
 			decimal locatedOthers = await _context.BinStocks.Where(x => x.CompanyID == companyId && x.WarehouseId == warehouseId && x.ItemId == itemId && x.BinLocationId != binLocationId).SumAsync(x => (decimal?)x.QtyOnHand) ?? 0m;
 			if (R4(locatedOthers + countedQty) > R4(whQty))
-				return (false, $"الكمية المرصودة ({countedQty}) + المواقع الأخرى ({locatedOthers}) تتجاوز رصيد الصنف بالمخزن ({whQty}). فرق حقيقي؟ استخدم الإعدام/تسوية الجرد.");
+				return (false, $"The counted quantity ({countedQty}) + the other locations ({locatedOthers}) exceeds the item balance in the warehouse ({whQty}). A genuine difference? Use a write-off / stock-count adjustment.");
 			if (thisBin == null) { thisBin = new BinStock { CompanyID = companyId, WarehouseId = warehouseId, BinLocationId = binLocationId, ItemId = itemId }; _context.BinStocks.Add(thisBin); }
 			thisBin.QtyOnHand = R4(countedQty);
 			thisBin.LastMovementAt = DateTime.UtcNow;
@@ -673,7 +677,7 @@ namespace CrossBuy.BL
 		{
 			var settings = await _context.ItemWarehouseSettings.AsNoTracking()
 				.Where(s => s.WarehouseId == warehouseId && s.DefaultSectionId != null).ToListAsync();
-			if (settings.Count == 0) return (false, "لا توجد مواقع افتراضية للأصناف في هذا المخزن", 0);
+			if (settings.Count == 0) return (false, "There are no default item locations in this warehouse", 0);
 			var balances = (await _context.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.WarehouseId == warehouseId && b.QtyOnHand > 0).ToListAsync())
 				.ToDictionary(b => b.ItemId, b => b.QtyOnHand);
 			int n = 0;
@@ -697,22 +701,22 @@ namespace CrossBuy.BL
 			var accs = await _context.Accounts.AsNoTracking().Where(a => ids.Contains(a.ID)).ToListAsync();
 			if (!accs.Any(a => a.RequireCostCenter)) return (false, null, null);
 			var cc = await _context.CostCenters.AsNoTracking().Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
-			if (cc == null) return (true, null, "حساب يتطلب مركز تكلفة ولا يوجد مركز تكلفة معرّف");
+			if (cc == null) return (true, null, "The account requires a cost centre and no cost centre is defined");
 			return (true, cc, null);
 		}
 
 		// move stock from one warehouse to another, at cost (no GL — same inventory account, net zero)
 		public async Task<(bool ok, string? error, StockTransfer? transfer)> TransferAsync(int companyId, int fromWarehouseId, int toWarehouseId, DateTime date, string? notes, List<TransferLineInput> lines, string? userId)
 		{
-			if (fromWarehouseId == toWarehouseId) return (false, "اختر مخزنين مختلفين", null);
-			if (lines == null || lines.Count == 0) return (false, "التحويل يجب أن يحتوي على بند واحد على الأقل", null);
+			if (fromWarehouseId == toWarehouseId) return (false, "Choose two different warehouses", null);
+			if (lines == null || lines.Count == 0) return (false, "The transfer must contain at least one line", null);
 			int __fdp = await FunctionalDpAsync(companyId);   // HM-2: functional-currency cost rounding
 			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 
 			var srcWh = await _context.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.ID == fromWarehouseId && w.CompanyID == companyId);
 			var dstWh = await _context.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.ID == toWarehouseId && w.CompanyID == companyId);
-			if (srcWh == null || dstWh == null) return (false, "المخزن غير موجود", null);
+			if (srcWh == null || dstWh == null) return (false, "Warehouse not found", null);
 
 			// same branch → pure relocation (no GL). different branch → value moves between cost centers (configurable).
 			bool sameBranch = srcWh.BranchHierarchicalId == dstWh.BranchHierarchicalId;
@@ -739,7 +743,7 @@ namespace CrossBuy.BL
 				{
 					if (l.ItemId <= 0 || l.Qty <= 0) continue;
 					var litem = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId && i.CompanyID == companyId);
-					if (litem == null) { await tx.RollbackAsync(); return (false, $"صنف غير موجود ({l.ItemId})", null); }
+					if (litem == null) { await tx.RollbackAsync(); return (false, $"Item not found ({l.ItemId})", null); }
 
 					// FEFO: an expiry-tracked item moved without a named batch → split the move across nearest-expiry batches
 					var subs = new List<(string? batchNo, decimal qty, int? uom)>();
@@ -758,12 +762,12 @@ namespace CrossBuy.BL
 					{
 						// stock OUT of source (computes cost) — stock-only, GL handled below as one inter-branch entry
 						var (ook, oerr, mvOut) = await PostSingleAsync(companyId, new MovementRequest
-						{ Date = date, ItemId = l.ItemId, WarehouseId = fromWarehouseId, Direction = -1, Qty = s.qty, UoMId = s.uom, BatchNo = s.batchNo, SerialNo = l.SerialNo, BinLocationId = l.SourceBinLocationId, SourceType = "TransferOut", SourceId = tr.ID, PostToGl = false, AllowExpired = true, Notes = $"تحويل {tr.TransferNo}" }, userId);
-						if (!ook) { await tx.RollbackAsync(); return (false, $"تعذّر الصرف من المخزن المصدر: {oerr}", null); }
+						{ Date = date, ItemId = l.ItemId, WarehouseId = fromWarehouseId, Direction = -1, Qty = s.qty, UoMId = s.uom, BatchNo = s.batchNo, SerialNo = l.SerialNo, BinLocationId = l.SourceBinLocationId, SourceType = "TransferOut", SourceId = tr.ID, PostToGl = false, AllowExpired = true, Notes = $"Transfer {tr.TransferNo}" }, userId);
+						if (!ook) { await tx.RollbackAsync(); return (false, $"Could not issue from the source warehouse: {oerr}", null); }
 						// stock IN to destination at the same unit cost + same batch
 						var (iok, ierr, mvIn) = await PostSingleAsync(companyId, new MovementRequest
-						{ Date = date, ItemId = l.ItemId, WarehouseId = toWarehouseId, Direction = 1, Qty = s.qty, UoMId = s.uom, UnitCostInBase = mvOut!.UnitCost, BatchNo = s.batchNo, SerialNo = l.SerialNo, BinLocationId = l.BinLocationId, SourceType = "TransferIn", SourceId = tr.ID, PostToGl = false, Notes = $"تحويل {tr.TransferNo}" }, userId);
-						if (!iok) { await tx.RollbackAsync(); return (false, $"تعذّر الإدخال للمخزن الوجهة: {ierr}", null); }
+						{ Date = date, ItemId = l.ItemId, WarehouseId = toWarehouseId, Direction = 1, Qty = s.qty, UoMId = s.uom, UnitCostInBase = mvOut!.UnitCost, BatchNo = s.batchNo, SerialNo = l.SerialNo, BinLocationId = l.BinLocationId, SourceType = "TransferIn", SourceId = tr.ID, PostToGl = false, Notes = $"Transfer {tr.TransferNo}" }, userId);
+						if (!iok) { await tx.RollbackAsync(); return (false, $"Could not receive into the destination warehouse: {ierr}", null); }
 						tr.Lines.Add(new StockTransferLine { StockTransferId = tr.ID, LineNo = ln++, ItemId = l.ItemId, Qty = mvOut.QtyBase, UoMId = s.uom, UnitCost = mvOut.UnitCost, LineTotal = mvOut.TotalCost, BatchNo = s.batchNo, SerialNo = l.SerialNo, OutMovementId = mvOut.ID, InMovementId = mvIn!.ID });
 						total += mvOut.TotalCost;
 
@@ -771,7 +775,7 @@ namespace CrossBuy.BL
 						{
 							var invAcc = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId)
 								.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => c.InventoryAccountId).FirstOrDefaultAsync();
-							if (invAcc == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد الأصناف", null); }
+							if (invAcc == null) { await tx.RollbackAsync(); return (false, "The inventory account is not linked for one of the items", null); }
 							valueByInvAcc[invAcc.Value] = valueByInvAcc.TryGetValue(invAcc.Value, out var v) ? v + mvOut.TotalCost : mvOut.TotalCost;
 						}
 					}
@@ -785,7 +789,7 @@ namespace CrossBuy.BL
 				if (postGl && valueByInvAcc.Count > 0)
 				{
 					var glLines = new List<JournalLineInput>();
-					var desc = $"تحويل بين الفروع {tr.TransferNo}";
+					var desc = $"Inter-branch transfer {tr.TransferNo}";
 					foreach (var kv in valueByInvAcc)
 					{
 						var v = R2(kv.Value);
@@ -796,7 +800,7 @@ namespace CrossBuy.BL
 					}
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "StockTransfer", SourceId = tr.ID, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد التحويل بين الفروع: " + jerr, null); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the inter-branch transfer entry: " + jerr, null); }
 					tr.JournalEntryId = je!.ID;
 					await _context.SaveChangesAsync();
 				}
@@ -804,7 +808,7 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null, tr);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء التحويل: " + ex.Message, null); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error during the transfer: " + ex.Message, null); }
 		}
 
 		// landed cost: allocates extra charges (freight/customs) over a goods receipt's items, raising their value (qty unchanged)
@@ -814,16 +818,16 @@ namespace CrossBuy.BL
 			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 			var gr = await _context.GoodsReceipts.Include(g => g.Lines).FirstOrDefaultAsync(g => g.ID == goodsReceiptId && g.CompanyID == companyId);
-			if (gr == null) return (false, "إذن الاستلام غير موجود", null);
+			if (gr == null) return (false, "Goods receipt not found", null);
 			var grLines = gr.Lines.Where(l => l.Qty > 0).ToList();
-			if (grLines.Count == 0) return (false, "إذن الاستلام لا يحتوي على بنود", null);
+			if (grLines.Count == 0) return (false, "The goods receipt has no lines", null);
 			charges = (charges ?? new()).Where(c => c.Amount > 0 && c.AccountId > 0).ToList();
-			if (charges.Count == 0) return (false, "أضف مصروفًا واحدًا على الأقل", null);
+			if (charges.Count == 0) return (false, "Add at least one expense", null);
 
 			decimal totalAdd = R2(charges.Sum(c => c.Amount));
 			bool byQty = allocationMethod == "Qty";
 			decimal sumQty = grLines.Sum(l => l.Qty), sumVal = grLines.Sum(l => l.LineTotal);
-			if (byQty ? sumQty <= 0 : sumVal <= 0) return (false, "تعذّر التوزيع (قيمة/كمية الاستلام صفر)", null);
+			if (byQty ? sumQty <= 0 : sumVal <= 0) return (false, "Could not allocate (receipt value/quantity is zero)", null);
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
@@ -833,7 +837,14 @@ namespace CrossBuy.BL
 				await _context.SaveChangesAsync();
 				lc.LandedNo = $"LC-{date:yyyy}-{lc.ID:D5}";
 				int cln = 1;
-				foreach (var ch in charges) _context.LandedCostCharges.Add(new LandedCostCharge { LandedCostId = lc.ID, LineNo = cln++, Description = ch.Description, Amount = R2(ch.Amount), AccountId = ch.AccountId });
+				foreach (var ch in charges)
+					_context.LandedCostCharges.Add(new LandedCostCharge
+					{
+						LandedCostId = lc.ID, LineNo = cln++,
+						Description = ch.Description,
+						DescriptionEn = string.IsNullOrWhiteSpace(ch.DescriptionEn) ? null : ch.DescriptionEn.Trim(),
+						Amount = R2(ch.Amount), AccountId = ch.AccountId,
+					});
 
 				var invDrByAccount = new Dictionary<int, decimal>();
 				var shareByItem = new Dictionary<int, decimal>();          // HM-D7: aggregate share per ITEM (one locked read each)
@@ -849,11 +860,11 @@ namespace CrossBuy.BL
 					if (share == 0) continue;
 					shareByItem[line.ItemId] = shareByItem.TryGetValue(line.ItemId, out var sv) ? sv + share : share;
 
-					_context.StockMovements.Add(new StockMovement { CompanyID = companyId, MovementDate = date, ItemId = line.ItemId, WarehouseId = gr.WarehouseId, Direction = 1, QtyBase = 0, UnitCost = 0, TotalCost = share, SourceType = "LandedCost", SourceId = lc.ID, Notes = $"تكلفة إضافية {lc.LandedNo}", CreatedBy = userId, CreatedAt = DateTime.UtcNow });
+					_context.StockMovements.Add(new StockMovement { CompanyID = companyId, MovementDate = date, ItemId = line.ItemId, WarehouseId = gr.WarehouseId, Direction = 1, QtyBase = 0, UnitCost = 0, TotalCost = share, SourceType = "LandedCost", SourceId = lc.ID, Notes = $"Landed cost {lc.LandedNo}", CreatedBy = userId, CreatedAt = DateTime.UtcNow });
 
 					var cat = await _context.Items.AsNoTracking().Where(i => i.ID == line.ItemId)
 						.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => c.InventoryAccountId).FirstOrDefaultAsync();
-					if (cat == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد الأصناف", null); }
+					if (cat == null) { await tx.RollbackAsync(); return (false, "The inventory account is not linked for one of the items", null); }
 					invDrByAccount[cat.Value] = invDrByAccount.TryGetValue(cat.Value, out var v) ? v + share : share;
 				}
 
@@ -885,7 +896,7 @@ namespace CrossBuy.BL
 						{
 							System.Threading.Interlocked.Increment(ref LockReadGuardTrips);
 							await tx.RollbackAsync();
-							return (false, "تعذّر ترحيل التكلفة الإضافية: رصيد الصنف يحمل تعديلًا غير محفوظ لحظة القراءة المقفولة — أُلغيت العملية لمنع تحديث ضائع", null);
+							return (false, "Could not post the landed cost: the item balance carried an unsaved change at the moment of the locked read — the operation was cancelled to prevent a lost update", null);
 						}
 						await entry.ReloadAsync();   // refresh the tracked instance to the LOCKED DB truth
 					}
@@ -901,20 +912,20 @@ namespace CrossBuy.BL
 
 				// combined JE: Dr Inventory (allocated shares) / Cr charge accounts (amounts)
 				var glLines = new List<JournalLineInput>();
-				foreach (var kv in invDrByAccount) glLines.Add(new JournalLineInput { AccountId = kv.Key, Debit = R2(kv.Value), Credit = 0, Description = $"تكلفة إضافية {lc.LandedNo}" });
-				foreach (var ch in charges) glLines.Add(new JournalLineInput { AccountId = ch.AccountId, Debit = 0, Credit = R2(ch.Amount), Description = ch.Description ?? "تكلفة إضافية" });
+				foreach (var kv in invDrByAccount) glLines.Add(new JournalLineInput { AccountId = kv.Key, Debit = R2(kv.Value), Credit = 0, Description = $"Landed cost {lc.LandedNo}" });
+				foreach (var ch in charges) glLines.Add(new JournalLineInput { AccountId = ch.AccountId, Debit = 0, Credit = R2(ch.Amount), Description = ch.Description ?? "Landed cost" });
 				var (need, cc, ccErr) = await ResolveCcAsync(companyId, glLines.Select(g => g.AccountId));
 				if (ccErr != null) { await tx.RollbackAsync(); return (false, ccErr, null); }
 				if (need) foreach (var g in glLines) g.CostCenterId = cc;
 
-				var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput { CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "LandedCost", SourceId = lc.ID, CurrencyId = 0, Description = $"تكلفة إضافية {lc.LandedNo}", Lines = glLines }, null);
-				if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد التكلفة الإضافية: " + jerr, null); }
+				var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput { CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "LandedCost", SourceId = lc.ID, CurrencyId = 0, Description = $"Landed cost {lc.LandedNo}", Lines = glLines }, null);
+				if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the landed-cost entry: " + jerr, null); }
 				lc.JournalEntryId = je!.ID;
 				await _context.SaveChangesAsync();
 				await tx.CommitAsync();
 				return (true, null, lc);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء ترحيل التكلفة الإضافية: " + ex.Message, null); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error while posting the landed cost: " + ex.Message, null); }
 		}
 
 		// physical count: compares counted vs book qty per item and posts the difference as an Adjustment
@@ -922,8 +933,8 @@ namespace CrossBuy.BL
 		{
 			int __fdp = await FunctionalDpAsync(companyId);   // HM-2: functional-currency cost rounding
 			decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
-			if (warehouseId <= 0) return (false, "المخزن مطلوب", null);
-			if (lines == null || lines.Count == 0) return (false, "الجرد يجب أن يحتوي على بند واحد على الأقل", null);
+			if (warehouseId <= 0) return (false, "Warehouse is required", null);
+			if (lines == null || lines.Count == 0) return (false, "The stock count must contain at least one line", null);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 
 			// HM-7: batch-aware count. An expiry-tracked item is counted ONE LINE PER BATCH (BatchNo set); the diff is
@@ -944,7 +955,7 @@ namespace CrossBuy.BL
 				{
 					if (l.ItemId <= 0) continue;
 					var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId && i.CompanyID == companyId);
-					if (item == null) { await tx.RollbackAsync(); return (false, $"صنف غير موجود ({l.ItemId})", null); }
+					if (item == null) { await tx.RollbackAsync(); return (false, $"Item not found ({l.ItemId})", null); }
 					bool batchAware = item.TrackExpiry && !string.IsNullOrWhiteSpace(l.BatchNo);
 
 					decimal bookQty, avg; bool createdBatch = false; DateTime? lineExpiry = null;
@@ -956,7 +967,7 @@ namespace CrossBuy.BL
 							// counted a batch the system does not know → the count creates it (real shelf stock). Expiry required.
 							createdBatch = true; bookQty = 0m; lineExpiry = l.Expiry;
 							if (l.CountedQty > 0 && l.Expiry == null)
-							{ await tx.RollbackAsync(); return (false, $"الدفعة ({l.BatchNo}) للصنف ({item.ItemCode}) غير مسجَّلة ويلزم تاريخ صلاحية لإنشائها أثناء الجرد", null); }
+							{ await tx.RollbackAsync(); return (false, $"Batch ({l.BatchNo}) for item ({item.ItemCode}) is not registered, and an expiry date is required to create it during the count", null); }
 						}
 						else { bookQty = await BatchOnHandAsync(companyId, l.ItemId, warehouseId, batch.ID); lineExpiry = batch.ExpiryDate ?? l.Expiry; }
 						var (_, _, itemAvg) = await GetBalanceAsync(companyId, l.ItemId, warehouseId);   // cost basis unchanged — item-level avg
@@ -979,9 +990,9 @@ namespace CrossBuy.BL
 							Date = date, ItemId = l.ItemId, WarehouseId = warehouseId, Direction = dir, Qty = Math.Abs(diff),
 							UnitCostInBase = dir == 1 ? avg : (decimal?)null, SourceType = "Adjustment", SourceId = cnt.ID, PostToGl = true,
 							BatchNo = batchAware ? l.BatchNo : null, Expiry = batchAware ? lineExpiry : null,
-							Notes = $"تسوية جرد {cnt.CountNo}"
+							Notes = $"Stock-count adjustment {cnt.CountNo}"
 						}, userId);
-						if (!sok) { await tx.RollbackAsync(); return (false, $"تعذّر ترحيل تسوية صنف: {serr}", null); }
+						if (!sok) { await tx.RollbackAsync(); return (false, $"Could not post the item adjustment: {serr}", null); }
 						cl.UnitCost = mv!.UnitCost;
 						cl.DiffValue = R2(dir * mv.TotalCost);
 						cl.AdjustmentMovementId = mv.ID;
@@ -994,7 +1005,7 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null, cnt);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء الجرد: " + ex.Message, null); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error during the stock count: " + ex.Message, null); }
 		}
 
 		// HM-7: on-hand of ONE batch in a warehouse, derived from movements (there is no per-batch balance row; batch qty
@@ -1012,14 +1023,14 @@ namespace CrossBuy.BL
 			int companyId, int warehouseId, DateTime date, string? reason, string? notes, List<WriteOffLineInput> lines, string? userId)
 		{
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
-			if (warehouseId <= 0) return (false, "المخزن مطلوب", null, null, "");
+			if (warehouseId <= 0) return (false, "Warehouse is required", null, null, "");
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null, null, ""); }
 			lines = (lines ?? new()).Where(l => l.ItemId > 0 && l.Qty > 0).ToList();
-			if (lines.Count == 0) return (false, "أضف بندًا واحدًا على الأقل", null, null, "");
+			if (lines.Count == 0) return (false, "Add at least one line", null, null, "");
 
 			var mode = await _context.InventorySettings.AsNoTracking().Where(s => s.CompanyID == companyId).Select(s => s.WriteOffMode).FirstOrDefaultAsync() ?? "SeparateDocument";
 			var woAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "510103").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (woAcc == null) return (false, "حساب مصروف الإعدام (510103) غير موجود في شجرة الحسابات", null, null, mode);
+			if (woAcc == null) return (false, "The write-off expense account (510103) does not exist in the chart of accounts", null, null, mode);
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
@@ -1047,9 +1058,9 @@ namespace CrossBuy.BL
 				foreach (var l in lines)
 				{
 					var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId && i.CompanyID == companyId);
-					if (item == null) { await tx.RollbackAsync(); return (false, $"صنف غير موجود ({l.ItemId})", null, null, mode); }
+					if (item == null) { await tx.RollbackAsync(); return (false, $"Item not found ({l.ItemId})", null, null, mode); }
 					var cat = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId);
-					if (cat?.InventoryAccountId == null) { await tx.RollbackAsync(); return (false, $"حساب المخزون غير مربوط لفئة الصنف {item.ItemCode}", null, null, mode); }
+					if (cat?.InventoryAccountId == null) { await tx.RollbackAsync(); return (false, $"The inventory account is not linked for the category of item {item.ItemCode}", null, null, mode); }
 					int invAcc = cat.InventoryAccountId.Value;
 
 					var (bookQty, _, _) = await GetBalanceAsync(companyId, l.ItemId, warehouseId);
@@ -1057,9 +1068,9 @@ namespace CrossBuy.BL
 					{
 						Date = date, ItemId = l.ItemId, WarehouseId = warehouseId, Direction = -1, Qty = l.Qty, UoMId = l.UoMId,
 						BatchNo = l.BatchNo, SerialNo = l.SerialNo, BinLocationId = l.BinLocationId, SourceType = srcType, SourceId = docId, PostToGl = false, AllowExpired = true,
-						Notes = $"إعدام {docNo}" + (string.IsNullOrWhiteSpace(l.Reason ?? reason) ? "" : $" ({l.Reason ?? reason})")
+						Notes = $"Write-off {docNo}" + (string.IsNullOrWhiteSpace(l.Reason ?? reason) ? "" : $" ({l.Reason ?? reason})")
 					}, userId);
-					if (!sok) { await tx.RollbackAsync(); return (false, $"تعذّر صرف صنف الإعدام: {serr}", null, null, mode); }
+					if (!sok) { await tx.RollbackAsync(); return (false, $"Could not issue the written-off item: {serr}", null, null, mode); }
 
 					byInvAcc[invAcc] = R2(byInvAcc.GetValueOrDefault(invAcc) + mv!.TotalCost);
 					accForCc.Add(invAcc);
@@ -1076,14 +1087,14 @@ namespace CrossBuy.BL
 				{
 					var (need, cc, ccErr) = await ResolveCcAsync(companyId, accForCc);
 					if (ccErr != null) { await tx.RollbackAsync(); return (false, ccErr, null, null, mode); }
-					var desc = $"إعدام مخزون {docNo}";
+					var desc = $"Stock write-off {docNo}";
 					var glLines = new List<JournalLineInput> { new JournalLineInput { AccountId = woAcc.Value, Debit = total, Credit = 0, Description = desc, CostCenterId = cc } };
 					foreach (var kv in byInvAcc)
 						glLines.Add(new JournalLineInput { AccountId = kv.Key, Debit = 0, Credit = kv.Value, Description = desc, CostCenterId = need ? cc : null });
 
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "StockWriteOff", SourceId = docId, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد الإعدام: " + jerr, null, null, mode); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the write-off entry: " + jerr, null, null, mode); }
 					if (wof != null) wof.JournalEntryId = je!.ID;
 				}
 
@@ -1092,7 +1103,7 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null, docNo, docId, mode);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء الإعدام: " + ex.Message, null, null, mode); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error during the write-off: " + ex.Message, null, null, mode); }
 		}
 
 		// Opening stock (Go-Live): receives qty at cost building FIFO layers + balance, then books
@@ -1103,10 +1114,10 @@ namespace CrossBuy.BL
 		{
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			lines = (lines ?? new()).Where(l => l.ItemId > 0 && l.WarehouseId > 0 && l.Qty > 0).ToList();
-			if (lines.Count == 0) return (false, "أضف بندًا واحدًا على الأقل", null, 0);
+			if (lines.Count == 0) return (false, "Add at least one line", null, 0);
 			{ var pErr = await PeriodGuardAsync(companyId, cutoff); if (pErr != null) return (false, pErr, null, 0); }
 			var obe = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "3301").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (obe == null) return (false, "حساب الرصيد الافتتاحي (3301) غير موجود", null, 0);
+			if (obe == null) return (false, "The opening-balance account (3301) does not exist", null, 0);
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
@@ -1117,18 +1128,18 @@ namespace CrossBuy.BL
 				foreach (var l in lines)
 				{
 					var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId && i.CompanyID == companyId);
-					if (item == null) { await tx.RollbackAsync(); return (false, $"صنف غير موجود ({l.ItemId})", null, 0); }
+					if (item == null) { await tx.RollbackAsync(); return (false, $"Item not found ({l.ItemId})", null, 0); }
 					var cat = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId);
-					if (cat?.InventoryAccountId == null) { await tx.RollbackAsync(); return (false, $"حساب المخزون غير مربوط لفئة الصنف {item.ItemCode}", null, 0); }
+					if (cat?.InventoryAccountId == null) { await tx.RollbackAsync(); return (false, $"The inventory account is not linked for the category of item {item.ItemCode}", null, 0); }
 					int invAcc = cat.InventoryAccountId.Value;
 
 					var (sok, serr, mv) = await PostSingleAsync(companyId, new MovementRequest
 					{
 						Date = cutoff, ItemId = l.ItemId, WarehouseId = l.WarehouseId, Direction = 1, Qty = l.Qty, UoMId = l.UoMId,
 						UnitCostInBase = l.UnitCost, BatchNo = l.BatchNo, Expiry = l.Expiry, BinLocationId = l.BinLocationId,
-						SourceType = "OpeningStock", PostToGl = false, Notes = "رصيد افتتاحي"
+						SourceType = "OpeningStock", PostToGl = false, Notes = "Opening balance"
 					}, userId);
-					if (!sok) { await tx.RollbackAsync(); return (false, $"تعذّر إدخال رصيد افتتاحي: {serr}", null, 0); }
+					if (!sok) { await tx.RollbackAsync(); return (false, $"Could not enter the opening balance: {serr}", null, 0); }
 
 					byInvAcc[invAcc] = R2(byInvAcc.GetValueOrDefault(invAcc) + mv!.TotalCost);
 					accForCc.Add(invAcc);
@@ -1141,19 +1152,19 @@ namespace CrossBuy.BL
 					if (ccErr != null) { await tx.RollbackAsync(); return (false, ccErr, null, 0); }
 					var glLines = new List<JournalLineInput>();
 					foreach (var kv in byInvAcc)
-						glLines.Add(new JournalLineInput { AccountId = kv.Key, Debit = kv.Value, Credit = 0, Description = "مخزون افتتاحي", CostCenterId = need ? cc : null });
-					glLines.Add(new JournalLineInput { AccountId = obe.Value, Debit = 0, Credit = total, Description = "رصيد افتتاحي - مخزون" });
+						glLines.Add(new JournalLineInput { AccountId = kv.Key, Debit = kv.Value, Credit = 0, Description = "Opening stock", CostCenterId = need ? cc : null });
+					glLines.Add(new JournalLineInput { AccountId = obe.Value, Debit = 0, Credit = total, Description = "Opening balance - stock" });
 
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
-					{ CompanyID = companyId, EntryDate = cutoff, JournalType = "Opening", SourceType = "OpeningStock", SourceId = 0, CurrencyId = 0, Description = "رصيد مخزون افتتاحي", Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد المخزون الافتتاحي: " + jerr, null, 0); }
+					{ CompanyID = companyId, EntryDate = cutoff, JournalType = "Opening", SourceType = "OpeningStock", SourceId = 0, CurrencyId = 0, Description = "Opening stock balance", Lines = glLines }, null);
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the opening-stock entry: " + jerr, null, 0); }
 					await tx.CommitAsync();
 					return (true, null, je!.ID, total);
 				}
 				await tx.CommitAsync();
 				return (true, null, null, 0);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء المخزون الافتتاحي: " + ex.Message, null, 0); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error during the opening stock: " + ex.Message, null, 0); }
 		}
 
 		// Capitalize an Asset-type item that currently sits in inventory: issue it out at cost and record a fixed asset.
@@ -1161,26 +1172,26 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? assetId, decimal cost)> CapitalizeFromStockAsync(int companyId, int itemId, int warehouseId, decimal qty, DateTime date, int? costCenterId, string? userId)
 		{
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", null, 0);
+			if (qty <= 0) return (false, "Quantity must be greater than zero", null, 0);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null, 0); }
 			var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == itemId && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف غير موجود", null, 0);
-			if (item.ItemType != "Asset") return (false, "هذا الصنف ليس من نوع أصل ثابت", null, 0);
+			if (item == null) return (false, "Item not found", null, 0);
+			if (item.ItemType != "Asset") return (false, "This item is not of the fixed-asset type", null, 0);
 			var cat = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId);
-			if (cat?.InventoryAccountId == null) return (false, "حساب المخزون غير مربوط لفئة الصنف", null, 0);
+			if (cat?.InventoryAccountId == null) return (false, "The inventory account is not linked for the item category", null, 0);
 			int invAcc = cat.InventoryAccountId.Value;
 			var costAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1201").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			var accumAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1202").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			var expAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520103").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (costAcc == null || accumAcc == null || expAcc == null) return (false, "حسابات الأصول الثابتة غير مُهيّأة في شجرة الحسابات", null, 0);
+			if (costAcc == null || accumAcc == null || expAcc == null) return (false, "The fixed-asset accounts are not configured in the chart of accounts", null, 0);
 			var cc = costCenterId ?? await _context.CostCenters.AsNoTracking().Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
 			{
 				var (sok, serr, mv) = await PostSingleAsync(companyId, new MovementRequest
-				{ Date = date, ItemId = itemId, WarehouseId = warehouseId, Direction = -1, Qty = qty, SourceType = "AssetCapitalization", PostToGl = false, AllowExpired = true, Notes = "رسملة أصل من المخزون" }, userId);
-				if (!sok) { await tx.RollbackAsync(); return (false, $"تعذّر صرف الصنف: {serr}", null, 0); }
+				{ Date = date, ItemId = itemId, WarehouseId = warehouseId, Direction = -1, Qty = qty, SourceType = "AssetCapitalization", PostToGl = false, AllowExpired = true, Notes = "Asset capitalisation from stock" }, userId);
+				if (!sok) { await tx.RollbackAsync(); return (false, $"Could not issue the item: {serr}", null, 0); }
 				decimal cost = mv!.TotalCost;
 
 				var asset = new CrossBuy.Models.Context.Accounting.FixedAsset
@@ -1196,33 +1207,33 @@ namespace CrossBuy.BL
 				{
 					var glLines = new List<JournalLineInput>
 					{
-						new() { AccountId = costAcc.Value, Debit = cost, Credit = 0, CostCenterId = cc, Description = $"رسملة أصل {asset.AssetNo}" },
-						new() { AccountId = invAcc, Debit = 0, Credit = cost, CostCenterId = cc, Description = $"رسملة أصل {asset.AssetNo}" },
+						new() { AccountId = costAcc.Value, Debit = cost, Credit = 0, CostCenterId = cc, Description = $"Asset capitalisation {asset.AssetNo}" },
+						new() { AccountId = invAcc, Debit = 0, Credit = cost, CostCenterId = cc, Description = $"Asset capitalisation {asset.AssetNo}" },
 					};
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
-					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "AssetCapitalization", SourceId = asset.ID, CurrencyId = 0, Description = $"رسملة أصل من المخزون {asset.AssetNo}", Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد الرسملة: " + jerr, null, 0); }
+					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "AssetCapitalization", SourceId = asset.ID, CurrencyId = 0, Description = $"Asset capitalisation from stock {asset.AssetNo}", Lines = glLines }, null);
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the capitalisation entry: " + jerr, null, 0); }
 					asset.AcquisitionJournalEntryId = je!.ID; await _context.SaveChangesAsync();
 				}
 				await tx.CommitAsync();
 				return (true, null, asset.ID, cost);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء الرسملة: " + ex.Message, null, 0); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error during capitalisation: " + ex.Message, null, 0); }
 		}
 
 		// produce (assemble) or break down (disassemble) an Assembly composite item
 		public async Task<(bool ok, string? error, StockMovement? produced)> AssembleAsync(int companyId, int assemblyItemId, int warehouseId, decimal qty, DateTime date, bool disassemble, string? userId)
 		{
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", null);
+			if (qty <= 0) return (false, "Quantity must be greater than zero", null);
 			{ var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, null); }
 			var kit = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == assemblyItemId && i.CompanyID == companyId);
-			if (kit == null) return (false, "الصنف غير موجود", null);
-			if (!(kit.IsComposite && kit.CompositeType == "Assembly")) return (false, "هذا الصنف ليس من نوع التجميع", null);
+			if (kit == null) return (false, "Item not found", null);
+			if (!(kit.IsComposite && kit.CompositeType == "Assembly")) return (false, "This item is not of the assembly type", null);
 			var kitCat = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == kit.ItemCategoryId);
-			if (kitCat?.InventoryAccountId == null) return (false, "حساب المخزون غير مربوط لفئة الصنف المركّب", null);
+			if (kitCat?.InventoryAccountId == null) return (false, "The inventory account is not linked for the composite item category", null);
 			var comps = await _context.ItemComponents.AsNoTracking().Where(c => c.CompanyID == companyId && c.ParentItemId == kit.ID).OrderBy(c => c.SortOrder).ToListAsync();
-			if (comps.Count == 0) return (false, "صنف التجميع لا يحتوي على مكوّنات", null);
+			if (comps.Count == 0) return (false, "The assembly item has no components", null);
 			// ASSEMBLY quantities come from the canonical service (extended by planned scrap, canonical rounding).
 			// The raw rows above are still loaded because DISASSEMBLY needs the PER-UNIT quantity un-extended — it
 			// returns what a kit nominally contains and does not recover scrap — and because the component account
@@ -1252,7 +1263,7 @@ namespace CrossBuy.BL
 					foreach (var c in kitBom.Lines)
 					{
 						var invAcc = InvAccOf(c.ComponentItemId);
-						if (invAcc == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد المكوّنات", null); }
+						if (invAcc == null) { await tx.RollbackAsync(); return (false, "The inventory account is not linked for one of the components", null); }
 						var citem = compItems.FirstOrDefault(x => x.ID == c.ComponentItemId);
 						var reqQty = c.Quantity;   // canonical: planned scrap included, 4dp AwayFromZero
 
@@ -1263,7 +1274,7 @@ namespace CrossBuy.BL
 							var (needBase, ccerr) = await ToBaseAsync(citem, c.UoMId, reqQty);
 							if (ccerr != null) { await tx.RollbackAsync(); return (false, ccerr, null); }
 							var (app, ferr, alloc) = await FefoAllocateAsync(companyId, citem, warehouseId, needBase, date);
-							if (app && ferr != null) { await tx.RollbackAsync(); return (false, $"تعذّر صرف مكوّن: {ferr}", null); }
+							if (app && ferr != null) { await tx.RollbackAsync(); return (false, $"Could not issue a component: {ferr}", null); }
 							if (app) foreach (var a in alloc) subs.Add((a.batchNo, a.qtyBase, citem.BaseUoMId));
 							else subs.Add((null, reqQty, c.UoMId));
 						}
@@ -1273,7 +1284,7 @@ namespace CrossBuy.BL
 						{
 							var (ok, err, mv) = await PostSingleAsync(companyId, new MovementRequest
 							{ Date = date, ItemId = c.ComponentItemId, WarehouseId = warehouseId, Direction = -1, Qty = s.qty, UoMId = s.uom, BatchNo = s.batchNo, SourceType = "Assembly", PostToGl = false, Notes = descKit }, userId);
-							if (!ok) { await tx.RollbackAsync(); return (false, $"تعذّر صرف مكوّن: {err}", null); }
+							if (!ok) { await tx.RollbackAsync(); return (false, $"Could not issue a component: {err}", null); }
 							accForCc.Add(invAcc.Value);
 							glLines.Add(new JournalLineInput { AccountId = invAcc.Value, Debit = 0, Credit = mv!.TotalCost, Description = descKit });
 							total = R2(total + mv.TotalCost);
@@ -1293,7 +1304,7 @@ namespace CrossBuy.BL
 					{
 						var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 						{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "Assembly", SourceId = prod!.ID, CurrencyId = 0, Description = descKit, Lines = glLines }, null);
-						if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد التجميع: " + jerr, null); }
+						if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the assembly entry: " + jerr, null); }
 						prod.JournalEntryId = je!.ID;
 						await _context.SaveChangesAsync();
 					}
@@ -1324,9 +1335,9 @@ namespace CrossBuy.BL
 						decimal cqty = qty * c.Quantity;
 						var (iok, ierr, imv) = await PostSingleAsync(companyId, new MovementRequest
 						{ Date = date, ItemId = c.ComponentItemId, WarehouseId = warehouseId, Direction = 1, Qty = cqty, UnitCostInBase = cqty > 0 ? R4(share / cqty) : 0m, SourceType = "Disassembly", PostToGl = false, Notes = descKit }, userId);
-						if (!iok) { await tx.RollbackAsync(); return (false, $"تعذّر إدخال مكوّن: {ierr}", null); }
+						if (!iok) { await tx.RollbackAsync(); return (false, $"Could not receive a component: {ierr}", null); }
 						var invAcc = InvAccOf(c.ComponentItemId);
-						if (invAcc == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد المكوّنات", null); }
+						if (invAcc == null) { await tx.RollbackAsync(); return (false, "The inventory account is not linked for one of the components", null); }
 						accForCc.Add(invAcc.Value);
 						glLines.Add(new JournalLineInput { AccountId = invAcc.Value, Debit = share, Credit = 0, Description = descKit });
 					}
@@ -1339,7 +1350,7 @@ namespace CrossBuy.BL
 					{
 						var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 						{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "Disassembly", SourceId = kmv.ID, CurrencyId = 0, Description = descKit, Lines = glLines }, null);
-						if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد التفكيك: " + jerr, null); }
+						if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the disassembly entry: " + jerr, null); }
 						kmv.JournalEntryId = je!.ID;
 						await _context.SaveChangesAsync();
 					}
@@ -1347,7 +1358,7 @@ namespace CrossBuy.BL
 					return (true, null, kmv);
 				}
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء التجميع: " + ex.Message, null); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error during assembly: " + ex.Message, null); }
 		}
 
 		// Module 4: complete a work order. Backflush components → WIP(1105) → finished goods, plus optional
@@ -1369,7 +1380,7 @@ namespace CrossBuy.BL
 			foreach (var c in comps)
 			{
 				var invAcc = InvAccOf(c.ItemId);
-				if (invAcc == null) return (false, "حساب المخزون غير مربوط لأحد المكوّنات", 0);
+				if (invAcc == null) return (false, "The inventory account is not linked for one of the components", 0);
 				var citem = compItems.FirstOrDefault(x => x.ID == c.ItemId);
 				var subs = new List<(string? batchNo, decimal qty, int? uom)>();
 				if (citem != null && citem.TrackExpiry)
@@ -1377,7 +1388,7 @@ namespace CrossBuy.BL
 					var (needBase, wcerr) = await ToBaseAsync(citem, c.UoMId, c.PlannedQty);
 					if (wcerr != null) return (false, wcerr, 0);
 					var (app, ferr, alloc) = await FefoAllocateAsync(companyId, citem, wo.WarehouseId, needBase, date);
-					if (app && ferr != null) return (false, $"تعذّر صرف مكوّن: {ferr}", 0);
+					if (app && ferr != null) return (false, $"Could not issue a component: {ferr}", 0);
 					if (app) foreach (var a in alloc) subs.Add((a.batchNo, a.qtyBase, citem.BaseUoMId));
 					else subs.Add((null, c.PlannedQty, c.UoMId));
 				}
@@ -1394,7 +1405,7 @@ namespace CrossBuy.BL
 				{
 					var (ok, err, mv) = await PostSingleAsync(companyId, new MovementRequest
 					{ Date = date, ItemId = c.ItemId, WarehouseId = wo.WarehouseId, Direction = -1, Qty = s.qty, UoMId = s.uom, BatchNo = s.batchNo, SourceType = "WorkOrder", SourceId = wo.ID, PostToGl = false, Notes = desc }, userId);
-					if (!ok) return (false, $"تعذّر صرف مكوّن: {err}", 0);
+					if (!ok) return (false, $"Could not issue a component: {err}", 0);
 					accForCc.Add(invAcc.Value);
 					glLines.Add(new JournalLineInput { AccountId = invAcc.Value, Debit = 0, Credit = mv!.TotalCost, Description = desc });   // Cr component inventory
 					compCost = R2(compCost + mv.TotalCost);
@@ -1402,7 +1413,7 @@ namespace CrossBuy.BL
 				c.IssuedQty = c.PlannedQty; c.UnitCost = c.PlannedQty > 0 ? R4(compCost / c.PlannedQty) : 0m;
 				material = R2(material + compCost);
 			}
-			glLines.Add(new JournalLineInput { AccountId = wipAccId, Debit = material, Credit = 0, Description = desc + " (مواد)" });   // Dr WIP (materials)
+			glLines.Add(new JournalLineInput { AccountId = wipAccId, Debit = material, Credit = 0, Description = desc + " (materials)" });   // Dr WIP (materials)
 			return (true, null, material);
 		}
 
@@ -1411,20 +1422,20 @@ namespace CrossBuy.BL
 		{
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr);
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
-			if (wo == null) return (false, "أمر التشغيل غير موجود");
-			if (wo.Status != "Draft") return (false, "لا يمكن الإصدار إلا من حالة «مخطّط»");
-			if (wo.Mode != "OrderBased") return (false, "الإصدار المرحلي متاح لأوامر «بمراحل» فقط");
+			if (wo == null) return (false, "Work order not found");
+			if (wo.Status != "Draft") return (false, "Release is only possible from the Planned state");
+			if (wo.Mode != "OrderBased") return (false, "Staged release is available only for staged work orders");
 			var comps = await _context.ManufWorkOrderComponents.Where(c => c.CompanyID == companyId && c.WorkOrderId == wo.ID).ToListAsync();
-			if (comps.Count == 0) return (false, "أمر التشغيل لا يحتوي على مكوّنات");
+			if (comps.Count == 0) return (false, "The work order has no components");
 			var wipAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (wipAcc == null) return (false, "حساب WIP (1105) غير موجود — شغّل cb_manuf_4_1.sql");
+			if (wipAcc == null) return (false, "The WIP account (1105) does not exist — run cb_manuf_4_1.sql");
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
 			{
 				var glLines = new List<JournalLineInput>();
 				var accForCc = new List<int> { wipAcc.Value };
-				string desc = "إصدار أمر تشغيل (صرف مواد): " + (wo.WoNo ?? ("#" + wo.ID));
+				string desc = "Work-order release (material issue): " + (wo.WoNo ?? ("#" + wo.ID));
 				var (iok, ierr, material) = await AppendIssueLinesAsync(companyId, wo, comps, glLines, accForCc, wipAcc.Value, date, desc, userId);
 				if (!iok) { await tx.RollbackAsync(); return (false, ierr); }
 
@@ -1436,7 +1447,7 @@ namespace CrossBuy.BL
 				{
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "WorkOrder", SourceId = wo.ID, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد الإصدار: " + jerr); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the release entry: " + jerr); }
 					wo.JournalEntryId = je!.ID;
 				}
 				wo.MaterialCost = material; wo.WipBalance = material; wo.Status = "Released"; wo.ReleasedAt = DateTime.UtcNow;
@@ -1444,7 +1455,7 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء إصدار أمر التشغيل: " + ex.Message); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error while releasing the work order: " + ex.Message); }
 		}
 
 		// Complete: receive finished goods from WIP, clearing it. If materials were NOT yet issued (direct/quick path
@@ -1455,27 +1466,27 @@ namespace CrossBuy.BL
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, 0);
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
-			if (wo == null) return (false, "أمر التشغيل غير موجود", 0);
-			if (wo.Status == "Completed") return (false, "أمر التشغيل مكتمل بالفعل", 0);
-			if (wo.Status == "Cancelled") return (false, "أمر التشغيل ملغى", 0);
-			if (wo.Qty <= 0) return (false, "كمية الإنتاج يجب أن تكون أكبر من صفر", 0);
+			if (wo == null) return (false, "Work order not found", 0);
+			if (wo.Status == "Completed") return (false, "The work order is already complete", 0);
+			if (wo.Status == "Cancelled") return (false, "The work order is cancelled", 0);
+			if (wo.Qty <= 0) return (false, "The production quantity must be greater than zero", 0);
 			var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == wo.ItemId && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف المُصنَّع غير موجود", 0);
+			if (item == null) return (false, "The manufactured item was not found", 0);
 			var finCat = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId);
-			if (finCat?.InventoryAccountId == null) return (false, "حساب المخزون غير مربوط لفئة الصنف المُصنَّع", 0);
+			if (finCat?.InventoryAccountId == null) return (false, "The inventory account is not linked for the manufactured item category", 0);
 			var comps = await _context.ManufWorkOrderComponents.Where(c => c.CompanyID == companyId && c.WorkOrderId == wo.ID).ToListAsync();
-			if (comps.Count == 0) return (false, "أمر التشغيل لا يحتوي على مكوّنات (راجع قائمة المواد BOM)", 0);
+			if (comps.Count == 0) return (false, "The work order has no components (check the bill of materials)", 0);
 
 			var wipAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			var appliedAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520108").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (wipAcc == null || appliedAcc == null) return (false, "حسابات التصنيع (WIP/المطبّقة) غير موجودة — شغّل cb_manuf_4_1.sql", 0);
+			if (wipAcc == null || appliedAcc == null) return (false, "The manufacturing accounts (WIP/applied) do not exist — run cb_manuf_4_1.sql", 0);
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
 			{
 				var glLines = new List<JournalLineInput>();
 				var accForCc = new List<int> { finCat.InventoryAccountId!.Value, wipAcc.Value };
-				string desc = "أمر تشغيل: " + (wo.WoNo ?? ("#" + wo.ID)) + " — " + item.ItemCode;
+				string desc = "Work order: " + (wo.WoNo ?? ("#" + wo.ID)) + " — " + item.ItemCode;
 
 				// HAS THIS ORDER ALREADY ISSUED ITS MATERIALS? That is a LIFECYCLE question, and it used to be
 				// answered with a COST: `wo.WipBalance > 0m`. Release stamps the materials it issued as a value
@@ -1512,8 +1523,8 @@ namespace CrossBuy.BL
 				var labOh = R2(wo.LaborCost + wo.OverheadCost);
 				if (labOh != 0m)
 				{
-					glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = labOh, Credit = 0, Description = desc + " (عمالة مطبّقة/أوفرهيد)" });
-					glLines.Add(new JournalLineInput { AccountId = appliedAcc.Value, Debit = 0, Credit = labOh, Description = desc + " (تكاليف مطبّقة)" });
+					glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = labOh, Credit = 0, Description = desc + " (applied labour/overhead)" });
+					glLines.Add(new JournalLineInput { AccountId = appliedAcc.Value, Debit = 0, Credit = labOh, Description = desc + " (applied costs)" });
 				}
 
 				// WIP already holds materials (+ any sourced labor lines) = wipPrior; for the direct path it's the material issued now
@@ -1536,7 +1547,7 @@ namespace CrossBuy.BL
 				{
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "WorkOrder", SourceId = wo.ID, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد أمر التشغيل: " + jerr, 0); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the work-order entry: " + jerr, 0); }
 					wo.JournalEntryId = je!.ID;
 				}
 				wo.Status = "Completed"; wo.ProducedQty = wo.Qty; wo.MaterialCost = material; wo.UnitCost = unit;
@@ -1545,7 +1556,7 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null, unit);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء تنفيذ أمر التشغيل: " + ex.Message, 0); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error while executing the work order: " + ex.Message, 0); }
 		}
 
 		// بند5 — partial/final production at STANDARD unit cost. Receives finished goods (Dr finished / Cr WIP);
@@ -1557,34 +1568,34 @@ namespace CrossBuy.BL
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, 0);
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
-			if (wo == null) return (false, "أمر التشغيل غير موجود", 0);
-			if (wo.Status == "Completed") return (false, "أمر التشغيل مكتمل بالفعل", 0);
-			if (wo.Status == "Cancelled") return (false, "أمر التشغيل ملغى", 0);
-			if (wo.Status != "Released" && wo.Status != "InProgress") return (false, "أصدر الأمر أولًا (Release) لتحميل المواد على WIP", 0);
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", 0);
+			if (wo == null) return (false, "Work order not found", 0);
+			if (wo.Status == "Completed") return (false, "The work order is already complete", 0);
+			if (wo.Status == "Cancelled") return (false, "The work order is cancelled", 0);
+			if (wo.Status != "Released" && wo.Status != "InProgress") return (false, "Release the order first so the materials are charged to WIP", 0);
+			if (qty <= 0) return (false, "Quantity must be greater than zero", 0);
 			decimal remaining = R4(wo.Qty - wo.ProducedQty);
-			if (remaining <= 0) return (false, "تم إنتاج الكمية المخطّطة بالكامل", 0);
+			if (remaining <= 0) return (false, "The full planned quantity has already been produced", 0);
 			decimal receiveQty = qty > remaining ? remaining : qty;
 			if (stdUnitCost < 0) stdUnitCost = 0m;
 
 			var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == wo.ItemId && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف المُصنَّع غير موجود", 0);
+			if (item == null) return (false, "The manufactured item was not found", 0);
 			var finCat = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(c => c.ID == item.ItemCategoryId);
-			if (finCat?.InventoryAccountId == null) return (false, "حساب المخزون غير مربوط لفئة الصنف المُصنَّع", 0);
+			if (finCat?.InventoryAccountId == null) return (false, "The inventory account is not linked for the manufactured item category", 0);
 			var wipAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			var appliedAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520108").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			var varAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520109").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (wipAcc == null || appliedAcc == null) return (false, "حسابات التصنيع (WIP/المطبّقة) غير موجودة", 0);
+			if (wipAcc == null || appliedAcc == null) return (false, "The manufacturing accounts (WIP/applied) do not exist", 0);
 
 			bool isFinal = finalize || R4(wo.ProducedQty + receiveQty) >= wo.Qty;
-			if (isFinal && varAcc == null) return (false, "حساب انحراف الإنتاج 520109 غير موجود — شغّل manuf_variance_520109.sql", 0);
+			if (isFinal && varAcc == null) return (false, "The production variance account 520109 does not exist — run manuf_variance_520109.sql", 0);
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
 			{
 				var glLines = new List<JournalLineInput>();
 				var accForCc = new List<int> { finCat.InventoryAccountId!.Value, wipAcc.Value };
-				string desc = "إنتاج جزئي: " + (wo.WoNo ?? ("#" + wo.ID)) + " — " + item.ItemCode;
+				string desc = "Partial production: " + (wo.WoNo ?? ("#" + wo.ID)) + " — " + item.ItemCode;
 				decimal recvVal = R2(stdUnitCost * receiveQty);
 
 				// receive finished goods at standard cost → Dr finished inventory / Cr WIP
@@ -1605,20 +1616,20 @@ namespace CrossBuy.BL
 					var labOh = R2(wo.LaborCost + wo.OverheadCost);
 					if (labOh != 0m)
 					{
-						glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = labOh, Credit = 0, Description = desc + " (عمالة مطبّقة/أوفرهيد)" });
-						glLines.Add(new JournalLineInput { AccountId = appliedAcc.Value, Debit = 0, Credit = labOh, Description = desc + " (تكاليف مطبّقة)" });
+						glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = labOh, Credit = 0, Description = desc + " (applied labour/overhead)" });
+						glLines.Add(new JournalLineInput { AccountId = appliedAcc.Value, Debit = 0, Credit = labOh, Description = desc + " (applied costs)" });
 						wo.WipBalance = R2(wo.WipBalance + labOh);
 					}
 					decimal varAmt = R2(wo.WipBalance);
 					if (varAmt > 0m)   // WIP still positive → cost exceeded standard → unfavorable variance
 					{
-						glLines.Add(new JournalLineInput { AccountId = varAcc!.Value, Debit = varAmt, Credit = 0, Description = desc + " (انحراف غير مُوات)" });
+						glLines.Add(new JournalLineInput { AccountId = varAcc!.Value, Debit = varAmt, Credit = 0, Description = desc + " (unfavourable variance)" });
 						glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = 0, Credit = varAmt, Description = desc });
 					}
 					else if (varAmt < 0m)   // WIP negative → produced at less than accumulated → favorable variance
 					{
 						glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = -varAmt, Credit = 0, Description = desc });
-						glLines.Add(new JournalLineInput { AccountId = varAcc!.Value, Debit = 0, Credit = -varAmt, Description = desc + " (انحراف مُوات)" });
+						glLines.Add(new JournalLineInput { AccountId = varAcc!.Value, Debit = 0, Credit = -varAmt, Description = desc + " (favourable variance)" });
 					}
 					wo.WipBalance = 0m; wo.Status = "Completed"; wo.UnitCost = stdUnitCost;
 					wo.CompletedAt = DateTime.UtcNow; wo.ClosedAt = DateTime.UtcNow;
@@ -1632,14 +1643,14 @@ namespace CrossBuy.BL
 				{
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "WorkOrder", SourceId = wo.ID, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد الإنتاج الجزئي: " + jerr, 0); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the partial-production entry: " + jerr, 0); }
 					wo.JournalEntryId = je!.ID;
 				}
 				await _context.SaveChangesAsync();
 				await tx.CommitAsync();
 				return (true, null, receiveQty);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء الإنتاج الجزئي: " + ex.Message, 0); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error during partial production: " + ex.Message, 0); }
 		}
 
 		// STAGED: cancel an order. If nothing was issued (Draft / WIP==0) just mark Cancelled. If materials were issued
@@ -1648,9 +1659,9 @@ namespace CrossBuy.BL
 		{
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
-			if (wo == null) return (false, "أمر التشغيل غير موجود");
-			if (wo.Status == "Completed") return (false, "لا يمكن إلغاء أمر مكتمل");
-			if (wo.Status == "Cancelled") return (false, "أمر التشغيل ملغى بالفعل");
+			if (wo == null) return (false, "Work order not found");
+			if (wo.Status == "Completed") return (false, "A completed order cannot be cancelled");
+			if (wo.Status == "Cancelled") return (false, "The work order is already cancelled");
 
 			if (wo.WipBalance <= 0m)   // nothing issued → cancel with no GL
 			{
@@ -1661,7 +1672,7 @@ namespace CrossBuy.BL
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr);
 			var comps = await _context.ManufWorkOrderComponents.Where(c => c.CompanyID == companyId && c.WorkOrderId == wo.ID && c.IssuedQty > 0).ToListAsync();
 			var wipAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (wipAcc == null) return (false, "حساب WIP (1105) غير موجود");
+			if (wipAcc == null) return (false, "The WIP account (1105) does not exist");
 			var compItemIds = comps.Select(c => c.ItemId).Distinct().ToList();
 			var compItems = await _context.Items.AsNoTracking().Where(i => compItemIds.Contains(i.ID)).ToListAsync();
 			var compCatIds = compItems.Select(i => i.ItemCategoryId).Distinct().ToList();
@@ -1673,15 +1684,15 @@ namespace CrossBuy.BL
 			{
 				var glLines = new List<JournalLineInput>();
 				var accForCc = new List<int> { wipAcc.Value };
-				string desc = "إلغاء أمر تشغيل (عكس المواد/العمالة): " + (wo.WoNo ?? ("#" + wo.ID));
+				string desc = "Work-order cancellation (reversing materials/labour): " + (wo.WoNo ?? ("#" + wo.ID));
 				decimal returned = 0m;
 				foreach (var c in comps)
 				{
 					var invAcc = InvAccOf(c.ItemId);
-					if (invAcc == null) { await tx.RollbackAsync(); return (false, "حساب المخزون غير مربوط لأحد المكوّنات"); }
+					if (invAcc == null) { await tx.RollbackAsync(); return (false, "The inventory account is not linked for one of the components"); }
 					var (ok, err, mv) = await PostSingleAsync(companyId, new MovementRequest
 					{ Date = date, ItemId = c.ItemId, WarehouseId = wo.WarehouseId, Direction = 1, Qty = c.IssuedQty, UoMId = c.UoMId, UnitCostInBase = c.UnitCost, SourceType = "WorkOrder", SourceId = wo.ID, PostToGl = false, Notes = desc }, userId);
-					if (!ok) { await tx.RollbackAsync(); return (false, $"تعذّر إرجاع مكوّن: {err}"); }
+					if (!ok) { await tx.RollbackAsync(); return (false, $"Could not return a component: {err}"); }
 					accForCc.Add(invAcc.Value);
 					glLines.Add(new JournalLineInput { AccountId = invAcc.Value, Debit = mv!.TotalCost, Credit = 0, Description = desc });   // Dr raw inventory (return)
 					returned = R2(returned + mv.TotalCost);
@@ -1698,8 +1709,8 @@ namespace CrossBuy.BL
 				{
 					if (lab.CreditAccountId == null) continue;
 					var net = R2(lab.Amount - lab.WhtAmount);
-					if (net != 0m) { glLines.Add(new JournalLineInput { AccountId = lab.CreditAccountId.Value, Debit = net, Credit = 0, Description = desc + " (عمالة)" }); accForCc.Add(lab.CreditAccountId.Value); }
-					if (lab.WhtAmount > 0m && whtAccId != null) glLines.Add(new JournalLineInput { AccountId = whtAccId.Value, Debit = lab.WhtAmount, Credit = 0, Description = desc + " (عكس ض.خصم)" });
+					if (net != 0m) { glLines.Add(new JournalLineInput { AccountId = lab.CreditAccountId.Value, Debit = net, Credit = 0, Description = desc + " (labour)" }); accForCc.Add(lab.CreditAccountId.Value); }
+					if (lab.WhtAmount > 0m && whtAccId != null) glLines.Add(new JournalLineInput { AccountId = whtAccId.Value, Debit = lab.WhtAmount, Credit = 0, Description = desc + " (withholding-tax reversal)" });
 					laborReturned = R2(laborReturned + lab.Amount);
 				}
 
@@ -1714,7 +1725,7 @@ namespace CrossBuy.BL
 				{
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "WorkOrder", SourceId = wo.ID, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد الإلغاء: " + jerr); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the cancellation entry: " + jerr); }
 					wo.JournalEntryId = je!.ID;
 				}
 				if (laborLines.Count > 0) _context.ManufWorkOrderLabor.RemoveRange(laborLines);
@@ -1723,21 +1734,21 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء إلغاء أمر التشغيل: " + ex.Message); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error while cancelling the work order: " + ex.Message); }
 		}
 
 		// بند3: add a labor line. Posts Dr WIP / Cr (520101 employee | cash/payable+210202 external | 520108 applied).
 		// Sourced labor REPLACES 520108 for that amount (no double-count). Raises WIP + the order's WipBalance.
-		public async Task<(bool ok, string? error, int laborId)> AddWorkOrderLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal ratePerHour, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId)
+		public async Task<(bool ok, string? error, int laborId)> AddWorkOrderLaborAsync(int companyId, int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal ratePerHour, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, DateTime date, string? userId, string? workerNameEn = null)
 		{
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: labor cost rounds to functional dp (no static R2)
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr, 0);
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == workOrderId);
-			if (wo == null) return (false, "أمر التشغيل غير موجود", 0);
-			if (wo.Status != "Released" && wo.Status != "InProgress") return (false, "تحميل العمالة متاح بعد الإصدار وقبل الإكمال فقط", 0);
-			if (hours <= 0 || ratePerHour <= 0) return (false, "الساعات وسعر الساعة يجب أن يكونا أكبر من صفر", 0);
+			if (wo == null) return (false, "Work order not found", 0);
+			if (wo.Status != "Released" && wo.Status != "InProgress") return (false, "Labour can only be charged after release and before completion", 0);
+			if (hours <= 0 || ratePerHour <= 0) return (false, "The hours and the hourly rate must both be greater than zero", 0);
 			var wipAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (wipAcc == null) return (false, "حساب WIP (1105) غير موجود", 0);
+			if (wipAcc == null) return (false, "The WIP account (1105) does not exist", 0);
 
 			// MC (بند ب): the entered rate/amount are in the line currency; convert to FUNCTIONAL (Buy — we pay the worker).
 			// Amount = functional equivalent (hits WIP); AmountForeign + CurrencyId + ExchangeRate preserved (same *Base principle).
@@ -1754,18 +1765,18 @@ namespace CrossBuy.BL
 				? await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == srcCode).Select(a => (int?)a.ID).FirstOrDefaultAsync()
 				: (externalCreditAccountId ?? await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => (int?)a.ID).FirstOrDefaultAsync());
 			if (sourceType != "Employee" && sourceType != "Applied") sourceType = "External";
-			if (creditAcc == null) return (false, "حساب الطرف الدائن للعمالة غير موجود (520101 / 110101)", 0);
+			if (creditAcc == null) return (false, "The labour credit account does not exist (520101 / 110101)", 0);
 
 			decimal whtAmount = 0m; int? whtAccId = null;
 			if (whtCodeId != null && whtCodeId > 0)
 			{
 				var rate = await _context.TaxCodes.AsNoTracking().Where(t => t.CompanyID == companyId && t.ID == whtCodeId && t.Kind == "WHT").Select(t => (decimal?)t.Rate).FirstOrDefaultAsync();
-				if (rate == null) return (false, "كود ضريبة الخصم غير صالح", 0);
+				if (rate == null) return (false, "Invalid withholding-tax code", 0);
 				whtAmount = R2(amount * rate.Value / 100m);
 				if (whtAmount > 0)
 				{
 					whtAccId = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "210202").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-					if (whtAccId == null) return (false, "حساب ضريبة الخصم والتحصيل (210202) غير موجود", 0);
+					if (whtAccId == null) return (false, "The withholding and collection tax account (210202) does not exist", 0);
 				}
 			}
 
@@ -1774,12 +1785,12 @@ namespace CrossBuy.BL
 			{
 				var glLines = new List<JournalLineInput>();
 				var accForCc = new List<int> { wipAcc.Value, creditAcc.Value };
-				string lbl = sourceType == "Employee" ? "موظف" : sourceType == "External" ? (workerName ?? "عامل خارجي") : "مطبّقة";
-				string desc = "عمالة أمر تشغيل: " + (wo.WoNo ?? ("#" + wo.ID)) + " — " + lbl;
+				string lbl = sourceType == "Employee" ? "Employee" : sourceType == "External" ? (workerName ?? "External worker") : "Applied";
+				string desc = "Work-order labour: " + (wo.WoNo ?? ("#" + wo.ID)) + " — " + lbl;
 				glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = amount, Credit = 0, Description = desc });   // Dr WIP
 				var net = R2(amount - whtAmount);
 				if (net != 0m) glLines.Add(new JournalLineInput { AccountId = creditAcc.Value, Debit = 0, Credit = net, Description = desc });   // Cr source (520101 / cash / 520108)
-				if (whtAmount > 0m && whtAccId != null) glLines.Add(new JournalLineInput { AccountId = whtAccId.Value, Debit = 0, Credit = whtAmount, Description = desc + " (ض.خصم)" });
+				if (whtAmount > 0m && whtAccId != null) glLines.Add(new JournalLineInput { AccountId = whtAccId.Value, Debit = 0, Credit = whtAmount, Description = desc + " (withholding tax)" });
 
 				var (need, cc, ccErr) = await ResolveCcAsync(companyId, accForCc);
 				if (ccErr != null) { await tx.RollbackAsync(); return (false, ccErr, 0); }
@@ -1790,12 +1801,13 @@ namespace CrossBuy.BL
 				{
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "WorkOrder", SourceId = wo.ID, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد العمالة: " + jerr, 0); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the labour entry: " + jerr, 0); }
 					jeId = je!.ID;
 				}
 				var labor = new ManufWorkOrderLabor
 				{
-					CompanyID = companyId, WorkOrderId = wo.ID, SourceType = sourceType, EmployeeId = employeeId, WorkerName = workerName,
+					CompanyID = companyId, WorkOrderId = wo.ID, SourceType = sourceType, EmployeeId = employeeId,
+					WorkerName = workerName, WorkerNameEn = string.IsNullOrWhiteSpace(workerNameEn) ? null : workerNameEn.Trim(),
 					Hours = hours, RatePerHour = ratePerHour, Amount = amount, WhtCodeId = whtCodeId, WhtAmount = whtAmount,
 					CurrencyId = lineCcy, ExchangeRate = fxRate, AmountForeign = amountForeign,
 					CreditAccountId = creditAcc, JournalEntryId = jeId, CreatedBy = userId, CreatedAt = DateTime.UtcNow
@@ -1807,7 +1819,7 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null, labor.ID);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء تحميل العمالة: " + ex.Message, 0); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error while charging labour: " + ex.Message, 0); }
 		}
 
 		// بند3: remove a labor line — post the reverse (Dr its source / Cr WIP), reduce WipBalance, delete the row.
@@ -1815,26 +1827,26 @@ namespace CrossBuy.BL
 		{
 			int __fdp = await FunctionalDpAsync(companyId); decimal R2(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);   // HM-2 Batch 5: functional cost dp (no static R2)
 			var lab = await _context.ManufWorkOrderLabor.FirstOrDefaultAsync(l => l.CompanyID == companyId && l.ID == laborId);
-			if (lab == null) return (false, "سطر العمالة غير موجود");
+			if (lab == null) return (false, "Labour line not found");
 			var wo = await _context.ManufWorkOrders.FirstOrDefaultAsync(w => w.CompanyID == companyId && w.ID == lab.WorkOrderId);
-			if (wo == null) return (false, "أمر التشغيل غير موجود");
-			if (wo.Status == "Completed" || wo.Status == "Cancelled" || wo.Status == "Closed") return (false, "لا يمكن حذف العمالة بعد إغلاق الأمر");
+			if (wo == null) return (false, "Work order not found");
+			if (wo.Status == "Completed" || wo.Status == "Cancelled" || wo.Status == "Closed") return (false, "Labour cannot be deleted after the order is closed");
 			var pErr = await PeriodGuardAsync(companyId, date); if (pErr != null) return (false, pErr);
 			var wipAcc = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "1105").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (wipAcc == null) return (false, "حساب WIP (1105) غير موجود");
+			if (wipAcc == null) return (false, "The WIP account (1105) does not exist");
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			try
 			{
 				var glLines = new List<JournalLineInput>();
 				var accForCc = new List<int> { wipAcc.Value };
-				string desc = "حذف عمالة أمر تشغيل: " + (wo.WoNo ?? ("#" + wo.ID));
+				string desc = "Work-order labour deletion: " + (wo.WoNo ?? ("#" + wo.ID));
 				var net = R2(lab.Amount - lab.WhtAmount);
 				if (lab.CreditAccountId != null && net != 0m) { glLines.Add(new JournalLineInput { AccountId = lab.CreditAccountId.Value, Debit = net, Credit = 0, Description = desc }); accForCc.Add(lab.CreditAccountId.Value); }
 				if (lab.WhtAmount > 0m)
 				{
 					var whtAccId = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "210202").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-					if (whtAccId != null) glLines.Add(new JournalLineInput { AccountId = whtAccId.Value, Debit = lab.WhtAmount, Credit = 0, Description = desc + " (عكس ض.خصم)" });
+					if (whtAccId != null) glLines.Add(new JournalLineInput { AccountId = whtAccId.Value, Debit = lab.WhtAmount, Credit = 0, Description = desc + " (withholding-tax reversal)" });
 				}
 				glLines.Add(new JournalLineInput { AccountId = wipAcc.Value, Debit = 0, Credit = lab.Amount, Description = desc });   // Cr WIP
 
@@ -1846,7 +1858,7 @@ namespace CrossBuy.BL
 				{
 					var (jok, jerr, je) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 					{ CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "WorkOrder", SourceId = wo.ID, CurrencyId = 0, Description = desc, Lines = glLines }, null);
-					if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد حذف العمالة: " + jerr); }
+					if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the labour-deletion entry: " + jerr); }
 				}
 				_context.ManufWorkOrderLabor.Remove(lab);
 				wo.WipBalance = R2(wo.WipBalance - lab.Amount);
@@ -1854,7 +1866,7 @@ namespace CrossBuy.BL
 				await tx.CommitAsync();
 				return (true, null);
 			}
-			catch (Exception ex) { await tx.RollbackAsync(); return (false, "خطأ أثناء حذف العمالة: " + ex.Message); }
+			catch (Exception ex) { await tx.RollbackAsync(); return (false, "Error while deleting labour: " + ex.Message); }
 		}
 
 		// builds + posts the 2-line journal entry for a stock movement
@@ -1864,7 +1876,7 @@ namespace CrossBuy.BL
 			int? cogsAcc = cat?.CogsAccountId;
 			int? adjAcc = cat?.AdjustmentAccountId;
 			int? grniAcc = cat?.GrniAccountId;
-			if (inventoryAcc == null) return (false, "حساب المخزون غير مربوط لفئة الصنف — اربطه من شاشة الفئات", null);
+			if (inventoryAcc == null) return (false, "The inventory account is not linked for the item category — link it from the Categories screen", null);
 
 			// the counter account depends on the movement type
 			int? counter = req.SourceType switch
@@ -1879,7 +1891,7 @@ namespace CrossBuy.BL
 			};
 			// optional override (e.g. project material issue → project execution cost 510104). Inventory side unchanged → stock_gl intact.
 			if (req.CounterAccountOverride.HasValue) counter = req.CounterAccountOverride.Value;
-			if (counter == null) return (false, "الحساب المقابل غير مربوط لفئة الصنف (التكلفة/التسوية/GRNI)", null);
+			if (counter == null) return (false, "The contra account is not linked for the item category (cost/adjustment/GRNI)", null);
 
 			// some accounts (expense/COGS) require a cost center — attach a default one if so
 			var accs = await _context.Accounts.AsNoTracking().Where(a => a.ID == inventoryAcc.Value || a.ID == counter.Value).ToListAsync();
@@ -1888,28 +1900,36 @@ namespace CrossBuy.BL
 			if (needsCc)
 			{
 				cc = await _context.CostCenters.AsNoTracking().Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
-				if (cc == null) return (false, "الحساب المقابل يتطلب مركز تكلفة ولا يوجد مركز تكلفة معرّف", null);
+				if (cc == null) return (false, "The contra account requires a cost centre and no cost centre is defined", null);
 			}
 
 			var lines = new List<JournalLineInput>();
+			// BOTH DESCRIPTIONS, and the English one uses the item's ENGLISH name. This single string was the
+			// description on the entry header AND on both of its lines, so one Arabic-named item put Arabic
+			// across every row of /Accounting/Journals and /Accounting/Index on an English screen.
+			//
+			// Neither depends on the operator's UI language: these are STORED, read later by everyone, so the
+			// English text has to be the same whoever posted the movement. NameEn is optional on Item, so the
+			// fallback is the Arabic name rather than a gap in the middle of a sentence.
 			var desc = $"حركة مخزون: {item.ItemCode} - {item.Name}";
+			var descEn = $"Stock movement: {item.ItemCode} - {(string.IsNullOrWhiteSpace(item.NameEn) ? item.Name : item.NameEn)}";
 			var proj = req.ProjectId;   // analytic dimension carried from the source document (e.g. a project-tagged sales invoice → COGS)
 			if (req.Direction == 1)   // IN: Dr Inventory / Cr counter
 			{
-				lines.Add(new JournalLineInput { AccountId = inventoryAcc.Value, Debit = value, Credit = 0, Description = desc, CostCenterId = cc, ProjectId = proj });
-				lines.Add(new JournalLineInput { AccountId = counter.Value, Debit = 0, Credit = value, Description = desc, CostCenterId = cc, ProjectId = proj });
+				lines.Add(new JournalLineInput { AccountId = inventoryAcc.Value, Debit = value, Credit = 0, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
+				lines.Add(new JournalLineInput { AccountId = counter.Value, Debit = 0, Credit = value, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
 			}
 			else                      // OUT: Dr counter (COGS/Adjustment) / Cr Inventory
 			{
-				lines.Add(new JournalLineInput { AccountId = counter.Value, Debit = value, Credit = 0, Description = desc, CostCenterId = cc, ProjectId = proj });
-				lines.Add(new JournalLineInput { AccountId = inventoryAcc.Value, Debit = 0, Credit = value, Description = desc, CostCenterId = cc, ProjectId = proj });
+				lines.Add(new JournalLineInput { AccountId = counter.Value, Debit = value, Credit = 0, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
+				lines.Add(new JournalLineInput { AccountId = inventoryAcc.Value, Debit = 0, Credit = value, Description = desc, DescriptionEn = descEn, CostCenterId = cc, ProjectId = proj });
 			}
 
 			var (ok, err, entry) = await _journals.CreateAndPostNoTxAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = req.Date, JournalType = "Auto",
 				SourceType = "Inventory", SourceId = mv.ID, CurrencyId = 0,
-				Description = desc, Lines = lines
+				Description = desc, DescriptionEn = descEn, Lines = lines
 			}, null);
 			if (!ok) return (false, "تعذّر ترحيل القيد: " + err, null);
 			return (true, null, entry?.ID);

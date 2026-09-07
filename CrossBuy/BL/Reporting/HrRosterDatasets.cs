@@ -313,16 +313,16 @@ namespace CrossBuy.BL.Reporting
                 var minutes = (int)(r.PlannedEnd - r.PlannedStart).TotalMinutes;
                 builder.AddRow(
                     r.WorkDate,
-                    (isAr ? r.EmployeeName : r.EmployeeNameEn) ?? r.EmployeeName,
+                    (isAr ? r.EmployeeName : DisplayName.Or(r.EmployeeNameEn, r.EmployeeName)) ?? r.EmployeeName,
                     r.EmployeeID,
                     r.BranchName,
                     r.ShiftCode,
-                    (isAr ? r.ShiftNameAr : r.ShiftNameEn),
+                    (isAr ? r.ShiftNameAr : DisplayName.Or(r.ShiftNameEn, r.ShiftNameAr)),
                     r.PlannedStart,
                     r.PlannedEnd,
                     Math.Round(minutes / 60m, 2),
                     r.PlannedStart.Date != r.PlannedEnd.Date,
-                    (isAr ? r.PeriodNameAr : r.PeriodNameEn));
+                    (isAr ? r.PeriodNameAr : DisplayName.Or(r.PeriodNameEn, r.PeriodNameAr)));
             }
 
             return builder.Build(totalRowCount: total);
@@ -418,7 +418,7 @@ namespace CrossBuy.BL.Reporting
                 emitted.Add(new object?[]
                 {
                     day,
-                    (isAr ? who?.FullName : who?.FullNameEn) ?? who?.FullName,
+                    (isAr ? who?.FullName : DisplayName.Or(who?.FullNameEn, who?.FullName)) ?? who?.FullName,
                     empId,
                     c.Source,
                     Math.Round((c.ExpectedMinutes ?? 0) / 60m, 2),

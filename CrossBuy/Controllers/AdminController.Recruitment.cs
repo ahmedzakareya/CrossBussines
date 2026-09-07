@@ -106,7 +106,7 @@ namespace CrossBuy.Controllers
 			// resolve display names
 			ViewBag.JobTitleName = app.JobTitleID == null ? null : await Db.JobTitles.Where(t => t.ID == app.JobTitleID).Select(t => isAr ? t.TitleAr : t.Title).FirstOrDefaultAsync();
 			ViewBag.BranchName = app.BranchID == null ? null : await Db.Branches.Where(b => b.ID == app.BranchID).Select(b => isAr ? b.NameAr : b.Name).FirstOrDefaultAsync();
-			ViewBag.DeptName = app.DepartmentID == null ? null : await Db.Hierarchicals.Where(h => h.H_ID == app.DepartmentID).Select(h => isAr ? h.H_Name : h.H_NameEn).FirstOrDefaultAsync();
+			ViewBag.DeptName = app.DepartmentID == null ? null : await Db.Hierarchicals.Where(h => h.H_ID == app.DepartmentID).Select(h => isAr ? h.H_Name : DisplayName.Or(h.H_NameEn, h.H_Name)).FirstOrDefaultAsync();
 			ViewBag.Stages = CrossBuy.BL.RecruitmentStages.Order;
 			return View(app);
 		}

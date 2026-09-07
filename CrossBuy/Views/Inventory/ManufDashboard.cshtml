@@ -10,7 +10,7 @@
     string Money(decimal v) => v.ToString("N2");
     // brand-safe status palette: green = done/active-ok, amber-caution = in-progress, red = cancelled, gray = draft
     string stStyle(string s) => s switch {
-        "Completed" => "background:#eaf3ef;color:#13433a;",
+        "Completed" => "background:#E7F0FF;color:#0E4A9E;",
         "Released" or "InProgress" => "background:#fef3e2;color:#b96a00;",
         "Cancelled" => "background:#fdeaea;color:#d92d20;",
         _ => "background:#f2f4f7;color:#475467;" };
@@ -59,7 +59,7 @@
                     </div>
                 </div>
                 <div class="col-xl-4">
-                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background:linear-gradient(135deg,#1f6253 0%,#13433a 100%)">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background:linear-gradient(135deg,#145DBF 0%,#0E4A9E 100%)">
                         <div class="card-header pt-5">
                             <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@Localizer["Production this month"]</span></h3>
                             <div class="card-toolbar"><a href="@Url.Action("WorkOrders","Inventory")" class="btn btn-icon bg-white bg-opacity-10 btn-color-white w-25px h-25px"><i class="ki-outline ki-black-right fs-5"></i></a></div>
@@ -92,11 +92,11 @@
                 @{
                     // (label, value, icon, bg, fg, href)
                     var stats = new (string label, string value, string icon, string bg, string fg, string href)[] {
-                        (Localizer["Work orders"].Value, Model.TotalWos.ToString(), "ki-gear", "#eaf3ef", "#13433a", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Work orders"].Value, Model.TotalWos.ToString(), "ki-gear", "#E7F0FF", "#0E4A9E", Url.Action("WorkOrders","Inventory")),
                         (Localizer["Draft"].Value, Model.Draft.ToString(), "ki-document", "#f2f4f7", "#475467", Url.Action("WorkOrders","Inventory")),
                         (Localizer["Active orders"].Value, Model.Active.ToString(), "ki-time", "#fef3e2", "#b96a00", Url.Action("WorkOrders","Inventory")),
-                        (Localizer["Completed"].Value, Model.Completed.ToString(), "ki-check-circle", "#eaf3ef", "#13433a", Url.Action("WorkOrders","Inventory")),
-                        (Localizer["Open WIP"].Value, Money(Model.OpenWip), "ki-abstract-26", "#eaf3ef", "#13433a", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Completed"].Value, Model.Completed.ToString(), "ki-check-circle", "#E7F0FF", "#0E4A9E", Url.Action("WorkOrders","Inventory")),
+                        (Localizer["Open WIP"].Value, Money(Model.OpenWip), "ki-abstract-26", "#E7F0FF", "#0E4A9E", Url.Action("WorkOrders","Inventory")),
                         (Localizer["Cancelled"].Value, Model.Cancelled.ToString(), "ki-cross-circle", Model.Cancelled>0?"#fdeaea":"#f2f4f7", Model.Cancelled>0?"#d92d20":"#475467", Url.Action("WorkOrders","Inventory")),
                     };
                 }
@@ -129,7 +129,7 @@
                         <div class="card-body pt-2">
                             <div class="table-responsive">
                             <table class="table align-middle fs-6 gy-3 my-0" style="font-variant-numeric:tabular-nums;">
-                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                                     <th class="ps-4">@Localizer["WO"]</th><th class="min-w-200px">@SR["Item"]</th><th class="text-end">@SR["Quantity"]</th>
                                     <th class="text-end">@Localizer["Cost"]</th><th>@SR["Date"]</th><th class="text-center pe-4">@SR["Status"]</th>
                                 </tr></thead>
@@ -166,9 +166,9 @@
                             {
                                 <div id="manuf_cost_chart" style="height:220px"></div>
                                 <div class="mt-4">
-                                    <div class="d-flex flex-stack mb-2"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#1f6253;width:9px;height:9px;"></span>@Localizer["Material"]</span><span class="fw-bold text-gray-900">@Money(Model.TotMaterial)</span></div>
+                                    <div class="d-flex flex-stack mb-2"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#145DBF;width:9px;height:9px;"></span>@Localizer["Material"]</span><span class="fw-bold text-gray-900">@Money(Model.TotMaterial)</span></div>
                                     <div class="d-flex flex-stack mb-2"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#b96a00;width:9px;height:9px;"></span>@Localizer["Labor"]</span><span class="fw-bold text-gray-900">@Money(Model.TotLabor)</span></div>
-                                    <div class="d-flex flex-stack"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#7c9c93;width:9px;height:9px;"></span>@Localizer["Overhead"]</span><span class="fw-bold text-gray-900">@Money(Model.TotOverhead)</span></div>
+                                    <div class="d-flex flex-stack"><span class="d-flex align-items-center text-gray-700 fw-semibold"><span class="bullet bullet-dot me-2" style="background:#5B8CFF;width:9px;height:9px;"></span>@Localizer["Overhead"]</span><span class="fw-bold text-gray-900">@Money(Model.TotOverhead)</span></div>
                                 </div>
                             }
                         </div>
@@ -187,7 +187,7 @@
                             @foreach (var t in Model.TopItems)
                             {
                                 <div class="d-flex flex-stack mb-2"><span class="text-gray-700 fw-semibold flex-grow-1 text-truncate me-3">@t.Name</span><span class="text-gray-900 fw-bold me-3">@Money(t.Value)</span></div>
-                                <div class="d-flex align-items-center w-100 mb-4"><div class="progress h-6px w-100 me-2" style="background:#eaf3ef;"><div class="progress-bar" style="width:@(t.Pct)%;background:#1f6253;"></div></div><span class="text-gray-500 fw-semibold fs-7">@t.Pct%</span></div>
+                                <div class="d-flex align-items-center w-100 mb-4"><div class="progress h-6px w-100 me-2" style="background:#E7F0FF;"><div class="progress-bar" style="width:@(t.Pct)%;background:#145DBF;"></div></div><span class="text-gray-500 fw-semibold fs-7">@t.Pct%</span></div>
                             }
                         </div>
                     </div>
@@ -213,7 +213,7 @@
                                 {
                                     <div class="col-3">
                                         <a href="@Url.Action(l.action,"Inventory")" class="d-flex flex-column flex-center bg-hover-light rounded h-100 py-5 border border-gray-200 text-decoration-none">
-                                            <i class="ki-outline @l.icon fs-2x mb-2" style="color:#1f6253;"></i>
+                                            <i class="ki-outline @l.icon fs-2x mb-2" style="color:#145DBF;"></i>
                                             <span class="fs-8 fw-semibold text-gray-800 text-center px-1">@l.label</span>
                                         </a>
                                     </div>
@@ -245,7 +245,7 @@
     new ApexCharts(trendEl, {
         chart: { type: 'area', height: 330, fontFamily: 'inherit', toolbar: { show: false } },
         series: [ { name: '@Localizer["Produced value"]', data: vals } ],
-        colors: ['#1f6253'],
+        colors: ['#145DBF'],
         xaxis: { categories: months, labels: { style: { colors: '#99A1B7' } } },
         yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return v.toLocaleString(); } } },
         stroke: { curve: 'smooth', width: 3 },
@@ -263,7 +263,7 @@
             chart: { type: 'donut', height: 220, fontFamily: 'inherit' },
             series: costData,
             labels: ['@Localizer["Material"]', '@Localizer["Labor"]', '@Localizer["Overhead"]'],
-            colors: ['#1f6253', '#b96a00', '#7c9c93'],
+            colors: ['#145DBF', '#b96a00', '#5B8CFF'],
             legend: { show: false },
             dataLabels: { enabled: true, formatter: function (v) { return Math.round(v) + '%'; } },
             plotOptions: { pie: { donut: { size: '62%' } } },

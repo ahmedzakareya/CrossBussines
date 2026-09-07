@@ -19,9 +19,9 @@
             @{
                 // (label, value, raw, icon, bg-tint, fg)
                 var kpis = new (string label, string value, string raw, string icon, string bg, string fg)[] {
-                    (Localizer["Weighted (expected)"].Value, totWeighted.ToString("N0"), Raw(totWeighted), "ki-chart-line-up", "#eaf3ef", "#13433a"),
-                    (Localizer["Total open pipeline"].Value, totOpen.ToString("N0"), Raw(totOpen), "ki-chart-simple", "#eaf3ef", "#1f6253"),
-                    (Localizer["Won"].Value, totWon.ToString("N0"), Raw(totWon), "ki-medal-star", "#eaf3ef", "#13433a"),
+                    (Localizer["Weighted (expected)"].Value, totWeighted.ToString("N0"), Raw(totWeighted), "ki-chart-line-up", "#E7F0FF", "#0E4A9E"),
+                    (Localizer["Total open pipeline"].Value, totOpen.ToString("N0"), Raw(totOpen), "ki-chart-simple", "#E7F0FF", "#145DBF"),
+                    (Localizer["Won"].Value, totWon.ToString("N0"), Raw(totWon), "ki-medal-star", "#E7F0FF", "#0E4A9E"),
                 };
             }
             @foreach (var k in kpis)
@@ -41,7 +41,7 @@
         <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Forecast by expected close month"]</div></div>
             <div class="card-body">
                 <div class="table-responsive"><table class="table align-middle fs-6 gy-3" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Month"]</th><th class="text-center">@Localizer["Open opps"]</th><th class="text-end">@Localizer["Open value"]</th><th class="text-end">@Localizer["Weighted"]</th><th class="text-end pe-4">@Localizer["Won"]</th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Month"]</th><th class="text-center">@Localizer["Open opps"]</th><th class="text-end">@Localizer["Open value"]</th><th class="text-end">@Localizer["Weighted"]</th><th class="text-end pe-4">@Localizer["Won"]</th></tr></thead>
                     <tbody>
                     @foreach (var r in rows)
                     {
@@ -49,15 +49,15 @@
                             <td class="ps-4 fw-bold text-gray-800">@r.Month</td>
                             <td class="text-center">@r.OpenCount</td>
                             <td class="text-end text-muted">@r.OpenAmount.ToString("N0")</td>
-                            <td class="text-end fw-bold" style="color:#13433a;">@r.WeightedAmount.ToString("N0")</td>
-                            <td class="text-end fw-bold pe-4" style="color:#13433a;">@r.WonAmount.ToString("N0")</td>
+                            <td class="text-end fw-bold" style="color:#0E4A9E;">@r.WeightedAmount.ToString("N0")</td>
+                            <td class="text-end fw-bold pe-4" style="color:#0E4A9E;">@r.WonAmount.ToString("N0")</td>
                         </tr>
                     }
                     @if (rows.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-10">@Localizer["No opportunities with an expected close date"]</td></tr> }
                     </tbody>
                     @if (rows.Count > 0)
                     {
-                        <tfoot><tr class="fw-bolder fs-6" style="background:#eaf3ef;border-top:2px solid #13433a;"><td class="ps-4" style="color:#1f6253;">@SR["Total"]</td><td></td><td class="text-end" style="color:#13433a;">@totOpen.ToString("N0")</td><td class="text-end" style="color:#13433a;">@totWeighted.ToString("N0")</td><td class="text-end pe-4" style="color:#13433a;">@totWon.ToString("N0")</td></tr></tfoot>
+                        <tfoot><tr class="fw-bolder fs-6" style="background:#E7F0FF;border-top:2px solid #0E4A9E;"><td class="ps-4" style="color:#145DBF;">@SR["Total"]</td><td></td><td class="text-end" style="color:#0E4A9E;">@totOpen.ToString("N0")</td><td class="text-end" style="color:#0E4A9E;">@totWeighted.ToString("N0")</td><td class="text-end pe-4" style="color:#0E4A9E;">@totWon.ToString("N0")</td></tr></tfoot>
                     }
                 </table></div>
                 <div class="text-muted fs-8 mt-3">@Localizer["Weighted = Σ (opportunity amount × stage probability). Lost opportunities are excluded."]</div>

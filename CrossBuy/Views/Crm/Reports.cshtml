@@ -21,19 +21,19 @@
             @{ var tkAlert = Model.TicketsBreached > 0; }
             <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
                 <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@totalLeads">@totalLeads</span><span class="fs-7 text-muted mt-2">@Localizer["Leads"]</span><span class="fs-8 text-muted mt-1">@Localizer["Hot"] @Model.LeadsHot · @Localizer["Warm"] @Model.LeadsWarm</span></div>
-                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-user-square fs-2x" style="color:#13433a;"></i></span></span>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#E7F0FF;"><i class="ki-outline ki-user-square fs-2x" style="color:#0E4A9E;"></i></span></span>
             </div></div></div>
             <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
                 <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.PipelineWeighted)">@Model.PipelineWeighted.ToString("N0")</span><span class="fs-7 text-muted mt-2">@Localizer["Pipeline (weighted)"]</span><span class="fs-8 text-muted mt-1">@Model.OppOpen @Localizer["open"]</span></div>
-                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-chart-line-up fs-2x" style="color:#13433a;"></i></span></span>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#E7F0FF;"><i class="ki-outline ki-chart-line-up fs-2x" style="color:#0E4A9E;"></i></span></span>
             </div></div></div>
             <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
                 <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold text-gray-900 lh-1" data-kt-countup="true" data-kt-countup-value="@Raw(Model.WonValue)">@Model.WonValue.ToString("N0")</span><span class="fs-7 text-muted mt-2">@Localizer["Won"]</span><span class="fs-8 text-muted mt-1">@Localizer["Win rate"] @(Model.WinRatePct == null ? "—" : Model.WinRatePct + "%")</span></div>
-                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-medal-star fs-2x" style="color:#13433a;"></i></span></span>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:#E7F0FF;"><i class="ki-outline ki-medal-star fs-2x" style="color:#0E4A9E;"></i></span></span>
             </div></div></div>
             <div class="col-6 col-md-3"><div class="card card-flush h-100"><div class="card-body d-flex flex-stack p-5">
                 <div class="d-flex flex-column me-2"><span class="fs-2 fw-bold lh-1" style="color:@(tkAlert?"#d92d20":"#1a1a1a")" data-kt-countup="true" data-kt-countup-value="@Model.TicketsOpen">@Model.TicketsOpen</span><span class="fs-7 text-muted mt-2">@Localizer["Open tickets"]</span><span class="fs-8 mt-1" style="color:@(tkAlert?"#d92d20":"#99a1b7")">@Model.TicketsBreached @Localizer["SLA breached"]</span></div>
-                <span class="symbol symbol-45px"><span class="symbol-label" style="background:@(tkAlert?"#fdeaea":"#eaf3ef");"><i class="ki-outline ki-questionnaire-tablet fs-2x" style="color:@(tkAlert?"#d92d20":"#13433a");"></i></span></span>
+                <span class="symbol symbol-45px"><span class="symbol-label" style="background:@(tkAlert?"#fdeaea":"#E7F0FF");"><i class="ki-outline ki-questionnaire-tablet fs-2x" style="color:@(tkAlert?"#d92d20":"#0E4A9E");"></i></span></span>
             </div></div></div>
         </div>
 
@@ -41,7 +41,7 @@
             <!--begin::Lead funnel-->
             <div class="col-lg-6"><div class="card h-100"><div class="card-header"><div class="card-title fw-bold">@Localizer["Lead funnel"]</div></div>
                 <div class="card-body"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-2" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th>@SR["Status"]</th><th class="text-end">@Localizer["Count"]</th><th class="text-end">%</th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Status"]</th><th class="text-end">@Localizer["Count"]</th><th class="text-end">%</th></tr></thead>
                     <tbody>
                     @foreach (var kv in Model.LeadsByStatus.OrderByDescending(x => x.Value))
                     {
@@ -55,7 +55,7 @@
             <!--begin::Pipeline by stage-->
             <div class="col-lg-6"><div class="card h-100"><div class="card-header"><div class="card-title fw-bold">@Localizer["Pipeline by stage"]</div></div>
                 <div class="card-body"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-2" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th>@Localizer["Stage"]</th><th class="text-center">@Localizer["Count"]</th><th class="text-end">@Localizer["Value"]</th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Stage"]</th><th class="text-center">@Localizer["Count"]</th><th class="text-end">@Localizer["Value"]</th></tr></thead>
                     <tbody>
                     @foreach (var p in Model.Pipeline)
                     {
@@ -86,7 +86,7 @@
             <!--begin::Top reps-->
             <div class="col-lg-6"><div class="card h-100"><div class="card-header"><div class="card-title fw-bold">@Localizer["Rep performance"]</div></div>
                 <div class="card-body"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-2" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th>@Localizer["Rep"]</th><th class="text-center">@Localizer["Leads"]</th><th class="text-center">@Localizer["Opps"]</th><th class="text-end">@Localizer["Won"]</th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Rep"]</th><th class="text-center">@Localizer["Leads"]</th><th class="text-center">@Localizer["Opps"]</th><th class="text-end">@Localizer["Won"]</th></tr></thead>
                     <tbody>
                     @foreach (var o in Model.Owners)
                     {

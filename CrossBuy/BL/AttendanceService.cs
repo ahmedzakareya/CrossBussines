@@ -60,7 +60,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, AttendanceRecord? rec)> RecordAsync(int companyId, int employeeId, DateTime date, DateTime? checkIn, DateTime? checkOut, string source, string? notes, string? userId)
 		{
-			if (employeeId <= 0) return (false, "الموظف مطلوب", null);
+			if (employeeId <= 0) return (false, "Employee is required", null);
 			var day = date.Date;
 			var policy = await PolicyForAsync(employeeId);
 			bool isHoliday = (await _holidays.HolidayDatesAsync(companyId, day, day)).Count > 0;

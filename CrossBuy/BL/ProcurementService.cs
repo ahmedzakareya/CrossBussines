@@ -62,8 +62,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, PurchaseOrder? po)> CreatePurchaseOrderAsync(int companyId, int vendorId, int? warehouseId, DateTime date, DateTime? expected, string? notes, List<PoLineInput> lines, string? userId, int? projectId = null)
 		{
-			if (vendorId <= 0) return (false, "المورد مطلوب", null);
-			if (lines == null || lines.Count == 0) return (false, "أمر الشراء يجب أن يحتوي على بند واحد على الأقل", null);
+			if (vendorId <= 0) return (false, "Supplier is required", null);
+			if (lines == null || lines.Count == 0) return (false, "The purchase order must contain at least one line", null);
 
 			// HM-2 Batch 5: PO carries no document currency here → round to the FUNCTIONAL dp via the central helper (EGP no-op; no static R).
 			int __fdp = await _rounding.DecimalsAsync(companyId, null);
@@ -92,8 +92,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, GoodsReceipt? gr)> CreateReceiptAsync(int companyId, int? vendorId, int warehouseId, int? poId, DateTime date, string? notes, List<ReceiptLineInput> lines, string? userId, int? currencyId = null, decimal? exchangeRate = null)
 		{
-			if (warehouseId <= 0) return (false, "المخزن مطلوب", null);
-			if (lines == null || lines.Count == 0) return (false, "إذن الاستلام يجب أن يحتوي على بند واحد على الأقل", null);
+			if (warehouseId <= 0) return (false, "Warehouse is required", null);
+			if (lines == null || lines.Count == 0) return (false, "The goods receipt must contain at least one line", null);
 
 			// Multi-Currency (1-3): line UnitCost is in `cur`; stock value + GL are FUNCTIONAL currency.
 			// Convert the unit cost to base AT SOURCE so StockService never sees a foreign amount.
@@ -124,7 +124,7 @@ namespace CrossBuy.BL
 				{
 					var grni = await _context.ItemCategories.AsNoTracking().Where(c => c.ID == hdr.ItemCategoryId).Select(c => c.GrniAccountId).FirstOrDefaultAsync()
 							?? await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "210203").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-					if (grni == null) { _context.GoodsReceiptLines.RemoveRange(gr.Lines); _context.GoodsReceipts.Remove(gr); await _context.SaveChangesAsync(); return (false, "حساب فواتير لم ترد (GRNI) غير مُهيّأ لرسملة الأصل", null); }
+					if (grni == null) { _context.GoodsReceiptLines.RemoveRange(gr.Lines); _context.GoodsReceipts.Remove(gr); await _context.SaveChangesAsync(); return (false, "The GRNI account is not configured for capitalising the asset", null); }
 					var cc = await _context.CostCenters.AsNoTracking().Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
 					var aUnit = BaseUnit(l.UnitCost);
 					decimal aCost = Rf(l.Qty * aUnit);
@@ -142,7 +142,7 @@ namespace CrossBuy.BL
 				{
 					Date = date, ItemId = l.ItemId, WarehouseId = warehouseId, Direction = 1, Qty = l.Qty, UoMId = l.UoMId,
 					UnitCostInBase = baseUnit, BatchNo = l.BatchNo, Expiry = l.Expiry, SerialNo = l.SerialNo, BinLocationId = l.BinLocationId,
-					SourceType = "Receipt", SourceId = gr.ID, PostToGl = true, Notes = $"إذن استلام {gr.ReceiptNo}"
+					SourceType = "Receipt", SourceId = gr.ID, PostToGl = true, Notes = $"Goods receipt {gr.ReceiptNo}"
 				}, userId);
 				if (!sok)
 				{
@@ -150,7 +150,7 @@ namespace CrossBuy.BL
 					_context.GoodsReceiptLines.RemoveRange(gr.Lines);
 					_context.GoodsReceipts.Remove(gr);
 					await _context.SaveChangesAsync();
-					return (false, $"تعذّر استلام صنف: {serr}", null);
+					return (false, $"Could not receive an item: {serr}", null);
 				}
 				var lineCost = mv!.TotalCost;
 				gr.Lines.Add(new GoodsReceiptLine { GoodsReceiptId = gr.ID, LineNo = ln++, ItemId = l.ItemId, Qty = l.Qty, UoMId = l.UoMId, UnitCost = baseUnit, LineTotal = lineCost, BatchNo = l.BatchNo, ExpiryDate = l.Expiry, SerialNo = l.SerialNo, PurchaseOrderLineId = l.PurchaseOrderLineId, StockMovementId = mv.ID });
@@ -181,7 +181,7 @@ namespace CrossBuy.BL
 			{
 				await _notify.NotifyRoleAsync(companyId, "acc", new[] { "Accountant", "ChiefAccountant" },
 					"تم استلام بضاعة من مورد", "Goods received",
-					$"إذن الاستلام {gr.ReceiptNo} بقيمة {gr.TotalCost:N2} جاهز لمطابقة فاتورة المورد", $"Goods receipt {gr.ReceiptNo} ({gr.TotalCost:N2}) is ready for vendor-invoice matching",
+					$"Goods receipt {gr.ReceiptNo}, worth {gr.TotalCost:N2}, is ready to be matched to the supplier invoice", $"Goods receipt {gr.ReceiptNo} ({gr.TotalCost:N2}) is ready for vendor-invoice matching",
 					"goods_receipt", gr.ID);
 			}
 			catch { /* notifications never block the business flow */ }
@@ -193,9 +193,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? invoiceId)> ConvertToInvoiceAsync(int companyId, int poId, string? userId)
 		{
 			var po = await _context.PurchaseOrders.Include(p => p.Lines).FirstOrDefaultAsync(p => p.ID == poId && p.CompanyID == companyId);
-			if (po == null) return (false, "أمر الشراء غير موجود", null);
-			if (po.Status == "Closed") return (false, "أمر الشراء محوّل لفاتورة بالفعل", null);
-			if (po.Status == "Cancelled") return (false, "أمر الشراء ملغي", null);
+			if (po == null) return (false, "Purchase order not found", null);
+			if (po.Status == "Closed") return (false, "The purchase order has already been converted to an invoice", null);
+			if (po.Status == "Cancelled") return (false, "The purchase order is cancelled", null);
 
 			var receipts = await _context.GoodsReceipts.Where(g => g.CompanyID == companyId && g.PurchaseOrderId == poId && g.Status == "Posted").ToListAsync();
 			bool received = receipts.Any();
@@ -205,7 +205,7 @@ namespace CrossBuy.BL
 			{
 				var match = await _match.CheckPoAsync(companyId, poId);
 				if (!match.Ok)
-					return (false, "فشل المطابقة الثلاثية (الكمية/السعر خارج السماحية): " + string.Join("؛ ", match.Failures), null);
+					return (false, "Three-way match failed (quantity/price outside tolerance): " + string.Join("; ", match.Failures), null);
 			}
 
 			var lines = new List<PurchaseLineInput>();
@@ -228,9 +228,9 @@ namespace CrossBuy.BL
 					WarehouseId = received ? (int?)null : po.WarehouseId,
 				});
 			}
-			if (lines.Count == 0) return (false, "لا توجد بنود قابلة للفوترة", null);
+			if (lines.Count == 0) return (false, "There are no invoiceable lines", null);
 
-			var (ok, err, inv) = await _payables.CreatePurchaseInvoiceAsync(companyId, po.VendorId, DateTime.Today, lines, $"من أمر شراء {po.OrderNo}", null, po.CurrencyId, po.ExchangeRate, po.ProjectId);
+			var (ok, err, inv) = await _payables.CreatePurchaseInvoiceAsync(companyId, po.VendorId, DateTime.Today, lines, $"From purchase order {po.OrderNo}", null, po.CurrencyId, po.ExchangeRate, po.ProjectId);
 			if (!ok) return (false, err, null);
 
 			po.Status = "Closed";

@@ -53,10 +53,10 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveSubcontractAsync(int companyId, int projectId, int id, int vendorId, string? description, decimal? value, decimal? retentionPct, int? userId)
 		{
-			if (!await _db.Projects.AnyAsync(p => p.ID == projectId && p.CompanyID == companyId)) return (false, "المشروع غير موجود", 0);
-			if (!await _db.Vendors.AnyAsync(v => v.ID == vendorId && v.CompanyID == companyId)) return (false, "المورّد (الباطن) غير موجود", 0);
+			if (!await _db.Projects.AnyAsync(p => p.ID == projectId && p.CompanyID == companyId)) return (false, "Project not found", 0);
+			if (!await _db.Vendors.AnyAsync(v => v.ID == vendorId && v.CompanyID == companyId)) return (false, "The subcontractor was not found", 0);
 			Subcontract sc;
-			if (id > 0) sc = await _db.Subcontracts.FirstOrDefaultAsync(s => s.ID == id && s.CompanyID == companyId) ?? throw new InvalidOperationException("العقد غير موجود");
+			if (id > 0) sc = await _db.Subcontracts.FirstOrDefaultAsync(s => s.ID == id && s.CompanyID == companyId) ?? throw new InvalidOperationException("Contract not found");
 			else { sc = new Subcontract { CompanyID = companyId, ProjectId = projectId, Status = "Active", CreatedAt = DateTime.UtcNow, CreatedBy = userId }; _db.Subcontracts.Add(sc); }
 			sc.VendorId = vendorId; sc.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
 			sc.ContractValue = value; sc.RetentionPercent = retentionPct;
@@ -104,13 +104,13 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int id)> SaveBillingDraftAsync(int companyId, int subcontractId, int billingId, DateTime date, decimal cumulativeWork, decimal taxRate, string? note, int? userId)
 		{
 			var sc = await _db.Subcontracts.AsNoTracking().FirstOrDefaultAsync(s => s.ID == subcontractId && s.CompanyID == companyId);
-			if (sc == null) return (false, "عقد الباطن غير موجود", 0);
+			if (sc == null) return (false, "Subcontract not found", 0);
 			if (taxRate < 0) taxRate = 0;
 			SubcontractBilling hdr;
 			if (billingId > 0)
 			{
-				hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == billingId && b.CompanyID == companyId) ?? throw new InvalidOperationException("المستخلص غير موجود");
-				if (hdr.Status != "Draft") return (false, "لا يمكن تعديل مستخلص معتمد/مرحّل", 0);
+				hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == billingId && b.CompanyID == companyId) ?? throw new InvalidOperationException("Certificate not found");
+				if (hdr.Status != "Draft") return (false, "An approved or posted certificate cannot be edited", 0);
 			}
 			else
 			{
@@ -120,7 +120,7 @@ namespace CrossBuy.BL
 			}
 			decimal prev = await PreviouslyBilledAsync(companyId, subcontractId, hdr.ID);
 			var pv = Compute(sc, "", hdr.ID, hdr.BillingNo, date, "Draft", note, cumulativeWork, taxRate, prev);
-			if (pv.GrossWork <= 0) return (false, "قيمة الفترة صفر — التراكمي يجب أن يتجاوز المفوتر سابقًا", 0);
+			if (pv.GrossWork <= 0) return (false, "The period value is zero — the cumulative amount must exceed what was previously billed", 0);
 			hdr.BillingDate = date; hdr.Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim();
 			hdr.CumulativeWork = R(cumulativeWork); hdr.GrossWork = pv.GrossWork; hdr.TaxRate = taxRate; hdr.TaxAmount = pv.TaxAmount;
 			hdr.RetentionPercent = pv.RetentionPercent; hdr.RetentionAmount = pv.RetentionAmount; hdr.NetPayable = pv.NetPayable;
@@ -131,9 +131,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> ApproveBillingAsync(int companyId, int id)
 		{
 			var hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
-			if (hdr == null) return (false, "المستخلص غير موجود");
-			if (hdr.Status != "Draft") return (false, "الحالة لا تسمح بالاعتماد");
-			if (hdr.GrossWork <= 0) return (false, "لا يوجد عمل لفوترته");
+			if (hdr == null) return (false, "Certificate not found");
+			if (hdr.Status != "Draft") return (false, "The current status does not allow approval");
+			if (hdr.GrossWork <= 0) return (false, "There is no work to bill");
 			hdr.Status = "Approved"; await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -141,29 +141,29 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> PostBillingAsync(int companyId, int id, int? userId)
 		{
 			var hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
-			if (hdr == null) return (false, "المستخلص غير موجود");
-			if (hdr.Status == "Posted") return (false, "المستخلص مرحّل بالفعل");
-			if (hdr.Status != "Approved") return (false, "يجب اعتماد المستخلص قبل الترحيل");
+			if (hdr == null) return (false, "Certificate not found");
+			if (hdr.Status == "Posted") return (false, "The certificate is already posted");
+			if (hdr.Status != "Approved") return (false, "The certificate must be approved before posting");
 			var sc = await _db.Subcontracts.AsNoTracking().FirstAsync(s => s.ID == hdr.SubcontractId);
 			var expAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == ExpenseAccountCode).Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (expAcc == null) return (false, $"حساب تكلفة التنفيذ ({ExpenseAccountCode}) غير مُهيّأ");
+			if (expAcc == null) return (false, $"The execution cost account ({ExpenseAccountCode}) is not configured");
 			var retAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == RetentionAccountCode).Select(a => (int?)a.ID).FirstOrDefaultAsync();
 
 			// (1) purchase invoice for the period work (W) + tax → Dr 510104 [ProjectId] + Dr VAT input / Cr AP
 			var invLines = new List<PurchaseLineInput> {
-				new() { ItemDescription = $"مستخلص باطن #{hdr.BillingNo}", Qty = 1m, UnitPrice = hdr.GrossWork, DiscountAmount = 0m, TaxRate = hdr.TaxRate, ExpenseAccountId = expAcc.Value }
+				new() { ItemDescription = $"Subcontract certificate #{hdr.BillingNo}", Qty = 1m, UnitPrice = hdr.GrossWork, DiscountAmount = 0m, TaxRate = hdr.TaxRate, ExpenseAccountId = expAcc.Value }
 			};
 			var (iok, ierr, inv) = await _ap.CreatePurchaseInvoiceAsync(companyId, hdr.VendorId, hdr.BillingDate, invLines, hdr.Note, userId, projectId: hdr.ProjectId);
-			if (!iok || inv == null) return (false, "تعذّر إنشاء فاتورة الباطن: " + ierr);
+			if (!iok || inv == null) return (false, "Could not create the subcontractor invoice: " + ierr);
 
 			// (2) retention withheld → settlement payment into 2105 (Dr AP / Cr 2105), ProjectId-tagged
 			int? retPayId = null;
 			if (hdr.RetentionAmount > 0)
 			{
-				if (retAcc == null) return (false, "حساب محتجزات الباطن (2105) غير مُهيّأ");
+				if (retAcc == null) return (false, "The subcontractor retention account (2105) is not configured");
 				int before = await _db.Payments.Where(p => p.CompanyID == companyId && p.VendorId == hdr.VendorId).Select(p => (int?)p.ID).MaxAsync() ?? 0;
 				var (pok, perr) = await _ap.CreatePaymentAsync(companyId, hdr.VendorId, hdr.BillingDate, hdr.RetentionAmount, "Retention", retAcc.Value, hdr.Note, userId, 0m, null, null, projectId: hdr.ProjectId);
-				if (!pok) return (false, "تعذّر ترحيل محتجز الباطن: " + perr);
+				if (!pok) return (false, "Could not post the subcontractor retention: " + perr);
 				retPayId = await _db.Payments.Where(p => p.CompanyID == companyId && p.VendorId == hdr.VendorId && p.ID > before).Select(p => (int?)p.ID).MaxAsync();
 			}
 
@@ -176,8 +176,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteBillingAsync(int companyId, int id)
 		{
 			var hdr = await _db.SubcontractBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
-			if (hdr == null) return (false, "المستخلص غير موجود");
-			if (hdr.Status == "Posted") return (false, "لا يمكن حذف مستخلص مرحّل");
+			if (hdr == null) return (false, "Certificate not found");
+			if (hdr.Status == "Posted") return (false, "A posted certificate cannot be deleted");
 			_db.SubcontractBillings.Remove(hdr); await _db.SaveChangesAsync();
 			return (true, null);
 		}

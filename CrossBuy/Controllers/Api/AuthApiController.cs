@@ -36,19 +36,19 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Login([FromBody] LoginRequest model)
 		{
 			if (model == null || string.IsNullOrWhiteSpace(model.UserName) || string.IsNullOrWhiteSpace(model.Password))
-				return BadRequest(new { success = false, message = "اسم المستخدم وكلمة المرور مطلوبان" });
+				return BadRequest(new { success = false, message = "Username and password are required" });
 
 			var user = await _userManager.FindByNameAsync(model.UserName);
 			if (user == null || !user.IsActive || !user.IsEndUser)
-				return Unauthorized(new { success = false, message = "بيانات الدخول غير صحيحة" });
+				return Unauthorized(new { success = false, message = "Invalid sign-in details" });
 
 			var passwordOk = await _userManager.CheckPasswordAsync(user, model.Password);
 			if (!passwordOk)
-				return Unauthorized(new { success = false, message = "بيانات الدخول غير صحيحة" });
+				return Unauthorized(new { success = false, message = "Invalid sign-in details" });
 
 			var employee = await _employeeService.GetEmployeeByUserIdAsync(user.Id);
 			if (employee == null)
-				return Unauthorized(new { success = false, message = "لا يوجد ملف موظف مرتبط بهذا الحساب" });
+				return Unauthorized(new { success = false, message = "There is no employee record linked to this account" });
 
 			var token = _tokenService.CreateToken(user, employee.ID);
 
@@ -60,6 +60,7 @@ namespace CrossBuy.Controllers.Api
 				{
 					employee.ID,
 					employee.FullName,
+					employee.FullNameEn,
 					employee.Email,
 					employee.ProfileImage
 				}

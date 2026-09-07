@@ -18,7 +18,7 @@
                 <input type="text" id="s" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search by period..."]" autocomplete="off" />
             </div></div></div>
             <div class="card-body pt-0 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" id="t" style="font-variant-numeric:tabular-nums;">
-                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Period"]</th><th>@Localizer["Run date"]</th><th class="text-center">@Localizer["Assets"]</th><th class="text-end">@SR["Total"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@Localizer["Open"]</th></tr></thead>
+                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Period"]</th><th>@Localizer["Run date"]</th><th class="text-center">@Localizer["Assets"]</th><th class="text-end">@SR["Total"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@Localizer["Open"]</th></tr></thead>
                 <tbody>
                 @foreach (var r in Model) {
                     <tr class="r" data-s="@r.PeriodDate.ToString("yyyy/MM")">
@@ -26,8 +26,8 @@
                         <td class="text-muted">@r.RunDate.ToString("yyyy/MM/dd")</td>
                         <td class="text-center">@r.AssetCount</td>
                         <td class="text-end fw-bold">@r.TotalAmount.ToString("N2")</td>
-                        <td class="text-center"><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@r.Status</span></td>
-                        <td class="text-center"><a href="@Url.Action("DepreciationRunDetail","Accounting", new { id = r.ID })" class="btn btn-sm btn-icon" style="background:#eaf3ef;" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-6" style="color:#13433a;"></i></a></td>
+                        <td class="text-center"><span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@r.Status</span></td>
+                        <td class="text-center"><a href="@Url.Action("DepreciationRunDetail","Accounting", new { id = r.ID })" class="btn btn-sm btn-icon" style="background:#E7F0FF;" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-6" style="color:#0E4A9E;"></i></a></td>
                     </tr>
                 }
                 @if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-10">@Localizer["No depreciation runs yet"]</td></tr> }
@@ -41,7 +41,7 @@
     <form asp-action="RunDepreciation" method="post">@Html.AntiForgeryToken()
         <div class="modal-header"><h2 class="fw-bold">@Localizer["Run monthly depreciation"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body py-6 px-8">
-            <div class="alert fs-7" style="background:#eaf3ef;color:#1f6253;">@Localizer["One month's depreciation is computed for all active assets and posted as a single entry."]</div>
+            <div class="alert fs-7" style="background:#E7F0FF;color:#145DBF;">@Localizer["One month's depreciation is computed for all active assets and posted as a single entry."]</div>
             <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Depreciation month"]</label><input name="periodDate" type="date" class="form-control form-control-solid" value="2026-06-30" required /></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@Localizer["Compute & post"]</button></div>

@@ -10,7 +10,7 @@
     var assetAccs = accounts.Where(a => a.Code.StartsWith("12")).ToList();
     var expAccs = accounts.Where(a => a.TypeCode == "EXP").ToList();
     var byId = accounts.ToDictionary(a => a.Id, a => a);
-    string AccName(int id) => byId.TryGetValue(id, out var a) ? a.Code + " — " + (isAr ? a.Name : a.NameEn) : "—";
+    string AccName(int id) => byId.TryGetValue(id, out var a) ? a.Code + " — " + (isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name)) : "—";
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -25,12 +25,12 @@
                 <input type="text" id="s" class="form-control form-control-solid w-300px ps-12" placeholder="@SR["Search"]" autocomplete="off" />
             </div></div></div>
             <div class="card-body pt-0 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" id="t" style="font-variant-numeric:tabular-nums;">
-                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Category"]</th><th class="text-center">@Localizer["Default life"]</th><th>@Localizer["Cost account"]</th><th>@Localizer["Accum. dep."]</th><th>@Localizer["Dep. expense"]</th></tr></thead>
+                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Category"]</th><th class="text-center">@Localizer["Default life"]</th><th>@Localizer["Cost account"]</th><th>@Localizer["Accum. dep."]</th><th>@Localizer["Dep. expense"]</th></tr></thead>
                 <tbody>
                 @foreach (var c in Model) {
                     <tr class="r" data-s="@c.Name @c.NameEn">
                         <td class="fw-bold text-gray-900">@(isAr ? c.Name : (c.NameEn ?? c.Name))</td>
-                        <td class="text-center"><span class="badge fw-bold" style="background:#eaf3ef;color:#1f6253;">@c.DefaultUsefulLifeMonths @Localizer["mo"]</span></td>
+                        <td class="text-center"><span class="badge fw-bold" style="background:#E7F0FF;color:#145DBF;">@c.DefaultUsefulLifeMonths @Localizer["mo"]</span></td>
                         <td class="text-muted">@AccName(c.CostAccountId)</td>
                         <td class="text-muted">@AccName(c.AccumDepAccountId)</td>
                         <td class="text-muted">@AccName(c.DepExpenseAccountId)</td>
@@ -50,9 +50,9 @@
             <div class="row"><div class="col-7 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="name" class="form-control form-control-solid" required /></div>
             <div class="col-5 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Life (months)"]</label><input name="defaultUsefulLifeMonths" type="number" value="60" class="form-control form-control-solid" required /></div></div>
             <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" /></div>
-            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Cost account"]</label><select name="costAccountId" class="form-select form-select-solid" required>@foreach (var a in assetAccs) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
-            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Accum. depreciation"]</label><select name="accumDepAccountId" class="form-select form-select-solid" required>@foreach (var a in assetAccs) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
-            <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Depreciation expense"]</label><select name="depExpenseAccountId" class="form-select form-select-solid" required>@foreach (var a in expAccs) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
+            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Cost account"]</label><select name="costAccountId" class="form-select form-select-solid" required>@foreach (var a in assetAccs) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))</option> }</select></div>
+            <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Accum. depreciation"]</label><select name="accumDepAccountId" class="form-select form-select-solid" required>@foreach (var a in assetAccs) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))</option> }</select></div>
+            <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Depreciation expense"]</label><select name="depExpenseAccountId" class="form-select form-select-solid" required>@foreach (var a in expAccs) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))</option> }</select></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@SR["Save"]</button></div>
     </form>

@@ -4,10 +4,30 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
+    @* A new resource key needs a rebuilt satellite assembly; IViewLocalizer returns the KEY when
+       it cannot resolve one. Resource first, Arabic literal only as the fallback. *@
+    Func<string, string, string> Lz = (key, ar) =>
+    {
+        var v = Localizer[key].Value;
+        return (isAr && string.Equals(v, key, StringComparison.Ordinal)) ? ar : v;
+    };
+
+    @* ALL TWELVE TYPES THE DATA ACTUALLY HOLDS. This knew six, and the rest fell through to the
+       raw column value - which is why "OpeningStock" sat in English beside Arabic labels in the
+       same column. *@
     string srcName(string? s) => s switch {
-        "Opening" => Localizer["Opening"].Value, "Receipt" => Localizer["Receipt"].Value,
-        "Issue" => Localizer["Issue"].Value, "Adjustment" => Localizer["Adjustment"].Value,
-        "PurchaseInvoice" => Localizer["Purchase"].Value, "SalesInvoice" => Localizer["Sale"].Value,
+        "Opening" => Lz("Opening", "رصيد افتتاحي"),
+        "OpeningStock" => Lz("Opening stock", "رصيد افتتاحي"),
+        "Receipt" => Lz("Receipt", "إذن استلام"),
+        "Issue" => Lz("Issue", "إذن صرف"),
+        "Adjustment" => Lz("Adjustment", "تسوية"),
+        "PurchaseInvoice" => Lz("Purchase", "فاتورة شراء"),
+        "SalesInvoice" => Lz("Sale", "فاتورة بيع"),
+        "SalesInvoiceReversal" => Lz("Sales reversal", "عكس فاتورة بيع"),
+        "SalesReturn" => Lz("Sales return", "مرتجع بيع"),
+        "PurchaseReturn" => Lz("Purchase return", "مرتجع شراء"),
+        "WorkOrder" => Lz("Work order", "أمر تشغيل"),
+        "Assembly" => Lz("Assembly", "تجميع"),
         _ => s ?? "—" };
 }
 @foreach (var m in Model)
@@ -18,10 +38,31 @@
         <td class="text-muted">@(string.IsNullOrEmpty(m.WarehouseCode) ? "—" : m.WarehouseCode)</td>
         <td class="text-muted">@(string.IsNullOrEmpty(m.BinLocationCode) ? "—" : m.BinLocationCode)</td>
         <td class="text-center"><span class="badge badge-light-@(m.Direction==1?"success":"danger")">@srcName(m.SourceType)</span></td>
-        <td class="text-end fw-bold text-primary">@(m.Direction==1 ? m.QtyBase.ToString("0.##") : "—")</td>
-        <td class="text-end fw-bold text-danger">@(m.Direction==-1 ? m.QtyBase.ToString("0.##") : "—")</td>
-        <td class="text-end text-muted">@m.UnitCost.ToString("0.00")</td>
-        <td class="text-end fw-bold text-gray-800">@m.TotalCost.ToString("0.00")</td>
+        @* ONE SIGNED FIGURE WITH AN ARROW, like a ticker. Two columns were being spent to say one
+           thing, and the EMPTY one was painted text-danger - so a dash in the inbound column came
+           out red. The arrow states the direction on its own, the sign states it again in text,
+           and the colour is the third signal rather than the only one. *@
+        @{
+            var inbound = m.Direction == 1;
+            var tone = inbound ? "success" : "danger";
+            var arrow = inbound ? "ki-arrow-up" : "ki-arrow-down";
+            var sign = inbound ? "+" : "−";
+        }
+        <td class="text-end">
+            @* THE PILL from the reference: a tinted capsule holding the arrow and the signed
+               figure. Three signals for one fact - arrow, sign, tint - so the row still reads
+               correctly for someone who cannot separate green from red. *@
+            <span class="badge badge-light-@tone fw-bold fs-7 d-inline-flex align-items-center gap-1"
+                  dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">
+                <i class="ki-outline @arrow fs-7 text-@tone"></i>@sign@m.QtyBase.ToString("0.##")
+            </span>
+        </td>
+        @* A ZERO IS MUTED. A test item priced at nothing was drawing the eye exactly as hard as a
+           real 32.99 sitting under it. *@
+        <td class="text-end @(m.UnitCost == 0 ? "text-gray-400" : "text-gray-600")" dir="ltr"
+            style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@m.UnitCost.ToString("0.00")</td>
+        <td class="text-end fw-bold @(m.TotalCost == 0 ? "text-gray-400" : "text-gray-800")" dir="ltr"
+            style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@m.TotalCost.ToString("0.00")</td>
         <td class="text-center">@if (m.JournalEntryId != null) { <span class="badge badge-light-primary">#@m.JournalEntryId</span> } else { <span class="text-muted">—</span> }</td>
     </tr>
 }

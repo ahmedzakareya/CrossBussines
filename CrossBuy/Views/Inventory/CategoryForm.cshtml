@@ -10,7 +10,7 @@
     var accounts = ViewBag.Accounts as List<AccountNode> ?? new();
     var cats = ViewBag.Categories as List<ItemCategory> ?? new();
     string AcctOpts(int? sel) => "<option value=\"\">—</option>" + string.Join("", accounts.Select(a =>
-        $"<option value=\"{a.Id}\"{(sel == a.Id ? " selected" : "")}>{a.Code} — {(isAr ? a.Name : a.NameEn)}</option>"));
+        $"<option value=\"{a.Id}\"{(sel == a.Id ? " selected" : "")}>{a.Code} — {(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))}</option>"));
     var blank = Url.Content("~/Backend-assets/media/svg/files/blank-image.svg");
     var hasIcon = !string.IsNullOrWhiteSpace(Model.StoreIcon);
     var iconUrl = hasIcon ? Url.Content("~" + Model.StoreIcon!.Replace("\\", "/")) : blank;
@@ -101,7 +101,7 @@
                                     <option value="Group" selected="@(Model.Kind=="Group")">@Localizer["Group (under a category)"]</option>
                                 </select>
                             </div>
-                            <div class="col-md-4 mb-5" id="catParentWrap"><label class="fw-semibold fs-6 mb-2" id="catParentLbl">@Localizer["Parent category"]</label><select name="ParentId" id="catParent" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["— Root —"]</option>@foreach (var c in cats.Where(x => x.Kind != "Group")) { <option value="@c.ID" selected="@(Model.ParentId==c.ID)">@c.Code — @(isAr ? c.Name : c.NameEn)</option> }</select></div>
+                            <div class="col-md-4 mb-5" id="catParentWrap"><label class="fw-semibold fs-6 mb-2" id="catParentLbl">@Localizer["Parent category"]</label><select name="ParentId" id="catParent" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["— Root —"]</option>@foreach (var c in cats.Where(x => x.Kind != "Group")) { <option value="@c.ID" selected="@(Model.ParentId==c.ID)">@c.Code — @(isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name))</option> }</select></div>
                         </div>
                         <div class="text-muted fs-7 mb-5">@Localizer["A Group inherits its GL account mapping from its parent Category when left empty."]</div>
                         <div class="row">

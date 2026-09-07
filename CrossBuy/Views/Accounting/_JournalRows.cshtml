@@ -6,7 +6,7 @@
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     string desc(JournalListItem e) => !isAr && !string.IsNullOrWhiteSpace(e.DescriptionEn) ? e.DescriptionEn! : (e.Description ?? "—");
     // brand-safe status palette: green = posted, gray = draft/reversed, amber-caution = submitted (no mint/yellow/blue)
-    string StatusStyle(string s) => s switch { "Posted" => "background:#eaf3ef;color:#13433a;", "Submitted" => "background:#fef3e2;color:#b96a00;", "Reversed" => "background:#fdeaea;color:#d92d20;", _ => "background:#f2f4f7;color:#475467;" };
+    string StatusStyle(string s) => s switch { "Posted" => "background:#E7F0FF;color:#0E4A9E;", "Submitted" => "background:#fef3e2;color:#b96a00;", "Reversed" => "background:#fdeaea;color:#d92d20;", _ => "background:#f2f4f7;color:#475467;" };
     string StatusText(string s) => s switch { "Posted" => Localizer["Posted"].Value, "Draft" => SR["Draft"].Value, "Submitted" => Localizer["Submitted"].Value, "Reversed" => Localizer["Reversed"].Value, _ => s };
 }
 @foreach (var e in Model)

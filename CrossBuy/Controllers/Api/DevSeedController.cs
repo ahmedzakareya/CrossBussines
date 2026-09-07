@@ -109,6 +109,218 @@ namespace CrossBuy.Controllers.Api
 			return Ok(new { ok = bytes.Length > 0, bytes = bytes.Length });
 		}
 
+		// =========================================================================================
+		// DEVELOPMENT IDENTITY ROLE PROVISIONING (TAB-1)
+		//
+		// GET /api/dev/identity-roles-seed?key=seed123&password=<chosen at call time>
+		//
+		// WHY THIS EXISTS: CrossBuyDev shipped with AspNetRoles = 0 and AspNetUserRoles = 0, so
+		// BusinessContext.Roles (built from ClaimTypes.Role — BusinessContextFactory) was ALWAYS empty and no
+		// role-gated authorization could be exercised by a real signed-in user. Reporting's permission map
+		// (Program.cs) resolves against role NAMES, so with no roles the whole map matched nobody.
+		//
+		// WHAT IT IS NOT: not a production seeder, not a backdoor, not a way to fake roles.
+		//   · It creates roles and users through RoleManager/UserManager — the project's real Identity APIs.
+		//     No password hash is ever written by hand, so every account behaves exactly like a normal one and
+		//     signs in through the ordinary AccountController.Login → PasswordSignInAsync path.
+		//   · THE PASSWORD IS NOT IN THIS FILE. It is supplied by the caller per invocation, so the repository
+		//     contains no credential and there is no known-secret account to find by reading the source.
+		//   · The class-level [DevOnly] returns 404 outside Development, so this endpoint cannot exist in
+		//     Production, Prelive or any other environment.
+		//   · IDEMPOTENT: every step is create-if-absent. Re-running changes nothing and re-reports the state.
+		//     It never deletes, never demotes, and never rewrites an existing user's password.
+		//
+		// ROLE NAMES ARE TAKEN FROM SOURCE, not from a document: Program.cs maps reporting.administer →
+		// {Admin, SuperAdmin}, businessevents.view → {Admin, SuperAdmin, Auditor}, .confidential →
+		// {Admin, SuperAdmin}, .restricted → {SuperAdmin}.
+		//
+		// THE FOUR USERS ARE A TEST MATRIX, not four copies of an admin. Each one isolates ONE refusing
+		// dimension, which is what makes a denial provable rather than merely observed:
+		//   dev.auditor    company 1, Auditor    — authorized, NOT an administrator (proves the tiers: sees
+		//                                          Internal rows, must NOT see Payload/Restricted).
+		//   dev.clerk      company 1, no roles   — same company, same department: the cross-OWNER and
+		//                                          write-denial peer. Refused on ROLE alone.
+		//   dev.superadmin company 1, SuperAdmin — the elevated path: administer + confidential + restricted.
+		//   dev.otherco    company 65, Auditor   — HOLDS the role but sits in another company, so a refusal
+		//                                          isolates COMPANY as the cause. A roleless outsider would be
+		//                                          refused for two reasons at once and would prove neither.
+		//
+		// RoleManager is resolved from RequestServices rather than added to the constructor on purpose: this
+		// controller's constructor is edited by several tabs at once, and a 23rd parameter would collide on
+		// every merge. Nothing outside this one method changes.
+		// =========================================================================================
+		[HttpGet("identity-roles-seed")]
+		public async Task<IActionResult> IdentityRolesSeed(string key, string password, bool reset = false)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (string.IsNullOrWhiteSpace(password))
+				return BadRequest(new { message = "password is required and is never stored in source" });
+
+			var roleManager = HttpContext.RequestServices.GetRequiredService<RoleManager<IdentityRole>>();
+
+			// The canonical Reporting role vocabulary, read from Program.cs's permission map.
+			var canonicalRoles = new[] { "Auditor", "Admin", "SuperAdmin" };
+			var roleReport = new List<object>();
+			foreach (var roleName in canonicalRoles)
+			{
+				if (await roleManager.RoleExistsAsync(roleName))
+				{
+					roleReport.Add(new { role = roleName, action = "already-present" });
+					continue;
+				}
+				var created = await roleManager.CreateAsync(new IdentityRole(roleName));
+				if (!created.Succeeded)
+					return StatusCode(500, new { message = $"could not create role {roleName}",
+						errors = created.Errors.Select(e => e.Description) });
+				roleReport.Add(new { role = roleName, action = "created" });
+			}
+
+			// A real job title is required (Employee.JobTitleID is non-nullable and a FK).
+			var jobTitleId = await _db.JobTitles.AsNoTracking().OrderBy(j => j.ID).Select(j => j.ID).FirstOrDefaultAsync();
+			if (jobTitleId <= 0) return StatusCode(500, new { message = "no JobTitles row exists to attach a dev employee to" });
+
+			// dev.auditor and dev.clerk share a department so Team-scope template behaviour is testable:
+			// a team peer may RUN the team layout but must not EDIT it.
+			var sharedDepartmentId = await _db.Employee.AsNoTracking()
+				.Where(e => e.EmpCompanyID == 1 && e.DepartmentID != null)
+				.OrderBy(e => e.ID).Select(e => e.DepartmentID).FirstOrDefaultAsync();
+
+			var plan = new (string UserName, string Email, string NameAr, string NameEn, int CompanyId, int? DepartmentId, string[] Roles)[]
+			{
+				("dev.auditor",    "dev.auditor@crossbuy.local",    "مدقّق التطوير",  "Dev Auditor",     1,  sharedDepartmentId, new[] { "Auditor" }),
+				("dev.clerk",      "dev.clerk@crossbuy.local",      "موظّف التطوير",  "Dev Clerk",       1,  sharedDepartmentId, System.Array.Empty<string>()),
+				("dev.superadmin", "dev.superadmin@crossbuy.local", "مدير النظام",    "Dev SuperAdmin",  1,  sharedDepartmentId, new[] { "SuperAdmin" }),
+				("dev.otherco",    "dev.otherco@crossbuy.local",    "مدقّق شركة أخرى", "Dev Other Co",   65, null,               new[] { "Auditor" }),
+			};
+
+			var userReport = new List<object>();
+			foreach (var spec in plan)
+			{
+				var actions = new List<string>();
+
+				var user = await _um.FindByNameAsync(spec.UserName);
+				if (user == null)
+				{
+					user = new Users
+					{
+						UserName = spec.UserName,
+						Email = spec.Email,
+						EmailConfirmed = true,
+						// AccountController.Login refuses a user that is not BOTH active and an end user,
+						// so a dev account without these two flags would fail sign-in for a reason that has
+						// nothing to do with roles.
+						IsActive = true,
+						IsEndUser = true,
+					};
+					var createdUser = await _um.CreateAsync(user, password);
+					if (!createdUser.Succeeded)
+						return StatusCode(500, new { message = $"could not create user {spec.UserName}",
+							errors = createdUser.Errors.Select(e => e.Description) });
+					actions.Add("user-created");
+				}
+				else if (!reset)
+				{
+					// Never rewrite an existing account's password BY DEFAULT — that would make a routine
+					// re-run a silent credential reset for whoever is already using the account.
+					actions.Add("user-already-present");
+				}
+				else
+				{
+					// OPT-IN RESET (?reset=true), for the case this exists to serve: a machine where these
+					// four accounts were provisioned earlier and nobody now holds the password, so no
+					// authenticated runtime verification can be performed at all.
+					//
+					// It is explicit rather than implicit precisely BECAUSE it is destructive to a
+					// credential: a caller has to ask for it by name, and the default answer is still no.
+					// It goes through UserManager's own reset token — no hash is written by hand, so the
+					// account continues to behave like every other one.
+					var resetToken = await _um.GeneratePasswordResetTokenAsync(user);
+					var resetResult = await _um.ResetPasswordAsync(user, resetToken, password);
+					if (!resetResult.Succeeded)
+						return StatusCode(500, new { message = $"could not reset {spec.UserName}",
+							errors = resetResult.Errors.Select(e => e.Description) });
+
+					// A dev account that was left inactive would fail sign-in for a reason that has nothing
+					// to do with its password, which is a confusing hour to spend.
+					user.IsActive = true;
+					user.IsEndUser = true;
+					await _um.UpdateAsync(user);
+
+					actions.Add("password-reset");
+				}
+
+				foreach (var roleName in spec.Roles)
+				{
+					if (await _um.IsInRoleAsync(user, roleName)) { actions.Add($"role:{roleName}:already"); continue; }
+					var addedRole = await _um.AddToRoleAsync(user, roleName);
+					if (!addedRole.Succeeded)
+						return StatusCode(500, new { message = $"could not add {spec.UserName} to {roleName}",
+							errors = addedRole.Errors.Select(e => e.Description) });
+					actions.Add($"role:{roleName}:added");
+				}
+
+				// The Employee row is what BusinessContextFactory treats as AUTHORITATIVE for company and
+				// branch, and AccountController.Login refuses a user who has none.
+				var employee = await _db.Employee.FirstOrDefaultAsync(e => e.UserId == user.Id);
+				if (employee == null)
+				{
+					employee = new CrossBuy.Models.Context.Admin.Employee
+					{
+						FirstName = spec.NameEn.Split(' ')[0],
+						LastName = spec.NameEn.Split(' ').Last(),
+						FullName = spec.NameAr,
+						FullNameEn = spec.NameEn,
+						Address = "-",
+						PhoneNumber = "-",
+						Email = spec.Email,
+						JobTitleID = jobTitleId,
+						EmpCompanyID = spec.CompanyId,
+						DepartmentID = spec.DepartmentId,
+						BranchID = null,          // head-office reader: no branch filter narrows their reports
+						// EMPTY, not a placeholder like "-". _LayoutInventory renders the avatar as
+						// Url.Content("~" + ProfileImage.Replace("\\","/")), so any non-empty value that is not a
+						// rooted path throws ArgumentException ("The path in 'value' must start with '/'") and
+						// 500s EVERY page the user opens. Empty takes the blank-avatar branch, which is the
+						// convention the existing employee rows already use.
+						ProfileImage = "",
+						DateOfBirth = new DateTime(1990, 1, 1),
+						Gender = "male",
+						MaritalStatus = "single",
+						DateOfJoining = new DateTime(2026, 1, 1),
+						IsActive = true,
+						UserId = user.Id,
+					};
+					_db.Employee.Add(employee);
+					await _db.SaveChangesAsync();
+					actions.Add("employee-created");
+				}
+				else
+				{
+					actions.Add("employee-already-present");
+				}
+
+				userReport.Add(new
+				{
+					userName = spec.UserName,
+					userId = user.Id,
+					employeeId = employee.ID,
+					company = employee.EmpCompanyID,
+					department = employee.DepartmentID,
+					roles = spec.Roles,
+					actions,
+				});
+			}
+
+			return Ok(new
+			{
+				ok = true,
+				note = "Development only. Roles and users created through RoleManager/UserManager; "
+				     + "no password is stored in source. Re-running is idempotent.",
+				roles = roleReport,
+				users = userReport,
+			});
+		}
+
 		// GET /api/dev/culture-check?key=seed123 — HM-1 verification: prove decimals round-trip under
 		// the (number-normalized) request culture, and that dates/calendar/UI are untouched.
 		[HttpGet("culture-check")]
@@ -249,7 +461,7 @@ namespace CrossBuy.Controllers.Api
 			async Task<int> EnsureTerminal(string code, string name, string prefix)
 			{
 				var exT = await _db.PosTerminals.FirstOrDefaultAsync(t => t.BranchId == bid && t.Code == code);
-				var (ok, err, id) = await _posSetup.SaveTerminalAsync(bid, exT?.ID ?? 0, code, name, prefix, null, true, true);
+				var (ok, err, id) = await _posSetup.SaveTerminalAsync(bid, exT?.ID ?? 0, code, name, null, prefix, null, true, true);
 				return id;
 			}
 			int l1 = await EnsureTerminal("HM-L1", "Lane 1", "HM-L1-");
@@ -895,14 +1107,18 @@ namespace CrossBuy.Controllers.Api
 			int i1 = await _db.Items.Where(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-001").Select(i => i.ID).FirstAsync();
 			int i3 = await _db.Items.Where(i => i.CompanyID == company && i.ItemCode == "HM-DEMO-003").Select(i => i.ID).FirstAsync();
 
-			async Task<int> EnsureCat(string code, string name)
+			// TWO NAMES, not one copied into both columns. This helper ran "NameEn = name", so the two ZZ
+			// categories it seeds carried an Arabic string in the ENGLISH column and /Inventory/Categories
+			// showed Arabic on an English screen - the view resolves NameEn correctly and had nothing English
+			// to resolve to. A seeder that writes bad shape teaches every screen downstream to look broken.
+			async Task<int> EnsureCat(string code, string name, string nameEn)
 			{
 				var c = await _db.ItemCategories.FirstOrDefaultAsync(x => x.CompanyID == company && x.Code == code);
-				if (c == null) { c = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Code = code, Name = name, NameEn = name, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.ItemCategories.Add(c); await _db.SaveChangesAsync(); }
+				if (c == null) { c = new CrossBuy.Models.Context.Inventory.ItemCategory { CompanyID = company, Code = code, Name = name, NameEn = nameEn, IsActive = true, CreatedAt = DateTime.UtcNow }; _db.ItemCategories.Add(c); await _db.SaveChangesAsync(); }
 				return c.ID;
 			}
-			int zcatCat = await EnsureCat("ZZ-CATP", "ZZ فئة العرض");   // holds the category-promo members only
-			int zcatItem = await EnsureCat("ZZ-PROMO", "ZZ عروض الصنف"); // holds the item/qty-promo members (no category promo)
+			int zcatCat = await EnsureCat("ZZ-CATP", "ZZ فئة العرض", "ZZ promo category");   // holds the category-promo members only
+			int zcatItem = await EnsureCat("ZZ-PROMO", "ZZ عروض الصنف", "ZZ item promos"); // holds the item/qty-promo members (no category promo)
 
 			async Task<int> EnsureZz(string code, int catId, decimal price)
 			{
@@ -1159,9 +1375,9 @@ namespace CrossBuy.Controllers.Api
 			// T4: named expired batch blocked; FEFO excludes expired and reports it
 			await Reseed();
 			var (n4ok, n4err) = await Issue(expId, 5m, pcs, "Issue", "LOT-EXP");
-			Chk("T4a: named expired batch ⇒ blocked", !n4ok && (n4err ?? "").Contains("منتهية"));
+			Chk("T4a: named expired batch ⇒ blocked", !n4ok && (n4err ?? "").Contains("has expired"));
 			var (f4ok, f4err) = await Issue(expId, 250m, pcs, "Issue");   // > valid 200, so 50 expired excluded
-			Chk("T4b: FEFO short ⇒ excludes expired, clear message", !f4ok && (f4err ?? "").Contains("مستبعَد") && (f4err ?? "").Contains("منتهية"));
+			Chk("T4b: FEFO short ⇒ excludes expired, clear message", !f4ok && (f4err ?? "").Contains("excluding") && (f4err ?? "").Contains("expired batches"));
 			log.Add($"  T4 named='{n4err}' · fefo='{f4err}'");
 
 			// T5: input without a batch rejected in each user path (zero effect)
@@ -1185,7 +1401,7 @@ namespace CrossBuy.Controllers.Api
 				await _db.SaveChangesAsync();
 			}
 			var (u6ok, u6err) = await Issue(ub.ID, 10m, pcs, "Issue");
-			Chk("T6: unbatched physical stock ⇒ clear data-correction message (not 'available 0')", !u6ok && (u6err ?? "").Contains("غير مرتبط بدفعات"));
+			Chk("T6: unbatched physical stock ⇒ clear data-correction message (not 'available 0')", !u6ok && (u6err ?? "").Contains("not linked to any batch"));
 			log.Add($"  T6 '{u6err}'");
 			// teardown the crafted ZZ-UNBATCH so this test leaves NO residue in the counted classification (our rule:
 			// no test leaves an inv-test-integrity deviation). The issue above was blocked, so there is no out-movement.
@@ -1296,7 +1512,7 @@ namespace CrossBuy.Controllers.Api
 			// ===== T3: invoice the SAME GRN again ⇒ rejected, zero effect =====
 			decimal bAP3 = await NetId(apId);
 			var (m3ok, m3err, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr1.ID, T, gr1.TotalCost, null);
-			Chk("T3 re-invoice same GRN ⇒ rejected (set-once) · AP unchanged", !m3ok && (m3err ?? "").Contains("مُفوتَر") && R(await NetId(apId) - bAP3) == 0m);
+			Chk("T3 re-invoice same GRN ⇒ rejected (set-once) · AP unchanged", !m3ok && (m3err ?? "").Contains("already invoiced") && R(await NetId(apId) - bAP3) == 0m);
 			log.Add($"  T3 ok={m3ok} err='{m3err}'");
 
 			// ===== T4: standalone invoice (no GRN) ⇒ Dr 1103 / Cr AP + ONE stock movement (behaviour preserved) =====
@@ -1311,14 +1527,14 @@ namespace CrossBuy.Controllers.Api
 			decimal bAP5 = await NetId(apId);
 			var (m5ok, m5err, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr5!.ID, T, 30m, null);   // 30 ≠ 28
 			int? open5 = await _db.GoodsReceipts.AsNoTracking().Where(g => g.ID == gr5.ID).Select(g => g.InvoiceId).FirstAsync();
-			Chk("T5a mismatch amount ⇒ refused · GRN stays open · AP unchanged", !m5ok && (m5err ?? "").Contains("تختلف") && open5 == null && R(await NetId(apId) - bAP5) == 0m);
+			Chk("T5a mismatch amount ⇒ refused · GRN stays open · AP unchanged", !m5ok && (m5err ?? "").Contains("differs from") && open5 == null && R(await NetId(apId) - bAP5) == 0m);
 			var (m5bok, m5berr, _) = await _ap.MatchGoodsReceiptToInvoiceAsync(company, gr5.ID, T, gr5.TotalCost, null);
 			Chk("T5b correct amount ⇒ match succeeds · GRN closed", m5bok && (await _db.GoodsReceipts.AsNoTracking().Where(g => g.ID == gr5.ID).Select(g => g.InvoiceId).FirstAsync()) != null);
 			log.Add($"  T5 mismatchErr='{m5err}' correctOk={m5bok}");
 
 			// ===== T6: GRN of a TrackExpiry item WITHOUT a batch ⇒ rejected; WITH a batch ⇒ succeeds, movement carries BatchId =====
 			var (g6aok, g6aerr, _) = await Grn(exp.ID, 5m, 3m);   // no batch
-			Chk("T6a GRN of TrackExpiry item WITHOUT batch ⇒ rejected (HM-6 guard covers the GRN path)", !g6aok && (g6aerr ?? "").Contains("الدفعة"));
+			Chk("T6a GRN of TrackExpiry item WITHOUT batch ⇒ rejected (HM-6 guard covers the GRN path)", !g6aok && (g6aerr ?? "").Contains("batch number is required"));
 			var (g6bok, g6berr, gr6) = await Grn(exp.ID, 5m, 3m, "ZZ-H16-LOT", T.AddDays(90));
 			bool mvBatched = gr6 != null && await _db.StockMovements.AsNoTracking().AnyAsync(m => m.SourceType == "Receipt" && m.SourceId == gr6.ID && m.BatchId != null);
 			Chk("T6b GRN WITH batch ⇒ succeeds · movement carries BatchId", g6bok && mvBatched);
@@ -1502,14 +1718,14 @@ namespace CrossBuy.Controllers.Api
 			var tk2 = await _db.SalesInvoices.FirstAsync(i => i.ID == invKwd.ID && i.CompanyID == company);
 			var (ok11, err11) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(tk2, "اسم آخر", "OTHER", "9");
 			var v11 = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == invKwd.ID);
-			Chk("T11 second stamp rejected (set-once) · first name unchanged", !ok11 && (err11 ?? "").Contains("مسبقًا") && v11.CustomerNameOverride == "أحمد المستهلك");
+			Chk("T11 second stamp rejected (set-once) · first name unchanged", !ok11 && (err11 ?? "").Contains("already stamped") && v11.CustomerNameOverride == "أحمد المستهلك");
 			log.Add($"  T11 ok={ok11} err='{err11}'");
 
 			// ===== T12: taxed invoice (14%) → stamp REJECTED (the auditor's rule) · no override written =====
 			var te = await _db.SalesInvoices.FirstAsync(i => i.ID == invEgp.ID && i.CompanyID == company);
 			var (ok12, err12) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(te, "اسم على فاتورة ضريبية", "X", "9");
 			var v12 = await _db.SalesInvoices.AsNoTracking().FirstAsync(i => i.ID == invEgp.ID);
-			Chk("T12 taxed invoice stamp REFUSED · reason=tax present · CustomerNameOverride stays null", !ok12 && (err12 ?? "").Contains("ضريبة") && v12.CustomerNameOverride == null);
+			Chk("T12 taxed invoice stamp REFUSED · reason=tax present · CustomerNameOverride stays null", !ok12 && (err12 ?? "").Contains("carries tax") && v12.CustomerNameOverride == null);
 			log.Add($"  T12 ok={ok12} err='{err12}'");
 
 			// ===== T6: no tax number given → override tax stays null (the doc omits the line, not '0'/'null') =====
@@ -1656,7 +1872,7 @@ namespace CrossBuy.Controllers.Api
 			var p5 = await Pay(o5);
 			var (l5ok, l5err) = await _posOrders.SetOrderCustomerAsync(company, o5, real.ID);
 			int? o5cust = await OrderCustomer(o5);
-			Chk("T5 link on a PAID order ⇒ refused (الطلب ليس مفتوحًا) · customer unchanged", !l5ok && (l5err ?? "").Contains("مفتوح") && o5cust == walkIn.ID);
+			Chk("T5 link on a PAID order ⇒ refused (the order is not open) · customer unchanged", !l5ok && (l5err ?? "").Contains("not open") && o5cust == walkIn.ID);
 			log.Add($"  T5 linkAfterPay ok={l5ok} err='{l5err}'");
 
 			// ===== T6: capability disabled on a branch without config ⇒ not enabled =====
@@ -1680,7 +1896,7 @@ namespace CrossBuy.Controllers.Api
 			{ var (_t8ok, _t8e, t8inv) = await _ar.CreateSalesInvoiceAsync(company, real.ID, T, new List<CrossBuy.BL.SalesLineInput> { new() { ItemDescription = "ZZ taxed", Qty = 1m, UnitPrice = 100m, TaxRate = 14m, RevenueAccountId = rev4101 } }, "ZZ-HM9-TAXED", null); taxed = t8inv; }
 			var (stampOk, stampErr) = CrossBuy.BL.OfficialInvoiceHelper.StampCustomer(taxed!, "اسم على وثيقة ضريبية", "X", "9");
 			Chk("T8 taxed invoice posts to the real customer · no override · HM-8 stamp refused on tax>0 (identity is the route)",
-				taxed != null && taxed.TaxTotal > 0m && taxed.CustomerId == real.ID && taxed.CustomerNameOverride == null && !stampOk && (stampErr ?? "").Contains("ضريبة"));
+				taxed != null && taxed.TaxTotal > 0m && taxed.CustomerId == real.ID && taxed.CustomerNameOverride == null && !stampOk && (stampErr ?? "").Contains("carries tax"));
 			log.Add($"  T8 taxedCust={taxed?.CustomerId}(real={real.ID}) tax={taxed?.TaxTotal} override={(taxed?.CustomerNameOverride ?? "null")} stampRefused={!stampOk}");
 
 			// ===== T10: link then CHANGE the customer before pay ⇒ last one gets the invoice =====
@@ -1992,21 +2208,21 @@ namespace CrossBuy.Controllers.Api
 			var o4 = await NewOrder(term1.ID, shift1.ID);
 			var (p4aok, _p4ae, inv4) = await _posOrders.PayAsync(company, o4, "Cash", 1, idempotencyToken: Tok());
 			var (p4bok, p4berr, inv4b) = await _posOrders.PayAsync(company, o4, "Cash", 1, idempotencyToken: Tok());   // different token, same (now Paid) order
-			Chk("T4 two different tokens, same cart ⇒ 2nd REJECTED (الطلب ليس مفتوحًا) · one invoice", p4aok && !p4bok && (p4berr ?? "").Contains("مفتوح") && inv4b == null);
+			Chk("T4 two different tokens, same cart ⇒ 2nd REJECTED (the order is not open) · one invoice", p4aok && !p4bok && (p4berr ?? "").Contains("not open") && inv4b == null);
 			log.Add($"  T4 first={inv4} secondOk={p4bok} err='{p4berr}'");
 
 			// ===== T9: token lost (new session ⇒ new token) after a successful pay ⇒ 2nd rejected by status guard · one invoice =====
 			var o9 = await NewOrder(term1.ID, shift1.ID);
 			var (p9aok, _p9ae, inv9) = await _posOrders.PayAsync(company, o9, "Cash", 1, idempotencyToken: Tok());
 			var (p9bok, p9berr, _inv9b) = await _posOrders.PayAsync(company, o9, "Cash", 1, idempotencyToken: Tok());   // the "lost" token replaced by a fresh one
-			Chk("T9 token lost (fresh token) ⇒ 2nd pay rejected by the status guard · one invoice", p9aok && !p9bok && (p9berr ?? "").Contains("مفتوح"));
+			Chk("T9 token lost (fresh token) ⇒ 2nd pay rejected by the status guard · one invoice", p9aok && !p9bok && (p9berr ?? "").Contains("not open"));
 			log.Add($"  T9 first={inv9} secondOk={p9bok}");
 
 			// ===== T10: F5 re-post WITHOUT a token (server backstop for a raw resubmit) ⇒ rejected by status guard =====
 			var o10 = await NewOrder(term1.ID, shift1.ID);
 			var (p10aok, _p10ae, inv10) = await _posOrders.PayAsync(company, o10, "Cash", 1, idempotencyToken: Tok());
 			var (p10bok, p10berr, _i10b) = await _posOrders.PayAsync(company, o10, "Cash", 1, idempotencyToken: null);   // raw re-post, no token
-			Chk("T10 raw re-post (no token, PRG-lost) ⇒ rejected by the status guard · one invoice", p10aok && !p10bok && (p10berr ?? "").Contains("مفتوح"));
+			Chk("T10 raw re-post (no token, PRG-lost) ⇒ rejected by the status guard · one invoice", p10aok && !p10bok && (p10berr ?? "").Contains("not open"));
 			log.Add($"  T10 first={inv10} rePostOk={p10bok}");
 
 			// ===== T7: disconnect BEFORE commit ⇒ order stays Open on the server · pay after reconnect ⇒ one invoice =====
@@ -2296,7 +2512,7 @@ namespace CrossBuy.Controllers.Api
 			// ===== T7/T11: same, WITHOUT expiry ⇒ rejected, ZERO effect (atomic) =====
 			decimal qExpBefore = await Qty(exp.ID);
 			var (c7ok, c7err, _) = await _stock.PostCountAsync(company, wh, T, "hm7 T7", new List<CrossBuy.BL.CountLineInput> { CL(exp.ID, 5m, "ZC-NOEXP", null) }, "dev");
-			Chk("T7/T11 unregistered batch WITHOUT expiry ⇒ rejected, zero effect", !c7ok && (c7err ?? "").Contains("صلاحية") && await Qty(exp.ID) == qExpBefore);
+			Chk("T7/T11 unregistered batch WITHOUT expiry ⇒ rejected, zero effect", !c7ok && (c7err ?? "").Contains("expiry date is required") && await Qty(exp.ID) == qExpBefore);
 			log.Add($"  T7 ok={c7ok} err='{c7err}' qtyUnchanged={await Qty(exp.ID) == qExpBefore}");
 
 			// ===== T8: WEIGHTED tracked, KG per batch ⇒ fractions preserved =====
@@ -2390,7 +2606,7 @@ namespace CrossBuy.Controllers.Api
 			var A = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-GUARD-A", NameAr = "اختبار أ", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "guard test", ActivityPresetCode = null };
 			var B = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-GUARD-B", NameAr = "اختبار ب", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "guard test", ActivityPresetCode = null };
 			_db.Branches.Add(A); _db.Branches.Add(B); await _db.SaveChangesAsync();
-			await _posSetup.SaveTerminalAsync(A.ID, 0, "ZZ-TA", "TA", "ZZ-TA-", null, false, true);   // gives A operational history (a terminal), no cash account
+			await _posSetup.SaveTerminalAsync(A.ID, 0, "ZZ-TA", "TA", null, "ZZ-TA-", null, false, true);   // gives A operational history (a terminal), no cash account
 
 			async Task Run(string label, int bid, string code, bool conscious, bool expectOk)
 			{
@@ -2427,7 +2643,7 @@ namespace CrossBuy.Controllers.Api
 			// ---- Part A: receipt number on a throwaway branch+terminal ----
 			var br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-CONC-BR", NameAr = "تزامن", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "conc test", ActivityPresetCode = null };
 			_db.Branches.Add(br); await _db.SaveChangesAsync();
-			var (_, _, termId) = await _posSetup.SaveTerminalAsync(br.ID, 0, "ZZ-CT", "ct", "ZZ-CT-", null, false, true);
+			var (_, _, termId) = await _posSetup.SaveTerminalAsync(br.ID, 0, "ZZ-CT", "ct", null, "ZZ-CT-", null, false, true);
 
 			var recTasks = Enumerable.Range(0, N).Select(_ => Task.Run(async () =>
 			{
@@ -2738,7 +2954,7 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			// ZZ branch + terminal with a DIGIT in the prefix (ZZ6-) — the worst case for the old all-digits scrape
 			var br = new CrossBuy.Models.Context.Admin.Branch { Name = "ZZ-D5A-BR", NameAr = "اختبار كشط", Location = "t", CountryID = 32, CompanyID = 79, PhoneNumber = "", Email = "", Description = "d5a", ActivityPresetCode = null };
 			_db.Branches.Add(br); await _db.SaveChangesAsync();
-			var (_, _, termId) = await _posSetup.SaveTerminalAsync(br.ID, 0, "ZZ6-T", "d5a", "ZZ6-", null, false, true);
+			var (_, _, termId) = await _posSetup.SaveTerminalAsync(br.ID, 0, "ZZ6-T", "d5a", null, "ZZ6-", null, false, true);
 			await _db.Database.ExecuteSqlRawAsync("UPDATE PosTerminals SET NextReceiptNo = 5 WHERE ID = {0}", termId);
 
 			int oldScrape = int.Parse(new string("ZZ6-000012".Where(char.IsDigit).ToArray()), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);   // OLD bug = 6000012
@@ -2767,10 +2983,10 @@ UPDATE dbo.NumberSequences SET NextNumber=NextNumber+1 OUTPUT deleted.NextNumber
 			// 4) prefix-change guard (corr. 3): give the terminal an OPEN (zero-footprint) order → a prefix CHANGE must be rejected; SAME prefix stays allowed
 			_db.PosOrders.Add(new CrossBuy.Models.Context.Pos.PosOrder { CompanyId = 1, BranchId = br.ID, TerminalId = termId, Status = "Open", OrderType = "Takeaway", OpenedAt = DateTime.UtcNow });
 			await _db.SaveChangesAsync();
-			var (gChangeOk, gChangeErr, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ6-T", "d5a", "ZZ9-", null, false, true);   // change ZZ6- → ZZ9- (has orders) → REJECT
-			var (gSameOk, _, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ6-T", "d5a", "ZZ6-", null, false, true);              // same prefix → allowed
+			var (gChangeOk, gChangeErr, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ6-T", "d5a", null, "ZZ9-", null, false, true);   // change ZZ6- → ZZ9- (has orders) → REJECT
+			var (gSameOk, _, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ6-T", "d5a", null, "ZZ6-", null, false, true);              // same prefix → allowed
 			// 4b) CODE backdoor (corr. 2): change CODE with an EMPTY prefix → derived prefix (code+"-") changes → must be REJECTED too
-			var (gCodeOk, gCodeErr, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ9-T", "d5a", null, null, false, true);
+			var (gCodeOk, gCodeErr, _) = await _posSetup.SaveTerminalAsync(br.ID, termId, "ZZ9-T", "d5a", null, null, null, false, true);
 			var prefixAfter = await _db.PosTerminals.AsNoTracking().Where(t => t.ID == termId).Select(t => t.ReceiptPrefix).FirstAsync();
 			var codeAfter = await _db.PosTerminals.AsNoTracking().Where(t => t.ID == termId).Select(t => t.Code).FirstAsync();
 
@@ -5575,7 +5791,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			__p.Status = CrossBuy.Models.Context.Accounting.AccountingPeriodStatuses.Closed;
 			await _db.SaveChangesAsync();
 			var attempts = new List<object>();
-			void rec(string op, bool ok, string? err) => attempts.Add(new { op, ok, blocked = !ok && (err ?? "").Contains("مقفول"), error = err });
+			void rec(string op, bool ok, string? err) => attempts.Add(new { op, ok, blocked = !ok && (err ?? "").Contains("period is closed"), error = err });
 			try
 			{
 				var r1 = await _stock.PostMovementAsync(company, new CrossBuy.BL.MovementRequest { Date = closedDate, ItemId = item.ID, WarehouseId = wh.ID, Direction = 1, Qty = 10, UnitCostInBase = 10m, SourceType = "Receipt", PostToGl = true }, null);
@@ -6479,9 +6695,9 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
 
 				// --- payment methods ---
-				var (m1ok, m1e) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "Cash", "نقدي", cashAcc == 0 ? (int?)null : cashAcc, true, 1);
-				var (m2ok, m2e) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "KNet", "كي-نت", null, true, 2);
-				var (dupOk, _) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "Cash", null, null, true, 9);   // duplicate type → rejected
+				var (m1ok, m1e) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "Cash", "نقدي", null, cashAcc == 0 ? (int?)null : cashAcc, true, 1);
+				var (m2ok, m2e) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "KNet", "كي-نت", null, null, true, 2);
+				var (dupOk, _) = await _posSetup.SavePaymentMethodAsync(branchId, 0, "Cash", null, null, null, true, 9);   // duplicate type → rejected
 				var methods = await _posSetup.GetPaymentMethodsAsync(branchId);
 				Chk("payment methods added", m1ok && m2ok && methods.Count(x => x.PaymentMethod == "Cash" || x.PaymentMethod == "KNet") >= 2);
 				Chk("duplicate method rejected", !dupOk);
@@ -6618,7 +6834,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				int accB = await _db.Accounts.CountAsync(a => a.CompanyID == company);
 
 				// create a terminal with an AUTO-created dedicated till account
-				var (t1ok, t1e, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST1", "اختبار", null, null, true, true);
+				var (t1ok, t1e, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST1", "اختبار", null, null, null, true, true);
 				Chk("terminal created", t1ok && tid > 0);
 				var term = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.ID == tid);
 				Chk("receipt prefix defaulted + counter=1", term != null && term.ReceiptPrefix == "TST1-" && term.NextReceiptNo == 1);
@@ -6627,7 +6843,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				var till = term?.CashAccountId == null ? null : await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.ID == term.CashAccountId);
 				var mainCashId = await _db.Accounts.Where(a => a.CompanyID == company && a.Code == "110101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 				Chk("dedicated till cash account auto-created (postable child of 110101)", till != null && till.IsPostable && till.Code.StartsWith("110101") && till.ParentId == mainCashId);
-				Chk("duplicate terminal code rejected", !(await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST1", "x", null, null, true, true)).ok);
+				Chk("duplicate terminal code rejected", !(await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST1", "x", null, null, null, true, true)).ok);
 
 				// shift: open, reject double-open, close
 				var (s1ok, _) = await _posSetup.OpenShiftAsync(tid, "Morning", null, 100m);
@@ -6679,7 +6895,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				Chk("CanSell: cashier=yes, waiter=no; manager=manager", _posAccess.CanSell(new[] { "pos-cashier" }) && !_posAccess.CanSell(new[] { "pos-waiter" }) && _posAccess.IsManager(new[] { "pos-manager" }));
 
 				// a terminal with an auto drawer + an open shift
-				var (tok, terr, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "POS2T", "اختبار POS2", null, null, true, true);
+				var (tok, terr, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "POS2T", "اختبار POS2", null, null, null, true, true);
 				if (!tok) return Ok(new { allPass = false, log = new[] { "FAIL terminal: " + terr } });
 				var term = await _db.PosTerminals.AsNoTracking().FirstAsync(t => t.ID == tid);
 				int drawer = term.CashAccountId ?? 0;
@@ -6729,12 +6945,12 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				if (branch == null) return BadRequest(new { message = "need a branch" });
 				int jeB = await _db.JournalEntries.CountAsync(e => e.CompanyID == company);
 
-				var (ok, err, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST3", "طباعة", null, null, true, true, 58, 3, "Star TSP");
+				var (ok, err, tid) = await _posSetup.SaveTerminalAsync(branch.ID, 0, "TST3", "طباعة", null, null, null, true, true, 58, 3, "Star TSP");
 				Chk("terminal saved with receipt settings", ok && tid > 0);
 				var t = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(x => x.ID == tid);
 				Chk("paper=58, copies=3, printer persisted", t != null && t.ReceiptPaperWidthMm == 58 && t.ReceiptCopies == 3 && t.ReceiptPrinterName == "Star TSP");
 				// clamp guards
-				await _posSetup.SaveTerminalAsync(branch.ID, tid, "TST3", "طباعة", null, null, false, true, 80, 99, null);
+				await _posSetup.SaveTerminalAsync(branch.ID, tid, "TST3", "طباعة", null, null, null, false, true, 80, 99, null);
 				var t2 = await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(x => x.ID == tid);
 				Chk("paper normalized to 80 + copies clamped to 5", t2 != null && t2.ReceiptPaperWidthMm == 80 && t2.ReceiptCopies == 5);
 				Chk("printing setup posts NO journal entries", (await _db.JournalEntries.CountAsync(e => e.CompanyID == company)) == jeB);
@@ -7600,7 +7816,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			var (ok2, e2, _) = await ar.CreateSalesInvoiceAsync(company, cust.ID, DateTime.Today, line(900m), "test2", null);  // 200+900=1100 > 1000 → blocked
 
 			bool withinOk = ok1;
-			bool overBlocked = !ok2 && (e2 ?? "").Contains("حدّ الائتمان");
+			bool overBlocked = !ok2 && (e2 ?? "").Contains("Credit limit exceeded");
 
 			// cleanup: delete the customer's invoices + their JEs + the customer
 			var invIds = await _db.SalesInvoices.Where(i => i.CompanyID == company && i.CustomerId == cust.ID).Select(i => i.ID).ToListAsync();
@@ -7860,7 +8076,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/seed-accounting?key=seed123&companyId=1
 		// Phase-0 seed: account types, EGP currency, fiscal year 2026 + periods, and a starter Egyptian COA.
 		[HttpGet("seed-accounting")]
-		public async Task<IActionResult> SeedAccounting(string key, int companyId = 1)
+		public async Task<IActionResult> SeedAccounting(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 
@@ -8054,7 +8270,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// (Buy/Sell/Central) + FX GL anchor accounts (realized/unrealized gain/loss, translation
 		// reserve) + sets company default currency and each branch functional currency = EGP.
 		[HttpGet("seed-multicurrency")]
-		public async Task<IActionResult> SeedMultiCurrency(string key, int companyId = 1)
+		public async Task<IActionResult> SeedMultiCurrency(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 
@@ -8138,7 +8354,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// the real services → verifies foreign cost is converted to the functional currency before GL/stock.
 		// Then call /api/dev/inv-test-integrity to confirm AP==subledger / inventory==GL / TB balanced.
 		[HttpGet("mc-test-p2p")]
-		public async Task<IActionResult> McTestP2p(string key, int companyId = 1)
+		public async Task<IActionResult> McTestP2p(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
@@ -8180,7 +8396,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// real services → revenue/VAT/AR are converted to the functional currency. Then call inv-test-integrity
 		// to confirm AR==subledger / TB balanced (using the base columns).
 		[HttpGet("mc-test-o2c")]
-		public async Task<IActionResult> McTestO2c(string key, int companyId = 1)
+		public async Task<IActionResult> McTestO2c(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
@@ -8215,7 +8431,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Multi-Currency 1-5 smoke: a USD sales invoice @50 then a USD receipt @51 of the same foreign amount.
 		// Expects realized FX gain = foreign × (51−50) booked to 4902, AR cleared at the invoice rate, invariants intact.
 		[HttpGet("mc-test-fx")]
-		public async Task<IActionResult> McTestFx(string key, int companyId = 1)
+		public async Task<IActionResult> McTestFx(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
@@ -8260,7 +8476,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Multi-Currency 1-6 smoke: an OPEN USD invoice @50 + a closing rate of 55 → revaluation posts an
 		// unrealized gain to 4903 and an auto-reversal next day; AR control nets to zero (subledger intact).
 		[HttpGet("mc-test-reval")]
-		public async Task<IActionResult> McTestReval(string key, int companyId = 1)
+		public async Task<IActionResult> McTestReval(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
@@ -8304,7 +8520,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Pricing 2-1: verifies customer>segment>general priority, currency matching, and the converted fallback.
 		// Self-cleaning (no GL): creates lists, resolves prices, then removes the lists and restores the item price.
 		[HttpGet("mc-test-pricing2")]
-		public async Task<IActionResult> McTestPricing2(string key, int companyId = 1)
+		public async Task<IActionResult> McTestPricing2(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => c.ID).FirstOrDefaultAsync();
@@ -8361,7 +8577,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// sets the floor to 20% (→ floor 120), runs functional + foreign + per-item-override + unknown-cost cases,
 		// then removes everything and restores the settings. No GL touched (balance is throwaway and deleted).
 		[HttpGet("pricing-test-margin")]
-		public async Task<IActionResult> PricingTestMargin(string key, int companyId = 1)
+		public async Task<IActionResult> PricingTestMargin(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
@@ -8446,7 +8662,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Pricing 2B: verifies the promotion engine — percent, expired (ignored), fixed-amount (functional + doc-currency),
 		// best-single (largest wins), and cross-currency amount folding. Self-cleaning; no GL touched.
 		[HttpGet("promotion-test")]
-		public async Task<IActionResult> PromotionTest(string key, int companyId = 1)
+		public async Task<IActionResult> PromotionTest(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
@@ -8554,7 +8770,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Pricing 2C: verifies cost-plus price-list lines — purchased (avg stock cost 100 +20% = 120),
 		// manufactured (BOM material 100 +30% = 130), and foreign conversion + currency rounding. Self-cleaning; no GL.
 		[HttpGet("pricing-test-costplus")]
-		public async Task<IActionResult> PricingTestCostPlus(string key, int companyId = 1)
+		public async Task<IActionResult> PricingTestCostPlus(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var usd = await _db.Currencies.Where(c => c.Code == "USD").Select(c => (int?)c.ID).FirstOrDefaultAsync();
@@ -8642,7 +8858,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Creates PERSISTENT test employees + logins (company 1) so you can try the internal chat between users.
 		// Idempotent: re-running reuses the same accounts. NOT self-cleaning (they stay so you can log in).
 		[HttpGet("chat-test-seed")]
-		public async Task<IActionResult> ChatTestSeed(string key, int companyId = 1)
+		public async Task<IActionResult> ChatTestSeed(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var jtId = await _db.JobTitles.Select(j => j.ID).FirstOrDefaultAsync();
@@ -8684,7 +8900,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// HR-8: verifies the ESS request workflow (letter → chain → approve) and that an approved hourly
 		// permission waives late minutes in the monthly attendance summary. Self-cleaning; no GL touched.
 		[HttpGet("employee-request-test")]
-		public async Task<IActionResult> EmployeeRequestTest(string key, int companyId = 1)
+		public async Task<IActionResult> EmployeeRequestTest(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var reqSvc = HttpContext.RequestServices.GetService(typeof(IEmployeeRequestService)) as IEmployeeRequestService;
@@ -8776,7 +8992,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/appraisal-test?key=seed123&companyId=1
 		// HR-9: verifies weighted scoring + workflow (create → score → submit → acknowledge). Self-cleaning; no GL.
 		[HttpGet("appraisal-test")]
-		public async Task<IActionResult> AppraisalTest(string key, int companyId = 1)
+		public async Task<IActionResult> AppraisalTest(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var svc = HttpContext.RequestServices.GetService(typeof(IAppraisalService)) as IAppraisalService;
@@ -8830,7 +9046,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/training-test?key=seed123&companyId=1
 		// HR-10: verifies course + enrollment + status/score update + ESS my-trainings. Self-cleaning; no GL.
 		[HttpGet("training-test")]
-		public async Task<IActionResult> TrainingTest(string key, int companyId = 1)
+		public async Task<IActionResult> TrainingTest(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var svc = HttpContext.RequestServices.GetService(typeof(ITrainingService)) as ITrainingService;
@@ -8869,7 +9085,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/pricing-test-discount?key=seed123&companyId=1
 		// Pricing 2D: verifies the discount ceiling — Block rejects unless manage authority; Warn notifies. Self-cleaning; no GL.
 		[HttpGet("pricing-test-discount")]
-		public async Task<IActionResult> PricingTestDiscount(string key, int companyId = 1)
+		public async Task<IActionResult> PricingTestDiscount(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var svc = HttpContext.RequestServices.GetService(typeof(IPricingService)) as IPricingService;
@@ -8906,7 +9122,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/crm-test-automation?key=seed123&companyId=1
 		// CRM 3-7b(ii): rule (LeadCreated → CreateActivity) fires; stage filter respected. Self-cleaning; no GL.
 		[HttpGet("crm-test-automation")]
-		public async Task<IActionResult> CrmTestAutomation(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestAutomation(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var svc = HttpContext.RequestServices.GetService(typeof(ICrmAutomationService)) as ICrmAutomationService;
@@ -8945,7 +9161,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/crm-test-customfields?key=seed123&companyId=1
 		// CRM 3-7b(i): define a custom field, store a value for an entity, read it back. Self-cleaning; no GL.
 		[HttpGet("crm-test-customfields")]
-		public async Task<IActionResult> CrmTestCustomFields(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestCustomFields(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var svc = HttpContext.RequestServices.GetService(typeof(ICrmCustomFieldService)) as ICrmCustomFieldService;
@@ -8970,7 +9186,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/fx-test-bank-reval?key=seed123&companyId=1 (run seed-multicurrency first)
 		// Foreign bank revaluation: a foreign bank's statement balance × closing rate vs GL carrying value → 4903/5903 + auto-reversal.
 		[HttpGet("fx-test-bank-reval")]
-		public async Task<IActionResult> FxTestBankReval(string key, int companyId = 1)
+		public async Task<IActionResult> FxTestBankReval(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fx = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IFxRevaluationService)) as CrossBuy.BL.IFxRevaluationService;
@@ -9020,14 +9236,14 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 		// GET /api/dev/seed-brands?key=seed123&companyId=1 — demo brands (idempotent by Code).
 		[HttpGet("seed-brands")]
-		public async Task<IActionResult> SeedBrands(string key, int companyId = 1)
+		public async Task<IActionResult> SeedBrands(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var demo = new[]
 			{
 				new Brand { CompanyId = companyId, Code = "REST", Name = "مطعم الأصالة", NameEn = "Al-Asala Restaurant", TradeName = "الأصالة للمأكولات الشرقية", ColorPrimary = "#8B1E1E", ColorSecondary = "#D4AF37", ColorAccent = "#2F4F4F", Address = "القاهرة — مدينة نصر، شارع مكرم عبيد", Phone = "0100 123 4567", Email = "info@alasala.demo", Website = "alasala.demo", ReceiptFooterAr = "شكرًا لزيارتكم — نسعد بخدمتكم دائمًا", ReceiptFooterEn = "Thank you for dining with us", IsActive = true, CreatedAt = DateTime.UtcNow },
 				new Brand { CompanyId = companyId, Code = "CAFE", Name = "كافيه لاتيه", NameEn = "Latte Cafe", TradeName = "لاتيه للقهوة المختصة", ColorPrimary = "#6F4E37", ColorSecondary = "#C4A484", ColorAccent = "#3B2F2F", Address = "الجيزة — الشيخ زايد، مول أركان", Phone = "0111 222 3344", Email = "hello@latte.demo", Website = "latte.demo", ReceiptFooterAr = "قهوتك المفضّلة بانتظارك", ReceiptFooterEn = "Your favorite coffee awaits", IsActive = true, CreatedAt = DateTime.UtcNow },
-				new Brand { CompanyId = companyId, Code = "MART", Name = "سوبر ماركت الوفرة", NameEn = "Al-Wafra Supermarket", TradeName = "الوفرة للتجزئة", ColorPrimary = "#1E7A46", ColorSecondary = "#F2C200", ColorAccent = "#0B3D2E", Address = "الإسكندرية — سموحة", Phone = "0122 555 7788", Email = "care@wafra.demo", Website = "wafra.demo", ReceiptFooterAr = "وفّر أكثر مع الوفرة", ReceiptFooterEn = "Save more at Al-Wafra", IsActive = true, CreatedAt = DateTime.UtcNow },
+				new Brand { CompanyId = companyId, Code = "MART", Name = "سوبر ماركت الوفرة", NameEn = "Al-Wafra Supermarket", TradeName = "الوفرة للتجزئة", ColorPrimary = "#1E7A46", ColorSecondary = "#F2C200", ColorAccent = "#0E4A9E", Address = "الإسكندرية — سموحة", Phone = "0122 555 7788", Email = "care@wafra.demo", Website = "wafra.demo", ReceiptFooterAr = "وفّر أكثر مع الوفرة", ReceiptFooterEn = "Save more at Al-Wafra", IsActive = true, CreatedAt = DateTime.UtcNow },
 			};
 			var logos = new Dictionary<string, string> { { "REST", "/uploads/brands/rest.svg" }, { "CAFE", "/uploads/brands/cafe.svg" }, { "MART", "/uploads/brands/mart.svg" } };
 			int added = 0;
@@ -9045,7 +9261,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/brand-test?key=seed123&companyId=1
 		// Brand foundation: verifies identity resolution (company fallback → brand values) + branch linking. Self-cleaning; no GL.
 		[HttpGet("brand-test")]
-		public async Task<IActionResult> BrandTest(string key, int companyId = 1)
+		public async Task<IActionResult> BrandTest(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var svc = HttpContext.RequestServices.GetService(typeof(IBrandService)) as IBrandService;
@@ -9090,7 +9306,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Asset maintenance: monthly schedule → log a maintenance with cost → JE Dr 520110/Cr cash (asset cost center) +
 		// NextDueDate advances +1 month + it shows in the due list. Self-cleaning (reverses the JE, removes record+schedule).
 		[HttpGet("maint-test")]
-		public async Task<IActionResult> MaintTest(string key, int companyId = 1)
+		public async Task<IActionResult> MaintTest(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var mnt = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IMaintenanceService)) as CrossBuy.BL.IMaintenanceService;
@@ -9156,7 +9372,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 
 		// GET /api/dev/je-test-project?key=seed123&companyId=1 — a manual JE line carries the chosen ProjectId (persists + reads back).
 		[HttpGet("je-test-project")]
-		public async Task<IActionResult> JeTestProject(string key, int companyId = 1)
+		public async Task<IActionResult> JeTestProject(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var je = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IJournalEntryService)) as CrossBuy.BL.IJournalEntryService;
@@ -9184,7 +9400,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Project dimension: a project-tagged sales invoice must produce a revenue line AND a COGS line with the SAME ProjectId,
 		// and the profitability report must show both revenue and cost for that project. No self-cleaning (posts a real invoice).
 		[HttpGet("project-test")]
-		public async Task<IActionResult> ProjectTest(string key, int companyId = 1)
+		public async Task<IActionResult> ProjectTest(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var ar = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IReceivableService)) as CrossBuy.BL.IReceivableService;
@@ -9240,7 +9456,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// profitability report still runs, and verify the project save wrote ZERO journal entries (no new accounting
 		// writer). Self-cleaning (deletes the test project + activity type — pure master data, no GL).
 		[HttpGet("p0-test")]
-		public async Task<IActionResult> P0Test(string key, int companyId = 1)
+		public async Task<IActionResult> P0Test(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
@@ -9310,7 +9526,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Projects & Contracting P1 (BOQ): create a project + a main item with 2 priced sub-items, verify Σ values,
 		// Σ estimated cost, margin, project link, and ZERO journal entries (estimate only, no GL). Self-cleaning.
 		[HttpGet("p1-test")]
-		public async Task<IActionResult> P1Test(string key, int companyId = 1)
+		public async Task<IActionResult> P1Test(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
@@ -9361,7 +9577,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Projects & Contracting P2: receive an advance → Dr cash · Cr «Advances from customers» (2104, LIABILITY, NOT revenue),
 		// tagged with ProjectId, balanced; advance balance read from the GL matches. Self-cleaning (hard-deletes the JE + project).
 		[HttpGet("p2-test")]
-		public async Task<IActionResult> P2Test(string key, int companyId = 1)
+		public async Task<IActionResult> P2Test(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
@@ -9418,7 +9634,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Projects & Contracting P3 (execution/progress): cumulative snapshots per BOQ item → value-weighted overall %
 		// + period delta (cumulative − previous) + cap at 100% + Draft/Confirmed. OPERATIONAL — zero journal entries. Self-cleaning.
 		[HttpGet("p3-test")]
-		public async Task<IActionResult> P3Test(string key, int companyId = 1)
+		public async Task<IActionResult> P3Test(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var prj = HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IProjectService)) as CrossBuy.BL.IProjectService;
@@ -9495,7 +9711,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("seed-billing-data")]
 		public async Task<IActionResult> SeedBillingData(string key, int projectId,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
-			[FromServices] CrossBuy.BL.IProgressService progress, int companyId = 1)
+			[FromServices] CrossBuy.BL.IProgressService progress, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
@@ -9573,7 +9789,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
 			[FromServices] CrossBuy.BL.IContractService contract, [FromServices] CrossBuy.BL.IProgressService progress,
 			[FromServices] CrossBuy.BL.IProgressBillingService billing, [FromServices] CrossBuy.BL.IReceivableService ar,
-			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
@@ -9709,7 +9925,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("p5a-test")]
 		public async Task<IActionResult> P5aTest(string key,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IProjectMaterialIssueService material,
-			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 
@@ -9796,7 +10012,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("p5b-test")]
 		public async Task<IActionResult> P5bTest(string key,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IProjectLaborService labor,
-			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var emp = await _db.Employee.OrderBy(e => e.ID).FirstOrDefaultAsync();
@@ -9880,7 +10096,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		public async Task<IActionResult> P6aTest(string key,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
 			[FromServices] CrossBuy.BL.IProjectMaterialIssueService material, [FromServices] CrossBuy.BL.IProjectLaborService labor,
-			[FromServices] CrossBuy.BL.IProjectBudgetService budget, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IProjectBudgetService budget, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var pick = await (from sb in _db.StockBalances.AsNoTracking()
@@ -9975,7 +10191,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("p6b-test")]
 		public async Task<IActionResult> P6bTest(string key,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IContractService contract,
-			[FromServices] CrossBuy.BL.IJournalEntryService je, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IJournalEntryService je, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var cashId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
@@ -10060,7 +10276,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("p6c-test")]
 		public async Task<IActionResult> P6cTest(string key,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.ISubcontractBillingService subc,
-			[FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IPayableService ap, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var jeBefore = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId);
@@ -10150,7 +10366,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("p6c2-test")]
 		public async Task<IActionResult> P6c2Test(string key,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IContractService contract,
-			[FromServices] CrossBuy.BL.IJournalEntryService je, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IJournalEntryService je, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var cashId = await _db.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.IsActive && a.Code.StartsWith("1101")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
@@ -10233,7 +10449,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IBoqService boq,
 			[FromServices] CrossBuy.BL.IProgressService progress, [FromServices] CrossBuy.BL.IProgressBillingService billing,
 			[FromServices] CrossBuy.BL.IVariationOrderService vos, [FromServices] CrossBuy.BL.IReceivableService ar,
-			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var revAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4102").Select(a => a.ID).FirstOrDefaultAsync();
@@ -10332,7 +10548,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		[HttpGet("p6e-test")]
 		public async Task<IActionResult> P6eTest(string key,
 			[FromServices] CrossBuy.BL.IProjectService prj, [FromServices] CrossBuy.BL.IEquipmentDepreciationService equip,
-			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = 1)
+			[FromServices] CrossBuy.BL.IIntegrityCheckService integ, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			int? depExpAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "520103").Select(a => (int?)a.ID).FirstOrDefaultAsync();
@@ -10436,7 +10652,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		public async Task<IActionResult> PrjDemoCost(string key,
 			[FromServices] CrossBuy.BL.IProjectMaterialIssueService material, [FromServices] CrossBuy.BL.IProjectLaborService labor,
 			[FromServices] CrossBuy.BL.IEquipmentDepreciationService equip, [FromServices] CrossBuy.BL.IIntegrityCheckService integ,
-			int companyId = 1)
+			int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			const string MARK = "DEMO-COST";
@@ -10545,7 +10761,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Recruitment R0: verifies the 3 new tables exist + required-document catalog CRUD round-trip + the seeded defaults.
 		// Self-cleaning. Does NOT touch Employee/EmployeeRequest. (EmployeeService field-persist fix is build-verified + covered in R3.)
 		[HttpGet("r0-test")]
-		public async Task<IActionResult> R0Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		public async Task<IActionResult> R0Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			// 1) tables exist
@@ -10593,7 +10809,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Recruitment R1: create a job application → appears on the board → move through stages (dates stamped) →
 		// move-to-Hired blocked (needs conversion, R3) → edit. Self-cleaning. Does NOT touch Employee.
 		[HttpGet("r1-test")]
-		public async Task<IActionResult> R1Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		public async Task<IActionResult> R1Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
@@ -10645,7 +10861,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Recruitment R2: application checklist (catalog types, all missing) → upload a mandatory doc → it turns Present and
 		// the mandatory-done count rises → add an "other" doc → delete a doc. Self-cleaning (cascade deletes docs). No file on disk.
 		[HttpGet("r2-test")]
-		public async Task<IActionResult> R2Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		public async Task<IActionResult> R2Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var suffix = Guid.NewGuid().ToString("N").Substring(0, 5);
@@ -10708,7 +10924,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// the doc is carried into EmployeeDocuments, the application becomes Hired + HiredEmployeeID set, re-hire is blocked.
 		// Self-cleaning (removes the carried EmployeeDocuments + the application). Employee row itself is left untouched.
 		[HttpGet("r3-test")]
-		public async Task<IActionResult> R3Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = 1)
+		public async Task<IActionResult> R3Test(string key, [FromServices] CrossBuy.BL.IRecruitmentService recruit, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var emp = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId).OrderBy(e => e.ID).FirstOrDefaultAsync()
@@ -10766,7 +10982,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Recruitment: permanent sample applicants spread across the board stages (+ some documents on the accepted one).
 		// Idempotent (marker Source='DEMO'), NON-cleaning — intentional demo data so the board/detail aren't empty for review.
 		[HttpGet("recruit-demo")]
-		public async Task<IActionResult> RecruitDemo(string key, int companyId = 1)
+		public async Task<IActionResult> RecruitDemo(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			if (await _db.JobApplications.AnyAsync(a => a.CompanyID == companyId && a.Source == "DEMO"))
@@ -10824,7 +11040,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/crm-seed-pipeline?key=seed123&companyId=1
 		// CRM 3-3: seed the default sales pipeline + stages (idempotent) and backfill opportunities' PipelineId/StageId.
 		[HttpGet("crm-seed-pipeline")]
-		public async Task<IActionResult> CrmSeedPipeline(string key, int companyId = 1)
+		public async Task<IActionResult> CrmSeedPipeline(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var pl = await _db.CrmPipelines.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.IsDefault);
@@ -10862,7 +11078,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/crm-test-o2c?key=seed123&companyId=1
 		// CRM 3-3b: account → opportunity → products (Amount recompute) → convert to Quotation (O2C). Self-cleaning.
 		[HttpGet("crm-test-o2c")]
-		public async Task<IActionResult> CrmTestO2c(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestO2c(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var item = await _db.Items.AsNoTracking().FirstOrDefaultAsync(i => i.CompanyID == companyId && i.IsActive && i.ItemType == "Stockable");
@@ -10904,7 +11120,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// CRM 3-2: lead → convert to Account(+Contact, NO customer) → opportunity on account → Won → financial Customer
 		// is created & linked (Account.CustomerId + Opportunity.CustomerId). Self-cleaning.
 		[HttpGet("crm-test-account")]
-		public async Task<IActionResult> CrmTestAccount(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestAccount(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var lead = new CrossBuy.Models.Context.Crm.Lead { CompanyID = companyId, Name = "جهة اختبار 360", Company = "شركة اختبار 360", Phone = "0100", Email = "t@x.com", Status = "Qualified", CreatedAt = DateTime.UtcNow };
@@ -10947,7 +11163,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// CRM 3-4: attach activities to an Account via the polymorphic timeline, read them back, and exercise the
 		// due-reminder pipeline (GetDueReminders → MarkReminded). Self-cleaning.
 		[HttpGet("crm-test-timeline")]
-		public async Task<IActionResult> CrmTestTimeline(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestTimeline(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var emp = await _db.Employee.AsNoTracking().Where(e => e.EmpCompanyID == companyId).Select(e => (int?)e.ID).FirstOrDefaultAsync();
@@ -10982,7 +11198,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// CRM 3-5: build a marketing list → push to a campaign → add member + dedupe → set Converted →
 		// attribute a won opportunity → read campaign ROI/funnel. Self-cleaning.
 		[HttpGet("crm-test-marketing")]
-		public async Task<IActionResult> CrmTestMarketing(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestMarketing(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var camp = new CrossBuy.Models.Context.Crm.Campaign { CompanyID = companyId, Name = "حملة اختبار التسويق", Status = "Active", Budget = 1000, CreatedAt = DateTime.UtcNow };
@@ -11029,7 +11245,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// CRM 3-6: SLA policy → ticket stamps due dates → status transitions set first-response/resolved →
 		// a past-due ticket is detected as breached. Self-cleaning.
 		[HttpGet("crm-test-tickets")]
-		public async Task<IActionResult> CrmTestTickets(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestTickets(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var (pok, perr) = await _crm.SaveSlaPolicyAsync(companyId, new CrossBuy.Models.Context.Crm.CrmSlaPolicy { Name = "اختبار SLA عالي", Priority = "High", FirstResponseMins = 60, ResolutionMins = 240, IsActive = true });
@@ -11118,7 +11334,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		}
 
 		[HttpGet("crm-test-scoring")]
-		public async Task<IActionResult> CrmTestScoring(string key, int companyId = 1)
+		public async Task<IActionResult> CrmTestScoring(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			// reset settings (routing off) for the scoring part
@@ -11196,7 +11412,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		}
 
 		[HttpGet("manuf-test-wo")]
-		public async Task<IActionResult> ManufTestWo([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IStockService stock, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestWo([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IStockService stock, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var cat = await _db.ItemCategories.AsNoTracking().Where(c => c.CompanyID == companyId && c.InventoryAccountId != null).Select(c => (int?)c.ID).FirstOrDefaultAsync();
@@ -13991,7 +14207,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/manuf-test-routing?key=seed123&companyId=1
 		// Module 4 4-2: work center + routing op for MFGT-FIN → new WO must prefill labor/overhead from routing time.
 		[HttpGet("manuf-test-routing")]
-		public async Task<IActionResult> ManufTestRouting([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestRouting([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14032,7 +14248,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/manuf-test-mrp?key=seed123&companyId=1
 		// Module 4 4-3: plan demand for MFGT-FIN → MRP must explode BOM (2×R1 + 1×R2) and net against on-hand.
 		[HttpGet("manuf-test-mrp")]
-		public async Task<IActionResult> ManufTestMrp([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestMrp([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14043,7 +14259,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			decimal OnHand(int id) => _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && b.ItemId == id).Sum(b => (decimal?)b.QtyOnHand) ?? 0m;
 			decimal finOh = OnHand(fin.Value), r1Oh = OnHand(r1.Value), r2Oh = OnHand(r2.Value);
 
-			var (pok, perr, planId) = await manuf.CreatePlanAsync(companyId, "MRP-TEST", DateTime.UtcNow, "test");
+			var (pok, perr, planId) = await manuf.CreatePlanAsync(companyId, "MRP-TEST", "MRP-TEST", DateTime.UtcNow, "test");
 			if (!pok) return BadRequest(new { step = "create-plan", error = perr });
 			var (aok, aerr) = await manuf.AddDemandAsync(companyId, planId, fin.Value, 100, null);
 			if (!aok) return BadRequest(new { step = "add-demand", error = aerr });
@@ -14074,7 +14290,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/manuf-test-scrap?key=seed123&companyId=1
 		// Module 4 4-5: set 10% scrap on the R1 BOM line of MFGT-FIN → WO planned qty must inflate (2×10×1.10=22).
 		[HttpGet("manuf-test-scrap")]
-		public async Task<IActionResult> ManufTestScrap([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestScrap([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14104,7 +14320,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Module 4 (ب): foreign-currency EXTERNAL labor — Amount stored FUNCTIONAL (hits WIP), foreign+rate preserved,
 		// WHT on functional, wip_gl matched. 3h × 40 USD @ 50 = 120 foreign → 6000 functional; WHT 1% = 60.
 		[HttpGet("manuf-test-labor-fx")]
-		public async Task<IActionResult> ManufTestLaborFx([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestLaborFx([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14156,7 +14372,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Module 4 (ج): WIP invariant — account 1105 must net to ZERO at every lifecycle step
 		// (create / release / complete), proving materials+labor+overhead post and clear atomically.
 		[HttpGet("manuf-test-wip")]
-		public async Task<IActionResult> ManufTestWip([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestWip([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14188,7 +14404,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/manuf-test-staged?key=seed123&companyId=1
 		// Module 4 (staged): release issues materials → WIP (WIP>0); complete clears WIP→0; cancel reverses issue.
 		[HttpGet("manuf-test-staged")]
-		public async Task<IActionResult> ManufTestStaged([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestStaged([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14250,7 +14466,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/manuf-test-partial?key=seed123&companyId=1  (run manuf-test-wo first)
 		// بند5: partial production at std cost + finalize → variance to 520109; WIP returns to baseline (wip_gl intact).
 		[HttpGet("manuf-test-partial")]
-		public async Task<IActionResult> ManufTestPartial([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestPartial([FromServices] CrossBuy.BL.IManufService manuf, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14296,7 +14512,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Module 4 (بند2): the upgraded wip_gl check (1105 == Σ open-order WipBalance):
 		// passes with an OPEN released order (WIP>0), stays passing after complete (==0), and DETECTS a manual JE on 1105.
 		[HttpGet("manuf-test-wipcheck")]
-		public async Task<IActionResult> ManufTestWipCheck([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestWipCheck([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14357,7 +14573,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// Module 4 (بند3): sourced labor (employee+external) hits real accounts (520101/cash/WHT) and REPLACES 520108
 		// (520108 carries overhead only); wip_gl stays matched; WHT correct; an employee with no rate/salary is BLOCKED.
 		[HttpGet("manuf-test-labor")]
-		public async Task<IActionResult> ManufTestLabor([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestLabor([FromServices] CrossBuy.BL.IManufService manuf, [FromServices] CrossBuy.BL.IIntegrityCheckService integ, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14420,7 +14636,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 				{
 					var (bok, berr, _) = await manuf.AddLaborAsync(companyId, woA, "Employee", emp.ID, null, 1, null, null, null, null, null, DateTime.UtcNow, "test");
 					block = new { attempted = true, ok = bok, msg = berr };
-					blockPass = !bok && (berr ?? "").Contains("لا يوجد");
+					blockPass = !bok && (berr ?? "").Contains("no manufacturing hourly rate");
 				}
 				else block = new { attempted = false, note = "employee has a salary → fallback resolves (not a block case)", baseSalary };
 			}
@@ -14447,7 +14663,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/manuf-test-immediate-scrap?key=seed123&companyId=1
 		// Module 4 (بند4): immediate production (AssembleAsync) must consume planned scrap too.
 		[HttpGet("manuf-test-immediate-scrap")]
-		public async Task<IActionResult> ManufTestImmediateScrap([FromServices] CrossBuy.BL.IStockService stock, string key, int companyId = 1)
+		public async Task<IActionResult> ManufTestImmediateScrap([FromServices] CrossBuy.BL.IStockService stock, string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			var fin = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.ItemCode == "MFGT-FIN").Select(i => (int?)i.ID).FirstOrDefaultAsync();
@@ -14480,7 +14696,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// stages/months (won/lost for the forecast), activities+reminders, campaigns+members+lists, tickets+SLA
 		// (a couple breached), scoring rules & settings. Idempotent (skips if already seeded).
 		[HttpGet("crm-seed-demo")]
-		public async Task<IActionResult> CrmSeedDemo(string key, int companyId = 1)
+		public async Task<IActionResult> CrmSeedDemo(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			if (await _db.CrmAccounts.AnyAsync(a => a.CompanyID == companyId && a.Name == "شركة النور للتجارة"))
@@ -14585,7 +14801,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// months, partial receipts/payments for aging, banks, cash boxes, transfer, reconciliation,
 		// 6 months payroll, manual entries). Idempotent. Built via the verified services → balanced JEs.
 		[HttpGet("seed-acc-demo")]
-		public async Task<IActionResult> SeedAccDemo(string key, int companyId = 1)
+		public async Task<IActionResult> SeedAccDemo(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			if (await _db.Vendors.AnyAsync(v => v.CompanyID == companyId && v.Name == "مورد القرطاسية"))
@@ -14697,7 +14913,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/seed-fa-demo?key=seed123&companyId=1
 		// Phase-6 fixed-assets demo: 2 categories, 3 assets funded from cash, then depreciation Jan→Jun. Idempotent.
 		[HttpGet("seed-fa-demo")]
-		public async Task<IActionResult> SeedFaDemo(string key, int companyId = 1)
+		public async Task<IActionResult> SeedFaDemo(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			if (await _db.FixedAssets.AnyAsync(a => a.CompanyID == companyId))
@@ -14751,7 +14967,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/seed-tax-demo?key=seed123&companyId=1
 		// Phase-7 taxes demo: VAT + WHT codes and a filed VAT return for H1 2026. Idempotent.
 		[HttpGet("seed-tax-demo")]
-		public async Task<IActionResult> SeedTaxDemo(string key, int companyId = 1)
+		public async Task<IActionResult> SeedTaxDemo(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			if (await _db.TaxCodes.AnyAsync(c => c.CompanyID == companyId))
@@ -14825,7 +15041,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		// GET /api/dev/seed-inv-demo?key=seed123&companyId=1
 		// Phase I0 inventory master-data demo: units, categories (GL-mapped), warehouse, items (code+barcode). Idempotent.
 		[HttpGet("seed-inv-demo")]
-		public async Task<IActionResult> SeedInvDemo(string key, int companyId = 1)
+		public async Task<IActionResult> SeedInvDemo(string key, int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
 			if (await _db.Items.AnyAsync(i => i.CompanyID == companyId))
@@ -14887,7 +15103,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		public async Task<IActionResult> SeedProjectExecution(string key, int id = 25)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
-			const int companyId = 1;
+			const int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId;
 			var prj = await _db.Projects.FirstOrDefaultAsync(p => p.ID == id && p.CompanyID == companyId);
 			if (prj == null) return NotFound(new { message = $"project {id} not found" });
 			var log = new List<string>();
@@ -15038,7 +15254,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		public async Task<IActionResult> SeedFinalSettlement(string key)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
-			const int companyId = 1;
+			const int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId;
 			var settle = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IFinalSettlementService>();
 			var payAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => (int?)a.ID).FirstOrDefaultAsync();
 			if (payAcc == null) return NotFound(new { message = "cash account 110101 not found" });
@@ -15069,7 +15285,7 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		public async Task<IActionResult> SeedAttendanceMonth(string key, int year, int month)
 		{
 			if (key != "seed123") return Unauthorized(new { message = "bad key" });
-			const int companyId = 1;
+			const int companyId = CrossBuy.Models.DevSeedFixture.DefaultCompanyId;
 			var att = HttpContext.RequestServices.GetRequiredService<CrossBuy.BL.IAttendanceService>();
 			var log = new List<string>();
 
@@ -15176,3 +15392,4 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 		}
 	}
 }
+

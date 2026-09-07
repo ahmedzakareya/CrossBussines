@@ -121,12 +121,12 @@
                 <div class="card-toolbar">
                     <div class="d-flex align-items-center flex-nowrap gap-3">
                         <div class="position-relative">
-                            <i class="ki-outline ki-magnifier fs-4 position-absolute top-50 translate-middle-y ms-3" style="color:#13433a !important;"></i>
+                            <i class="ki-outline ki-magnifier fs-4 position-absolute top-50 translate-middle-y ms-3" style="color:#0E4A9E !important;"></i>
                             <input type="text" class="form-control form-control-solid ps-10 w-200px" placeholder="@SR["Search"]" autocomplete="off" />
                         </div>
                         <select id="whFilter" class="form-select form-select-solid w-250px" data-control="select2">
                             <option value="">@Localizer["All warehouses"]</option>
-                            @foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }
+                            @foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }
                         </select>
                     </div>
                 </div>
@@ -134,7 +134,7 @@
             <div class="card-body pt-0">
                 <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-4">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                         <th class="min-w-100px">@SR["Date"]</th>
                         <th class="min-w-100px">@SR["Warehouse"]</th>
                         <th class="text-center min-w-90px">@SR["Type"]</th>
@@ -184,7 +184,7 @@
     new ApexCharts(el, {
       chart: { type: 'area', height: 300, fontFamily: 'inherit', toolbar: { show: false } },
       series: [ { name: '@SR["Balance"]', data: bal } ],
-      colors: ['#1f6253'],
+      colors: ['#145DBF'],
       xaxis: { categories: cats, labels: { rotate: -45, style: { colors: '#99A1B7', fontSize: '11px' } }, tickAmount: 10 },
       yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return Number(v).toLocaleString(); } } },
       stroke: { curve: 'stepline', width: 3 },

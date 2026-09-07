@@ -1,0 +1,7 @@
+﻿"worker","module","file","registered","uses_periodictimer","creates_scope","uses_worker_gate","multi_company","hardcoded_company","logs_errors","graceful_shutdown"
+"CommMessageDispatcherHostedService","Communication","CrossBuy/BL/Comm/CommMessageDispatcherHostedService.cs","True","True","True","True","False","False","True","True"
+"CrmReminderHostedService","Core","CrossBuy/BL/CrmReminderHostedService.cs","True","True","True","True","True","False","True","True"
+"IntegrityCheckHostedService","Core","CrossBuy/BL/IntegrityCheckHostedService.cs","True","True","True","True","True","False","True","True"
+"BusinessEventDispatchWorker","Platform","CrossBuy/BL/Platform/BusinessEventDispatchWorker.cs","True","True","True","True","False","False","True","True"
+"TaskGeneratorHostedService","Core","CrossBuy/BL/TaskGeneratorHostedService.cs","True","True","True","True","True","False","True","True"
+"TaskScheduleMatchHostedService","Core","CrossBuy/BL/TaskScheduleMatchHostedService.cs","True","True","True","True","True","False","True","True"

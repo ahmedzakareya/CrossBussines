@@ -29,7 +29,7 @@
             <div class="col-md-2" id="rateWrap" style="display:none"><label class="fw-semibold fs-6 mb-2">@Localizer["FX rate"]</label><input type="number" step="0.0001" min="0" name="exchangeRate" class="form-control form-control-solid" placeholder="@Localizer["Auto"]" /></div>
         </div><div class="mt-4"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div></div></div>
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Lines"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
-        <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+        <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
             <th style="min-width:220px">@SR["Item"]</th><th style="min-width:140px">@SR["Description"]</th><th style="width:90px">@Localizer["Qty"]</th><th style="min-width:120px">@Localizer["Unit"]</th><th style="width:120px">@SR["Price"]</th><th style="width:100px">@Localizer["Disc"]</th><th style="width:80px">@Localizer["Tax%"]</th><th class="text-end" style="width:120px">@SR["Total"]</th><th style="width:40px"></th>
         </tr></thead><tbody id="rows"></tbody><tfoot><tr class="fw-bold"><td colspan="7" class="text-end">@Localizer["Sub / Tax / Total"]</td><td class="text-end" id="tot">0.00</td><td></td></tr></tfoot></table></div></div></div>
     </div></div>
@@ -39,7 +39,7 @@
 @section Scripts {
 <script>
 var ITEMS=[]; var itemPickUrl='@Url.Action("ItemPickData","Inventory")';
-var UNITS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(units.Select(u=>new{iD=u.ID,name=(isAr?u.Name:u.NameEn)})));
+var UNITS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(units.Select(u=>new{iD=u.ID,name=(isAr?u.Name:DisplayName.Or(u.NameEn, u.Name))})));
 function iopts(){return '<option value="">—</option>';}
 function uopts(){var o='<option value="">—</option>';UNITS.forEach(function(u){o+='<option value="'+u.iD+'">'+u.name+'</option>';});return o;}
 function addRow(){var tr=document.createElement('tr');tr.innerHTML=

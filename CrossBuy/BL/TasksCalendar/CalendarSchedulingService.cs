@@ -1,4 +1,4 @@
-using CrossBuy.Models.Context;
+﻿using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Calendar;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,6 +32,15 @@ namespace CrossBuy.BL.TasksCalendar
 		public required DateOnly LocalDate { get; init; }
 		/// False for the first occurrence, true for every repeat. The UI marks a series member.
 		public required bool IsRepeat { get; init; }
+
+		/// The employee who owns the event. Carried on the occurrence because the timeline joins
+		/// people to occurrences AFTER expansion, and an organiser is a participant in their own
+		/// meeting - a fact the attendee table does not record.
+		public int OwnerEmpId { get; init; }
+
+		/// Where the booking is. The timeline has to answer "busy WHERE", and an hour cell that only
+		/// says "busy" is the reason this screen was opaque.
+		public string? Location { get; init; }
 	}
 
 	public sealed class CalendarConflict
@@ -81,6 +90,15 @@ namespace CrossBuy.BL.TasksCalendar
 	{
 		public required int EmployeeId { get; init; }
 		public required string EmployeeName { get; init; }
+
+		/// The branch the employee belongs to, resolved for the reader's language. The row used to
+		/// carry a name alone, so the grid could say somebody is busy without saying where they sit.
+		public string? BranchName { get; init; }
+
+		/// The branch key. Rows are GROUPED on this and not on BranchName, because two branches may
+		/// carry the same display name and grouping by text would merge them into one heading.
+		/// Null means the employee has no branch on file, or one that no longer resolves.
+		public int? BranchId { get; init; }
 		public required IReadOnlyList<CalendarOccurrence> Occurrences { get; init; }
 	}
 
@@ -96,6 +114,18 @@ namespace CrossBuy.BL.TasksCalendar
 
 	public sealed class CalendarTimelinePage
 	{
+		/// The company this whole grid belongs to, resolved for the reader's language. Every row on the
+		/// page is inside it, so it is stated once rather than repeated per group.
+		public string CompanyName { get; init; } = "";
+
+		/// Every occurrence on the day, in time order. The screen needs the occurrences and not only
+		/// their number: a count with nothing behind it is what made the timeline unreadable.
+		public IReadOnlyList<CalendarOccurrence> Occurrences { get; init; } = new List<CalendarOccurrence>();
+
+		/// Occurrences that appear in no row of the grid - no attendees, and an owner who is not an
+		/// active employee here. Counted in OccurrenceCount, visible nowhere else.
+		public IReadOnlyList<CalendarOccurrence> Unassigned { get; init; } = new List<CalendarOccurrence>();
+
 		/// The local day the grid spans — the value the date picker and the prev/next links carry.
 		public required DateTime Day { get; init; }
 		public required IReadOnlyList<CalendarTimelineRow> People { get; init; }
@@ -153,6 +183,18 @@ namespace CrossBuy.BL.TasksCalendar
 		/// than they meant to, must not become an unbounded loop inside a web request.
 		public const int MaxOccurrencesPerEvent = 1000;
 
+		/// THE ONE CULTURE RULE IN THIS FILE. Arabic UI reads the Arabic column; anything else reads
+		/// the English one and falls back to Arabic when it is empty - the same rule CalendarService
+		/// applies to the same fields, stated once here so the expansion path cannot drift from it.
+		/// An event name in the wrong language is a defect; a blank name is a worse one.
+		private static string Display(string? ar, string? en)
+		{
+			var arabic = System.Globalization.CultureInfo.CurrentUICulture
+				.TwoLetterISOLanguageName.Equals("ar", StringComparison.OrdinalIgnoreCase);
+			if (!arabic && !string.IsNullOrWhiteSpace(en)) return en!;
+			return ar ?? "";
+		}
+
 		private readonly CrossDbContext _db;
 		private readonly IConfiguration? _config;
 
@@ -197,33 +239,33 @@ namespace CrossBuy.BL.TasksCalendar
 		public async Task<(bool ok, string? error)> SaveScheduleAsync(
 			int companyId, CalendarEventSchedule input, int? actorEmployeeId, CancellationToken ct = default)
 		{
-			if (companyId <= 0) return (false, "الشركة غير محددة (unresolved company)");
-			if (input.EventId <= 0) return (false, "الحدث غير محدد (no event)");
-			if (!RecurrenceKinds.IsKnown(input.RecurrenceKind)) return (false, "نوع تكرار غير معروف (unknown recurrence kind)");
+			if (companyId <= 0) return (false, "Unresolved company");
+			if (input.EventId <= 0) return (false, "No event was specified");
+			if (!RecurrenceKinds.IsKnown(input.RecurrenceKind)) return (false, "Unknown recurrence kind");
 
 			// Interval 0 would make "the next occurrence" the same occurrence, forever.
 			if (input.RecurrenceKind != RecurrenceKinds.None && input.Interval < 1)
-				return (false, "الفاصل الزمني يجب أن يكون 1 على الأقل (the interval must be at least 1)");
+				return (false, "The interval must be at least 1");
 
 			// A repeating series must END. Without an end there is no last occurrence, so every expansion
 			// would be silently truncated by a limit the user never chose.
 			if (input.RecurrenceKind != RecurrenceKinds.None
 				&& input.UntilLocalDate == null && (input.OccurrenceCount == null || input.OccurrenceCount <= 0))
-				return (false, "يجب تحديد نهاية للتكرار: تاريخ أو عدد مرات (a repeating series needs an end: a date or a count)");
+				return (false, "A repeating series needs an end: a date or a count");
 
 			if (input.UntilLocalDate != null && input.OccurrenceCount != null)
-				return (false, "حدّد نهاية واحدة فقط: تاريخ أو عدد (choose one end: a date or a count, not both)");
+				return (false, "Choose one end: a date or a count, not both");
 
 			if (!string.IsNullOrWhiteSpace(input.TimeZoneId))
 			{
 				// Fail here, where the user can fix it, rather than at every later read.
 				try { TaskCalendarTime.ResolveZone(input.TimeZoneId); }
-				catch (TimeZoneUnresolvedException) { return (false, $"منطقة زمنية غير معروفة: {input.TimeZoneId} (unknown time zone)"); }
+				catch (TimeZoneUnresolvedException) { return (false, $"Unknown time zone: {input.TimeZoneId}"); }
 			}
 
 			var ev = await _db.CalendarEvents.AsNoTracking()
 				.FirstOrDefaultAsync(e => e.Id == input.EventId && e.CompanyID == companyId && e.DeletedAt == null, ct);
-			if (ev == null) return (false, "الحدث غير موجود في هذه الشركة (event not found in this company)");
+			if (ev == null) return (false, "The event was not found in this company");
 
 			var existing = await _db.CalendarEventSchedules
 				.FirstOrDefaultAsync(s => s.CompanyId == companyId && s.EventId == input.EventId, ct);
@@ -324,8 +366,9 @@ namespace CrossBuy.BL.TasksCalendar
 				{
 					result.Add(new CalendarOccurrence
 					{
-						EventId = ev.Id, Title = ev.Title, StartUtc = ev.StartAt, EndUtc = ev.EndAt,
-						AllDay = ev.AllDay, LocalDate = DateOnly.FromDateTime(ev.StartAt), IsRepeat = false
+						EventId = ev.Id, Title = Display(ev.Title, ev.TitleEn), StartUtc = ev.StartAt, EndUtc = ev.EndAt,
+						AllDay = ev.AllDay, LocalDate = DateOnly.FromDateTime(ev.StartAt), IsRepeat = false,
+						OwnerEmpId = ev.OwnerEmpId, Location = Display(ev.Location, ev.LocationEn)
 					});
 				}
 				return result;
@@ -376,7 +419,8 @@ namespace CrossBuy.BL.TasksCalendar
 					{
 						result.Add(new CalendarOccurrence
 						{
-							EventId = ev.Id, Title = ev.Title,
+							EventId = ev.Id, Title = Display(ev.Title, ev.TitleEn), OwnerEmpId = ev.OwnerEmpId,
+							Location = Display(ev.Location, ev.LocationEn),
 							StartUtc = startUtc,
 							EndUtc = ev.EndAt.HasValue ? startUtc + duration : null,
 							AllDay = ev.AllDay, LocalDate = cursor,
@@ -463,11 +507,13 @@ namespace CrossBuy.BL.TasksCalendar
 
 			var employeeNames = attendeeRows.Count == 0 ? new() : await _db.Employee.AsNoTracking()
 				.Where(e => attendeeRows.Select(a => a.EmployeeId).Contains(e.ID))
-				.Select(e => new { e.ID, e.FullName }).ToDictionaryAsync(e => e.ID, e => e.FullName ?? $"#{e.ID}", ct);
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+				.ToDictionaryAsync(e => e.ID, e => EmployeeNames.Of(e.FullName, e.FullNameEn, e.ID), ct);
 
 			var resourceNames = resourceRows.Count == 0 ? new() : await _db.CalendarResources.AsNoTracking()
 				.Where(r => r.CompanyId == companyId && resourceRows.Select(x => x.ResourceId).Contains(r.ID))
-				.ToDictionaryAsync(r => r.ID, r => r.Name, ct);
+				.Select(r => new { r.ID, r.Name, r.NameEn })
+				.ToDictionaryAsync(r => r.ID, r => Display(r.Name, r.NameEn), ct);
 
 			foreach (var occ in occurrences)
 			{
@@ -564,8 +610,27 @@ namespace CrossBuy.BL.TasksCalendar
 			var employees = await _db.Employee.AsNoTracking()
 				.Where(e => e.EmpCompanyID == companyId && e.IsActive)
 				.OrderBy(e => e.ID)
-				.Select(e => new { e.ID, e.FullName })
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn, e.BranchID })
 				.ToListAsync(ct);
+
+			// The branch names, in one round trip rather than one per row. Scoped to this company as
+			// well as to the ids in hand: a stale BranchID pointing at another company's branch must
+			// not leak that branch's name onto this grid.
+			var branchIds = employees.Where(e => e.BranchID != null).Select(e => e.BranchID!.Value).Distinct().ToList();
+			var branches = branchIds.Count == 0
+				? new Dictionary<int, string>()
+				: (await _db.Branches.AsNoTracking()
+					.Where(b => branchIds.Contains(b.ID) && b.CompanyID == companyId)
+					.Select(b => new { b.ID, b.Name, b.NameAr })
+					.ToListAsync(ct))
+				  .ToDictionary(b => b.ID, b => Display(ar: b.NameAr, en: b.Name));
+
+			// The company the whole grid belongs to, so a group header can say "company > branch"
+			// rather than a bare branch name. One row, read once.
+			var company = await _db.Companies.AsNoTracking()
+				.Where(c => c.CompanyID == companyId)
+				.Select(c => new { c.CompanyName, c.ComoanyNameAr })
+				.FirstOrDefaultAsync(ct);
 
 			// COMPANY ISOLATION: CalendarEventAttendee carries no CompanyID, so it is scoped through the
 			// events it belongs to — and those came from ExpandWindowAsync, which is already filtered to
@@ -588,15 +653,40 @@ namespace CrossBuy.BL.TasksCalendar
 			var people = employees.Select(e => new CalendarTimelineRow
 			{
 				EmployeeId = e.ID,
-				EmployeeName = e.FullName ?? $"#{e.ID}",
+				EmployeeName = EmployeeNames.Of(e.FullName, e.FullNameEn, e.ID),
+				BranchId = e.BranchID != null && branches.ContainsKey(e.BranchID.Value) ? e.BranchID : null,
+				BranchName = e.BranchID != null && branches.TryGetValue(e.BranchID.Value, out var bn) ? bn : null,
 				// Always a List, never Array.Empty: a caller must not have to discover which runtime
 				// type it was handed for an empty row versus a full one.
-				Occurrences = eventsByEmployee.TryGetValue(e.ID, out var mine)
-					? occurrences.Where(o => mine.Contains(o.EventId)).ToList()
-					: new List<CalendarOccurrence>()
+				// ATTENDEE **OR** OWNER. Joining on the attendee table alone reported the organiser of a
+				// meeting as free during their own meeting, and hid any occurrence that had no attendees
+				// at all - which is what made this screen read as an empty grid under a non-zero count.
+				Occurrences = occurrences
+					.Where(o => o.OwnerEmpId == e.ID
+						|| (eventsByEmployee.TryGetValue(e.ID, out var mine) && mine.Contains(o.EventId)))
+					.ToList()
 			}).ToList();
 
-			return new CalendarTimelinePage { Day = day, People = people, OccurrenceCount = occurrences.Count };
+			// THE OCCURRENCES THEMSELVES. The page previously carried only a COUNT, so a screen that said
+			// "2 bookings" had no way to show which two. Handed over ordered by time, which is the order a
+			// day is read in.
+			var ordered = occurrences.OrderBy(o => o.StartUtc).ThenBy(o => o.EventId).ToList();
+
+			// Which occurrences reach nobody on this grid. An occurrence whose owner is not an active
+			// employee of this company and which has no attendees is real, is counted, and appears in no
+			// row - so it is named rather than left to be inferred from a mismatch.
+			var reachable = people.SelectMany(r => r.Occurrences.Select(o => o.EventId)).ToHashSet();
+			var unassigned = ordered.Where(o => !reachable.Contains(o.EventId)).ToList();
+
+			return new CalendarTimelinePage
+			{
+				Day = day,
+				People = people,
+				OccurrenceCount = occurrences.Count,
+				CompanyName = company == null ? "" : Display(ar: company.ComoanyNameAr, en: company.CompanyName),
+				Occurrences = ordered,
+				Unassigned = unassigned,
+			};
 		}
 
 		public async Task<CalendarResourcePage> BuildResourcePageAsync(
@@ -608,10 +698,14 @@ namespace CrossBuy.BL.TasksCalendar
 
 			var occurrences = await ExpandWindowAsync(companyId, day.ToUniversalTime(), day.AddDays(1).ToUniversalTime(), ct);
 
-			var resources = await _db.CalendarResources.AsNoTracking()
+			var resources = (await _db.CalendarResources.AsNoTracking()
 				.Where(r => r.CompanyId == companyId && r.IsActive)
-				.OrderBy(r => r.Name)
-				.ToListAsync(ct);
+				.Select(r => new { r.ID, r.Name, r.NameEn, r.Kind, r.Capacity })
+				.ToListAsync(ct))
+				// Ordered on the DISPLAYED name, not on r.Name. Sorting an English page by its Arabic
+				// column is alphabetical by something the reader cannot see, which reads as unsorted.
+				.OrderBy(r => Display(r.Name, r.NameEn), StringComparer.CurrentCulture)
+				.ToList();
 
 			var bookings = await _db.CalendarEventResources.AsNoTracking()
 				.Where(r => r.CompanyId == companyId)
@@ -625,7 +719,7 @@ namespace CrossBuy.BL.TasksCalendar
 			var rows = resources.Select(r => new CalendarResourceRow
 			{
 				ResourceId = r.ID,
-				Name = r.Name,
+				Name = Display(r.Name, r.NameEn),
 				Kind = r.Kind,
 				Capacity = r.Capacity,
 				Occurrences = eventsByResource.TryGetValue(r.ID, out var booked)

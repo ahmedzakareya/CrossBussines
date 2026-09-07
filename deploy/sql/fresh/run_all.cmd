@@ -4,7 +4,7 @@ REM  CrossBuy — build a clean production database from scratch.
 REM  Edit SVR below if your instance differs. Run from this folder (deploy\sql\fresh).
 REM  Order is required: create DB -> schema -> seed -> foreign keys.
 REM ============================================================================
-set "SVR=localhost\SQLEXPRESS"
+set "SVR=localhost"
 
 echo [1/4] create database...
 sqlcmd -S %SVR% -E -C -b -i "%~dp000_create_database.sql"   || goto :err

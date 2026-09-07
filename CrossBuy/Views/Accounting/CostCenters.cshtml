@@ -26,10 +26,10 @@
                         {
                             <span class="me-2" style="width:13px;display:inline-block"></span>
                         }
-                        <span class="badge fs-8 fw-bold" style="background:#e9f1ee;color:#13433a;">@n.Code</span>
+                        <span class="badge fs-8 fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@n.Code</span>
                     </div>
                 </td>
-                <td><i class="ki-outline ki-abstract-26 fs-6 text-primary me-2"></i><span class="fw-semibold text-gray-800">@(isAr ? n.Name : n.NameEn)</span></td>
+                <td><i class="ki-outline ki-abstract-26 fs-6 text-primary me-2"></i><span class="fw-semibold text-gray-800">@(isAr ? n.Name : DisplayName.Or(n.NameEn, n.Name))</span></td>
                 <td class="text-center">
                     @if (n.SourceHierarchicalId.HasValue)
                     {
@@ -90,8 +90,8 @@
                     {
                         <div class="table-responsive">
                             <table class="table table-row-dashed align-middle gy-3 mb-0" id="ccTable">
-                                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
-                                    <tr>
+                                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                    <tr style="border-bottom:2px solid #0E4A9E;">
                                         <th style="width:140px">@SR["Code"]</th>
                                         <th>@Localizer["Cost Center"]</th>
                                         <th class="text-center" style="width:140px">@Localizer["Source"]</th>

@@ -46,7 +46,7 @@ namespace CrossBuy.BL
 			var res = new MatchResult { QtyTolerancePct = QtyTolPct, PriceTolerancePct = PriceTolPct };
 			var po = await _context.PurchaseOrders.Include(p => p.Lines).AsNoTracking()
 				.FirstOrDefaultAsync(p => p.ID == poId && p.CompanyID == companyId);
-			if (po == null) { res.Ok = false; res.Failures.Add("أمر الشراء غير موجود"); return res; }
+			if (po == null) { res.Ok = false; res.Failures.Add("Purchase order not found"); return res; }
 
 			var receipts = await _context.GoodsReceipts.AsNoTracking()
 				.Where(g => g.CompanyID == companyId && g.PurchaseOrderId == poId && g.Status == "Posted").Select(g => g.ID).ToListAsync();
@@ -74,7 +74,7 @@ namespace CrossBuy.BL
 				if (!ok)
 				{
 					res.Ok = false;
-					res.Failures.Add($"{line.ItemDesc}: مطلوب {pl.Qty:0.##} / مستلم {receivedQty:0.##} (انحراف كمية {line.QtyVarPct:0.#}%، سعر {line.PriceVarPct:0.#}%)");
+					res.Failures.Add($"{line.ItemDesc}: ordered {pl.Qty:0.##} / received {receivedQty:0.##} (quantity variance {line.QtyVarPct:0.#}%, price variance {line.PriceVarPct:0.#}%)");
 				}
 			}
 			return res;

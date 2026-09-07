@@ -29,7 +29,7 @@
                 </div>
                 <div class="col-md-3 text-md-end">
                     <div class="fs-8 fw-bold text-muted text-uppercase">@Localizer["Total:"]</div>
-                    <div class="fs-2 fw-bolder" style="color:#13433a;">@grand.ToString("N2")</div>
+                    <div class="fs-2 fw-bolder" style="color:#0E4A9E;">@grand.ToString("N2")</div>
                 </div>
             </div>
         </div></div>
@@ -38,7 +38,7 @@
             <div class="card-body pt-6">
                 <div class="table-responsive">
                 <table class="table align-middle gy-3 mb-0" id="t" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th>@Localizer["WH"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Avg cost"]</th><th class="text-end pe-4">@Localizer["Value"]</th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th>@Localizer["WH"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Avg cost"]</th><th class="text-end pe-4">@Localizer["Value"]</th></tr></thead>
                     <tbody class="fw-semibold text-gray-700">
                     @foreach (var r in Model)
                     {
@@ -48,7 +48,7 @@
                         </tr>
                     }
                     </tbody>
-                    <tfoot><tr class="fw-bolder fs-5" style="border-top:2px solid #13433a;"><td colspan="5" class="text-end ps-4" style="color:#1f6253;">@SR["GrandTotal"]</td><td class="text-end pe-4" style="color:#13433a;">@grand.ToString("N2")</td></tr></tfoot>
+                    <tfoot><tr class="fw-bolder fs-5" style="border-top:2px solid #0E4A9E;"><td colspan="5" class="text-end ps-4" style="color:#145DBF;">@SR["GrandTotal"]</td><td class="text-end pe-4" style="color:#0E4A9E;">@grand.ToString("N2")</td></tr></tfoot>
                 </table>
                 </div>
                 @if (Model.Count == 0) { <div class="text-center text-muted py-10">@SR["NoData"]</div> }

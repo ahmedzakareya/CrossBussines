@@ -23,7 +23,7 @@
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
 
-        <div class="card mb-5" style="background:linear-gradient(90deg,#13433a,#1f6253);">
+        <div class="card mb-5" style="background:linear-gradient(90deg,#0E4A9E,#145DBF);">
             <div class="card-body d-flex flex-wrap align-items-center justify-content-between p-9">
                 <div>
                     <div class="d-flex align-items-center gap-3 mb-2">
@@ -33,15 +33,15 @@
                     <div class="text-white opacity-75 fw-semibold fs-6">@(isAr ? "خطة الأعمال الكاملة — كل الوحدات مفعّلة" : "Full business plan — all modules enabled")</div>
                 </div>
                 <div class="text-end">
-                    <span class="badge fw-bold fs-6 px-4 py-2" style="background:#ffffff;color:#13433a;"><i class="ki-outline ki-check-circle fs-4 me-1" style="color:#13433a;"></i>@(isAr ? "نشط" : "Active")</span>
+                    <span class="badge fw-bold fs-6 px-4 py-2" style="background:#ffffff;color:#0E4A9E;"><i class="ki-outline ki-check-circle fs-4 me-1" style="color:#0E4A9E;"></i>@(isAr ? "نشط" : "Active")</span>
                 </div>
             </div>
         </div>
 
         <div class="row g-5 mb-5">
             <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6"><div class="text-muted fs-7">@(isAr ? "الخطة" : "Plan")</div><div class="fw-bold fs-3 text-gray-900">@(isAr ? "احترافي" : "Professional")</div></div></div></div>
-            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6"><div class="text-muted fs-7">@(isAr ? "الوحدات المفعّلة" : "Enabled modules")</div><div class="fw-bold fs-3" style="color:#13433a;">@modules.Length</div></div></div></div>
-            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6"><div class="text-muted fs-7">@(isAr ? "الحالة" : "Status")</div><div class="fw-bold fs-3" style="color:#13433a;">@(isAr ? "نشط" : "Active")</div></div></div></div>
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6"><div class="text-muted fs-7">@(isAr ? "الوحدات المفعّلة" : "Enabled modules")</div><div class="fw-bold fs-3" style="color:#0E4A9E;">@modules.Length</div></div></div></div>
+            <div class="col-md-4"><div class="card card-flush h-100"><div class="card-body py-6"><div class="text-muted fs-7">@(isAr ? "الحالة" : "Status")</div><div class="fw-bold fs-3" style="color:#0E4A9E;">@(isAr ? "نشط" : "Active")</div></div></div></div>
         </div>
 
         <div class="card">
@@ -50,10 +50,10 @@
                 @foreach (var m in modules)
                 {
                     <div class="col-md-6 col-xl-4">
-                        <div class="d-flex align-items-center rounded p-4 h-100" style="background:#f8faf9;">
-                            <span class="symbol symbol-45px me-3"><span class="symbol-label" style="background:#e9f1ee;"><i class="ki-outline @m.icon fs-2" style="color:#13433a;"></i></span></span>
+                        <div class="d-flex align-items-center rounded p-4 h-100" style="background:#F3F7FF;">
+                            <span class="symbol symbol-45px me-3"><span class="symbol-label" style="background:#E7F0FF;"><i class="ki-outline @m.icon fs-2" style="color:#0E4A9E;"></i></span></span>
                             <span class="fw-bold text-gray-900 flex-grow-1">@(isAr ? m.ar : m.en)</span>
-                            <i class="ki-outline ki-check-circle fs-3" style="color:#13433a;"></i>
+                            <i class="ki-outline ki-check-circle fs-3" style="color:#0E4A9E;"></i>
                         </div>
                     </div>
                 }

@@ -199,6 +199,9 @@ namespace CrossBuy.Models.Context.Pos
 		public int ID { get; set; }
 		public int BranchId { get; set; }
 		public string Name { get; set; } = "";
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? NameEn { get; set; }
 		public string Phone { get; set; } = "";
 		public bool IsActive { get; set; } = true;
 	}
@@ -284,6 +287,9 @@ namespace CrossBuy.Models.Context.Pos
 		public int BranchId { get; set; }
 		public string Code { get; set; } = "";          // unique per branch (e.g. T1)
 		public string Name { get; set; } = "";
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? NameEn { get; set; }
 		public int? CashAccountId { get; set; }          // the terminal's own cash drawer (auto-created child of main cash, or admin-picked)
 		public string ReceiptPrefix { get; set; } = "";  // e.g. "T1-" — makes the local sequence globally unique (offline-safe)
 		public int NextReceiptNo { get; set; } = 1;       // per-terminal counter; consumed at sale (operation phase), not now
@@ -324,7 +330,10 @@ namespace CrossBuy.Models.Context.Pos
 		public int ID { get; set; }
 		public int BranchId { get; set; }
 		public string PaymentMethod { get; set; } = "Cash";   // Cash / Card / KNet / Mada / Meeza / OnAccount / Voucher ... (market-configurable, not hard-coded)
-		public string? DisplayName { get; set; }                // optional label shown on the cashier (e.g. "كي-نت")
+		public string? DisplayName { get; set; }
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? DisplayNameEn { get; set; }                // optional label shown on the cashier (e.g. "كي-نت")
 		public int? TargetAccountId { get; set; }               // cash box / bank / card-clearing / (AR for OnAccount)
 		public bool IsActive { get; set; } = true;
 		public int Sort { get; set; }

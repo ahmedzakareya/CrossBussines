@@ -37,7 +37,7 @@ namespace CrossBuy.Models
 		private static void Deny(ActionExecutingContext context)
 		{
 			if (context.Controller is Controller c)
-				c.TempData["InvErr"] = "ليست لديك صلاحية لتنفيذ هذا الإجراء";
+				c.TempData["InvErr"] = "You do not have permission to perform this action";
 			// GET → redirect to inventory home; POST → back where possible
 			context.Result = new RedirectToActionResult("Index", "Inventory", null);
 		}

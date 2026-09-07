@@ -454,7 +454,8 @@ namespace CrossBuy.Controllers
 			if (appr == null || appr.EmployeeID != emp.ID || appr.Status < 1) return RedirectToAction(nameof(MyAppraisals));
 			var tpl = await AprSvc.GetTemplateAsync(appr.CompanyID, appr.TemplateId);
 			ViewBag.Criteria = tpl?.Criteria ?? new List<CrossBuy.Models.Context.Admin.AppraisalCriterion>();
-			ViewBag.Manager = await _context.Employee.AsNoTracking().Where(e => e.ID == appr.ManagerEmployeeID).Select(e => e.FullName).FirstOrDefaultAsync();
+			ViewBag.Manager = await _context.Employee.AsNoTracking().Where(e => e.ID == appr.ManagerEmployeeID)
+				.Select(CrossBuy.BL.EmployeeNames.Display()).FirstOrDefaultAsync();
 			return View(appr);
 		}
 

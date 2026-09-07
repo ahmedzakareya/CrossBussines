@@ -133,11 +133,11 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? runId)> PostAsync(int companyId, DateTime asOf, string rateType, string? userId)
 		{
 			var prev = await PreviewAsync(companyId, asOf, rateType);
-			if (!prev.HasAny) return (false, "لا توجد أرصدة أجنبية مفتوحة لإعادة تقييمها", null);
+			if (!prev.HasAny) return (false, "There are no open foreign-currency balances to revalue", null);
 
 			var gain = await AccIdAsync(companyId, "4903");
 			var loss = await AccIdAsync(companyId, "5903");
-			if (gain == null || loss == null) return (false, "حسابا فروق العملة غير المحققة (4903/5903) غير مُهيّأين", null);
+			if (gain == null || loss == null) return (false, "The unrealised exchange-difference accounts (4903/5903) are not configured", null);
 
 			// build the revaluation lines (each control adjustment paired with its FX offset → balanced)
 			var lines = new List<JournalLineInput>();
@@ -146,16 +146,16 @@ namespace CrossBuy.BL
 				if (l.Diff == 0) continue;
 				if (l.PartyType != "AP")   /* AR or Bank — an ASSET (Dr asset / Cr 4903 on gain) */
 				{
-					if (l.Diff > 0) { lines.Add(new() { AccountId = l.ControlAccountId, Debit = l.Diff, Credit = 0, Description = $"إعادة تقييم ذمم {l.Party}" }); lines.Add(new() { AccountId = gain.Value, Debit = 0, Credit = l.Diff, Description = "ربح فرق عملة غير محقق" }); }
-					else { lines.Add(new() { AccountId = l.ControlAccountId, Debit = 0, Credit = -l.Diff, Description = $"إعادة تقييم ذمم {l.Party}" }); lines.Add(new() { AccountId = loss.Value, Debit = -l.Diff, Credit = 0, Description = "خسارة فرق عملة غير محققة" }); }
+					if (l.Diff > 0) { lines.Add(new() { AccountId = l.ControlAccountId, Debit = l.Diff, Credit = 0, Description = $"Revaluation of receivables for {l.Party}" }); lines.Add(new() { AccountId = gain.Value, Debit = 0, Credit = l.Diff, Description = "Unrealised exchange gain" }); }
+					else { lines.Add(new() { AccountId = l.ControlAccountId, Debit = 0, Credit = -l.Diff, Description = $"Revaluation of receivables for {l.Party}" }); lines.Add(new() { AccountId = loss.Value, Debit = -l.Diff, Credit = 0, Description = "Unrealised exchange loss" }); }
 				}
 				else // AP — liability
 				{
-					if (l.Diff > 0) { lines.Add(new() { AccountId = l.ControlAccountId, Debit = 0, Credit = l.Diff, Description = $"إعادة تقييم موردين {l.Party}" }); lines.Add(new() { AccountId = loss.Value, Debit = l.Diff, Credit = 0, Description = "خسارة فرق عملة غير محققة" }); }
-					else { lines.Add(new() { AccountId = l.ControlAccountId, Debit = -l.Diff, Credit = 0, Description = $"إعادة تقييم موردين {l.Party}" }); lines.Add(new() { AccountId = gain.Value, Debit = 0, Credit = -l.Diff, Description = "ربح فرق عملة غير محقق" }); }
+					if (l.Diff > 0) { lines.Add(new() { AccountId = l.ControlAccountId, Debit = 0, Credit = l.Diff, Description = $"Revaluation of payables for {l.Party}" }); lines.Add(new() { AccountId = loss.Value, Debit = l.Diff, Credit = 0, Description = "Unrealised exchange loss" }); }
+					else { lines.Add(new() { AccountId = l.ControlAccountId, Debit = -l.Diff, Credit = 0, Description = $"Revaluation of payables for {l.Party}" }); lines.Add(new() { AccountId = gain.Value, Debit = 0, Credit = -l.Diff, Description = "Unrealised exchange gain" }); }
 				}
 			}
-			if (lines.Count == 0) return (false, "لا يوجد فرق لإعادة التقييم (الأسعار مطابقة)", null);
+			if (lines.Count == 0) return (false, "There is no difference to revalue (the rates match)", null);
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
@@ -165,7 +165,7 @@ namespace CrossBuy.BL
 			if (!ok) return (false, err, null);
 
 			// automatic reversal dated the next day (start of next period)
-			var revLines = lines.Select(x => new JournalLineInput { AccountId = x.AccountId, Debit = x.Credit, Credit = x.Debit, CostCenterId = x.CostCenterId, Description = "عكس إعادة التقييم" }).ToList();
+			var revLines = lines.Select(x => new JournalLineInput { AccountId = x.AccountId, Debit = x.Credit, Credit = x.Debit, CostCenterId = x.CostCenterId, Description = "Revaluation reversal" }).ToList();
 			var (rok, rerr, rentry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = asOf.Date.AddDays(1), JournalType = "Auto", SourceType = "FxRevaluationReversal",
@@ -174,8 +174,8 @@ namespace CrossBuy.BL
 			if (!rok)
 			{
 				// undo the revaluation so nothing is left unbalanced
-				await _journals.ReverseAsync(entry!.ID, null, "تعذّر إنشاء قيد العكس التلقائي");
-				return (false, $"تعذّر ترحيل قيد العكس التلقائي: {rerr}", null);
+				await _journals.ReverseAsync(entry!.ID, null, "Could not create the automatic reversing entry");
+				return (false, $"Could not post the automatic reversing entry: {rerr}", null);
 			}
 
 			var run = new FxRevaluationRun

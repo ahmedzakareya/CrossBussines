@@ -25,7 +25,7 @@
                     <div class="card-body pt-2">
                         <form asp-action="AssignAccRole" method="post">@Html.AntiForgeryToken()
                             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Employee"]</label>
-                                <select name="employeeId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var e in employees) { <option value="@e.ID">@e.FullName</option> }</select></div>
+                                <select name="employeeId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var e in employees) { <option value="@e.ID">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }</select></div>
                             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Role"]</label>
                                 <select name="role" class="form-select form-select-solid" data-control="select2" data-hide-search="true" required>@foreach (var r in roles) { <option value="@r.v">@Localizer[r.en]</option> }</select></div>
                             <button type="submit" class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Assign"]</button>
@@ -57,7 +57,7 @@
                     <div class="card-header"><div class="card-title"><h2>@Localizer["Assigned roles"]</h2></div></div>
                     <div class="card-body pt-2">
                         <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-3">
-                            <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0"><th>@SR["Employee"]</th><th>@Localizer["Role"]</th><th class="text-end"></th></tr></thead>
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Employee"]</th><th>@Localizer["Role"]</th><th class="text-end"></th></tr></thead>
                             <tbody class="fw-semibold text-gray-700">
                             @foreach (var a in assignments)
                             {

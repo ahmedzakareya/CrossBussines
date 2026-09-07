@@ -17,11 +17,11 @@
         <div class="card">
             <div class="card-header border-0 pt-6">
                 <div class="card-title"><h3 class="fw-bold">@(isAr ? "قسائم رواتبي" : "My payslips")</h3></div>
-                <div class="card-toolbar"><span class="badge fw-bold fs-7 py-2 px-3" style="background:#e9f1ee;color:#13433a;">@(isAr ? "إجمالي الصافي" : "Total net"): @totNet.ToString("N2")</span></div>
+                <div class="card-toolbar"><span class="badge fw-bold fs-7 py-2 px-3" style="background:#E7F0FF;color:#0E4A9E;">@(isAr ? "إجمالي الصافي" : "Total net"): @totNet.ToString("N2")</span></div>
             </div>
             <div class="card-body pt-0 pb-4"><div class="table-responsive">
                 <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
-                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr>
+                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;">
                         <th>@(isAr ? "الفترة" : "Period")</th><th class="text-end">@(isAr ? "الإجمالي" : "Gross")</th><th class="text-end">@(isAr ? "الخصومات" : "Deductions")</th><th class="text-end">@(isAr ? "الصافي" : "Net")</th><th class="text-center">@(isAr ? "القسيمة" : "Slip")</th>
                     </tr></thead>
                     <tbody>

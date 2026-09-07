@@ -910,8 +910,20 @@ namespace CrossBuy.Controllers
 				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
 			if (inv == null) return NotFound();
 			if (inv.Status != "Posted") { TempData["AccErr"] = L["Only posted invoices can be edited"].Value; return RedirectToAction(nameof(SalesInvoices)); }
-			if (await _context.ReceiptAllocations.AsNoTracking().AnyAsync(a => a.CompanyID == DefaultCompanyId && a.SalesInvoiceId == id))
-			{ TempData["AccErr"] = L["Cannot edit: this invoice has an allocated receipt — unallocate it first"].Value; return RedirectToAction(nameof(SalesInvoices)); }
+			// Name the receipt(s) holding this invoice. The old message said only "a receipt",
+			// which left the user to search for it - and this is the common case, not a rare one.
+			var blockingReceipts = await (from a in _context.ReceiptAllocations.AsNoTracking()
+										   join r in _context.Receipts.AsNoTracking() on a.ReceiptId equals r.ID
+										   where a.CompanyID == DefaultCompanyId && a.SalesInvoiceId == id
+										   select new { r.ReceiptNo, a.ForeignAmount }).ToListAsync();
+			if (blockingReceipts.Count > 0)
+			{
+				var named = string.Join(", ", blockingReceipts.Take(2).Select(r => $"{r.ReceiptNo} ({r.ForeignAmount:N2})"));
+				if (blockingReceipts.Count > 2) named += L[" and {0} more", blockingReceipts.Count - 2].Value;
+				TempData["AccErr"] = L["Cannot edit {0}: receipt {1} is allocated to it. Unallocate it from Receipts first.",
+					inv.InvoiceNo, named].Value;
+				return RedirectToAction(nameof(SalesInvoices));
+			}
 			ViewBag.Customers = await _ar.GetCustomersAsync(DefaultCompanyId);
 			ViewBag.RevenueAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "REV").ToList();
 			ViewBag.InvWarehouses = await _context.Warehouses.AsNoTracking().Where(w => w.CompanyID == DefaultCompanyId && w.IsActive).OrderBy(w => w.Code).ToListAsync();
@@ -1253,8 +1265,19 @@ namespace CrossBuy.Controllers
 				.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == DefaultCompanyId);
 			if (inv == null) return NotFound();
 			if (inv.Status != "Posted") { TempData["AccErr"] = L["Only posted invoices can be edited"].Value; return RedirectToAction(nameof(PurchaseInvoices)); }
-			if (await _context.PaymentAllocations.AsNoTracking().AnyAsync(a => a.CompanyID == DefaultCompanyId && a.PurchaseInvoiceId == id))
-			{ TempData["AccErr"] = L["Cannot edit: this invoice has an allocated payment — unallocate it first"].Value; return RedirectToAction(nameof(PurchaseInvoices)); }
+			// Same as the sales side: say WHICH payment, not just that there is one.
+			var blockingPayments = await (from a in _context.PaymentAllocations.AsNoTracking()
+										   join pm in _context.Payments.AsNoTracking() on a.PaymentId equals pm.ID
+										   where a.CompanyID == DefaultCompanyId && a.PurchaseInvoiceId == id
+										   select new { pm.PaymentNo, a.ForeignAmount }).ToListAsync();
+			if (blockingPayments.Count > 0)
+			{
+				var named = string.Join(", ", blockingPayments.Take(2).Select(x => $"{x.PaymentNo} ({x.ForeignAmount:N2})"));
+				if (blockingPayments.Count > 2) named += L[" and {0} more", blockingPayments.Count - 2].Value;
+				TempData["AccErr"] = L["Cannot edit {0}: payment {1} is allocated to it. Unallocate it from Payments first.",
+					inv.InvoiceNo, named].Value;
+				return RedirectToAction(nameof(PurchaseInvoices));
+			}
 			ViewBag.Vendors = await _ap.GetVendorsAsync(DefaultCompanyId);
 			ViewBag.ExpenseAccounts = (await _coa.GetFlatAsync(DefaultCompanyId, postableOnly: true)).Where(a => a.TypeCode == "EXP" || a.TypeCode == "ASSET").ToList();
 			ViewBag.CostCenters = await _costCenters.GetFlatAsync(DefaultCompanyId);
@@ -1529,9 +1552,9 @@ namespace CrossBuy.Controllers
 		private CrossBuy.BL.IMaintenanceService MntSvc => (HttpContext.RequestServices.GetService(typeof(CrossBuy.BL.IMaintenanceService)) as CrossBuy.BL.IMaintenanceService)!;
 
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.AccPerm("manage")]
-		public async Task<IActionResult> SaveMaintenanceSchedule(int id, int assetId, string title, string type, int intervalMonths, DateTime nextDueDate, decimal? estimatedCost, bool isActive)
+		public async Task<IActionResult> SaveMaintenanceSchedule(int id, int assetId, string title, string? titleEn, string type, int intervalMonths, DateTime nextDueDate, decimal? estimatedCost, bool isActive)
 		{
-			var (ok, err, _) = await MntSvc.SaveScheduleAsync(new CrossBuy.Models.Context.Accounting.MaintenanceSchedule { ID = id, CompanyID = DefaultCompanyId, AssetId = assetId, Title = title ?? "", Type = type, IntervalMonths = intervalMonths, NextDueDate = nextDueDate, EstimatedCost = estimatedCost, IsActive = isActive });
+			var (ok, err, _) = await MntSvc.SaveScheduleAsync(new CrossBuy.Models.Context.Accounting.MaintenanceSchedule { ID = id, CompanyID = DefaultCompanyId, AssetId = assetId, Title = title ?? "", TitleEn = titleEn, Type = type, IntervalMonths = intervalMonths, NextDueDate = nextDueDate, EstimatedCost = estimatedCost, IsActive = isActive });
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The maintenance schedule was saved"].Value : err;
 			return RedirectToAction(nameof(FixedAssetDetail), new { id = assetId });
 		}

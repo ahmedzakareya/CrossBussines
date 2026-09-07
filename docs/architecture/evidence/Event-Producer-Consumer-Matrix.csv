@@ -1,0 +1,11 @@
+﻿kind,entity,event_type,visibility,has_dedupkey,producer_file,producer_method,inside_scopedtx,consumer
+producer,ManufWorkOrder,?,Internal,True,CrossBuy/BL/ManufService.cs,,True,
+producer,PurchaseInvoice,e.Created,Internal,True,CrossBuy/BL/PayableService.cs,CreatePurchaseInvoiceAsync,True,
+producer,PurchaseInvoice,e.Updated,Internal,False,CrossBuy/BL/PayableService.cs,EditPurchaseInvoiceAsync,True,
+producer,Customer,r.Created,Internal,True,CrossBuy/BL/ReceivableService.cs,CreateCustomerAsync,True,
+producer,Customer,r.Created,Internal,True,CrossBuy/BL/ReceivableService.cs,SaveCustomerAsync,True,
+producer,Customer,r.Updated,Internal,False,CrossBuy/BL/ReceivableService.cs,SaveCustomerAsync,True,
+producer,SalesInvoice,e.Created,Internal,True,CrossBuy/BL/ReceivableService.cs,CreateSalesInvoiceAsync,True,
+producer,SalesInvoice,e.Updated,Internal,False,CrossBuy/BL/ReceivableService.cs,EditSalesInvoiceAsync,True,
+consumer,(all registered),(all),,False,CrossBuy/BL/Platform/NotificationProjectionConsumer.cs,HandleAsync,False,NotificationProjection
+consumer,(all registered),(all),,False,CrossBuy/BL/Platform/TimelineProjectionConsumer.cs,HandleAsync,False,TimelineProjection

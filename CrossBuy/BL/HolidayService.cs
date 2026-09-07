@@ -29,7 +29,7 @@ namespace CrossBuy.BL
 			{
 				// prevent duplicate same-date holiday for the company
 				if (await _db.OfficialHolidays.AnyAsync(x => x.CompanyID == h.CompanyID && x.HolidayDate == h.HolidayDate.Date))
-					return (false, "يوجد عطلة بنفس التاريخ بالفعل");
+					return (false, "A holiday already exists on that date");
 				h.HolidayDate = h.HolidayDate.Date; h.CreatedAt = DateTime.UtcNow;
 				_db.OfficialHolidays.Add(h);
 			}

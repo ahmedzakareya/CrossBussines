@@ -90,8 +90,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteActivityTypeAsync(int companyId, int id)
 		{
 			var e = await _db.ProjectActivityTypes.FirstOrDefaultAsync(t => t.ID == id && t.CompanyID == companyId);
-			if (e == null) return (false, "نوع النشاط غير موجود");
-			if (await _db.Projects.AnyAsync(p => p.ActivityTypeId == id)) return (false, "لا يمكن الحذف: مستخدم في مشاريع (يمكن إيقافه)");
+			if (e == null) return (false, "Activity type not found");
+			if (await _db.Projects.AnyAsync(p => p.ActivityTypeId == id)) return (false, "Cannot delete: it is used by projects (you can deactivate it instead)");
 			_db.ProjectActivityTypes.Remove(e); await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -104,8 +104,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)
 		{
 			var e = await _db.Projects.FirstOrDefaultAsync(p => p.ID == id && p.CompanyID == companyId);
-			if (e == null) return (false, "المشروع غير موجود");
-			if (await _db.JournalEntryLines.AnyAsync(l => l.ProjectId == id)) return (false, "لا يمكن الحذف: توجد قيود مرتبطة بالمشروع (يمكن إيقافه بدل الحذف)");
+			if (e == null) return (false, "Project not found");
+			if (await _db.JournalEntryLines.AnyAsync(l => l.ProjectId == id)) return (false, "Cannot delete: there are journal entries linked to the project (you can deactivate it instead)");
 			_db.Projects.Remove(e); await _db.SaveChangesAsync();
 			return (true, null);
 		}

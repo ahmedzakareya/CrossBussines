@@ -59,9 +59,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> StartAsync(int companyId, int taskId, int employeeId)
 		{
-			if (employeeId <= 0) return (false, "لا يمكن تحديد الموظف الحالي");
+			if (employeeId <= 0) return (false, "The current employee could not be determined");
 			var task = await _db.TaskItems.AsNoTracking().FirstOrDefaultAsync(t => t.ID == taskId && t.CompanyId == companyId);
-			if (task == null) return (false, "المهمة غير موجودة");
+			if (task == null) return (false, "Task not found");
 
 			// one active timer per employee → auto-stop the previous running one (prevents double-counting)
 			var open = await _db.TimesheetEntries.Where(e => e.CompanyId == companyId && e.EmployeeId == employeeId && e.Source == "Timer" && e.EndedAt == null).ToListAsync();
@@ -83,7 +83,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> StopAsync(int companyId, int employeeId)
 		{
 			var open = await _db.TimesheetEntries.FirstOrDefaultAsync(e => e.CompanyId == companyId && e.EmployeeId == employeeId && e.Source == "Timer" && e.EndedAt == null);
-			if (open == null) return (false, "لا يوجد مؤقّت شغّال");
+			if (open == null) return (false, "There is no running timer");
 			var now = DateTime.UtcNow;
 			open.EndedAt = now; open.Hours = HoursBetween(open.StartedAt ?? now, now);
 			await _db.SaveChangesAsync();
@@ -95,17 +95,28 @@ namespace CrossBuy.BL
 		{
 			var open = await _db.TimesheetEntries.AsNoTracking().FirstOrDefaultAsync(e => e.CompanyId == companyId && e.EmployeeId == employeeId && e.Source == "Timer" && e.EndedAt == null);
 			if (open == null) return null;
-			var title = await _db.TaskItems.AsNoTracking().Where(t => t.ID == open.TaskId).Select(t => t.Title).FirstOrDefaultAsync() ?? "";
-			return new RunningTimerDto { EntryId = open.ID, TaskId = open.TaskId, TaskTitle = title, StartedAt = open.StartedAt ?? open.CreatedAt };
+			// THE READER'S LANGUAGE. Projected as the PAIR and resolved after materialising:
+			// DisplayName.Of reads CurrentUICulture, which EF cannot translate to SQL.
+			var pair = await _db.TaskItems.AsNoTracking()
+				.Where(t => t.ID == open.TaskId)
+				.Select(t => new { t.Title, t.TitleEn })
+				.FirstOrDefaultAsync();
+			var title = pair == null ? "" : CrossBuy.BL.DisplayName.Of(pair.Title, pair.TitleEn);
+			// THE KIND TRAVELS WITH THE VALUE. StartAsync writes DateTime.UtcNow, but EF reads it back
+			// Kind=Unspecified - so any consumer calling ToUniversalTime() on it shifted a UTC instant
+			// by the local offset again. The running timer read three hours over in a UTC+3 office.
+			// Raw subtraction was never affected (it ignores Kind); only CONVERSION was.
+			var started = DateTime.SpecifyKind(open.StartedAt ?? open.CreatedAt, DateTimeKind.Utc);
+			return new RunningTimerDto { EntryId = open.ID, TaskId = open.TaskId, TaskTitle = title, StartedAt = started };
 		}
 
 		public async Task<(bool ok, string? error)> AddManualAsync(int companyId, int taskId, int employeeId, DateTime workDate, decimal hours, string? description)
 		{
-			if (employeeId <= 0) return (false, "لا يمكن تحديد الموظف الحالي");
+			if (employeeId <= 0) return (false, "The current employee could not be determined");
 			var task = await _db.TaskItems.AsNoTracking().FirstOrDefaultAsync(t => t.ID == taskId && t.CompanyId == companyId);
-			if (task == null) return (false, "المهمة غير موجودة");
-			if (hours <= 0) return (false, "الساعات يجب أن تكون أكبر من صفر");
-			if (hours > 24) return (false, "الساعات لا تتجاوز 24 في اليوم");
+			if (task == null) return (false, "Task not found");
+			if (hours <= 0) return (false, "The hours must be greater than zero");
+			if (hours > 24) return (false, "The hours cannot exceed 24 in a day");
 			_db.TimesheetEntries.Add(new TimesheetEntry
 			{
 				CompanyId = companyId, TaskId = taskId, EmployeeId = employeeId,
@@ -120,7 +131,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteEntryAsync(int companyId, int id)
 		{
 			var e = await _db.TimesheetEntries.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == companyId);
-			if (e == null) return (false, "السطر غير موجود");
+			if (e == null) return (false, "Line not found");
 			int taskId = e.TaskId;
 			_db.TimesheetEntries.Remove(e);
 			await _db.SaveChangesAsync();
@@ -137,8 +148,13 @@ namespace CrossBuy.BL
 
 			var empIds = raw.Select(r => r.EmployeeId).Distinct().ToList();
 			var taskIds = raw.Select(r => r.TaskId).Distinct().ToList();
-			var empNames = await _db.Employee.AsNoTracking().Where(x => empIds.Contains(x.ID)).ToDictionaryAsync(x => x.ID, x => x.FullName ?? "");
-			var taskTitles = await _db.TaskItems.AsNoTracking().Where(x => taskIds.Contains(x.ID)).ToDictionaryAsync(x => x.ID, x => x.Title);
+			var empNames = await _db.Employee.AsNoTracking().Where(x => empIds.Contains(x.ID))
+				.Select(x => new { x.ID, x.FullName, x.FullNameEn })
+				.ToDictionaryAsync(x => x.ID, x => EmployeeNames.Of(x.FullName, x.FullNameEn));
+			var taskTitles = await _db.TaskItems.AsNoTracking()
+				.Where(x => taskIds.Contains(x.ID))
+				.Select(x => new { x.ID, x.Title, x.TitleEn })
+				.ToDictionaryAsync(x => x.ID, x => CrossBuy.BL.DisplayName.Of(x.Title, x.TitleEn));
 
 			var dto = new HoursReportDto { From = f, To = to.Date };
 			foreach (var g in raw.GroupBy(r => r.EmployeeId).OrderBy(g => empNames.TryGetValue(g.Key, out var n) ? n : ""))
@@ -162,7 +178,9 @@ namespace CrossBuy.BL
 				.Select(e => new TimesheetLineDto { Id = e.ID, EmployeeId = e.EmployeeId, WorkDate = e.WorkDate, Hours = e.Hours, Description = e.Description, Source = e.Source, Running = e.Source == "Timer" && e.EndedAt == null })
 				.ToListAsync();
 			var empIds = rows.Select(r => r.EmployeeId).Distinct().ToList();
-			var names = await _db.Employee.AsNoTracking().Where(x => empIds.Contains(x.ID)).ToDictionaryAsync(x => x.ID, x => x.FullName ?? "");
+			var names = await _db.Employee.AsNoTracking().Where(x => empIds.Contains(x.ID))
+				.Select(x => new { x.ID, x.FullName, x.FullNameEn })
+				.ToDictionaryAsync(x => x.ID, x => EmployeeNames.Of(x.FullName, x.FullNameEn));
 			foreach (var r in rows) r.EmployeeName = names.TryGetValue(r.EmployeeId, out var n) ? n : "";
 			return rows;
 		}

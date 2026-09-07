@@ -16,12 +16,12 @@ namespace CrossBuy.BL
 		//   - No financial field is touched (CustomerId, control account, journal entry, amounts all unchanged).
 		public static (bool ok, string? error) StampCustomer(SalesInvoice inv, string? name, string? taxNo, string? by)
 		{
-			if (inv == null) return (false, "الفاتورة غير موجودة");
-			if (string.IsNullOrWhiteSpace(name)) return (false, "اسم العميل مطلوب");
+			if (inv == null) return (false, "Invoice not found");
+			if (string.IsNullOrWhiteSpace(name)) return (false, "Customer name is required");
 			if (!string.IsNullOrWhiteSpace(inv.CustomerNameOverride))
-				return (false, "بيانات العميل مختومة على الفاتورة مسبقًا — لا تُعدَّل (ختم لمرّة واحدة)");
+				return (false, "The customer details are already stamped on the invoice and cannot be changed (a one-time stamp)");
 			if (inv.TaxTotal > 0m)
-				return (false, "الفاتورة تحمل ضريبة — تستلزم عميلًا مسجَّلًا لا اسمًا على الوثيقة (يجب أن يتطابق المستفيد مع صاحب الحساب في الدفتر)");
+				return (false, "The invoice carries tax — it requires a registered customer, not just a name on the document (the beneficiary must match the account holder in the ledger)");
 			inv.CustomerNameOverride = name.Trim();
 			inv.CustomerTaxNoOverride = string.IsNullOrWhiteSpace(taxNo) ? null : taxNo.Trim();
 			inv.CustomerOverrideBy = by;

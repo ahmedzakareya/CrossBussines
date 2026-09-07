@@ -15,8 +15,8 @@
     string roleName(string r) => roles.FirstOrDefault(x => x.v == r) is var m && m.v != null ? (isAr ? m.ar : m.en) : r;
     // brand-safe per-role badge styling (green family + grays; no blue/mint/yellow)
     string roleStyle(string r) => r switch {
-        "InventoryManager"  => "background:#eaf3ef;color:#13433a;",
-        "WarehouseKeeper"   => "background:#e9f1ee;color:#1f6253;",
+        "InventoryManager"  => "background:#E7F0FF;color:#0E4A9E;",
+        "WarehouseKeeper"   => "background:#E7F0FF;color:#145DBF;",
         "PurchasingOfficer" => "background:#f2f4f7;color:#475467;",
         _                    => "background:#eef2f7;color:#3f4254;" };
 }
@@ -33,7 +33,7 @@
                     <div class="card-body pt-2">
                         <form asp-action="AssignRole" method="post">@Html.AntiForgeryToken()
                             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Employee"]</label>
-                                <select name="employeeId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var e in employees) { <option value="@e.ID">@e.FullName</option> }</select></div>
+                                <select name="employeeId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var e in employees) { <option value="@e.ID">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }</select></div>
                             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Role"]</label>
                                 <select name="role" id="roleSel" class="form-select form-select-solid" data-control="select2" data-hide-search="true" required>@foreach (var r in roles) { <option value="@r.v">@(isAr ? r.ar : r.en)</option> }</select></div>
                             <div class="mb-4" id="scopeWrap"><label class="fw-semibold fs-6 mb-2">@Localizer["Branch scope (keeper)"]</label>
@@ -57,7 +57,7 @@
                     <div class="card-body pt-2">
                         <div class="table-responsive">
                         <table class="table align-middle gy-3 mb-0">
-                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th>@Localizer["Role"]</th><th>@SR["Branch"]</th><th class="text-end pe-4"></th></tr></thead>
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Employee"]</th><th>@Localizer["Role"]</th><th>@SR["Branch"]</th><th class="text-end pe-4"></th></tr></thead>
                             <tbody class="fw-semibold text-gray-700">
                             @foreach (var a in assignments)
                             {

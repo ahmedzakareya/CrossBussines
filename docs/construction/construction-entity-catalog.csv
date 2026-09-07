@@ -1,0 +1,37 @@
+﻿Entity,State,Evidence,Isolation,Decision
+Project,Existing,CrossBuy/Models/Context/Accounting/Dimensions.cs:23,company + project,"Extend: SiteId, BranchID, ParentId, ContractCurrency, ProjectTypeId; keep every existing column."
+ProjectActivityType,Existing,Dimensions.cs:49,company,Reuse as-is (user-defined lookup).
+ProjectMember,Existing,Models/Context/Accounting/ProjectMember.cs:16,company + project,Reuse as-is — the record-level access relationship (tab 1 owned).
+CostCenter,Existing,Dimensions.cs:7,company,Reuse for ORG rollup only; must not be overloaded as a construction cost code.
+BoqItem,Existing,Models/Context/Accounting/Boq.cs:8,company + project,"Extend with WbsNodeId, CostCodeId, RevisionId, Status, Source, RowVersion; retire ReplaceAllAsync."
+ProjectProgress / ProjectProgressLine,Existing,Models/Context/Accounting/ProjectProgress.cs,company + project,"Extend with WBS/site reference, progress method, over-quantity block, BOQ revision snapshot."
+ProgressBilling / ProgressBillingLine,Existing,Models/Context/Accounting/ProgressBilling.cs,company + project,"Extend into the client certificate: review chain, BoqRevisionId, MOS, deductions, RowVersion, line audit."
+Subcontract / SubcontractBilling,Existing,Models/Context/Accounting/Subcontract.cs,company + project,"Extend heavily: scope allocation lines, quantity cap, dates, advance, penalties, certificate lines."
+VariationOrder / VariationOrderLine,Existing,Models/Context/Accounting/VariationOrder.cs,company + project,Extend states; STOP in-place BOQ mutation — emit a BOQ revision instead.
+ProjectMaterialIssue / Line,Existing,Models/Context/Accounting/ProjectMaterialIssue.cs,company + project + site,"Extend line with WbsNodeId, CostCodeId, SiteId, requester/approver."
+EquipmentDepreciationAllocation,Existing,Models/Context/Accounting/EquipmentDepreciationAllocation.cs,company + project,Keep as the costing reclass; the usage log becomes a separate construction entity.
+Warehouse,Existing,Models/Context/Inventory/Inventory.cs:144,company + branch,"Extend with SiteId (nullable) — Inventory-owned change, must be agreed with the Inventory owner."
+PurchaseOrder,Existing,Models/Context/Inventory/Inventory.cs:300,company,Already carries ProjectId; commitment reading is additive and read-only.
+LibraryItem,Existing,Models/Context/Library/LibraryItem.cs:6,company,Reuse as the ONLY file store; construction adds metadata rows that reference it.
+ConstructionSite,New,proposed,company + project,"A physical site/location under a project; parent of site stores, DSRs, manpower and equipment logs."
+WbsNode,New,proposed,company + project,"The work breakdown node: Code, Name, ParentId, Path, Sequence, Status, dates, owner, ProgressMethod, depth-limited, no cross-project parent."
+CostCode,New,proposed,company (global reference per company),Cost breakdown code with a Category (Material/Labor/Equipment/Subcontractor/SiteExpense/Transportation/Accommodation/Overhead/Contingency/Other).
+BoqRevision,New,proposed,company + project,"Immutable header for a BOQ version: RevisionNo, Kind (Original/Revised/Approved), Source (Contract/Variation), ApprovedBy/At, reason."
+BoqLineHistory,New,proposed,company + project,"Immutable per-line history: old/new quantity, rate, unit, reason, actor, revision."
+ProjectBudget / ProjectBudgetLine,New,proposed,company + project,"Versioned budget by WBS x CostCode: Original/Revised/Approved/Baseline/Scenario, immutable once approved."
+BudgetTransfer,New,proposed,company + project,"From/To budget line, amount, reason, approval chain."
+ProjectCommitment,New,proposed,company + project,"Read-model + record of committed cost from PO / subcontract, allocated to WBS x CostCode."
+CostAllocation,New,proposed,company + project,The construction dimension row for any cost fact: SourceEntityType/Id + Project/WBS/CostCode/BOQ/Contract/Site/Branch.
+ClientContract / ClientContractTerm,New,proposed,company + project,"The contract as a first-class document with currency, terms, bonds, insurance, DLP, attachments, approvals."
+SubcontractScope,New,proposed,company + project,Allocated BOQ/WBS scope with quantity and rate — the cap that stops over-certification.
+Certificate / CertificateLine,New (extends ProgressBilling),proposed,company + project,Client and subcontractor certificate with the full review chain and a BOQ-revision snapshot per line.
+Bond / Insurance,New,proposed,company + project,"Guarantee/insurance register with validity, expiry alerting and issuer."
+Claim / DelayEvent,New,proposed,company + project,"Entitlement, cause, responsible party, cost and time impact, evidence, settlement."
+MaterialRequest / Line,New,proposed,company + project + site,Site demand with WBS/CostCode/BOQ reference and approval.
+DailySiteReport + child logs,New,proposed,company + project + site,"Structured DSR: manpower, equipment, quantities, materials, visitors, delays, incidents, photos."
+ManpowerLog / EquipmentLog,New,proposed,company + project + site,"Per-day, per-trade / per-asset hours with WBS reference and cost rate source."
+Rfi / InspectionRequest / Submittal / MethodStatement / Ncr / PunchItem,New,proposed,company + project,Quality and technical control documents with a common header shape.
+DocumentRegister / DocumentRevision,New,proposed,company + project,"Controlled register: number, revision, discipline, status, supersede link, current flag, distribution; file bytes stay in LibraryItem."
+ProgressRecord,New,proposed,company + project,"Planned vs actual vs approved vs certified progress per WBS node, per method."
+CashFlowPlan / CashFlowLine,New,proposed,company + project,Planned/committed/actual/forecast inflow and outflow by period.
+ConstructionAudit,New,proposed,company + project,"Field-level immutable history: entity, field, old, new, reason, actor, correlation, revision."

@@ -28,7 +28,7 @@
         <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Production cost & variance vs standard"]</div></div>
             <div class="card-body py-3">
                 <div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
-                    <thead><tr class="fw-bold fs-8 text-muted text-uppercase"><th>@Localizer["WO"]</th><th>@SR["Item"]</th><th class="text-end">@Localizer["Produced"]</th><th class="text-end">@Localizer["Mat."]</th><th class="text-end">@Localizer["Labor"]</th><th class="text-end">@Localizer["OH"]</th><th class="text-end">@SR["Total"]</th><th class="text-end">@Localizer["Unit"]</th><th class="text-end">@Localizer["Std"]</th><th class="text-end">@Localizer["Var."]</th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-muted text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["WO"]</th><th>@SR["Item"]</th><th class="text-end">@Localizer["Produced"]</th><th class="text-end">@Localizer["Mat."]</th><th class="text-end">@Localizer["Labor"]</th><th class="text-end">@Localizer["OH"]</th><th class="text-end">@SR["Total"]</th><th class="text-end">@Localizer["Unit"]</th><th class="text-end">@Localizer["Std"]</th><th class="text-end">@Localizer["Var."]</th></tr></thead>
                     <tbody>
                     @if (!rep.Lines.Any()) { <tr><td colspan="10" class="text-center text-muted py-6">@Localizer["No completed work orders in this period."]</td></tr> }
                     @foreach (var l in rep.Lines)
@@ -59,7 +59,7 @@
         <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Work-center load"]</div></div>
             <div class="card-body py-3">
                 <div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
-                    <thead><tr class="fw-bold fs-8 text-muted text-uppercase"><th>@Localizer["Work center"]</th><th class="text-end">@Localizer["Minutes"]</th><th class="text-end">@Localizer["Hours"]</th><th class="text-end">@Localizer["Labor cost"]</th><th class="text-end">@Localizer["Overhead"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-muted text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Work center"]</th><th class="text-end">@Localizer["Minutes"]</th><th class="text-end">@Localizer["Hours"]</th><th class="text-end">@Localizer["Labor cost"]</th><th class="text-end">@Localizer["Overhead"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
                     <tbody>
                     @if (!rep.Load.Any()) { <tr><td colspan="6" class="text-center text-muted py-6">@Localizer["No routings for items produced in this period."]</td></tr> }
                     @foreach (var w in rep.Load)

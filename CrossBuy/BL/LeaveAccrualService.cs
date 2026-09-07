@@ -95,19 +95,19 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> EncashAsync(int companyId, int employeeId, int leaveTypeId, int days, int payFromGlAccountId, DateTime date, int? userId)
 		{
-			if (days <= 0) return (false, "عدد الأيام يجب أن يكون أكبر من صفر");
+			if (days <= 0) return (false, "The number of days must be greater than zero");
 			var type = await _context.LeaveTypes.AsNoTracking().FirstOrDefaultAsync(t => t.ID == leaveTypeId);
-			if (type == null || !type.IsEncashable) return (false, "نوع الإجازة غير قابل للصرف النقدي");
+			if (type == null || !type.IsEncashable) return (false, "This leave type cannot be encashed");
 			var remaining = await _leave.RemainingForTypeAsync(employeeId, leaveTypeId);
-			if (days > remaining) return (false, $"الأيام المطلوبة ({days}) تتجاوز الرصيد المتاح ({remaining})");
+			if (days > remaining) return (false, $"The days requested ({days}) exceed the available balance ({remaining})");
 
 			var rate = await DailyRateAsync(employeeId);
-			if (rate <= 0) return (false, "تعذّر حساب الأجر اليومي (لا توجد لائحة راتب للموظف)");
+			if (rate <= 0) return (false, "Could not calculate the daily rate (the employee has no salary policy)");
 			var amount = R(days * rate);
 
 			var expAcc = await AccIdAsync(companyId, "520104");
-			if (expAcc == null) return (false, "حساب بدل الإجازات 520104 غير موجود. شغّل بذرة المحاسبة.");
-			if (payFromGlAccountId == expAcc.Value) return (false, "حساب الدفع غير صالح");
+			if (expAcc == null) return (false, "The leave allowance account 520104 does not exist. Run the accounting seed.");
+			if (payFromGlAccountId == expAcc.Value) return (false, "Invalid payment account");
 
 			var emp = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == employeeId);
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
@@ -117,7 +117,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = expAcc.Value, Debit = amount, Credit = 0, Description = "بدل إجازات" },
-					new() { AccountId = payFromGlAccountId, Debit = 0, Credit = amount, Description = "صرف من البنك/الخزينة" },
+					new() { AccountId = payFromGlAccountId, Debit = 0, Credit = amount, Description = "Payment from bank/cash" },
 				},
 			}, userId);
 			if (!ok) return (false, err);
@@ -165,23 +165,23 @@ namespace CrossBuy.BL
 		{
 			var pv = await ProvisionPreviewAsync(companyId, asOf);
 			var adj = pv.Adjustment;
-			if (adj == 0m) return (false, "لا يوجد فرق في المخصص لترحيله (الرصيد الحالي مطابق للمطلوب)");
+			if (adj == 0m) return (false, "There is no provision difference to post (the current balance already matches the required one)");
 
 			var expAcc = await AccIdAsync(companyId, "520106");
 			var liabAcc = await AccIdAsync(companyId, "210206");
-			if (expAcc == null || liabAcc == null) return (false, "حسابات المخصص (520106/210206) غير موجودة. شغّل بذرة المحاسبة.");
+			if (expAcc == null || liabAcc == null) return (false, "The provision accounts (520106/210206) do not exist. Run the accounting seed.");
 
 			var amount = Math.Abs(adj);
 			var lines = new List<JournalLineInput>();
 			if (adj > 0)   // increase the provision
 			{
-				lines.Add(new() { AccountId = expAcc.Value, Debit = amount, Credit = 0, Description = "مصروف مخصص إجازات" });
-				lines.Add(new() { AccountId = liabAcc.Value, Debit = 0, Credit = amount, Description = "زيادة مخصص الإجازات" });
+				lines.Add(new() { AccountId = expAcc.Value, Debit = amount, Credit = 0, Description = "Leave provision expense" });
+				lines.Add(new() { AccountId = liabAcc.Value, Debit = 0, Credit = amount, Description = "Increase in the leave provision" });
 			}
 			else            // release surplus provision
 			{
-				lines.Add(new() { AccountId = liabAcc.Value, Debit = amount, Credit = 0, Description = "تخفيض مخصص الإجازات" });
-				lines.Add(new() { AccountId = expAcc.Value, Debit = 0, Credit = amount, Description = "رد مخصص إجازات" });
+				lines.Add(new() { AccountId = liabAcc.Value, Debit = amount, Credit = 0, Description = "Decrease in the leave provision" });
+				lines.Add(new() { AccountId = expAcc.Value, Debit = 0, Credit = amount, Description = "Leave provision release" });
 			}
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput

@@ -136,7 +136,7 @@ namespace CrossBuy.BL.Reporting
                 links.Add(new WorkspaceReportLink
                 {
                     Kind = WorkspaceReportKind.Recent,
-                    Label = (arabic ? run.ReportTitleAr : run.ReportTitleEn)
+                    Label = (arabic ? run.ReportTitleAr : DisplayName.Or(run.ReportTitleEn, run.ReportTitleAr))
                             ?? definition?.Title(arabic) ?? run.ReportCode,
 
                     // The failure reason CODE, never the engine's message: a Workspace tile is read by people

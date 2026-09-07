@@ -57,7 +57,7 @@
                         <div class="table-responsive">
                             <table class="table table-row-bordered align-middle">
                                 <thead>
-                                    <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                    <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                                         <th style="min-width:260px">@SR["Account"]</th>
                                         <th style="width:140px" class="text-end">@SR["Debit"]</th>
                                         <th style="width:140px" class="text-end">@SR["Credit"]</th>
@@ -94,8 +94,8 @@
 
 @section Scripts {
     <script>
-        var ACCOUNTS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a => new { a.Id, a.Code, name = (isAr ? a.Name : a.NameEn) })));
-        var COSTCENTERS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(costCenters.Select(c => new { c.ID, c.Code, name = (isAr ? c.Name : c.NameEn) })));
+        var ACCOUNTS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a => new { a.Id, a.Code, name = (isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name)) })));
+        var COSTCENTERS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(costCenters.Select(c => new { c.ID, c.Code, name = (isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name)) })));
         var PROJECTS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(projects.Select(p => new { id = p.id, text = p.text })));
         var isAr = @(isAr ? "true" : "false");
 

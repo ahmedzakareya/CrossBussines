@@ -108,7 +108,7 @@
     board.addEventListener('dragend', function () { if (dragged) dragged.style.opacity = ''; });
     [].slice.call(document.querySelectorAll('.kanban-col')).forEach(function (col) {
         if (col.getAttribute('data-locked') === '1') return;   // Hired column is not a drop target
-        col.addEventListener('dragover', function (e) { e.preventDefault(); col.style.background = '#eef4f1'; });
+        col.addEventListener('dragover', function (e) { e.preventDefault(); col.style.background = '#E7F0FF'; });
         col.addEventListener('dragleave', function () { col.style.background = ''; });
         col.addEventListener('drop', function (e) {
             e.preventDefault(); col.style.background = ''; if (!dragged || col === fromCol) return;

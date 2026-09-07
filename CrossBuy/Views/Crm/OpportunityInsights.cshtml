@@ -197,8 +197,13 @@
                         {
                             (Localizer["High priority"].Value, Model.CountOfSeverity(CrmOpportunityRiskRules.Severity.High), "ki-information-5", "danger"),
                             (Localizer["Past expected close date"].Value, Model.CountOf(CrmOpportunityRiskRules.Finding.PastExpectedClose), "ki-calendar-remove", "danger"),
-                            (Localizer["No recent activity"].Value, Model.CountOf(CrmOpportunityRiskRules.Finding.StaleActivity) + Model.CountOf(CrmOpportunityRiskRules.Finding.NoActivityEver), "ki-time", "warning"),
-                            (Localizer["No open next action"].Value, Model.CountOf(CrmOpportunityRiskRules.Finding.NoNextAction), "ki-check-square", "secondary"),
+                            @* warning-strong, not `warning`: the pale yellow does not hold 4.5:1 on
+                               white. Same caution, a colour that can carry it. *@
+                            (Localizer["No recent activity"].Value, Model.CountOf(CrmOpportunityRiskRules.Finding.StaleActivity) + Model.CountOf(CrmOpportunityRiskRules.Finding.NoActivityEver), "ki-time", "warning-strong"),
+                            @* `secondary` painted rgb(241,241,244) on rgb(249,249,249) here - about
+                               1.07:1, an icon nobody can see. Neutral is the right MEANING for the
+                               mildest finding; it just needs a foreground that exists. *@
+                            (Localizer["No open next action"].Value, Model.CountOf(CrmOpportunityRiskRules.Finding.NoNextAction), "ki-check-square", "neutral"),
                         };
                     }
                     @foreach (var c in cards)
@@ -206,7 +211,17 @@
                         <div class="col-6 col-xl-3">
                             <div class="card h-100">
                                 <div class="card-body p-5">
-                                    <div class="symbol symbol-40px mb-3"><span class="symbol-label bg-light-@c.color"><i class="ki-outline @c.icon fs-2x text-@c.color"></i></span></div>
+                                    @* A BLOCK WRAPPER, so the icon actually sits ABOVE the number. `.symbol`
+                                       is inline-block, so the old markup put the number on the same line as
+                                       the icon - 7px out of alignment with it - and the mb-3 separated
+                                       nothing. *@
+                                    <div class="mb-3">
+                                        <span class="symbol symbol-40px">
+                                            <span class="symbol-label @(c.color == "neutral" ? "bg-light" : "bg-light-" + c.color)">
+                                                <i class="ki-outline @c.icon fs-2x @(c.color == "neutral" ? "text-gray-700" : "text-" + c.color)"></i>
+                                            </span>
+                                        </span>
+                                    </div>
                                     <span class="fw-bold fs-2x text-gray-900 lh-1">@c.value</span>
                                     <div class="mt-2"><span class="fw-semibold fs-7 text-gray-500">@c.label</span></div>
                                 </div>
@@ -244,8 +259,8 @@
                         </div>
                         <div class="table-responsive">
                             <table class="table table-row-dashed align-middle gs-0 gy-3" id="tInsights">
-                                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
-                                    <tr>
+                                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                    <tr style="border-bottom:2px solid #0E4A9E;">
                                         <th>@Localizer["Opportunity"]</th>
                                         <th>@Localizer["Account"]</th>
                                         <th>@Localizer["Owner"]</th>

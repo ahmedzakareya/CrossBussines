@@ -110,10 +110,10 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> CreateJobTitle([FromBody] JobTitleInput m)
 		{
 			if (!await MayManageOrganisationAsync())
-				return NotFound(new { success = false, message = "غير مصرح" });
+				return NotFound(new { success = false, message = "Not authorised" });
 
 			if (m == null || (string.IsNullOrWhiteSpace(m.Title) && string.IsNullOrWhiteSpace(m.TitleAr)))
-				return BadRequest(new { success = false, message = "الاسم مطلوب" });
+				return BadRequest(new { success = false, message = "Name is required" });
 			var jt = new JobTitle { Title = m.Title ?? "", TitleAr = m.TitleAr ?? "", Description = m.Description ?? "" };
 			_context.JobTitles.Add(jt);
 			await _context.SaveChangesAsync();
@@ -124,10 +124,10 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> UpdateJobTitle(int id, [FromBody] JobTitleInput m)
 		{
 			if (!await MayManageOrganisationAsync())
-				return NotFound(new { success = false, message = "غير مصرح" });
+				return NotFound(new { success = false, message = "Not authorised" });
 
 			var jt = await _context.JobTitles.FirstOrDefaultAsync(j => j.ID == id);
-			if (jt == null) return NotFound(new { success = false, message = "غير موجود" });
+			if (jt == null) return NotFound(new { success = false, message = "Not found" });
 			jt.Title = m.Title ?? jt.Title;
 			jt.TitleAr = m.TitleAr ?? jt.TitleAr;
 			jt.Description = m.Description ?? jt.Description;

@@ -25,7 +25,7 @@
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         @if (fromPo != null) { <div class="alert alert-light-primary d-flex align-items-center"><i class="ki-outline ki-information-5 fs-2 me-3"></i>@Localizer["Receiving against PO"] <strong class="mx-2">@fromPo.OrderNo</strong> — @Localizer["adjust the actually received quantities."]</div> }
         <div class="card mb-5"><div class="card-body"><div class="row g-5">
-            <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fromPo?.WarehouseId==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+            <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fromPo?.WarehouseId==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@SR["Vendor"]</label><select name="vendorId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var v in vendors) { <option value="@v.ID" selected="@(fromPo?.VendorId==v.ID)">@(isAr ? v.Name : (v.NameEn ?? v.Name))</option> }</select></div>
             <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="receiptDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
             <div class="col-md-2"><label class="fw-semibold fs-6 mb-2">@SR["Currency"]</label>
@@ -35,7 +35,7 @@
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@SR["Notes"]</label><input name="notes" class="form-control form-control-solid" /></div>
         </div></div></div>
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Received items"]</h3><div class="card-toolbar d-flex gap-2 align-items-center flex-wrap"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan barcode + Enter"]" autocomplete="off" /></div><button type="button" class="btn btn-sm btn-light-primary" id="newItem"><i class="ki-outline ki-plus fs-3"></i>@SR["New item"]</button><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div></div>
-        <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+        <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
             <th style="min-width:220px">@SR["Item"]</th><th style="width:90px">@Localizer["Qty"]</th><th style="min-width:120px">@Localizer["Unit"]</th><th style="width:120px">@Localizer["Unit cost"]</th><th style="min-width:220px">@Localizer["Location (section/rack)"]</th><th style="min-width:120px">@Localizer["Batch"]</th><th style="min-width:130px">@Localizer["Expiry"]</th><th style="min-width:120px">@Localizer["Serial"]</th><th style="width:40px"></th>
         </tr></thead><tbody id="rows"></tbody></table></div></div></div>
     </div></div>
@@ -45,7 +45,7 @@
 @section Scripts {
 <script>
 var ITEMS=[]; var itemPickUrl='@Url.Action("ItemPickData","Inventory")';
-var UNITS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(units.Select(u=>new{iD=u.ID,name=(isAr?u.Name:u.NameEn)})));
+var UNITS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(units.Select(u=>new{iD=u.ID,name=(isAr?u.Name:DisplayName.Or(u.NameEn, u.Name))})));
 var PREFILL=@Html.Raw(fromPo == null ? "[]" : System.Text.Json.JsonSerializer.Serialize(fromPo.Lines.Where(l => l.ItemId != null && (l.Qty - l.ReceivedQty) > 0).Select(l => new { itemId = l.ItemId, text = l.ItemDescription, qty = (l.Qty - l.ReceivedQty), uomId = l.UoMId, cost = l.UnitPrice, polId = l.ID })));
 var FUNC=@funcCur; var curSel=document.getElementById('curSel'); var rateWrap=document.getElementById('rateWrap');
 function toggleRate(){ if(rateWrap) rateWrap.style.display=(parseInt(curSel.value)!==FUNC)?'':'none'; }

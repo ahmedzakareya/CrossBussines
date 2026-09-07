@@ -1,6 +1,39 @@
 @using CrossBuy.BL.Workspace
 @using System.Globalization
 @model WorkspacePanel<WorkspaceMention>
+@functions {
+    // Up to two initials from the display name, so a row with no photo still gets a stable,
+    // person-shaped mark. Works the same for Arabic and Latin names.
+    private static string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) { return "؟"; }
+        var parts = name.Trim().Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) { return parts[0].Substring(0, 1); }
+        return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);
+    }
+
+    // THE "@" MUST NOT REACH THE READER. It is authoring syntax, and the owner's rule is that it
+    // never shows on this screen.
+    //
+    // It does NOT arrive as raw markup. CommBodyPolicy.Excerpt has already flattened
+    // `@[Ahmed Zakareya](employee:5)` down to `@Ahmed Zakareya` before the row gets here
+    // (CommBodyPolicy.cs, LabelledMention.Replace), so by this point the brackets and the
+    // employee id are gone and only the sign is left. That is why this strips a sign rather than
+    // parsing a token.
+    //
+    // The fix is NOT made in Excerpt itself: that same string also feeds notification templates
+    // and the comment timeline, where the sign is not this screen's to remove.
+    //
+    // WHAT IS LOST, HONESTLY: with the id already stripped upstream, the view cannot tell where the
+    // name ends, so the mention cannot be drawn as a chip here - only as plain text. Carrying the
+    // stored label (CommMentions.LabelAr/LabelEn) through WorkspaceMention would restore it.
+    private static readonly System.Text.RegularExpressions.Regex AtSign =
+        new System.Text.RegularExpressions.Regex(@"@(?=[^\s@])",
+            System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private static string MentionText(string? raw)
+        => string.IsNullOrEmpty(raw) ? "" : AtSign.Replace(raw, "");
+}
 @{
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     // Inventory shell = THE visual authority. Its module menu is NOT this screen's navigation:
@@ -69,7 +102,7 @@
                     <div class="table-responsive">
                         <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                             <thead>
-                                <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700 cb-thead-rule">
                                     <th>@(arabic ? "الإشارة" : "Mention")</th>
                                     <th class="w-150px">@(arabic ? "الكيان" : "Entity")</th>
                                     <th class="w-125px">@(arabic ? "الطريقة" : "Via")</th>
@@ -79,26 +112,58 @@
                             <tbody>
                                 @foreach (var m in Model.Items)
                                 {
+                                    var unread = !m.IsRead;
+                                    var who = string.IsNullOrWhiteSpace(m.MentionedBy)
+                                        ? "#" + m.MentionedByEmployeeId
+                                        : m.MentionedBy!;
+                                    var photo = string.IsNullOrWhiteSpace(m.MentionedByAvatarUrl)
+                                        ? null
+                                        : Url.Content("~" + m.MentionedByAvatarUrl!.Replace("\\", "/"));
                                     <tr>
                                         <td class="min-w-250px">
-                                            <div class="d-flex align-items-center">
-                                                <div class="symbol symbol-35px me-3">
-                                                    <span class="symbol-label bg-light-primary">
-                                                        <i class="ki-outline ki-message-text-2 fs-5 text-primary"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="d-flex flex-column">
-                                                    <a class="fw-bold text-gray-900 text-hover-primary" href="@(m.Url ?? "#")">@(m.Excerpt ?? m.EntityLabel)</a>
-                                                    @if (!string.IsNullOrWhiteSpace(m.MentionedBy))
+                                            @* UNREAD IS MARKED THREE WAYS - a rule on the leading edge, a
+                                               heavier body, and a dot by the time. One mark is not enough:
+                                               colour alone fails anyone who cannot separate two blues, and
+                                               weight alone disappears in a column scan. *@
+                                            <div class="d-flex align-items-center @(unread ? "cb-unread-row" : "")">
+                                                <div class="symbol symbol-40px me-3 flex-shrink-0">
+                                                    @if (photo != null)
                                                     {
-                                                        <span class="text-gray-700 fs-7">@m.MentionedBy</span>
+                                                        <img src="@photo" alt="@who" class="rounded-circle" />
                                                     }
+                                                    else
+                                                    {
+                                                        @* NO PHOTO IS THE NORMAL CASE. Initials on the brand tint,
+                                                           never a broken-image frame. *@
+                                                        <span class="symbol-label bg-light-primary text-primary fw-bold">@Initials(who)</span>
+                                                    }
+                                                </div>
+                                                <div class="d-flex flex-column min-w-0">
+                                                    <span class="fw-bold text-gray-900 fs-6">@who</span>
+                                                    <a class="text-gray-700 text-hover-primary @(unread ? "fw-semibold" : "")"
+                                                       href="@(m.Url ?? "#")">@(m.Excerpt == null ? m.EntityLabel : MentionText(m.Excerpt))</a>
                                                 </div>
                                             </div>
                                         </td>
                                         <td><span class="badge badge-light-primary fs-8">@m.EntityLabel</span></td>
-                                        <td><span class="badge badge-light fs-8">@ViaLabel(m.ViaKind)</span></td>
-                                        <td class="text-end text-gray-700 fw-semibold">@Ago(m.At)</td>
+                                        <td>
+                                            @* SILENT WHEN THERE IS NOTHING TO SAY. This printed "direct" on
+                                               every row; a column that repeats one value is not a column. It
+                                               speaks only for a mention that arrived through a team or a
+                                               department, which is the case worth flagging. *@
+                                            @if (!string.Equals(m.ViaKind, "Employee", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <span class="badge badge-light-info fs-8">@ViaLabel(m.ViaKind)</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="text-gray-700 fw-semibold" dir="ltr"
+                                                  style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@Ago(m.At)</span>
+                                            @if (unread)
+                                            {
+                                                <span class="cb-unread-dot ms-2" title="@(arabic ? "غير مقروءة" : "Unread")"></span>
+                                            }
+                                        </td>
                                     </tr>
                                 }
                             </tbody>

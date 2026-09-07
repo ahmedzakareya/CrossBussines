@@ -53,7 +53,7 @@
             {
                 <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-3">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase"><th>@SR["Date"]</th><th>@Localizer["Check-in"]</th><th>@Localizer["Check-out"]</th><th>@Localizer["Hours"]</th><th>@Localizer["Late"]</th><th>@SR["Status"]</th></tr></thead>
+                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Date"]</th><th>@Localizer["Check-in"]</th><th>@Localizer["Check-out"]</th><th>@Localizer["Hours"]</th><th>@Localizer["Late"]</th><th>@SR["Status"]</th></tr></thead>
                     <tbody class="fw-semibold text-gray-700">
                     @foreach (var r in records.OrderBy(x => x.WorkDate))
                     {

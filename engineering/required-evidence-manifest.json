@@ -1,0 +1,446 @@
+{
+  "schema": 1,
+  "purpose": "Mandatory evidence tests. CI fails if any is missing, renamed without updating this file, skipped, not discovered, filtered out, or failing. Total test counts are NOT evidence (RISK-026).",
+  "rules": [
+    "A listed test that reports Skipped fails the build.",
+    "A listed test that is NOT DISCOVERED fails the build - this is the Stage 1 failure mode where 46 tests reported skipped for two batches.",
+    "Renaming a test without updating this manifest fails the build.",
+    "Total pass counts may never substitute for named-test verification.",
+    "Every test in the CrossBuy.Tests.SqlServer namespace must be registered here. Batch 00-C guard 6 enforces the reverse direction: an unregistered SQL evidence test fails the build."
+  ],
+  "requiredEnvironment": {
+    "CROSSBUY_TEST_SQL": "instance-only connection string; the fixture REFUSES a real CrossBuy catalog",
+    "CROSSBUY_SQL_REQUIRED": "set to 1 in CI: makes an unconfigured SQL instance a FAILURE instead of a skip (Batch 00-C guard 4)"
+  },
+  "groups": [
+    {
+      "group": "Stage 1 SQL authorization proofs",
+      "class": "CrossBuy.Tests.SqlServer.Stage1F4DatabaseProofTests",
+      "tests": [
+        "A_refused_accounting_decision_leaves_no_journal_no_lines_no_event_and_no_notification",
+        "A_refused_inventory_decision_leaves_no_movement_and_no_balance_change",
+        "A_refused_payroll_decision_leaves_no_posting_and_no_leave_balance_change",
+        "A_transaction_that_writes_then_fails_authorization_rolls_back_completely",
+        "Ten_concurrent_refusals_all_deny_and_write_nothing",
+        "Concurrent_transactions_that_all_roll_back_leave_no_rows",
+        "Every_negative_attempt_leaves_zero_business_effect",
+        "Measure_authorization_transaction_rollback_and_lock_overhead"
+      ]
+    },
+    {
+      "group": "UPDLOCK and HOLDLOCK",
+      "class": "CrossBuy.Tests.SqlServer.Stage1F4DatabaseProofTests",
+      "tests": [
+        "Updlock_serialises_two_readers_of_the_same_row",
+        "Holdlock_prevents_a_phantom_insert_into_the_scanned_range",
+        "Eight_concurrent_locked_decrements_lose_no_update"
+      ]
+    },
+    {
+      "group": "EF relational model (IMP-003)",
+      "class": "CrossBuy.Tests.SqlServer.Imp003RelationalModelTests",
+      "tests": [
+        "Inventory_every_entity_and_relationship_from_the_model",
+        "Reproduce_every_sql_server_incompatibility_in_the_generated_ddl",
+        "Compare_model_relationships_against_the_deployed_schema"
+      ]
+    },
+    {
+      "group": "Set-based scope query (C.1)",
+      "class": "CrossBuy.Tests.SqlServer.TaskScopeQuerySqlTests",
+      "tests": [
+        "Each_breadth_translates_to_real_sql_and_returns_the_right_rows",
+        "The_count_is_computed_by_the_server_and_never_loads_the_rows",
+        "Company_isolation_holds_against_a_real_server_for_every_breadth",
+        "A_branch_scope_never_reaches_sql"
+      ]
+    },
+    {
+      "group": "Authorization baseline (Batch 00)",
+      "class": "CrossBuy.Tests.Stage1PermissionBacklogTests",
+      "tests": [
+        "The_backlog_reconciles_exactly_with_the_committed_evidence",
+        "The_four_lane_guarded_actions_without_a_role_check_are_still_exactly_these",
+        "Every_accounting_api_mutating_action_is_authorized"
+      ]
+    },
+    {
+      "group": "Company source (CORRECTION-005)",
+      "class": "CrossBuy.Tests.Correction005StructuralTests",
+      "tests": [
+        "The_hardcoded_company_constant_count_has_not_grown",
+        "A_removed_constant_must_be_recorded_rather_than_silently_reducing_the_baseline",
+        "The_remediated_stamp_action_resolves_its_company_and_no_longer_reads_the_constant"
+      ]
+    },
+    {
+      "group": "Scratch database hygiene (RISK-036)",
+      "class": "CrossBuy.Tests.SqlServer.Batch00EvidenceGuardTests",
+      "tests": [
+        "The_shared_platform_fixture_contains_no_table_outside_the_kernel_and_its_outbox",
+        "No_leftover_scratch_database_remains_on_the_instance",
+        "The_fixture_refuses_a_real_crossbuy_catalog"
+      ],
+      "status": "PLANNED - Batch 00 adds this class"
+    },
+    {
+      "group": "Risk generator determinism",
+      "class": "CrossBuy.Tests.Batch00GeneratorDeterminismTests",
+      "tests": [
+        "The_risk_register_regenerates_identically",
+        "The_authorization_baseline_regenerates_identically"
+      ],
+      "status": "PLANNED - Batch 00 adds this class"
+    },
+    {
+      "group": "Batch P preserved Master Data rules (P-01 P-02 P-03)",
+      "class": "CrossBuy.Tests.SqlServer.BatchPPreservedRuleTests",
+      "tests": [
+        "P01_a_unit_with_a_defined_conversion_is_sellable_and_one_without_is_refused",
+        "P01_an_inverse_only_conversion_does_not_make_a_unit_sellable",
+        "P02_a_barcode_on_two_items_is_ambiguous_and_must_not_resolve_to_the_first_match",
+        "P02_first_match_would_be_order_dependent_which_is_why_it_is_prohibited",
+        "P03_the_barcode_uom_determines_the_base_quantity_sold",
+        "P03_two_barcodes_for_two_units_on_one_item_is_not_ambiguity",
+        "This_class_adds_nothing_to_the_shared_platform_fixture"
+      ],
+      "risks": [
+        "RISK-046",
+        "RISK-048",
+        "RISK-050"
+      ],
+      "mutationProven": true,
+      "isolation": "dedicated probe database (RISK-036)"
+    },
+    {
+      "group": "Master Data 24 invariants (remaining Batch P)",
+      "class": "CrossBuy.Tests.SqlServer.BatchPMasterDataBaselineTests",
+      "tests": [
+        "all 24 invariants - see Stage-002A-Batch-P-Non-Regression-Baseline.md"
+      ],
+      "status": "PLANNED - Batch P continuation"
+    },
+    {
+      "group": "Platform kernel - comm outbox concurrency (slice 3)",
+      "class": "CrossBuy.Tests.SqlServer.CommOutboxConcurrencyTests",
+      "purpose": "Real UPDLOCK/READPAST claiming on the Comm outbox. Kernel-owned; registered here so the loss of one is noticed.",
+      "tests": [
+        "A_claim_abandoned_by_a_dead_worker_is_reclaimed_after_the_timeout",
+        "A_failed_message_retries_while_a_sent_one_stays_done",
+        "A_sent_message_is_never_reclaimed_even_when_every_clock_is_ancient",
+        "Concurrent_workers_partition_the_queue_without_double_sending",
+        "Each_claim_carries_its_own_company",
+        "MaxAttempts_stops_retry_and_the_failure_reason_is_kept",
+        "Only_one_worker_can_own_a_queued_message",
+        "Retrying_never_duplicates_attachments",
+        "The_deployed_outbox_script_is_idempotent_and_its_constraints_are_real",
+        "The_fixture_refuses_to_target_a_real_CrossBuy_database"
+      ]
+    },
+    {
+      "group": "Platform kernel - business event dispatch concurrency",
+      "class": "CrossBuy.Tests.SqlServer.DispatchConcurrencyTests",
+      "purpose": "The claim-by-Status contract and the no-cursor rule (ADR-003/007) against a real server.",
+      "tests": [
+        "A_Done_row_is_never_claimed_again_even_when_stale",
+        "A_claim_abandoned_by_a_dead_worker_is_reclaimed_after_the_timeout",
+        "A_failed_notification_row_leaves_the_completed_timeline_row_alone",
+        "An_event_and_its_dispatch_rows_roll_back_together_on_SQL_Server",
+        "An_event_that_commits_after_a_higher_EventId_is_not_lost",
+        "Concurrent_recordings_with_the_same_DedupKey_create_exactly_one_event",
+        "Concurrent_workers_partition_pending_rows_instead_of_colliding",
+        "Only_one_worker_can_own_a_dispatch_row",
+        "The_deployed_check_constraints_reject_values_outside_the_frozen_vocabularies"
+      ]
+    },
+    {
+      "group": "Platform kernel - event monitor retry concurrency",
+      "class": "CrossBuy.Tests.SqlServer.EventMonitorRetryConcurrencyTests",
+      "purpose": "Operator retry versus worker reclaim under contention, including cross-company refusal.",
+      "tests": [
+        "A_requeued_row_is_claimed_by_the_next_real_dispatcher_pass",
+        "A_retry_leaves_a_completed_sibling_consumer_untouched_on_SqlServer",
+        "A_retry_that_loses_to_a_worker_reclaim_is_rejected_and_changes_nothing",
+        "A_row_a_live_worker_just_claimed_is_not_stolen_by_a_retry",
+        "An_exhausted_row_becomes_claimable_only_after_an_elevated_override",
+        "An_uncontended_retry_of_the_same_stale_row_succeeds",
+        "Retrying_another_companys_row_is_refused_indistinguishably_on_SqlServer",
+        "Two_simultaneous_retries_of_one_row_do_not_both_apply",
+        "Under_sustained_contention_a_row_is_never_both_in_flight_and_queued"
+      ]
+    },
+    {
+      "group": "Platform schema deployment (slices 1-3)",
+      "class": "CrossBuy.Tests.SqlServer.PlatformSchemaDeploymentTests",
+      "purpose": "Idempotency, filtered indexes and CHECK constraints of the deployed SQL. The independent witness for RISK-036.",
+      "tests": [
+        "Slice1_is_idempotent_and_creates_every_object_the_kernel_depends_on",
+        "Slice2_is_idempotent_and_makes_notifications_entity_addressable",
+        "Slice2_performs_no_backfill",
+        "Slice3_comm_outbox_is_idempotent_and_adds_only_what_it_claims",
+        "The_claiming_index_is_filtered_so_finished_work_leaves_it",
+        "The_dedup_index_is_unique_per_company_and_ignores_null_keys",
+        "The_numeric_floor_constraints_are_enforced_not_decorative",
+        "The_payload_json_constraint_is_present_and_enforced_on_a_supported_engine",
+        "The_platform_scripts_create_no_table_outside_the_kernel_and_its_outbox"
+      ]
+    },
+    {
+      "group": "SQL companion guards (Batch 00-C)",
+      "class": "CrossBuy.Tests.SqlServer.SqlCompanionGuardTests",
+      "purpose": "The seven SQL infrastructure guards. Each proves it can fail; deleting one must be noticed here.",
+      "tests": [
+        "Guard1_accepts_a_scratch_catalog_because_the_suite_creates_those_itself",
+        "Guard1_accepts_an_instance_only_connection_string",
+        "Guard1_does_not_claim_to_detect_every_malformed_string",
+        "Guard1_is_the_rule_the_FIXTURE_actually_consults_not_a_parallel_copy",
+        "Guard1_refuses_a_connection_string_naming_a_production_catalog",
+        "Guard1_refuses_a_missing_or_malformed_connection_string_rather_than_guessing",
+        "Guard1_the_configured_connection_string_is_itself_clean",
+        "Guard2_accepts_a_name_the_suite_creates",
+        "Guard2_refuses_a_name_the_suite_did_not_create",
+        "Guard2_the_FIXTURE_refuses_to_drop_a_database_it_does_not_own",
+        "Guard3_is_case_insensitive_about_what_is_accounted_for",
+        "Guard3_never_reports_a_database_the_suite_does_not_own",
+        "Guard3_no_leftover_scratch_database_exists_on_the_real_instance",
+        "Guard3_reports_an_owned_database_that_no_current_run_accounts_for",
+        "Guard4_FAILS_in_strict_mode_when_no_instance_is_configured",
+        "Guard4_FAILS_when_the_variable_is_set_but_the_fixture_is_unavailable",
+        "Guard4_allows_a_developer_machine_with_no_instance_but_records_that_nothing_executed",
+        "Guard4_applied_to_THIS_run",
+        "Guard4_reports_execution_when_the_fixture_is_available",
+        "Guard5_FAILS_when_a_declared_test_is_missing_from_its_class",
+        "Guard5_every_manifest_declared_SQL_test_exists_on_the_class_that_declares_it",
+        "Guard6_FAILS_when_an_unregistered_SQL_test_appears",
+        "Guard6_every_SQL_evidence_test_in_the_assembly_is_registered_in_the_manifest",
+        "Guard6_recognizes_SkippableFact_as_a_test_or_it_would_see_almost_no_SQL_evidence",
+        "Guard7_lists_leftovers_by_name_so_the_fix_is_actionable",
+        "Guard7_says_EXECUTED_only_when_the_evidence_actually_ran",
+        "Guard7_says_NOT_EXECUTED_loudly_when_nothing_ran",
+        "Guard7_writes_the_SQL_evidence_summary"
+      ]
+    },
+    {
+      "group": "RISK-036 shared-fixture purity - F4 family",
+      "class": "CrossBuy.Tests.SqlServer.Stage1F4DatabaseProofTests",
+      "purpose": "Proves the F4 family adds nothing to the shared platform fixture. Added when RISK-036 was closed.",
+      "tests": [
+        "This_family_adds_nothing_to_the_shared_platform_fixture"
+      ]
+    },
+    {
+      "group": "RISK-036 shared-fixture purity - TaskScope family",
+      "class": "CrossBuy.Tests.SqlServer.TaskScopeQuerySqlTests",
+      "purpose": "Proves the TaskScope family adds nothing to the shared platform fixture.",
+      "tests": [
+        "This_family_adds_nothing_to_the_shared_platform_fixture"
+      ]
+    },
+    {
+      "group": "Single-worker lease",
+      "class": "CrossBuy.Tests.SqlServer.WorkerLeaseTests",
+      "purpose": "Only one process may run the workers; a standby takes over on release.",
+      "tests": [
+        "A_standby_can_take_over_after_the_primary_releases",
+        "All_workers_in_one_process_share_a_single_lease",
+        "Different_lease_names_do_not_contend",
+        "Only_one_of_two_processes_becomes_the_worker_primary",
+        "The_lease_is_held_for_the_process_lifetime_not_for_one_transaction",
+        "With_the_requirement_disabled_both_processes_run_workers"
+      ]
+    },
+    {
+      "group": "Platform Grant Writer acceptance (Batch A, RISK-037)",
+      "class": "CrossBuy.Tests.SqlServer.PlatformGrantWriterAcceptanceTests",
+      "purpose": "The production writer creates a grant, the REAL HR access service honours it, and revocation removes the authorization. No test seeds a grant row directly - every row is created by IPlatformGrantWriter, because seeding proves the reader and says nothing about the writer.",
+      "tests": [
+        "A_branch_scoped_grant_keeps_its_branch_exactly",
+        "A_cross_company_grant_is_denied_without_platform_authority",
+        "A_duplicate_active_grant_is_refused",
+        "A_foreign_company_grant_is_indistinguishable_from_not_found",
+        "A_grant_closes_bootstrap_open_for_the_company_and_scope",
+        "A_module_administrator_may_not_confer_a_role_they_do_not_hold",
+        "A_retry_with_the_same_idempotency_key_returns_the_original_and_creates_no_second_row",
+        "A_revoked_grant_cannot_be_brought_back_by_a_validity_change",
+        "A_worker_or_system_context_may_not_administer_grants",
+        "An_authorized_administrator_creates_a_grant_that_HR_then_honours_and_revoking_removes_it",
+        "An_expired_grant_does_not_authorize",
+        "An_inactive_employee_cannot_receive_a_grant",
+        "An_unauthorized_actor_creates_no_row_and_no_event",
+        "An_unknown_role_or_scope_never_creates_a_silent_no_op_row",
+        "Module_level_authority_is_NOT_admissible_under_bootstrap_open",
+        "Self_escalation_is_refused_below_platform_authority",
+        "The_same_key_with_a_DIFFERENT_payload_is_a_conflict_not_a_silent_replay"
+      ]
+    },
+    {
+      "group": "Platform Grant Writer concurrency (Batch B, B0)",
+      "class": "CrossBuy.Tests.SqlServer.PlatformGrantWriterConcurrencyTests",
+      "purpose": "Real parallelism against SQL Server: the filtered unique index and the UPDLOCK read are the mechanism, and SQLite has neither - an in-process version would pass while proving nothing. Closes the one gap the Batch A delivery report declared outstanding.",
+      "tests": [
+        "Concurrent_retries_with_the_same_idempotency_key_create_one_row_and_one_event",
+        "Concurrent_revoke_and_validity_update_do_not_lose_an_update_or_split_the_audit",
+        "Eight_concurrent_creates_still_produce_exactly_one_active_row",
+        "Two_concurrent_creates_of_the_same_grant_produce_exactly_one_active_row",
+        "Two_concurrent_revokes_revoke_once_and_report_AlreadyRevoked_once"
+      ]
+    },
+    {
+      "group": "Bootstrap policy storage and reader (Batch B, B2+B4)",
+      "class": "CrossBuy.Tests.SqlServer.BootstrapPolicyStorageAndReaderTests",
+      "purpose": "SQL Server evidence for the explicit bootstrap policy store and its reader. Every property under test is a SQL Server construct (filtered unique index, six CHECK constraints) so SQLite would pass while proving nothing. Includes the subversion test: a hand-inserted allowing policy for a Never action still denies.",
+      "tests": [
+        "A_POS_policy_is_refused_by_the_DATABASE",
+        "A_Temporary_policy_with_no_expiry_is_refused_by_the_DATABASE",
+        "A_Temporary_row_without_expiry_that_bypassed_the_constraint_is_a_ConfigurationError",
+        "A_duplicate_ACTIVE_policy_is_refused_by_the_DATABASE",
+        "A_hand_inserted_allowing_policy_for_a_Never_action_still_DENIES",
+        "A_missing_policy_DENIES_which_is_the_inversion_Batch_B_exists_to_make",
+        "A_permitting_state_allows_and_names_its_decision_source",
+        "A_rolled_back_transaction_leaves_no_partial_row",
+        "An_expiry_before_the_enable_date_is_refused_by_the_DATABASE",
+        "An_unknown_state_is_refused_by_the_DATABASE",
+        "An_unresolved_context_an_unknown_scope_and_an_unknown_action_all_DENY",
+        "Audit_fields_persist_and_two_companies_stay_independent",
+        "Company_isolation_holds_a_policy_in_one_company_does_not_answer_another",
+        "Concurrent_equivalent_inserts_produce_exactly_one_active_policy",
+        "Decision_metadata_reports_review_state_and_carries_no_confidential_payload",
+        "Disabled_denies_and_an_inactive_row_is_ignored",
+        "Disabling_a_policy_RETAINS_history_and_allows_a_new_active_row",
+        "Every_Never_action_denies_with_the_Never_reason_code",
+        "Every_declared_column_exists_with_no_silent_omission",
+        "Temporary_allows_before_expiry_and_denies_after_it",
+        "The_Never_list_holds_exactly_the_confirmed_fifteen_entries",
+        "The_reader_needs_no_Session_and_lists_policies_per_company",
+        "The_slice_applies_a_SECOND_time_without_error_and_detects_no_drift",
+        "Validate_refuses_a_permitting_policy_for_a_Never_action",
+        "Validate_rejects_structurally_invalid_policies"
+      ]
+    },
+    {
+      "group": "Bootstrap policy behaviour-preserving seed (Batch B, B3)",
+      "class": "CrossBuy.Tests.SqlServer.BootstrapPolicySeedTests",
+      "purpose": "CrossBusiness Platform B3 seed evidence on real SQL Server. Pins the source-derived 4-entry plan (41 superseded, 32 eligibility inventory, 4 implemented), each reconciled to a B6 call site. Mutation D proves the Never filter is load-bearing.",
+      "tests": [
+        "A_company_mismatch_is_refused_and_writes_nothing",
+        "A_differing_active_policy_is_reported_as_a_conflict_and_not_overwritten",
+        "A_disabled_historical_policy_is_NOT_silently_reactivated",
+        "A_dry_run_writes_nothing_but_reports_what_it_would_do",
+        "An_inactive_or_foreign_actor_is_refused",
+        "An_invalid_company_is_refused",
+        "An_unresolved_context_a_missing_reason_and_an_unknown_source_are_all_refused",
+        "Apply_inserts_the_four_policies_then_a_second_run_inserts_nothing",
+        "Audit_fields_source_reason_and_migration_batch_all_persist",
+        "Concurrent_equivalent_seeds_leave_exactly_four_active_policies",
+        "Every_planned_entry_names_the_B6_call_site_that_will_read_it",
+        "No_seeded_row_is_ever_a_Never_action_or_POS",
+        "The_plan_excludes_every_module_B6_does_not_convert",
+        "The_plan_is_deterministic_across_calls",
+        "The_plan_is_the_four_entries_B6_will_actually_read",
+        "The_plan_validates_and_contains_no_Never_and_no_POS_entry",
+        "The_seed_reports_the_Never_and_POS_filtering_explicitly",
+        "The_seeded_policies_are_INERT_until_B6_because_the_reader_is_not_yet_consulted",
+        "Two_companies_are_independent"
+      ]
+    },
+    {
+      "group": "CRM visible-owner typed contract (Batch B)",
+      "class": "CrossBuy.Tests.CrmVisibleOwnerScopeTests",
+      "purpose": "CrossBusiness Platform: null vs empty are the two OPPOSITE extremes of CRM owner visibility and one keystroke apart. Proves the typed mapping, fail-closed behaviour, and that ToLegacy never maps a misconfiguration to null. Production CrmAccessService is unchanged, asserted by reflection.",
+      "tests": [
+        "A_Never_action_decision_can_never_produce_a_visible_scope",
+        "A_cross_company_owner_id_produces_ConfigurationError_not_a_filtered_set",
+        "A_denied_decision_maps_to_NoAccess_and_a_misconfiguration_maps_to_ConfigurationError",
+        "A_role_based_scope_is_not_reported_as_bootstrap",
+        "An_allowed_bootstrap_decision_maps_to_unrestricted_scope_carrying_its_provenance",
+        "An_invalid_owner_id_fails_CLOSED_rather_than_being_filtered_away",
+        "An_unresolved_company_fails_closed_with_no_fallback_to_company_1",
+        "ConfigurationError_and_NoAccess_both_DENY",
+        "Decision_source_reason_code_policy_id_and_company_all_survive_the_mapping",
+        "Duplicate_owner_ids_normalise_without_changing_the_visible_set",
+        "Legacy_EMPTY_maps_to_NoAccess_and_denies",
+        "Legacy_null_maps_to_UnrestrictedCompanyScope",
+        "Legacy_populated_preserves_the_exact_owner_ids",
+        "Null_and_empty_are_NOT_equivalent_which_is_the_whole_reason_this_type_exists",
+        "Production_CrmAccessService_still_returns_the_legacy_nullable_shape",
+        "Restricted_to_nobody_becomes_NoAccess_rather_than_an_empty_restricted_set",
+        "The_contract_needs_no_Session_and_no_HttpContext",
+        "The_reason_code_never_carries_customer_data",
+        "ToLegacy_maps_ConfigurationError_to_an_EMPTY_set_and_never_to_null",
+        "ToLegacy_round_trips_the_three_shapes"
+      ]
+    },
+    {
+      "group": "B6 Mechanism A conversion — three approved sites",
+      "class": "CrossBuy.Tests.SqlServer.B6BootstrapConversionTests",
+      "purpose": "CrossBusiness Platform: behaviour preservation for the three converted bootstrap sites; Never denials; branch/warehouse exactness; CRM asserted unchanged.",
+      "tests": [
+        "A_BRANCH_SCOPED_WarehouseKeeper_reaches_only_its_own_branch_exactly",
+        "A_keeper_cannot_reach_a_warehouse_in_another_company",
+        "Accounting_Never_actions_DENY_with_no_role_configured",
+        "Accounting_a_Cashier_keeps_pay_and_is_still_refused_post_and_manage",
+        "Accounting_a_hand_inserted_policy_cannot_open_post",
+        "Accounting_an_Auditor_keeps_read_only",
+        "Accounting_an_unknown_action_denies_and_never_falls_through_to_read",
+        "Accounting_company_mismatch_and_unresolved_context_DENY_with_no_company_1_fallback",
+        "Accounting_configured_roles_behave_EXACTLY_as_before",
+        "Accounting_read_DENIES_when_the_policy_is_missing_expired_or_disabled",
+        "Accounting_read_decision_names_BootstrapLegacyCompatibility_and_the_policy_id",
+        "Accounting_read_is_PRESERVED_through_the_seeded_compatibility_policy",
+        "An_InventoryManager_keeps_unrestricted_warehouse_access__role_path_1_unchanged",
+        "An_UNSCOPED_WarehouseKeeper_keeps_access_to_any_warehouse__role_path_2_unchanged",
+        "CRM_remains_on_Mechanism_A_and_is_asserted_unchanged",
+        "Inventory_Never_actions_DENY_with_no_role_configured",
+        "Inventory_a_PurchasingOfficer_keeps_purchase_and_is_refused_doc_and_manage",
+        "Inventory_configured_roles_behave_EXACTLY_as_before",
+        "Inventory_purchase_stays_ONE_closed_action_preserving_the_vocabulary_defect_decision",
+        "Inventory_read_DENIES_when_the_policy_is_missing_or_expired",
+        "Inventory_read_is_PRESERVED_through_the_seeded_compatibility_policy",
+        "NO_policy_state_can_open_warehouse_access",
+        "PlatformOps_is_Never_and_cannot_be_reached_through_Accounting_compatibility",
+        "Warehouse_access_is_DENIED_with_no_configured_role"
+      ]
+    },
+    {
+      "group": "B6 Accounting.read path diagnosis and Mutation H",
+      "class": "CrossBuy.Tests.SqlServer.B6AccountingReadPathDiagnosisTests",
+      "purpose": "Instruments the production path with a recording reader wrapping the REAL reader. Proves the reader is reached once with the exact company/scope/action, that a role row bypasses it, and that a Disabled policy denies.",
+      "tests": [
+        "A_configured_role_row_would_BYPASS_the_reader__the_candidate_cause_pinned",
+        "MUTATION_H_a_Disabled_policy_DENIES_Accounting_read_with_no_role_configured",
+        "The_Accounting_read_path_reaches_the_reader_exactly_once_with_the_expected_arguments"
+      ]
+    },
+    {
+      "group": "A0 Reporting database deployment proofs",
+      "class": "CrossBuy.Tests.SqlServer.ReportingSchemaDeploymentTests",
+      "tests": [
+        "The_reporting_slice_creates_its_whole_schema_in_an_empty_database",
+        "Applying_the_slice_twice_leaves_an_identical_object_inventory",
+        "Every_reporting_entity_in_the_ef_model_has_a_table_in_the_authored_slice",
+        "Every_persisted_reporting_property_has_a_column",
+        "Each_vocabulary_check_constraint_is_present",
+        "Out_of_range_vocabulary_values_are_rejected_by_the_database",
+        "A_duplicate_live_share_grant_is_rejected",
+        "The_reporting_slice_records_through_the_existing_platform_schema_history",
+        "A_changed_slice_hash_is_visible_as_a_second_apply",
+        "The_reporting_services_run_against_the_authored_schema",
+        "No_probe_database_is_left_behind"
+      ]
+    },
+    {
+      "group": "Platform dispatch — abandoned-claim recovery (TAB-1, 2026-08-13)",
+      "class": "CrossBuy.Tests.SqlServer.AbandonedClaimReaperConcurrencyTests",
+      "why": "ClaimPendingAsync reclaims a stale Claimed row, but every branch of its WHERE sits under 'AND Attempts < MaxAttempts'. A worker that dies on its FINAL attempt therefore leaves the row Claimed at Attempts = MaxAttempts, matchable by no predicate: not retryable, not terminal, and indistinguishable in BusinessEventMonitor from a claim a worker is holding right now. 23 such rows sat in CrossBuyDev from 2026-08-03. These tests drive the PRODUCTION statement (ROWLOCK/READPAST/UPDLOCK) on a real SQL Server, because the properties that matter — a live claim is never stolen, concurrent reapers cannot classify one row twice — cannot be shown on SQLite.",
+      "tests": [
+        "The_production_statement_releases_an_abandoned_claim_the_claim_loop_cannot_reach",
+        "Two_concurrent_reapers_release_the_row_exactly_once",
+        "Reapers_racing_in_parallel_still_release_exactly_one_row_each_at_most_once",
+        "A_claim_a_worker_is_holding_right_now_is_never_released",
+        "A_stale_claim_with_attempts_remaining_is_left_for_the_claim_loop_to_retry",
+        "A_released_row_can_be_replayed_by_the_operator_path_and_reach_Done"
+      ]
+    }
+  ],
+  "enforcedTestCount": 234
+}

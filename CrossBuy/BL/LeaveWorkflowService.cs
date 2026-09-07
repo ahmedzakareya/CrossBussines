@@ -236,8 +236,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, LeaveRequest? req)> CreateAsync(
 			int employeeId, int leaveTypeId, DateTime start, DateTime end, string? reason)
 		{
-			if (end.Date < start.Date) return (false, "تاريخ النهاية قبل تاريخ البداية", null);
-			if (!await _context.LeaveTypes.AnyAsync(t => t.ID == leaveTypeId)) return (false, "نوع الإجازة غير صحيح", null);
+			if (end.Date < start.Date) return (false, "The end date is before the start date", null);
+			if (!await _context.LeaveTypes.AnyAsync(t => t.ID == leaveTypeId)) return (false, "Invalid leave type", null);
 
 			// no overlapping leave: the employee can't be on two leaves (ANY type) on the same day(s).
 			// blocks against any existing request that is pending (0) or approved (1).
@@ -254,18 +254,18 @@ namespace CrossBuy.BL
 				var tname = conflict.LeaveType?.NameAr ?? "إجازة";
 				var st = conflict.Status == 1 ? "موافَق عليه" : "معلّق";
 				return (false,
-					$"يوجد طلب {tname} ({st}) يتداخل مع هذه الفترة ({conflict.StartDate:yyyy/MM/dd} → {conflict.EndDate:yyyy/MM/dd}). لا يمكن أخذ إجازتين في نفس الأيام.",
+					$"There is a {tname} request ({st}) that overlaps this period ({conflict.StartDate:yyyy/MM/dd} → {conflict.EndDate:yyyy/MM/dd}). You cannot take two leaves on the same days.",
 					null);
 			}
 
 			// working days only (exclude weekly rest days defined by the policy)
 			var days = await _dashboard.WorkingDaysAsync(employeeId, start, end);
-			if (days <= 0) return (false, "كل الأيام المختارة أيام راحة. اختر تواريخ ضمن أيام العمل.", null);
+			if (days <= 0) return (false, "Every day you selected is a rest day. Choose dates that fall on working days.", null);
 
 			// strict balance check
 			var remaining = await _dashboard.RemainingForTypeAsync(employeeId, leaveTypeId);
 			if (days > remaining)
-				return (false, $"الرصيد غير كافٍ. المتبقي {(remaining < 0 ? 0 : remaining)} يوم والمطلوب {days} يوم.", null);
+				return (false, $"Insufficient balance. {(remaining < 0 ? 0 : remaining)} day(s) remain and {days} day(s) are requested.", null);
 
 			var chainResult = await ApproverChainAsync(employeeId);
 			var chain = chainResult.Approvers;
@@ -275,7 +275,7 @@ namespace CrossBuy.BL
 			// manager gets filtered out, the chain comes back empty, and `chain.Count == 0` reads that as
 			// "requester is at the top of the tree" and approves the leave with no approver at all.
 			if (chain.Count == 0 && chainResult.HierarchyDefect)
-				return (false, "لا يمكن تحديد سلسلة الموافقة لهذا الموظف — الهيكل التنظيمي غير صحيح. راجع إدارة الموارد البشرية.", null);
+				return (false, "The approval chain for this employee cannot be determined — the organisation structure is not correct. Please contact HR.", null);
 
 			var req = new LeaveRequest
 			{
@@ -342,12 +342,12 @@ namespace CrossBuy.BL
 				.Include(r => r.LeaveType)
 				.Include(r => r.ApprovalSteps)
 				.FirstOrDefaultAsync(r => r.ID == requestId);
-			if (req == null) return (false, "الطلب غير موجود");
-			if (req.Status != 0) return (false, "تم البتّ في الطلب مسبقًا");
-			if (req.CurrentApproverEmployeeID != approverEmployeeId) return (false, "لا تملك صلاحية اعتماد هذا الطلب");
+			if (req == null) return (false, "Order not found");
+			if (req.Status != 0) return (false, "The request has already been decided");
+			if (req.CurrentApproverEmployeeID != approverEmployeeId) return (false, "You do not have permission to approve this request");
 
 			var step = req.ApprovalSteps.FirstOrDefault(s => s.Level == req.CurrentLevel && s.Status == 0);
-			if (step == null) return (false, "خطوة الاعتماد غير موجودة");
+			if (step == null) return (false, "Approval step not found");
 
 			var approver = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == approverEmployeeId);
 			var aAr = approver?.FullName ?? "المدير";
@@ -384,7 +384,7 @@ namespace CrossBuy.BL
 				// strict balance re-check (other approved requests may have consumed it meanwhile)
 				var remaining = await _dashboard.RemainingForTypeAsync(req.EmployeeID, req.LeaveTypeID);
 				if (req.Days > remaining)
-					return (false, $"لا يمكن الاعتماد: الرصيد غير كافٍ (المتبقي {(remaining < 0 ? 0 : remaining)} يوم، المطلوب {req.Days}).");
+					return (false, $"Cannot approve: insufficient balance ({(remaining < 0 ? 0 : remaining)} day(s) remaining, {req.Days} requested).");
 
 				step.Status = 1; step.DecisionAt = now; step.DecisionNote = note;
 				step.UpdatedAt = now; step.updatedBy = approverEmployeeId;

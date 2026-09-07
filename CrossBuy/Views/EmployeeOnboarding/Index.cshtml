@@ -10,8 +10,8 @@
     var today = (DateTime)ViewBag.Today;
     ViewData["Title"] = Localizer["Employee onboarding"].Value;
 
-    var empName = (isAr ? emp.NameAr : emp.NameEn) ?? emp.NameAr ?? emp.NameEn ?? "";
-    var empTitle = (isAr ? emp.JobTitleAr : emp.JobTitleEn) ?? emp.JobTitleAr ?? emp.JobTitleEn;
+    var empName = (isAr ? emp.NameAr : DisplayName.Or(emp.NameEn, emp.NameAr)) ?? emp.NameAr ?? emp.NameEn ?? "";
+    var empTitle = (isAr ? emp.JobTitleAr : DisplayName.Or(emp.JobTitleEn, emp.JobTitleAr)) ?? emp.JobTitleAr ?? emp.JobTitleEn;
     var empDept = (isAr ? emp.DepartmentAr : emp.DepartmentEn) ?? emp.DepartmentAr ?? emp.DepartmentEn;
 
     // Model is null when the caller may not read this employee's onboarding, AND when no plan exists
@@ -199,7 +199,7 @@
                         <div class="table-responsive">
                             <table class="table table-row-dashed align-middle gy-4">
                                 <thead>
-                                    <tr class="fw-semibold text-gray-500 fs-7 text-uppercase">
+                                    <tr class="fw-semibold text-gray-500 fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                                         <th class="min-w-250px">@Localizer["Requirement"].Value</th>
                                         <th class="min-w-125px">@Localizer["Responsible"].Value</th>
                                         <th class="min-w-100px">@Localizer["Due date"].Value</th>
@@ -212,12 +212,12 @@
                                     @foreach (var r in Model.Requirements.OrderBy(x => x.Item.SortOrder).ThenBy(x => x.Item.ID))
                                     {
                                         var it = r.Item;
-                                        var title = (isAr ? it.TitleAr : it.TitleEn);
+                                        var title = (isAr ? it.TitleAr : DisplayName.Or(it.TitleEn, it.TitleAr));
                                         if (string.IsNullOrWhiteSpace(title)) { title = !string.IsNullOrWhiteSpace(it.TitleAr) ? it.TitleAr : (!string.IsNullOrWhiteSpace(it.TitleEn) ? it.TitleEn : it.ItemKey); }
-                                        var desc = (isAr ? it.DescriptionAr : it.DescriptionEn);
+                                        var desc = (isAr ? it.DescriptionAr : DisplayName.Or(it.DescriptionEn, it.DescriptionAr));
                                         var isOverdue = r.IsOverdue(today);
                                         var settled = OnboardingItemStatus.IsSettled(it.Status);
-                                        var typeName = r.RequiredType == null ? null : (isAr ? r.RequiredType.NameAr : r.RequiredType.NameEn);
+                                        var typeName = r.RequiredType == null ? null : (isAr ? r.RequiredType.NameAr : DisplayName.Or(r.RequiredType.NameEn, r.RequiredType.NameAr));
 
                                         <tr>
                                             <td>
@@ -331,7 +331,7 @@
                 @foreach (var r in Model.Requirements.Where(x => x.Item.IsMandatory && !OnboardingItemStatus.IsSettled(x.Item.Status)))
                 {
                     var it = r.Item;
-                    var title = (isAr ? it.TitleAr : it.TitleEn);
+                    var title = (isAr ? it.TitleAr : DisplayName.Or(it.TitleEn, it.TitleAr));
                     if (string.IsNullOrWhiteSpace(title)) { title = !string.IsNullOrWhiteSpace(it.TitleAr) ? it.TitleAr : (!string.IsNullOrWhiteSpace(it.TitleEn) ? it.TitleEn : it.ItemKey); }
 
                     <div class="modal fade" id="waive-@it.ID" tabindex="-1" aria-hidden="true">

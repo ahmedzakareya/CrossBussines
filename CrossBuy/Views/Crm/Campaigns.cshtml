@@ -4,8 +4,8 @@
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
     var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
     var channels = new (string v, string ar, string en)[] {
-        ("Email","بريد","Email"),("Social","تواصل اجتماعي","Social"),("Event","فعالية","Event"),
-        ("Ads","إعلانات","Ads"),("Referral","إحالة","Referral"),("Other","أخرى","Other") };
+        ("Email","Email","Email"),("Social","Social media","Social"),("Event","Event","Event"),
+        ("Ads","Advertising","Ads"),("Referral","Referral","Referral"),("Other","Other","Other") };
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -28,7 +28,7 @@
         <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
             <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Campaign"]</th><th>@Localizer["Channel"]</th><th>@Localizer["Period"]</th><th class="text-end">@Localizer["Budget"]</th><th class="text-center">@Localizer["Leads"]</th><th class="text-center">@Localizer["Opps"]</th><th class="text-center">@Localizer["Won"]</th><th class="text-end">@Localizer["Won value"]</th><th class="text-end">@Localizer["ROI"]</th><th class="text-center">@SR["Status"]</th><th class="text-center pe-4">@SR["Actions"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Campaign"]</th><th>@Localizer["Channel"]</th><th>@Localizer["Period"]</th><th class="text-end">@Localizer["Budget"]</th><th class="text-center">@Localizer["Leads"]</th><th class="text-center">@Localizer["Opps"]</th><th class="text-center">@Localizer["Won"]</th><th class="text-end">@Localizer["Won value"]</th><th class="text-end">@Localizer["ROI"]</th><th class="text-center">@SR["Status"]</th><th class="text-center pe-4">@SR["Actions"]</th></tr></thead>
                 <tbody id="rows"></tbody>
             </table></div>
                 <div class="text-center text-muted py-10 d-none" id="loadingRow"><span class="spinner-border spinner-border-sm me-2"></span>@Localizer["Loading…"]</div>

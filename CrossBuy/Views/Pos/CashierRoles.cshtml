@@ -65,7 +65,7 @@
                     <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Assigned roles"]</h3></div><div class="card-toolbar"><span class="badge badge-light-primary">@roles.Count</span></div></div>
                         <div class="card-body">
                             <div class="table-responsive"><table class="table table-row-dashed align-middle fs-7">
-                                <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Employee"]</th><th>@Localizer["Role"]</th><th></th></tr></thead>
+                                <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Employee"]</th><th>@Localizer["Role"]</th><th></th></tr></thead>
                                 <tbody>
                                     @if (!roles.Any()) { <tr><td colspan="3" class="text-muted text-center py-5">@Localizer["No roles assigned yet."]</td></tr> }
                                     @foreach (var r in roles)

@@ -48,7 +48,7 @@
                     </div>
                     <div class="col">
                         <div class="card card-dashed flex-center min-w-175px my-3 p-6">
-                            <span class="fs-4 fw-semibold pb-1 px-2 @(up?"":"text-danger")" style="@(up?"color:#13433a":"")">@Localizer["Net change in cash"]</span>
+                            <span class="fs-4 fw-semibold pb-1 px-2 @(up?"":"text-danger")" style="@(up?"color:#0E4A9E":"")">@Localizer["Net change in cash"]</span>
                             <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.NetChange)" data-kt-countup-decimal-places="2">@Model.NetChange.ToString("N2")</span>
                         </div>
                     </div>
@@ -62,14 +62,14 @@
 
                 @if (up)
                 {
-                    <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#eaf3ef;border-color:#13433a !important;">
-                        <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#13433a;"><i class="ki-outline ki-chart-line-up fs-2x text-white"></i></span></span>
+                    <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                        <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-chart-line-up fs-2x text-white"></i></span></span>
                         <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                             <div class="mb-3 mb-md-0 fw-semibold pe-5">
                                 <h4 class="text-gray-900 fw-bold mb-1">@SR["Net cash increased"]</h4>
                                 <div class="fs-6 text-gray-700">@SR["Cash increase detail"]</div>
                             </div>
-                            <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#13433a;color:#fff;"><i class="ki-outline ki-arrow-up fs-6 text-white me-1"></i>@SR["Net change"]: @Model.NetChange.ToString("N2")</span>
+                            <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#0E4A9E;color:#fff;"><i class="ki-outline ki-arrow-up fs-6 text-white me-1"></i>@SR["Net change"]: @Model.NetChange.ToString("N2")</span>
                         </div>
                     </div>
                 }
@@ -98,31 +98,31 @@
             <div class="card-body px-0 pt-0 pb-4">
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
-                        <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th class="ps-9">@SR["Item"]</th><th class="text-end pe-9">@SR["Amount"]</th></tr></thead>
+                        <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th class="ps-9">@SR["Item"]</th><th class="text-end pe-9">@SR["Amount"]</th></tr></thead>
                         <tbody class="fs-6 fw-semibold text-gray-700">
                             <tr>
                                 <td class="ps-9"><i class="ki-outline ki-wallet fs-6 me-2 text-gray-500"></i>@Localizer["Cash at beginning"]</td>
                                 <td class="text-end pe-9 text-gray-900 fw-bold">@Model.BeginningCash.ToString("N2")</td>
                             </tr>
                             <tr>
-                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@(isAr ? "تشغيلي" : "Operating")</span>@Localizer["Cash from operating activities"]</td>
-                                <td class="text-end pe-9 fw-bold @(Model.Operating>=0?"":"text-danger")" style="@(Model.Operating>=0?"color:#13433a":"")">@Model.Operating.ToString("N2")</td>
+                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#E7F0FF;color:#145DBF;">@(isAr ? "تشغيلي" : "Operating")</span>@Localizer["Cash from operating activities"]</td>
+                                <td class="text-end pe-9 fw-bold @(Model.Operating>=0?"":"text-danger")" style="@(Model.Operating>=0?"color:#0E4A9E":"")">@Model.Operating.ToString("N2")</td>
                             </tr>
                             <tr>
-                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@(isAr ? "استثماري" : "Investing")</span>@Localizer["Cash from investing activities"]</td>
-                                <td class="text-end pe-9 fw-bold @(Model.Investing>=0?"":"text-danger")" style="@(Model.Investing>=0?"color:#13433a":"")">@Model.Investing.ToString("N2")</td>
+                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#E7F0FF;color:#145DBF;">@(isAr ? "استثماري" : "Investing")</span>@Localizer["Cash from investing activities"]</td>
+                                <td class="text-end pe-9 fw-bold @(Model.Investing>=0?"":"text-danger")" style="@(Model.Investing>=0?"color:#0E4A9E":"")">@Model.Investing.ToString("N2")</td>
                             </tr>
                             <tr>
-                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@(isAr ? "تمويلي" : "Financing")</span>@Localizer["Cash from financing activities"]</td>
-                                <td class="text-end pe-9 fw-bold @(Model.Financing>=0?"":"text-danger")" style="@(Model.Financing>=0?"color:#13433a":"")">@Model.Financing.ToString("N2")</td>
+                                <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#E7F0FF;color:#145DBF;">@(isAr ? "تمويلي" : "Financing")</span>@Localizer["Cash from financing activities"]</td>
+                                <td class="text-end pe-9 fw-bold @(Model.Financing>=0?"":"text-danger")" style="@(Model.Financing>=0?"color:#0E4A9E":"")">@Model.Financing.ToString("N2")</td>
                             </tr>
                             <tr style="border-top:1px solid #e9edf2;">
                                 <td class="ps-9 fw-bold text-gray-600">@Localizer["Net change in cash"]</td>
-                                <td class="text-end pe-9 fw-bolder @(up?"":"text-danger")" style="@(up?"color:#13433a":"")">@Model.NetChange.ToString("N2")</td>
+                                <td class="text-end pe-9 fw-bolder @(up?"":"text-danger")" style="@(up?"color:#0E4A9E":"")">@Model.NetChange.ToString("N2")</td>
                             </tr>
-                            <tr style="background:#eaf3ef;">
-                                <td class="ps-9 fw-bold fs-5" style="color:#1f6253;">@Localizer["Cash at end of period"]</td>
-                                <td class="text-end pe-9 fw-bolder fs-4" style="color:#13433a;">@Model.EndingCash.ToString("N2")</td>
+                            <tr style="background:#E7F0FF;">
+                                <td class="ps-9 fw-bold fs-5" style="color:#145DBF;">@Localizer["Cash at end of period"]</td>
+                                <td class="text-end pe-9 fw-bolder fs-4" style="color:#0E4A9E;">@Model.EndingCash.ToString("N2")</td>
                             </tr>
                         </tbody>
                     </table>

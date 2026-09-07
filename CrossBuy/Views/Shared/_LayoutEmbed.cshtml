@@ -6,23 +6,23 @@
     <title>CrossBuy</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
-    <link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
+    <link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     @if (ar)
     {
-        <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
-        <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
-        <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
         <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <style>html[lang="ar"] body{font-family:'Cairo',sans-serif;direction:rtl;text-align:right}</style>
     }
     else
     {
-        <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
-        <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
-        <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
     }
     @* NOTE: deliberately NO frame-buster here — this layout is meant to be shown inside a modal iframe. *@
     <style>body{background:#fff}#kt_app_body{padding:0}.app-embed{padding:1.25rem}</style>
@@ -32,9 +32,9 @@
         @RenderBody()
     </div>
     <script>var hostUrl = "~/Backend-assets/";</script>
-    <script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
-    <script src="~/Backend-assets/js/scripts.bundle.js"></script>
-    <script src="~/Backend-assets/js/crossbuy-confirm.js"></script>
+    <script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+    <script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
+    <script src="~/Backend-assets/js/crossbuy-confirm.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

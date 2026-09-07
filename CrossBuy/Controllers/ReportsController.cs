@@ -69,7 +69,8 @@ namespace CrossBuy.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(
             string? search, string? module, string? category, string? tag, bool favorites,
-            CancellationToken cancellationToken)
+            int savedPage = 1, int recentPage = 1,
+            CancellationToken cancellationToken = default)
         {
             var model = await _presenter.BuildCenterAsync(new ReportsCenterQuery
             {
@@ -79,6 +80,11 @@ namespace CrossBuy.Controllers
                 Tag = tag,
                 FavoritesOnly = favorites,
                 Arabic = Arabic,
+
+                // Two page numbers, one per paged table. Clamped in the presenter, which also pulls a page
+                // past the end back onto the last real page rather than serving an empty table.
+                SavedPage = savedPage,
+                RecentPage = recentPage,
             }, cancellationToken);
 
             return View(model);

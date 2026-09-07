@@ -10,10 +10,10 @@
         <td class="text-end">@i.SubTotal.ToString("N2")</td>
         <td class="text-end text-muted">@i.TaxTotal.ToString("N2")</td>
         <td class="text-end fw-bold">@i.GrandTotal.ToString("N2")</td>
-        <td class="text-center"><span class="badge fw-bold" style="@(i.Status=="Posted"?"background:#eaf3ef;color:#13433a;":"background:#f2f4f7;color:#475467;")">@i.Status</span></td>
+        <td class="text-center"><span class="badge fw-bold" style="@(i.Status=="Posted"?"background:#E7F0FF;color:#0E4A9E;":"background:#f2f4f7;color:#475467;")">@i.Status</span></td>
         <td class="text-center pe-4"><div class="d-flex justify-content-center gap-1">
             <a href="@Url.Action("PurchaseInvoiceDetail","Accounting", new { id = i.ID })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-6"></i></a>
-            @if (i.Status == "Posted") { <a href="@Url.Action("EditPurchaseInvoice","Accounting", new { id = i.ID })" class="btn btn-sm btn-icon" style="background:#eaf3ef;color:#13433a;" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></a> }
+            @if (i.Status == "Posted") { <a href="@Url.Action("EditPurchaseInvoice","Accounting", new { id = i.ID })" class="btn btn-sm btn-icon" style="background:#E7F0FF;color:#0E4A9E;" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></a> }
         </div></td>
     </tr>
 }

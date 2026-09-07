@@ -1,5 +1,6 @@
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
+using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL
@@ -95,8 +96,9 @@ namespace CrossBuy.BL
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
 		private readonly ICurrencyRounding _rounding;
+		private readonly CrossBuy.BL.Platform.IBusinessEventService _events;   // Platform Kernel: durable business facts (in-transaction)
 		private readonly Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> L;
-		public ReceivableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; L = localizer; }
+		public ReceivableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding, CrossBuy.BL.Platform.IBusinessEventService events, Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> localizer) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; _events = events; L = localizer; }
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 
@@ -139,19 +141,59 @@ namespace CrossBuy.BL
 			return rows.Select(c => (c.Name, c.Segment ?? c.Phone ?? "")).ToList();
 		}
 
+		// Platform Kernel slice 2: the customer write paths had NO transaction — a single SaveChanges is atomic
+		// on its own, so none was needed. Recording an event needs one (ADR-001: the fact and its event must
+		// share a fate), so both paths now open a ScopedTx. BeginOrJoinAsync JOINS an ambient transaction when
+		// there is one and owns a new one otherwise, so a caller with no transaction behaves exactly as before.
 		public async Task<Customer> CreateCustomerAsync(int companyId, string name, string? nameEn, string? taxNo, decimal? creditLimit)
 		{
 			var control = await AccIdAsync(companyId, "1102") ?? 0;   // AR control
 			var c = new Customer { CompanyID = companyId, Name = name, NameEn = nameEn, TaxRegNo = taxNo, ControlAccountId = control, CreditLimit = creditLimit, IsActive = true, CreatedAt = DateTime.UtcNow };
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			_context.Customers.Add(c);
 			await _context.SaveChangesAsync();
+
+			await _events.RecordAsync(new BusinessEventRecord
+			{
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.Customer,
+				EntityId = c.ID,
+				EventType = CrossBuy.BL.Platform.CustomerEvents.Created,
+				PayloadVersion = CustomerEventPayload.Version,
+				Visibility = BusinessEventVisibility.Internal,
+				// The quick-add is fired from a document screen and is a realistic double-submit target
+				// (double-clicked button / retried POST), so one Created per customer row is pinned.
+				DedupKey = $"Customer.Created:{c.ID}",
+				Payload = new CustomerEventPayload
+				{
+					CustomerCode = c.TaxRegNo,
+					CustomerName = c.Name,
+					CustomerType = c.Segment,
+					InitialStatus = ActiveStatus(c.IsActive),
+					NewStatus = ActiveStatus(c.IsActive),
+				},
+			});
+
+			await tx.CommitAsync();
 			return c;
 		}
 
 		public async Task<(bool ok, string? error)> SaveCustomerAsync(int companyId, Customer dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم العميل مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Customer name is required");
 			var c = dto.ID > 0 ? await _context.Customers.FirstOrDefaultAsync(x => x.ID == dto.ID && x.CompanyID == companyId) : null;
+			bool isNew = c == null;
+
+			// Snapshot BEFORE mutation so the update event can carry a change summary. Field NAMES only — the
+			// values are deliberately not carried, because several of them are private contact details.
+			string? beforeName = c?.Name, beforeNameEn = c?.NameEn, beforeTaxNo = c?.TaxRegNo, beforeSegment = c?.Segment;
+			string? beforeAddress = c?.Address, beforeShipping = c?.ShippingAddress, beforePhone = c?.Phone;
+			string? beforeEmail = c?.Email, beforeContact = c?.ContactPerson;
+			decimal? beforeCreditLimit = c?.CreditLimit;
+			int? beforeTerms = c?.PaymentTermsDays;
+			bool? beforeActive = c?.IsActive;
+
+			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			if (c == null)
 			{
 				c = new Customer { CompanyID = companyId, ControlAccountId = await AccIdAsync(companyId, "1102") ?? 0, IsActive = true, CreatedAt = DateTime.UtcNow };
@@ -162,8 +204,71 @@ namespace CrossBuy.BL
 			c.Phone = dto.Phone; c.Email = dto.Email; c.ContactPerson = dto.ContactPerson; c.Segment = dto.Segment;
 			c.IsActive = dto.IsActive;
 			await _context.SaveChangesAsync();
+
+			// This method is an UPSERT: the same screen creates and edits, so which event fires depends on
+			// whether a row was found — not on which method was called.
+			if (isNew)
+			{
+				await _events.RecordAsync(new BusinessEventRecord
+				{
+					EntityCode = CrossBuy.BL.Platform.EntityRegistry.Customer,
+					EntityId = c.ID,
+					EventType = CrossBuy.BL.Platform.CustomerEvents.Created,
+					PayloadVersion = CustomerEventPayload.Version,
+					Visibility = BusinessEventVisibility.Internal,
+					DedupKey = $"Customer.Created:{c.ID}",
+					Payload = new CustomerEventPayload
+					{
+						CustomerCode = c.TaxRegNo, CustomerName = c.Name, CustomerType = c.Segment,
+						InitialStatus = ActiveStatus(c.IsActive), NewStatus = ActiveStatus(c.IsActive),
+					},
+				});
+			}
+			else
+			{
+				var changed = new List<string>();
+				if (beforeName != c.Name) changed.Add(nameof(c.Name));
+				if (beforeNameEn != c.NameEn) changed.Add(nameof(c.NameEn));
+				if (beforeTaxNo != c.TaxRegNo) changed.Add(nameof(c.TaxRegNo));
+				if (beforeCreditLimit != c.CreditLimit) changed.Add(nameof(c.CreditLimit));
+				if (beforeTerms != c.PaymentTermsDays) changed.Add(nameof(c.PaymentTermsDays));
+				if (beforeSegment != c.Segment) changed.Add(nameof(c.Segment));
+				if (beforeAddress != c.Address) changed.Add(nameof(c.Address));
+				if (beforeShipping != c.ShippingAddress) changed.Add(nameof(c.ShippingAddress));
+				if (beforePhone != c.Phone) changed.Add(nameof(c.Phone));
+				if (beforeEmail != c.Email) changed.Add(nameof(c.Email));
+				if (beforeContact != c.ContactPerson) changed.Add(nameof(c.ContactPerson));
+				if (beforeActive != c.IsActive) changed.Add(nameof(c.IsActive));
+
+				// No DedupKey: a customer may legitimately be edited many times, and each edit is its own fact.
+				await _events.RecordAsync(new BusinessEventRecord
+				{
+					EntityCode = CrossBuy.BL.Platform.EntityRegistry.Customer,
+					EntityId = c.ID,
+					EventType = CrossBuy.BL.Platform.CustomerEvents.Updated,
+					PayloadVersion = CustomerEventPayload.Version,
+					Visibility = BusinessEventVisibility.Internal,
+					Payload = new CustomerEventPayload
+					{
+						CustomerCode = c.TaxRegNo,
+						CustomerName = c.Name,
+						CustomerType = c.Segment,
+						ChangedFields = changed.Count > 0 ? changed.ToArray() : null,
+						// There is no status column on Customer and no dedicated activate/deactivate operation,
+						// so an IsActive flip is reported HERE rather than as a Customer.StatusChanged event
+						// that would name a transition the code does not have.
+						OldStatus = beforeActive.HasValue ? ActiveStatus(beforeActive.Value) : null,
+						NewStatus = ActiveStatus(c.IsActive),
+					},
+				});
+			}
+
+			await tx.CommitAsync();
 			return (true, null);
 		}
+
+		// Customer has no status column; IsActive is the only state it carries.
+		private static string ActiveStatus(bool isActive) => isActive ? "Active" : "Inactive";
 
 		public async Task<List<SalesInvoice>> GetInvoicesAsync(int companyId) =>
 			await _context.SalesInvoices.AsNoTracking().Where(i => i.CompanyID == companyId).OrderByDescending(i => i.ID).ToListAsync();
@@ -182,8 +287,8 @@ namespace CrossBuy.BL
 			int companyId, int customerId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null)
 		{
 			var cust = await _context.Customers.FirstOrDefaultAsync(c => c.ID == customerId && c.CompanyID == companyId);
-			if (cust == null) return (false, "العميل غير موجود", null);
-			if (lines == null || lines.Count == 0) return (false, "الفاتورة يجب أن تحتوي على بند واحد على الأقل", null);
+			if (cust == null) return (false, "Customer not found", null);
+			if (lines == null || lines.Count == 0) return (false, "The invoice must contain at least one line", null);
 
 			var vatOut = await AccIdAsync(companyId, "210201");
 
@@ -243,11 +348,11 @@ namespace CrossBuy.BL
 					{
 						await _notify.NotifyRoleAsync(companyId, "acc", new[] { "Accountant", "ChiefAccountant" },
 							"تجاوز حدّ ائتمان عميل", "Customer credit limit exceeded",
-							$"رُفضت فاتورة بقيمة {grandBase:N2} للعميل {cust.Name}: المستحق {outstanding:N2} يتجاوز الحدّ {cust.CreditLimit.Value:N2}", $"Invoice of {grandBase:N2} for {cust.Name} was blocked: outstanding {outstanding:N2} exceeds limit {cust.CreditLimit.Value:N2}",
+							$"An invoice of {grandBase:N2} for customer {cust.Name} was rejected: the outstanding balance {outstanding:N2} exceeds the limit {cust.CreditLimit.Value:N2}", $"Invoice of {grandBase:N2} for {cust.Name} was blocked: outstanding {outstanding:N2} exceeds limit {cust.CreditLimit.Value:N2}",
 							"credit_block", customerId);
 					}
 					catch { /* notifications never block the business flow */ }
-					return (false, $"تجاوز حدّ الائتمان: المستحق الحالي {outstanding:N2} + الفاتورة {grandBase:N2} = {(outstanding + grandBase):N2} يتجاوز حدّ العميل {cust.CreditLimit.Value:N2}", null);
+					return (false, $"Credit limit exceeded: the current outstanding {outstanding:N2} + this invoice {grandBase:N2} = {(outstanding + grandBase):N2}, which exceeds the customer limit {cust.CreditLimit.Value:N2}", null);
 				}
 			}
 
@@ -260,11 +365,11 @@ namespace CrossBuy.BL
 			await _context.SaveChangesAsync();
 
 			// auto journal (functional currency): Dr AR control (grand base) / Cr revenue per line / Cr VAT output
-			var jlines = new List<JournalLineInput> { new() { AccountId = cust.ControlAccountId, Debit = grandBase, Credit = 0, Description = $"فاتورة بيع {inv.InvoiceNo}", ProjectId = projectId } };
+			var jlines = new List<JournalLineInput> { new() { AccountId = cust.ControlAccountId, Debit = grandBase, Credit = 0, Description = $"Sales invoice {inv.InvoiceNo}", ProjectId = projectId } };
 			foreach (var g in revGroups)
-				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = 0, Credit = g.Base, Description = "إيراد", ProjectId = projectId });
+				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = 0, Credit = g.Base, Description = "Revenue", ProjectId = projectId });
 			if (vatBase > 0 && vatOut != null)
-				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = 0, Credit = vatBase, Description = "ض.ق.م مخرجات", ProjectId = projectId });
+				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = 0, Credit = vatBase, Description = "Output VAT", ProjectId = projectId });
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
@@ -287,19 +392,39 @@ namespace CrossBuy.BL
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = -1,
 					Qty = l.Qty, UoMId = l.UoMId, SourceType = "SalesInvoice", SourceId = inv.ID, SourceLineId = l.ID,
-					PostToGl = true, ProjectId = inv.ProjectId, Notes = $"صرف فاتورة بيع {inv.InvoiceNo}"
+					PostToGl = true, ProjectId = inv.ProjectId, Notes = $"Issue for sales invoice {inv.InvoiceNo}"
 				}, userId?.ToString());
-				if (!sok) return (false, serr ?? "تعذّر صرف المخزون", null);
+				if (!sok) return (false, serr ?? "Could not issue the stock", null);
 			}
-			await tx.CommitAsync();
-			try
+
+			// Platform Kernel (ADR-001): the durable fact, written INSIDE this transaction and BEFORE the
+			// commit — the event and the invoice share one fate. Deliberately NOT in a try/catch: if the
+			// event cannot be written the sale must not stand, which is the opposite of the notification
+			// convention a few lines below (best-effort, after commit, swallowed).
+			await _events.RecordAsync(new BusinessEventRecord
 			{
-				await _notify.NotifyRoleAsync(companyId, "acc", new[] { "ChiefAccountant" },
-					"فاتورة بيع جديدة", "New sales invoice",
-					$"صدرت فاتورة بيع {inv.InvoiceNo} للعميل {cust.Name} بقيمة {inv.GrandTotal:N2}", $"Sales invoice {inv.InvoiceNo} for {cust.Name} issued ({inv.GrandTotal:N2})",
-					"sales_invoice", inv.ID);
-			}
-			catch { /* notifications never block the business flow */ }
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice,
+				EntityId = inv.ID,
+				EventType = CrossBuy.BL.Platform.SalesInvoiceEvents.Created,
+				PayloadVersion = SalesInvoiceEventPayload.Version,
+				Visibility = BusinessEventVisibility.Internal,
+				DedupKey = $"SalesInvoice.Created:{inv.ID}",   // one Created per invoice, forever
+				Payload = new SalesInvoiceEventPayload
+				{
+					ReferenceNumber = inv.InvoiceNo,
+					NewStatus = inv.Status,
+					TotalAfter = inv.GrandTotal,
+				},
+			});
+
+			await tx.CommitAsync();
+
+			// Platform Kernel slice 2: the legacy after-commit NotifyRoleAsync that used to sit here was
+			// REMOVED and is now produced by NotificationProjection from the SalesInvoice.Created event above
+			// (same audience "acc"/ChiefAccountant, same catalog type "sales_invoice", same wording). Keeping
+			// both would double-notify. The other notifications in this service — the stale-rate warning and
+			// the credit-limit block — are untouched: neither has an event, and the credit-limit one fires on a
+			// REJECTED invoice, where no business fact exists to record. See ADR-006.
 			return (true, null, inv);
 		}
 
@@ -308,14 +433,26 @@ namespace CrossBuy.BL
 			int companyId, int invoiceId, int customerId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null)
 		{
 			var inv = await _context.SalesInvoices.Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == invoiceId && i.CompanyID == companyId);
-			if (inv == null) return (false, "الفاتورة غير موجودة", null);
-			if (inv.Status != "Posted") return (false, "لا يمكن تعديل فاتورة غير مُرحّلة أو ملغاة", null);
+			if (inv == null) return (false, "Invoice not found", null);
+			if (inv.Status != "Posted") return (false, "An invoice that is not posted, or is cancelled, cannot be edited", null);
 			// integrity guard: a collected invoice must not be edited (its AR is already allocated to a receipt)
 			bool allocated = await _context.ReceiptAllocations.AsNoTracking().AnyAsync(a => a.CompanyID == companyId && a.SalesInvoiceId == invoiceId);
-			if (allocated) return (false, "لا يمكن تعديل الفاتورة لوجود تحصيل مخصّص عليها — ألغِ التخصيص أولًا", null);
+			if (allocated) return (false, "The invoice cannot be edited because a collection is allocated to it — unallocate it first", null);
 			var cust = await _context.Customers.FirstOrDefaultAsync(c => c.ID == customerId && c.CompanyID == companyId);
-			if (cust == null) return (false, "العميل غير موجود", null);
-			if (lines == null || lines.Count == 0) return (false, "الفاتورة يجب أن تحتوي على بند واحد على الأقل", null);
+			if (cust == null) return (false, "Customer not found", null);
+			if (lines == null || lines.Count == 0) return (false, "The invoice must contain at least one line", null);
+
+			// Platform Kernel: snapshot the header values BEFORE any mutation so the event can carry a
+			// change SUMMARY (field names + total delta) instead of the whole entity graph.
+			var beforeCustomerId = inv.CustomerId;
+			var beforeInvoiceDate = inv.InvoiceDate;
+			var beforeCurrencyId = inv.CurrencyId;
+			var beforeExchangeRate = inv.ExchangeRate;
+			var beforeProjectId = inv.ProjectId;
+			var beforeNotes = inv.Notes;
+			var beforeStatus = inv.Status;
+			var beforeGrandTotal = inv.GrandTotal;
+			var beforeLineSignature = LineSignature(inv.Lines);
 
 			var vatOut = await AccIdAsync(companyId, "210201");
 			var functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
@@ -344,15 +481,15 @@ namespace CrossBuy.BL
 					Date = date, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = 1,
 					Qty = m.QtyBase, UoMId = null, UnitCostInBase = m.UnitCost,
 					SourceType = "SalesInvoiceEdit", SourceId = invoiceId, PostToGl = true,
-					ProjectId = inv.ProjectId, Notes = $"عكس صرف تعديل فاتورة {inv.InvoiceNo}"
+					ProjectId = inv.ProjectId, Notes = $"Reversal of the issue for the edit of invoice {inv.InvoiceNo}"
 				}, userId?.ToString());
-				if (!rok) return (false, rerr ?? "تعذّر عكس صرف المخزون", null);
+				if (!rok) return (false, rerr ?? "Could not reverse the stock issue", null);
 			}
 			// (2) reverse the original GL entry (mirror entry dated today)
 			if (inv.JournalEntryId.HasValue)
 			{
-				var (rjok, rjerr, _) = await _journals.ReverseAsync(inv.JournalEntryId.Value, userId, $"تعديل فاتورة {inv.InvoiceNo}");
-				if (!rjok) return (false, rjerr ?? "تعذّر عكس قيد الفاتورة", null);
+				var (rjok, rjerr, _) = await _journals.ReverseAsync(inv.JournalEntryId.Value, userId, $"Edit of invoice {inv.InvoiceNo}");
+				if (!rjok) return (false, rjerr ?? "Could not reverse the invoice entry", null);
 			}
 
 			// (3) drop the old lines
@@ -376,9 +513,9 @@ namespace CrossBuy.BL
 			await _context.SaveChangesAsync();
 
 			// (5) post the new GL entry
-			var jlines = new List<JournalLineInput> { new() { AccountId = cust.ControlAccountId, Debit = grandBase, Credit = 0, Description = $"فاتورة بيع {inv.InvoiceNo} (معدّلة)", ProjectId = projectId } };
-			foreach (var g in revGroups) jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = 0, Credit = g.Base, Description = "إيراد", ProjectId = projectId });
-			if (vatBase > 0 && vatOut != null) jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = 0, Credit = vatBase, Description = "ض.ق.م مخرجات", ProjectId = projectId });
+			var jlines = new List<JournalLineInput> { new() { AccountId = cust.ControlAccountId, Debit = grandBase, Credit = 0, Description = $"Sales invoice {inv.InvoiceNo} (edited)", ProjectId = projectId } };
+			foreach (var g in revGroups) jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = 0, Credit = g.Base, Description = "Revenue", ProjectId = projectId });
+			if (vatBase > 0 && vatOut != null) jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = 0, Credit = vatBase, Description = "Output VAT", ProjectId = projectId });
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "SalesInvoice", SourceId = inv.ID, CurrencyId = cur,
@@ -398,13 +535,52 @@ namespace CrossBuy.BL
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = -1,
 					Qty = l.Qty, UoMId = l.UoMId, SourceType = "SalesInvoice", SourceId = inv.ID, SourceLineId = l.ID,
-					PostToGl = true, ProjectId = inv.ProjectId, Notes = $"صرف فاتورة بيع {inv.InvoiceNo} (معدّلة)"
+					PostToGl = true, ProjectId = inv.ProjectId, Notes = $"Issue for sales invoice {inv.InvoiceNo} (edited)"
 				}, userId?.ToString());
-				if (!sok) return (false, serr ?? "تعذّر صرف المخزون", null);
+				if (!sok) return (false, serr ?? "Could not issue the stock", null);
 			}
+
+			// Platform Kernel (ADR-001): the durable fact, inside this transaction and before the commit.
+			// Field NAMES only — no old/new values beyond the totals, which the reader can already see on
+			// the invoice. No DedupKey: an invoice may legitimately be edited more than once, and each edit
+			// is its own fact.
+			var changedFields = new List<string>();
+			if (beforeCustomerId != inv.CustomerId) changedFields.Add(nameof(inv.CustomerId));
+			if (beforeInvoiceDate != inv.InvoiceDate) changedFields.Add(nameof(inv.InvoiceDate));
+			if (beforeCurrencyId != inv.CurrencyId) changedFields.Add(nameof(inv.CurrencyId));
+			if (beforeExchangeRate != inv.ExchangeRate) changedFields.Add(nameof(inv.ExchangeRate));
+			if (beforeProjectId != inv.ProjectId) changedFields.Add(nameof(inv.ProjectId));
+			if (beforeNotes != inv.Notes) changedFields.Add(nameof(inv.Notes));
+			if (beforeLineSignature != LineSignature(inv.Lines)) changedFields.Add(nameof(inv.Lines));
+			if (beforeGrandTotal != inv.GrandTotal) changedFields.Add(nameof(inv.GrandTotal));
+
+			await _events.RecordAsync(new BusinessEventRecord
+			{
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice,
+				EntityId = inv.ID,
+				EventType = CrossBuy.BL.Platform.SalesInvoiceEvents.Updated,
+				PayloadVersion = SalesInvoiceEventPayload.Version,
+				Visibility = BusinessEventVisibility.Internal,
+				Payload = new SalesInvoiceEventPayload
+				{
+					ReferenceNumber = inv.InvoiceNo,
+					ChangedFields = changedFields.Count > 0 ? changedFields.ToArray() : null,
+					OldStatus = beforeStatus,
+					NewStatus = inv.Status,
+					TotalBefore = beforeGrandTotal,
+					TotalAfter = inv.GrandTotal,
+				},
+			});
+
 			await tx.CommitAsync();
 			return (true, null, inv);
 		}
+
+		// Platform Kernel: a stable fingerprint of the invoice lines, used only to decide whether "Lines"
+		// belongs in an edit's changed-field list. Never stored in the event payload.
+		private static string LineSignature(IEnumerable<SalesInvoiceLine> lines) => string.Join("|",
+			lines.OrderBy(l => l.LineNo)
+				 .Select(l => $"{l.ItemId}:{l.ItemDescription}:{l.Qty}:{l.UnitPrice}:{l.DiscountAmount}:{l.TaxRate}:{l.WarehouseId}:{l.UoMId}"));
 
 		// ---------------- P3-3a: Sales returns / credit notes ----------------
 		public async Task<List<SalesReturn>> GetSalesReturnsAsync(int companyId) =>
@@ -417,8 +593,8 @@ namespace CrossBuy.BL
 			int companyId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null)
 		{
 			var cust = await _context.Customers.FirstOrDefaultAsync(c => c.ID == customerId && c.CompanyID == companyId);
-			if (cust == null) return (false, "العميل غير موجود", null);
-			if (lines == null || lines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند واحد على الأقل", null);
+			if (cust == null) return (false, "Customer not found", null);
+			if (lines == null || lines.Count == 0) return (false, "The return must contain at least one line", null);
 			var vatOut = await AccIdAsync(companyId, "210201");
 			// HM-2 (3-ج-0): currency-aware. The AR is reversed at the ORIGINAL INVOICE's rate (so ar_sub nets to 0 against it);
 			// with NO original invoice there is no reference rate ⇒ book at the return-day rate (no FX). All JE lines are functional (base).
@@ -463,10 +639,10 @@ namespace CrossBuy.BL
 			// credit-note JE = REVERSE of the sale at the invoice rate (all lines functional/base): Dr revenue + Dr VAT / Cr AR (single grandBase)
 			var jlines = new List<JournalLineInput>();
 			foreach (var g in revGroups)
-				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = g.Base, Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
+				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = g.Base, Credit = 0, Description = "Sales return — revenue reduction" });
 			if (vatBase > 0 && vatOut != null)
-				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = vatBase, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
-			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = grandBase, Description = $"إشعار دائن {ret.ReturnNo}" });
+				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = vatBase, Credit = 0, Description = "Output VAT reversal" });
+			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = grandBase, Description = $"Credit note {ret.ReturnNo}" });
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
@@ -487,9 +663,9 @@ namespace CrossBuy.BL
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,
 					Qty = l.Qty, SourceType = "SalesReturn", SourceId = ret.ID, SourceLineId = l.ID,
-					PostToGl = true, Notes = $"مرتجع بيع {ret.ReturnNo}"
+					PostToGl = true, Notes = $"Sales return {ret.ReturnNo}"
 				}, userId?.ToString());
-				if (!sok) return (false, serr ?? "تعذّر إرجاع المخزون", null);
+				if (!sok) return (false, serr ?? "Could not return the stock", null);
 			}
 			await tx.CommitAsync();
 			return (true, null, ret);
@@ -500,11 +676,11 @@ namespace CrossBuy.BL
 			int companyId, int returnId, int customerId, int? originalInvoiceId, DateTime date, List<SalesLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null)
 		{
 			var ret = await _context.SalesReturns.Include(r => r.Lines).FirstOrDefaultAsync(r => r.ID == returnId && r.CompanyID == companyId);
-			if (ret == null) return (false, "المرتجع غير موجود", null);
-			if (ret.Status != "Posted") return (false, "لا يمكن تعديل مرتجع غير مُرحّل", null);
+			if (ret == null) return (false, "Return not found", null);
+			if (ret.Status != "Posted") return (false, "A return that is not posted cannot be edited", null);
 			var cust = await _context.Customers.FirstOrDefaultAsync(c => c.ID == customerId && c.CompanyID == companyId);
-			if (cust == null) return (false, "العميل غير موجود", null);
-			if (lines == null || lines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند واحد على الأقل", null);
+			if (cust == null) return (false, "Customer not found", null);
+			if (lines == null || lines.Count == 0) return (false, "The return must contain at least one line", null);
 			var vatOut = await AccIdAsync(companyId, "210201");
 			// HM-2 (3-ج-0): same currency rule as CreateSalesReturnAsync — settle at the ORIGINAL INVOICE rate (else return-day). All JE lines base.
 			var functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
@@ -535,13 +711,13 @@ namespace CrossBuy.BL
 				var (rok, rerr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest {
 					Date = date, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = -1,
 					Qty = m.QtyBase, OutCostOverride = m.UnitCost, PostToGl = false,
-					SourceType = "SalesReturnEdit", SourceId = returnId, Notes = $"عكس مرتجع {ret.ReturnNo}"
+					SourceType = "SalesReturnEdit", SourceId = returnId, Notes = $"Reversal of return {ret.ReturnNo}"
 				}, userId?.ToString());
-				if (!rok) return (false, rerr ?? "تعذّر عكس مخزون المرتجع", null);
-				if (m.JournalEntryId.HasValue) { var (jr, je, _) = await _journals.ReverseAsync(m.JournalEntryId.Value, userId, $"تعديل مرتجع {ret.ReturnNo}"); if (!jr) return (false, je ?? "تعذّر عكس قيد المخزون", null); }
+				if (!rok) return (false, rerr ?? "Could not reverse the return's stock", null);
+				if (m.JournalEntryId.HasValue) { var (jr, je, _) = await _journals.ReverseAsync(m.JournalEntryId.Value, userId, $"Edit of return {ret.ReturnNo}"); if (!jr) return (false, je ?? "Could not reverse the inventory entry", null); }
 			}
 			// (2) reverse the credit-note GL
-			if (ret.JournalEntryId.HasValue) { var (jr2, je2, _) = await _journals.ReverseAsync(ret.JournalEntryId.Value, userId, $"تعديل مرتجع {ret.ReturnNo}"); if (!jr2) return (false, je2 ?? "تعذّر عكس قيد الإشعار", null); }
+			if (ret.JournalEntryId.HasValue) { var (jr2, je2, _) = await _journals.ReverseAsync(ret.JournalEntryId.Value, userId, $"Edit of return {ret.ReturnNo}"); if (!jr2) return (false, je2 ?? "Could not reverse the credit-note entry", null); }
 
 			// (3) drop old lines + recompute
 			_context.SalesReturnLines.RemoveRange(ret.Lines); ret.Lines.Clear();
@@ -563,10 +739,10 @@ namespace CrossBuy.BL
 			// (4) new credit-note JE (all functional/base): Dr revenue + Dr VAT / Cr AR (single grandBase)
 			var jlines = new List<JournalLineInput>();
 			foreach (var g in revGroups)
-				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = g.Base, Credit = 0, Description = "مرتجع مبيعات — تخفيض إيراد" });
+				jlines.Add(new JournalLineInput { AccountId = g.Acc, Debit = g.Base, Credit = 0, Description = "Sales return — revenue reduction" });
 			if (vatBase > 0 && vatOut != null)
-				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = vatBase, Credit = 0, Description = "عكس ض.ق.م مخرجات" });
-			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = grandBase, Description = $"إشعار دائن {ret.ReturnNo} (معدّل)" });
+				jlines.Add(new JournalLineInput { AccountId = vatOut.Value, Debit = vatBase, Credit = 0, Description = "Output VAT reversal" });
+			jlines.Add(new JournalLineInput { AccountId = cust.ControlAccountId, Debit = 0, Credit = grandBase, Description = $"Credit note {ret.ReturnNo} (edited)" });
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "SalesReturn", SourceId = ret.ID,
@@ -586,9 +762,9 @@ namespace CrossBuy.BL
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,
 					Qty = l.Qty, SourceType = "SalesReturn", SourceId = ret.ID, SourceLineId = l.ID,
-					PostToGl = true, Notes = $"مرتجع بيع {ret.ReturnNo} (معدّل)"
+					PostToGl = true, Notes = $"Sales return {ret.ReturnNo} (edited)"
 				}, userId?.ToString());
-				if (!sok) return (false, serr ?? "تعذّر إرجاع المخزون", null);
+				if (!sok) return (false, serr ?? "Could not return the stock", null);
 			}
 			await tx.CommitAsync();
 			return (true, null, ret);
@@ -599,8 +775,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> CreateReceiptAsync(int companyId, int customerId, DateTime date, decimal amount, string method, int cashAccountId, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null)
 		{
 			var cust = await _context.Customers.FirstOrDefaultAsync(c => c.ID == customerId && c.CompanyID == companyId);
-			if (cust == null) return (false, "العميل غير موجود");
-			if (amount <= 0) return (false, "المبلغ يجب أن يكون أكبر من صفر");
+			if (cust == null) return (false, "Customer not found");
+			if (amount <= 0) return (false, "The amount must be greater than zero");
 			// HM-1-أ (هـ): receipt row + its JE + the JournalEntryId back-ref must be ATOMIC (own-or-join). Called from PayAsync
 			// it joins that transaction; standalone it opens its own — closing the old 2-commit gap (JE posted, back-ref unsaved).
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -657,15 +833,19 @@ namespace CrossBuy.BL
 
 			var lines = new List<JournalLineInput>
 			{
-				new() { AccountId = cashAccountId, Debit = cashBase, Credit = 0, Description = "تحصيل نقدي", ProjectId = projectId },
-				new() { AccountId = cust.ControlAccountId, Debit = 0, Credit = arBaseTotal, Description = "سداد عميل", ProjectId = projectId },
+				// DescriptionEn on every line, not only on the entry header. The header here already had one
+				// ("Receipt {no}") while the lines under it stayed Arabic, so /Accounting/JournalEntry read as
+				// an English document with Arabic rows. These strings are STORED, so the English text must not
+				// depend on the operator's UI language - both are written, and the view picks.
+				new() { AccountId = cashAccountId, Debit = cashBase, Credit = 0, Description = "تحصيل نقدي", DescriptionEn = "Cash collected", ProjectId = projectId },
+				new() { AccountId = cust.ControlAccountId, Debit = 0, Credit = arBaseTotal, Description = "سداد عميل", DescriptionEn = "Customer settlement", ProjectId = projectId },
 			};
 			if (fxNet != 0)
 			{
 				var fxAcc = await AccIdAsync(companyId, fxNet > 0 ? "4902" : "5902");
 				if (fxAcc == null) { if (_context.Database.CurrentTransaction == null) { _context.Receipts.Remove(rc); await _context.SaveChangesAsync(); } return (false,"حساب فروق العملة المحققة (4902/5902) غير مُهيّأ"); }
-				if (fxNet > 0) lines.Add(new() { AccountId = fxAcc.Value, Debit = 0, Credit = fxNet, Description = "ربح فرق عملة محقق", ProjectId = projectId });
-				else lines.Add(new() { AccountId = fxAcc.Value, Debit = -fxNet, Credit = 0, Description = "خسارة فرق عملة محققة", ProjectId = projectId });
+				if (fxNet > 0) lines.Add(new() { AccountId = fxAcc.Value, Debit = 0, Credit = fxNet, Description = "ربح فرق عملة محقق", DescriptionEn = "Realised FX gain", ProjectId = projectId });
+				else lines.Add(new() { AccountId = fxAcc.Value, Debit = -fxNet, Credit = 0, Description = "خسارة فرق عملة محققة", DescriptionEn = "Realised FX loss", ProjectId = projectId });
 			}
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput

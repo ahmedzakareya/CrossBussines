@@ -452,7 +452,7 @@ namespace CrossBuy.BL.Reporting
                 .FirstOrDefault(x => string.Equals(x.Key, c.FieldKey, StringComparison.Ordinal));
 
             if (column == null) return c.FieldKey;
-            return ctx.Arabic ? column.TitleAr : column.TitleEn;
+            return ctx.Arabic ? column.TitleAr : DisplayName.Or(column.TitleEn, column.TitleAr);
         }
 
         private static object? Value(ReportRow? row, string? key)
@@ -496,7 +496,7 @@ namespace CrossBuy.BL.Reporting
                 ReportSystemField.CurrentDateTime => ctx.Now.ToString("yyyy-MM-dd HH:mm", culture),
                 ReportSystemField.PageNumber => page.ToString(culture),
                 ReportSystemField.TotalPages => total.ToString(culture),
-                ReportSystemField.PageXOfY => ctx.Arabic ? $"صفحة {page} من {total}" : $"Page {page} of {total}",
+                ReportSystemField.PageXOfY => ctx.Arabic ? $"Page {page} of {total}" : $"Page {page} of {total}",
                 ReportSystemField.ReportName => ctx.ReportTitle,
                 _ => "",
             };
@@ -589,8 +589,8 @@ namespace CrossBuy.BL.Reporting
             sb.Append(".cbv-table-wrap{display:block;overflow:visible;}");
             sb.Append(".cbv-table{width:100%;border-collapse:collapse;font-size:inherit;}");
             sb.Append(".cbv-table th,.cbv-table td{border-block-end:.2mm solid #ccc;padding:.6mm 1mm;}");
-            sb.Append(".cbv-table thead th{border-block-end:.4mm solid #13433a;font-weight:700;}");
-            sb.Append(".cbv-table tfoot td{border-block-start:.4mm solid #13433a;font-weight:700;}");
+            sb.Append(".cbv-table thead th{border-block-end:.4mm solid #0E4A9E;font-weight:700;}");
+            sb.Append(".cbv-table tfoot td{border-block-start:.4mm solid #0E4A9E;font-weight:700;}");
         }
 
         private static string Mm(double v) => v.ToString("0.###", CultureInfo.InvariantCulture) + "mm";

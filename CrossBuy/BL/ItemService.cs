@@ -145,15 +145,15 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> CreateCategoryAsync(int companyId, ItemCategory c, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(c.Code) || string.IsNullOrWhiteSpace(c.Name)) return (false, "الكود والاسم مطلوبان");
-			if (await _context.ItemCategories.AnyAsync(x => x.CompanyID == companyId && x.Code == c.Code)) return (false, "كود الفئة مستخدم من قبل");
+			if (string.IsNullOrWhiteSpace(c.Code) || string.IsNullOrWhiteSpace(c.Name)) return (false, "Code and name are required");
+			if (await _context.ItemCategories.AnyAsync(x => x.CompanyID == companyId && x.Code == c.Code)) return (false, "That category code is already in use");
 			c.Kind = (c.Kind == "Group") ? "Group" : "Category";
 			if (c.Kind == "Group")
 			{
-				if (c.ParentId == null) return (false, "المجموعة يجب أن تتبع فئة رئيسية");
+				if (c.ParentId == null) return (false, "A group must belong to a top-level category");
 				var parent = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(x => x.ID == c.ParentId && x.CompanyID == companyId);
-				if (parent == null) return (false, "الفئة الأب غير موجودة");
-				if (parent.Kind == "Group") return (false, "لا يمكن أن تتبع المجموعة مجموعةً أخرى (مستويان فقط: فئة ثم مجموعة)");
+				if (parent == null) return (false, "The parent category was not found");
+				if (parent.Kind == "Group") return (false, "A group cannot belong to another group (only two levels: category, then group)");
 				// GL mapping inherited from the parent Category when left empty on the Group (copy-down; keeps every GL consumer unchanged)
 				InheritGlFromParent(c, parent);
 			}
@@ -177,9 +177,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> UpdateCategoryAsync(int companyId, int id, ItemCategory c, string? userId)
 		{
 			var ex = await _context.ItemCategories.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (ex == null) return (false, "الفئة غير موجودة");
-			if (await _context.ItemCategories.AnyAsync(x => x.CompanyID == companyId && x.Code == c.Code && x.ID != id)) return (false, "كود الفئة مستخدم من قبل");
-			if (c.ParentId == id) return (false, "لا يمكن أن تكون الفئة أبًا لنفسها");
+			if (ex == null) return (false, "Category not found");
+			if (await _context.ItemCategories.AnyAsync(x => x.CompanyID == companyId && x.Code == c.Code && x.ID != id)) return (false, "That category code is already in use");
+			if (c.ParentId == id) return (false, "A category cannot be its own parent");
 
 			// remember old GL values so we can cascade to child groups that were inheriting (value == old parent value)
 			var (oldInv, oldCogs, oldAdj, oldGrni) = (ex.InventoryAccountId, ex.CogsAccountId, ex.AdjustmentAccountId, ex.GrniAccountId);
@@ -187,10 +187,10 @@ namespace CrossBuy.BL
 			var kind = (c.Kind == "Group") ? "Group" : "Category";
 			if (kind == "Group")
 			{
-				if (c.ParentId == null) return (false, "المجموعة يجب أن تتبع فئة رئيسية");
+				if (c.ParentId == null) return (false, "A group must belong to a top-level category");
 				var parent = await _context.ItemCategories.AsNoTracking().FirstOrDefaultAsync(x => x.ID == c.ParentId && x.CompanyID == companyId);
-				if (parent == null) return (false, "الفئة الأب غير موجودة");
-				if (parent.Kind == "Group") return (false, "لا يمكن أن تتبع المجموعة مجموعةً أخرى (مستويان فقط: فئة ثم مجموعة)");
+				if (parent == null) return (false, "The parent category was not found");
+				if (parent.Kind == "Group") return (false, "A group cannot belong to another group (only two levels: category, then group)");
 				InheritGlFromParent(c, parent);
 			}
 			else { c.ParentId = null; }
@@ -365,11 +365,11 @@ namespace CrossBuy.BL
 			foreach (var u in x.Units ?? new())
 				if (u.UoMId > 0 && u.UoMId != x.BaseUoMId && !string.IsNullOrWhiteSpace(u.Barcode)) subs.Add(u.Barcode.Trim());
 			var dup = subs.GroupBy(s => s).FirstOrDefault(g => g.Count() > 1);
-			if (dup != null) return $"الباركود «{dup.Key}» مكرَّر داخل نفس الصنف";
+			if (dup != null) return $"Barcode «{dup.Key}» is duplicated within the same item";
 			foreach (var b in subs.Distinct())
 			{
-				if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.Barcode == b && i.ID != itemId)) return $"الباركود «{b}» مستخدم من قبل لصنف آخر";
-				if (await _context.ItemBarcodes.AnyAsync(z => z.Barcode == b && z.ItemId != itemId)) return $"الباركود «{b}» مستخدم من قبل لصنف آخر";
+				if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.Barcode == b && i.ID != itemId)) return $"Barcode «{b}» is already used by another item";
+				if (await _context.ItemBarcodes.AnyAsync(z => z.Barcode == b && z.ItemId != itemId)) return $"Barcode «{b}» is already used by another item";
 			}
 			// HM-3: a FIXED product barcode must not fall inside any scale-barcode prefix configured on the company's branches
 			// (GS1 reserves that range for variable-measure). Deliberate company-wide guard over a branch-level setting
@@ -380,7 +380,7 @@ namespace CrossBuy.BL
 				.Select(s => s.ScaleBarcodePrefix!).Distinct().ToListAsync();
 			foreach (var b in subs.Distinct())
 				foreach (var pfx in scalePrefixes)
-					if (b.StartsWith(pfx)) return $"الباركود «{b}» يقع في نطاق باركود الميزان المحجوز — غير مسموح لباركود ثابت.";
+					if (b.StartsWith(pfx)) return $"Barcode «{b}» falls inside the reserved scale-barcode range — that is not allowed for a fixed barcode.";
 			return null;
 		}
 
@@ -388,10 +388,10 @@ namespace CrossBuy.BL
 		private async Task<string?> WeightedItemGuardAsync(int companyId, int itemId, ItemInput x)
 		{
 			if (!x.IsWeighted) return null;
-			if (x.ScaleCode == null) return "صنف موزون يستلزم كود ميزان (ScaleCode).";
+			if (x.ScaleCode == null) return "A weighed item requires a scale code (ScaleCode).";
 			var baseCode = await _context.UnitsOfMeasure.AsNoTracking().Where(u => u.ID == x.BaseUoMId).Select(u => u.Code).FirstOrDefaultAsync();
-			if (!string.Equals(baseCode, "KG", StringComparison.OrdinalIgnoreCase)) return "صنف موزون يستلزم وحدة أساس بالوزن (كجم).";
-			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ScaleCode == x.ScaleCode && i.ID != itemId)) return "كود الميزان مستخدم من قبل لصنف آخر.";
+			if (!string.Equals(baseCode, "KG", StringComparison.OrdinalIgnoreCase)) return "A weighed item requires a weight-based base unit (kg).";
+			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ScaleCode == x.ScaleCode && i.ID != itemId)) return "That scale code is already used by another item.";
 			return null;
 		}
 
@@ -400,16 +400,16 @@ namespace CrossBuy.BL
 		// implemented. (All existing TrackBatch items already have TrackExpiry, so this breaks nothing.)
 		private static string? TrackingGuard(ItemInput x)
 			=> (x.TrackBatch && !x.TrackExpiry)
-				? "تتبّع الدفعات دون تتبّع الصلاحية غير مدعوم — فعّل تتبّع الصلاحية (يُرتِّب الصرف بنظام FEFO)."
+				? "Batch tracking without expiry tracking is not supported — enable expiry tracking (it orders issues by FEFO)."
 				: null;
 
 		private static (bool ok, string? error) ValidateItem(ItemInput x)
 		{
-			if (string.IsNullOrWhiteSpace(x.ItemCode)) return (false, "كود الصنف مطلوب");
-			if (string.IsNullOrWhiteSpace(x.Barcode)) return (false, "الباركود مطلوب لكل صنف");
-			if (string.IsNullOrWhiteSpace(x.Name)) return (false, "اسم الصنف مطلوب");
-			if (x.ItemCategoryId <= 0) return (false, "الفئة مطلوبة");
-			if (x.BaseUoMId <= 0) return (false, "وحدة القياس الأساسية مطلوبة");
+			if (string.IsNullOrWhiteSpace(x.ItemCode)) return (false, "Item code is required");
+			if (string.IsNullOrWhiteSpace(x.Barcode)) return (false, "A barcode is required for every item");
+			if (string.IsNullOrWhiteSpace(x.Name)) return (false, "Item name is required");
+			if (x.ItemCategoryId <= 0) return (false, "Category is required");
+			if (x.BaseUoMId <= 0) return (false, "A base unit of measure is required");
 			return (true, null);
 		}
 
@@ -418,7 +418,7 @@ namespace CrossBuy.BL
 			var (vok, verr) = ValidateItem(x);
 			if (!vok) return (false, verr, null);
 			var code = x.ItemCode.Trim(); var bar = x.Barcode.Trim();   // compare the SAME (trimmed) value we store, else the DB unique index 500s on a stray space
-			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ItemCode == code)) return (false, "كود الصنف مستخدم من قبل", null);
+			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ItemCode == code)) return (false, "That item code is already in use", null);
 			var bcErr = await BarcodeConflictAsync(companyId, 0, x);
 			if (bcErr != null) return (false, bcErr, null);
 			var wErr = await WeightedItemGuardAsync(companyId, 0, x);   // HM-3
@@ -454,9 +454,9 @@ namespace CrossBuy.BL
 			var (vok, verr) = ValidateItem(x);
 			if (!vok) return (false, verr);
 			var item = await _context.Items.FirstOrDefaultAsync(i => i.ID == id && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف غير موجود");
+			if (item == null) return (false, "Item not found");
 			var code = x.ItemCode.Trim(); var bar = x.Barcode.Trim();
-			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ItemCode == code && i.ID != id)) return (false, "كود الصنف مستخدم من قبل");
+			if (await _context.Items.AnyAsync(i => i.CompanyID == companyId && i.ItemCode == code && i.ID != id)) return (false, "That item code is already in use");
 			var bcErr = await BarcodeConflictAsync(companyId, id, x);
 			if (bcErr != null) return (false, bcErr);
 			var wErr = await WeightedItemGuardAsync(companyId, id, x);   // HM-3

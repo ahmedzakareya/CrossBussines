@@ -54,7 +54,7 @@
                     </div>
                     <div class="col">
                         <div class="card card-dashed flex-center min-w-175px my-3 p-6">
-                            <span class="fs-4 fw-semibold pb-1 px-2 @(profit?"":"text-danger")" style="@(profit?"color:#13433a":"")">@(profit ? Localizer["Net Profit"] : Localizer["Net Loss"])</span>
+                            <span class="fs-4 fw-semibold pb-1 px-2 @(profit?"":"text-danger")" style="@(profit?"color:#0E4A9E":"")">@(profit ? Localizer["Net Profit"] : Localizer["Net Loss"])</span>
                             <span class="fs-lg-2tx fw-bold d-flex justify-content-center" data-kt-countup="true" data-kt-countup-value="@Raw(Model.NetProfit)" data-kt-countup-decimal-places="2">@Model.NetProfit.ToString("N2")</span>
                         </div>
                     </div>
@@ -62,14 +62,14 @@
 
                 @if (profit)
                 {
-                    <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#eaf3ef;border-color:#13433a !important;">
-                        <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#13433a;"><i class="ki-outline ki-chart-line-up fs-2x text-white"></i></span></span>
+                    <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                        <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-chart-line-up fs-2x text-white"></i></span></span>
                         <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
                             <div class="mb-3 mb-md-0 fw-semibold pe-5">
                                 <h4 class="text-gray-900 fw-bold mb-1">@SR["The period achieved a net profit"]</h4>
                                 <div class="fs-6 text-gray-700">@SR["Net profit detail"]</div>
                             </div>
-                            <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#13433a;color:#fff;"><i class="ki-outline ki-arrow-up fs-6 text-white me-1"></i>@SR["Profit"]: @Model.NetProfit.ToString("N2")</span>
+                            <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#0E4A9E;color:#fff;"><i class="ki-outline ki-arrow-up fs-6 text-white me-1"></i>@SR["Profit"]: @Model.NetProfit.ToString("N2")</span>
                         </div>
                     </div>
                 }
@@ -98,13 +98,13 @@
             <div class="card-body px-0 pt-0 pb-4">
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
-                        <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th class="ps-9">@SR["Account"]</th><th class="text-end pe-9">@SR["Amount"]</th></tr></thead>
+                        <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th class="ps-9">@SR["Account"]</th><th class="text-end pe-9">@SR["Amount"]</th></tr></thead>
                         <tbody class="fs-6 fw-semibold text-gray-700">
                             <tr><td colspan="2" class="ps-9 py-3 fw-bold text-gray-800 fs-6" style="background:#f4f6f8;">@Localizer["Revenue"]</td></tr>
                             @foreach (var l in Model.Revenue.Lines)
                             {
                                 <tr>
-                                    <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@l.Code</span>@(isAr ? l.NameAr : l.NameEn)</td>
+                                    <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#E7F0FF;color:#145DBF;">@l.Code</span>@(isAr ? l.NameAr : DisplayName.Or(l.NameEn, l.NameAr))</td>
                                     <td class="text-end pe-9 text-gray-900 fw-bold">@l.Amount.ToString("N2")</td>
                                 </tr>
                             }
@@ -115,16 +115,16 @@
                             @foreach (var l in Model.Expenses.Lines)
                             {
                                 <tr>
-                                    <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#eaf3ef;color:#1f6253;">@l.Code</span>@(isAr ? l.NameAr : l.NameEn)</td>
+                                    <td class="ps-9"><span class="badge fs-8 fw-bold me-2" style="background:#E7F0FF;color:#145DBF;">@l.Code</span>@(isAr ? l.NameAr : DisplayName.Or(l.NameEn, l.NameAr))</td>
                                     <td class="text-end pe-9 text-gray-900 fw-bold">(@l.Amount.ToString("N2"))</td>
                                 </tr>
                             }
                             @if (Model.Expenses.Lines.Count == 0) { <tr><td class="ps-9 text-muted">@Localizer["No expenses"]</td><td class="text-end pe-9 text-muted">0.00</td></tr> }
                             <tr style="border-top:1px solid #e9edf2;"><td class="ps-9 fw-bold text-gray-600">@Localizer["Total Expenses"]</td><td class="text-end pe-9 fw-bold text-gray-800">(@Model.Expenses.Total.ToString("N2"))</td></tr>
 
-                            <tr style="@(profit?"background:#eaf3ef":"")" class="@(profit?"":"bg-light-danger")">
+                            <tr style="@(profit?"background:#E7F0FF":"")" class="@(profit?"":"bg-light-danger")">
                                 <td class="ps-9 fw-bold fs-5 text-gray-900">@(profit ? Localizer["Net Profit"] : Localizer["Net Loss"])</td>
-                                <td class="text-end pe-9 fw-bolder fs-4" style="@(profit?"color:#13433a":"")"><span class="@(profit?"":"text-danger")">@Model.NetProfit.ToString("N2")</span></td>
+                                <td class="text-end pe-9 fw-bolder fs-4" style="@(profit?"color:#0E4A9E":"")"><span class="@(profit?"":"text-danger")">@Model.NetProfit.ToString("N2")</span></td>
                             </tr>
                         </tbody>
                     </table>

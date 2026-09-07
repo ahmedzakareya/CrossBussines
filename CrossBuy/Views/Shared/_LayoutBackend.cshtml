@@ -28,19 +28,19 @@ License: For each use you must have a valid license purchased only from above li
 		<title>@Localizer["PageTitle"]</title>
 		<meta charset="utf-8" />
 		@* Class C removal, mirroring _LayoutInventory. This block shipped Metronic's own storefront 		   metadata: a Themeforest sales description, the vendor's SEO keyword list, og:title / og:url / 		   og:site_name naming this page "Metronic - The World's #1 Selling Bootstrap Admin Template by 		   KeenThemes", and a rel=canonical pointing at preview.keenthemes.com/metronic8. The canonical is 		   the damaging one — it declares this application a duplicate of the vendor's public demo. og:url 		   and canonical are dropped outright rather than repointed, because CrossBuy has no public URL to 		   name here and inventing one is out of scope. 		   The theme attribution comment near the top of this file is deliberately KEPT: it records 		   provenance and the Metronic licence terms, and it is a source comment, not rendered output. *@ 		<meta name="description" content="CrossBuy business platform." /> 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+		<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
 		<!--begin::Fonts(mandatory for all pages)-->
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 		<!--end::Fonts-->
 	<!-- ✅ FullCalendar -->
-	<link href="~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.css" rel="stylesheet" type="text/css" />
+	<link href="~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 
 	<!-- ✅ DataTables -->
-	<link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
+	<link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 
 	<!-- ✅ jsTree -->
-	<link href="~/Backend-assets/plugins/custom/jstree/jstree.bundle.css" rel="stylesheet" type="text/css" />
+	<link href="~/Backend-assets/plugins/custom/jstree/jstree.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 
 
 	<!-- ✅ Dropzone (only Arabic needs this, but can be loaded globally if used in both) -->
@@ -50,9 +50,9 @@ License: For each use you must have a valid license purchased only from above li
 	@if ((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"))
 	{
 		<!-- RTL Plugin Styles -->
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
-	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 
 		<!-- Cairo Font -->
 		<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
@@ -72,9 +72,9 @@ License: For each use you must have a valid license purchased only from above li
 	else
 	{
 		<!-- LTR Plugin Styles -->
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
-	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 	}
 
 		<!--end::Global Stylesheets Bundle-->
@@ -118,7 +118,7 @@ License: For each use you must have a valid license purchased only from above li
 							   matching _LayoutInventory's logo exactly. The destination is made real FIRST; naming a dead href
 							   would be the cosmetic fix the brief forbids. *@
 							<a href="@Url.Action("Index", "Home")" class="app-sidebar-logo">
-								<img alt="@Localizer["PageTitle"]" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" />
+								<img alt="@Localizer["PageTitle"]" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" asp-append-version="true" />
 							</a>
 							<!--end::Logo-->
 						</div>
@@ -844,7 +844,7 @@ License: For each use you must have a valid license purchased only from above li
 											<!--end::Avatar-->
 											<!--begin::Username-->
 											<div class="d-flex flex-column">
-												<div class="fw-bold d-flex align-items-center fs-5">@employee.FullName
+												<div class="fw-bold d-flex align-items-center fs-5">@CrossBuy.BL.EmployeeNames.Of(employee.FullName, employee.FullNameEn)
 												<span class="badge badge-light-primary fw-bold fs-8 px-2 py-1 ms-2">@Localizer["Pro"]</span></div>
 												<a href="#" class="fw-semibold text-muted text-hover-primary fs-7">@employee.Email</a>
 											</div>
@@ -1667,13 +1667,13 @@ License: For each use you must have a valid license purchased only from above li
 		<script>var hostUrl = "~/Backend-assets/";</script>
 		<!--begin::Global Javascript Bundle(mandatory for all pages)-->
 		<!-- ✅ Global Plugins (أساسي لجميع الصفحات) -->
-<script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
-<script src="~/Backend-assets/js/scripts.bundle.js"></script>
+<script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
 
 <!-- ✅ Vendor Plugins (مستخدمة حسب الصفحة) -->
-<script src="~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.js"></script>
-<script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js"></script>
-<script src="~/Backend-assets/plugins/custom/jstree/jstree.bundle.js"></script>
+<script src="~/Backend-assets/plugins/custom/fullcalendar/fullcalendar.bundle.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/plugins/custom/jstree/jstree.bundle.js" asp-append-version="true"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
 
 <!-- ✅ AmCharts Plugins -->
@@ -1690,17 +1690,17 @@ License: For each use you must have a valid license purchased only from above li
 <script src="https://cdn.amcharts.com/lib/5/geodata/worldTimeZoneAreasLow.js"></script>
 
 <!-- ✅ Custom Scripts (مخصصة للوظائف والصفحات) -->
-<script src="~/Backend-assets/js/widgets.bundle.js"></script>
-<script src="~/Backend-assets/js/custom/widgets.js"></script>
-<script src="~/Backend-assets/js/custom/apps/chat/chat.js"></script>
-<script src="~/Backend-assets/js/custom/utilities/modals/upgrade-plan.js"></script>
-<script src="~/Backend-assets/js/custom/utilities/modals/new-target.js"></script>
-<script src="~/Backend-assets/js/custom/utilities/modals/create-campaign.js"></script>
-<script src="~/Backend-assets/js/custom/utilities/modals/users-search.js"></script>
-<script src="~/Backend-assets/js/custom/apps/customers/list/list.js"></script>
-<script src="~/Backend-assets/js/custom/apps/projects/project/project.js"></script>
-<script src="~/Backend-assets/js/custom/apps/ecommerce/catalog/products.js"></script>
-	<script src="~/assets/js/app.ajax.js"></script>
+<script src="~/Backend-assets/js/widgets.bundle.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/widgets.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/apps/chat/chat.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/utilities/modals/upgrade-plan.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/utilities/modals/new-target.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/utilities/modals/create-campaign.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/utilities/modals/users-search.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/apps/customers/list/list.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/apps/projects/project/project.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/custom/apps/ecommerce/catalog/products.js" asp-append-version="true"></script>
+	<script src="~/assets/js/app.ajax.js" asp-append-version="true"></script>
 	<script src="~/Backend-assets/js/crossbuy-confirm.js" asp-append-version="true"></script>
 	@await Html.PartialAsync("_CbToastr")
 

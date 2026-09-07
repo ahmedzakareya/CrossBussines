@@ -25,7 +25,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveRuleAsync(CrmAutomationRule dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم القاعدة مطلوب", 0);
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Rule name is required", 0);
 			var trg = new[] { "LeadCreated", "OpportunityStageChanged" }.Contains(dto.TriggerType) ? dto.TriggerType : "LeadCreated";
 			var act = new[] { "Notify", "CreateActivity" }.Contains(dto.ActionType) ? dto.ActionType : "CreateActivity";
 			CrmAutomationRule e;

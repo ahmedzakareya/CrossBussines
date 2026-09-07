@@ -11,7 +11,7 @@
     var cash = ViewBag.CashAccounts as List<AccountNode> ?? new();
     var depreciable = Model.Cost - Model.SalvageValue;
     var pct = depreciable > 0 ? (int)Math.Min(100, Math.Round(Model.AccumulatedDepreciation / depreciable * 100)) : 0;
-    string StatusStyle(string s) => s switch { "Active" => "background:#eaf3ef;color:#13433a;", "FullyDepreciated" => "background:#eef1f5;color:#5e6278;", "Disposed" => "background:#f1f3f7;color:#7e8299;", _ => "background:#f1f3f7;color:#7e8299;" };
+    string StatusStyle(string s) => s switch { "Active" => "background:#E7F0FF;color:#0E4A9E;", "FullyDepreciated" => "background:#eef1f5;color:#5e6278;", "Disposed" => "background:#f1f3f7;color:#7e8299;", _ => "background:#f1f3f7;color:#7e8299;" };
     string StatusName(string s) => s switch { "Active" => SR["Active"].Value, "FullyDepreciated" => Localizer["Fully dep."].Value, "Disposed" => Localizer["Disposed"].Value, _ => s };
     string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);   // invariant countUp value
 }
@@ -21,7 +21,7 @@
         <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("FixedAssets","Accounting")" class="text-muted">@Localizer["Fixed Assets"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Model.AssetNo</li></ul></div>
         <div class="d-flex gap-2">
             <a href="@Url.Action("FixedAssets","Accounting")" class="btn btn-sm btn-light">@SR["Back"]</a>
-            @if (Model.AcquisitionJournalEntryId.HasValue) { <a href="@Url.Action("JournalEntry","Accounting", new { id = Model.AcquisitionJournalEntryId })" class="btn btn-sm" style="background:#eaf3ef;color:#13433a;"><i class="ki-outline ki-document fs-5" style="color:#13433a;"></i>@Localizer["Acquisition JV"]</a> }
+            @if (Model.AcquisitionJournalEntryId.HasValue) { <a href="@Url.Action("JournalEntry","Accounting", new { id = Model.AcquisitionJournalEntryId })" class="btn btn-sm" style="background:#E7F0FF;color:#0E4A9E;"><i class="ki-outline ki-document fs-5" style="color:#0E4A9E;"></i>@Localizer["Acquisition JV"]</a> }
             @if (Model.Status != "Disposed") { <button class="btn btn-sm btn-light-danger" data-bs-toggle="modal" data-bs-target="#mDispose"><i class="ki-outline ki-trash fs-5"></i>@Localizer["Dispose"]</button> }
         </div>
     </div></div>
@@ -29,14 +29,14 @@
 
         <div class="row g-5 mb-5">
             <div class="col-md-3"><div class="card h-100"><div class="card-body text-center py-6"><div class="fs-7 text-muted">@Localizer["Cost"]</div><div class="fw-bold fs-2 text-gray-900" data-kt-countup="true" data-kt-countup-value="@Raw(Model.Cost)">@Model.Cost.ToString("N2")</div></div></div></div>
-            <div class="col-md-3"><div class="card h-100"><div class="card-body text-center py-6"><div class="fs-7 text-muted">@Localizer["Accum. depreciation"]</div><div class="fw-bold fs-2" style="color:#1f6253;" data-kt-countup="true" data-kt-countup-value="@Raw(Model.AccumulatedDepreciation)">@Model.AccumulatedDepreciation.ToString("N2")</div></div></div></div>
-            <div class="col-md-3"><div class="card h-100"><div class="card-body text-center py-6"><div class="fs-7 text-muted">@Localizer["Net book value"]</div><div class="fw-bold fs-2" style="color:#13433a;" data-kt-countup="true" data-kt-countup-value="@Raw(Model.NetBookValue)">@Model.NetBookValue.ToString("N2")</div></div></div></div>
+            <div class="col-md-3"><div class="card h-100"><div class="card-body text-center py-6"><div class="fs-7 text-muted">@Localizer["Accum. depreciation"]</div><div class="fw-bold fs-2" style="color:#145DBF;" data-kt-countup="true" data-kt-countup-value="@Raw(Model.AccumulatedDepreciation)">@Model.AccumulatedDepreciation.ToString("N2")</div></div></div></div>
+            <div class="col-md-3"><div class="card h-100"><div class="card-body text-center py-6"><div class="fs-7 text-muted">@Localizer["Net book value"]</div><div class="fw-bold fs-2" style="color:#0E4A9E;" data-kt-countup="true" data-kt-countup-value="@Raw(Model.NetBookValue)">@Model.NetBookValue.ToString("N2")</div></div></div></div>
             <div class="col-md-3"><div class="card h-100"><div class="card-body text-center py-6"><div class="fs-7 text-muted">@Localizer["Monthly depreciation"]</div><div class="fw-bold fs-2 text-gray-900" data-kt-countup="true" data-kt-countup-value="@Raw(monthly)">@monthly.ToString("N2")</div></div></div></div>
         </div>
 
         <div class="card mb-5"><div class="card-body py-5">
             <div class="d-flex justify-content-between mb-2"><span class="fw-semibold text-muted">@Localizer["Depreciated"]</span><span class="fw-bold">@pct%</span></div>
-            <div class="progress h-8px" style="background:#eaf3ef;"><div class="progress-bar" style="width:@pct%;background:#13433a;"></div></div>
+            <div class="progress h-8px" style="background:#E7F0FF;"><div class="progress-bar" style="width:@pct%;background:#0E4A9E;"></div></div>
             <div class="row g-5 mt-3">
                 <div class="col-md-3"><div class="fs-7 text-muted">@SR["Number"]</div><div class="fw-bold">@Model.AssetNo</div></div>
                 <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Acquired"]</div><div class="fw-bold">@Model.AcquisitionDate.ToString("yyyy/MM/dd")</div></div>
@@ -46,17 +46,17 @@
                 @if (Model.Status == "Disposed") {
                     <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Disposed on"]</div><div class="fw-bold">@(Model.DisposalDate?.ToString("yyyy/MM/dd"))</div></div>
                     <div class="col-md-3"><div class="fs-7 text-muted">@Localizer["Proceeds"]</div><div class="fw-bold">@(Model.DisposalProceeds?.ToString("N2"))</div></div>
-                    @if (Model.DisposalJournalEntryId.HasValue) { <div class="col-md-3 d-flex align-items-end"><a href="@Url.Action("JournalEntry","Accounting", new { id = Model.DisposalJournalEntryId })" class="btn btn-sm" style="background:#eaf3ef;color:#13433a;">@Localizer["Disposal JV"]</a></div> }
+                    @if (Model.DisposalJournalEntryId.HasValue) { <div class="col-md-3 d-flex align-items-end"><a href="@Url.Action("JournalEntry","Accounting", new { id = Model.DisposalJournalEntryId })" class="btn btn-sm" style="background:#E7F0FF;color:#0E4A9E;">@Localizer["Disposal JV"]</a></div> }
                 }
             </div>
         </div></div>
 
         <div class="card"><div class="card-header border-0 pt-6"><div class="card-title"><h3 class="fw-bold">@Localizer["Depreciation history"]</h3></div></div>
         <div class="card-body pt-0 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
-            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Period"]</th><th class="text-end">@SR["Amount"]</th><th class="text-end">@Localizer["Accumulated"]</th><th class="text-end">@Localizer["Net book value"]</th></tr></thead>
+            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Period"]</th><th class="text-end">@SR["Amount"]</th><th class="text-end">@Localizer["Accumulated"]</th><th class="text-end">@Localizer["Net book value"]</th></tr></thead>
             <tbody>
             @foreach (var h in history) {
-                <tr><td><span class="badge fw-bold" style="background:#eaf3ef;color:#1f6253;">@(history.IndexOf(h)+1)</span></td><td class="text-end fw-bold text-gray-900">@h.Amount.ToString("N2")</td><td class="text-end text-muted">@h.AccumulatedAfter.ToString("N2")</td><td class="text-end fw-bold">@h.NetBookValueAfter.ToString("N2")</td></tr>
+                <tr><td><span class="badge fw-bold" style="background:#E7F0FF;color:#145DBF;">@(history.IndexOf(h)+1)</span></td><td class="text-end fw-bold text-gray-900">@h.Amount.ToString("N2")</td><td class="text-end text-muted">@h.AccumulatedAfter.ToString("N2")</td><td class="text-end fw-bold">@h.NetBookValueAfter.ToString("N2")</td></tr>
             }
             @if (history.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-10">@Localizer["No depreciation yet"]</td></tr> }
             </tbody>
@@ -65,24 +65,25 @@
         @{ var mSch = ViewBag.MaintSchedules as List<MaintenanceSchedule> ?? new(); var mRec = ViewBag.MaintRecords as List<MaintenanceRecord> ?? new(); var mProjects = ViewBag.Projects as List<(int id, string text)> ?? new(); var mTypes = new[] { "Preventive", "Inspection", "Calibration", "Repair" }; }
         <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Scheduled maintenance"]</div></div>
             <div class="card-body">
-                <form asp-action="SaveMaintenanceSchedule" method="post" class="row g-2 align-items-end mb-4 rounded p-3" style="background:#eaf3ef;">@Html.AntiForgeryToken()<input type="hidden" name="assetId" value="@Model.ID" /><input type="hidden" name="isActive" value="true" />
+                <form asp-action="SaveMaintenanceSchedule" method="post" class="row g-2 align-items-end mb-4 rounded p-3" style="background:#E7F0FF;">@Html.AntiForgeryToken()<input type="hidden" name="assetId" value="@Model.ID" /><input type="hidden" name="isActive" value="true" />
                     <div class="col-md-3"><label class="fw-semibold fs-8 mb-1">@Localizer["Title"]</label><input name="title" class="form-control form-control-solid form-control-sm" required /></div>
+                    <div class="col-md-3"><label class="fw-semibold fs-8 mb-1">@Localizer["Title (English)"]</label><input name="titleEn" class="form-control form-control-solid form-control-sm" /></div>
                     <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@SR["Type"]</label><select name="type" class="form-select form-select-solid form-select-sm">@foreach (var t in mTypes) { <option value="@t">@t</option> }</select></div>
                     <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Every (months)"]</label><input name="intervalMonths" type="number" min="1" value="3" class="form-control form-control-solid form-control-sm" /></div>
                     <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Next due"]</label><input name="nextDueDate" type="date" class="form-control form-control-solid form-control-sm" required /></div>
                     <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Est. cost"]</label><input name="estimatedCost" type="number" step="0.01" class="form-control form-control-solid form-control-sm" /></div>
-                    <div class="col-md-1"><button class="btn btn-sm text-white w-100" style="background:#13433a;"><i class="ki-outline ki-plus fs-4" style="color:#fff;"></i></button></div>
+                    <div class="col-md-1"><button class="btn btn-sm text-white w-100" style="background:#0E4A9E;"><i class="ki-outline ki-plus fs-4" style="color:#fff;"></i></button></div>
                 </form>
                 <div class="table-responsive mb-5"><table class="table table-row-dashed align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Schedule"]</th><th>@SR["Type"]</th><th class="text-center">@Localizer["Every"]</th><th>@Localizer["Next due"]</th><th>@Localizer["Last done"]</th><th class="text-end"></th></tr></thead>
+                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Schedule"]</th><th>@SR["Type"]</th><th class="text-center">@Localizer["Every"]</th><th>@Localizer["Next due"]</th><th>@Localizer["Last done"]</th><th class="text-end"></th></tr></thead>
                     <tbody>
                     @if (!mSch.Any()) { <tr><td colspan="6" class="text-center text-muted py-5">@Localizer["No maintenance schedules"]</td></tr> }
                     @foreach (var s in mSch)
                     {
                         var overdue = s.NextDueDate.Date < DateTime.Today;
                         <tr>
-                            <td class="fw-bold text-gray-900">@s.Title</td><td class="text-muted fs-8">@s.Type</td><td class="text-center">@s.IntervalMonths @Localizer["mo"]</td>
-                            <td>@if (overdue) { <span class="badge badge-light-danger fw-bold">@s.NextDueDate.ToString("yyyy-MM-dd")</span> } else { <span class="badge fw-bold" style="background:#eaf3ef;color:#1f6253;">@s.NextDueDate.ToString("yyyy-MM-dd")</span> }</td>
+                            <td class="fw-bold text-gray-900">@DisplayName.Of(s.Title, s.TitleEn)</td><td class="text-muted fs-8">@s.Type</td><td class="text-center">@s.IntervalMonths @Localizer["mo"]</td>
+                            <td>@if (overdue) { <span class="badge badge-light-danger fw-bold">@s.NextDueDate.ToString("yyyy-MM-dd")</span> } else { <span class="badge fw-bold" style="background:#E7F0FF;color:#145DBF;">@s.NextDueDate.ToString("yyyy-MM-dd")</span> }</td>
                             <td class="text-muted fs-8">@(s.LastDoneDate?.ToString("yyyy-MM-dd") ?? "—")</td>
                             <td class="text-end"><form asp-action="DeleteMaintenanceSchedule" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete schedule?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@s.ID" /><input type="hidden" name="assetId" value="@Model.ID" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-6"></i></button></form></td>
                         </tr>
@@ -92,21 +93,21 @@
 
                 <div class="fw-bold fs-6 mb-2">@Localizer["Log a performed maintenance"]</div>
                 <form asp-action="LogMaintenance" method="post" class="row g-2 align-items-end mb-4">@Html.AntiForgeryToken()<input type="hidden" name="assetId" value="@Model.ID" />
-                    <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Schedule"]</label><select name="scheduleId" class="form-select form-select-solid form-select-sm"><option value="">@Localizer["No schedule"]</option>@foreach (var s in mSch) { <option value="@s.ID">@s.Title</option> }</select></div>
+                    <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Schedule"]</label><select name="scheduleId" class="form-select form-select-solid form-select-sm"><option value="">@Localizer["No schedule"]</option>@foreach (var s in mSch) { <option value="@s.ID">@DisplayName.Of(s.Title, s.TitleEn)</option> }</select></div>
                     <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@SR["Date"]</label><input name="date" type="date" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="form-control form-control-solid form-control-sm" required /></div>
                     <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@SR["Description"]</label><input name="description" class="form-control form-control-solid form-control-sm" /></div>
                     <div class="col-md-1"><label class="fw-semibold fs-8 mb-1">@Localizer["Cost"]</label><input name="cost" type="number" step="0.01" value="0" class="form-control form-control-solid form-control-sm" /></div>
-                    <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Pay from (opt.)"]</label><select name="payFromGlAccountId" class="form-select form-select-solid form-select-sm"><option value="">@Localizer["Record only"]</option>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
+                    <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Pay from (opt.)"]</label><select name="payFromGlAccountId" class="form-select form-select-solid form-select-sm"><option value="">@Localizer["Record only"]</option>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))</option> }</select></div>
                     <div class="col-md-2"><label class="fw-semibold fs-8 mb-1">@Localizer["Project"]</label><select name="projectId" class="form-select form-select-solid form-select-sm"><option value="">—</option>@foreach (var p in mProjects) { <option value="@p.id">@p.text</option> }</select></div>
-                    <div class="col-md-1"><button class="btn btn-sm text-white w-100" style="background:#13433a;"><i class="ki-outline ki-check fs-4" style="color:#fff;"></i></button></div>
+                    <div class="col-md-1"><button class="btn btn-sm text-white w-100" style="background:#0E4A9E;"><i class="ki-outline ki-check fs-4" style="color:#fff;"></i></button></div>
                 </form>
                 <div class="table-responsive"><table class="table table-row-dashed align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@SR["Date"]</th><th>@SR["Description"]</th><th>@SR["Vendor"]</th><th class="text-end">@Localizer["Cost"]</th><th class="text-center">@Localizer["GL"]</th></tr></thead>
+                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@SR["Date"]</th><th>@SR["Description"]</th><th>@SR["Vendor"]</th><th class="text-end">@Localizer["Cost"]</th><th class="text-center">@Localizer["GL"]</th></tr></thead>
                     <tbody>
                     @if (!mRec.Any()) { <tr><td colspan="5" class="text-center text-muted py-5">@Localizer["No maintenance records"]</td></tr> }
                     @foreach (var r in mRec)
                     {
-                        <tr><td class="text-gray-800">@r.Date.ToString("yyyy-MM-dd")</td><td class="text-gray-800">@r.Description</td><td class="text-muted fs-8">@r.Vendor</td><td class="text-end fw-bold text-gray-900">@r.Cost.ToString("N2")</td><td class="text-center">@if (r.JournalEntryId != null) { <i class="ki-outline ki-check-circle fs-4" style="color:#13433a;"></i> } else { <span class="text-gray-300">—</span> }</td></tr>
+                        <tr><td class="text-gray-800">@r.Date.ToString("yyyy-MM-dd")</td><td class="text-gray-800">@r.Description</td><td class="text-muted fs-8">@r.Vendor</td><td class="text-end fw-bold text-gray-900">@r.Cost.ToString("N2")</td><td class="text-center">@if (r.JournalEntryId != null) { <i class="ki-outline ki-check-circle fs-4" style="color:#0E4A9E;"></i> } else { <span class="text-gray-300">—</span> }</td></tr>
                     }
                     </tbody>
                 </table></div>
@@ -120,10 +121,10 @@
     <form asp-action="DisposeAsset" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.ID" />
         <div class="modal-header"><h2 class="fw-bold">@Localizer["Dispose asset"]</h2><div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div></div>
         <div class="modal-body py-6 px-8">
-            <div class="alert fs-7" style="background:#eaf3ef;color:#1f6253;">@Localizer["Current net book value"]: <b>@Model.NetBookValue.ToString("N2")</b></div>
+            <div class="alert fs-7" style="background:#E7F0FF;color:#145DBF;">@Localizer["Current net book value"]: <b>@Model.NetBookValue.ToString("N2")</b></div>
             <div class="row"><div class="col-6 mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Disposal date"]</label><input name="disposalDate" type="date" class="form-control form-control-solid" value="2026-06-01" required /></div>
             <div class="col-6 mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Proceeds"]</label><input name="proceeds" type="number" step="0.01" value="0" class="form-control form-control-solid" /></div></div>
-            <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Received into"]</label><select name="cashAccountId" class="form-select form-select-solid" required>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
+            <div class="mb-2"><label class="required fw-semibold fs-6 mb-2">@Localizer["Received into"]</label><select name="cashAccountId" class="form-select form-select-solid" required>@foreach (var a in cash) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))</option> }</select></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-danger">@Localizer["Dispose & post"]</button></div>
     </form>

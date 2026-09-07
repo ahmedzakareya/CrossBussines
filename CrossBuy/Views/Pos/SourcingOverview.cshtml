@@ -33,7 +33,7 @@
                 <div class="card mb-5"><div class="card-header"><div class="card-title"><h3>@g.Key.BranchName <span class="text-muted fs-7 ms-2">(@g.Count())</span></h3></div></div>
                 <div class="card-body py-4">
                     <table class="table table-row-dashed align-middle fs-7">
-                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@T("الصنف", "Item")</th><th>@T("طريقة التوفير", "Method")</th><th>@T("الفرع المصدر", "Source branch")</th><th>@T("نصف-المصنّع", "Semi-finished")</th><th>@T("التوقيت", "Timing")</th></tr></thead>
+                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th>@T("الصنف", "Item")</th><th>@T("طريقة التوفير", "Method")</th><th>@T("الفرع المصدر", "Source branch")</th><th>@T("نصف-المصنّع", "Semi-finished")</th><th>@T("التوقيت", "Timing")</th></tr></thead>
                         <tbody>
                         @foreach (var r in g.OrderBy(x => x.ItemCode))
                         {

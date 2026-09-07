@@ -126,13 +126,13 @@ document.addEventListener('DOMContentLoaded', function () {
             row.addEventListener('click', function (e) {
                 if (e.target.closest('.dg-del')) return;
                 listEl.querySelectorAll('.dg-item').forEach(function (r) { r.style.borderColor = '#eff2f5'; r.style.background = '#fff'; });
-                row.style.borderColor = '#13433a'; row.style.background = '#eaf3ef';
+                row.style.borderColor = '#0E4A9E'; row.style.background = '#E7F0FF';
                 showMain(f);
             });
             var del = row.querySelector('.dg-del');
             if (del) del.addEventListener('click', function () { delAttachment(f.id); });
             listEl.appendChild(row);
-            if (idx === 0) { row.style.borderColor = '#13433a'; row.style.background = '#eaf3ef'; showMain(f); }
+            if (idx === 0) { row.style.borderColor = '#0E4A9E'; row.style.background = '#E7F0FF'; showMain(f); }
         });
     }
 

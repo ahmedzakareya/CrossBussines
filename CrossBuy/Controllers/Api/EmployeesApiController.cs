@@ -3,6 +3,7 @@ using CrossBuy.Models.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using CrossBuy.BL;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.Controllers.Api
@@ -75,7 +76,7 @@ namespace CrossBuy.Controllers.Api
 			}
 
 			var data = await q
-				.OrderBy(e => e.FullName)
+				.OrderByDisplayName()
 				.Select(e => new
 				{
 					id = e.ID,
@@ -145,6 +146,6 @@ namespace CrossBuy.Controllers.Api
 		}
 
 		private NotFoundObjectResult NotFoundEmployee()
-			=> NotFound(new { success = false, message = "الموظف غير موجود" });
+			=> NotFound(new { success = false, message = "Employee not found" });
 	}
 }

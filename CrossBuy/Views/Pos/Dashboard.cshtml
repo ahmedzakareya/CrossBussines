@@ -55,7 +55,7 @@
                 </div>
                 <!--begin::Month card (brand green)-->
                 <div class="col-xl-4">
-                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#1f6253">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#145DBF">
                         <div class="card-header pt-5">
                             <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@Localizer["Sales this month"]</span></h3>
                             <div class="card-toolbar">
@@ -124,7 +124,7 @@
                         <div class="card-body pt-2">
                             <div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                 <thead>
-                                    <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                    <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                                         <th>@Localizer["Receipt"]</th><th>@SR["Type"]</th><th>@SR["Date"]</th>
                                         <th class="text-end">@Localizer["Total"]</th><th class="text-center">@SR["Status"]</th>
                                     </tr>
@@ -265,7 +265,7 @@
             new ApexCharts(document.querySelector('#pos_sales_chart'), {
                 chart: { type: 'area', height: 330, fontFamily: 'inherit', toolbar: { show: false } },
                 series: [{ name: '@Localizer["Sales"]', data: totals }],
-                colors: ['#13433a'],
+                colors: ['#1877F2'],
                 xaxis: { categories: days, labels: { style: { colors: '#99A1B7' } } },
                 yaxis: { labels: { style: { colors: '#99A1B7' }, formatter: function (v) { return Math.round(v); } } },
                 stroke: { curve: 'smooth', width: 3 },

@@ -103,7 +103,7 @@
         @* Say the cap out loud. A board that silently dropped cards would read as an empty column. *@
         <div class="alert alert-warning d-flex align-items-center py-3 mb-5">
             <i class="ki-outline ki-information-5 fs-2 text-warning me-3"></i>
-            <span>@T($"تُعرض أول {boardCap} مهمة فقط. استخدم التصفية لتضييق النتائج.", $"Only the first {boardCap} tasks are shown. Use the filters to narrow the board.")</span>
+            <span>@T($"Only the first {boardCap} tasks are shown. Use the filters to narrow the results.", $"Only the first {boardCap} tasks are shown. Use the filters to narrow the board.")</span>
         </div>
     }
 
@@ -139,6 +139,10 @@
                                 <div class="card-body p-4">
                                     <div class="d-flex flex-stack mb-2">
                                         <a href="/Tasks/Detail?id=@t.Id" class="fw-semibold text-gray-900">@t.Title</a>
+                                        @* A quiet way to the read-only summary. The title still opens the
+                                           editable screen, because that is what a card click has always done. *@
+                                        <a href="/Tasks/Summary/@t.Id" class="text-muted ms-2" aria-label="@T("الملخّص", "Summary")"
+                                           title="@T("الملخّص", "Summary")"><i class="ki-outline ki-clipboard fs-7"></i></a>
                                         <span class="badge badge-light-@pc(t.Priority) fs-8">@pl(t.Priority)</span>
                                     </div>
 

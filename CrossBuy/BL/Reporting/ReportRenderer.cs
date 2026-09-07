@@ -23,13 +23,13 @@ namespace CrossBuy.BL.Reporting
 
     // Visual identity for rendered output.
     //
-    // Defaults are the product's ledger green + gold. CLAUDE.md is explicit that the brand is green #13433a and
+    // Defaults are the product's ledger green + gold. CLAUDE.md is explicit that the brand is green #0E4A9E and
     // gold, NOT blue, and that crossbuy-brand.css overrides Metronic's blue on purpose — so the reporting
     // defaults match the ledger, and the open A6.2 "preserve the blue identity" question is NOT silently
     // resolved here in either direction. Whoever owns that decision changes these two constants.
     public sealed class ReportBranding
     {
-        public const string BrandGreen = "#13433a";
+        public const string BrandGreen = "#0E4A9E";
         public const string BrandGold = "#b28b3c";
 
         public string? CompanyName { get; init; }

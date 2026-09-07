@@ -19,14 +19,14 @@
         <div class="card"><div class="card-body py-3">
             <div class="text-muted fs-8 mb-3">@Localizer["A plan is a production demand for manufactured items. On run, BOMs are exploded multi-level and on-hand is netted, surfacing shortages to make or buy."]</div>
             <div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
-                <thead><tr class="fw-bold fs-7 text-muted text-uppercase"><th>#</th><th>@SR["Name"]</th><th>@SR["Date"]</th><th>@SR["Status"]</th><th></th></tr></thead>
+                <thead><tr class="fw-bold fs-7 text-muted text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>#</th><th>@SR["Name"]</th><th>@SR["Date"]</th><th>@SR["Status"]</th><th></th></tr></thead>
                 <tbody>
                 @if (!plans.Any()) { <tr><td colspan="5" class="text-center text-muted py-6">@Localizer["No plans yet."]</td></tr> }
                 @foreach (var p in plans)
                 {
                     <tr>
                         <td class="fw-bold">@p.ID</td>
-                        <td><a href="@Url.Action("PlanDetails","Inventory", new { id = p.ID })" class="fw-bold text-hover-primary">@p.Name</a></td>
+                        <td><a href="@Url.Action("PlanDetails","Inventory", new { id = p.ID })" class="fw-bold text-hover-primary">@DisplayName.Of(p.Name, p.NameEn)</a></td>
                         <td class="text-muted">@(p.PlanDate?.ToString("yyyy-MM-dd"))</td>
                         <td><span class="badge badge-light-@stCls(p.Status)">@stNm(p.Status)</span></td>
                         <td class="text-end">
@@ -47,6 +47,9 @@
         <div class="modal-body row g-4">
             <div class="col-md-8"><label class="required fw-semibold fs-7 text-muted mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" required placeholder="@Localizer["June plan"]" /></div>
             <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Date"]</label><input type="date" name="planDate" class="form-control form-control-solid" /></div>
+            @* Optional English name. The list shows this to an English reader and falls back to
+               the Arabic one when it is left empty, so nothing breaks if the planner skips it. *@
+            <div class="col-md-8"><label class="fw-semibold fs-7 text-muted mb-1">@Localizer["Name (English)"]</label><input name="nameEn" class="form-control form-control-solid" placeholder="@Localizer["June plan"]" /></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button><button class="btn btn-primary">@Localizer["Create"]</button></div>
     </form>

@@ -167,12 +167,25 @@ namespace CrossBuy.BL
 			var recent = await _context.JournalEntries.AsNoTracking()
 				.Where(e => e.CompanyID == companyId && (e.Status == "Posted" || e.Status == "Reversed"))
 				.OrderByDescending(e => e.ID).Take(8)
-				.Select(e => new { e.ID, e.EntryNo, e.EntryDate, e.Description, e.JournalType, e.Status })
+				.Select(e => new { e.ID, e.EntryNo, e.EntryDate, e.Description, e.DescriptionEn, e.JournalType, e.Status })
 				.ToListAsync();
+			bool isAr = System.Globalization.CultureInfo.CurrentUICulture
+				.TwoLetterISOLanguageName.Equals("ar", System.StringComparison.OrdinalIgnoreCase);
 			foreach (var e in recent)
 			{
 				var amt = await _context.JournalEntryLines.AsNoTracking().Where(l => l.JournalEntryId == e.ID).SumAsync(l => (decimal?)l.Debit) ?? 0;
-				dto.Recent.Add(new AccRecentEntry { EntryNo = e.EntryNo, Date = e.EntryDate, Description = e.Description, JournalType = e.JournalType, Status = e.Status, Amount = Math.Round(amt, 2) });
+				dto.Recent.Add(new AccRecentEntry
+				{
+					EntryNo = e.EntryNo,
+					Date = e.EntryDate,
+					// The description the reader's language asks for. /Accounting/JournalEntry and
+					// /Accounting/Journals already did this; this list did not, so the same entry read
+					// English on one screen and Arabic on the dashboard beside it.
+					Description = isAr || string.IsNullOrWhiteSpace(e.DescriptionEn) ? e.Description : e.DescriptionEn,
+					JournalType = e.JournalType,
+					Status = e.Status,
+					Amount = Math.Round(amt, 2),
+				});
 			}
 
 			// Phase 6 — fixed-asset summary (active assets only)

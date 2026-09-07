@@ -12,13 +12,13 @@
         --as-border:       #e4e9f2;
         --as-text:         #1a2236;
         --as-muted:        #7b8494;
-        --as-primary:      #1f6253;
-        --as-primary-soft: #e9f1ee;
+        --as-primary:      #145DBF;
+        --as-primary-soft: #E7F0FF;
         --as-shadow:       0 12px 34px rgba(20,32,55,.09);
         --as-radius:       22px;
-        --c1-main:#13433a; --c1-shadow:#081f1a; --c1-platform:#0f342d; --c1-light:#2f6a5c;
-        --c2-main:#1f6253; --c2-shadow:#123a31; --c2-platform:#1a5446; --c2-light:#3a8471;
-        --c3-main:#2f8f78; --c3-shadow:#1f6253; --c3-platform:#277d67; --c3-light:#5aa892;
+        --c1-main:#0E4A9E; --c1-shadow:#0B3D91; --c1-platform:#0E4A9E; --c1-light:#166FE5;
+        --c2-main:#145DBF; --c2-shadow:#0E4A9E; --c2-platform:#145DBF; --c2-light:#1877F2;
+        --c3-main:#1877F2; --c3-shadow:#145DBF; --c3-platform:#166FE5; --c3-light:#5B8CFF;
     }
 
     .as-page  { background:var(--as-bg); border-radius:24px; padding:22px; }
@@ -26,10 +26,10 @@
 
     /* ── HEADER ── */
     .as-official-header { position:relative; padding:22px 26px; background:#ffffff; border-bottom:1px solid var(--as-border); }
-    .as-official-header::before { content:""; position:absolute; inset-inline-start:0; top:0; width:100%; height:4px; background:#1f6253; }
+    .as-official-header::before { content:""; position:absolute; inset-inline-start:0; top:0; width:100%; height:4px; background:#145DBF; }
     .as-official-main  { display:flex; align-items:center; gap:16px; }
-    .as-official-icon  { width:52px; height:52px; border-radius:16px; background:#e9f1ee; border:1px solid #c3ddd3; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 22px rgba(19,67,58,.10); }
-    .as-eyebrow        { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; background:#e9f1ee; color:#1f6253; border:1px solid #c3ddd3; font-size:12px; font-weight:800; margin-bottom:10px; }
+    .as-official-icon  { width:52px; height:52px; border-radius:16px; background:#E7F0FF; border:1px solid #D0E1FF; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 22px rgba(14,74,158,.10); }
+    .as-eyebrow        { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; background:#E7F0FF; color:#145DBF; border:1px solid #D0E1FF; font-size:12px; font-weight:800; margin-bottom:10px; }
     .as-title          { color:#162033; font-size:23px; font-weight:800; margin:0; }
     .as-subtitle       { color:#667085; font-size:13px; margin-top:7px; }
     .as-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex-shrink:0; }
@@ -38,7 +38,7 @@
     .as-command-bar    { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 20px; background:#fff; border-bottom:1px solid var(--as-border); }
     .as-search-wrap    { flex:1; max-width:640px; }
     .as-search-box     { height:44px; border:1px solid var(--as-border); border-radius:14px; background:#ffffff; display:flex; align-items:center; gap:10px; padding:0 14px; box-shadow:0 4px 12px rgba(20,32,55,.04); }
-    .as-search-box:focus-within { border-color:rgba(31,98,83,.45); box-shadow:0 0 0 4px rgba(31,98,83,.08); }
+    .as-search-box:focus-within { border-color:rgba(20,93,191,.45); box-shadow:0 0 0 4px rgba(20,93,191,.08); }
     .as-search-box input { border:0; outline:0; background:transparent; width:100%; font-weight:700; font-size:13px; color:var(--as-text); }
     .as-search-box input::placeholder { color:#9aa4b5; font-weight:600; }
     .as-search-clear   { width:28px; height:28px; border:0; border-radius:8px; background:#f3f6fb; color:#6b7280; display:none; align-items:center; justify-content:center; cursor:pointer; }
@@ -71,8 +71,8 @@
     .org-legend-title{ font-size:12px; font-weight:900; color:#182235; }
     .org-legend-code { font-size:10px; color:#6b7280; margin-top:2px; font-weight:700; }
     .org-legend-num  { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; }
-    .ht1{color:var(--c1-main);background:#e9f1ee;} .ht2{color:var(--c2-main);background:#eaf3ef;} .ht3{color:var(--c3-main);background:#edf5f1;}
-    .num1{color:var(--c1-main);background:#e9f1ee;border:1px solid #b7d3c9;} .num2{color:var(--c2-main);background:#eaf3ef;border:1px solid #b7d3c9;} .num3{color:var(--c3-main);background:#edf5f1;border:1px solid #c3ddd3;}
+    .ht1{color:var(--c1-main);background:#E7F0FF;} .ht2{color:var(--c2-main);background:#E7F0FF;} .ht3{color:var(--c3-main);background:#E7F0FF;}
+    .num1{color:var(--c1-main);background:#E7F0FF;border:1px solid #A8C5FF;} .num2{color:var(--c2-main);background:#E7F0FF;border:1px solid #A8C5FF;} .num3{color:var(--c3-main);background:#E7F0FF;border:1px solid #D0E1FF;}
     .org-summary-grid  { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; text-align:center; }
     .org-summary-num   { font-size:22px; font-weight:950; line-height:1; }
     .org-summary-label { font-size:10px; color:#667085; margin-top:5px; font-weight:800; }
@@ -84,7 +84,7 @@
         direction:ltr;
         scrollbar-width:thin; scrollbar-color:#cfd8e6 #f8fafc;
         cursor:grab; user-select:none;
-        background-color:#fbfdfc;
+        background-color:#F3F7FF;
         background-image:
             linear-gradient(#edf0f5 1px,transparent 1px),
             linear-gradient(90deg,#edf0f5 1px,transparent 1px);
@@ -122,7 +122,7 @@
         backdrop-filter:blur(8px);
     }
     .org-zoom-btn { width:36px; height:36px; border:1px solid #d9e2ee; border-radius:11px; background:#fff; color:#172033; display:inline-flex; align-items:center; justify-content:center; font-weight:900; cursor:pointer; transition:all .16s; }
-    .org-zoom-btn:hover { background:#e9f1ee; border-color:#b7d3c9; color:#1f6253; }
+    .org-zoom-btn:hover { background:#E7F0FF; border-color:#A8C5FF; color:#145DBF; }
     .org-zoom-value { min-width:54px; height:36px; padding:0 9px; border-radius:11px; background:#f4f7fb; color:#475467; font-size:12px; font-weight:900; display:inline-flex; align-items:center; justify-content:center; }
 
 
@@ -160,18 +160,18 @@
         position:relative; z-index:1;
         min-height:52px;
     }
-    .fc-card:hover { border-color:rgba(31,98,83,.28); box-shadow:0 10px 22px rgba(20,32,55,.09); transform:translateX(-3px); }
+    .fc-card:hover { border-color:rgba(20,93,191,.28); box-shadow:0 10px 22px rgba(20,32,55,.09); transform:translateX(-3px); }
     .fc-ring  { width:38px; height:38px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
     .fc-info  { flex:1; min-width:0; }
     .fc-name  { font-size:12px; font-weight:900; color:var(--as-text); line-height:1.45; overflow-wrap:anywhere; }
     .fc-lbl   { font-size:10px; color:var(--as-muted); margin-top:2px; font-weight:700; }
     .fc-toggle {
         width:26px; height:26px; border-radius:9px;
-        border:1px solid var(--as-border); background:#f4f8f6;
+        border:1px solid var(--as-border); background:#E7F0FF;
         display:flex; align-items:center; justify-content:center;
         flex-shrink:0; cursor:pointer; transition:background .15s;
     }
-    .fc-toggle:hover { background:#e9f1ee; }
+    .fc-toggle:hover { background:#E7F0FF; }
     .fc-toggle svg { width:11px; height:11px; color:var(--as-text); transition:transform .2s; }
     .fc-node.collapsed > .fc-item > .fc-card .fc-toggle svg { transform:rotate(-90deg); }
     .fc-node.collapsed > .fc-children { display:none; }
@@ -251,7 +251,7 @@
     }
 
     /* ── MISC ── */
-    .as-match     { outline:3px solid rgba(31,98,83,.16); border-color:rgba(31,98,83,.48)!important; }
+    .as-match     { outline:3px solid rgba(20,93,191,.16); border-color:rgba(20,93,191,.48)!important; }
     .as-print-root{ display:none; }
 
     @@media print {
@@ -303,7 +303,7 @@
                     <div class="as-official-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
                         <div class="as-official-main">
                             <div class="as-official-icon">
-                                <i class="ki-outline ki-abstract-26 fs-2" style="color:#1f6253"></i>
+                                <i class="ki-outline ki-abstract-26 fs-2" style="color:#145DBF"></i>
                             </div>
                             <div>
                                 <div class="as-eyebrow"><i class="ki-outline ki-shield-tick fs-5"></i>@Localizer["Official administrative unit"]</div>
@@ -576,10 +576,10 @@ var modalOcPositions = {};
    COLOR MAP
 ══════════════════════════════════════════════════════════ */
 var COLORS = {
-    1:{ main:'#13433a', shadow:'#081f1a', platform:'#0f342d', light:'#2f6a5c' },
-    2:{ main:'#1f6253', shadow:'#123a31', platform:'#1a5446', light:'#3a8471' },
-    3:{ main:'#2f8f78', shadow:'#1f6253', platform:'#277d67', light:'#5aa892' },
-    4:{ main:'#5aa892', shadow:'#3a8471', platform:'#4a9583', light:'#86c3b1' },
+    1:{ main:'#0E4A9E', shadow:'#0B3D91', platform:'#0E4A9E', light:'#166FE5' },
+    2:{ main:'#145DBF', shadow:'#0E4A9E', platform:'#145DBF', light:'#1877F2' },
+    3:{ main:'#1877F2', shadow:'#145DBF', platform:'#166FE5', light:'#5B8CFF' },
+    4:{ main:'#5B8CFF', shadow:'#1877F2', platform:'#1877F2', light:'#7DA9FF' },
     5:{ main:'#7b8494', shadow:'#565f6e', platform:'#6b7688', light:'#a6adba' }
 };
 var TYPE_LABELS = {1:'@SR["Company"]',2:'@SR["Branch"]',3:'@Localizer["Administrative entity"]',4:'@Localizer["Position"]',5:'@SR["Employee"]'};
@@ -1133,7 +1133,7 @@ function fcBuildNode(data, item, level){
     var name=getName(item);
 
     /* ring colour cycles through type colours */
-    var ringColors=['#e9f1ee','#eaf3ef','#edf5f1'];
+    var ringColors=['#E7F0FF','#E7F0FF','#E7F0FF'];
     var ci=(getHType(item)-1)%3;
 
     var html='<div class="fc-node" data-id="'+item.h_ID+'">';
@@ -1198,12 +1198,12 @@ function buildPrintNode(data,item,level){
     var html='<div style="border:1px solid #d9e0ea;border-radius:12px;background:#fff;padding:10px 14px;margin-bottom:8px;page-break-inside:avoid">'
         +'<div style="font-size:14px;font-weight:800">'+escapeHtml(n)+'</div>'
         +'<div style="font-size:11px;color:#667085;margin-top:3px">@Localizer["Level"] '+(level+1)+' · '+escapeHtml(getTypeLabel(item))+'</div>';
-    if(ch.length){ html+='<div style="margin-top:8px;margin-right:18px;padding-right:14px;border-right:2px solid #d9e0ea">'; ch.forEach(function(c){ html+=buildPrintNode(data,c,level+1); }); html+='</div>'; }
+    if(ch.length){ html+='<div style="margin-top:8px;margin-left:18px;padding-left:14px;border-left:2px solid #d9e0ea">'; ch.forEach(function(c){ html+=buildPrintNode(data,c,level+1); }); html+='</div>'; }
     return html+'</div>';
 }
 function buildPrintStructure(){
     var q=$('#asGlobalSearch').val(), data=getFilteredData(hierarchicalItemsCache,q), roots=getChildren(data,null);
-    var html='<div dir="rtl" style="font-family:Arial,sans-serif;padding:16mm"><div style="border-bottom:2px solid #172033;padding-bottom:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><h1 style="font-size:20px;margin:0">الهيكل الإداري</h1><p style="color:#667085;font-size:12px;margin:4px 0 0">Administrative Structure</p></div><div style="border:1px solid #d0d5dd;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700">'+new Date().toLocaleString('ar-KW')+'</div></div><div>';
+    var html='<div dir="ltr" style="font-family:Arial,sans-serif;padding:16mm"><div style="border-bottom:2px solid #172033;padding-bottom:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><h1 style="font-size:20px;margin:0">Administrative Structure</h1><p style="color:#667085;font-size:12px;margin:4px 0 0">@Localizer["Organisation chart"]</p></div><div style="border:1px solid #d0d5dd;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700">'+new Date().toLocaleString('en-GB')+'</div></div><div>';
     roots.forEach(function(r){ html+=buildPrintNode(data,r,0); });
     html+='</div></div>';
     $('#asPrintRoot').html(html);

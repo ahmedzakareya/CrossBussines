@@ -105,7 +105,7 @@
                     <div class="table-responsive">
                         <table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                             <thead>
-                                <tr class="fw-bold fs-7 text-uppercase text-gray-700">
+                                <tr class="fw-bold fs-7 text-uppercase text-gray-700" style="border-bottom:2px solid #0E4A9E;">
                                     <th class="w-125px">@(arabic ? "الوقت" : "Time")</th>
                                     <th>@(arabic ? "العنصر" : "Item")</th>
                                     <th class="text-end w-200px">@(arabic ? "النوع" : "Type")</th>
@@ -183,6 +183,68 @@
                                 }
                             </tbody>
                         </table>
+                    </div>
+
+                    @* THE PAGER. The panel now states its page, its size and the total, so nothing here is
+                       derived from Items.Count - a last page with 4 rows and a full page of 25 are told
+                       apart by the numbers, not guessed at. Plain links carrying `days`, so the range
+                       switcher above and the page below stay consistent, the back button works, and the
+                       pager needs no script. Rendered only when there IS more than one page. *@
+                    int pgNow = Model.Page ?? 1;
+                    int pgSize = Model.PageSize ?? 0;
+                    int pgTotal = Model.Total ?? Model.Items.Count;
+                    int pgCount = pgSize > 0 ? (int)System.Math.Ceiling(pgTotal / (double)pgSize) : 1;
+                    int shownFrom = pgTotal == 0 ? 0 : ((pgNow - 1) * pgSize) + 1;
+                    int shownTo = pgTotal == 0 ? 0 : System.Math.Min(pgNow * pgSize, pgTotal);
+                    <div class="d-flex flex-stack flex-wrap gap-3 pt-4 px-3">
+                        <div class="fs-7 text-muted">
+                            @(arabic
+                                ? $"عرض {shownFrom}–{shownTo} من {pgTotal}"
+                                : $"Showing {shownFrom}–{shownTo} of {pgTotal}")
+                        </div>
+
+                        @if (pgCount > 1)
+                        {
+                            <ul class="pagination mb-0">
+                                <li class="page-item @(pgNow <= 1 ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("Agenda", "Workspace", new { days = days, page = pgNow - 1 })"
+                                       aria-label="@(arabic ? "السابق" : "Previous")">
+                                        <i class="ki-outline ki-@(arabic ? "right" : "left")" aria-hidden="true"></i>
+                                    </a>
+                                </li>
+
+                                @* Inside the <ul> we are back in MARKUP, so these need a code block -
+                                   unlike the ones above, which sit in a code context and must not have one. *@
+                                @{
+                                    int win = 2;
+                                    int lo = System.Math.Max(1, pgNow - win);
+                                    int hi = System.Math.Min(pgCount, pgNow + win);
+                                }
+                                @if (lo > 1)
+                                {
+                                    <li class="page-item"><a class="page-link" href="@Url.Action("Agenda", "Workspace", new { days = days, page = 1 })">1</a></li>
+                                    @if (lo > 2) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+                                }
+                                @for (int n = lo; n <= hi; n++)
+                                {
+                                    <li class="page-item @(n == pgNow ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Agenda", "Workspace", new { days = days, page = n })">@n</a>
+                                    </li>
+                                }
+                                @if (hi < pgCount)
+                                {
+                                    @if (hi < pgCount - 1) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+                                    <li class="page-item"><a class="page-link" href="@Url.Action("Agenda", "Workspace", new { days = days, page = pgCount })">@pgCount</a></li>
+                                }
+
+                                <li class="page-item @(pgNow >= pgCount ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("Agenda", "Workspace", new { days = days, page = pgNow + 1 })"
+                                       aria-label="@(arabic ? "التالي" : "Next")">
+                                        <i class="ki-outline ki-@(arabic ? "left" : "right")" aria-hidden="true"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        }
                     </div>
                 }
                 else if (Model.State is WorkspacePanelState.Ready or WorkspacePanelState.Empty)

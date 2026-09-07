@@ -92,6 +92,12 @@ namespace CrossBuy.BL.Reporting
         Task<IReadOnlyList<ReportHistoryRow>> QueryAsync(ReportHistoryQuery query, BusinessContext context,
             CancellationToken cancellationToken = default);
 
+        // How many rows QueryAsync would return if it were not paged. Same filter, same visibility rules -
+        // a screen that pages this list needs a page count, and a count computed any other way would
+        // eventually advertise a page that does not exist.
+        Task<int> CountAsync(ReportHistoryQuery query, BusinessContext context,
+            CancellationToken cancellationToken = default);
+
         Task<ReportHistoryRow?> GetAsync(long runId, BusinessContext context,
             CancellationToken cancellationToken = default);
 
@@ -187,8 +193,36 @@ namespace CrossBuy.BL.Reporting
         {
             if (context.CompanyId <= 0) return Array.Empty<ReportHistoryRow>();
 
-            var isAdmin = await _authorization.IsAdministratorAsync(context, cancellationToken);
+            var q = Filter(query, context,
+                await _authorization.IsAdministratorAsync(context, cancellationToken));
 
+            var take = Math.Clamp(query.Take, 1, MaxTake);
+
+            var rows = await q
+                .OrderByDescending(r => r.Id)
+                .Skip(Math.Max(0, query.Skip))
+                .Take(take)
+                .ToListAsync(cancellationToken);
+
+            return await ProjectAsync(rows, cancellationToken);
+        }
+
+        public async Task<int> CountAsync(ReportHistoryQuery query, BusinessContext context,
+            CancellationToken cancellationToken = default)
+        {
+            if (context.CompanyId <= 0) return 0;
+
+            return await Filter(query, context,
+                    await _authorization.IsAdministratorAsync(context, cancellationToken))
+                .CountAsync(cancellationToken);
+        }
+
+        // THE ONE FILTER, shared by QueryAsync and CountAsync. Shared rather than repeated because the
+        // interesting clause here is a permission rule, not a convenience: duplicate it and the day someone
+        // changes who may see whose runs, one of the two copies is missed and the count starts describing
+        // rows the query refuses to return.
+        private IQueryable<ReportRun> Filter(ReportHistoryQuery query, BusinessContext context, bool isAdmin)
+        {
             var q = _db.ReportRuns.AsNoTracking().Where(r => r.CompanyID == context.CompanyId);
 
             // Without administration you see YOUR OWN runs only. A run row carries the parameters someone used,
@@ -205,15 +239,7 @@ namespace CrossBuy.BL.Reporting
             if (query.From.HasValue) q = q.Where(r => r.StartedAt >= query.From.Value);
             if (query.To.HasValue) q = q.Where(r => r.StartedAt <= query.To.Value);
 
-            var take = Math.Clamp(query.Take, 1, MaxTake);
-
-            var rows = await q
-                .OrderByDescending(r => r.Id)
-                .Skip(Math.Max(0, query.Skip))
-                .Take(take)
-                .ToListAsync(cancellationToken);
-
-            return await ProjectAsync(rows, cancellationToken);
+            return q;
         }
 
         public async Task<ReportHistoryRow?> GetAsync(long runId, BusinessContext context,
@@ -266,12 +292,21 @@ namespace CrossBuy.BL.Reporting
                 .Distinct().ToList();
 
             // One round trip for every name on the page, not one per row.
+            //
+            // BOTH NAMES, resolved by the UI language. This column used to select FullName alone, which put
+            // "احمد زكريا" in the By column of an English screen. The English twin is optional on Employee, so
+            // an employee who has none still shows the Arabic name - a name is better than a blank.
+            bool arabic = System.Globalization.CultureInfo.CurrentUICulture
+                .TwoLetterISOLanguageName.Equals("ar", StringComparison.OrdinalIgnoreCase);
+
             var names = employeeIds.Count == 0
                 ? new Dictionary<int, string>()
                 : await _db.Employee.AsNoTracking()
                     .Where(e => employeeIds.Contains(e.ID))
-                    .Select(e => new { e.ID, e.FullName })
-                    .ToDictionaryAsync(e => e.ID, e => e.FullName, cancellationToken);
+                    .Select(e => new { e.ID, e.FullName, e.FullNameEn })
+                    .ToDictionaryAsync(e => e.ID,
+                        e => arabic || string.IsNullOrWhiteSpace(e.FullNameEn) ? e.FullName : e.FullNameEn!,
+                        cancellationToken);
 
             return rows.Select(r =>
             {

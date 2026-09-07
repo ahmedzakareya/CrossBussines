@@ -40,7 +40,7 @@
                     <div class="card-header pt-6"><h3 class="card-title fw-bold">@SR["Sales by category"]</h3></div>
                     <div class="card-body pt-2">
                         <table class="table table-row-dashed align-middle gs-0 gy-2">
-                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-2">@SR["Category"]</th><th class="text-end">@SR["Revenue"] (KWD)</th><th class="text-end pe-2">@SR["Margin"] (EGP)</th></tr></thead>
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-2">@SR["Category"]</th><th class="text-end">@SR["Revenue"] (KWD)</th><th class="text-end pe-2">@SR["Margin"] (EGP)</th></tr></thead>
                             <tbody>
                                 @if (cats.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-6">—</td></tr> }
                                 @foreach (var c in cats)
@@ -62,7 +62,7 @@
                     <div class="card-header pt-6"><h3 class="card-title fw-bold">@SR["Top items by revenue"]</h3></div>
                     <div class="card-body pt-2">
                         <table class="table table-row-dashed align-middle gs-0 gy-2">
-                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted"><th class="ps-2">@SR["Item"]</th><th class="text-end">@SR["Qty"]</th><th class="text-end pe-2">@SR["Revenue"] (KWD)</th></tr></thead>
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-2">@SR["Item"]</th><th class="text-end">@SR["Qty"]</th><th class="text-end pe-2">@SR["Revenue"] (KWD)</th></tr></thead>
                             <tbody>
                                 @if (top.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-6">—</td></tr> }
                                 @foreach (var r in top)

@@ -1,0 +1,10 @@
+Path,Category,TrackedStatus,SizeBytes,SHA256,Exists,Compiles,TestCoverage,PreservationArtifact,RestoreVerified,Notes
+CrossBuy/Models/Platform/CrmVisibleOwnerScope.cs,source,untracked,12040,663cd9aa49a81bc724a93f02107c4483984f5a151d25b1327cc7f330af74599d,yes,yes,n/a,stage2a-phase4.tar.gz,yes,
+CrossBuy.Tests/CrmVisibleOwnerScopeTests.cs,source,untracked,14016,2d88ccc653016a9043ed847aa8c0f0dfdba6fc26deb470921ef8d5528799e775,yes,yes,n/a,stage2a-phase4.tar.gz,yes,
+docs/platform/Stage-002A-Batch-B-Compatibility-Read-Matrix.md,document,untracked,15049,ec252ad769344551080499ce7d4cef78b0b0b9edf5a8934d2c9a54d58ab8f879,yes,n/a,n/a,stage2a-phase4.tar.gz,yes,
+docs/platform/Stage-002A-CRM-Visible-Owner-Scope-Contract.md,document,untracked,7181,647022a2c297e96cf6d5101b460b21af0894abeca6a0c993d4790063132b48de,yes,n/a,n/a,stage2a-phase4.tar.gz,yes,
+docs/platform/Stage-002A-Bootstrap-Seed-Plan-Reconciliation.md,document,untracked,5556,7d3720feeeaf88f9d904d99a9a7c038b0857bd03e275a6f3cf342366a553f440,yes,n/a,n/a,stage2a-phase4.tar.gz,yes,
+docs/platform/Stage-002A-Bootstrap-Policy-Storage-Evidence.md,document,untracked,7864,68b7c32e3b50402610ed4b67f22c7d290c5d0510e5fc4240fdf469d7c90fedc2,yes,n/a,n/a,stage2a-phase4.tar.gz,yes,
+docs/platform/Stage-002A-Bootstrap-Policy-Seed-Evidence.md,document,untracked,8377,b8c8dc3ed15db4098d5b891b3d1acf72aed58d508778d5a4215004ddddf13f66,yes,n/a,n/a,stage2a-phase4.tar.gz,yes,
+docs/platform/Stage-002A-Bootstrap-Reader-Evidence.md,document,untracked,8036,cc9bbb52579dbdd40dcb9ee621facdd2ebb87034a8aedfe4a6658f9e9d90d6a0,yes,n/a,n/a,stage2a-phase4.tar.gz,yes,
+engineering/required-evidence-manifest.json,evidence,untracked,21356,0fa7135bf818224f2cf8101962b31c21d9efd8f303c87e16cd52d6cb459fe015,yes,n/a,n/a,stage2a-phase4.tar.gz,yes,

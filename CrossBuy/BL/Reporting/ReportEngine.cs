@@ -574,11 +574,11 @@ namespace CrossBuy.BL.Reporting
                 // Closed-option parameters print the LABEL, not the stored code: "Posted", not "P".
                 var option = descriptor.Options.FirstOrDefault(o =>
                     string.Equals(o.Value, value.RawText, StringComparison.Ordinal));
-                if (option != null) text = arabic ? option.LabelAr : option.LabelEn;
+                if (option != null) text = arabic ? option.LabelAr : DisplayName.Or(option.LabelEn, option.LabelAr);
 
                 result.Add(new ReportParameterDisplay
                 {
-                    Label = arabic ? descriptor.TitleAr : descriptor.TitleEn,
+                    Label = arabic ? descriptor.TitleAr : DisplayName.Or(descriptor.TitleEn, descriptor.TitleAr),
                     Value = text,
                 });
             }

@@ -142,6 +142,12 @@ re-checked per the standing rule:
   forward, commit IntegrityCheckService via HEAD-base plumbing (our lines only) like SharedResources/CrossDbContext.**
 - Parallel infra added today: `CompanyScopeMiddleware` + `CompanyQueryFilters` global query filter (HM-D59) — deliberately
   EXCLUDES StockBalance (names our UPDLOCK guard). Does not touch the stock writer; only breaks single-shot curl (cookie jar).
+- **HM-D61 (boot break).** `Program.cs` gained `AddHostedService<PermissionScopeStartupValidator>()` — a singleton hosted
+  service consuming a scoped `IModuleAccessService`, which fails `ValidateOnBuild` and CRASHES startup. Absent from HEAD;
+  appeared on disk after the green HM-8 run. Disabled temporarily in the working tree to run HM-9 acceptance, restored,
+  never committed (`Program.cs` not in our commit). **This is the FOURTH movement of the floor in two phases — broke the
+  build twice (HM-D44/D52), coupled into a GL writer (HM-D53), and now broke boot (HM-D61) — and every one was found by a
+  failure mid-work, not by coordination.** The pattern is the item to raise, not any single break.
 
 ---
 
@@ -160,3 +166,6 @@ re-checked per the standing rule:
 2. **HM-D60** — `FilterCompanyId => CompanyId ?? 0`: an unresolved scope returns a silent empty grid, not an exception —
    the fallback-not-exception anti-pattern (like `factor ?? 1`).
 3. **IntegrityCheckService co-ownership** — agree a boundary so our checks and their scoping edits stop colliding.
+4. **The floor keeps moving (HM-D61)** — four uncommitted-WIP breaks in two phases (build×2, GL-writer coupling, boot),
+   each found by a mid-work failure not by coordination. Ask them to COMMIT their kernel work so our selective commits
+   diff against a stable base, and to stop registering singletons that consume scoped services.

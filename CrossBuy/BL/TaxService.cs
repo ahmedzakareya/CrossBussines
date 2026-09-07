@@ -24,7 +24,7 @@ namespace CrossBuy.BL
 	{
 		public bool IsEnabled(EtaSettings? settings) => settings?.Enabled == true;
 		public Task<EtaSubmitResult> SubmitSalesInvoiceAsync(int companyId, int salesInvoiceId) =>
-			Task.FromResult(new EtaSubmitResult { Submitted = false, Status = "NotConfigured", Message = "تكامل مصلحة الضرائب غير مُفعَّل (مؤجَّل)" });
+			Task.FromResult(new EtaSubmitResult { Submitted = false, Status = "NotConfigured", Message = "The tax authority integration is not enabled (deferred)" });
 	}
 
 	public interface ITaxService
@@ -68,9 +68,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> CreateCodeAsync(int companyId, string code, string name, string? nameEn, string kind, decimal rate, bool isDefault)
 		{
-			if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name)) return (false, "الكود والاسم مطلوبان");
-			if (rate < 0 || rate > 100) return (false, "النسبة يجب أن تكون بين 0 و100");
-			if (await _context.TaxCodes.AnyAsync(c => c.CompanyID == companyId && c.Code == code)) return (false, "كود الضريبة مستخدم من قبل");
+			if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name)) return (false, "Code and name are required");
+			if (rate < 0 || rate > 100) return (false, "The rate must be between 0 and 100");
+			if (await _context.TaxCodes.AnyAsync(c => c.CompanyID == companyId && c.Code == code)) return (false, "That tax code is already in use");
 			kind = kind == "WHT" ? "WHT" : "VAT";
 			if (isDefault)
 			{
@@ -85,9 +85,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> UpdateCodeAsync(int companyId, int id, string name, string? nameEn, decimal rate, bool isDefault)
 		{
 			var c = await _context.TaxCodes.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (c == null) return (false, "كود الضريبة غير موجود");
-			if (string.IsNullOrWhiteSpace(name)) return (false, "الاسم مطلوب");
-			if (rate < 0 || rate > 100) return (false, "النسبة يجب أن تكون بين 0 و100");
+			if (c == null) return (false, "Tax code not found");
+			if (string.IsNullOrWhiteSpace(name)) return (false, "Name is required");
+			if (rate < 0 || rate > 100) return (false, "The rate must be between 0 and 100");
 			// only one default per kind (Code + Kind stay immutable — they may be referenced by posted transactions)
 			if (isDefault && !c.IsDefault)
 			{
@@ -102,7 +102,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> ToggleCodeAsync(int companyId, int id)
 		{
 			var c = await _context.TaxCodes.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (c == null) return (false, "كود الضريبة غير موجود");
+			if (c == null) return (false, "Tax code not found");
 			c.IsActive = !c.IsActive;
 			if (!c.IsActive) c.IsDefault = false;   // an inactive code can't stay the default
 			await _context.SaveChangesAsync();
@@ -137,9 +137,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, VatReturn? ret)> FileVatReturnAsync(int companyId, DateTime from, DateTime to, string? notes)
 		{
-			if (to.Date < from.Date) return (false, "نهاية الفترة قبل بدايتها", null);
+			if (to.Date < from.Date) return (false, "The period end is before its start", null);
 			if (await _context.VatReturns.AnyAsync(r => r.CompanyID == companyId && r.PeriodStart == from.Date && r.PeriodEnd == to.Date))
-				return (false, "تم تقديم إقرار لهذه الفترة من قبل", null);
+				return (false, "A return has already been filed for this period", null);
 			var (output, input) = await ComputeAsync(companyId, from, to);
 			var ret = new VatReturn
 			{
@@ -154,29 +154,29 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SettleVatReturnAsync(int companyId, int returnId, DateTime settleDate, int? userId)
 		{
 			var ret = await _context.VatReturns.FirstOrDefaultAsync(r => r.ID == returnId && r.CompanyID == companyId);
-			if (ret == null) return (false, "الإقرار غير موجود");
-			if (ret.Status == "Settled") return (false, "الإقرار مُسوّى بالفعل");
+			if (ret == null) return (false, "Return not found");
+			if (ret.Status == "Settled") return (false, "The return has already been settled");
 
 			var outAcc = await AccIdAsync(companyId, "210201");
 			var inAcc = await AccIdAsync(companyId, "110401");
-			if (outAcc == null || inAcc == null) return (false, "حسابات ض.ق.م غير مُهيّأة");
+			if (outAcc == null || inAcc == null) return (false, "The VAT accounts are not configured");
 
 			var jlines = new List<JournalLineInput>();
-			if (ret.OutputVat != 0) jlines.Add(new() { AccountId = outAcc.Value, Debit = ret.OutputVat, Credit = 0, Description = "إقفال ض.ق.م مخرجات" });
-			if (ret.InputVat != 0) jlines.Add(new() { AccountId = inAcc.Value, Debit = 0, Credit = ret.InputVat, Description = "إقفال ض.ق.م مدخلات" });
+			if (ret.OutputVat != 0) jlines.Add(new() { AccountId = outAcc.Value, Debit = ret.OutputVat, Credit = 0, Description = "Closing of output VAT" });
+			if (ret.InputVat != 0) jlines.Add(new() { AccountId = inAcc.Value, Debit = 0, Credit = ret.InputVat, Description = "Closing of input VAT" });
 
 			var net = R(ret.OutputVat - ret.InputVat);
 			if (net > 0)
 			{
 				var payable = await EnsureAccAsync(companyId, "210205", "ض.ق.م مستحقة السداد للمصلحة", "VAT Payable to Authority", "LIAB", "2102");
-				jlines.Add(new() { AccountId = payable, Debit = 0, Credit = net, Description = "صافي ض.ق.م مستحقة" });
+				jlines.Add(new() { AccountId = payable, Debit = 0, Credit = net, Description = "Net VAT payable" });
 			}
 			else if (net < 0)
 			{
 				var carry = await EnsureAccAsync(companyId, "110402", "رصيد ض.ق.م مُرحَّل", "VAT Credit Carryforward", "ASSET", "1104");
-				jlines.Add(new() { AccountId = carry, Debit = -net, Credit = 0, Description = "رصيد ضريبي دائن مُرحَّل" });
+				jlines.Add(new() { AccountId = carry, Debit = -net, Credit = 0, Description = "Tax credit carried forward" });
 			}
-			if (jlines.Count < 2) return (false, "لا توجد حركة ضريبية في هذه الفترة للتسوية");
+			if (jlines.Count < 2) return (false, "There is no tax activity in this period to settle");
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{

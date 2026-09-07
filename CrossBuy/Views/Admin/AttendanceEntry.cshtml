@@ -11,8 +11,8 @@
     int y = ViewBag.Year; int m = ViewBag.Month;
     // brand-safe status badge styling (green family + red only for Absent; no mint/yellow/blue)
     string stStyle(string s) => s switch {
-        "Present" => "background:#eaf3ef;color:#13433a;",
-        "Leave"   => "background:#e9f1ee;color:#1f6253;",
+        "Present" => "background:#E7F0FF;color:#0E4A9E;",
+        "Leave"   => "background:#E7F0FF;color:#145DBF;",
         "Absent"  => "background:#fdeaea;color:#d92d20;",
         "Late"    => "background:#f2f4f7;color:#475467;",
         _          => "background:#f2f4f7;color:#667085;" };
@@ -61,7 +61,7 @@
                     </div>
                     <div class="card-body pt-2"><div class="table-responsive">
                         <table id="monthRecordsTable" class="table align-middle fs-7 gy-2 mb-0" style="font-variant-numeric:tabular-nums;">
-                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th>@SR["Date"]</th><th class="text-center">@Localizer["In"]</th><th class="text-center">@Localizer["Out"]</th><th class="text-center">@Localizer["Late"]</th><th class="text-center">@Localizer["OT"]</th><th class="text-center">@Localizer["Hrs"]</th><th class="text-center pe-4">@SR["Status"]</th></tr></thead>
+                            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Employee"]</th><th>@SR["Date"]</th><th class="text-center">@Localizer["In"]</th><th class="text-center">@Localizer["Out"]</th><th class="text-center">@Localizer["Late"]</th><th class="text-center">@Localizer["OT"]</th><th class="text-center">@Localizer["Hrs"]</th><th class="text-center pe-4">@SR["Status"]</th></tr></thead>
                             <tbody class="fw-semibold text-gray-700">
                             @foreach (var r in recs)
                             {
@@ -71,7 +71,7 @@
                                     <td class="text-center">@(r.CheckIn?.ToString("HH:mm") ?? "—")</td>
                                     <td class="text-center">@(r.CheckOut?.ToString("HH:mm") ?? "—")</td>
                                     <td class="text-center @(r.LateMinutes>0?"fw-bold text-gray-900":"text-gray-400")">@r.LateMinutes</td>
-                                    <td class="text-center @(r.OvertimeMinutes>0?"fw-bold":"text-gray-400")" style="@(r.OvertimeMinutes>0?"color:#1f6253;":"")">@r.OvertimeMinutes</td>
+                                    <td class="text-center @(r.OvertimeMinutes>0?"fw-bold":"text-gray-400")" style="@(r.OvertimeMinutes>0?"color:#145DBF;":"")">@r.OvertimeMinutes</td>
                                     <td class="text-center">@r.WorkedHours.ToString("0.##")</td>
                                     <td class="text-center pe-4"><span class="badge fw-bold" style="@stStyle(r.Status)">@stName(r.Status)</span></td>
                                 </tr>
@@ -86,12 +86,12 @@
 </div>
 
 @section Scripts {
-<link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" />
-<script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js"></script>
+<link href="~/Backend-assets/plugins/custom/datatables/datatables.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+<script src="~/Backend-assets/plugins/custom/datatables/datatables.bundle.js" asp-append-version="true"></script>
 <style>
     #monthRecordsTable_wrapper .dataTables_paginate .paginate_button.current,
-    #monthRecordsTable_wrapper .dataTables_paginate .paginate_button.current:hover { background:#1f6253 !important; border-color:#1f6253 !important; color:#fff !important; }
-    #monthRecordsTable_wrapper .dataTables_paginate .paginate_button:hover { color:#1f6253 !important; }
+    #monthRecordsTable_wrapper .dataTables_paginate .paginate_button.current:hover { background:#145DBF !important; border-color:#145DBF !important; color:#fff !important; }
+    #monthRecordsTable_wrapper .dataTables_paginate .paginate_button:hover { color:#145DBF !important; }
     #monthRecordsTable_wrapper .dataTables_info { color:#a1a5b7; padding-top:1rem; }
     #monthRecordsTable tbody tr { border-bottom:1px dashed #eef1f6; }
 </style>

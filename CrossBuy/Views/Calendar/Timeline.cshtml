@@ -22,6 +22,47 @@
     // early or late meeting is never invisible.
     const int StartHour = 7, EndHour = 20;
     var hours = Enumerable.Range(StartHour, EndHour - StartHour).ToList();
+
+    // BOOKED FIRST. Forty rows of empty dots is what buried the signal - a reader had to scan the
+    // whole grid to discover that two rows carried anything. Order is otherwise preserved.
+    var booked = Model.People.Where(r => r.Occurrences.Count > 0).ToList();
+    var free = Model.People.Where(r => r.Occurrences.Count == 0).ToList();
+
+    // Grouped on BranchId and never on BranchName: two branches can carry the same display name,
+    // and grouping by text would silently merge two places into one heading.
+    var groups = Model.People
+        .GroupBy(r => r.BranchId)
+        .Select(g => new
+        {
+            Key = g.Key,
+            Name = g.Key == null ? T("بدون فرع محدَّد", "No branch on file")
+                                 : (g.First().BranchName ?? T("بدون فرع محدَّد", "No branch on file")),
+            Booked = g.Count(r => r.Occurrences.Count > 0),
+            // Booked-first INSIDE the group, so the reason for the ordering survives the grouping.
+            Rows = g.OrderByDescending(r => r.Occurrences.Count > 0).ThenBy(r => r.EmployeeId).ToList(),
+        })
+        // Busiest branch first so a scheduler lands on the group that matters; the unplaced bucket
+        // is pinned last because it is a data gap, not a location.
+        .OrderBy(g => g.Key == null ? 1 : 0)
+        .ThenByDescending(g => g.Booked)
+        .ThenBy(g => g.Name, StringComparer.CurrentCulture)
+        .ToList();
+
+    // The local wall-clock of an occurrence. StartUtc is stored as an instant; the grid and this
+    // list must agree on the conversion, so it is done in one place.
+    Func<CalendarOccurrence, string> when = o =>
+    {
+        var st = o.StartUtc.ToLocalTime();
+        var en = (o.EndUtc ?? o.StartUtc.AddMinutes(30)).ToLocalTime();
+        return o.AllDay ? T("اليوم بالكامل", "All day") : $"{st:HH:mm} – {en:HH:mm}";
+    };
+    var nameOf = Model.People.ToDictionary(r => r.EmployeeId, r => r.EmployeeName);
+
+    // The link lands on the calendar, on THIS day, with the event's own dialog already open. That
+    // dialog, its permission check and its edit/delete buttons all exist there - nothing about
+    // viewing an event is duplicated onto this screen.
+    Func<CalendarOccurrence, string> eventHref = o =>
+        $"/Calendar/Index?eventId={o.EventId}&day={day:yyyy-MM-dd}";
 }
 
 <!--begin::Toolbar-->
@@ -60,10 +101,126 @@
 <!--end::Toolbar-->
 
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    @* ---- WHAT THIS DAY HOLDS -------------------------------------------------------------------
+       Three numbers and then the bookings themselves. The header used to show only the first of
+       these, which is how a real day with one meeting on it read as a broken screen. *@
+    <div class="row g-5 mb-5">
+        <div class="col-md-4">
+            <div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="fs-2hx fw-bold text-gray-900 tabular-nums">@Model.OccurrenceCount</div>
+                <div class="fs-7 text-muted">@T("مواعيد اليوم", "Bookings today")</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="fs-2hx fw-bold text-gray-900 tabular-nums">@booked.Count</div>
+                <div class="fs-7 text-muted">@T("موظفون مشغولون", "People booked")</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-flush h-100"><div class="card-body py-5">
+                <div class="fs-2hx fw-bold text-gray-900 tabular-nums">@free.Count</div>
+                <div class="fs-7 text-muted">@T("موظفون متفرغون", "People free")</div>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="card card-flush mb-5">
+        <div class="card-header align-items-center py-4">
+            <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@T("مواعيد اليوم", "Bookings today")</h3></div>
+        </div>
+        <div class="card-body pt-0">
+            @if (Model.Occurrences.Count == 0)
+            {
+                <div class="text-center text-muted py-10">@T("لا مواعيد في هذا اليوم", "Nothing booked on this day")</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                <table class="table table-row-dashed align-middle fs-6 gy-4 mb-0">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                        <th class="ps-4 min-w-125px">@T("الوقت", "Time")</th>
+                        <th class="min-w-200px">@T("الموعد", "Booking")</th>
+                        <th class="min-w-150px">@T("المكان", "Where")</th>
+                        <th class="min-w-150px">@T("المسؤول", "Owner")</th>
+                        <th class="text-center min-w-100px pe-4">@T("المشاركون", "Participants")</th>
+                    </tr></thead>
+                    <tbody class="fw-semibold text-gray-700">
+                    @foreach (var o in Model.Occurrences)
+                    {
+                        @* Who this occurrence actually reaches on the grid below - the same join, so the
+                           two cannot disagree. A zero here is the answer to "why is the grid empty". *@
+                        var on = Model.People.Count(r => r.Occurrences.Any(x => x.EventId == o.EventId));
+                        <tr>
+                            <td class="ps-4 tabular-nums text-gray-900">@when(o)@if (o.IsRepeat) { <span class="text-muted ms-1" title="@T("موعد متكرر", "Repeating")">↻</span> }</td>
+                            <td class="fw-bold">
+                                <a href="@eventHref(o)" class="text-gray-900 text-hover-primary"><bdi>@o.Title</bdi></a>
+                            </td>
+                            <td>@if (string.IsNullOrWhiteSpace(o.Location)) { <span class="text-muted">—</span> } else { <span class="text-gray-700"><i class="ki-outline ki-geolocation fs-7 text-muted me-1"></i><bdi>@o.Location</bdi></span> }</td>
+                            <td><bdi>@(nameOf.TryGetValue(o.OwnerEmpId, out var on2) ? on2 : "—")</bdi></td>
+                            <td class="text-center pe-4">
+                                @if (on == 0)
+                                {
+                                    <span class="badge badge-light-warning fs-8">@T("لا أحد", "Nobody")</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-light-primary fs-8 tabular-nums">@on</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                </div>
+            }
+
+            @if (Model.Unassigned.Count > 0)
+            {
+                @* NAMED, not inferred. These are counted in the number above and appear in NO row of the
+                   grid: no attendees, and an owner who is not an active employee of this company. Before
+                   this block a reader could only discover them as a mismatch between a count and a grid. *@
+                <div class="notice d-flex rounded border border-dashed p-6 mt-4" style="background:#E7F0FF;border-color:#0E4A9E !important;">
+                    <span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+                    <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                        <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                            <h4 class="text-gray-900 fw-bold mb-1">@T("مواعيد لا تظهر في الشبكة", "Bookings that appear in no row")</h4>
+                            <div class="fs-6 text-gray-700">
+                                @T("هذه المواعيد محسوبة في العدد أعلاه ولا تظهر في أي صف بالأسفل: لا مشاركين لها، ومالكها ليس موظفًا نشطًا في هذه الشركة.",
+                                   "These are counted in the total above and appear in no row below: they have no participants, and their owner is not an active employee of this company.")
+                            </div>
+                        </div>
+                        <span class="badge fs-7 fw-bold px-4 py-2 flex-shrink-0" style="background:#0E4A9E;color:#fff;">
+                            <i class="ki-outline ki-information-5 fs-6 text-white me-1"></i>@Model.Unassigned.Count
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
     <div class="card card-flush">
         <div class="card-header align-items-center py-4">
-            <h3 class="card-title fw-bold text-gray-900">@T("الموظفون", "People")</h3>
-            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@Model.OccurrenceCount @T("موعد", "bookings")</span></div>
+            <div class="card-title flex-column align-items-start">
+                <h3 class="fw-bold text-gray-900 fs-4 m-0">@T("شبكة الساعات", "Hour grid")</h3>
+                @if (!string.IsNullOrWhiteSpace(Model.CompanyName))
+                {
+                    @* The company every row below belongs to. Stated once here instead of on each row,
+                       which is what lets the group headings be branches alone. *@
+                    <span class="fs-8 text-muted fw-semibold mt-1">
+                        <i class="ki-outline ki-bank fs-8 me-1"></i><bdi>@Model.CompanyName</bdi>
+                        <span class="mx-1">·</span>@groups.Count @T(groups.Count == 1 ? "فرع" : "فروع", "group(s)")
+                    </span>
+                }
+            </div>
+            @* THE KEY. Nothing on this page said what a cell meant. Same form as the legend on
+               /Pos/Reservations and /Calendar. *@
+            <div class="card-toolbar d-flex gap-4 fs-8 text-muted flex-wrap align-items-center">
+                <span><span class="badge badge-light-primary fs-8 me-1">&nbsp;&nbsp;</span> @T("مشغول", "Busy")</span>
+                <span><span class="text-muted me-1">·</span> @T("متفرغ", "Free")</span>
+                <span class="text-gray-500">@T("الساعات ٠٧–١٩ بالتوقيت المحلي", "Hours 07–19, local time")</span>
+            </div>
         </div>
         <div class="card-body pt-0">
             @* KEYBOARD-REACHABLE SCROLL REGION. `.table-responsive` scrolls horizontally, and a region
@@ -75,7 +232,7 @@
                  aria-label="@T("شبكة ساعات الموظفين", "Employee hour grid")">
                 <table class="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-2">
                     <thead>
-                        <tr class="fw-bold text-muted fs-8">
+                        <tr class="fw-bold text-muted fs-8" style="border-bottom:2px solid #0E4A9E;">
                             <th class="min-w-150px">@T("الموظف", "Employee")</th>
                             @foreach (var h in hours)
                             {
@@ -88,13 +245,42 @@
                         {
                             <tr><td colspan="@(hours.Count + 1)" class="text-center text-muted py-10">@T("لا موظفين", "No employees")</td></tr>
                         }
-                        @foreach (var emp in Model.People)
+                        @foreach (var g in groups)
+                        {
+                            @* THE GROUP HEADING. Same shaded full-width row this product already uses for
+                               group rows elsewhere (#f4f6f8). It carries the branch, how many people sit
+                               in it and how many of them are booked - so a branch that is entirely free is
+                               readable as a fact instead of as thirteen columns of dots. *@
+                            <tr style="background:#f4f6f8;">
+                                <td colspan="@(hours.Count + 1)" class="py-2">
+                                    <div class="d-flex align-items-center flex-wrap gap-2">
+                                        <span class="fw-bold fs-7 text-gray-900">
+                                            <i class="ki-outline ki-bank fs-7 me-1" style="color:#0E4A9E;"></i><bdi>@g.Name</bdi>
+                                        </span>
+                                        <span class="badge badge-light fs-8 tabular-nums">@g.Rows.Count @T(g.Rows.Count == 1 ? "موظف" : "موظفين", "people")</span>
+                                        @if (g.Booked > 0)
+                                        {
+                                            <span class="badge badge-light-primary fs-8 tabular-nums">@g.Booked @T("مشغول", "booked")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-light-success fs-8">@T("الفرع بالكامل متفرغ", "Whole branch free")</span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        @foreach (var emp in g.Rows)
                         {
                             @* The employee→occurrence join is done in the service. A view that rebuilds a
                                relationship is a view that can get it wrong where no test can see it. *@
                             var mine = emp.Occurrences;
                             <tr>
-                                <td class="fw-semibold text-gray-900 fs-7">@emp.EmployeeName</td>
+                                <td class="fw-semibold fs-7 @(mine.Count == 0 ? "text-muted" : "text-gray-900")">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <bdi>@emp.EmployeeName</bdi>
+                                        @if (mine.Count > 0) { <span class="badge badge-light-primary fs-8 tabular-nums">@mine.Count</span> }
+                                    </div>
+                                </td>
                                 @foreach (var h in hours)
                                 {
                                     @* An occurrence covers this hour if it overlaps it — a 09:30–10:30
@@ -105,9 +291,10 @@
                                     if (hit != null)
                                     {
                                         <td class="text-center p-1">
-                                            <span class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block" title="@hit.Title">
+                                            <a href="@eventHref(hit)" class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block"
+                                               title="@hit.Title@(string.IsNullOrWhiteSpace(hit.Location) ? "" : " — " + hit.Location)">
                                                 @hit.Title@(hit.IsRepeat ? " ↻" : "")
-                                            </span>
+                                            </a>
                                         </td>
                                     }
                                     else
@@ -116,6 +303,7 @@
                                     }
                                 }
                             </tr>
+                        }
                         }
                     </tbody>
                 </table>

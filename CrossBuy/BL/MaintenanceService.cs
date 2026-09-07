@@ -43,13 +43,13 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveScheduleAsync(MaintenanceSchedule dto)
 		{
-			if (dto.AssetId <= 0) return (false, "الأصل مطلوب", 0);
-			if (string.IsNullOrWhiteSpace(dto.Title)) return (false, "عنوان الجدول مطلوب", 0);
-			if (dto.IntervalMonths <= 0) return (false, "الفترة بالأشهر يجب أن تكون أكبر من صفر", 0);
+			if (dto.AssetId <= 0) return (false, "Asset is required", 0);
+			if (string.IsNullOrWhiteSpace(dto.Title)) return (false, "Schedule title is required", 0);
+			if (dto.IntervalMonths <= 0) return (false, "The interval in months must be greater than zero", 0);
 			MaintenanceSchedule e;
-			if (dto.ID > 0) e = await _db.MaintenanceSchedules.FirstOrDefaultAsync(s => s.ID == dto.ID && s.CompanyID == dto.CompanyID) ?? throw new InvalidOperationException("الجدول غير موجود");
+			if (dto.ID > 0) e = await _db.MaintenanceSchedules.FirstOrDefaultAsync(s => s.ID == dto.ID && s.CompanyID == dto.CompanyID) ?? throw new InvalidOperationException("Schedule not found");
 			else { e = new MaintenanceSchedule { CompanyID = dto.CompanyID, AssetId = dto.AssetId, CreatedAt = DateTime.UtcNow }; _db.MaintenanceSchedules.Add(e); }
-			e.Title = dto.Title.Trim(); e.Type = dto.Type; e.IntervalMonths = dto.IntervalMonths;
+			e.Title = dto.Title.Trim(); e.TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim(); e.Type = dto.Type; e.IntervalMonths = dto.IntervalMonths;
 			e.NextDueDate = dto.NextDueDate.Date; e.EstimatedCost = dto.EstimatedCost; e.IsActive = dto.IsActive;
 			if (dto.ID <= 0) e.LastDoneDate = null;
 			await _db.SaveChangesAsync();
@@ -65,7 +65,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> LogMaintenanceAsync(int companyId, int assetId, int? scheduleId, DateTime date, string? description, decimal cost, string? vendor, int? payFromGlAccountId, int? projectId, int? userId)
 		{
 			var asset = await _db.FixedAssets.AsNoTracking().FirstOrDefaultAsync(a => a.ID == assetId && a.CompanyID == companyId);
-			if (asset == null) return (false, "الأصل غير موجود");
+			if (asset == null) return (false, "Asset not found");
 			if (cost < 0) cost = 0;
 
 			var rec = new MaintenanceRecord { CompanyID = companyId, AssetId = assetId, ScheduleId = scheduleId, Date = date.Date, Description = description, Cost = R(cost), Vendor = vendor, Status = "Done", ProjectId = projectId, CreatedAt = DateTime.UtcNow };
@@ -74,16 +74,16 @@ namespace CrossBuy.BL
 			if (payFromGlAccountId.HasValue && payFromGlAccountId.Value > 0 && cost > 0)
 			{
 				var maintAcc = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520110").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-				if (maintAcc == null) return (false, "حساب مصروف الصيانة 520110 غير موجود — شغّل asset_maintenance.sql");
-				if (payFromGlAccountId.Value == maintAcc.Value) return (false, "حساب الدفع غير صالح");
+				if (maintAcc == null) return (false, "The maintenance expense account 520110 does not exist — run asset_maintenance.sql");
+				if (payFromGlAccountId.Value == maintAcc.Value) return (false, "Invalid payment account");
 				var lines = new List<JournalLineInput>
 				{
-					new() { AccountId = maintAcc.Value, Debit = R(cost), Credit = 0, CostCenterId = asset.CostCenterId, ProjectId = projectId, Description = $"صيانة أصل {asset.AssetNo ?? asset.Name}" },
-					new() { AccountId = payFromGlAccountId.Value, Debit = 0, Credit = R(cost), CostCenterId = asset.CostCenterId, ProjectId = projectId, Description = "سداد صيانة" },
+					new() { AccountId = maintAcc.Value, Debit = R(cost), Credit = 0, CostCenterId = asset.CostCenterId, ProjectId = projectId, Description = $"Maintenance of asset {asset.AssetNo ?? asset.Name}" },
+					new() { AccountId = payFromGlAccountId.Value, Debit = 0, Credit = R(cost), CostCenterId = asset.CostCenterId, ProjectId = projectId, Description = "Maintenance payment" },
 				};
 				var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
-				{ CompanyID = companyId, EntryDate = date.Date, JournalType = "Auto", SourceType = "AssetMaintenance", Description = $"صيانة أصل {asset.AssetNo ?? asset.Name}", Lines = lines }, userId);
-				if (!ok) return (false, "تعذّر ترحيل قيد الصيانة: " + err);
+				{ CompanyID = companyId, EntryDate = date.Date, JournalType = "Auto", SourceType = "AssetMaintenance", Description = $"Maintenance of asset {asset.AssetNo ?? asset.Name}", Lines = lines }, userId);
+				if (!ok) return (false, "Could not post the maintenance entry: " + err);
 				rec.JournalEntryId = entry!.ID;
 			}
 			_db.MaintenanceRecords.Add(rec);

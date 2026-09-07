@@ -56,7 +56,7 @@
                         <div><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
                             <select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>
                                 <option value="">@Localizer["Select"]</option>
-                                @foreach (var w in warehouses) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }
+                                @foreach (var w in warehouses) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }
                             </select></div>
                     </div>
                 </div>
@@ -80,7 +80,7 @@
                             <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Unit"]</label>
                                 <select name="uomId" id="mvUom" class="form-select form-select-solid" data-control="select2">
                                     <option value="">@Localizer["Base unit"]</option>
-                                    @foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : u.NameEn)</option> }
+                                    @foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }
                                 </select></div>
                             <div class="col-md-4 mb-5" id="costWrap"><label class="fw-semibold fs-6 mb-2">@Localizer["Unit cost (for inbound)"]</label><input name="unitCost" type="number" step="0.0001" min="0" class="form-control form-control-solid" /></div>
                         </div>

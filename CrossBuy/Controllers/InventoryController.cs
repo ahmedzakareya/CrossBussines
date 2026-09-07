@@ -54,7 +54,7 @@ namespace CrossBuy.Controllers
 		/// Page-shaped refusal, matching what InvPerm already does to a denied page request.
 		private IActionResult CompanyRefusedView()
 		{
-			TempData["Err"] = "تعذّر تحديد الشركة لهذه الجلسة";
+			TempData["Err"] = "The company for this session could not be determined";
 			return RedirectToAction("Index", "Home");
 		}
 
@@ -406,7 +406,7 @@ namespace CrossBuy.Controllers
 		[HttpGet] public async Task<IActionResult> Warehouses()
 		{
 			ViewBag.Branches = await _context.Hierarchicals.AsNoTracking().Where(h => h.IsActive == true).OrderBy(h => h.H_Name).ToListAsync();
-			ViewBag.Employees = await _context.Employee.AsNoTracking().OrderBy(e => e.FullName).ToListAsync();
+			ViewBag.Employees = await _context.Employee.AsNoTracking().OrderByDisplayName().ToListAsync();
 			return View(await _warehouses.GetWarehousesAsync(co));
 		}
 
@@ -440,7 +440,7 @@ namespace CrossBuy.Controllers
 			if (!ok) return Json(new { ok = false, error = err });
 			// return the SAME "Code — Name" label the server-rendered options use, so the appended option is consistent
 			var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
-			return Json(new { ok = true, id = w.ID, name = w.Code + " — " + (isAr ? w.Name : w.NameEn) });
+			return Json(new { ok = true, id = w.ID, name = w.Code + " — " + (isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name)) });
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
@@ -463,9 +463,9 @@ namespace CrossBuy.Controllers
 
 		[HttpPost][ValidateAntiForgeryToken]
 		[InvPerm("manage")]
-		public async Task<IActionResult> SaveBinLocation(int warehouseId, int id, string code, string? name, string locationType, int? parentId, bool isActive = true)
+		public async Task<IActionResult> SaveBinLocation(int warehouseId, int id, string code, string? name, string locationType, int? parentId, bool isActive = true, string? nameEn = null)
 		{
-			var (ok, err) = await _warehouses.SaveBinLocationAsync(warehouseId, id, code, name, locationType, parentId, isActive);
+			var (ok, err) = await _warehouses.SaveBinLocationAsync(warehouseId, id, code, name, locationType, parentId, isActive, nameEn);
 			TempData[ok ? "InvMsg" : "InvErr"] = ok ? L["Saved"].Value : err;
 			return RedirectToAction(nameof(WarehouseSections), new { warehouseId });
 		}
@@ -495,7 +495,7 @@ namespace CrossBuy.Controllers
 				ViewBag.Rows = items.Where(i => i.ItemType == "Stockable").Select(i =>
 				{
 					settings.TryGetValue(i.ID, out var s);
-					return new { ItemId = i.ID, i.ItemCode, ItemName = i.Name, SectionId = s?.DefaultSectionId, RackId = s?.DefaultBinLocationId };
+					return new ItemLocationGridRow { ItemId = i.ID, ItemCode = i.ItemCode, ItemName = ItemDisplayName(i), SectionId = s?.DefaultSectionId, RackId = s?.DefaultBinLocationId };
 				}).ToList();
 			}
 			return View();
@@ -529,6 +529,30 @@ namespace CrossBuy.Controllers
 
 		public class ItemLocationRow { public int ItemId { get; set; } public int? SectionId { get; set; } public int? RackId { get; set; } }
 
+		// The GRID's row, and it must be PUBLIC. Views are compiled at runtime here
+		// (Program.cs: AddRazorRuntimeCompilation), so they live in their own assembly, and C# anonymous
+		// types are internal to the assembly that declares them. ItemLocations.cshtml reads its rows as
+		// IEnumerable<dynamic>, so an anonymous type left the runtime binder unable to see ANY member and
+		// it reported the nearest accessible type instead:
+		//
+		//     RuntimeBinderException: 'object' does not contain a definition for 'SectionId'
+		//
+		// SectionId only because it is the first member the loop touches; ItemCode and ItemName would have
+		// failed the same way. The page looked healthy until a warehouse was chosen, because Rows is only
+		// populated when warehouseId is supplied and an empty grid never binds anything.
+		//
+		// Kept separate from ItemLocationRow above rather than extending it: that one is the JSON contract
+		// SaveItemLocations deserializes, and display columns have no business widening a POST contract.
+		// CrmController.CrmRoleRow is the same fix for the same reason.
+		public class ItemLocationGridRow
+		{
+			public int ItemId { get; set; }
+			public string ItemCode { get; set; } = "";
+			public string ItemName { get; set; } = "";
+			public int? SectionId { get; set; }
+			public int? RackId { get; set; }
+		}
+
 		// JSON feed for inbound document line editors: the warehouse's sections + racks + each item's default location.
 		// Views use it to render section/rack pickers per line and prefill from the item's default; the picked (most specific) id is stamped on the movement.
 		[HttpGet] public async Task<IActionResult> WarehouseBinsData(int warehouseId)
@@ -546,6 +570,16 @@ namespace CrossBuy.Controllers
 		}
 
 		// ---------------- Rack-level stock (BinStock): balances + count + relocate ----------------
+		// THE NAME THE READER SEES, for the two entities this screen names. Written once here rather than
+		// four times inline: the same rule was already spelled out wrong four times in this action, which is
+		// how one of them ends up missed. Both English columns are optional, so both fall back to Arabic -
+		// a name in the wrong language beats an empty cell in a stock report.
+		private string ItemDisplayName(CrossBuy.Models.Context.Inventory.Item i) =>
+			Ar() || string.IsNullOrWhiteSpace(i.NameEn) ? i.Name : i.NameEn!;
+
+		private string BinDisplayName(CrossBuy.Models.Context.Inventory.BinLocation b) =>
+			Ar() || string.IsNullOrWhiteSpace(b.NameEn) ? (b.Name ?? "") : b.NameEn!;
+
 		[HttpGet] public async Task<IActionResult> RackBalances(int? warehouseId)
 		{
 			ViewBag.Warehouses = await _warehouses.GetWarehousesAsync(co);
@@ -559,13 +593,13 @@ namespace CrossBuy.Controllers
 				var itemsById = (await _items.GetItemsAsync(co)).ToDictionary(i => i.ID, i => i);
 				ViewBag.Items = itemsById;
 				ViewBag.Rows = binStocks
-					.Select(bs => new
+					.Select(bs => new InvRackStockRow
 					{
-						bs.ItemId, bs.BinLocationId, bs.QtyOnHand,
+						ItemId = bs.ItemId, BinLocationId = bs.BinLocationId, QtyOnHand = bs.QtyOnHand,
 						ItemCode = itemsById.TryGetValue(bs.ItemId, out var it) ? it.ItemCode : ("#" + bs.ItemId),
-						ItemName = itemsById.TryGetValue(bs.ItemId, out var it2) ? it2.Name : "",
+						ItemName = itemsById.TryGetValue(bs.ItemId, out var it2) ? ItemDisplayName(it2) : "",
 						BinCode = bins.TryGetValue(bs.BinLocationId, out var b) ? b.Code : ("#" + bs.BinLocationId),
-						BinName = bins.TryGetValue(bs.BinLocationId, out var b2) ? b2.Name : "",
+						BinName = bins.TryGetValue(bs.BinLocationId, out var b2) ? BinDisplayName(b2) : "",
 						BinType = bins.TryGetValue(bs.BinLocationId, out var b3) ? b3.LocationType : ""
 					})
 					.OrderBy(r => r.BinCode).ThenBy(r => r.ItemCode).ToList();
@@ -573,10 +607,10 @@ namespace CrossBuy.Controllers
 				var located = binStocks.GroupBy(b => b.ItemId).ToDictionary(g => g.Key, g => g.Sum(x => x.QtyOnHand));
 				var whBals = (await _stock.GetBalancesAsync(co, warehouseId.Value)).ToDictionary(b => b.ItemId, b => b.QtyOnHand);
 				ViewBag.Recon = located.Keys.Union(whBals.Keys.Where(k => whBals[k] != 0))
-					.Select(id => new
+					.Select(id => new InvRackReconRow
 					{
 						ItemCode = itemsById.TryGetValue(id, out var it) ? it.ItemCode : ("#" + id),
-						ItemName = itemsById.TryGetValue(id, out var it2) ? it2.Name : "",
+						ItemName = itemsById.TryGetValue(id, out var it2) ? ItemDisplayName(it2) : "",
 						Located = located.TryGetValue(id, out var lq) ? lq : 0m,
 						Total = whBals.TryGetValue(id, out var tq) ? tq : 0m
 					})
@@ -706,7 +740,10 @@ namespace CrossBuy.Controllers
 			return View();   // shell; rows via StockMovementsData
 		}
 
-		[HttpGet] public async Task<IActionResult> StockMovementsData(string? q, int? warehouseId, int page = 1, int pageSize = 25)
+		// ONE PLACE THAT BUILDS THE FILTER. The list and the summary MUST see the same rows: a total
+		// that describes a different set than the table under it is worse than no total. Rebuilding
+		// the predicate in two places is how they drift, so there is only one.
+		private IQueryable<MovementRow> MovementsFiltered(string? q, int? warehouseId)
 		{
 			var src = _context.StockMovements.AsNoTracking().Where(m => m.CompanyID == co);
 			if (warehouseId.HasValue && warehouseId.Value > 0) src = src.Where(m => m.WarehouseId == warehouseId.Value);
@@ -730,6 +767,61 @@ namespace CrossBuy.Controllers
 					|| (r.ItemNameEn != null && r.ItemNameEn.Contains(s)) || (r.SourceType != null && r.SourceType.Contains(s)) || r.WarehouseCode.Contains(s));
 				if (pred != null) q0 = q0.Where(pred);
 			}
+			return q0;
+		}
+
+		// THE TICKER. Quantity and value moved across the WHOLE filter, plus the items moving most.
+		// Read-only, and it issues no query the list does not already issue.
+		[HttpGet] public async Task<IActionResult> StockMovementsSummary(string? q, int? warehouseId)
+		{
+			var q0 = MovementsFiltered(q, warehouseId);
+
+			// Direction is +1 in / -1 out. Summed separately so "moved 900 units" cannot hide 450 in
+			// and 450 out, which nets to nothing and is a completely different day.
+			var agg = await q0.GroupBy(r => 1).Select(g => new
+			{
+				Count = g.Count(),
+				InQty = g.Sum(r => r.Direction > 0 ? r.QtyBase : 0m),
+				OutQty = g.Sum(r => r.Direction < 0 ? r.QtyBase : 0m),
+				InValue = g.Sum(r => r.Direction > 0 ? r.TotalCost : 0m),
+				OutValue = g.Sum(r => r.Direction < 0 ? r.TotalCost : 0m),
+			}).FirstOrDefaultAsync();
+
+			var movers = await q0
+				.GroupBy(r => new { r.ItemId, r.ItemCode, r.ItemName, r.ItemNameEn })
+				.Select(g => new
+				{
+					g.Key.ItemId, g.Key.ItemCode, g.Key.ItemName, g.Key.ItemNameEn,
+					Net = g.Sum(r => r.Direction > 0 ? r.QtyBase : -r.QtyBase),
+					Moves = g.Count(),
+					Gross = g.Sum(r => r.QtyBase),
+				})
+				.OrderByDescending(x => x.Gross)
+				.Take(6)
+				.ToListAsync();
+
+			bool ar = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+			return Json(new
+			{
+				count = agg?.Count ?? 0,
+				inQty = agg?.InQty ?? 0m,
+				outQty = agg?.OutQty ?? 0m,
+				netQty = (agg?.InQty ?? 0m) - (agg?.OutQty ?? 0m),
+				inValue = agg?.InValue ?? 0m,
+				outValue = agg?.OutValue ?? 0m,
+				netValue = (agg?.InValue ?? 0m) - (agg?.OutValue ?? 0m),
+				movers = movers.Select(x => new
+				{
+					code = x.ItemCode,
+					name = ar ? x.ItemName : (string.IsNullOrWhiteSpace(x.ItemNameEn) ? x.ItemName : x.ItemNameEn),
+					net = x.Net,
+					gross = x.Gross,
+					moves = x.Moves,
+				})
+			});
+		}
+		[HttpGet] public async Task<IActionResult> StockMovementsData(string? q, int? warehouseId, int page = 1, int pageSize = 25)
+		{			var q0 = MovementsFiltered(q, warehouseId);
 			var total = await q0.CountAsync();
 			if (page < 1) page = 1; if (pageSize < 1) pageSize = 25; else if (pageSize > 200) pageSize = 200;
 			var rows = await q0.OrderByDescending(r => r.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -890,9 +982,9 @@ namespace CrossBuy.Controllers
 		[HttpGet] public async Task<IActionResult> BulkPriceChange()
 		{
 			ViewBag.PriceLists = await _context.PriceLists.AsNoTracking().Where(p => p.CompanyID == co && p.IsActive)
-				.OrderBy(p => p.Name).Select(p => new { p.ID, p.Name }).ToListAsync();
+				.OrderBy(p => p.Name).Select(p => new InvIdNameOption { ID = p.ID, Name = p.Name }).ToListAsync();
 			ViewBag.Categories = await _context.ItemCategories.AsNoTracking().Where(c => c.CompanyID == co)
-				.OrderBy(c => c.Name).Select(c => new { c.ID, c.Name }).ToListAsync();
+				.OrderBy(c => c.Name).Select(c => new InvIdNameOption { ID = c.ID, Name = c.Name }).ToListAsync();
 			return View();
 		}
 
@@ -928,7 +1020,7 @@ namespace CrossBuy.Controllers
 		[HttpGet] public async Task<IActionResult> ShelfLabels(int? priceListId)
 		{
 			ViewBag.PriceLists = await _context.PriceLists.AsNoTracking().Where(p => p.CompanyID == co && p.IsActive)
-				.OrderBy(p => p.Name).Select(p => new { p.ID, p.Name }).ToListAsync();
+				.OrderBy(p => p.Name).Select(p => new InvIdNameOption { ID = p.ID, Name = p.Name }).ToListAsync();
 			ViewBag.SelectedList = priceListId;
 			ViewBag.Cards = priceListId.HasValue ? await BuildLabelCardsAsync(priceListId.Value) : new List<ShelfLabelCard>();
 			return View();
@@ -1307,18 +1399,32 @@ namespace CrossBuy.Controllers
 			// is never the control.
 			ViewBag.CanDoc = await _access.CanAsync("doc");
 			ViewBag.Components = await _manuf.GetComponentsAsync(co, id);
-			ViewBag.ItemName = await _context.Items.AsNoTracking().Where(i => i.ID == wo.ItemId).Select(i => i.ItemCode + " — " + i.Name).FirstOrDefaultAsync();
-			ViewBag.WarehouseName = await _context.Warehouses.AsNoTracking().Where(w => w.ID == wo.WarehouseId).Select(w => w.Name).FirstOrDefaultAsync();
+			// BOTH NAME COLUMNS, resolved by UI language. These three reads took the Arabic column only,
+			// which is why an English work order said "فرع 2" for its warehouse. Written as a translatable
+			// conditional rather than a helper call so the choice still happens in SQL.
+			bool woAr = System.Globalization.CultureInfo.CurrentUICulture
+				.TwoLetterISOLanguageName.Equals("ar", System.StringComparison.OrdinalIgnoreCase);
+
+			ViewBag.ItemName = await _context.Items.AsNoTracking().Where(i => i.ID == wo.ItemId)
+				.Select(i => i.ItemCode + " — " + (woAr || i.NameEn == null || i.NameEn == "" ? i.Name : i.NameEn))
+				.FirstOrDefaultAsync();
+			ViewBag.WarehouseName = await _context.Warehouses.AsNoTracking().Where(w => w.ID == wo.WarehouseId)
+				.Select(w => woAr || w.NameEn == "" ? w.Name : w.NameEn)
+				.FirstOrDefaultAsync();
 			var compIds = (ViewBag.Components as List<CrossBuy.Models.Context.Inventory.ManufWorkOrderComponent>)!.Select(c => c.ItemId).ToList();
-			ViewBag.CompNames = await _context.Items.AsNoTracking().Where(i => compIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.ItemCode + " — " + i.Name);
+			ViewBag.CompNames = await _context.Items.AsNoTracking().Where(i => compIds.Contains(i.ID))
+				.ToDictionaryAsync(i => i.ID,
+					i => i.ItemCode + " — " + (woAr || i.NameEn == null || i.NameEn == "" ? i.Name : i.NameEn));
 			// بند3: labor lines + pickers
 			var labor = await _manuf.GetLaborAsync(co, id);
 			ViewBag.Labor = labor;
 			var empIds = labor.Where(l => l.EmployeeId != null).Select(l => l.EmployeeId!.Value).Distinct().ToList();
-			ViewBag.LaborEmpNames = await _context.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID)).ToDictionaryAsync(e => e.ID, e => e.FullName);
+			ViewBag.LaborEmpNames = await _context.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID))
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+				.ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
 			// NOTE: return full public entities (not anonymous types) — runtime-compiled Razor views cannot
 			// access members of anonymous types declared in the controller assembly (RuntimeBinderException).
-			ViewBag.Employees = await _context.Employee.AsNoTracking().Where(e => e.EmpCompanyID == co && e.IsActive).OrderBy(e => e.FullName).ToListAsync();
+			ViewBag.Employees = await _context.Employee.AsNoTracking().Where(e => e.EmpCompanyID == co && e.IsActive).OrderByDisplayName().ToListAsync();
 			ViewBag.WhtCodes = await _context.TaxCodes.AsNoTracking().Where(t => t.CompanyID == co && t.Kind == "WHT" && t.IsActive).OrderBy(t => t.Name).ToListAsync();
 			ViewBag.CashAccounts = await _context.Accounts.AsNoTracking().Where(a => a.CompanyID == co && (a.Code == "110101" || a.Code.StartsWith("2101")) && a.IsPostable).OrderBy(a => a.Code).ToListAsync();
 			// MC (بند ب): currencies for external-labor foreign entry
@@ -1329,13 +1435,13 @@ namespace CrossBuy.Controllers
 
 		// ---- بند3: work-order labor ----
 		[HttpPost][ValidateAntiForgeryToken][InvPerm("doc")]
-		public async Task<IActionResult> AddWorkOrderLabor(int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal? ratePerHour, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate)
+		public async Task<IActionResult> AddWorkOrderLabor(int workOrderId, string sourceType, int? employeeId, string? workerName, decimal hours, decimal? ratePerHour, int? whtCodeId, int? externalCreditAccountId, int? currencyId, decimal? exchangeRate, string? workerNameEn = null)
 		{
 			// picking a non-functional currency requires the currency-override permission (same rule as sales invoices)
 			var functional = await _currency.GetFunctionalCurrencyIdAsync(co, null);
 			if (currencyId.HasValue && currencyId.Value != functional && !await _accAccess.CanAsync("currency-override"))
 			{ TempData["InvErr"] = L["You do not have permission to use a foreign currency (currency-override)"].Value; return RedirectToAction(nameof(WorkOrderDetails), new { id = workOrderId }); }
-			var (ok, err, _) = await _manuf.AddLaborAsync(co, workOrderId, sourceType, employeeId, workerName, hours, ratePerHour, whtCodeId, externalCreditAccountId, currencyId, exchangeRate, DateTime.UtcNow, User?.Identity?.Name);
+			var (ok, err, _) = await _manuf.AddLaborAsync(co, workOrderId, sourceType, employeeId, workerName, hours, ratePerHour, whtCodeId, externalCreditAccountId, currencyId, exchangeRate, DateTime.UtcNow, User?.Identity?.Name, workerNameEn);
 			TempData[ok ? "InvMsg" : "InvErr"] = ok ? L["Labor charged to the work order (WIP)"].Value : err;
 			return RedirectToAction(nameof(WorkOrderDetails), new { id = workOrderId });
 		}
@@ -1399,10 +1505,10 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][InvPerm("manage")]
-		public async Task<IActionResult> SaveWorkCenter(int id, string? code, string name, decimal costPerHour, decimal overheadPerHour, bool isActive = true)
+		public async Task<IActionResult> SaveWorkCenter(int id, string? code, string name, string? nameEn, decimal costPerHour, decimal overheadPerHour, bool isActive = true)
 		{
 			var (ok, err) = await _manuf.SaveWorkCenterAsync(co, new CrossBuy.Models.Context.Inventory.ManufWorkCenter
-			{ ID = id, Code = code, Name = name, CostPerHour = costPerHour, OverheadPerHour = overheadPerHour, IsActive = isActive });
+			{ ID = id, Code = code, Name = name, NameEn = nameEn, CostPerHour = costPerHour, OverheadPerHour = overheadPerHour, IsActive = isActive });
 			TempData[ok ? "InvMsg" : "InvErr"] = ok ? L["Work center saved"].Value : err;
 			return RedirectToAction(nameof(WorkCenters));
 		}
@@ -1445,9 +1551,9 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][InvPerm("doc")]
-		public async Task<IActionResult> CreatePlan(string name, DateTime? planDate)
+		public async Task<IActionResult> CreatePlan(string name, string? nameEn, DateTime? planDate)
 		{
-			var (ok, err, id) = await _manuf.CreatePlanAsync(co, name, planDate, User?.Identity?.Name);
+			var (ok, err, id) = await _manuf.CreatePlanAsync(co, name, nameEn, planDate, User?.Identity?.Name);
 			if (!ok) { TempData["InvErr"] = err; return RedirectToAction(nameof(ProductionPlanning)); }
 			return RedirectToAction(nameof(PlanDetails), new { id });
 		}
@@ -2377,7 +2483,12 @@ namespace CrossBuy.Controllers
 			vm.Header.Add(new() { Label = "ملاحظات", LabelEn = "Notes", Value = d.Notes ?? "—" });
 			vm.Columns = new() { new() { Label = "البيان", LabelEn = "Description" }, new() { Label = "الحساب الدائن", LabelEn = "Credit account" }, new() { Label = "المبلغ", LabelEn = "Amount", Num = true } };
 			foreach (var c in d.Charges.OrderBy(x => x.LineNo))
-				vm.Rows.Add(new() { c.Description ?? "—", accs.GetValueOrDefault(c.AccountId, "#" + c.AccountId), N2(c.Amount) });
+			{
+				// The charge line's own description, in the reader's language. Ar() is the same flag the
+				// account name two lines above already uses; this row took the Arabic column straight.
+				var chDesc = Ar() || string.IsNullOrWhiteSpace(c.DescriptionEn) ? c.Description : c.DescriptionEn;
+				vm.Rows.Add(new() { chDesc ?? "—", accs.GetValueOrDefault(c.AccountId, "#" + c.AccountId), N2(c.Amount) });
+			}
 			vm.Totals.Add(new() { Label = "إجمالي المصاريف", LabelEn = "Total charges", Value = N2(d.TotalAmount) });
 			return View("DocumentDetails", vm);
 		}
@@ -2765,7 +2876,7 @@ namespace CrossBuy.Controllers
 				ViewBag.Rows = items.Where(i => i.ItemType == "Stockable").Select(i =>
 				{
 					settings.TryGetValue(i.ID, out var s);
-					return new InvReportRow { ItemId = i.ID, ItemCode = i.ItemCode, ItemName = i.Name, ReorderPoint = s?.ReorderPoint ?? 0, MinQty = s?.MinQty ?? 0, MaxQty = s?.MaxQty ?? 0 };
+					return new InvReportRow { ItemId = i.ID, ItemCode = i.ItemCode, ItemName = ItemDisplayName(i), ReorderPoint = s?.ReorderPoint ?? 0, MinQty = s?.MinQty ?? 0, MaxQty = s?.MaxQty ?? 0 };
 				}).ToList();
 			}
 			return View();
@@ -2825,7 +2936,7 @@ namespace CrossBuy.Controllers
 			try { sel = System.Text.Json.JsonSerializer.Deserialize<List<InvReportRow>>(linesJson ?? "[]", new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new(); } catch { sel = new(); }
 			var lines = sel.Where(r => r.ItemId > 0 && r.Suggested > 0).Select(r => new PoLineInput { ItemId = r.ItemId, ItemDescription = r.ItemName, Qty = r.Suggested, UnitPrice = r.Cost, TaxRate = 0 }).ToList();
 			if (lines.Count == 0) { TempData["InvErr"] = L["Select at least one item"].Value; return RedirectToAction(nameof(Planning), new { warehouseId }); }
-			var (ok, err, po) = await _proc.CreatePurchaseOrderAsync(co, vendorId, warehouseId, DateTime.Today, null, "مولّد من تخطيط النواقص", lines, null);
+			var (ok, err, po) = await _proc.CreatePurchaseOrderAsync(co, vendorId, warehouseId, DateTime.Today, null, "Generated from shortage planning", lines, null);
 			if (!ok) { TempData["InvErr"] = err; return RedirectToAction(nameof(Planning), new { warehouseId }); }
 			TempData["InvMsg"] = string.Format(L["Purchase order {0} created from planning"].Value, po?.OrderNo);
 			return RedirectToAction(nameof(PurchaseOrders));
@@ -2918,4 +3029,37 @@ namespace CrossBuy.Controllers
 	public class InvBranchOption { public int H_ID { get; set; } public string? H_Name { get; set; } }
 	public class InvRoleAssignmentRow { public int ID { get; set; } public int EmployeeId { get; set; } public string? EmployeeName { get; set; } public string Role { get; set; } = ""; public string? Branch { get; set; } }
 	public class InvBookBalanceRow { public int ItemId { get; set; } public decimal QtyOnHand { get; set; } public decimal AvgCost { get; set; } }
+
+	// Rack view payloads. NAMED and public on purpose: the view reads them through
+	// IEnumerable<dynamic>, and an anonymous type is internal to this assembly - a
+	// runtime-compiled Razor view sits in another one and cannot bind to it, which
+	// raises "'object' does not contain a definition for 'Total'".
+	public class InvRackStockRow
+	{
+		public int ItemId { get; set; }
+		public int BinLocationId { get; set; }
+		public decimal QtyOnHand { get; set; }
+		public string? ItemCode { get; set; }
+		public string? ItemName { get; set; }
+		public string? BinCode { get; set; }
+		public string? BinName { get; set; }
+		public string? BinType { get; set; }
+	}
+
+	public class InvRackReconRow
+	{
+		public string? ItemCode { get; set; }
+		public string? ItemName { get; set; }
+		public decimal Located { get; set; }
+		public decimal Total { get; set; }
+	}
+
+	// A simple {ID, Name} option list. NAMED, for the same reason as InvRackReconRow:
+	// the views read these through IEnumerable<dynamic>, and an anonymous type is
+	// internal to this assembly, so a runtime-compiled view cannot bind to it.
+	public class InvIdNameOption
+	{
+		public int ID { get; set; }
+		public string? Name { get; set; }
+	}
 }

@@ -70,7 +70,7 @@
                 </div>
                 <!--begin::Portfolio card (brand green)-->
                 <div class="col-xl-4">
-                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#1f6253">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#145DBF">
                         <div class="card-header pt-5">
                             <h3 class="card-title"><span class="text-white fs-3 fw-bold me-2">@Localizer["Contract portfolio"]</span></h3>
                             <div class="card-toolbar">
@@ -140,7 +140,7 @@
                         <div class="card-body pt-2">
                             <div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
                                 <thead>
-                                    <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                    <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                                         <th>@SR["Code"]</th><th>@Localizer["Project"]</th><th>@Localizer["Customer"]</th>
                                         <th class="text-end">@Localizer["Contract value"]</th><th class="text-center">@SR["Status"]</th>
                                     </tr>
@@ -154,7 +154,7 @@
                                     {
                                         var m = sm(p.Status);
                                         <tr>
-                                            <td><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:#1f6253;">@p.Code</span></td>
+                                            <td><span class="badge fw-bold fs-8" style="background:#E7F0FF;color:#145DBF;">@p.Code</span></td>
                                             <td class="fw-bold text-gray-900">@nm(p.Name, p.NameEn)</td>
                                             <td class="text-gray-600 fw-semibold">@(p.Customer ?? "—")</td>
                                             <td class="text-end fw-bold text-gray-800">@(p.ContractValue.HasValue ? p.ContractValue.Value.ToString("N2") : "—")</td>
@@ -216,7 +216,7 @@
                         <div class="card-body pt-2">
                             <div class="table-responsive"><table class="table align-middle fs-6 gy-3 my-0" style="font-variant-numeric:tabular-nums;">
                                 <thead>
-                                    <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #1f7d57;">
+                                    <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #1f7d57;border-bottom:2px solid #0E4A9E;">
                                         <th class="ps-2">@Localizer["Project"]</th>
                                         <th class="text-end">@Localizer["Revenue"]</th>
                                         <th class="text-end">@Localizer["Cost"]</th>
@@ -231,7 +231,7 @@
                                     @foreach (var r in Model.TopByProfit)
                                     {
                                         <tr style="border-bottom:1px dashed #eef1f6;">
-                                            <td class="ps-2"><span class="badge fw-bold fs-8 me-2" style="background:#eaf3ef;color:#1f6253;">@r.Code</span><span class="fw-semibold text-gray-800">@r.Name</span></td>
+                                            <td class="ps-2"><span class="badge fw-bold fs-8 me-2" style="background:#E7F0FF;color:#145DBF;">@r.Code</span><span class="fw-semibold text-gray-800">@r.Name</span></td>
                                             <td class="text-end fw-bold @(r.Revenue > 0 ? "text-gray-900" : "text-gray-300")">@(r.Revenue > 0 ? r.Revenue.ToString("N2") : "—")</td>
                                             <td class="text-end fw-bold @(r.Cost > 0 ? "text-gray-900" : "text-gray-300")">@(r.Cost > 0 ? r.Cost.ToString("N2") : "—")</td>
                                             <td class="text-end pe-2 fw-bold text-@(r.Profit >= 0 ? "success" : "danger")">@r.Profit.ToString("N2")</td>

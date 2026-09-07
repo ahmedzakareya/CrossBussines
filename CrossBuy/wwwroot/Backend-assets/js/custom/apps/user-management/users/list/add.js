@@ -18,7 +18,7 @@ var KTUsersAddUser = function () {
                     'CompanyNameAr': {
                         validators: {
                             notEmpty: {
-                                message: 'إسم الشركة مطلوب'
+                                message: 'Company name is required'
                             }
                         }
                     },
@@ -32,7 +32,7 @@ var KTUsersAddUser = function () {
                     'countriesDropdown': {
                         validators: {
                             notEmpty: {
-                                message: 'إسم الدولة مطلوب'
+                                message: 'Country name is required'
                             }
                         }
                     },

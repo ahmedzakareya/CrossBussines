@@ -39,7 +39,7 @@
 <form id="af">@Html.AntiForgeryToken()</form>
 
 @section Scripts {
-    <script src="~/Backend-assets/plugins/signalr.min.js"></script>
+    <script src="~/Backend-assets/plugins/signalr.min.js" asp-append-version="true"></script>
     <script>
         window.DELIV = {
             rtl: @(isAr ? "true" : "false"),

@@ -17,8 +17,8 @@
     int? branchFilter = ViewBag.BranchFilter;
     int? employeeFilter = ViewBag.EmployeeFilter;
 
-    string PeriodName(RosterPeriod p) => (isAr ? p.NameAr : p.NameEn) is { Length: > 0 } n ? n : (p.NameAr ?? p.NameEn ?? "#" + p.ID);
-    string ShiftName(WorkShift? s) => s == null ? "" : ((isAr ? s.NameAr : s.NameEn) is { Length: > 0 } n ? n : s.Code);
+    string PeriodName(RosterPeriod p) => (isAr ? p.NameAr : DisplayName.Or(p.NameEn, p.NameAr)) is { Length: > 0 } n ? n : (p.NameAr ?? p.NameEn ?? "#" + p.ID);
+    string ShiftName(WorkShift? s) => s == null ? "" : ((isAr ? s.NameAr : DisplayName.Or(s.NameEn, s.NameAr)) is { Length: > 0 } n ? n : s.Code);
 
     // The grid's rows are EMPLOYEES and its columns are DATES. That is the shape a scheduler reads:
     // "who is on, and is anybody's week empty". A list of assignment rows would be a database table
@@ -254,7 +254,7 @@
                             <div class="table-responsive">
                                 <table class="table table-bordered align-middle gy-2 mb-0" style="min-width: 900px;">
                                     <thead>
-                                        <tr class="fw-semibold text-gray-500 fs-8">
+                                        <tr class="fw-semibold text-gray-500 fs-8" style="border-bottom:2px solid #0E4A9E;">
                                             <th class="min-w-150px bg-light">@Localizer["Employee"]</th>
                                             @foreach (var d in days)
                                             {
@@ -345,7 +345,7 @@
                             <div class="table-responsive">
                                 <table class="table table-row-dashed align-middle gy-3 mb-0">
                                     <thead>
-                                        <tr class="fw-semibold text-gray-500 fs-8 text-uppercase">
+                                        <tr class="fw-semibold text-gray-500 fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                                             <th>@Localizer["Employee"]</th>
                                             <th>@Localizer["Date"]</th>
                                             <th>@Localizer["Conflict"]</th>
@@ -358,7 +358,7 @@
                                             var who = Model.Assignments.FirstOrDefault(a => a.EmployeeID == c.EmployeeID)?.Employee;
                                             <tr>
                                                 <td class="fw-semibold text-gray-800 fs-7">
-                                                    @((isAr ? who?.FullName : who?.FullNameEn) ?? who?.FullName ?? ("#" + c.EmployeeID))
+                                                    @((isAr ? who?.FullName : DisplayName.Or(who?.FullNameEn, who?.FullName)) ?? who?.FullName ?? ("#" + c.EmployeeID))
                                                 </td>
                                                 <td class="fs-7 text-gray-700">@c.WorkDate.ToString("yyyy-MM-dd")</td>
                                                 <td>
@@ -521,7 +521,7 @@
                         </div>
                         <div class="modal-body">
                             <div class="fw-semibold text-gray-800 mb-1">
-                                @((isAr ? a.Employee?.FullName : a.Employee?.FullNameEn) ?? a.Employee?.FullName)
+                                @((isAr ? a.Employee?.FullName : DisplayName.Or(a.Employee?.FullNameEn, a.Employee?.FullName)) ?? a.Employee?.FullName)
                             </div>
                             <div class="text-gray-600 fs-8 mb-4">
                                 @a.WorkDate.ToString("yyyy-MM-dd") · @ShiftName(a.Shift)

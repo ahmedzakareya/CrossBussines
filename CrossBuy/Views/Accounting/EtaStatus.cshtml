@@ -40,7 +40,7 @@
             </div></div>
         </div>
         <div class="card-body pt-0 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
-            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Invoice"]</th><th>@SR["Date"]</th><th class="text-end">@SR["Total"]</th><th>UUID</th><th class="text-center">@Localizer["ETA status"]</th></tr></thead>
+            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Invoice"]</th><th>@SR["Date"]</th><th class="text-end">@SR["Total"]</th><th>UUID</th><th class="text-center">@Localizer["ETA status"]</th></tr></thead>
             <tbody>
             @foreach (var i in invoices) {
                 <tr class="r" data-s="@i.InvoiceNo @i.EtaUuid"><td class="fw-bold text-gray-900">@i.InvoiceNo</td><td class="text-muted">@i.InvoiceDate.ToString("yyyy/MM/dd")</td><td class="text-end fw-bold text-gray-900">@i.GrandTotal.ToString("N2")</td><td class="text-muted">@(i.EtaUuid ?? "—")</td><td class="text-center"><span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@(i.EtaStatus ?? Localizer["Not sent"].Value)</span></td></tr>

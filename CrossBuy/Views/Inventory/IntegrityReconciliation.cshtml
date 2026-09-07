@@ -7,81 +7,345 @@
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var checks = ViewBag.Checks as List<IntegrityCheck> ?? new();
     var runs = ViewBag.Runs as List<IntegrityCheckRun> ?? new();
-    var allOk = checks.All(c => c.Ok);
+
+    Func<IntegrityCheck, string> nameOf = c => isAr
+        ? c.NameAr
+        : (string.IsNullOrEmpty(c.NameEn) ? c.NameAr : c.NameEn);
+
+    @* THREE STATES, because IntegrityCheckService has three. Fifteen of its checks carry
+       Ok = true with a non-zero Actual on purpose - "COUNTED ... never fails" - so a non-zero
+       difference is NOT automatically a deviation. Grouping by state is what lets this page
+       answer its own question instead of listing everything it knows. *@
+    var breaches = checks.Where(c => !c.Ok).OrderByDescending(c => Math.Abs(c.Diff)).ToList();
+    var counted = checks.Where(c => c.Ok && c.Diff != 0).OrderByDescending(c => Math.Abs(c.Diff)).ToList();
+    var holding = checks.Where(c => c.Ok && c.Diff == 0).ToList();
+    var allOk = breaches.Count == 0;
+    var worst = breaches.FirstOrDefault();
+
+    // RunAt is written as DateTime.UtcNow, so the Kind is pinned before every conversion -
+    // rendered raw it printed UTC digits as though they were local.
+    Func<DateTime, DateTime> local = d => DateTime.SpecifyKind(d, DateTimeKind.Utc).ToLocalTime();
+    var shown = runs.Take(20).ToList();
+    var streak = runs.TakeWhile(x => x.AllOk).Count();
 }
+
+@* =================================================================================================
+   BUILT ON THE THEME'S OWN DASHBOARD VOCABULARY (demo39 / finance-performance), not on shapes
+   invented for this page:
+
+     * a row of narrow KPI cards  - icon, big figure, muted label, badge underneath
+     * card-flush with a two-line card-header - card-label plus a muted second line
+     * pill tabs in the card-toolbar  (btn-color-muted / btn-active-light) for switching lists
+
+   Everything the IDENTITY governs still comes from us: the colour rule (danger = attention,
+   secondary = normal, success = complete, primary = brand and never a state), the .cb-glyph dot,
+   tokens only with no invented hex, bidi isolation on every numeric run, and a table-row-*
+   variant on every table.
+
+   The page still answers its question first. The old table asked the reader to scan thirty rows -
+   seventeen of them "0.00 0.00 0.00 Match" - to find the four that were wrong.
+   ================================================================================================= *@
+
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
-        <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Integrity reconciliation"]</h1>
-        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Integrity"]</li></ul></div>
+        <div class="page-title d-flex flex-column justify-content-center gap-1">
+            <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Integrity reconciliation"]</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+                <li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">@Localizer["Integrity"]</li>
+            </ul>
+        </div>
         <div class="d-flex gap-2 align-items-center">
-            <span class="badge fs-6 py-2 px-4 fw-bold d-inline-flex align-items-center gap-2" style="@(allOk ? "background:#eaf3ef;color:#13433a;" : "background:#fdeaea;color:#d92d20;")"><i class="ki-outline @(allOk ? "ki-shield-tick" : "ki-shield-cross") fs-4" style="@(allOk ? "color:#13433a;" : "color:#d92d20;")"></i>@(allOk ? Localizer["Healthy"] : Localizer["Deviations"])</span>
-            <button type="button" class="btn btn-light-primary btn-sm d-inline-flex align-items-center gap-1" id="exportBtn"><i class="ki-outline ki-exit-down fs-5"></i>@SR["Export"]</button>
-            <form asp-action="RunIntegrity" method="post">@Html.AntiForgeryToken()<button class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"><i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Run now"]</button></form>
+            <button type="button" class="btn btn-light btn-sm d-inline-flex align-items-center gap-1" id="exportBtn">
+                <i class="ki-outline ki-exit-down fs-5"></i>@SR["Export"]</button>
+            <form asp-action="RunIntegrity" method="post">@Html.AntiForgeryToken()
+                <button class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+                    <i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Run now"]</button></form>
         </div>
     </div></div>
+
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-        <div class="row g-5">
-            <div class="col-lg-8">
-                <div class="card card-flush">
-                    <div class="card-header pt-6"><div class="card-title"><h2 class="fw-bold">@Localizer["System invariants"]</h2></div>
-                        <div class="card-toolbar"><span class="text-muted fs-7">@Localizer["Live check now"]</span></div>
+
+        @* ---------------------------------------------------------- THE STAT TILES ------------
+           The theme's profile-stat shape (demo39 / user-profile / campaigns): a compact tile with a
+           dashed border, a directional icon beside the figure, and the label underneath. Four of
+           them in one card reads as a dense strip of facts; four full-height cards holding one
+           number each read as four mostly-empty boxes, which is what they were.
+
+           The DASHED BORDER is also the language this app already uses for a notice, so the strip
+           belongs to the same family as the rest of the identity. *@
+        <div class="card mb-5 mb-xl-10">
+            <div class="card-body py-5">
+                <div class="d-flex flex-wrap gap-4">
+
+                    @* The one tile that carries the alarm, and only when there is something to
+                       alarm about: its border, icon and figure all go danger together. *@
+                    @{ var devBorder = allOk ? "border-gray-300" : "border-danger"; }
+                    <div class="border @devBorder border-dashed rounded min-w-200px py-3 px-4">
+                        <div class="d-flex align-items-center">
+                            <i class="ki-outline @(allOk ? "ki-shield-tick" : "ki-shield-cross") fs-3 @(allOk ? "text-gray-500" : "text-danger") me-2"></i>
+                            <div class="fs-2 fw-bold @(allOk ? "text-gray-900" : "text-danger")" dir="ltr" style="unicode-bidi:isolate">@breaches.Count</div>
+                        </div>
+                        <div class="fw-semibold fs-6 text-gray-500">@Localizer["DeviationsShort"]</div>
+                        @if (worst != null)
+                        {
+                            <div class="fs-8 fw-semibold text-danger cb-tabular">@Localizer["Largest deviation"]:
+                                <span dir="ltr" style="unicode-bidi:isolate">@worst.Diff.ToString("N2")</span></div>
+                        }
+                        else
+                        {
+                            <div class="fs-8 fw-semibold text-success">@Localizer["No deviations"]</div>
+                        }
                     </div>
-                    <div class="card-body pt-2"><div class="table-responsive">
-                        <table class="table align-middle gy-3 mb-0" id="t" style="font-variant-numeric:tabular-nums;">
-                            <thead><tr class="text-muted fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Check"]</th><th class="text-end">@Localizer["Expected"]</th><th class="text-end">@Localizer["Actual"]</th><th class="text-end">@Localizer["Diff"]</th><th class="text-center">@SR["Status"]</th><th class="pe-4"></th></tr></thead>
-                            <tbody class="fw-semibold text-gray-700">
-                            @foreach (var c in checks)
-                            {
-                                <tr class="@(c.Ok ? "" : "bg-light-danger")" style="border-bottom:1px dashed #eef1f6;">
-                                    <td class="ps-4 fw-bold text-gray-900">@(isAr ? c.NameAr : (string.IsNullOrEmpty(c.NameEn) ? c.NameAr : c.NameEn))</td>
-                                    <td class="text-end">@c.Expected.ToString("N2")</td>
-                                    <td class="text-end">@c.Actual.ToString("N2")</td>
-                                    <td class="text-end fw-bold @(c.Diff == 0 ? "text-muted" : "text-danger")">@c.Diff.ToString("N2")</td>
-                                    <td class="text-center">@if (c.Ok) { <span class="badge badge-light-primary">@Localizer["Match"]</span> } else { <span class="badge badge-light-danger">@Localizer["Diff"]</span> }</td>
-                                    <td class="text-end">@if (!string.IsNullOrEmpty(c.Detail)) { <a href="@c.Detail" class="btn btn-icon btn-light-primary btn-sm" title="@Localizer["Source"]"><i class="ki-outline ki-eye fs-6"></i></a> }</td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div></div>
+                    <div class="border border-gray-300 border-dashed rounded min-w-200px py-3 px-4">
+                        <div class="d-flex align-items-center">
+                            <i class="ki-outline ki-eye fs-3 text-gray-500 me-2"></i>
+                            <div class="fs-2 fw-bold text-gray-900" dir="ltr" style="unicode-bidi:isolate">@counted.Count</div>
+                        </div>
+                        <div class="fw-semibold fs-6 text-gray-500">@Localizer["Observations to watch"]</div>
+                        @* Neutral on purpose: these never fail, so the alarm colour is not spent
+                           on something nobody must act on. *@
+                        <div class="fs-8 fw-semibold text-gray-500">@Localizer["never fails"]</div>
+                    </div>
+                    <div class="border border-gray-300 border-dashed rounded min-w-200px py-3 px-4">
+                        <div class="d-flex align-items-center">
+                            <i class="ki-outline ki-shield-tick fs-3 text-success me-2"></i>
+                            <div class="fs-2 fw-bold text-gray-900" dir="ltr" style="unicode-bidi:isolate">@holding.Count</div>
+                        </div>
+                        <div class="fw-semibold fs-6 text-gray-500">@Localizer["invariants hold"]</div>
+                        @* The denominator is what makes 17 a proportion instead of a loose number. *@
+                        <div class="fs-8 fw-semibold text-gray-500">@Localizer["of"]
+                            <span dir="ltr" style="unicode-bidi:isolate">@checks.Count</span>
+                            @Localizer["checks"]</div>
+                    </div>
+                    <div class="border border-gray-300 border-dashed rounded min-w-200px py-3 px-4">
+                        <div class="d-flex align-items-center">
+                            <i class="ki-outline ki-arrows-circle fs-3 text-gray-500 me-2"></i>
+                            <div class="fs-2 fw-bold text-gray-900" dir="ltr" style="unicode-bidi:isolate">@streak</div>
+                        </div>
+                        <div class="fw-semibold fs-6 text-gray-500">@Localizer["consecutive clean runs"]</div>
+                        @if (shown.Count > 0)
+                        {
+                            <div class="fs-8 fw-semibold text-gray-500">@Localizer["Last run"]:
+                                @(shown[0].Source == "Scheduled" ? Localizer["Scheduled"] : Localizer["Manual"])
+                                <span dir="ltr" style="unicode-bidi:isolate">@local(shown[0].RunAt).ToString("HH:mm")</span></div>
+                        }
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-4">
-                <div class="card card-flush">
-                    <div class="card-header pt-6"><div class="card-title"><h2 class="fw-bold">@Localizer["Run history"]</h2></div></div>
-                    <div class="card-body pt-2">
-                        @foreach (var r in runs)
+        </div>
+
+        @* -------------------------------------------------------- THE DEVIATIONS --------------
+           A table, not cards: four rows with three comparable figures each is what a table is for,
+           and the reader wants to compare them. The two-line header is the theme's card-label
+           pattern - the title states the section, the line under it states the worst case. *@
+        @if (breaches.Count > 0)
+        {
+            <div class="card card-flush mb-5 mb-xl-10">
+                <div class="card-header pt-7">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bold text-gray-900">@Localizer["Deviations"]</span>
+                        <span class="text-gray-500 pt-2 fw-semibold fs-6">
+                            @Localizer["Largest deviation"]: @nameOf(worst!)
+                            <span class="fw-bold text-danger cb-tabular" dir="ltr" style="unicode-bidi:isolate">@worst!.Diff.ToString("N2")</span></span>
+                    </h3>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive">
+                        @* The theme's table shape: dashed rows, no side gutter, min-w per column.
+                           The NAME is the link - which removes a whole icon-button column that
+                           pointed at the same place - and each figure sits beside its own
+                           difference instead of across the table from it. *@
+                        <table class="table table-row-dashed align-middle gs-0 gy-4 mb-0 cb-tabular">
+                            <thead><tr class="fs-7 fw-bold border-0 text-gray-500 cb-thead-rule">
+                                <th class="min-w-250px">@Localizer["Check"]</th>
+                                <th class="min-w-150px text-end">@Localizer["Expected"]</th>
+                                <th class="min-w-200px text-end pe-0">@Localizer["Actual"]</th>
+                            </tr></thead>
+                            <tbody>
+                                @foreach (var c in breaches)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(c.Detail))
+                                            {
+                                                <a href="@c.Detail" class="text-gray-800 fw-bold text-hover-primary fs-6">@nameOf(c)</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-gray-800 fw-bold fs-6">@nameOf(c)</span>
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="text-gray-600 fw-semibold fs-6" dir="ltr" style="unicode-bidi:isolate">@c.Expected.ToString("N2")</span>
+                                        </td>
+                                        <td class="pe-0">
+                                            @* THE FIGURE AND ITS DIFFERENCE IN ONE CELL. The difference only
+                                               means anything next to the number it came from. *@
+                                            <div class="d-flex justify-content-end">
+                                                <span class="text-gray-900 fw-bold fs-6 me-3" dir="ltr" style="unicode-bidi:isolate">@c.Actual.ToString("N2")</span>
+                                                <span class="text-danger min-w-100px d-block text-end fw-bold fs-6" dir="ltr" style="unicode-bidi:isolate">@c.Diff.ToString("N2")</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>                    </div>
+                </div>
+            </div>
+        }
+
+        @* ---------------------------------------------------- THE TWO REFERENCE LISTS ---------
+           Pill tabs in the card-toolbar, which is the theme's own way of switching a card's body -
+           and it replaces two stacked disclosure widgets that each invented their own layout. *@
+        <div class="card card-flush">
+            <div class="card-header pt-7">
+                <h3 class="card-title align-items-start flex-column">
+                    <span class="card-label fw-bold text-gray-900">@Localizer["System invariants"]</span>
+                    <span class="text-gray-500 pt-2 fw-semibold fs-6">@Localizer["Counted, not an invariant - this check never fails"]</span>
+                </h3>
+                <div class="card-toolbar">
+                    <ul class="nav" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-sm btn-color-muted btn-active btn-active-light active fw-bold px-4 me-1"
+                               data-bs-toggle="tab" href="#cbCounted" role="tab">
+                                @Localizer["Observations to watch"]
+                                <span class="badge badge-light-secondary ms-2" dir="ltr" style="unicode-bidi:isolate">@counted.Count</span></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-sm btn-color-muted btn-active btn-active-light fw-bold px-4"
+                               data-bs-toggle="tab" href="#cbHolding" role="tab">
+                                @Localizer["invariants hold"]
+                                <span class="badge badge-light-success ms-2" dir="ltr" style="unicode-bidi:isolate">@holding.Count</span></a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body pt-2">
+                <div class="tab-content">
+
+                    <div class="tab-pane fade show active" id="cbCounted" role="tabpanel">
+                        @if (counted.Count == 0)
                         {
-                            var main = r.AllOk ? "#13433a" : "#d92d20";
-                            var soft = r.AllOk ? "#eaf3ef" : "#fdeaea";
-                            <div class="d-flex align-items-center justify-content-between py-3" style="border-bottom:1px dashed #eef1f6;">
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="symbol symbol-40px"><span class="symbol-label" style="background:@soft;"><i class="ki-outline @(r.AllOk ? "ki-check-circle" : "ki-cross-circle") fs-2" style="color:@main;"></i></span></span>
-                                    <div>
-                                        <div class="fw-bold fs-6 text-gray-900">@r.RunAt.ToString("yyyy-MM-dd HH:mm")</div>
-                                        <div class="fs-8 text-muted d-flex align-items-center gap-1"><i class="ki-outline ki-profile-circle fs-6"></i>@(r.Source == "Scheduled" ? Localizer["Scheduled"] : Localizer["Manual"])</div>
-                                    </div>
-                                </div>
-                                <span class="badge fw-bold d-inline-flex align-items-center gap-2 px-3 py-2" style="background:@soft;color:@main;">
-                                    <span style="width:7px;height:7px;border-radius:50%;background:@main;display:inline-block;"></span>@(r.AllOk ? Localizer["OK"].Value : $"{r.FailedCount} " + Localizer["fail"].Value)
-                                </span>
+                            <div class="text-center text-muted py-10">@Localizer["No runs yet"]</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-row-dashed align-middle gs-0 gy-4 mb-0 cb-tabular">
+                                    @* A HEADER, because "21.00" with no label does not say what 21 is,
+                                       and in a reconciliation an unlabelled figure is worse than none. *@
+                                    <thead><tr class="fs-7 fw-bold border-0 text-gray-500 cb-thead-rule">
+                                        <th class="min-w-300px">@Localizer["Check"]</th>
+                                        <th class="min-w-150px text-end pe-0">@Localizer["Actual"]</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        @foreach (var c in counted)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(c.Detail))
+                                                    {
+                                                        <a href="@c.Detail" class="text-gray-800 fw-bold text-hover-primary fs-6">@nameOf(c)</a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-gray-800 fw-bold fs-6">@nameOf(c)</span>
+                                                    }
+                                                </td>
+                                                <td class="pe-0">
+                                                    @* NOT DANGER. These never fail, so the figure keeps the
+                                                       neutral ink - the alarm colour is reserved for a breach. *@
+                                                    <div class="d-flex justify-content-end">
+                                                        <span class="text-gray-900 fw-bold fs-6" dir="ltr" style="unicode-bidi:isolate">@c.Actual.ToString("N2")</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
                         }
-                        @if (runs.Count == 0) { <div class="text-center text-muted py-8">@Localizer["No runs yet"]</div> }
-                        <div class="text-muted fs-8 mt-3">@Localizer["A scheduled daily check runs automatically and notifies managers on any deviation."]</div>
+                    </div>
+
+                    <div class="tab-pane fade" id="cbHolding" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-row-dashed align-middle gs-0 gy-4 mb-0 cb-tabular">
+                                <thead><tr class="fs-7 fw-bold border-0 text-gray-500 cb-thead-rule">
+                                    <th class="min-w-250px">@Localizer["Check"]</th>
+                                    <th class="min-w-150px text-end">@Localizer["Expected"]</th>
+                                    <th class="min-w-150px text-end pe-0">@Localizer["Actual"]</th>
+                                    <th class="min-w-100px text-center">@SR["Status"]</th>
+                                </tr></thead>
+                                <tbody>
+                                    @foreach (var c in holding)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(c.Detail))
+                                                {
+                                                    <a href="@c.Detail" class="text-gray-800 fw-bold text-hover-primary fs-6">@nameOf(c)</a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-gray-800 fw-bold fs-6">@nameOf(c)</span>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="text-gray-600 fw-semibold fs-6" dir="ltr" style="unicode-bidi:isolate">@c.Expected.ToString("N2")</span></td>
+                                            <td class="text-end pe-0">
+                                                <span class="text-gray-900 fw-bold fs-6" dir="ltr" style="unicode-bidi:isolate">@c.Actual.ToString("N2")</span></td>
+                                            <td class="text-center">
+                                                <span class="badge badge-light-success d-inline-flex align-items-center">
+                                                    <span class="cb-glyph me-2"></span>@Localizer["Match"]</span></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>                        </div>
                     </div>
                 </div>
+                <div class="text-muted fs-8 mt-4">@Localizer["A scheduled daily check runs automatically and notifies managers on any deviation."]</div>
             </div>
         </div>
     </div></div>
 </div>
+
+<style>
+
+    @@media print {
+        /* A printed reconciliation is the record, so BOTH reference lists are on it - a tab that
+           happened to be closed must not decide what the printed copy contains. */
+        .tab-content > .tab-pane { display: block !important; opacity: 1 !important; }
+        .card-toolbar, #kt_app_toolbar .btn, form { display: none !important; }
+    }
+</style>
+
 @section Scripts {
 <script>
-document.getElementById('exportBtn').addEventListener('click',function(){
-  var rows=[['@Localizer["Check"]','@Localizer["Expected"]','@Localizer["Actual"]','@Localizer["Diff"]','@SR["Status"]']];
-  [].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(tr){var c=tr.querySelectorAll('td');rows.push([c[0].innerText.trim(),c[1].innerText.trim(),c[2].innerText.trim(),c[3].innerText.trim(),c[4].innerText.trim()]);});
-  var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='integrity.csv';a.click();
+// The export carries EVERY check with its state - not just the tab that happens to be open. A CSV
+// that depended on the page's current tab would be a different file each time.
+document.getElementById('exportBtn').addEventListener('click', function () {
+    var rows = [['@Localizer["Check"]', '@Localizer["Expected"]', '@Localizer["Actual"]', '@Localizer["Diff"]', '@SR["Status"]']];
+    var data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        checks.Select(c => new {
+            name = nameOf(c),
+            expected = c.Expected,
+            actual = c.Actual,
+            diff = c.Diff,
+            state = !c.Ok ? Localizer["Diff"].Value : (c.Diff != 0 ? Localizer["Counted"].Value : Localizer["Match"].Value)
+        })));
+    data.forEach(function (c) {
+        rows.push([c.name, c.expected.toFixed(2), c.actual.toFixed(2), c.diff.toFixed(2), c.state]);
+    });
+    var csv = rows.map(function (r) {
+        return r.map(function (x) { return '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\n');
+    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'integrity.csv';
+    a.click();
 });
 </script>
 }

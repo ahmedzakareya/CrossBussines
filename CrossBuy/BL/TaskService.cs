@@ -9,7 +9,16 @@ namespace CrossBuy.BL
 	public class TaskRowDto
 	{
 		public int Id { get; set; }
+		// Title is the DISPLAY title: resolved for the current culture before this DTO leaves the service,
+		// exactly like AssigneeName, AssigneeJobTitle, CustomerName and ExpectedPartyName already are. Every
+		// caller therefore stays language-agnostic and no view has to know the rule.
 		public string Title { get; set; } = "";
+		// The two STORED values, kept alongside the resolved one. An editor must round-trip what is in the
+		// database, not what the current culture happened to display: without TitleAr, opening the edit form
+		// in an English UI would prefill the English twin into the primary Title box and the next save would
+		// overwrite the Arabic title with it.
+		public string TitleAr { get; set; } = "";
+		public string? TitleEn { get; set; }
 		public string? Description { get; set; }
 		public int AssigneeEmployeeId { get; set; }
 		public string AssigneeName { get; set; } = "";
@@ -47,6 +56,7 @@ namespace CrossBuy.BL
 	{
 		public int Id { get; set; }
 		public string Title { get; set; } = "";
+		public string? TitleEn { get; set; }      // optional English twin; blank stores null and falls back to Title
 		public string? Description { get; set; }
 		public int AssigneeEmployeeId { get; set; }
 		public string Priority { get; set; } = "Normal";
@@ -117,7 +127,15 @@ namespace CrossBuy.BL
 			if (assignee.HasValue && assignee.Value > 0) query = query.Where(t => t.AssigneeEmployeeId == assignee.Value);
 			if (!string.IsNullOrWhiteSpace(status)) query = query.Where(t => t.Status == status);
 			if (!string.IsNullOrWhiteSpace(priority)) query = query.Where(t => t.Priority == priority);
-			if (!string.IsNullOrWhiteSpace(q)) { var term = q.Trim(); query = query.Where(t => t.Title.Contains(term) || (t.Description != null && t.Description.Contains(term))); }
+			if (!string.IsNullOrWhiteSpace(q))
+			{
+				var term = q.Trim();
+				// BOTH titles, whichever language the searcher typed. Matching Title alone meant an
+				// English reader could not find a task by the English name in front of them.
+				query = query.Where(t => t.Title.Contains(term)
+					|| (t.TitleEn != null && t.TitleEn.Contains(term))
+					|| (t.Description != null && t.Description.Contains(term)));
+			}
 			var now = DateTime.Now;
 			switch (view)
 			{
@@ -170,7 +188,7 @@ namespace CrossBuy.BL
 				.Skip((page - 1) * pageSize).Take(pageSize)        // server-side paging (no more 1000-row dumps)
 				.Select(t => new TaskRowDto
 				{
-					Id = t.ID, Title = t.Title, Description = t.Description,
+					Id = t.ID, Title = t.Title, TitleAr = t.Title, TitleEn = t.TitleEn, Description = t.Description,
 					AssigneeEmployeeId = t.AssigneeEmployeeId, CreatedByEmployeeId = t.CreatedByEmployeeId,
 					Priority = t.Priority, DueDate = t.DueDate, Status = t.Status,
 					EstimatedHours = t.EstimatedHours, ActualHours = t.ActualHours, CreatedAt = t.CreatedAt,
@@ -199,6 +217,13 @@ namespace CrossBuy.BL
 			var now = DateTime.Now;
 			foreach (var r in rows)
 			{
+				// THE TASK'S OWN TITLE WAS THE ONE BILINGUAL FIELD NOBODY RESOLVED. TaskItems.TitleEn exists
+				// in the entity and in the database, and nothing read it: the projection never selected it and
+				// the grid printed t.Title raw, so an English UI showed Arabic titles beside English column
+				// headers even for a task that DID carry an English title. Resolved here, next to the employee
+				// name and the customer name, on the same isEn flag and with the same "fall back when the twin
+				// is empty" rule the rest of this method uses.
+				if (isEn && !string.IsNullOrWhiteSpace(r.TitleEn)) r.Title = r.TitleEn!;
 				r.AssigneeName = names.TryGetValue(r.AssigneeEmployeeId, out var an) ? an : "";
 				r.AssigneePhoto = photos.TryGetValue(r.AssigneeEmployeeId, out var ap) ? ap : null;
 				r.AssigneeJobTitle = empJob.TryGetValue(r.AssigneeEmployeeId, out var jt2) ? jt2 : "";
@@ -219,8 +244,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveAsync(int companyId, TaskSaveInput input, int currentEmployeeId)
 		{
-			if (string.IsNullOrWhiteSpace(input.Title)) return (false, "عنوان المهمة مطلوب", 0);
-			if (input.AssigneeEmployeeId <= 0) return (false, "يجب اختيار المسؤول عن المهمة", 0);
+			if (string.IsNullOrWhiteSpace(input.Title)) return (false, "Task title is required", 0);
+			if (input.AssigneeEmployeeId <= 0) return (false, "An assignee must be chosen for the task", 0);
 			var priority = Priorities.Contains(input.Priority) ? input.Priority : "Normal";
 			// TM-2: normalize the optional link — either BOTH set or BOTH null (an unlinked task is valid)
 			var linkTypes = new[] { "SalesInvoice", "Customer", "ManufWorkOrder", "PosOrder", "Employee", "Project", "Item" };
@@ -233,7 +258,7 @@ namespace CrossBuy.BL
 			// TM-9: normalize scheduled criteria — a valid set (type + party) or fully cleared. Party type is derived.
 			var schedTypes = new[] { "PurchaseInvoice", "SalesInvoice" };
 			bool scheduled = input.IsScheduled && !string.IsNullOrWhiteSpace(input.ExpectedEntityType) && schedTypes.Contains(input.ExpectedEntityType) && input.ExpectedPartyId > 0;
-			if (input.IsScheduled && !scheduled) return (false, "المهمة المجدولة تحتاج نوع حركة متوقّع + طرف (مورّد/عميل)", 0);
+			if (input.IsScheduled && !scheduled) return (false, "A scheduled task needs an expected transaction type and a party (supplier/customer)", 0);
 			string? expType = scheduled ? input.ExpectedEntityType : null;
 			string? expPartyType = scheduled ? (input.ExpectedEntityType == "PurchaseInvoice" ? "Supplier" : "Customer") : null;
 			int? expPartyId = scheduled ? input.ExpectedPartyId : null;
@@ -243,14 +268,16 @@ namespace CrossBuy.BL
 			if (input.Id > 0)
 			{
 				var t = await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == input.Id && x.CompanyId == companyId);
-				if (t == null) return (false, "المهمة غير موجودة", 0);
+				if (t == null) return (false, "Task not found", 0);
 
 				// Capture BEFORE mutating: an event and a notification both need the previous value, and
 				// after the assignment below it is gone.
 				int previousAssignee = t.AssigneeEmployeeId;
 				DateTime? previousDue = t.DueDate;
 
-				t.Title = input.Title.Trim(); t.Description = input.Description;
+				t.Title = input.Title.Trim();
+				t.TitleEn = string.IsNullOrWhiteSpace(input.TitleEn) ? null : input.TitleEn.Trim();
+				t.Description = input.Description;
 				t.AssigneeEmployeeId = input.AssigneeEmployeeId; t.Priority = priority;
 				t.DueDate = input.DueDate; t.EstimatedHours = input.EstimatedHours;
 				t.ProgressPct = Math.Clamp(input.ProgressPct, 0, 100);
@@ -301,7 +328,9 @@ namespace CrossBuy.BL
 			}
 			var nt = new TaskItem
 			{
-				CompanyId = companyId, Title = input.Title.Trim(), Description = input.Description,
+				CompanyId = companyId, Title = input.Title.Trim(),
+				TitleEn = string.IsNullOrWhiteSpace(input.TitleEn) ? null : input.TitleEn.Trim(),
+				Description = input.Description,
 				AssigneeEmployeeId = input.AssigneeEmployeeId, CreatedByEmployeeId = currentEmployeeId,
 				Priority = priority, DueDate = input.DueDate, EstimatedHours = input.EstimatedHours,
 				ProgressPct = Math.Clamp(input.ProgressPct, 0, 100),
@@ -335,14 +364,14 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> ChangeStatusAsync(int companyId, int id, string status, int currentEmployeeId)
 		{
-			if (!Statuses.Contains(status)) return (false, "حالة غير معروفة");
+			if (!Statuses.Contains(status)) return (false, "Unknown status");
 			var t = await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == companyId);
-			if (t == null) return (false, "المهمة غير موجودة");
+			if (t == null) return (false, "Task not found");
 			if (t.Status == status) return (true, null);
 			// A REFUSED transition returns before anything is written, so no event and no notification is
 			// produced for a change that did not happen. Same for the unchanged-status early return above.
 			if (!Transitions.TryGetValue(t.Status, out var allowed) || !allowed.Contains(status))
-				return (false, $"انتقال غير مسموح: {t.Status} → {status}");
+				return (false, $"Transition not allowed: {t.Status} → {status}");
 
 			string previousStatus = t.Status;
 			t.Status = status;
@@ -377,7 +406,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)
 		{
 			var t = await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == companyId);
-			if (t == null) return (false, "المهمة غير موجودة");
+			if (t == null) return (false, "Task not found");
 			_db.TaskItems.Remove(t);
 			await _db.SaveChangesAsync();
 			return (true, null);

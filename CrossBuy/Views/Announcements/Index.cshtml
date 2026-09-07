@@ -5,7 +5,7 @@
 @{
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
     var branches = ViewBag.Branches as Dictionary<int, string>;
-    string Badge(string p) => p switch { "Critical" => "background:#fdeceb;color:#b42318;", "High" => "background:#fff6e5;color:#b54708;", _ => "background:#eaf3ef;color:#13433a;" };
+    string Badge(string p) => p switch { "Critical" => "background:#fdeceb;color:#b42318;", "High" => "background:#fff6e5;color:#b54708;", _ => "background:#E7F0FF;color:#0E4A9E;" };
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
@@ -26,7 +26,7 @@
                 <div class="table-responsive">
                     <table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
                         <thead>
-                            <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                            <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                                 <th class="ps-4">@SR["Title"]</th><th>@Localizer["Priority"]</th><th>@Localizer["Scope"]</th>
                                 <th>@Localizer["Window"]</th><th>@SR["Status"]</th><th>@Localizer["By"]</th><th class="text-end pe-4"></th>
                             </tr>

@@ -446,10 +446,18 @@ namespace CrossBuy.BL.Platform
                 // TM-2 employee picker never filtered by company. Adding the filter here would silently
                 // hide employees from an existing multi-company picker, which is a behaviour change outside
                 // this slice's pilot. Tracked in PKS-001 "Known limitations".
-                Employee => await _db.Employee.AsNoTracking()
-                    .Where(e => e.FullName != null && e.FullName != "" && (any || e.FullName.Contains(term)))
-                    .OrderBy(e => e.FullName).Take(SearchTake)
-                    .Select(e => new ValueTuple<int, string>(e.ID, e.FullName!)).ToListAsync(cancellationToken),
+                // SEARCHES BOTH NAMES. It matched FullName only, so typing an English name returned
+                // nothing - and the label it returned was Arabic even on an English screen.
+                Employee => (await _db.Employee.AsNoTracking()
+                    .Where(e => e.FullName != null && e.FullName != "")
+                    .Where(e => any
+                        || (e.FullName != null && e.FullName.Contains(term))
+                        || (e.FullNameEn != null && e.FullNameEn.Contains(term)))
+                    .OrderByDisplayName().Take(SearchTake)
+                    .Select(e => new { e.ID, e.FullName, e.FullNameEn })
+                    .ToListAsync(cancellationToken))
+                    .Select(e => new ValueTuple<int, string>(e.ID, EmployeeNames.Of(e.FullName, e.FullNameEn)))
+                    .ToList(),
 
                 Project => await _db.Projects.AsNoTracking()
                     .Where(p => p.CompanyID == companyId && (any || p.Name.Contains(term) || p.Code.Contains(term)))
@@ -540,7 +548,7 @@ namespace CrossBuy.BL.Platform
                     // Same deliberate deviation as the search above: no company filter (TM-2 behaviour).
                     label = await _db.Employee.AsNoTracking()
                         .Where(e => e.ID == entityId)
-                        .Select(e => e.FullName).FirstOrDefaultAsync(cancellationToken);
+                        .Select(EmployeeNames.Display()).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case Project:
                     label = await _db.Projects.AsNoTracking()

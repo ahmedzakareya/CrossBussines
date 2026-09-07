@@ -25,7 +25,7 @@
         <div class="app-container container-fluid">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title fw-bold">@Model.Code — @(isAr ? Model.NameAr : Model.NameEn)</h3>
+                    <h3 class="card-title fw-bold">@Model.Code — @(isAr ? Model.NameAr : DisplayName.Or(Model.NameEn, Model.NameAr))</h3>
                     <div class="card-toolbar">
                         <span class="badge badge-light-@(Model.NormalBalance == "D" ? "primary" : "info")">@(Model.NormalBalance == "D" ? Localizer["Debit nature"] : Localizer["Credit nature"])</span>
                     </div>
@@ -34,7 +34,7 @@
                     <div class="table-responsive">
                         <table class="table table-row-bordered align-middle gy-3">
                             <thead>
-                                <tr class="fw-bold fs-7 text-uppercase text-muted">
+                                <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                                     <th>@SR["Date"]</th>
                                     <th>@Localizer["Entry No"]</th>
                                     <th>@SR["Description"]</th>

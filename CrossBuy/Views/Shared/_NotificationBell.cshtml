@@ -1,4 +1,4 @@
-@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     var nbIsAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
@@ -9,22 +9,89 @@
     .cbnb-toast > .cbnb-toast-av, .cbnb-toast > .cbnb-toast-ic { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
     .cbnb-toast > .cbnb-toast-ic { background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; }
     .cbnb-toast > .cbnb-toast-ic i { font-size: 20px; color: #fff; }
+    /* The notification BODY wraps to two lines and clips only past that.
+       It used to be a single truncated line, but the body is the line that tells two
+       alerts of the same TYPE apart ("2 integrity checks failed" under six identical
+       titles), so a hard cut mid-word removes the only distinguishing text.
+       A clamp keeps what the one-line rule was protecting - bounded, near-uniform row
+       height - without throwing the content away: a row is 80px or 98px, never the
+       length of whatever an operator typed. The full text stays on the title attribute. */
+    .cbnb-body {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: normal;      /* text-truncate set nowrap; wrapping is the point here */
+        overflow-wrap: anywhere;  /* a single long token cannot push the row sideways */
+    }
 </style>
 <!--begin::Notifications (Communication Hub — real bell, shared across all lanes)-->
 <div class="app-navbar-item ms-2 ms-lg-4">
     <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-color-primary position-relative w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
         <i class="ki-outline ki-notification-on fs-1"></i>
-        <span id="cbnb_badge" class="badge badge-danger position-absolute fs-9 fw-bold p-0 d-flex align-items-center justify-content-center" style="display:none; top:-2px; inset-inline-end:2px; width:18px; height:18px; min-width:18px; border-radius:50%;">0</span>
+        @* Contrast (WCAG AA). This badge is small (fs-9) unread-count text, so the
+           small-text 4.5:1 threshold applies -- the large-text 3:1 allowance does not
+           rescue it.
+
+           It used to read --bs-danger-active, which was Metronic's DARKER step of the
+           danger hue. The Facebook Blue rebrand put danger into the ink-label family,
+           whose hover step BRIGHTENS instead of darkening, so that token flipped to
+           #F87171 and this badge started painting a dark label on a light red.
+
+               white on #EF4444  (danger base)        3.76  FAIL
+               white on #DC2626  (--cb-danger-strong) 4.83  PASS
+
+           So it now names its own token rather than borrowing one whose direction can
+           change underneath it, and states the label colour explicitly instead of
+           inheriting --bs-danger-inverse. Same red at a glance; the "unread" signal is
+           unchanged. *@
+        @* A COUNTER THAT FITS ITS OWN CONTENT. This was width:18px with border-radius:50% - a circle
+           sized for one or two digits. Measured with "99+" in it: scrollWidth 19px inside an 18px
+           box, so the third character was already outside the red. Metronic's own .badge-circle is
+           no better here (a fixed 23x23 that simply lets the text spill).
+
+           min-width equal to the height keeps it a perfect circle at one or two characters, exactly
+           as before; the horizontal padding and the pill radius let it grow into a pill at three or
+           four. Same token, same red, same position - it just stops clipping. *@
+        <span id="cbnb_badge" class="badge badge-danger position-absolute fs-9 fw-bold d-flex align-items-center justify-content-center" style="display:none; top:-2px; inset-inline-end:2px; height:18px; min-width:18px; padding:0 5px; border-radius:999px; background-color:var(--cb-danger-strong); color:#fff;">0</span>
     </div>
-    <div class="menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px" data-kt-menu="true">
-        <div class="d-flex flex-stack px-7 py-4 border-bottom border-gray-200" style="background:#1f6253;border-radius:.475rem .475rem 0 0;">
-            <span class="fw-bold fs-6 text-white">@SR["Notifications"]</span>
-            <a href="#" id="cbnb_readall" class="fs-7 text-white opacity-75 fw-semibold">@Localizer["Mark all read"]</a>
+    @* The same class contract the account menu uses, minus its width. The six classes this was
+       missing - menu-rounded, menu-gray-800, menu-state-bg, menu-state-color, fw-semibold, fs-6 -
+       are what give a Metronic menu its hover, its resting label colour and its base type. Without
+       menu-state-bg these rows did not react to the pointer at all. *@
+    <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-350px w-lg-375px" data-kt-menu="true">
+        @* HEADER, on the app's own dropdown form. The solid blue bar this replaces was the only one
+           of its kind in the product; the user menu - the one other rich dropdown here - opens with
+           a white menu-content block and a separator, which is what this now does. The unread pill
+           and the mark-all button are lifted from /Notifications/Index, which shows the same two
+           controls over the same data, so the bell and the page finally read as one feature.
+
+           It also removes an entire class of problem rather than fixing an instance of it: nothing
+           in this header is white-on-brand any more, so no label here needs a contrast argument. *@
+        <div class="menu-item px-3">
+            <div class="menu-content d-flex flex-stack align-items-center px-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold fs-6 text-gray-900">@SR["Notifications"]</span>
+                    @* Hidden at zero: a red "0 unread" pill is noise that reads as an alert. *@
+                    <span id="cbnb_unread_pill" class="badge badge-light-danger fs-8 fw-bold" style="display:none;"></span>
+                </div>
+                <a href="#" id="cbnb_readall" class="btn btn-sm btn-light-primary fw-bold fs-8 py-1 px-3">
+                    <i class="ki-outline ki-check fs-5"></i>@Localizer["Mark all read"]
+                </a>
+            </div>
         </div>
+        <div class="separator my-2"></div>
         <div id="cbnb_list" class="scroll-y mh-350px">
             <div class="text-center text-muted py-10 fs-7" id="cbnb_empty">@Localizer["No notifications"]</div>
         </div>
-        <div class="d-flex flex-center py-3 border-top border-gray-200">
+        @* THE FOOTER NOW ADMITS THE CAP. The API returns the latest 50 rows and no more, while the
+           bell's badge counts every unread row this operator has - 1340 of them as measured. A
+           badge reading "99+" over a list of six was not a wrong number, it was an unstated window.
+           The count line is the same `text-muted fs-7` form /Notifications/Index uses in its own
+           footer, and "View all" is what reaches the rest. *@
+        <div class="separator"></div>
+        <div class="d-flex flex-stack px-7 py-3">
+            <span id="cbnb_scope" class="text-muted fs-8"></span>
             <a href="@Url.Action("Index","Notifications")" class="fs-7 text-primary fw-semibold">@Localizer["View all"]</a>
         </div>
     </div>
@@ -42,37 +109,245 @@
         var empty = document.getElementById('cbnb_empty');
         if (!badge || !list) return;
         var unread = 0, maxId = 0;
+        var LBL_UNREAD = '@Localizer["unread"]';
+        @* NOT {0}/{1}: IViewLocalizer runs its key through String.Format, so a brace placeholder
+           with no argument throws FormatException - and this partial is in the shared layouts, so
+           that is a 500 on every page in the product. The substitution happens in the browser, so
+           the template must carry no .NET format syntax. *@
+        var LBL_SCOPE = '@Localizer["Showing the latest __N__ of __T__"]';
+
+        var unreadPill = document.getElementById('cbnb_unread_pill');
+        var scopeLine = document.getElementById('cbnb_scope');
 
         function setBadge(n) {
             unread = n;
             if (n > 0) { badge.style.display = ''; badge.textContent = n > 99 ? '99+' : n; }
             else { badge.style.display = 'none'; }
+            // The header pill shows the EXACT figure, not the 99+ abbreviation: the bell has 18px to
+            // work with and the open menu has room to be precise. Driven from here so the two can
+            // never disagree about the same number.
+            if (unreadPill) {
+                if (n > 0) { unreadPill.style.display = ''; unreadPill.textContent = n + ' ' + LBL_UNREAD; }
+                else { unreadPill.style.display = 'none'; }
+            }
         }
-        function when(iso) { try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+
+        // "Showing the latest N of M" - stated only when M actually exceeds what was sent, so a
+        // mailbox that fits in the menu says nothing at all rather than stating the obvious.
+        function setScope(shown, total) {
+            if (!scopeLine) return;
+            if (!total || !shown || total <= shown) { scopeLine.textContent = ''; return; }
+            scopeLine.textContent = LBL_SCOPE.replace('__N__', shown).replace('__T__', total);
+        }
+        // THE TIMESTAMP. This was `new Date(iso).toLocaleString()` with no locale and no options,
+        // which yields "8/31/2026, 12:11:56 PM" - and on an RTL page the browser reorders that to
+        // "PM 12:11:56 ,8/31/2026", comma adrift and the meridiem leading. It also spent a whole
+        // third line of every row on seconds nobody reads.
+        //
+        // /Notifications/Index formats this same field as `yyyy-MM-dd HH:mm`. Same format here,
+        // assembled from the parts rather than from a locale string so that bidi reordering cannot
+        // reach it.
+        // The ABSOLUTE value, still assembled from parts so bidi cannot reorder it. Kept for
+        // the tooltip and for /Notifications/Index, which shows this same format on a full-width
+        // row where 16 characters cost nothing.
+        function whenExact(iso) {
+            try {
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return '';
+                var p = function (n) { return (n < 10 ? '0' : '') + n; };
+                return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+                       ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+            } catch (e) { return ''; }
+        }
+        // WHAT THE ROW SHOWS. Measured: the absolute stamp is 77px of a 350px menu and its
+        // first eleven characters are identical across rows minutes apart. Relative is 11px,
+        // and "how long ago" is the question a dropdown answers. Digits plus a one-letter unit,
+        // so there is no locale string for bidi to reorder; the exact value is on hover.
+        var U = { now: @Html.Raw(Json.Serialize(Localizer["now"].Value)),
+                  m: @Html.Raw(Json.Serialize(Localizer["m"].Value)),
+                  h: @Html.Raw(Json.Serialize(Localizer["h"].Value)),
+                  d: @Html.Raw(Json.Serialize(Localizer["d"].Value)) };
+        function when(iso) {
+            try {
+                var d = new Date(iso);
+                if (isNaN(d.getTime())) return '';
+                var secs = Math.floor((Date.now() - d.getTime()) / 1000);
+                if (secs < 0) secs = 0;                       // a clock-skewed future row reads as "now"
+                if (secs < 60) return U.now;
+                var mins = Math.floor(secs / 60);
+                if (mins < 60) return mins + U.m;
+                var hrs = Math.floor(mins / 60);
+                if (hrs < 24) return hrs + U.h;
+                var days = Math.floor(hrs / 24);
+                if (days < 100) return days + U.d;
+                // Past ~3 months a day count stops meaning anything; fall back to the date.
+                var p = function (n) { return (n < 10 ? '0' : '') + n; };
+                return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+            } catch (e) { return ''; }
+        }
+
+        // The category colours, SERIALISED FROM THE C# MAP rather than re-typed here. A second
+        // literal in this file is precisely the bug being fixed: the old copy was missing Tasks -
+        // 227 rows, the most common category in the table - which fell to `secondary`, measured at
+        // 1.07 for an icon on its own tile. See BL/NotificationCategories.cs for the measurements
+        // that decide which states are allowed at all.
+        var CAT = @Html.Raw(CrossBuy.BL.NotificationCategories.MapJson());
+        var CAT_FALLBACK = '@CrossBuy.BL.NotificationCategories.Fallback';
+        function catColor(c) { return (c && CAT[c]) ? CAT[c] : CAT_FALLBACK; }
+
+        // Titles and bodies are operator- and system-authored text arriving as JSON, and every one
+        // of them was concatenated straight into innerHTML. Razor escapes them on the full page;
+        // nothing escaped them here.
+        function esc(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
         function itemHtml(n) {
             var title = (isAr ? n.titleAr : n.titleEn) || n.titleEn || n.titleAr || '';
             var body = (isAr ? n.bodyAr : n.bodyEn) || n.bodyEn || n.bodyAr || '';
             var icon = n.icon || 'ki-notification-status';
-            var bg = n.isRead ? '' : 'bg-light-primary';
+            var c = catColor(n.category);
             var cur = (n.url ? ' style="cursor:pointer"' : '');
+
+            // The icon tile carries the category colour, as it does on the full page.
+            @* READ ROWS RECEDE. The symbol is the row's strongest visual mark, so dimming it is what
+               makes a read row read as handled without painting the 39 unread ones. opacity rather
+               than a different colour, so the category hue is still recognisable at a glance. *@
+            var dim = n.isRead ? ' style="opacity:.45"' : '';
             var avatar = n.actorAvatar
-                ? '<span class="symbol symbol-35px symbol-circle me-3"><img src="' + n.actorAvatar + '" alt=""></span>'
-                : '<span class="symbol symbol-35px me-3"><span class="symbol-label bg-light"><i class="ki-outline ' + icon + ' fs-3 text-primary"></i></span></span>';
-            return '<div class="cbnb-item d-flex align-items-start px-7 py-4 border-bottom border-gray-100 ' + bg + '"' +
-                ' data-id="' + n.id + '" data-url="' + (n.url || '') + '"' + cur + '>' +
-                avatar +
-                '<div class="flex-grow-1"><div class="fw-bold fs-7 text-gray-900">' + title + '</div>' +
-                '<div class="fs-8 text-muted">' + body + '</div>' +
-                '<div class="fs-9 text-gray-400 mt-1">' + when(n.createdAt) + '</div></div></div>';
+                ? '<span class="symbol symbol-35px symbol-circle me-3 flex-shrink-0"' + dim + '><img src="' + esc(n.actorAvatar) + '" alt=""></span>'
+                : '<span class="symbol symbol-35px me-3 flex-shrink-0"' + dim + '><span class="symbol-label bg-light-' + c + '">' +
+                  '<i class="ki-outline ' + esc(icon) + ' fs-3 text-' + c + '"></i></span></span>';
+
+            // The right-hand side of the title row: what this notification IS, how urgent it is, and
+            // whether it has been read. The priority labels come from this view's own resources -
+            // already present, because the toast below has always used them.
+            @* The right-hand slot carries URGENCY and READ STATE. The category sits on the meta line
+               beside the timestamp instead: this menu is 350px against a full-width page row, and
+               three badges plus a 35px symbol plus three lines of text do not fit across it. Nothing
+               the page shows is dropped, it is just placed where there is room for it. *@
+            var catBadge = n.category
+                ? '<span class="badge badge-light-' + c + ' fs-9">' + esc(n.category) + '</span>'
+                : '';
+
+            var marks = '';
+            if (n.priority === 'Critical') marks += '<span class="badge badge-light-danger fs-9">@Localizer["Critical"]</span>';
+            else if (n.priority === 'High') marks += '<span class="badge badge-light-warning fs-9">@Localizer["High"]</span>';
+            if (!n.isRead) marks += '<span class="bullet bullet-dot bg-danger h-8px w-8px"></span>';
+
+            @* MENU ITEM, not a bespoke row. The account menu's form is
+                   <div class="menu-item px-5"><a class="menu-link px-5">
+                       <span class="menu-text">..</span><span class="menu-badge">..</span></a></div>
+               and that is what is emitted here. The wrapper's menu-state-bg then supplies the hover
+               these rows never had, and menu-rounded rounds the highlight - both for free, because
+               they are the menu's job and not this row's.
+
+               align-items-start because a notification is two lines tall and menu-link centres by
+               default; px-5 on the item and px-3 on the link, so the symbol lines up under the
+               header's own px-3 content block. py-2 is the REFERENCE's rhythm, measured: its rows
+               are 38px for a single line, which is ~12px of padding in total - py-3 is 12px on
+               each side and made a two-line row 71px against the ~56px the reference's own spacing
+               produces for two lines.
+
+               An <a> when there is somewhere to go - keyboard-reachable and middle-clickable, which
+               a div with a click handler is not - and a div when there is not, because a link to
+               nowhere is worse than no link. *@
+            var tag = n.url ? 'a' : 'div';
+            var href = n.url ? ' href="' + esc(n.url) + '"' : '';
+
+            @* THE SHADE GOES ON THE LINK, NOT THE ITEM. On the item it would bleed the full width
+               of the menu and square off against both edges - a band. On the link it sits inside
+               the item's px-5 gutter and takes menu-rounded's corners, so it reads as a block. *@
+            var shade = n.isRead ? '' : ' bg-light-primary';
+            return '<div class="menu-item px-5 cbnb-item' + (n.isRead ? ' cbnb-read' : '') + '"' +
+                ' data-id="' + esc(n.id) + '" data-url="' + esc(n.url || '') + '"' + cur + '>' +
+                '<' + tag + href + ' class="menu-link px-3 py-2 align-items-start' + shade + '">' +
+                    avatar +
+                    @* THE TITLE CARRIES THE READ STATE. Unread goes one weight above the menu's own
+                       500; read drops back to it AND goes muted. That is the mail-list convention,
+                       and it distinguishes 39 rows from 11 without a single filled background.
+                       A read row's title stays text-muted rather than going lighter still, because
+                       it is the row's primary text and has to remain legible - measured, not
+                       assumed, by the probe that reads both states. *@
+                    '<span class="menu-text d-block flex-grow-1 min-w-0">' +
+                        @* TITLE AND TIME SHARE THE FIRST LINE. The time is 11px relative, so it costs
+                           the title almost nothing and the right-hand column disappears entirely -
+                           which is what gives the text 253px instead of 137px. *@
+                        '<span class="d-flex align-items-center gap-2">' +
+                            @* min-w-0: a flex item defaults to min-width:auto and refuses to shrink below
+                               its content, which pushed the timestamp beside it out of the row - visibly so
+                               in Arabic. It is also what makes text-truncate truncate inside a flex row. *@
+                            '<span class="d-block text-truncate flex-grow-1 min-w-0 ' + (n.isRead ? 'text-muted' : 'fw-bold') + '">' + esc(title) + '</span>' +
+                            '<span class="fs-9 text-gray-500 text-nowrap flex-shrink-0" title="' + esc(whenExact(n.createdAt)) + '">' + when(n.createdAt) + '</span>' +
+                        '</span>' +
+                        @* The BODY is where the rows actually differ - the title names the
+                           notification TYPE, so six escalations share one title and are told apart
+                           only by this line. It is the secondary line, the way the email sits under
+                           the name in this menu's own header. *@
+                        @* TRUNCATED TO ONE LINE. Measured before this: rows averaged 90px in English
+                           and 73px in Arabic because bodies of very different lengths each wrapped
+                           to a different number of lines - against the reference's uniform ~44px
+                           rhythm. A list whose rows are all different heights cannot be scanned,
+                           and the beginning of the body is already what tells two notifications of
+                           the same type apart. The full text is one click away under "View all",
+                           and the title attribute carries it on hover meanwhile. *@
+                        @* text-muted in BOTH states, deliberately. Fading it for read rows measured
+                           1.64:1 - de-emphasis became deletion. The read/unread distinction is
+                           carried by title weight, title colour, symbol opacity and the dot; the
+                           body does not need to carry it and is the one place that cost legibility. *@
+                        '<span class="d-block fs-7 fw-semibold mt-1 cbnb-body text-muted" title="' + esc(body) + '">' + esc(body) + '</span>' +
+                        @* BADGES ON THEIR OWN LINE, INSIDE the text block. They used to stack in a
+                           right-hand column, where their ~110px width set that column and squeezed
+                           the title and body into 137px of the 350px menu. Here they cost 24px of
+                           height instead - paid equally by every row, so the rhythm stays uniform,
+                           which is the property the notes above are protecting. *@
+                        (marks || catBadge
+                            ? '<span class="d-flex align-items-center gap-1 mt-2">' + marks + catBadge + '</span>'
+                            : '') +
+                    '</span>' +
+                '</' + tag + '>' +
+                '</div>';
         }
+        // THE READ APPEARANCE, IN ONE PLACE. Applied on click and on mark-all-read, so the two
+        // paths cannot drift - which is exactly how the previous version ended up removing the dot
+        // in one path and a background class in the other.
+        function markRowRead(el) {
+            // The shade is the loudest of the four signals, so it has to go first - leaving it
+            // behind would let a row that has just been read keep looking unread.
+            var link = el.querySelector('.menu-link');
+            if (link) link.classList.remove('bg-light-primary');
+            var dot = el.querySelector('.bullet-dot');
+            if (dot) dot.remove();
+            var sym = el.querySelector('.symbol');
+            if (sym) sym.style.opacity = '.45';
+            var title = el.querySelector('.menu-text > span');
+            if (title) { title.classList.remove('fw-bold'); title.classList.add('text-muted'); }
+            // The body is NOT touched: it is text-muted in both states because fading it measured
+            // 1.64:1. Marking a row read must not make its content unreadable.
+        }
+
         function bindItems() {
             list.querySelectorAll('.cbnb-item').forEach(function (el) {
                 if (el.__bound) return; el.__bound = true;
                 el.addEventListener('click', function () {
                     var id = el.getAttribute('data-id'); var url = el.getAttribute('data-url');
                     if (id) fetch('/api/notifications/' + id + '/read', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
-                    if (!el.classList.contains('bg-light-primary')) { } else { el.classList.remove('bg-light-primary'); setBadge(Math.max(0, unread - 1)); }
-                    if (url) window.location.href = url;
+                    // A row with a url is now a real <a>, so the browser navigates and this must not
+                    // also assign location - that was a second navigation racing the first.
+                    var isAnchor = !!el.querySelector('a.menu-link');
+                    // Only an UNREAD row decrements the badge; clicking an already-read one must not.
+                    // The DOT is now the unread state - the tinted band it used to test for is gone,
+                    // and leaving the test on that class would have silently stopped the badge from
+                    // ever counting down.
+                    // Clicking an unread row makes it a read row - the whole row recedes, not just the
+                    // dot, or a clicked row would keep its bold title and still look unread.
+                    if (!el.classList.contains('cbnb-read')) {
+                        el.classList.add('cbnb-read');
+                        markRowRead(el);
+                        setBadge(Math.max(0, unread - 1));
+                    }
+                    if (url && !isAnchor) window.location.href = url;
                 });
             });
         }
@@ -112,6 +387,7 @@
             if (toastNew && res.data) res.data.filter(function (n) { return n.id > maxId; }).forEach(toastFor);
             render(res.data);
             setBadge(res.unread || 0);
+            setScope(res.shown || (res.data ? res.data.length : 0), res.total || 0);
             if (res.data && res.data.length && res.data[0].id > maxId) maxId = res.data[0].id;
         }
         function load(toastNew) {
@@ -128,7 +404,12 @@
             e.preventDefault();
             fetch('/api/notifications/read-all', { method: 'POST', credentials: 'same-origin' }).then(function () {
                 setBadge(0);
-                list.querySelectorAll('.bg-light-primary').forEach(function (el) { el.classList.remove('bg-light-primary'); });
+                // Every row recedes, exactly as it would have if each had been clicked - the dot was
+                // never the whole mark, so removing only the dots left 39 bold titles behind.
+                list.querySelectorAll('.cbnb-item:not(.cbnb-read)').forEach(function (el) {
+                    el.classList.add('cbnb-read');
+                    markRowRead(el);
+                });
             });
         });
 

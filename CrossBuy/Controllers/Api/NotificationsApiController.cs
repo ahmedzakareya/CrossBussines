@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using CrossBuy.BL;
 using CrossBuy.Models.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -67,7 +67,14 @@ namespace CrossBuy.Controllers.Api
 			var unread = await _context.Notifications
 				.CountAsync(n => n.RecipientEmployeeID == empId.Value && !n.IsRead);
 
-			return Ok(new { success = true, unread, data = items });
+			// HOW MANY EXIST, not just how many were sent. The Take(50) above is a hard cap on what
+			// the bell can ever display, and without this number the dropdown cannot tell the reader
+			// that it is showing a window rather than the whole mailbox - which is how a badge reading
+			// "99+" came to sit above a list of six.
+			var total = await _context.Notifications
+				.CountAsync(n => n.RecipientEmployeeID == empId.Value);
+
+			return Ok(new { success = true, unread, total, shown = items.Count, data = items });
 		}
 
 		// POST /api/notifications/{id}/read

@@ -63,7 +63,7 @@
                                     <a class="nav-link btn btn-outline btn-flex btn-active-color-primary flex-column overflow-hidden w-90px h-85px pt-5 pb-2 active" data-bs-toggle="pill" id="exec_tab_rev" href="#exec_tab_content_rev">
                                         <div class="nav-icon mb-3"><i class="ki-outline ki-dollar fs-1 p-0"></i></div>
                                         <span class="nav-text text-gray-800 fw-bold fs-6 lh-1">@Localizer["Revenue"]</span>
-                                        <span class="bullet-custom position-absolute bottom-0 w-100 h-4px" style="background:#13433a"></span>
+                                        <span class="bullet-custom position-absolute bottom-0 w-100 h-4px" style="background:#0E4A9E"></span>
                                     </a>
                                 </li>
                                 <li class="nav-item mb-3 me-3 me-lg-6">
@@ -94,7 +94,7 @@
                 </div>
                 <!--begin::Key ratios panel (dark teal)-->
                 <div class="col-xl-4">
-                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#1f6253">
+                    <div class="card card-flush border-0 h-lg-100" data-bs-theme="light" style="background-color:#145DBF">
                         <div class="card-header pt-5">
                             <h3 class="card-title"><span class="text-white fs-3 fw-bold">@Localizer["Key Ratios"]</span></h3>
                         </div>
@@ -198,7 +198,7 @@
                         </div>
                         <div class="card-body pt-2">
                             <div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3 my-0">
-                                <thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+                                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                                     <th>@SR["Customer"]</th><th class="text-end">@Localizer["Revenue"]</th>
                                     <th class="text-end">@Localizer["Margin"]</th><th class="text-center">@Localizer["Margin %"]</th><th class="text-end">@Localizer["Outstanding"]</th>
                                 </tr></thead>
@@ -284,7 +284,7 @@
             function relayout(ids) { ids.forEach(function (id) { var t = document.getElementById(id); if (t) t.addEventListener('shown.bs.tab', function () { window.dispatchEvent(new Event('resize')); }); }); }
 
             // Row 1 — Revenue / Expense / Net
-            buildArea('#exec_rev_chart', '@Localizer["Revenue"]', months, revenue, '#13433a').render();
+            buildArea('#exec_rev_chart', '@Localizer["Revenue"]', months, revenue, '#0E4A9E').render();
             buildArea('#exec_exp_chart', '@Localizer["Expense"]', months, expense, '#f1416c').render();
             buildArea('#exec_net_chart', '@Localizer["Net"]', months, netTrend, '#0d9edc').render();
             relayout(['exec_tab_exp', 'exec_tab_net', 'exec_tab_rev']);
@@ -300,11 +300,11 @@
                         { name: valueName, type: 'column', data: data },
                         { name: '@Localizer["Cumulative pct"]', type: 'line', data: cum }
                     ],
-                    colors: ['#13433a', '#1f6253'],
+                    colors: ['#0E4A9E', '#145DBF'],
                     fill: { type: 'solid', opacity: 1 },
                     plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
                     stroke: { width: [0, 3], curve: 'smooth' },
-                    markers: { size: [0, 5], colors: ['#fff'], strokeColors: '#1f6253', strokeWidth: 2 },
+                    markers: { size: [0, 5], colors: ['#fff'], strokeColors: '#145DBF', strokeWidth: 2 },
                     dataLabels: { enabled: false },
                     xaxis: { categories: cats, labels: { style: { colors: '#99A1B7' } }, axisBorder: { show: false }, axisTicks: { show: false } },
                     yaxis: [

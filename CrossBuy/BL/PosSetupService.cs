@@ -31,7 +31,7 @@ namespace CrossBuy.BL
 		Task<(bool ok, string? error)> DeleteStationAsync(int id);
 		// POS-C2: delivery drivers (per-branch)
 		Task<List<Driver>> GetDriversAsync(int branchId);
-		Task<(bool ok, string? error)> SaveDriverAsync(int branchId, int id, string name, string phone, bool isActive);
+		Task<(bool ok, string? error)> SaveDriverAsync(int branchId, int id, string name, string? nameEn, string phone, bool isActive);
 		Task<(bool ok, string? error)> DeleteDriverAsync(int id);
 		// POS-A1: delivery zones (per-branch, name + fee) — full CRUD for management
 		Task<List<DeliveryZone>> GetAllDeliveryZonesAsync(int branchId);
@@ -78,7 +78,7 @@ namespace CrossBuy.BL
 
 		// ---- Payment methods (setup only): per-branch method → target GL account ----
 		Task<List<BranchPaymentMethod>> GetPaymentMethodsAsync(int branchId);
-		Task<(bool ok, string? error)> SavePaymentMethodAsync(int branchId, int id, string paymentMethod, string? displayName, int? targetAccountId, bool isActive, int sort);
+		Task<(bool ok, string? error)> SavePaymentMethodAsync(int branchId, int id, string paymentMethod, string? displayName, string? displayNameEn, int? targetAccountId, bool isActive, int sort);
 		Task<(bool ok, string? error)> DeletePaymentMethodAsync(int branchId, int id);
 
 		// ---- Cashier roles (setup only): assign branch employees to POS roles ----
@@ -90,7 +90,7 @@ namespace CrossBuy.BL
 		// ---- POS-1: terminals (isolated till) + shifts (setup only) ----
 		Task<List<PosTerminal>> GetTerminalsAsync(int branchId);
 		Task<List<CashAccountDto>> GetCashAccountsAsync();                  // postable cash/bank accounts for the override dropdown
-		Task<(bool ok, string? error, int id)> SaveTerminalAsync(int branchId, int id, string code, string name, string? receiptPrefix, int? cashAccountId, bool autoCreateCash, bool isActive, int paperWidthMm = 80, int copies = 1, string? printerName = null);
+		Task<(bool ok, string? error, int id)> SaveTerminalAsync(int branchId, int id, string code, string name, string? nameEn, string? receiptPrefix, int? cashAccountId, bool autoCreateCash, bool isActive, int paperWidthMm = 80, int copies = 1, string? printerName = null);
 		Task<(bool ok, string? error)> DeleteTerminalAsync(int branchId, int id);
 		Task<PosShift?> GetOpenShiftAsync(int terminalId);
 		Task<List<PosShift>> GetShiftsAsync(int terminalId, int take);
@@ -201,9 +201,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> ApplyPresetAsync(int branchId, string presetCode, bool allowActivityChange = false)
 		{
 			var branch = await _db.Branches.FirstOrDefaultAsync(b => b.ID == branchId);
-			if (branch == null) return (false, "الفرع غير موجود");
+			if (branch == null) return (false, "Branch not found");
 			var preset = await _db.ActivityPresets.AsNoTracking().FirstOrDefaultAsync(p => p.Code == presetCode);
-			if (preset == null) return (false, "نوع النشاط غير موجود");
+			if (preset == null) return (false, "Activity type not found");
 			// HM-1-أ (صفر-5 + صفر-تكميلي-3): guard DESTRUCTIVE activity assignment. Two risky cases:
 			//  (A) the branch already has an activity set and a DIFFERENT one is applied (would wipe & overwrite its caps);
 			//  (B) FIRST assignment (currently null) on a branch that ALREADY OPERATES (has terminals/orders) to an
@@ -220,8 +220,8 @@ namespace CrossBuy.BL
 							|| (!hasCurrent && hasHistory && !restaurantFamily);
 			if (riskyChange && !allowActivityChange)
 				return (false, hasCurrent
-					? $"نشاط هذا الفرع مضبوط بالفعل ({branch.ActivityPresetCode})؛ تغيير النشاط يتطلّب مسارًا واعيًا منفصلًا، لا تطبيق نشاط مختلف من هنا."
-					: $"هذا الفرع عامل فعليًّا (له ترمينالات/طلبات) ويُستخدم كمطعم؛ تعيين نشاط «{presetCode}» من عائلة مختلفة سيُلغي إعداده الحالي ويُقفل كاشيريه خارج ممرّهم — يتطلّب مسارًا واعيًا منفصلًا.");
+					? $"This branch already has an activity set ({branch.ActivityPresetCode}); changing it requires a separate, deliberate path rather than applying a different preset from here."
+					: $"This branch is actually live (it has terminals/orders) and is being used as a restaurant; applying preset «{presetCode}» from a different family would undo its current setup and lock its cashiers out of their lane — that requires a separate, deliberate path.");
 			var defaults = await _db.ActivityPresetCapabilities.AsNoTracking().Where(c => c.PresetId == preset.ID).ToListAsync();
 			var existing = await _db.BranchCapabilities.Where(c => c.BranchId == branchId).ToListAsync();
 			foreach (var d in defaults)
@@ -270,8 +270,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveDiningAreaAsync(int branchId, int id, string code, string name, int sort, bool isActive, string? nameEn = null)
 		{
-			if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name)) return (false, "الكود والاسم مطلوبان");
-			if (await _db.DiningAreas.AnyAsync(a => a.BranchId == branchId && a.Code == code && a.ID != id)) return (false, "كود الصالة مستخدم في هذا الفرع");
+			if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name)) return (false, "Code and name are required");
+			if (await _db.DiningAreas.AnyAsync(a => a.BranchId == branchId && a.Code == code && a.ID != id)) return (false, "That hall code is already used in this branch");
 			var enTrim = string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim();
 			if (id > 0)
 			{
@@ -287,8 +287,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteDiningAreaAsync(int id)
 		{
 			var ex = await _db.DiningAreas.FindAsync(id);
-			if (ex == null) return (false, "الصالة غير موجودة");
-			if (await _db.RestaurantTables.AnyAsync(t => t.DiningAreaId == id)) return (false, "لا يمكن الحذف: توجد طاولات في هذه الصالة");
+			if (ex == null) return (false, "Hall not found");
+			if (await _db.RestaurantTables.AnyAsync(t => t.DiningAreaId == id)) return (false, "Cannot delete: this hall still has tables");
 			_db.DiningAreas.Remove(ex); await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -299,8 +299,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveStationAsync(int branchId, int id, string code, string name, string? nameEn, string type, bool isActive)
 		{
-			if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name)) return (false, "الكود والاسم مطلوبان");
-			if (await _db.KitchenStations.AnyAsync(s => s.BranchId == branchId && s.Code == code && s.ID != id)) return (false, "كود المحطة مستخدم في هذا الفرع");
+			if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name)) return (false, "Code and name are required");
+			if (await _db.KitchenStations.AnyAsync(s => s.BranchId == branchId && s.Code == code && s.ID != id)) return (false, "That station code is already used in this branch");
 			type = new[] { "Kitchen", "Bar", "Grill", "Prep" }.Contains(type) ? type : "Kitchen";
 			var en = string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim();
 			if (id > 0)
@@ -318,16 +318,16 @@ namespace CrossBuy.BL
 		public async Task<List<Driver>> GetDriversAsync(int branchId) =>
 			await _db.Drivers.AsNoTracking().Where(d => d.BranchId == branchId).OrderByDescending(d => d.IsActive).ThenBy(d => d.Name).ToListAsync();
 
-		public async Task<(bool ok, string? error)> SaveDriverAsync(int branchId, int id, string name, string phone, bool isActive)
+		public async Task<(bool ok, string? error)> SaveDriverAsync(int branchId, int id, string name, string? nameEn, string phone, bool isActive)
 		{
-			if (string.IsNullOrWhiteSpace(name)) return (false, "اسم السائق مطلوب");
+			if (string.IsNullOrWhiteSpace(name)) return (false, "Driver name is required");
 			if (id > 0)
 			{
 				var ex = await _db.Drivers.FirstOrDefaultAsync(d => d.ID == id && d.BranchId == branchId);
-				if (ex == null) return (false, "السائق غير موجود");
-				ex.Name = name.Trim(); ex.Phone = phone?.Trim() ?? ""; ex.IsActive = isActive;
+				if (ex == null) return (false, "Driver not found");
+				ex.Name = name.Trim(); ex.NameEn = string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(); ex.Phone = phone?.Trim() ?? ""; ex.IsActive = isActive;
 			}
-			else _db.Drivers.Add(new Driver { BranchId = branchId, Name = name.Trim(), Phone = phone?.Trim() ?? "", IsActive = isActive });
+			else _db.Drivers.Add(new Driver { BranchId = branchId, Name = name.Trim(), NameEn = string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim(), Phone = phone?.Trim() ?? "", IsActive = isActive });
 			await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -335,7 +335,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteDriverAsync(int id)
 		{
 			var ex = await _db.Drivers.FirstOrDefaultAsync(d => d.ID == id);
-			if (ex == null) return (false, "السائق غير موجود");
+			if (ex == null) return (false, "Driver not found");
 			// keep history: if the driver is referenced by any order, deactivate instead of delete
 			if (await _db.PosOrders.AnyAsync(o => o.DriverId == id)) { ex.IsActive = false; await _db.SaveChangesAsync(); return (true, null); }
 			_db.Drivers.Remove(ex); await _db.SaveChangesAsync();
@@ -348,8 +348,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveDeliveryZoneAsync(int branchId, int id, string name, string? nameEn, decimal fee, bool isActive)
 		{
-			if (string.IsNullOrWhiteSpace(name)) return (false, "اسم المنطقة مطلوب");
-			if (fee < 0) return (false, "الرسم لا يكون سالبًا");
+			if (string.IsNullOrWhiteSpace(name)) return (false, "Zone name is required");
+			if (fee < 0) return (false, "The fee cannot be negative");
 			var en = string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim();
 			if (id > 0)
 			{
@@ -365,7 +365,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteDeliveryZoneAsync(int id)
 		{
 			var ex = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.ID == id);
-			if (ex == null) return (false, "المنطقة غير موجودة");
+			if (ex == null) return (false, "Zone not found");
 			// keep history: a zone frozen onto any order → deactivate instead of delete
 			if (await _db.PosOrders.AnyAsync(o => o.DeliveryZoneId == id)) { ex.IsActive = false; await _db.SaveChangesAsync(); return (true, null); }
 			_db.DeliveryZones.Remove(ex); await _db.SaveChangesAsync();
@@ -401,30 +401,30 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SaveBranchItemSourcingAsync(int companyId, int branchId, int itemId, string method, int? sourceBranchId, int? semiFinishedItemId, string? transferTiming)
 		{
 			method = (method ?? "").Trim();
-			if (!SourcingMethods.Contains(method)) return (false, "طريقة توفير غير معروفة");
-			if (!await _db.Items.AnyAsync(i => i.ID == itemId && i.CompanyID == companyId)) return (false, "الصنف غير موجود");
+			if (!SourcingMethods.Contains(method)) return (false, "Unknown sourcing method");
+			if (!await _db.Items.AnyAsync(i => i.ID == itemId && i.CompanyID == companyId)) return (false, "Item not found");
 			bool hasBom = await _db.ItemComponents.AnyAsync(c => c.CompanyID == companyId && c.ParentItemId == itemId);
 
 			// per-method guards (the user's decisions from the design doc)
-			if (method == "WorkOrder" && !hasBom) return (false, "أمر التصنيع يتطلب قائمة مواد (BOM) للصنف");
-			if (method == "RecipeAtSale" && !hasBom) return (false, "الوصفة عند البيع تتطلب قائمة مواد (BOM) للصنف");
+			if (method == "WorkOrder" && !hasBom) return (false, "A work order requires a bill of materials for the item");
+			if (method == "RecipeAtSale" && !hasBom) return (false, "Recipe-on-sale requires a bill of materials for the item");
 			if (method == "FinishedFromBranch" || method == "SemiFromBranchComplete")
 			{
-				if (sourceBranchId == null) return (false, "يجب اختيار الفرع المصدر");
-				if (sourceBranchId == branchId) return (false, "الفرع المصدر لا يكون نفس الفرع");
-				if (!await _db.Branches.AnyAsync(b => b.ID == sourceBranchId)) return (false, "الفرع المصدر غير موجود");
+				if (sourceBranchId == null) return (false, "You must choose a source branch");
+				if (sourceBranchId == branchId) return (false, "The source branch cannot be the same branch");
+				if (!await _db.Branches.AnyAsync(b => b.ID == sourceBranchId)) return (false, "Source branch not found");
 				if (string.IsNullOrWhiteSpace(transferTiming)) transferTiming = "Prepaid";
-				if (transferTiming != "Prepaid" && transferTiming != "AtSale") return (false, "توقيت تحويل غير صحيح");
+				if (transferTiming != "Prepaid" && transferTiming != "AtSale") return (false, "Invalid transfer timing");
 			}
 			else { sourceBranchId = null; transferTiming = null; }   // helper fields only apply to 2/3
 			if (method == "SemiFromBranchComplete")
 			{
-				if (semiFinishedItemId == null) return (false, "يجب اختيار الصنف نصف-المصنّع");
-				if (semiFinishedItemId == itemId) return (false, "نصف-المصنّع لا يكون نفس الصنف التام");
-				if (!await _db.Items.AnyAsync(i => i.ID == semiFinishedItemId && i.CompanyID == companyId)) return (false, "الصنف نصف-المصنّع غير موجود");
-				if (!hasBom) return (false, "الإكمال يتطلب قائمة مواد (BOM) للصنف التام");
+				if (semiFinishedItemId == null) return (false, "You must choose the semi-finished item");
+				if (semiFinishedItemId == itemId) return (false, "The semi-finished item cannot be the same as the finished item");
+				if (!await _db.Items.AnyAsync(i => i.ID == semiFinishedItemId && i.CompanyID == companyId)) return (false, "Semi-finished item not found");
+				if (!hasBom) return (false, "Finishing requires a bill of materials for the finished item");
 				if (!await _db.ItemComponents.AnyAsync(c => c.CompanyID == companyId && c.ParentItemId == itemId && c.ComponentItemId == semiFinishedItemId))
-					return (false, "نصف-المصنّع يجب أن يكون ضمن قائمة مواد الصنف التام");
+					return (false, "The semi-finished item must be part of the finished item's bill of materials");
 			}
 			else semiFinishedItemId = null;   // only method 3
 
@@ -463,7 +463,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteStationAsync(int id)
 		{
 			var ex = await _db.KitchenStations.FindAsync(id);
-			if (ex == null) return (false, "المحطة غير موجودة");
+			if (ex == null) return (false, "Station not found");
 			_db.KitchenStations.Remove(ex); await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -477,19 +477,19 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveTableAsync(int diningAreaId, int id, string code, int seats, decimal x, decimal y, decimal w, decimal h, string shape, bool isActive)
 		{
-			if (string.IsNullOrWhiteSpace(code)) return (false, "كود الطاولة مطلوب");
+			if (string.IsNullOrWhiteSpace(code)) return (false, "Table code is required");
 			code = code.Trim();
 			shape = new[] { "Square", "Round", "Rect" }.Contains(shape) ? shape : "Square";
 			var area = await _db.DiningAreas.AsNoTracking().FirstOrDefaultAsync(a => a.ID == diningAreaId);
-			if (area == null) return (false, "الصالة غير موجودة");
+			if (area == null) return (false, "Hall not found");
 			// code unique within the branch (across its areas) — case/space-insensitive
 			var branchAreaIds = await _db.DiningAreas.Where(a => a.BranchId == area.BranchId).Select(a => a.ID).ToListAsync();
 			if (await _db.RestaurantTables.AnyAsync(t => branchAreaIds.Contains(t.DiningAreaId) && t.Code == code && t.ID != id))
-				return (false, $"كود الطاولة «{code}» مستخدم بالفعل في هذا الفرع");
+				return (false, $"Table code «{code}» is already used in this branch");
 			if (id > 0)
 			{
 				var ex = await _db.RestaurantTables.FirstOrDefaultAsync(t => t.ID == id);
-				if (ex == null) return (false, "الطاولة غير موجودة");
+				if (ex == null) return (false, "Table not found");
 				ex.DiningAreaId = diningAreaId; ex.Code = code.Trim(); ex.Seats = seats; ex.X = x; ex.Y = y; ex.W = w; ex.H = h; ex.Shape = shape; ex.IsActive = isActive;
 			}
 			else _db.RestaurantTables.Add(new RestaurantTable { DiningAreaId = diningAreaId, Code = code.Trim(), Seats = seats, X = x, Y = y, W = w, H = h, Shape = shape, QrToken = NewToken(), IsActive = isActive });
@@ -514,7 +514,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteTableAsync(int id)
 		{
 			var ex = await _db.RestaurantTables.FindAsync(id);
-			if (ex == null) return (false, "الطاولة غير موجودة");
+			if (ex == null) return (false, "Table not found");
 			_db.RestaurantTables.Remove(ex); await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -522,7 +522,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> RegenerateQrAsync(int id)
 		{
 			var ex = await _db.RestaurantTables.FindAsync(id);
-			if (ex == null) return (false, "الطاولة غير موجودة");
+			if (ex == null) return (false, "Table not found");
 			ex.QrToken = NewToken(); await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -533,7 +533,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveMenuGroupAsync(int branchId, int id, string name, string? nameEn, int sort, bool isActive, int? kitchenStationId = null)
 		{
-			if (string.IsNullOrWhiteSpace(name)) return (false, "اسم المجموعة مطلوب");
+			if (string.IsNullOrWhiteSpace(name)) return (false, "Group name is required");
 			// RC-3e: guard the station belongs to THIS branch (else ignore → default station applies)
 			if (kitchenStationId != null && !await _db.KitchenStations.AnyAsync(s => s.ID == kitchenStationId && s.BranchId == branchId)) kitchenStationId = null;
 			if (id > 0)
@@ -550,7 +550,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteMenuGroupAsync(int id)
 		{
 			var ex = await _db.PosMenuGroups.FindAsync(id);
-			if (ex == null) return (false, "المجموعة غير موجودة");
+			if (ex == null) return (false, "Group not found");
 			// ungroup its quick items (don't delete the buttons, just detach the tab)
 			var items = await _db.PosQuickItems.Where(q => q.GroupId == id).ToListAsync();
 			foreach (var q in items) q.GroupId = null;
@@ -564,8 +564,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> AddQuickItemAsync(int branchId, int? groupId, int itemId)
 		{
-			if (itemId <= 0) return (false, "اختر صنفًا");
-			if (await _db.PosQuickItems.AnyAsync(q => q.BranchId == branchId && q.ItemId == itemId)) return (false, "الصنف مضاف بالفعل كزر سريع في هذا الفرع");
+			if (itemId <= 0) return (false, "Choose an item");
+			if (await _db.PosQuickItems.AnyAsync(q => q.BranchId == branchId && q.ItemId == itemId)) return (false, "The item is already added as a quick button in this branch");
 			var maxSort = await _db.PosQuickItems.Where(q => q.BranchId == branchId && q.GroupId == groupId).Select(q => (int?)q.Sort).MaxAsync() ?? 0;
 			_db.PosQuickItems.Add(new PosQuickItem { BranchId = branchId, GroupId = groupId, ItemId = itemId, Sort = maxSort + 1, IsActive = true });
 			await _db.SaveChangesAsync();
@@ -575,7 +575,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> RemoveQuickItemAsync(int id)
 		{
 			var ex = await _db.PosQuickItems.FindAsync(id);
-			if (ex == null) return (false, "الزر غير موجود");
+			if (ex == null) return (false, "Button not found");
 			_db.PosQuickItems.Remove(ex); await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -583,7 +583,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SaveQuickItemAsync(int id, int? groupId, int sort)
 		{
 			var ex = await _db.PosQuickItems.FindAsync(id);
-			if (ex == null) return (false, "الزر غير موجود");
+			if (ex == null) return (false, "Button not found");
 			ex.GroupId = groupId; ex.Sort = sort;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -592,10 +592,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetQuickCodeAsync(int companyId, int itemId, string? code)
 		{
 			var item = await _db.Items.FirstOrDefaultAsync(i => i.ID == itemId && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف غير موجود");
+			if (item == null) return (false, "Item not found");
 			code = string.IsNullOrWhiteSpace(code) ? null : code.Trim();
 			if (code != null && await _db.Items.AnyAsync(i => i.CompanyID == companyId && i.QuickCode == code && i.ID != itemId))
-				return (false, $"الكود السريع «{code}» مستخدم لصنف آخر");
+				return (false, $"Quick code «{code}» is already used by another item");
 			item.QuickCode = code;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -627,7 +627,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveModifierGroupAsync(int companyId, ModifierGroup dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم المجموعة مطلوب", 0);
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Group name is required", 0);
 			var type = dto.Type == "Choice" ? "Choice" : "AddOn";
 			var g = dto.ID > 0 ? await _db.ModifierGroups.FirstOrDefaultAsync(x => x.ID == dto.ID && x.CompanyID == companyId) : null;
 			if (g == null) { g = new ModifierGroup { CompanyID = companyId, CreatedAt = DateTime.UtcNow }; _db.ModifierGroups.Add(g); }
@@ -642,7 +642,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteModifierGroupAsync(int companyId, int id)
 		{
 			var g = await _db.ModifierGroups.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (g == null) return (false, "المجموعة غير موجودة");
+			if (g == null) return (false, "Group not found");
 			var opts = await _db.ModifierOptions.Where(o => o.GroupId == id).ToListAsync();
 			var links = await _db.ItemModifierGroups.Where(l => l.GroupId == id).ToListAsync();
 			_db.ModifierOptions.RemoveRange(opts);
@@ -672,9 +672,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SaveOptionAsync(int companyId, int groupId, int id, string? name, string? nameEn, int linkedItemId, decimal qtyDeducted, decimal extraPrice, bool isDefault)
 		{
 			var g = await _db.ModifierGroups.FirstOrDefaultAsync(x => x.ID == groupId && x.CompanyID == companyId);
-			if (g == null) return (false, "المجموعة غير موجودة");
+			if (g == null) return (false, "Group not found");
 			var item = await _db.Items.FirstOrDefaultAsync(i => i.ID == linkedItemId && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف المرتبط غير موجود");
+			if (item == null) return (false, "The linked item was not found");
 			if (qtyDeducted <= 0) qtyDeducted = 1;
 			if (extraPrice < 0) extraPrice = 0;
 			if (g.Type == "Choice") extraPrice = 0;   // Choice alternatives carry no extra price
@@ -695,10 +695,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteOptionAsync(int companyId, int id)
 		{
 			var o = await _db.ModifierOptions.FirstOrDefaultAsync(x => x.ID == id);
-			if (o == null) return (false, "الخيار غير موجود");
+			if (o == null) return (false, "Option not found");
 			// guard company via its group
 			var g = await _db.ModifierGroups.FirstOrDefaultAsync(x => x.ID == o.GroupId && x.CompanyID == companyId);
-			if (g == null) return (false, "غير مسموح");
+			if (g == null) return (false, "Not allowed");
 			_db.ModifierOptions.Remove(o);
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -715,8 +715,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> AttachGroupToItemAsync(int companyId, int groupId, int itemId)
 		{
 			var g = await _db.ModifierGroups.FirstOrDefaultAsync(x => x.ID == groupId && x.CompanyID == companyId);
-			if (g == null) return (false, "المجموعة غير موجودة");
-			if (!await _db.Items.AnyAsync(i => i.ID == itemId && i.CompanyID == companyId)) return (false, "الصنف غير موجود");
+			if (g == null) return (false, "Group not found");
+			if (!await _db.Items.AnyAsync(i => i.ID == itemId && i.CompanyID == companyId)) return (false, "Item not found");
 			if (await _db.ItemModifierGroups.AnyAsync(l => l.GroupId == groupId && l.ItemId == itemId)) return (true, null);   // already linked
 			var sort = (await _db.ItemModifierGroups.Where(l => l.ItemId == itemId).MaxAsync(l => (int?)l.Sort) ?? 0) + 1;
 			_db.ItemModifierGroups.Add(new ItemModifierGroup { GroupId = groupId, ItemId = itemId, Sort = sort });
@@ -727,9 +727,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DetachGroupFromItemAsync(int companyId, int linkId)
 		{
 			var l = await _db.ItemModifierGroups.FirstOrDefaultAsync(x => x.ID == linkId);
-			if (l == null) return (false, "الرابط غير موجود");
+			if (l == null) return (false, "Link not found");
 			var g = await _db.ModifierGroups.FirstOrDefaultAsync(x => x.ID == l.GroupId && x.CompanyID == companyId);
-			if (g == null) return (false, "غير مسموح");
+			if (g == null) return (false, "Not allowed");
 			_db.ItemModifierGroups.Remove(l);
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -739,18 +739,19 @@ namespace CrossBuy.BL
 		public async Task<List<BranchPaymentMethod>> GetPaymentMethodsAsync(int branchId) =>
 			await _db.BranchPaymentMethods.AsNoTracking().Where(p => p.BranchId == branchId).OrderBy(p => p.Sort).ThenBy(p => p.ID).ToListAsync();
 
-		public async Task<(bool ok, string? error)> SavePaymentMethodAsync(int branchId, int id, string paymentMethod, string? displayName, int? targetAccountId, bool isActive, int sort)
+		public async Task<(bool ok, string? error)> SavePaymentMethodAsync(int branchId, int id, string paymentMethod, string? displayName, string? displayNameEn, int? targetAccountId, bool isActive, int sort)
 		{
 			paymentMethod = (paymentMethod ?? "").Trim();
-			if (paymentMethod.Length == 0) return (false, "نوع طريقة الدفع مطلوب");
+			if (paymentMethod.Length == 0) return (false, "Payment method type is required");
 			var p = id > 0 ? await _db.BranchPaymentMethods.FirstOrDefaultAsync(x => x.ID == id && x.BranchId == branchId) : null;
 			if (p == null)
 			{
 				if (await _db.BranchPaymentMethods.AnyAsync(x => x.BranchId == branchId && x.PaymentMethod == paymentMethod))
-					return (false, $"طريقة الدفع «{paymentMethod}» معرّفة بالفعل لهذا الفرع");
+					return (false, $"Payment method «{paymentMethod}» is already defined for this branch");
 				p = new BranchPaymentMethod { BranchId = branchId }; _db.BranchPaymentMethods.Add(p);
 			}
 			p.PaymentMethod = paymentMethod; p.DisplayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim();
+			p.DisplayNameEn = string.IsNullOrWhiteSpace(displayNameEn) ? null : displayNameEn.Trim();
 			p.TargetAccountId = targetAccountId; p.IsActive = isActive; p.Sort = sort;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -759,7 +760,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeletePaymentMethodAsync(int branchId, int id)
 		{
 			var p = await _db.BranchPaymentMethods.FirstOrDefaultAsync(x => x.ID == id && x.BranchId == branchId);
-			if (p == null) return (false, "غير موجود");
+			if (p == null) return (false, "Not found");
 			_db.BranchPaymentMethods.Remove(p);
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -769,22 +770,28 @@ namespace CrossBuy.BL
 		private static readonly string[] PosRoles = { "pos-waiter", "pos-kitchen", "pos-cashier", "pos-manager" };
 
 		public async Task<List<BranchEmployeeDto>> GetBranchEmployeesAsync(int branchId) =>
-			await _db.Employee.AsNoTracking().Where(e => e.BranchID == branchId)
-				.OrderBy(e => e.FullName).Select(e => new BranchEmployeeDto { Id = e.ID, Name = e.FullName ?? ("#" + e.ID) }).ToListAsync();
+			(await _db.Employee.AsNoTracking().Where(e => e.BranchID == branchId)
+				.OrderByDisplayName()
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+				.ToListAsync())
+				.Select(e => new BranchEmployeeDto { Id = e.ID, Name = EmployeeNames.Of(e.FullName, e.FullNameEn, e.ID) })
+				.ToList();
 
 		public async Task<List<BranchRoleDto>> GetBranchRolesAsync(int branchId)
 		{
 			var roles = await _db.BranchUserRoles.AsNoTracking().Where(r => r.BranchId == branchId).OrderBy(r => r.PosRole).ToListAsync();
 			var empIds = roles.Select(r => r.EmployeeId).Distinct().ToList();
-			var emps = await _db.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID)).ToDictionaryAsync(e => e.ID, e => e.FullName);
+			var emps = await _db.Employee.AsNoTracking().Where(e => empIds.Contains(e.ID))
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+				.ToDictionaryAsync(e => e.ID, e => EmployeeNames.Of(e.FullName, e.FullNameEn));
 			return roles.Select(r => new BranchRoleDto { Id = r.ID, EmployeeId = r.EmployeeId, EmployeeName = emps.TryGetValue(r.EmployeeId, out var n) ? (n ?? ("#" + r.EmployeeId)) : ("#" + r.EmployeeId), PosRole = r.PosRole }).ToList();
 		}
 
 		public async Task<(bool ok, string? error)> AssignPosRoleAsync(int branchId, int employeeId, string posRole)
 		{
-			if (!PosRoles.Contains(posRole)) return (false, "دور غير صالح");
+			if (!PosRoles.Contains(posRole)) return (false, "Invalid role");
 			var emp = await _db.Employee.FirstOrDefaultAsync(e => e.ID == employeeId && e.BranchID == branchId);
-			if (emp == null) return (false, "الموظف غير موجود في هذا الفرع");
+			if (emp == null) return (false, "The employee was not found in this branch");
 			if (await _db.BranchUserRoles.AnyAsync(r => r.BranchId == branchId && r.EmployeeId == employeeId && r.PosRole == posRole))
 				return (true, null);   // already assigned
 			_db.BranchUserRoles.Add(new BranchUserRole { BranchId = branchId, EmployeeId = employeeId, PosRole = posRole, IsActive = true, CreatedAt = DateTime.UtcNow });
@@ -795,7 +802,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> RemovePosRoleAsync(int branchId, int id)
 		{
 			var r = await _db.BranchUserRoles.FirstOrDefaultAsync(x => x.ID == id && x.BranchId == branchId);
-			if (r == null) return (false, "غير موجود");
+			if (r == null) return (false, "Not found");
 			_db.BranchUserRoles.Remove(r);
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -837,15 +844,16 @@ namespace CrossBuy.BL
 			return acc.ID;
 		}
 
-		public async Task<(bool ok, string? error, int id)> SaveTerminalAsync(int branchId, int id, string code, string name, string? receiptPrefix, int? cashAccountId, bool autoCreateCash, bool isActive, int paperWidthMm = 80, int copies = 1, string? printerName = null)
+		public async Task<(bool ok, string? error, int id)> SaveTerminalAsync(int branchId, int id, string code, string name, string? nameEn, string? receiptPrefix, int? cashAccountId, bool autoCreateCash, bool isActive, int paperWidthMm = 80, int copies = 1, string? printerName = null)
 		{
 			code = (code ?? "").Trim();
-			if (code.Length == 0) return (false, "كود الجهاز مطلوب", 0);
+			if (code.Length == 0) return (false, "Terminal code is required", 0);
 			if (await _db.PosTerminals.AnyAsync(t => t.BranchId == branchId && t.Code == code && t.ID != id))
-				return (false, $"كود الجهاز «{code}» مستخدم في هذا الفرع", 0);
+				return (false, $"Terminal code «{code}» is already used in this branch", 0);
 			var t = id > 0 ? await _db.PosTerminals.FirstOrDefaultAsync(x => x.ID == id && x.BranchId == branchId) : null;
 			bool isNew = t == null;
 			if (t == null) { t = new PosTerminal { BranchId = branchId, NextReceiptNo = 1, CreatedAt = DateTime.UtcNow }; _db.PosTerminals.Add(t); }
+			t.NameEn = string.IsNullOrWhiteSpace(nameEn) ? null : nameEn.Trim();
 			// HM-D5-أ: the ReceiptPrefix must NOT change once the terminal has issued orders — an offline receipt already
 			// generated under the old prefix would then fail the suffix-parse (become a ReceiptNoMismatch conflict) and stop
 			// protecting the counter at the worst moment. Changing it is allowed only while the terminal has no orders.
@@ -853,7 +861,7 @@ namespace CrossBuy.BL
 			{
 				var newPfx = string.IsNullOrWhiteSpace(receiptPrefix) ? (code + "-") : receiptPrefix.Trim();
 				if (!string.Equals(newPfx, t.ReceiptPrefix, StringComparison.Ordinal) && await _db.PosOrders.AnyAsync(o => o.TerminalId == t.ID))
-					return (false, "لا يمكن تغيير بادئة سلسلة الإيصالات بعد إصدار طلبات على هذا الجهاز (تحمي من تصادم أرقام الإيصالات الأوفلاين)", t.ID);
+					return (false, "The receipt series prefix cannot be changed once orders have been issued on this terminal (it protects against offline receipt-number collisions)", t.ID);
 			}
 			t.Code = code; t.Name = string.IsNullOrWhiteSpace(name) ? code : name.Trim();
 			t.ReceiptPrefix = string.IsNullOrWhiteSpace(receiptPrefix) ? (code + "-") : receiptPrefix.Trim();
@@ -871,8 +879,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteTerminalAsync(int branchId, int id)
 		{
 			var t = await _db.PosTerminals.FirstOrDefaultAsync(x => x.ID == id && x.BranchId == branchId);
-			if (t == null) return (false, "غير موجود");
-			if (await _db.PosShifts.AnyAsync(s => s.TerminalId == id && s.Status == "Open")) return (false, "لا يمكن حذف جهاز به وردية مفتوحة");
+			if (t == null) return (false, "Not found");
+			if (await _db.PosShifts.AnyAsync(s => s.TerminalId == id && s.Status == "Open")) return (false, "A terminal with an open shift cannot be deleted");
 			_db.PosTerminals.Remove(t);   // the auto-created cash account is left in the chart (may hold history)
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -886,8 +894,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> OpenShiftAsync(int terminalId, string shiftType, int? employeeId, decimal openingFloat)
 		{
-			if (!await _db.PosTerminals.AnyAsync(t => t.ID == terminalId)) return (false, "الجهاز غير موجود");
-			if (await _db.PosShifts.AnyAsync(s => s.TerminalId == terminalId && s.Status == "Open")) return (false, "توجد وردية مفتوحة بالفعل على هذا الجهاز");
+			if (!await _db.PosTerminals.AnyAsync(t => t.ID == terminalId)) return (false, "Terminal not found");
+			if (await _db.PosShifts.AnyAsync(s => s.TerminalId == terminalId && s.Status == "Open")) return (false, "There is already an open shift on this terminal");
 			_db.PosShifts.Add(new PosShift { TerminalId = terminalId, ShiftType = shiftType == "Evening" ? "Evening" : "Morning", Status = "Open", OpenedByEmployeeId = employeeId, OpeningFloat = openingFloat < 0 ? 0 : openingFloat, OpenedAt = DateTime.UtcNow });
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -951,8 +959,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> CloseShiftAsync(int companyId, int terminalId, int shiftId, decimal closingFloat, int? closedByEmployeeId, DateTime date, string? userId)
 		{
 			var s = await _db.PosShifts.FirstOrDefaultAsync(x => x.ID == shiftId && x.TerminalId == terminalId);
-			if (s == null) return (false, "الوردية غير موجودة");
-			if (s.Status == "Closed") return (false, "الوردية مُغلقة بالفعل");
+			if (s == null) return (false, "Shift not found");
+			if (s.Status == "Closed") return (false, "The shift is already closed");
 			// HM-1/HM-D34: cross-company guard (HARD REJECT). After the HM-D34 relabel every legitimate terminal/branch is company 1,
 			// so a terminal whose branch belongs to another company is a real cross-company shift-close JE — reject.
 			int? shiftBranchCo = await _db.PosTerminals.Where(t => t.ID == terminalId).Join(_db.Branches, t => t.BranchId, b => b.ID, (t, b) => (int?)b.CompanyID).FirstOrDefaultAsync();
@@ -977,19 +985,19 @@ namespace CrossBuy.BL
 				int drawer = term?.CashAccountId ?? 0;
 				if (drawer == 0) drawer = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "110101").Select(a => a.ID).FirstOrDefaultAsync();
 				var over = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "520111").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-				if (drawer == 0 || over == null) { await tx.RollbackAsync(); return (false, "حساب النقدية أو حساب عجز/زيادة النقدية (520111) غير موجود — شغّل SQL"); }
+				if (drawer == 0 || over == null) { await tx.RollbackAsync(); return (false, "The cash account or the cash over/short account (520111) does not exist — run the SQL script"); }
 				// SINGLE conversion of the variance to the functional currency ⇒ both JE lines use the SAME value ⇒ balances by construction.
 				decimal amt = Math.Round(Math.Abs(variance) * rate, fdp, MidpointRounding.AwayFromZero);
 				var lines = new List<JournalLineInput>
 				{
 					// overage (variance>0): more cash than book → Dr drawer / Cr 520111 (gain)
 					// shortage (variance<0): missing cash → Dr 520111 (loss) / Cr drawer
-					new JournalLineInput { AccountId = drawer, Debit = variance > 0 ? amt : 0, Credit = variance < 0 ? amt : 0, Description = "تسوية درج الوردية" },
+					new JournalLineInput { AccountId = drawer, Debit = variance > 0 ? amt : 0, Credit = variance < 0 ? amt : 0, Description = "Shift drawer adjustment" },
 					new JournalLineInput { AccountId = over.Value, Debit = variance < 0 ? amt : 0, Credit = variance > 0 ? amt : 0, Description = variance > 0 ? "زيادة نقدية درج" : "عجز نقدية درج" },
 				};
 				var (jok, jerr, je) = await _journals.CreateAndPostAsync(new JournalEntryInput
-				{ CompanyID = companyId, EntryDate = date.Date, JournalType = "Auto", SourceType = "PosShiftClose", SourceId = s.ID, Description = $"إغلاق وردية #{s.ID} — فرق درج", Lines = lines }, null);
-				if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد فرق الدرج: " + jerr); }
+				{ CompanyID = companyId, EntryDate = date.Date, JournalType = "Auto", SourceType = "PosShiftClose", SourceId = s.ID, Description = $"Shift close #{s.ID} — drawer difference", Lines = lines }, null);
+				if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the drawer-difference entry: " + jerr); }
 				s.VarianceJournalEntryId = je!.ID;
 			}
 
@@ -1005,7 +1013,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, bool alreadyClosed)> SyncShiftCloseAsync(int companyId, int terminalId, int shiftId, decimal closingFloat, int? closedByEmployeeId, DateTime date, string? userId)
 		{
 			var s = await _db.PosShifts.AsNoTracking().FirstOrDefaultAsync(x => x.ID == shiftId && x.TerminalId == terminalId);
-			if (s == null) return (false, "الوردية غير موجودة", false);
+			if (s == null) return (false, "Shift not found", false);
 			if (s.Status == "Closed") return (true, null, true);   // already synced/closed — idempotent
 			var (ok, err) = await CloseShiftAsync(companyId, terminalId, shiftId, closingFloat, closedByEmployeeId, date, userId);
 			return (ok, err, false);
@@ -1035,7 +1043,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> AcknowledgeSyncConflictAsync(int companyId, int conflictId, int? employeeId)
 		{
 			var c = await _db.PosSyncConflicts.FirstOrDefaultAsync(x => x.ID == conflictId && x.CompanyId == companyId);
-			if (c == null) return (false, "التعارض غير موجود");
+			if (c == null) return (false, "Conflict not found");
 			if (c.Status != "Acknowledged") { c.Status = "Acknowledged"; c.AckedByEmployeeId = employeeId; c.AckedAt = DateTime.UtcNow; await _db.SaveChangesAsync(); }
 			return (true, null);
 		}
@@ -1086,25 +1094,25 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveReservationAsync(int companyId, int branchId, int id, int tableId, int? customerId, string guestName, string guestPhone, DateTime reservedAt, int durationMinutes, int partySize, string? notes)
 		{
-			if (string.IsNullOrWhiteSpace(guestName)) return (false, "اسم الضيف مطلوب");
-			if (partySize < 1) return (false, "عدد الأشخاص غير صحيح");
+			if (string.IsNullOrWhiteSpace(guestName)) return (false, "Guest name is required");
+			if (partySize < 1) return (false, "Invalid party size");
 			if (durationMinutes < 1) durationMinutes = 120;
 			// no reservation for a time/day that has already passed (allow a small 1-minute skew)
-			if (id == 0 && reservedAt < DateTime.Now.AddMinutes(-1)) return (false, "لا يمكن الحجز في وقت أو يوم مضى");
+			if (id == 0 && reservedAt < DateTime.Now.AddMinutes(-1)) return (false, "A reservation cannot be made in the past");
 			// the table must belong to this branch
 			var tableOk = await (from t in _db.RestaurantTables join a in _db.DiningAreas on t.DiningAreaId equals a.ID where t.ID == tableId && a.BranchId == branchId select t.ID).AnyAsync();
-			if (!tableOk) return (false, "الطاولة غير صحيحة");
+			if (!tableOk) return (false, "Invalid table");
 			if (customerId != null && !await _db.Customers.AnyAsync(c => c.ID == customerId && c.CompanyID == companyId)) customerId = null;
 			// OVERLAP: no two BOOKED reservations on the same table whose windows [start, start+duration) intersect
 			var start = reservedAt; var end = reservedAt.AddMinutes(durationMinutes);
 			var others = await _db.Reservations.Where(r => r.BranchId == branchId && r.TableId == tableId && r.ID != id && r.Status == "Booked").ToListAsync();
 			if (others.Any(r => r.ReservedAtUtc < end && start < r.ReservedAtUtc.AddMinutes(r.DurationMinutes)))
-				return (false, "يوجد حجز متداخل على نفس الطاولة في هذا التوقيت");
+				return (false, "There is an overlapping reservation on the same table at this time");
 			if (id > 0)
 			{
 				var ex = await _db.Reservations.FirstOrDefaultAsync(r => r.ID == id && r.BranchId == branchId);
-				if (ex == null) return (false, "الحجز غير موجود");
-				if (ex.Status != "Booked") return (false, "لا يمكن تعديل حجز غير نشط");
+				if (ex == null) return (false, "Reservation not found");
+				if (ex.Status != "Booked") return (false, "A reservation that is not active cannot be edited");
 				ex.TableId = tableId; ex.CustomerId = customerId; ex.GuestName = guestName.Trim(); ex.GuestPhone = guestPhone?.Trim() ?? "";
 				ex.ReservedAtUtc = reservedAt; ex.DurationMinutes = durationMinutes; ex.PartySize = partySize; ex.Notes = notes?.Trim();
 			}
@@ -1116,10 +1124,10 @@ namespace CrossBuy.BL
 		// B1 handles Cancelled / NoShow (from Booked). Arrived is set by the arrival→order flow (POS-B2).
 		public async Task<(bool ok, string? error)> SetReservationStatusAsync(int companyId, int id, string status)
 		{
-			if (status != "Cancelled" && status != "NoShow") return (false, "حالة غير صحيحة");
+			if (status != "Cancelled" && status != "NoShow") return (false, "Invalid status");
 			var r = await _db.Reservations.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == companyId);
-			if (r == null) return (false, "الحجز غير موجود");
-			if (r.Status != "Booked") return (false, "لا يمكن تغيير حالة هذا الحجز");   // forward-only from Booked
+			if (r == null) return (false, "Reservation not found");
+			if (r.Status != "Booked") return (false, "The status of this reservation cannot be changed");   // forward-only from Booked
 			r.Status = status;
 			await _db.SaveChangesAsync();
 			return (true, null);

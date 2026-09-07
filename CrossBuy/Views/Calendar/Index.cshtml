@@ -13,8 +13,17 @@
     /* not decoration. The literal removed from the company rule was Metronic's STOCK primary — */
     /* precisely the blue crossbuy-brand.css overrides to ledger green on purpose, so hardcoding */
     /* it re-introduced the one colour the brand exists to replace. */
-    .fc-event.cbev-personal, .fc .cbev-personal { background: var(--bs-primary); border-color: var(--bs-primary); color: var(--bs-primary-inverse); }
-    .fc-event.cbev-company, .fc .cbev-company { background: var(--bs-info); border-color: var(--bs-info); color: var(--bs-primary-inverse); }
+    /* FACEBOOK BLUE REBRAND: the pair above stopped being distinct. --bs-primary became
+       #1877F2 and --bs-info #3B82F6 - two neighbouring blues, 37 apart in RGB - so a company
+       event read as a personal one. Both also carry small white text, and white measures
+       4.23 on the first and 3.68 on the second, under the AA minimum.
+       So each chip now names the step that can actually hold a white label, and company
+       takes violet: red, amber and green belong to danger/warning/success, and a calendar
+       chip must not look like a status.
+           personal  --cb-brand-fill    #166FE5  white 4.73  separation 115
+           company   --cb-violet-strong #7C3AED  white 5.70                 */
+    .fc-event.cbev-personal, .fc .cbev-personal { background: var(--cb-brand-fill); border-color: var(--cb-brand-fill); color: #fff; }
+    .fc-event.cbev-company, .fc .cbev-company { background: var(--cb-violet-strong); border-color: var(--cb-violet-strong); color: #fff; }
     #kt_calendar_app { min-height: 700px; }
 
     /* ------------------------------------------------------------------------------------------
@@ -101,6 +110,75 @@
     .cbrecip-av img, .cbrecip-av .cbrecip-ini { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: flex; align-items: center; justify-content: center; background: var(--bs-primary-light); color: var(--bs-primary); font-weight: 700; }
     .cbrecip-name { font-weight: 600; color: var(--bs-gray-900); font-size: .9rem; }
     .cbrecip-email { font-size: .78rem; color: var(--bs-gray-600); }
+
+    /* The TODAY tint. FullCalendar ships its own, and Metronic recolours it to a pale green that
+       belongs to no part of this identity - it arrives from the theme bundle, so no amount of
+       grepping this repository for a hex finds it. Repointed at the brand's own surface token, the
+       one 100+ screens already use for a tinted ground. No new value is introduced. */
+    .fc .fc-day-today { background: var(--cb-brand-surface, #E7F0FF) !important; }
+
+    /* The event dot, which FullCalendar paints from --bs-primary and therefore renders in the same
+       family as the chip it sits on - measured at 1.35:1 on a company chip and 1.12:1 on a personal
+       one, against WCAG's 3:1 for a non-text graphic. It takes the chip's own white, whose ratios
+       are the 5.70 / 4.73 recorded above. */
+    .fc .cbev-company .fc-daygrid-event-dot,
+    .fc .cbev-personal .fc-daygrid-event-dot { border-color: #fff; }
+
+    /* ------------------------------------------------------------------------------------------
+       WEEK AND DAY VIEWS: A SHORT EVENT MUST STILL BE READABLE.
+
+       Measured defect, week view at 1680px - the block is shorter than its own text:
+
+           15 minutes   block  14px   text  12px   overflow: visible
+           60 minutes   block  38px   text  36px   overflow: visible
+           2h 30m       block  97px   text  95px   overflow: visible
+
+       A 15-minute event gets a 14px sliver, and FullCalendar stacks the time ABOVE the title, so
+       two lines are asked to fit in fourteen pixels. `overflow: visible` means nothing clips them
+       either, so the text renders outside its own coloured block - exactly the failure this file
+       already documents for the month-view pill, on the other axis.
+
+       Fixed the same way and at the same boundary - no vendor file, no colour:
+
+         · min-height so one line always has room. 15 minutes at this zoom cannot be given more
+           space without lying about the duration, so it is given enough to be READ.
+         · overflow: hidden, so what does not fit is clipped by the block instead of escaping it.
+         · the time and title become one WRAPPING flex row: a short event reads
+           "10:00 - 10:15  Daily stand-up" on one line, while a tall event still wraps to two
+           because its title is long. One rule, both cases, no height query needed.
+       ------------------------------------------------------------------------------------------ */
+    .fc .fc-timegrid-event { min-height: 22px; overflow: hidden; }
+    .fc .fc-timegrid-event .fc-event-main { min-height: 0; overflow: hidden; }
+    .fc .fc-timegrid-event .fc-event-main-frame { flex-flow: row nowrap; column-gap: .35rem; align-items: baseline; }
+    .fc .fc-timegrid-event .fc-event-time { flex: 0 0 auto; font-weight: 600; }
+    .fc .fc-timegrid-event .fc-event-title-container { min-width: 0; }
+    .fc .fc-timegrid-event .fc-event-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ------------------------------------------------------------------------------------------
+       LIST VIEW: THE COLOUR BELONGS TO THE DOT, NOT TO THE ROW.
+
+       In list view FullCalendar renders each event as a <tr class="fc-list-event">, and that <tr>
+       carries the .cbev-* class. The solid-fill rule written for month and week chips therefore
+       painted an entire table row - a saturated band the full width of the card, four of them
+       stacked. That was never a decision about the list; it is a side effect of one selector
+       reaching a element it was not written for.
+
+       FullCalendar's own list view already has the right affordance for this: .fc-list-event-dot,
+       a small ring beside the time. So the fill is switched off for list rows and the dot takes the
+       category colour instead - the same two tokens, just carried by the element built for it.
+       ------------------------------------------------------------------------------------------ */
+    .fc .fc-list-event.cbev-company, .fc .fc-list-event.cbev-personal { background: transparent; }
+    /* NOT 'inherit': the <td> would inherit from the <tr>, and the <tr> is exactly what carries the
+       chip rule's color:#fff - which left white text on a now-white row. Measured at
+       rgb(255,255,255) on rgba(0,0,0,0) before this line existed. Stated outright instead. */
+    .fc .fc-list-event.cbev-company, .fc .fc-list-event.cbev-personal { color: #4b5675; }
+    .fc .fc-list-event.cbev-company > td, .fc .fc-list-event.cbev-personal > td { color: #4b5675; }
+    .fc .fc-list-event.cbev-company .fc-list-event-title a,
+    .fc .fc-list-event.cbev-personal .fc-list-event-title a { color: #071437; font-weight: 600; }
+    .fc .fc-list-event.cbev-company .fc-list-event-dot { border-color: var(--cb-violet-strong); }
+    .fc .fc-list-event.cbev-personal .fc-list-event-dot { border-color: var(--cb-brand-fill); }
+    /* The row keeps a hover, the way a list row should. */
+    .fc .fc-list-event:hover > td { background: var(--cb-brand-surface, #E7F0FF); }
 </style>
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
@@ -116,13 +194,21 @@
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card card-flush">
-            <div class="card-header">
-                <h2 class="card-title fw-bold">@Localizer["Calendar"]</h2>
+            <div class="card-header align-items-center py-4">
+                <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Calendar"]</h3></div>
                 <div class="card-toolbar">
                     <button class="btn btn-flex btn-primary" data-kt-calendar="add"><i class="ki-outline ki-plus fs-2"></i>@Localizer["Add Event"]</button>
                 </div>
             </div>
             <div class="card-body">
+                @* COLOUR KEY. Same form as the one on /Pos/Reservations. The colour tells a reader
+                   WHO SEES an event, which is information rather than decoration, and until now it
+                   was explained only in a code comment and in a badge you had to open an event to
+                   find. Swatches point at the same tokens the chips use. *@
+                <div class="d-flex gap-4 mb-4 fs-8 text-muted flex-wrap align-items-center">
+                    <span><span class="d-inline-block rounded-circle align-middle me-1" style="width:11px;height:11px;background:var(--cb-violet-strong);"></span> @Localizer["Company"]</span>
+                    <span><span class="d-inline-block rounded-circle align-middle me-1" style="width:11px;height:11px;background:var(--cb-brand-fill);"></span> @Localizer["Personal"]</span>
+                </div>
                 <div id="kt_calendar_app"></div>
             </div>
         </div>
@@ -140,19 +226,45 @@
                             <div class="btn btn-icon btn-sm btn-active-icon-primary" id="kt_modal_add_event_close"><i class="ki-outline ki-cross fs-1"></i></div>
                         </div>
                         <div class="modal-body py-10 px-lg-17">
-                            <div class="fv-row mb-9">
-                                <label class="fs-6 fw-semibold required mb-2">@Localizer["Event Name"]</label>
-                                <input type="text" class="form-control form-control-solid" name="title" required />
-                            </div>
-                            <div class="fv-row mb-9">
-                                <label class="fs-6 fw-semibold mb-2">@Localizer["Event Description"]</label>
-                                <input type="text" class="form-control form-control-solid" name="description" />
+                            @* TWO NAMES. CalendarEvents.TitleEn is new; without a field for it every event
+                               would keep exactly one title and the unified agenda would go on showing Arabic
+                               event names in an English UI. Optional - no twin means the stored name is used
+                               in both languages, the same fallback tasks and templates use. *@
+                            <div class="row row-cols-lg-2 g-9">
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold required mb-2">@Localizer["Event Name"]</label>
+                                        <input type="text" class="form-control form-control-solid" name="title" required />
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event Name"] (EN)</label>
+                                        <input type="text" dir="ltr" class="form-control form-control-solid" name="titleEn" />
+                                    </div>
+                                </div>
                             </div>
                             <div class="row row-cols-lg-2 g-9">
                                 <div class="col">
                                     <div class="fv-row mb-9">
-                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event Location"]</label>
-                                        <input type="text" class="form-control form-control-solid" name="location" />
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event Description"] (AR)</label>
+                                        <input type="text" dir="rtl" class="form-control form-control-solid" name="description" />
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event Description"] (EN)</label>
+                                        <input type="text" dir="ltr" class="form-control form-control-solid" name="descriptionEn" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row row-cols-lg-2 g-9">
+                                <div class="col">
+                                    <div class="fv-row mb-9">
+                                        <label class="fs-6 fw-semibold mb-2">@Localizer["Event Location"] (AR)</label>
+                                        <input type="text" dir="rtl" class="form-control form-control-solid" name="location" />
+                                        <label class="fs-6 fw-semibold mb-2 mt-3">@Localizer["Event Location"] (EN)</label>
+                                        <input type="text" dir="ltr" class="form-control form-control-solid" name="locationEn" />
                                     </div>
                                 </div>
                                 <div class="col">
@@ -222,24 +334,24 @@
         <div class="modal fade" id="kt_modal_view_event" tabindex="-1" data-bs-focus="false" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered mw-650px">
                 <div class="modal-content">
-                    <div class="modal-header border-0 justify-content-end">
-                        <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-primary me-2 d-none" title="@Localizer["Edit Event"]" id="kt_modal_view_event_edit"><i class="ki-outline ki-pencil fs-2"></i></div>
-                        <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-danger me-2 d-none" title="@Localizer["Delete Event"]" id="kt_modal_view_event_delete"><i class="ki-outline ki-trash fs-2"></i></div>
-                        <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-2x"></i></div>
+                    <div class="modal-header">
+                        <h2 class="fw-bold" data-kt-calendar="event_name"></h2>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-primary d-none" title="@Localizer["Edit Event"]" id="kt_modal_view_event_edit"><i class="ki-outline ki-pencil fs-2"></i></div>
+                            <div class="btn btn-icon btn-sm btn-color-gray-500 btn-active-icon-danger d-none" title="@Localizer["Delete Event"]" id="kt_modal_view_event_delete"><i class="ki-outline ki-trash fs-2"></i></div>
+                            <div class="btn btn-icon btn-sm" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-1"></i></div>
+                        </div>
                     </div>
-                    <div class="modal-body pt-0 pb-20 px-lg-17">
-                        <div class="d-flex">
+                    <div class="modal-body py-10 px-lg-17">
+                        <div class="d-flex mb-9">
                             <i class="ki-outline ki-calendar-8 fs-1 text-muted me-5"></i>
-                            <div class="mb-9">
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="fs-3 fw-bold me-3" data-kt-calendar="event_name"></span>
-                                    <span class="badge" data-kt-calendar="scope"></span>
-                                </div>
+                            <div>
+                                <div class="mb-2"><span class="badge" data-kt-calendar="scope"></span></div>
                                 <div class="fs-6" data-kt-calendar="event_description"></div>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center mb-2"><span class="bullet bullet-dot h-10px w-10px bg-success ms-2 me-7"></span><div class="fs-6"><span class="fw-bold">@Localizer["Starts"]</span> <span data-kt-calendar="event_start_date"></span></div></div>
-                        <div class="d-flex align-items-center mb-9"><span class="bullet bullet-dot h-10px w-10px bg-danger ms-2 me-7"></span><div class="fs-6"><span class="fw-bold">@Localizer["Ends"]</span> <span data-kt-calendar="event_end_date"></span></div></div>
+                        <div class="d-flex align-items-center mb-2"><span class="bullet bullet-dot h-10px w-10px bg-primary ms-2 me-7"></span><div class="fs-6"><span class="fw-bold">@Localizer["Starts"]</span> <span data-kt-calendar="event_start_date"></span></div></div>
+                        <div class="d-flex align-items-center mb-9"><span class="bullet bullet-dot h-10px w-10px bg-secondary ms-2 me-7"></span><div class="fs-6"><span class="fw-bold">@Localizer["Ends"]</span> <span data-kt-calendar="event_end_date"></span></div></div>
                         <div class="d-flex align-items-center mb-4"><i class="ki-outline ki-geolocation fs-1 text-muted me-5"></i><div class="fs-6" data-kt-calendar="event_location"></div></div>
                         <div class="d-flex align-items-center mb-4"><i class="ki-outline ki-profile-circle fs-1 text-muted me-5"></i><div class="fs-6"><span class="fw-bold">@Localizer["Owner"]:</span> <span data-kt-calendar="event_owner"></span></div></div>
                         <div class="d-flex align-items-start"><i class="ki-outline ki-people fs-1 text-muted me-5"></i><div class="fs-6" data-kt-calendar="event_attendees"></div></div>
@@ -322,7 +434,7 @@
     function localStr(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'; }
     document.getElementById('cbAllDay').addEventListener('change', function(){ toggleTimeCols(this.checked); });
     function openAdd(startDate, endDate){
-        form.querySelector('[name=id]').value=''; form.querySelector('[name=title]').value=''; form.querySelector('[name=description]').value='';
+        form.querySelector('[name=id]').value=''; form.querySelector('[name=title]').value=''; form.querySelector('[name=titleEn]').value=''; form.querySelector('[name=description]').value='';
         form.querySelector('[name=location]').value=''; form.querySelector('[name=scope]').value='Personal'; window.__cbSetAttendees([]);
         document.getElementById('cbAllDay').checked=false; toggleTimeCols(false);
         addModalEl.querySelector('[data-kt-calendar="title"]').textContent='@Localizer["Add Event"]';
@@ -333,7 +445,11 @@
     function openEdit(ev){
         addModalEl.querySelector('[data-kt-calendar="title"]').textContent='@Localizer["Edit Event"]';
         form.querySelector('[name=id]').value = ev.id;
-        form.querySelector('[name=title]').value = ev.title || '';
+        // THE STORED TITLE, not the displayed one. ev.title is resolved for the current culture, so an
+        // English UI would prefill the English twin into the primary name box and the next save would
+        // overwrite the Arabic title with it.
+        form.querySelector('[name=title]').value = (ev.extendedProps && ev.extendedProps.titleAr) || ev.title || '';
+        form.querySelector('[name=titleEn]').value = (ev.extendedProps && ev.extendedProps.titleEn) || '';
         form.querySelector('[name=description]').value = ev.extendedProps.description || '';
         form.querySelector('[name=location]').value = ev.extendedProps.location || '';
         form.querySelector('[name=scope]').value = ev.extendedProps.scope || 'Personal';
@@ -379,7 +495,7 @@
         m.querySelector('[data-kt-calendar="event_end_date"]').textContent = fmt(ev.endStr);
         m.querySelector('[data-kt-calendar="event_location"]').textContent = p.location || '—';
         m.querySelector('[data-kt-calendar="event_owner"]').textContent = p.ownerName || '';
-        m.querySelector('[data-kt-calendar="event_attendees"]').textContent = (p.attendees && p.attendees.length) ? p.attendees.join('، ') : '—';
+        m.querySelector('[data-kt-calendar="event_attendees"]').textContent = (p.attendees && p.attendees.length) ? p.attendees.join(', ') : '—';
         var edit = document.getElementById('kt_modal_view_event_edit'), del = document.getElementById('kt_modal_view_event_delete');
         edit.classList.toggle('d-none', !p.canEdit); del.classList.toggle('d-none', !p.canEdit);
         viewModal.show();
@@ -402,8 +518,17 @@
     // ---------- FullCalendar ----------
     // On phones let the grid flow (auto height, page scrolls); on desktop keep the fixed Metronic height.
     function calHeight(){ return window.innerWidth < 768 ? 'auto' : 750; }
+    // The deep-link parameters, read once. Both are optional and each is independent: a day with no
+    // event id simply opens the calendar on that day.
+    var qs = new URLSearchParams(location.search);
+    var wantEventId = qs.get('eventId');
+    var wantDay = qs.get('day');
+    var openedDeepLink = false;
+
     var calendar = new FullCalendar.Calendar(calEl, {
         direction: '@dir',
+        // Set before render so the linked event is inside the window that gets fetched.
+        initialDate: (wantDay && /^\d{4}-\d{2}-\d{2}$/.test(wantDay)) ? wantDay : undefined,
         locale: '@(isAr ? "ar" : "en")',
         buttonText: {
             today: '@Localizer["today"]',
@@ -445,12 +570,25 @@
                 .then(function(r){return r.ok?r.json():[];})
                 .then(function(list){ success(list.map(function(e){ return {
                     id:e.id, title:e.title, start:e.start, end:e.end, allDay:e.allDay, className:e.className,
-                    extendedProps:{ scope:e.scope, description:e.description, location:e.location, ownerName:e.ownerName, attendees:e.attendees, attendeeIds:e.attendeeIds, canEdit:e.canEdit } }; })); })
+                    extendedProps:{ scope:e.scope, description:e.description, location:e.location, ownerName:e.ownerName, attendees:e.attendees, attendeeIds:e.attendeeIds, canEdit:e.canEdit, titleAr:e.titleAr, titleEn:e.titleEn } }; })); })
                 .catch(failure);
         },
         dateClick: function(info){ var s=new Date(info.dateStr); openAdd(s, new Date(s.getTime()+60*60*1000)); },
         select: function(info){ openAdd(info.start, info.end); },
-        eventClick: function(info){ info.jsEvent.preventDefault(); openView(info.event); }
+        eventClick: function(info){ info.jsEvent.preventDefault(); openView(info.event); },
+        // Fires once the fetched events are in the calendar, which is the earliest moment
+        // getEventById can resolve. The flag makes it a one-shot: without it, every later month
+        // navigation would reopen the modal.
+        eventsSet: function(){
+            if (openedDeepLink || !wantEventId) return;
+            var ev = calendar.getEventById(wantEventId);
+            if (!ev) return;
+            openedDeepLink = true;
+            openView(ev);
+            // The parameters are consumed. Left in the address bar, a refresh or a back-navigation
+            // reopens a modal the reader has already dismissed.
+            history.replaceState({}, '', location.pathname);
+        }
     });
     calendar.render();
     // FullCalendar v5 ignores buttonText when a string `locale` is set — force the toolbar labels onto the DOM.

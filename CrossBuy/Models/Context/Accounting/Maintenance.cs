@@ -9,6 +9,9 @@ namespace CrossBuy.Models.Context.Accounting
 		public int CompanyID { get; set; }
 		public int AssetId { get; set; }
 		public string Title { get; set; } = "";
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? TitleEn { get; set; }
 		public string Type { get; set; } = "Preventive";   // Preventive | Inspection | Calibration | Repair
 		public int IntervalMonths { get; set; } = 1;
 		public DateTime NextDueDate { get; set; }

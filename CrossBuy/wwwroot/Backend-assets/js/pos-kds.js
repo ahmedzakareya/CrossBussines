@@ -35,7 +35,7 @@
     }
     function statusLabel(s) { return s === 'Ready' ? L.ready : (s === 'Preparing' ? L.preparing : L['new']); }
     function nextStatus(s) { return s === 'New' ? 'Preparing' : (s === 'Preparing' ? 'Ready' : null); }
-    // KDS status colours — brand-aligned (crossbuy-brand: --bs-primary #13433a). New=primary(brand), Preparing=warning, Ready=success. No off-brand blue/purple.
+    // KDS status colours — brand-aligned (crossbuy-brand: --bs-primary #0E4A9E). New=primary(brand), Preparing=warning, Ready=success. No off-brand blue/purple.
     function statusColor(s) { return s === 'Ready' ? 'success' : (s === 'Preparing' ? 'warning' : 'primary'); }
     function TL(ar, en) { return RTL ? ar : en; }
     // Every status change is CONFIRMED first (no "click and get surprised"), then a toast reports the result.
@@ -44,7 +44,7 @@
             return window.CB.confirm({
                 type: 'generic', icon: 'question',
                 title: TL('تأكيد تغيير الحالة', 'Confirm status change'), text: text,
-                confirmText: TL('تأكيد', 'Confirm'),
+                confirmText: TL('Confirm', 'Confirm'),
                 confirmClass: toReady ? 'btn btn-success' : 'btn btn-warning'
             });
         }
@@ -133,7 +133,7 @@
                     : '<div class="symbol symbol-50px me-3"><span class="symbol-label bg-light-' + sc + ' rounded"><i class="ki-outline ki-cup fs-2 text-' + sc + '"></i></span></div>';
                 var strike = st === 'Ready' ? ' text-decoration-line-through opacity-50' : '';
                 var mods = (l.modifiers && l.modifiers.length)
-                    ? '<div class="fs-8 text-gray-600' + strike + '">' + l.modifiers.map(function (m) { return '+ ' + esc(m); }).join('، ') + '</div>' : '';
+                    ? '<div class="fs-8 text-gray-600' + strike + '">' + l.modifiers.map(function (m) { return '+ ' + esc(m); }).join(', ') + '</div>' : '';
                 return '<div class="d-flex align-items-center py-3 px-3 border-bottom border-gray-200 border-dashed">'
                     + thumb
                     + '<div class="flex-grow-1 me-2">'
@@ -158,7 +158,7 @@
         if (busy) return;
         var toReady = status === 'Ready';
         var q = toReady
-            ? TL('تعليم «' + name + '» كجاهز؟', 'Mark "' + name + '" as ready?')
+            ? TL('Mark «' + name + '» as ready?', 'Mark "' + name + '" as ready?')
             : TL('بدء تحضير «' + name + '»؟', 'Start preparing "' + name + '"?');
         cbConfirm(q, toReady).then(function (ok) {
             if (!ok) return;

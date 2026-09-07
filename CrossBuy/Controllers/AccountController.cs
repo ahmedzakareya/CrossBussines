@@ -180,6 +180,62 @@ namespace CrossBuy.Controllers
 
 
 
+		// =========================================================================================
+		// SHARED ACCESS-DENIED DESTINATION.
+		//
+		// ASP.NET Identity's cookie handler redirects an authenticated-but-unauthorised request to
+		// AccessDeniedPath, which defaults to "/Account/AccessDenied". That action did not exist, so every
+		// Forbid() on a page request became 302 -> 404: the user was told the screen was MISSING when in
+		// fact it was FORBIDDEN, and the 403 the authorization system produced was lost on the way.
+		//
+		// It lives HERE, at the shared authentication level, not in any module: authorization is refused
+		// identically for Reporting, Workspace, Tasks, Calendar and every future module, so a per-module
+		// page would be the same screen copied N times and would drift.
+		//
+		// SEMANTICS ARE PRESERVED, not papered over:
+		//   * the response carries HTTP 403 - the redirect target reports the SAME outcome the pipeline
+		//     decided. Returning 200 here would make an authorization failure indistinguishable from a
+		//     successful page load to any caller that reads status codes (tests, monitors, the browser).
+		//   * an AJAX/JSON caller gets a JSON 403 instead of an HTML page, matching how PlatformOps/AccPerm/
+		//     InvPerm already answer script callers.
+		//   * nothing here turns a 403 into a 404. Endpoints that must hide existence keep returning
+		//     NotFound() themselves (ReportsController.Viewer does this deliberately, to deny a catalog
+		//     enumeration oracle) - that decision stays with the endpoint that owns the secret.
+		//
+		// NO INFORMATION LEAKAGE: the page names no resource, no permission key, no role and no module, and
+		// it deliberately does NOT render the ReturnUrl the cookie handler appends. Telling someone exactly
+		// which permission they lack maps the authorization surface for them; echoing an attacker-supplied
+		// ReturnUrl into the page is an injection sink. The user is told they lack access and offered a way
+		// back - nothing else.
+		//
+		// [AllowAnonymous] is required, not incidental: without it a denied user is redirected to a page
+		// that denies them, which redirects again. That is the loop this endpoint exists to end.
+		[Microsoft.AspNetCore.Authorization.AllowAnonymous]
+		[HttpGet]
+		public IActionResult AccessDenied()
+		{
+			bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest"
+			              || (Request.Headers["Accept"].ToString()?.Contains("application/json") ?? false);
+
+			var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+			if (isAjax)
+			{
+				return StatusCode(StatusCodes.Status403Forbidden, new
+				{
+					ok = false,
+					denied = true,
+					code = "access_denied",
+					error = arabic
+						? "You do not have permission to open this screen."
+						: "You do not have permission to open this screen."
+				});
+			}
+
+			Response.StatusCode = StatusCodes.Status403Forbidden;
+			return View();
+		}
+
 		//[HttpPost]
 		//[ValidateAntiForgeryToken]
 
@@ -213,7 +269,7 @@ namespace CrossBuy.Controllers
 			var slips = await _db.Payslips.AsNoTracking()
 				.Where(p => p.EmployeeID == emp.ID)
 				.OrderByDescending(p => p.Year).ThenByDescending(p => p.Month).ToListAsync();
-			ViewBag.EmployeeName = emp.FullName;
+			ViewBag.EmployeeName = CrossBuy.BL.EmployeeNames.Of(emp.FullName, emp.FullNameEn);
 			return View(slips);
 		}
 

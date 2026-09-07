@@ -143,14 +143,14 @@ namespace CrossBuy.BL
 		public async Task<PosPrepResult> ConsumeForDispatchAsync(int companyId, int orderId,
 			IReadOnlyList<int> lineIds, string? userId, CancellationToken ct = default)
 		{
-			if (companyId <= 0) return PosPrepResult.Fail("لم يتم تحديد الشركة");
+			if (companyId <= 0) return PosPrepResult.Fail("No company has been selected");
 			var order = await _db.PosOrders.AsNoTracking()
 				.FirstOrDefaultAsync(o => o.ID == orderId && o.CompanyId == companyId, ct);
-			if (order == null) return PosPrepResult.Fail("الطلب غير موجود");
+			if (order == null) return PosPrepResult.Fail("Order not found");
 
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == order.BranchId, ct);
 			int? whId = setting?.DefaultSalesWarehouseId;
-			if (whId == null) return PosPrepResult.Fail("لم يُحدَّد مخزن البيع الافتراضي للفرع (إعدادات نقاط البيع)");
+			if (whId == null) return PosPrepResult.Fail("The branch default sales warehouse is not set (POS settings)");
 			bool allowShortage = await CapabilityAsync(order.BranchId, PosPrepCapabilities.ShortageAllowed, ct);
 
 			var lines = await _db.PosOrderLines.AsNoTracking()
@@ -220,7 +220,7 @@ namespace CrossBuy.BL
 							if (!allowShortage)
 							{
 								await tx.RollbackAsync();
-								return PosPrepResult.Fail($"الرصيد غير كافٍ للتحضير: المتاح {onHand:0.####}، المطلوب {need.qty:0.####}");
+								return PosPrepResult.Fail($"Insufficient stock to prepare: available {onHand:0.####}, required {need.qty:0.####}");
 							}
 							// CONSUME WHAT IS ACTUALLY THERE. Never a negative balance — the shortfall becomes an
 							// auditable fact instead of an invented quantity, and Warehouse.AllowNegativeStock is
@@ -237,9 +237,9 @@ namespace CrossBuy.BL
 								Date = DateTime.Today, ItemId = d.itemId, WarehouseId = whId.Value, Direction = -1,
 								Qty = take, SourceType = PrepSourceType, SourceId = orderId, SourceLineId = l.ID,
 								PostToGl = true,   // Dr COGS / Cr Inventory — the cost follows the physical consumption
-								Notes = $"تحضير مطبخ — طلب #{orderId}",
+								Notes = $"Kitchen preparation — order #{orderId}",
 							}, userId);
-							if (!ok) { await tx.RollbackAsync(); return PosPrepResult.Fail(err ?? "تعذّر صرف مكوّنات التحضير"); }
+							if (!ok) { await tx.RollbackAsync(); return PosPrepResult.Fail(err ?? "Could not issue the preparation components"); }
 							wroteSomething = true;
 						}
 					}
@@ -273,7 +273,7 @@ namespace CrossBuy.BL
 			catch (Exception ex)
 			{
 				await tx.RollbackAsync();
-				return PosPrepResult.Fail("خطأ أثناء صرف مكوّنات التحضير: " + ex.Message);
+				return PosPrepResult.Fail("Error while issuing the preparation components: " + ex.Message);
 			}
 		}
 
@@ -290,7 +290,7 @@ namespace CrossBuy.BL
 			int companyId, int orderId, string? reason, string? userId, CancellationToken ct = default)
 		{
 			var order = await _db.PosOrders.AsNoTracking().FirstOrDefaultAsync(o => o.ID == orderId && o.CompanyId == companyId, ct);
-			if (order == null) return (false, "الطلب غير موجود", 0m);
+			if (order == null) return (false, "Order not found", 0m);
 
 			// IDEMPOTENT: a second cancel of the same order must not waste it twice.
 			bool alreadyWasted = await _db.JournalEntries.AsNoTracking()
@@ -307,7 +307,7 @@ namespace CrossBuy.BL
 
 			var cogs = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "510101").Select(a => (int?)a.ID).FirstOrDefaultAsync(ct);
 			var waste = await _db.Accounts.AsNoTracking().Where(a => a.CompanyID == companyId && a.Code == "520110").Select(a => (int?)a.ID).FirstOrDefaultAsync(ct);
-			if (cogs == null || waste == null) return (false, "حساب تكلفة المبيعات (510101) أو التسويات المخزنية (520110) غير موجود", 0m);
+			if (cogs == null || waste == null) return (false, "The cost-of-sales account (510101) or the stock-adjustment account (520110) does not exist", 0m);
 
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			try
@@ -316,14 +316,14 @@ namespace CrossBuy.BL
 				{
 					CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Auto",
 					SourceType = "PosWaste", SourceId = orderId, CurrencyId = 0,
-					Description = $"هدر تحضير — طلب كاشير #{orderId}" + (string.IsNullOrWhiteSpace(reason) ? "" : $" — {reason}"),
+					Description = $"Preparation waste — cashier order #{orderId}" + (string.IsNullOrWhiteSpace(reason) ? "" : $" — {reason}"),
 					Lines = new List<JournalLineInput>
 					{
-						new JournalLineInput { AccountId = waste.Value, Debit = value, Credit = 0, Description = "هدر/تسوية مخزنية" },
-						new JournalLineInput { AccountId = cogs.Value, Debit = 0, Credit = value, Description = "عكس تكلفة مبيعات لم تتحقق" },
+						new JournalLineInput { AccountId = waste.Value, Debit = value, Credit = 0, Description = "Waste / stock adjustment" },
+						new JournalLineInput { AccountId = cogs.Value, Debit = 0, Credit = value, Description = "Reversal of cost of sales that did not materialise" },
 					},
 				}, int.TryParse(userId, out var uid) ? uid : (int?)null);
-				if (!jok) { await tx.RollbackAsync(); return (false, "تعذّر ترحيل قيد الهدر: " + jerr, 0m); }
+				if (!jok) { await tx.RollbackAsync(); return (false, "Could not post the waste entry: " + jerr, 0m); }
 
 				await _events.RecordAsync(new BusinessEventRecord
 				{
@@ -339,7 +339,7 @@ namespace CrossBuy.BL
 			catch (Exception ex)
 			{
 				await tx.RollbackAsync();
-				return (false, "خطأ أثناء تسجيل الهدر: " + ex.Message, 0m);
+				return (false, "Error while recording the waste: " + ex.Message, 0m);
 			}
 		}
 
@@ -355,7 +355,7 @@ namespace CrossBuy.BL
 			var factor = await _db.UoMConversions.AsNoTracking()
 				.Where(c => c.ItemId == itemId && c.FromUoMId == uomId && c.ToUoMId == baseUoM)
 				.Select(c => (decimal?)c.Factor).FirstOrDefaultAsync(ct);
-			if (factor == null) return (0m, $"لا يوجد تحويل وحدة معرَّف للصنف #{itemId} من الوحدة المطلوبة إلى الوحدة الأساس");
+			if (factor == null) return (0m, $"No unit conversion is defined for item #{itemId} from the requested unit to the base unit");
 			return (Math.Round(qty * factor.Value, 4, MidpointRounding.AwayFromZero), null);
 		}
 	}

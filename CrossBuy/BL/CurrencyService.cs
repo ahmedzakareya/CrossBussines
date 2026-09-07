@@ -77,9 +77,9 @@ namespace CrossBuy.BL
 				return (R4(amount), 1m);
 
 			var (fromRate, f1) = await GetRateToEgpAsync(fromCurrencyId, date, rateType);
-			if (!f1) throw new InvalidOperationException($"لا يوجد سعر صرف للعملة المصدر بتاريخ {date:yyyy-MM-dd} ({rateType}).");
+			if (!f1) throw new InvalidOperationException($"There is no exchange rate for the source currency on {date:yyyy-MM-dd} ({rateType}).");
 			var (funcRate, f2) = await GetRateToEgpAsync(functionalCurrencyId, date, rateType);
-			if (!f2 || funcRate == 0m) throw new InvalidOperationException($"لا يوجد سعر صرف للعملة الوظيفية بتاريخ {date:yyyy-MM-dd} ({rateType}).");
+			if (!f2 || funcRate == 0m) throw new InvalidOperationException($"There is no exchange rate for the functional currency on {date:yyyy-MM-dd} ({rateType}).");
 
 			var effectiveRate = R4(fromRate / funcRate);   // from → functional
 			return (R4(amount * fromRate / funcRate), effectiveRate);

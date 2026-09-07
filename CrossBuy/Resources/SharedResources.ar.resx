@@ -762,9 +762,6 @@
   <data name="Note" xml:space="preserve">
     <value>ملاحظة</value>
   </data>
-  <data name="Notes" xml:space="preserve">
-    <value>ملاحظات</value>
-  </data>
   <data name="All" xml:space="preserve">
     <value>الكل</value>
   </data>
@@ -945,6 +942,12 @@
   <data name="Converted" xml:space="preserve">
     <value>محوّل</value>
   </data>
+  <data name="of open pipeline" xml:space="preserve">
+    <value>من إجمالي الفرص المفتوحة</value>
+  </data>
+  <data name="No open opportunities yet" xml:space="preserve">
+    <value>لا توجد فرص مفتوحة بعد</value>
+  </data>
   <data name="No opportunities yet" xml:space="preserve">
     <value>لا توجد فرص بعد</value>
   </data>
@@ -1058,9 +1061,6 @@
   </data>
   <data name="POS" xml:space="preserve">
     <value>نقطة البيع</value>
-  </data>
-  <data name="Logout" xml:space="preserve">
-    <value>تسجيل الخروج</value>
   </data>
   <data name="Profile" xml:space="preserve">
     <value>الملف الشخصي</value>
@@ -1353,14 +1353,8 @@
   <data name="Invoice No." xml:space="preserve">
     <value>رقم الفاتورة</value>
   </data>
-  <data name="Sales Invoices" xml:space="preserve">
-    <value>فواتير البيع</value>
-  </data>
   <data name="Sales Invoices — CrossBuy" xml:space="preserve">
     <value>فواتير البيع — CrossBuy</value>
-  </data>
-  <data name="Purchase Invoices" xml:space="preserve">
-    <value>فواتير الشراء</value>
   </data>
   <data name="Purchase Invoices — CrossBuy" xml:space="preserve">
     <value>فواتير الشراء — CrossBuy</value>
@@ -1454,9 +1448,6 @@
   </data>
   <data name="Document saved" xml:space="preserve">
     <value>تم حفظ المستند</value>
-  </data>
-  <data name="Document deleted" xml:space="preserve">
-    <value>تم حذف المستند</value>
   </data>
   <data name="Sent {0} alert(s)" xml:space="preserve">
     <value>تم إرسال {0} تنبيه</value>
@@ -2316,6 +2307,9 @@
   <data name="Approvals" xml:space="preserve">
     <value>الموافقات</value>
   </data>
+  <data name="No pending approvals" xml:space="preserve">
+    <value>لا توجد موافقات معلّقة</value>
+  </data>
   <data name="Inventory roles" xml:space="preserve">
     <value>صلاحيات المخزون</value>
   </data>
@@ -2447,9 +2441,6 @@
   </data>
   <data name="AR aging" xml:space="preserve">
     <value>أعمار ديون العملاء</value>
-  </data>
-  <data name="Customer analytics" xml:space="preserve">
-    <value>تحليلات العملاء</value>
   </data>
   <data name="CRM dashboard" xml:space="preserve">
     <value>لوحة CRM</value>
@@ -2693,9 +2684,6 @@
   </data>
   <data name="Name (EN)" xml:space="preserve">
     <value>الاسم (إنجليزي)</value>
-  </data>
-  <data name="Tax reg. no." xml:space="preserve">
-    <value>الرقم الضريبي</value>
   </data>
   <data name="Could not add" xml:space="preserve">
     <value>تعذّرت الإضافة</value>
@@ -2958,12 +2946,132 @@
   <data name="Restaurant dashboard">
     <value>لوحة المطعم</value>
   </data>
+  <data name="Best regards" xml:space="preserve">
+    <value>مع خالص التحية</value>
+  </data>
+  <data name="Subject" xml:space="preserve">
+    <value>الموضوع</value>
+  </data>
+  <data name="dated" xml:space="preserve">
+    <value>بتاريخ</value>
+  </data>
+  <data name="Communications log" xml:space="preserve">
+    <value>سجل المراسلات</value>
+  </data>
+  <data name="Recipient is required" xml:space="preserve">
+    <value>المستلِم مطلوب</value>
+  </data>
+  <data name="Send by email" xml:space="preserve">
+    <value>إرسال بالبريد</value>
+  </data>
+  <data name="Subject is required" xml:space="preserve">
+    <value>الموضوع مطلوب</value>
+  </data>
+  <data name="Send failed" xml:space="preserve">
+    <value>فشل الإرسال</value>
+  </data>
+  <data name="SMTP is not configured — the message will be queued and sent automatically once email settings are set." xml:space="preserve">
+    <value>لم يُضبَط SMTP — ستُوضَع الرسالة في قائمة الانتظار وتُرسَل تلقائيًا بمجرد ضبط إعدادات البريد.</value>
+  </data>
+  <data name="Dear" xml:space="preserve">
+    <value>عزيزي</value>
+  </data>
+  <data name="Email sent" xml:space="preserve">
+    <value>تم إرسال البريد</value>
+  </data>
+  <data name="Queued — will be sent once SMTP is configured" xml:space="preserve">
+    <value>في قائمة الانتظار — سيُرسَل تلقائيًا عند ضبط SMTP</value>
+  </data>
+  <data name="Cc" xml:space="preserve">
+    <value>نسخة</value>
+  </data>
+  <data name="Please find the details of your sales invoice" xml:space="preserve">
+    <value>تجد تفاصيل فاتورة مبيعاتك</value>
+  </data>
+  <data name="Reply" xml:space="preserve">
+    <value>رد</value>
+  </data>
+  <data name="Forward email" xml:space="preserve">
+    <value>تحويل الرسالة</value>
+  </data>
+  <data name="Attach files" xml:space="preserve">
+    <value>إرفاق ملفات</value>
+  </data>
+  <data name="Forwarded attachments" xml:space="preserve">
+    <value>مرفقات مُحوَّلة</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>التعليقات</value>
+  </data>
+  <data name="No comments yet" xml:space="preserve">
+    <value>لا تعليقات بعد</value>
+  </data>
+  <data name="Loading..." xml:space="preserve">
+    <value>جارٍ التحميل...</value>
+  </data>
+  <data name="Announcements" xml:space="preserve">
+    <value>الإعلانات</value>
+  </data>
+  <data name="Write a comment…" xml:space="preserve">
+    <value>اكتب تعليقًا…</value>
+  </data>
+  <data name="Purchase Invoice" xml:space="preserve">
+    <value>فاتورة مشتريات</value>
+  </data>
   <data name="The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry." xml:space="preserve">
     <value>سعر الصرف عمره {0} يومًا — لم يُدخَل سعر اليوم. اطلب من محاسب الفرع إدخاله من شاشة أسعار الصرف ثم أعِد المحاولة.</value>
   </data>
-  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>هذا الفرع يخصّ شركة أخرى — العمليات العابرة للشركات ممنوعة.</value></data>
-  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>هذا الترمينال يخصّ شركة أخرى — العمليات العابرة للشركات ممنوعة.</value></data>
-  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve"><value>حسابك يخصّ شركة أخرى غير شركة هذا الفرع — العمليات العابرة للشركات ممنوعة.</value></data>
+  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve">
+    <value>هذا الفرع يخصّ شركة أخرى — العمليات العابرة للشركات ممنوعة.</value>
+  </data>
+  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve">
+    <value>هذا الترمينال يخصّ شركة أخرى — العمليات العابرة للشركات ممنوعة.</value>
+  </data>
+  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve">
+    <value>حسابك يخصّ شركة أخرى غير شركة هذا الفرع — العمليات العابرة للشركات ممنوعة.</value>
+  </data>
+  <data name="Calendar" xml:space="preserve"><value>التقويم</value></data>
+  <data name="File Manager" xml:space="preserve"><value>إدارة الملفات</value></data>
+  <data name="Attach from library" xml:space="preserve"><value>إرفاق من المكتبة</value></data>
+  <data name="Attach" xml:space="preserve"><value>إرفاق</value></data>
+  <data name="Attach a copy" xml:space="preserve"><value>إرفاق نسخة</value></data>
+  <data name="Insert link" xml:space="preserve"><value>إدراج كرابط</value></data>
+  <data name="From the library" xml:space="preserve"><value>من المكتبة</value></data>
+  <data name="Event starting now" xml:space="preserve"><value>حدث يبدأ الآن</value></data>
+  <data name="starts soon" xml:space="preserve"><value>يبدأ قريبًا</value></data>
+  <data name="Open calendar" xml:space="preserve"><value>فتح التقويم</value></data>
+  <data name="Got it" xml:space="preserve"><value>حسنًا</value></data>
+  <data name="Business event monitor" xml:space="preserve"><value>مراقب أحداث المنصّة</value></data>
+  <data name="evt_status_Done" xml:space="preserve"><value>مكتمل</value></data>
+  <data name="evt_status_Failed" xml:space="preserve"><value>فاشل</value></data>
+  <data name="evt_status_Claimed" xml:space="preserve"><value>قيد المعالجة</value></data>
+  <data name="evt_status_Pending" xml:space="preserve"><value>في الانتظار</value></data>
+  <data name="evt_status_Exhausted" xml:space="preserve"><value>استنفدت المحاولات</value></data>
+  <data name="evt_vis_Internal" xml:space="preserve"><value>داخلي</value></data>
+  <data name="evt_vis_Public" xml:space="preserve"><value>عام</value></data>
+  <data name="evt_vis_Confidential" xml:space="preserve"><value>سري</value></data>
+  <data name="evt_vis_Restricted" xml:space="preserve"><value>مقيّد</value></data>
+  <data name="evt_vis_System" xml:space="preserve"><value>نظام</value></data>
+  <data name="evt_consumer_NotificationProjection" xml:space="preserve"><value>إسقاط الإشعارات</value></data>
+  <data name="evt_consumer_TimelineProjection" xml:space="preserve"><value>إسقاط الخط الزمني</value></data>
+  <data name="evt_role_Primary" xml:space="preserve"><value>أساسي</value></data>
+  <data name="evt_role_Standby" xml:space="preserve"><value>احتياطي</value></data>
+  <data name="evt_role_Unrestricted" xml:space="preserve"><value>غير مقيّد</value></data>
+  <data name="evt_role_Unknown" xml:space="preserve"><value>غير معروف</value></data>
+  <data name="evt_type_PurchaseInvoice.Created" xml:space="preserve"><value>إنشاء فاتورة مشتريات</value></data>
+  <data name="evt_type_SalesInvoice.Created" xml:space="preserve"><value>إنشاء فاتورة مبيعات</value></data>
+  <data name="evt_type_SalesInvoice.Posted" xml:space="preserve"><value>ترحيل فاتورة مبيعات</value></data>
+  <data name="evt_type_JournalEntry.Reversed" xml:space="preserve"><value>عكس قيد يومية</value></data>
+  <data name="evt_type_Quotation.Created" xml:space="preserve"><value>إنشاء عرض سعر</value></data>
+  <data name="evt_type_WorkOrder.Released" xml:space="preserve"><value>إطلاق أمر تشغيل</value></data>
+  <data name="evt_type_WorkOrder.Completed" xml:space="preserve"><value>اكتمال أمر تشغيل</value></data>
+  <data name="Library" xml:space="preserve"><value>المكتبة</value></data>
+  <data name="This folder is empty" xml:space="preserve"><value>هذا المجلد فارغ</value></data>
+  <data name="Invitation" xml:space="preserve"><value>دعوة</value></data>
+  <data name="You've been invited to this event" xml:space="preserve"><value>تمت دعوتك إلى هذا الحدث</value></data>
+  <data name="invited you to an event" xml:space="preserve"><value>دعاك إلى حدث</value></data>
+  <data name="When" xml:space="preserve"><value>الوقت</value></data>
+  <data name="Where" xml:space="preserve"><value>المكان</value></data>
   <data name="No item matches this barcode." xml:space="preserve"><value>لا يوجد صنف بهذا الباركود.</value></data>
   <data name="Open a shift before taking payment." xml:space="preserve"><value>افتح وردية قبل الدفع.</value></data>
   <data name="The cart is empty." xml:space="preserve"><value>السلة فارغة.</value></data>
@@ -2972,13 +3080,18 @@
   <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>هذا الباركود مسجَّل على أكثر من صنف — يجب تصحيح البيانات.</value></data>
   <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>الباركودات المتعدّدة غير مفعَّلة على هذا الفرع.</value></data>
   <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>لا يوجد تحويل معرَّف لهذه الوحدة على الصنف — لا يمكن بيعه.</value></data>
-  <data name="No item is linked to this scale code." xml:space="preserve"><value>لا يوجد صنف مرتبط بكود الميزان هذا.</value></data>
-  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>باركود الميزان بسعر مضمَّن غير مدعوم بعد.</value></data>
-  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>خانة تحقّق باركود الميزان غير صحيحة.</value></data>
-  <data name="The scale barcode format is invalid." xml:space="preserve"><value>صيغة باركود الميزان غير صحيحة.</value></data>
-  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>هذا باركود منتج ثابت داخل نطاق الميزان المحجوز — يجب تصحيح البيانات.</value></data>
-  <data name="This item is not sold by weight." xml:space="preserve"><value>هذا الصنف لا يُباع بالوزن.</value></data>
   <data name="Weighted selling is not enabled on this branch." xml:space="preserve"><value>البيع بالوزن غير مفعَّل على هذا الفرع.</value></data>
+  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>هذا باركود منتج ثابت داخل نطاق الميزان المحجوز — يجب تصحيح البيانات.</value></data>
+  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>خانة تحقّق باركود الميزان غير صحيحة.</value></data>
+  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>باركود الميزان بسعر مضمَّن غير مدعوم بعد.</value></data>
+  <data name="The scale barcode format is invalid." xml:space="preserve"><value>صيغة باركود الميزان غير صحيحة.</value></data>
+  <data name="No item is linked to this scale code." xml:space="preserve"><value>لا يوجد صنف مرتبط بكود الميزان هذا.</value></data>
+  <data name="This item is not sold by weight." xml:space="preserve"><value>هذا الصنف لا يُباع بالوزن.</value></data>
+  <data name="Activity timeline" xml:space="preserve"><value>سجل النشاط</value></data>
+  <data name="Historical" xml:space="preserve"><value>تاريخي</value></data>
+  <data name="No activity yet" xml:space="preserve"><value>لا يوجد نشاط بعد</value></data>
+  <data name="You are not authorised to view this activity" xml:space="preserve"><value>ليست لديك صلاحية لعرض هذا النشاط</value></data>
+  <data name="Could not load the activity timeline" xml:space="preserve"><value>تعذّر تحميل سجل النشاط</value></data>
   <data name="Bulk price change" xml:space="preserve"><value>تغيير الأسعار جماعيًّا</value></data>
   <data name="Choose a price list" xml:space="preserve"><value>اختر قائمة أسعار</value></data>
   <data name="Category (all)" xml:space="preserve"><value>الفئة (الكلّ)</value></data>
@@ -3010,6 +3123,120 @@
   <data name="Pricing" xml:space="preserve"><value>التسعير</value></data>
   <data name="The discount reduces the price to zero or below — the line was rejected." xml:space="preserve"><value>الخصم يخفّض السعر إلى صفر أو أقلّ — رُفِض السطر.</value></data>
   <data name="The vendor invoice was matched to the goods receipt and GRNI was cleared" xml:space="preserve"><value>طُوبِقت فاتورة المورّد مع إذن الاستلام وأُقفِل حساب «بضاعة وردت ولم تُفوتَر»</value></data>
+  <data name="evt_entity_SalesInvoice" xml:space="preserve">
+    <value>فاتورة بيع</value>
+  </data>
+  <data name="evt_entity_PurchaseInvoice" xml:space="preserve">
+    <value>فاتورة شراء</value>
+  </data>
+  <data name="evt_entity_Customer" xml:space="preserve">
+    <value>عميل</value>
+  </data>
+  <data name="evt_entity_Supplier" xml:space="preserve">
+    <value>مورّد</value>
+  </data>
+  <data name="evt_entity_JournalEntry" xml:space="preserve">
+    <value>قيد يومية</value>
+  </data>
+  <data name="evt_entity_ManufWorkOrder" xml:space="preserve">
+    <value>أمر تشغيل</value>
+  </data>
+  <data name="evt_entity_PosOrder" xml:space="preserve">
+    <value>طلب نقطة بيع</value>
+  </data>
+  <data name="evt_entity_Employee" xml:space="preserve">
+    <value>موظف</value>
+  </data>
+  <data name="evt_entity_Project" xml:space="preserve">
+    <value>مشروع</value>
+  </data>
+  <data name="evt_entity_Item" xml:space="preserve">
+    <value>صنف</value>
+  </data>
+  <data name="evt_entity_Quotation" xml:space="preserve">
+    <value>عرض سعر</value>
+  </data>
+  <data name="evt_type_SalesInvoice.Updated" xml:space="preserve">
+    <value>تعديل فاتورة بيع</value>
+  </data>
+  <data name="evt_type_SalesInvoice.Cancelled" xml:space="preserve">
+    <value>إلغاء فاتورة بيع</value>
+  </data>
+  <data name="evt_type_PurchaseInvoice.Updated" xml:space="preserve">
+    <value>تعديل فاتورة شراء</value>
+  </data>
+  <data name="evt_type_PurchaseInvoice.Cancelled" xml:space="preserve">
+    <value>إلغاء فاتورة شراء</value>
+  </data>
+  <data name="evt_type_Customer.Created" xml:space="preserve">
+    <value>إنشاء عميل</value>
+  </data>
+  <data name="evt_type_Customer.Updated" xml:space="preserve">
+    <value>تعديل عميل</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Created" xml:space="preserve">
+    <value>إنشاء أمر تشغيل</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Updated" xml:space="preserve">
+    <value>تعديل أمر تشغيل</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Released" xml:space="preserve">
+    <value>إصدار أمر تشغيل</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Completed" xml:space="preserve">
+    <value>إقفال أمر تشغيل</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Cancelled" xml:space="preserve">
+    <value>إلغاء أمر تشغيل</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Produced" xml:space="preserve">
+    <value>إنتاج جزئي</value>
+  </data>
+  <data name="evt_block_Done" xml:space="preserve">
+    <value>مكتمل — إعادة تشغيله قد تُكرّر آثاره</value>
+  </data>
+  <data name="evt_block_Pending" xml:space="preserve">
+    <value>مُدرَج في الطابور بالفعل</value>
+  </data>
+  <data name="evt_block_HeldByWorker" xml:space="preserve">
+    <value>عملية أخرى تعالجه الآن</value>
+  </data>
+  <data name="evt_block_AttemptsExhausted" xml:space="preserve">
+    <value>استُنفدت كل المحاولات — يتطلّب تجاوزًا بصلاحية موسّعة</value>
+  </data>
+  <data name="evt_outcome_Requeued" xml:space="preserve">
+    <value>تمت إعادة الإدراج — سيتناوله المُرسِل في الدورة القادمة</value>
+  </data>
+  <data name="evt_outcome_NotFound" xml:space="preserve">
+    <value>السجل غير موجود</value>
+  </data>
+  <data name="evt_outcome_AlreadyDone" xml:space="preserve">
+    <value>اكتمل هذا المستهلك بالفعل — إعادة تشغيله قد تُكرّر آثاره</value>
+  </data>
+  <data name="evt_outcome_AlreadyPending" xml:space="preserve">
+    <value>مُدرَج في الطابور بالفعل</value>
+  </data>
+  <data name="evt_outcome_HeldByWorker" xml:space="preserve">
+    <value>عملية أخرى تعالجه الآن — أعد المحاولة بعد انتهاء مهلة المطالبة</value>
+  </data>
+  <data name="evt_outcome_AttemptsExhausted" xml:space="preserve">
+    <value>استُنفدت كل المحاولات — يتطلّب تجاوزًا بصلاحية موسّعة مع سبب</value>
+  </data>
+  <data name="evt_outcome_ReasonRequired" xml:space="preserve">
+    <value>السبب مطلوب حتى تُدقَّق إعادة المحاولة</value>
+  </data>
+  <data name="evt_outcome_NotAuthorized" xml:space="preserve">
+    <value>التجاوز الموسّع يتطلّب صلاحية مسؤول منصّة</value>
+  </data>
+  <data name="evt_outcome_RaceLost" xml:space="preserve">
+    <value>تغيّر السجل أثناء التحضير — حدّث الصفحة وأعد المحاولة</value>
+  </data>
+  <data name="evt_mask_Restricted" xml:space="preserve">
+    <value>الحمولة مخفيّة: هذا الحدث مقيّد ويتطلّب صلاحيات منصّة موسّعة</value>
+  </data>
+  <data name="evt_mask_System" xml:space="preserve">
+    <value>الحمولة مخفيّة: هذا الحدث نظامي ويتطلّب صلاحيات منصّة موسّعة</value>
+  </data>
   <data name="Sales invoice not found" xml:space="preserve">
     <value>فاتورة البيع غير موجودة</value>
   </data>
@@ -3084,6 +3311,22 @@
   <data name="contains items with no posted cost — margin excludes them." xml:space="preserve"><value>يحوي أصنافًا بلا تكلفة مُرحَّلة — الهامش يستثنيها.</value></data>
   <data name="Revenue is document currency (KWD); COGS and margin are functional (EGP); the indicative column converts the margin at today's rate." xml:space="preserve"><value>الإيراد بعملة الوثيقة (KWD)؛ التكلفة والهامش بالعملة الوظيفيّة (EGP)؛ والعمود الإرشاديّ يحوّل الهامش بسعر اليوم.</value></data>
   <data name="today's rate is unavailable, the indicative column is blank." xml:space="preserve"><value>سعر اليوم غير متاح، فالعمود الإرشاديّ فارغ.</value></data>
-  <data name="(KWD~) is indicative — converted at today's rate, not posted; blank when no current rate." xml:space="preserve"><value>\u200F(KWD~) إرشاديّ — محوَّل بسعر اليوم، غير مُقيَّد؛ ويُترَك فارغًا عند غياب سعر حاليّ.</value></data>
-  <data name="No pending approvals" xml:space="preserve"><value>لا توجد موافقات معلّقة</value></data>
+  <data name="(KWD~) is indicative — converted at today's rate, not posted; blank when no current rate." xml:space="preserve"><value>‏(KWD~) إرشاديّ — محوَّل بسعر اليوم، غير مُقيَّد؛ ويُترَك فارغًا عند غياب سعر حاليّ.</value></data>
+  <data name="Platform" xml:space="preserve"><value>المنصّة</value></data>
+  <data name="Workspace" xml:space="preserve"><value>مساحة العمل</value></data>
+  <data name="Reports center" xml:space="preserve"><value>مركز التقارير</value></data>
+  <data name="Agenda" xml:space="preserve"><value>الأجندة</value></data>
+  <data name="Mentions" xml:space="preserve"><value>الإشارات إليّ</value></data>
+  <data name="My reports" xml:space="preserve"><value>تقاريري</value></data>
+  <!-- Main-navigation labels. The sidebar renders every label as @SR[LabelEn], so a key that is absent
+       here falls back to its ENGLISH key text and one row shows in English inside an Arabic menu. The
+       first three are the new Reporting group; the last four were already missing and were showing as
+       "Board", "Task templates", "Timeline" and "Resource view" in the live sidebar. -->
+  <data name="Reporting" xml:space="preserve"><value>التقارير</value></data>
+  <data name="Business event report" xml:space="preserve"><value>تقرير أحداث المنصّة</value></data>
+  <data name="Favourite reports" xml:space="preserve"><value>التقارير المفضّلة</value></data>
+  <data name="Board" xml:space="preserve"><value>اللوحة</value></data>
+  <data name="Task templates" xml:space="preserve"><value>قوالب المهام</value></data>
+  <data name="Timeline" xml:space="preserve"><value>الجدول الزمني</value></data>
+  <data name="Resource view" xml:space="preserve"><value>عرض الموارد</value></data>
 </root>

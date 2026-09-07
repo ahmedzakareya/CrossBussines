@@ -17,7 +17,7 @@
         : s == ProgressBillingStatuses.Submitted ? "info"
         : s == ProgressBillingStatuses.Returned ? "warning"
         : "secondary";
-    var brand = "#13433a";
+    var brand = "#0E4A9E";
     bool showEditor = (ViewBag.ShowEditor as bool?) ?? false;
     bool billable = Model.BillableMeasurements.Any();
 }
@@ -50,7 +50,7 @@
                 else
                 {
                     <div class="table-responsive"><table id="billTbl" class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid @brand;">
+                        <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid @brand;border-bottom:2px solid #0E4A9E;">
                             <th class="ps-4" style="width:44px;">#</th><th>@Localizer["Date"]</th><th class="text-end">@Localizer["Gross work"]</th>
                             <th class="text-end">@Localizer["Tax"]</th><th class="text-end">@Localizer["Retention"]</th>
                             <th class="text-end">@Localizer["Advance recovery"]</th><th class="text-end">@Localizer["Net due"]</th>
@@ -59,7 +59,7 @@
                         @foreach (var r in billings)
                         {
                             <tr style="border-bottom:1px dashed #eef1f6;" class="@(r.ID == Model.BillingId ? "bg-light-primary" : "")">
-                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#eaf3ef;color:@brand;">@r.BillingNo</span></td>
+                                <td class="ps-4"><span class="badge fw-bold fs-8" style="background:#E7F0FF;color:@brand;">@r.BillingNo</span></td>
                                 <td class="text-gray-800 fw-semibold">@r.BillingDate.ToString("yyyy-MM-dd")</td>
                                 <td class="text-end fw-bold text-gray-900">@r.GrossWork.ToString("N2")</td>
                                 <td class="text-end text-muted">@(r.TaxAmount > 0 ? r.TaxAmount.ToString("N2") : "—")</td>
@@ -67,7 +67,7 @@
                                 <td class="text-end @(r.AdvanceRecoveryAmount > 0 ? "text-danger fw-semibold" : "text-gray-300")">@(r.AdvanceRecoveryAmount > 0 ? r.AdvanceRecoveryAmount.ToString("N2") : "—")</td>
                                 <td class="text-end fw-bolder" style="color:@brand;">@r.NetDue.ToString("N2")</td>
                                 <td class="text-center">
-                                    @if (r.Status == "Posted") { <span class="badge fw-bold" style="background:#eaf3ef;color:@brand;">@Localizer[r.Status]</span> }
+                                    @if (r.Status == "Posted") { <span class="badge fw-bold" style="background:#E7F0FF;color:@brand;">@Localizer[r.Status]</span> }
                                     else { <span class="badge badge-light-@Badge(r.Status) fw-bold">@Localizer[r.Status]</span> }
                                 </td>
                                 <td class="text-center text-nowrap pe-4">
@@ -92,7 +92,7 @@
                 <div class="col-lg-7">
                     <div class="card h-100">
                         <div class="card-header"><h3 class="card-title fw-bold">@Localizer["Billing"] #@Model.BillingNo
-                            @if (Model.Status == "Posted") { <span class="badge ms-2" style="background:#eaf3ef;color:@brand;">@Localizer[Model.Status]</span> }
+                            @if (Model.Status == "Posted") { <span class="badge ms-2" style="background:#E7F0FF;color:@brand;">@Localizer[Model.Status]</span> }
                             else if (Model.Status != ProgressBillingStatuses.Draft) { <span class="badge badge-light-@Badge(Model.Status) ms-2">@Localizer[Model.Status]</span> }</h3></div>
                         <div class="card-body">
                             <form asp-action="SaveBilling" method="post" id="fBilling">@Html.AntiForgeryToken()
@@ -111,7 +111,7 @@
                                 </div>
 
                                 <div class="table-responsive"><table class="table table-row-bordered align-middle">
-                                    <thead><tr class="fw-bold text-muted fs-8 text-uppercase">
+                                    <thead><tr class="fw-bold text-muted fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                                         <th>@Localizer["Item"]</th><th class="text-end">@Localizer["Cumulative"]</th>
                                         <th class="text-end">@Localizer["Previously billed"]</th><th class="text-end">@Localizer["Period value"]</th></tr></thead>
                                     <tbody>
@@ -186,7 +186,7 @@
                                     {
                                         <form asp-action="PostBilling" method="post" class="flex-fill" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Post billing? (creates invoice + settlements)"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@Model.BillingId" /><input type="hidden" name="projectId" value="@prj?.ID" /><button class="btn btn-primary w-100"><i class="ki-outline ki-cloud-add fs-3"></i>@Localizer["Post"]</button></form>
                                     }
-                                    else { <span class="badge fs-6 py-3 px-4" style="background:#eaf3ef;color:@brand;"><i class="ki-outline ki-check-circle fs-3 me-1" style="color:@brand;"></i>@Localizer["Posted to the GL"]</span> }
+                                    else { <span class="badge fs-6 py-3 px-4" style="background:#E7F0FF;color:@brand;"><i class="ki-outline ki-check-circle fs-3 me-1" style="color:@brand;"></i>@Localizer["Posted to the GL"]</span> }
                                 </div>
 
                                 @* ---- WHO AND WHEN ---- *@
@@ -227,7 +227,7 @@
         else if (billable)
         {
             <div class="card"><div class="card-body d-flex flex-column align-items-center text-center py-10">
-                <span class="symbol symbol-60px mb-4"><span class="symbol-label" style="background:#eaf3ef;"><i class="ki-outline ki-document fs-2x" style="color:@brand;"></i></span></span>
+                <span class="symbol symbol-60px mb-4"><span class="symbol-label" style="background:#E7F0FF;"><i class="ki-outline ki-document fs-2x" style="color:@brand;"></i></span></span>
                 <div class="fw-bold fs-4 text-gray-900 mb-1">@Localizer["Ready to bill"]</div>
                 <div class="text-muted fs-6 mb-5">@string.Format(Localizer["{0} confirmed measurement(s) ready. Start a new billing to invoice this period."].Value, Model.BillableMeasurements.Count)</div>
                 <a href="@Url.Action("Billing","Project", new { id = prj?.ID, neu = true })" class="btn btn-primary"><i class="ki-outline ki-plus fs-2"></i>@Localizer["New billing"]</a>

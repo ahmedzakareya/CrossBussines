@@ -136,9 +136,9 @@ namespace CrossBuy.BL
 			BomExplosionOptions? options = null, CancellationToken cancellationToken = default)
 		{
 			var opt = options ?? new BomExplosionOptions();
-			if (companyId <= 0) return BomExplosionResult.Fail("لم يتم تحديد الشركة");
-			if (parentItemId <= 0) return BomExplosionResult.Fail("لم يتم تحديد الصنف");
-			if (qty <= 0) return BomExplosionResult.Fail("الكمية يجب أن تكون أكبر من صفر");
+			if (companyId <= 0) return BomExplosionResult.Fail("No company has been selected");
+			if (parentItemId <= 0) return BomExplosionResult.Fail("No item has been selected");
+			if (qty <= 0) return BomExplosionResult.Fail("Quantity must be greater than zero");
 
 			var graph = await LoadGraphAsync(companyId, cancellationToken);
 			if (!graph.ByParent.ContainsKey(parentItemId))
@@ -152,7 +152,7 @@ namespace CrossBuy.BL
 
 			void Walk(int itemId, decimal parentQty, int depth)
 			{
-				if (error != null || depth > opt.MaxDepth) { error ??= $"تجاوز عمق قائمة المواد المسموح ({opt.MaxDepth})"; return; }
+				if (error != null || depth > opt.MaxDepth) { error ??= $"The bill of materials exceeded the permitted depth ({opt.MaxDepth})"; return; }
 				if (!graph.ByParent.TryGetValue(itemId, out var comps)) return;
 
 				foreach (var c in comps)   // already ordered by SortOrder, then ComponentItemId — deterministic
@@ -169,7 +169,7 @@ namespace CrossBuy.BL
 
 					if (descend && !path.Add(c.ComponentItemId))
 					{
-						error = $"قائمة المواد تحتوي على دورة عند الصنف #{c.ComponentItemId}";
+						error = $"The bill of materials contains a cycle at item #{c.ComponentItemId}";
 						return;
 					}
 
@@ -210,7 +210,7 @@ namespace CrossBuy.BL
 			BomExplosionOptions? options = null, CancellationToken cancellationToken = default)
 		{
 			var opt = options ?? new BomExplosionOptions { Recursive = true, NetAgainstOnHand = true };
-			if (companyId <= 0) return BomRequirementsResult.Fail("لم يتم تحديد الشركة");
+			if (companyId <= 0) return BomRequirementsResult.Fail("No company has been selected");
 			ArgumentNullException.ThrowIfNull(available);
 			if (demands == null || demands.Count == 0) return new BomRequirementsResult();
 
@@ -245,7 +245,7 @@ namespace CrossBuy.BL
 				r.Net += net;
 
 				if (net <= 0 || !opt.Recursive || !graph.ByParent.TryGetValue(itemId, out var comps)) return;
-				if (!path.Add(itemId)) { error = $"قائمة المواد تحتوي على دورة عند الصنف #{itemId}"; return; }
+				if (!path.Add(itemId)) { error = $"The bill of materials contains a cycle at item #{itemId}"; return; }
 				foreach (var c in comps)
 				{
 					if (error != null) break;
@@ -277,7 +277,7 @@ namespace CrossBuy.BL
 			if (!graph.BaseUoM.TryGetValue(c.ComponentItemId, out var baseUoM)) return (extended, null);
 			if (c.UoMId == baseUoM) return (extended, null);
 			if (!graph.Factors.TryGetValue((c.ComponentItemId, c.UoMId.Value), out var factor))
-				return (0m, $"لا يوجد تحويل وحدة معرَّف للمكوّن #{c.ComponentItemId} من الوحدة المطلوبة إلى الوحدة الأساس");
+				return (0m, $"No unit conversion is defined for component #{c.ComponentItemId} from the requested unit to the base unit");
 			return (RoundQty(extended * factor), null);
 		}
 

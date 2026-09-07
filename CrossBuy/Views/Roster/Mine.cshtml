@@ -10,7 +10,7 @@
     ViewData["Title"] = Localizer["My schedule"].Value;
 
     string ShiftName(WorkShift? s) => s == null ? "" :
-        ((isAr ? s.NameAr : s.NameEn) is { Length: > 0 } n ? n : s.Code);
+        ((isAr ? s.NameAr : DisplayName.Or(s.NameEn, s.NameAr)) is { Length: > 0 } n ? n : s.Code);
 
     // FOUR WEEKS, drawn as weeks. An employee reads their roster to answer "when am I next on" and
     // "am I free on the 14th" — questions a calendar shape answers and a sorted list does not.
@@ -78,7 +78,7 @@
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle mb-0" style="min-width:700px;">
                                 <thead>
-                                    <tr class="fw-semibold text-gray-500 fs-8 text-center">
+                                    <tr class="fw-semibold text-gray-500 fs-8 text-center" style="border-bottom:2px solid #0E4A9E;">
                                         @foreach (var d in weeks[0])
                                         {
                                             <th style="width:14.28%;">@d.ToString("ddd")</th>

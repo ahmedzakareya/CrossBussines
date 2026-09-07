@@ -57,7 +57,10 @@
 <div class="d-flex flex-column flex-column-fluid">
 
     @* ---- TOOLBAR ------------------------------------------------------------------------------- *@
-    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
+    @* pb-5, not pb-2. The action row and the page-setup strip below it are both light surfaces, and 8px
+       between them read as ONE block stuck together — the separation has to be visible, not technically
+       present. *@
+    <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-5">
         <div class="app-container container-fluid d-flex flex-stack flex-wrap gap-3">
             <div class="page-title d-flex flex-column justify-content-center gap-1">
                 <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">
@@ -76,33 +79,70 @@
                 </ul>
             </div>
 
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <input id="cbd-name" type="text" class="form-control form-control-sm w-200px"
-                       placeholder="@(arabic ? "اسم التقرير" : "Report name")"
-                       aria-label="@(arabic ? "اسم التقرير" : "Report name")" />
+            @* TEN CONTROLS IN ONE LINE READ AS A WALL, which is what "the header is all crammed
+               together" was: same-weight light buttons at a uniform 0.5rem gap, with two hairline
+               separators doing all the grouping. They are grouped into btn-groups instead — adjacent
+               buttons in a group share a border and read as ONE control with parts, which is Bootstrap's
+               own answer to a row of buttons — and the space between GROUPS is widened while the space
+               inside them goes to zero. Nothing is hidden and nothing is renamed; only the grouping and
+               the gaps change.
+               Order: what the DRAFT is (name) · what to START (new, clear) · undo · what to PRODUCE
+               (preview, print, pdf, export) · save. *@
+            <div class="d-flex align-items-center gap-3 flex-wrap cbd-actions">
+                @* TWO NAMES, both always present regardless of the UI language. The saved layout is shown
+                   to Arabic and English users alike, so it needs a name in each; one field meant whatever
+                   the author happened to type was copied into both columns, and an Arabic name then
+                   appeared on the English screens. The field for the CURRENT language comes first. *@
+                @if (arabic)
+                {
+                    <input id="cbd-name" type="text" class="form-control form-control-sm w-175px"
+                           placeholder="Report name (Arabic)" aria-label="Report name (Arabic)" />
+                    <input id="cbd-name-en" type="text" class="form-control form-control-sm w-175px"
+                           placeholder="Report name (EN)" aria-label="Report name (English)" dir="ltr" />
+                }
+                else
+                {
+                    <input id="cbd-name-en" type="text" class="form-control form-control-sm w-175px"
+                           placeholder="Report name (EN)" aria-label="Report name (English)" dir="ltr" />
+                    <input id="cbd-name" type="text" class="form-control form-control-sm w-175px"
+                           placeholder="Report name (Arabic)" aria-label="Report name (Arabic)" dir="rtl" />
+                }
 
-                <button type="button" id="cbd-undo" class="btn btn-sm btn-icon btn-light" disabled
-                        title="@(arabic ? "تراجع" : "Undo") (Ctrl+Z)" aria-label="@(arabic ? "تراجع" : "Undo")">
-                    <i class="ki-outline ki-arrow-left fs-4"></i>
-                </button>
-                <button type="button" id="cbd-redo" class="btn btn-sm btn-icon btn-light" disabled
-                        title="@(arabic ? "إعادة" : "Redo") (Ctrl+Y)" aria-label="@(arabic ? "إعادة" : "Redo")">
-                    <i class="ki-outline ki-arrow-right fs-4"></i>
-                </button>
-
-                <div class="vr mx-1"></div>
-
-                <button type="button" id="cbd-preview" class="btn btn-sm btn-flex btn-light">
-                    <i class="ki-outline ki-eye fs-5 me-1"></i>@(arabic ? "معاينة" : "Preview")
-                </button>
-                <button type="button" id="cbd-print" class="btn btn-sm btn-flex btn-light">
-                    <i class="ki-outline ki-printer fs-5 me-1"></i>@(arabic ? "طباعة" : "Print")
-                </button>
-                <button type="button" id="cbd-pdf" class="btn btn-sm btn-flex btn-light">
-                    <i class="ki-outline ki-file-down fs-5 me-1"></i>PDF
-                </button>
+                @* NEW and CLEAR are PAGE-level, and they sit here rather than beside the canvas footer's
+                   Delete on purpose: that button removes what is SELECTED, these two remove the DESIGN.
+                   Both ask before acting — neither is a click anyone wants to make by accident. *@
+                <div class="btn-group">
+                    <button type="button" id="cbd-new" class="btn btn-sm btn-flex btn-light"
+                            title="@(arabic ? "تقرير جديد — يبدأ من صفحة فارغة" : "New report — start from an empty page")">
+                        <i class="ki-outline ki-file fs-5 me-1"></i>@(arabic ? "جديد" : "New")
+                    </button>
+                    <button type="button" id="cbd-clear" class="btn btn-sm btn-flex btn-light"
+                            title="@(arabic ? "مسح كل عناصر الصفحة" : "Clear every element on the page")">
+                        <i class="ki-outline ki-cross fs-5 me-1"></i>@(arabic ? "مسح" : "Clear")
+                    </button>
+                </div>
 
                 <div class="btn-group">
+                    <button type="button" id="cbd-undo" class="btn btn-sm btn-icon btn-light" disabled
+                            title="@(arabic ? "تراجع" : "Undo") (Ctrl+Z)" aria-label="@(arabic ? "تراجع" : "Undo")">
+                        <i class="ki-outline ki-arrow-left fs-4"></i>
+                    </button>
+                    <button type="button" id="cbd-redo" class="btn btn-sm btn-icon btn-light" disabled
+                            title="@(arabic ? "إعادة" : "Redo") (Ctrl+Y)" aria-label="@(arabic ? "إعادة" : "Redo")">
+                        <i class="ki-outline ki-arrow-right fs-4"></i>
+                    </button>
+                </div>
+
+                <div class="btn-group">
+                    <button type="button" id="cbd-preview" class="btn btn-sm btn-flex btn-light">
+                        <i class="ki-outline ki-eye fs-5 me-1"></i>@(arabic ? "معاينة" : "Preview")
+                    </button>
+                    <button type="button" id="cbd-print" class="btn btn-sm btn-flex btn-light">
+                        <i class="ki-outline ki-printer fs-5 me-1"></i>@(arabic ? "طباعة" : "Print")
+                    </button>
+                    <button type="button" id="cbd-pdf" class="btn btn-sm btn-flex btn-light">
+                        <i class="ki-outline ki-file-down fs-5 me-1"></i>PDF
+                    </button>
                     <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="ki-outline ki-exit-down fs-5 me-1"></i>@(arabic ? "تصدير" : "Export")
                     </button>
@@ -141,8 +181,12 @@
         else
         {
             @* ---- PAGE SETUP STRIP -------------------------------------------------------------- *@
-            <div class="card card-flush mb-3">
-                <div class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
+            @* mt-3 ON TOP of the toolbar's own bottom padding. Widening that padding alone took the gap
+               from 8px to 21px and it still read as touching, because both surfaces are light and the
+               card carries no shadow of its own — so the strip needs a margin that belongs to IT, not
+               only space that belongs to the row above. Measured at 37px, which is finally a gap. *@
+            <div class="card card-flush mt-3 mb-3">
+                <div id="cbd-setup" class="card-body py-3 d-flex flex-wrap align-items-center gap-3">
 
                     <div class="d-flex align-items-center gap-2">
                         <label class="fs-8 fw-semibold text-muted" for="cbd-paper">@(arabic ? "الورق" : "Paper")</label>
@@ -163,7 +207,7 @@
                         </select>
                     </div>
 
-                    <div class="d-flex align-items-center gap-1">
+                    <div class="d-flex align-items-center gap-1 cbd-setup-wide">
                         <span class="fs-8 fw-semibold text-muted me-1">@(arabic ? "الهوامش (مم)" : "Margins (mm)")</span>
                         <input id="cbd-mt" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أعلى" : "Top")" aria-label="@(arabic ? "هامش أعلى" : "Top margin")" />
                         <input id="cbd-mb" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أسفل" : "Bottom")" aria-label="@(arabic ? "هامش أسفل" : "Bottom margin")" />
@@ -171,7 +215,7 @@
                         <input id="cbd-mr" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "يمين" : "Right")" aria-label="@(arabic ? "هامش يمين" : "Right margin")" />
                     </div>
 
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 cbd-setup-wide">
                         <label class="fs-8 fw-semibold text-muted" for="cbd-grid">@(arabic ? "الشبكة" : "Grid")</label>
                         <input id="cbd-grid" type="number" step="1" min="1" max="20" class="form-control form-control-sm w-60px" aria-label="@(arabic ? "مقاس الشبكة" : "Grid size")" />
                         <div class="form-check form-check-sm form-check-custom">
@@ -184,7 +228,7 @@
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2 ms-auto">
+                    <div class="d-flex align-items-center gap-2 ms-auto cbd-setup-wide">
                         <label class="fs-8 fw-semibold text-muted" for="cbd-zoom">@(arabic ? "تكبير" : "Zoom")</label>
                         <input id="cbd-zoom" type="range" min="40" max="200" step="10" value="100" class="w-125px" aria-label="@(arabic ? "تكبير" : "Zoom")" />
                         <span id="cbd-zoom-label" class="fs-8 fw-semibold text-gray-700 w-40px">100%</span>
@@ -196,8 +240,43 @@
             @* ---- THE THREE RAILS --------------------------------------------------------------- *@
             <div class="cbd-wrap">
 
-                @* ---------------- LEFT RAIL: toolbox / data ------------------------------------- *@
-                <div class="cbd-rail">
+                @* ---------------- THE DOCK BAR: tools, and saved reports ---------------------- *@
+                @*
+                    ONE 34px TAB STRIP ON THE EDGE, the way Visual Studio stacks its auto-hide tabs, with
+                    the panel flying out OVER the canvas instead of taking a column of the row away from
+                    it. Both panels were docked columns before: the toolbox rail held 290px permanently
+                    even while nobody was adding an element, and the saved-reports list was a card at the
+                    bottom of that rail with no scrollbar of its own — 53 saved reports made the page
+                    1682px tall on a phone with the list itself far below the fold.
+
+                    ONE OPEN AT A TIME, and they differ in ONE way on purpose: the reports list is a
+                    PICKER, so it dismisses itself as soon as you click anywhere else; the toolbox is a
+                    PALETTE you add from repeatedly, so it stays until you close it. An auto-hiding
+                    toolbox would shut on the first canvas click after every single element.
+                *@
+                <div class="cbd-dockbar">
+                    <div class="cbd-dockbar-tabs">
+                    <button type="button" id="cbd-tools-tab" class="cbd-dock-tab" aria-expanded="false"
+                            aria-controls="cbd-tools-panel"
+                            title="@(arabic ? "الأدوات والبيانات والأقسام" : "Tools, data and bands")">
+                        <i class="ki-outline ki-abstract-25 fs-6"></i>
+                        <span>@(arabic ? "الأدوات" : "Tools")</span>
+                    </button>
+
+                    @if (Model.Saved.Count > 0)
+                    {
+                        <button type="button" id="cbd-saved-tab" class="cbd-dock-tab" aria-expanded="false"
+                                aria-controls="cbd-saved-panel"
+                                title="@(arabic ? "تقاريري المحفوظة" : "My saved reports")">
+                            <i class="ki-outline ki-folder fs-6"></i>
+                            <span>@(arabic ? "تقاريري" : "My reports")</span>
+                            <span class="cbd-dock-count">@Model.Saved.Count</span>
+                        </button>
+                    }
+                    </div>
+
+                    @* ---- THE TOOLS PANEL (was a permanent 290px rail) ------------------------- *@
+                    <div id="cbd-tools-panel" class="cbd-dock-panel cbd-dock-panel-wide" data-autohide="false" hidden>
                     <div class="card card-flush">
                         <div class="card-header min-h-40px px-3">
                             <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-8 fw-bold">
@@ -205,6 +284,12 @@
                                 <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-data">@(arabic ? "البيانات" : "Data")</a></li>
                                 <li class="nav-item"><a class="nav-link py-2" data-bs-toggle="tab" href="#cbd-tab-bands">@(arabic ? "الأقسام" : "Bands")</a></li>
                             </ul>
+                            <div class="card-toolbar">
+                                <button type="button" id="cbd-tools-close" class="btn btn-sm btn-icon btn-light w-25px h-25px"
+                                        title="@(arabic ? "إغلاق" : "Close")" aria-label="@(arabic ? "إغلاق" : "Close")">
+                                    <i class="ki-outline ki-cross fs-6"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body p-3 cbd-rail-body">
                             <div class="tab-content">
@@ -281,18 +366,26 @@
                             </div>
                         </div>
                     </div>
+                    </div>
 
+                    @* ---- THE SAVED-REPORTS PANEL --------------------------------------------- *@
                     @if (Model.Saved.Count > 0)
                     {
-                        <div class="card card-flush mt-3">
+                        <div id="cbd-saved-panel" class="cbd-dock-panel card card-flush" data-autohide="true" hidden>
                             <div class="card-header min-h-40px px-3">
                                 <h3 class="card-title fs-8 fw-bold text-gray-700 m-0">@(arabic ? "تقاريري" : "My reports")</h3>
+                                <div class="card-toolbar">
+                                    <button type="button" id="cbd-saved-close" class="btn btn-sm btn-icon btn-light w-25px h-25px"
+                                            title="@(arabic ? "إغلاق" : "Close")" aria-label="@(arabic ? "إغلاق" : "Close")">
+                                        <i class="ki-outline ki-cross fs-6"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="card-body p-3 d-flex flex-column gap-1">
+                            <div class="card-body p-3 d-flex flex-column gap-1 cbd-rail-body">
                                 @foreach (var saved in Model.Saved)
                                 {
-                                    <button type="button" class="btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2"
-                                            data-open="@saved.TemplateId">
+                                    <button type="button" class="btn btn-sm btn-light justify-content-start fw-semibold fs-8 py-2 text-start"
+                                            data-open="@saved.TemplateId" title="@saved.Name">
                                         <i class="ki-outline ki-file fs-5 me-2"></i>@saved.Name
                                     </button>
                                 }
@@ -389,6 +482,37 @@
     .cbd-rail { width: 290px; flex: 0 0 290px; }
     .cbd-rail-body { max-height: calc(100vh - 330px); overflow-y: auto; }
 
+    /* THE DOCK BAR — one 34px strip of stacked vertical tabs, panels flying out OVER the canvas.
+       Docking the panels as flex items was the first attempt and it cost too much: with the toolbox rail
+       and a 250px list both in the row, the canvas dropped from 607px to 350px. As overlays the canvas
+       keeps its width whatever is open, which is what an auto-hide tab promises in the first place. */
+    .cbd-dockbar { display: flex; flex-direction: row; align-items: flex-start; gap: .5rem; flex: 0 0 auto; }
+    .cbd-dockbar-tabs { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; flex: 0 0 auto; }
+    .cbd-dock-tab {
+        writing-mode: vertical-rl; display: flex; align-items: center; gap: 8px;
+        padding: 12px 7px; cursor: pointer; font-size: 11px; font-weight: 600;
+        background: var(--bs-card-bg); color: var(--bs-gray-700);
+        border: 1px solid var(--bs-border-color); border-radius: .475rem;
+    }
+    .cbd-dock-tab:hover { color: var(--bs-primary); border-color: var(--bs-primary); }
+    .cbd-dock-tab.on {
+        color: var(--bs-primary); border-color: var(--bs-primary);
+        background: rgba(var(--bs-primary-rgb), .08);
+    }
+    .cbd-dock-count {
+        writing-mode: horizontal-tb; font-size: 9px; line-height: 1; padding: 2px 4px;
+        border-radius: 6px; background: var(--bs-gray-200); color: var(--bs-gray-700);
+    }
+    /* THE PANEL PUSHES, IT DOES NOT COVER. Flying out over the canvas was the first attempt and it was
+       rejected for the obvious reason: the panel was sitting on top of the design being worked on. So a
+       panel takes its own column of the row and the canvas gives up that width while it is open — the
+       point of the tab strip is that closing it hands all of that width straight back (34px of tabs
+       instead of a permanent 290px rail: the canvas goes from 607px to 906px). */
+    .cbd-dock-panel { flex: 0 0 250px; width: 250px; }
+    /* The toolbox keeps the width it was designed at: the tool buttons, the field list and the band
+       rows were all laid out for a 290px rail. */
+    .cbd-dock-panel-wide { flex: 0 0 290px; width: 290px; }
+
     .cbd-stage {
         flex: 1 1 auto; min-width: 0;
         display: grid;
@@ -419,6 +543,19 @@
     }
     .cbd-band.drop { background: rgba(var(--bs-primary-rgb), .10); }
 
+    /* THE BAND SPLITTER. 6px along the band's bottom edge — the boundary itself is what the user aims at,
+       so the grip is drawn on it rather than beside it. It lies over the last 6px of the band, which is
+       the one cost: an element sitting flush against the bottom is grabbed from slightly higher up.
+       z-index sits above elements (theirs come from e.z, which counts up from 1) but below the element
+       resize handles at 999, so a selected element's corner still wins where the two meet. */
+    .cbd-band-resize {
+        position: absolute; inset-inline: 0; bottom: 0; height: 6px; z-index: 500;
+        cursor: row-resize; background: transparent;
+    }
+    /* .on is re-applied to THIS grip after every frame of the drag: renderCanvas rebuilds the node, so
+       :hover alone goes dark the instant the element it was hovering is replaced. */
+    .cbd-band-resize:hover, .cbd-band-resize.on { background: rgba(var(--bs-primary-rgb), .45); }
+
     .cbd-el {
         position: absolute; box-sizing: border-box; overflow: hidden; cursor: move;
         display: flex; user-select: none;
@@ -429,6 +566,23 @@
     .cbd-el.sel { outline: 2px solid var(--bs-primary); outline-offset: -1px; overflow: visible; }
     .cbd-el-body { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: pre-wrap; word-break: break-word; }
     .cbd-el img { display: block; width: 100%; height: 100%; }
+
+    /* AN IMAGE MUST FIT ITS FRAME, and without this rule it does the opposite: it SETS its own height and
+       the frame is ignored.
+       The body span is a flex item whose cross size comes from `align-items` on the element — flex-start,
+       centre or flex-end, never stretch — so its height is AUTO. `height:100%` on a child of an
+       auto-height parent is an indefinite percentage, which computes to `auto`: the picture keeps its
+       intrinsic aspect ratio at width:100% and a portrait photo becomes several times taller than the
+       box. `object-fit` cannot help, because it only has an effect on a box with a definite size — which
+       is why "احتواء / Contain" appeared to do nothing at all.
+       Unselected, .cbd-el's overflow:hidden hid the damage by cropping. SELECTED, that clip is off (the
+       resize handles need it off) — so the picture visibly spilled out of its own frame, which is how
+       this was reported.
+       align-self:stretch gives the span the element's own content height, and a stretched flex item's
+       cross size IS definite, so the percentage resolves and object-fit finally applies. Stretch also
+       matches what the print renderer emits, where the img is a direct child of a box with an explicit
+       height in mm — so the canvas and the printed page now size images the same way. */
+    .cbd-el-img > .cbd-el-body { align-self: stretch; min-height: 0; }
 
     .cbd-handle {
         position: absolute; width: 9px; height: 9px; background: #fff;
@@ -445,6 +599,17 @@
     .cbd-asset { border: 1px solid var(--bs-border-color); border-radius: .3rem; padding: 2px; cursor: grab; background: #fff; }
     .cbd-asset img { width: 46px; height: 34px; object-fit: contain; display: block; }
 
+    /* AN ASSET ROW CAN OUTLIVE ITS FILE. The row is in the database and the bytes are on the application's
+       own disk, so an instance that was re-published — or a second instance pointed at the same database —
+       lists images whose GET answers 404. Left alone that reads as "the picture will not import": an empty
+       box and no reason given. These two rules make it say so instead. */
+    .cbd-asset.missing { border: 1px dashed var(--bs-danger); position: relative; width: 52px; height: 40px; }
+    .cbd-asset.missing::after {
+        content: "!"; position: absolute; inset: 0; display: grid; place-items: center;
+        color: var(--bs-danger); font-weight: 700; font-size: 15px; line-height: 1;
+    }
+    .cbd-img-missing { color: var(--bs-danger); font-size: 10px; line-height: 1.1; text-align: center; }
+
     /* The preview pane hosts the RENDERER's own markup. It is given room and left alone: restyling it
        here would make the preview disagree with the print, which is the one thing this design forbids. */
     #cbd-preview-body .cbv-page { margin: 0 auto 14px; }
@@ -455,6 +620,50 @@
         .cbd-rail { width: 100%; flex: 1 1 100%; order: 2; }
         .cbd-stage { order: 1; flex: 1 1 100%; width: 100%; }
         .cbd-rail-body { max-height: 300px; }
+
+        /* The tab strip stops holding a whole row to itself: with the rails wrapped it was the only
+           thing on its line, 34px of content in a 101px band. */
+        .cbd-dockbar { order: 0; flex-direction: row; }
+    }
+
+    /* ---- PHONE ----------------------------------------------------------------------------------
+       Nothing here was overflowing — the complaint was the SPRAWL. Measured at 390 x 844: the page ran
+       1682px tall, of which 400px was chrome before any of the design was visible; the page-setup strip
+       alone took 217px as five nearly-empty right-aligned rows, and the saved-reports tab sat sideways
+       on a line of its own. Below is that same content, laid out for the width it actually has. */
+    @@media (max-width: 767.98px) {
+
+        /* The setup strip becomes a two-column grid: label and control on one line, each pair filling
+           half the width, instead of one pair per row with a wide empty gutter beside it. */
+        /* minmax(0, 1fr), NOT 1fr. A bare 1fr track has an automatic MINIMUM of min-content, so the row
+           of four margin boxes widened both tracks to ~300px each, the full-width groups then measured
+           612px inside a 348px card, and the whole document picked up 270px of horizontal scroll — the
+           header included, because it is laid out against the widened canvas. min-width:0 on the groups
+           is the same rule one level down: a grid item has that automatic minimum too. */
+        #cbd-setup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem .75rem; align-items: center; }
+        #cbd-setup > div { display: flex; align-items: center; gap: .4rem; justify-content: space-between; min-width: 0; }
+        #cbd-setup > div > label, #cbd-setup > div > span { white-space: nowrap; }
+        #cbd-setup > div > select, #cbd-setup > div > input { width: auto !important; min-width: 0; flex: 1 1 auto; }
+        /* The margins, the grid group and the zoom slider need the full width — four boxes, three
+           controls and a range slider do not survive being squeezed into half a phone. Marked with a
+           class rather than selected with :has(), which is recent enough that a browser without it
+           would silently squeeze them anyway. */
+        #cbd-setup > .cbd-setup-wide { grid-column: 1 / -1; margin-inline-start: 0 !important; }
+
+        /* A sideways tab is a desktop affordance. On a phone the dock is a plain full-width button with
+           the list dropping underneath it, in the flow, where a phone user expects it. */
+        .cbd-dockbar { flex: 1 1 100%; width: 100%; flex-wrap: wrap; }
+        .cbd-dockbar-tabs { flex-direction: row; flex: 1 1 100%; }
+        .cbd-dock-tab { writing-mode: horizontal-tb; flex: 1 1 auto; justify-content: center; padding: 8px; }
+        .cbd-dock-panel, .cbd-dock-panel-wide { width: 100%; flex: 1 1 100%; margin-top: .5rem; }
+
+        /* The canvas gets the height back that the chrome above it was taking. */
+        .cbd-stage { grid-template-columns: 16px 1fr; grid-template-rows: 16px 1fr 34px; }
+        .cbd-rail-body { max-height: 260px; }
+
+        /* Buttons that carry both an icon and a word wrap to three rows at this width; the label is what
+           makes them findable, so the padding goes rather than the text. */
+        #kt_app_toolbar .btn { padding-inline: .5rem; }
     }
 </style>
 }
@@ -513,6 +722,7 @@
     var S = {
         templateId: 0,
         name: "",
+        nameEn: "",
         datasetCode: "",
         columns: [],
         filters: [],
@@ -525,6 +735,7 @@
         assets: [],          // ReportAssetSummary[]
 
         selection: [],       // element ids
+        assetTarget: null,   // element id waiting for the image the upload is about to return, or null
         selectedBand: BAND.Detail,
         zoom: 1,
         showGrid: true,
@@ -717,6 +928,61 @@
     }
 
     // =============================================================================================
+    // WHICH BAND AN ELEMENT LIVES IN — and how it changes bands.
+    //
+    // An element's Y is LOCAL to its band, so "where is it on the page" needs the band's own top, and
+    // "which band is the pointer over" needs the reverse. Both walk S.layout.bands in ARRAY order rather
+    // than by kind, because that is the order renderCanvas draws them in and a loaded draft is not
+    // guaranteed to list them 0..6.
+    //
+    // WHY THIS EXISTS AT ALL: an element's band used to be fixed at the moment it was created. Dragging
+    // it never changed its band — beginMove only edited xMm/yMm, and yMm was clamped at 0, so an image
+    // added to Detail could be dragged up to its own band's top and no further. The properties panel
+    // showed the band as plain text. So a picture that landed in the wrong band could not be moved into
+    // the right one at all; the only way out was to delete it and add it again with the target band
+    // selected first. That is what "I cannot add the image to the band marked in red" was.
+    // =============================================================================================
+    function bandTopMm(kind) {
+        var top = 0;
+        for (var i = 0; i < S.layout.bands.length; i++) {
+            if (S.layout.bands[i].kind === kind) { return top; }
+            top += S.layout.bands[i].heightMm || 0;
+        }
+        return top;
+    }
+
+    // The band containing a Y measured from the top of the content box. Zero-height bands are skipped —
+    // they occupy no pixels, so no pointer can be "over" one. Past the last band (the blank area below,
+    // which exists whenever the page is taller than the bands) the last band with real height wins,
+    // rather than the element ending up owned by nothing.
+    function bandAtMm(absY) {
+        var top = 0, last = null;
+        for (var i = 0; i < S.layout.bands.length; i++) {
+            var b = S.layout.bands[i], h = b.heightMm || 0;
+            if (h > 0) {
+                last = b;
+                if (absY >= top && absY < top + h) { return b; }
+            }
+            top += h;
+        }
+        return last;
+    }
+
+    // Re-homes one element into another band, keeping the element itself untouched apart from its
+    // stacking order, which has to be recomputed against its new neighbours. Returns the new band.
+    function moveToBand(pair, targetKind) {
+        var target = band(targetKind);
+        if (!pair || !target || pair.b.kind === targetKind) { return null; }
+
+        var at = pair.b.elements.indexOf(pair.e);
+        if (at >= 0) { pair.b.elements.splice(at, 1); }
+        pair.e.z = nextZ(target);
+        target.elements.push(pair.e);
+        S.selectedBand = target.kind;
+        return target;
+    }
+
+    // =============================================================================================
     // THE CANVAS
     // =============================================================================================
     function renderCanvas() {
@@ -753,6 +1019,7 @@
 
         wireBands(sc);
         wireElements(sc);
+        markMissingImages(content);
         renderRulers(sc);
         renderStatus();
     }
@@ -768,9 +1035,19 @@
             .map(function (e) { return elementHtml(e, sc); })
             .join("");
 
+        // THE RESIZE GRIP: the bottom few pixels of the band, where a report designer's band splitter has
+        // always been. Only for bands that HAVE a height — a 0mm band's grip would sit on top of the
+        // previous band's grip, and two overlapping splitters make the boundary ambiguous to grab. A 0mm
+        // band is opened from the number box in the الأقسام / Bands tab, which is also what the grip
+        // writes to, so the two agree.
+        var grip = (b.heightMm || 0) > 0
+            ? "<span class='cbd-band-resize' data-bandgrip='" + b.kind + "' title='" +
+              esc(AR ? "اسحب لتغيير ارتفاع القسم" : "Drag to change the band's height") + "'></span>"
+            : "";
+
         return "<div class='cbd-band" + (selected ? " sel" : "") + "' data-band='" + b.kind + "' " +
                "style='height:" + h + "px'>" +
-               "<span class='cbd-band-tag'>" + esc(tag) + "</span>" + inner + "</div>";
+               "<span class='cbd-band-tag'>" + esc(tag) + "</span>" + inner + grip + "</div>";
     }
 
     function elementHtml(e, sc) {
@@ -803,7 +1080,10 @@
               "<span class='cbd-handle sw' data-h='sw'></span><span class='cbd-handle se' data-h='se'></span>"
             : "";
 
-        return "<div class='cbd-el" + (sel ? " sel" : "") + "' data-el='" + e.id + "' style='" + st.join(";") + "'>" +
+        // cbd-el-img is what lets an image FILL its frame instead of dictating its own height — see the
+        // rule of that name in the stylesheet.
+        return "<div class='cbd-el" + (sel ? " sel" : "") + (e.kind === KIND.Image ? " cbd-el-img" : "") +
+               "' data-el='" + e.id + "' style='" + st.join(";") + "'>" +
                "<span class='cbd-el-body'>" + elementFace(e) + "</span>" + handles + "</div>";
     }
 
@@ -864,7 +1144,7 @@
             return "<td class='text-primary'>{" + esc(c.fieldKey) + "}</td>";
         }).join("");
         return "<table class='table table-sm m-0 fs-8' style='table-layout:fixed;width:100%'>" +
-               "<thead><tr>" + head + "</tr></thead><tbody><tr>" + row + "</tr></tbody></table>";
+               "<thead><tr class='cb-thead-rule'>" + head + "</tr></thead><tbody><tr>" + row + "</tr></tbody></table>";
     }
 
     function renderRulers(sc) {
@@ -883,6 +1163,29 @@
             v.push("<span class='cbd-tick cbd-tick-v' style='top:" + ((pg.marginTopMm + y) * sc + 14) + "px'>" + y + "</span>");
         }
         $("cbd-ruler-v").innerHTML = v.join("");
+    }
+
+    // Zoom so the whole sheet fits the width available. Was inline in the Fit button's handler; it is a
+    // function now because BOOT calls it too — see fitIfSheetOverflows.
+    function fitToWidth() {
+        var avail = $("cbd-scroll").clientWidth - 40;
+        if (avail <= 0) { return; }
+        var z = avail / (paper()[0] * (96 / 25.4));
+        S.zoom = Math.max(0.4, Math.min(2, z));
+        $("cbd-zoom").value = Math.round(S.zoom * 100);
+        $("cbd-zoom-label").textContent = Math.round(S.zoom * 100) + "%";
+        renderCanvas();
+    }
+
+    // OPENING THE DESIGNER ON A NARROW SCREEN SHOWED A CORNER OF THE PAGE. At 390px the scroll box is
+    // ~326px wide and an A4 sheet at 100% is 794px, so the first thing a phone user saw was a slice of
+    // one edge with no way to tell what they were looking at. Fitted ONCE, at boot, and only when the
+    // sheet does not fit: a size test rather than a device test, so a narrow desktop window behaves the
+    // same, and a re-fit is never forced on top of a zoom the user chose themselves.
+    function fitIfSheetOverflows() {
+        var box = $("cbd-scroll");
+        if (!box) { return; }
+        if (paper()[0] * scale() > box.clientWidth - 8) { fitToWidth(); }
     }
 
     function renderStatus() {
@@ -943,6 +1246,15 @@
                 }
             });
 
+            var grip = bandEl.querySelector("[data-bandgrip]");
+            if (grip) {
+                grip.addEventListener("mousedown", function (ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();   // not a band selection click, and not a drag of any element
+                    beginBandResize(ev, kind, sc);
+                });
+            }
+
             bandEl.addEventListener("mousedown", function (ev) {
                 if (ev.target === bandEl || ev.target.classList.contains("cbd-band-tag")) {
                     S.selectedBand = kind;
@@ -982,6 +1294,16 @@
         renderAll();
     }
 
+    // The last press on an element, for double-click detection. MEASURED HERE rather than through the
+    // browser's own dblclick event, and not by preference: the mousedown handler below re-renders the
+    // canvas, so the node that took the first click is replaced before the second one lands and the
+    // browser never raises dblclick at all — verified, a delegated dblclick listener on the content box
+    // never fired once. Two presses on the same element inside DOUBLE_MS, with no drag in between, is
+    // the gesture. A drag clears it (see beginMove), so click-then-drag cannot be mistaken for a
+    // double-click and pop a file dialog mid-move; a press on a resize handle is excluded outright.
+    var lastPress = { id: null, at: 0 };
+    var DOUBLE_MS = 400;
+
     function wireElements(sc) {
         Array.prototype.forEach.call($("cbd-content").querySelectorAll("[data-el]"), function (node) {
             var id = node.getAttribute("data-el");
@@ -989,6 +1311,10 @@
             node.addEventListener("mousedown", function (ev) {
                 ev.stopPropagation();
                 var handle = ev.target.getAttribute && ev.target.getAttribute("data-h");
+
+                var now = (new Date()).getTime();
+                var isDouble = !handle && lastPress.id === id && (now - lastPress.at) < DOUBLE_MS;
+                lastPress = { id: id, at: now };
 
                 if (ev.shiftKey) {
                     var at = S.selection.indexOf(id);
@@ -1001,18 +1327,85 @@
                 if (pair) { S.selectedBand = pair.b.kind; }
                 renderCanvas(); renderProps(); renderBandList();
 
+                // DOUBLE-CLICK AN IMAGE = "give this element a picture". The obvious gesture on an empty
+                // image box, and the one that does not require finding a control in another rail first.
+                if (isDouble && pair && pair.e.kind === KIND.Image) {
+                    lastPress = { id: null, at: 0 };   // a third press must not re-open the dialog
+                    requestImageFor(pair.e);
+                    return;                            // and no move starts under the open dialog
+                }
+
                 if (handle) { beginResize(ev, id, handle, sc); }
                 else { beginMove(ev, sc); }
             });
         });
     }
 
+    // RESIZING A BAND BY DRAGGING ITS BOTTOM EDGE.
+    //
+    // The height was only ever a number box in the الأقسام / Bands tab. It still is — this writes to the
+    // same heightMm, and renderBandList at the end makes the box show what was dragged — but "make the
+    // header taller" is a direct-manipulation gesture and asking someone to leave the canvas, find the
+    // right tab and type millimetres is not the same thing.
+    //
+    // Elements are NOT moved or clipped by this. Their Y is measured from the band's top, so shrinking a
+    // band leaves anything taller than it overhanging — the same as it has always been for an element
+    // that does not fit, and the same as the print renderer does.
+    function beginBandResize(ev, kind, sc) {
+        var b = band(kind);
+        if (!b) { return; }
+
+        var startY = ev.clientY;
+        var origin = b.heightMm || 0;
+        var taken = false;
+
+        S.selectedBand = kind;
+        // The pointer leaves the grip the moment the band is redrawn under it, so the cursor is pinned
+        // for the duration rather than left to the hit test.
+        var priorCursor = document.body.style.cursor;
+        document.body.style.cursor = "row-resize";
+
+        function paintGrip() {
+            var g = $("cbd-content").querySelector("[data-bandgrip='" + kind + "']");
+            if (g) { g.classList.add("on"); }
+        }
+        paintGrip();
+
+        function onMove(e2) {
+            var dyMm = (e2.clientY - startY) / sc;
+            if (!taken && Math.abs(dyMm) < 0.3) { return; }
+            if (!taken) { snapshot(); taken = true; }
+
+            // A FLOOR OF 2mm, not 0, and only on the DRAG. A band dragged to 0 renders no pixels, so its
+            // grip is not drawn either — the gesture would delete its own handle and there would be no
+            // way to drag the band back open. 0 is still reachable by typing it in the الأقسام / Bands
+            // tab, which is a deliberate act and reversible from the same box.
+            b.heightMm = Math.max(2, snap(origin + dyMm));
+            renderCanvas();     // the band's tag carries the live height, so the number is visible as it moves
+            paintGrip();
+        }
+        function onUp() {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            document.body.style.cursor = priorCursor;
+            renderBandList();   // the Bands tab's number box must agree with what was just dragged
+            renderProps();
+            renderStatus();
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
     function beginMove(ev, sc) {
         var startX = ev.clientX, startY = ev.clientY;
+
+        // ORIGINS ARE KEPT IN CONTENT SPACE (absolute Y from the top of the printable box), not as the
+        // band-local Y the model stores. The element may change band half-way through the drag, and a
+        // local origin would then be measured against a different band's top — the element would jump.
         var origin = {};
         S.selection.forEach(function (id) {
             var p = elementById(id);
-            if (p) { origin[id] = { x: p.e.xMm, y: p.e.yMm }; }
+            if (p) { origin[id] = { x: p.e.xMm, absY: bandTopMm(p.b.kind) + p.e.yMm }; }
         });
         var moved = false;
 
@@ -1020,13 +1413,28 @@
             var dxMm = ((e2.clientX - startX) * rtlSign()) / sc;
             var dyMm = (e2.clientY - startY) / sc;
             if (!moved && Math.abs(dxMm) < 0.3 && Math.abs(dyMm) < 0.3) { return; }
-            if (!moved) { snapshot(); moved = true; }
+            if (!moved) { snapshot(); moved = true; lastPress = { id: null, at: 0 }; }
 
             S.selection.forEach(function (id) {
                 var p = elementById(id);
                 if (!p || !origin[id]) { return; }
+
+                var absY = Math.max(0, snap(origin[id].absY + dyMm));
+
+                // DRAGGING ACROSS A BAND BOUNDARY MOVES THE ELEMENT INTO THAT BAND. Dragging a picture
+                // up into the page header is the obvious gesture for putting it there, and before this
+                // it did nothing at all: the band never changed and the local Y stopped at 0.
+                var target = bandAtMm(absY);
+                if (target && target.kind !== p.b.kind) {
+                    moveToBand(p, target.kind);
+                    p = elementById(id);            // re-homed: the old pair is stale
+                    if (!p) { return; }
+                }
+
+                // NOT clamped into the band's height, deliberately: the pointer decides where the
+                // element goes, and an element taller than its band has always been allowed to overhang.
                 p.e.xMm = Math.max(0, snap(origin[id].x + dxMm));
-                p.e.yMm = Math.max(0, snap(origin[id].y + dyMm));
+                p.e.yMm = Math.max(0, snap(absY - bandTopMm(p.b.kind)));
             });
             renderCanvas();
             drawGuides(sc);
@@ -1035,7 +1443,10 @@
             document.removeEventListener("mousemove", onMove);
             document.removeEventListener("mouseup", onUp);
             clearGuides();
+            // renderBandList as well: a drag can now change which band an element belongs to, and the
+            // bands panel is where that is shown.
             renderProps();
+            renderBandList();
         }
         document.addEventListener("mousemove", onMove);
         document.addEventListener("mouseup", onUp);
@@ -1219,7 +1630,14 @@
         var e = p.e, s = e.style;
 
         var h = [];
-        h.push(row(AR ? "القسم" : "Band", "<span class='fw-semibold fs-8'>" + esc(BAND_LABEL[p.b.kind]) + "</span>"));
+        // THE BAND IS A CHOICE, not a label. It used to be printed as plain text, which made it the one
+        // property of an element that could not be changed after it was created — and dragging could not
+        // change it either, so an element in the wrong band had to be deleted and re-added. Each option
+        // carries the band's height because a 0mm band is a real and confusing destination: the element
+        // goes there and has no room to be seen in.
+        h.push(row(AR ? "القسم" : "Band", select("p-band", S.layout.bands.map(function (bb) {
+            return { v: bb.kind, t: BAND_LABEL[bb.kind] + " · " + (bb.heightMm || 0) + "mm" };
+        }), p.b.kind)));
 
         // ---- geometry, always ----
         h.push("<div class='separator my-3'></div>");
@@ -1267,10 +1685,25 @@
                 { v: 1, t: AR ? "شعار" : "Logo" }, { v: 2, t: AR ? "توقيع" : "Signature" },
                 { v: 3, t: AR ? "ختم" : "Stamp" }, { v: 0, t: AR ? "أخرى" : "Other" }
             ], e.imageRole)));
-            h.push(row(AR ? "الصورة" : "Picture", select("p-asset",
-                [{ v: "", t: AR ? "— بلا —" : "— none —" }].concat(S.assets.map(function (a) {
-                    return { v: a.id, t: a.title || a.fileName };
-                })), e.assetId == null ? "" : e.assetId)));
+            // THE UPLOAD BUTTON BELONGS HERE TOO, beside the picker that needs it.
+            //
+            // The only other one is at the bottom of the toolbox rail, ~235px below the fold behind
+            // twenty-two tools. Someone who places a signature and comes here to give it a picture finds a
+            // list with nothing in it and no way to add anything — which is indistinguishable from "importing
+            // an image does not work". Same hidden file input, same endpoint; the element's own role is
+            // pushed into the role selector first, so an image uploaded from a signature is filed as one.
+            h.push(row(AR ? "الصورة" : "Picture",
+                "<div class='d-flex gap-1 align-items-center'>" +
+                "<div class='flex-grow-1 min-w-0'>" +
+                select("p-asset",
+                    [{ v: "", t: AR ? "— بلا —" : "— none —" }].concat(S.assets.map(function (a) {
+                        return { v: a.id, t: a.title || a.fileName };
+                    })), e.assetId == null ? "" : e.assetId) +
+                "</div>" +
+                "<button type='button' id='p-asset-upload' class='btn btn-sm btn-light-primary px-2 flex-shrink-0' " +
+                "title='" + esc(AR ? "رفع صورة" : "Upload an image") + "'>" +
+                "<i class='ki-outline ki-cloud-add fs-5'></i></button>" +
+                "</div>"));
             h.push(row(AR ? "الملاءمة" : "Fit", select("p-fit", [
                 { v: 0, t: AR ? "احتواء" : "Contain" }, { v: 1, t: AR ? "تغطية" : "Cover" }, { v: 2, t: AR ? "تمديد" : "Stretch" }
             ], e.fit)));
@@ -1403,6 +1836,24 @@
         on("pw", "change", function () { edit(function () { e.widthMm = Math.max(1, num("pw", e.widthMm)); }); });
         on("ph", "change", function () { edit(function () { e.heightMm = Math.max(1, num("ph", e.heightMm)); }); });
 
+        on("p-band", "change", function () {
+            var to = parseInt($("p-band").value, 10);
+            var pair = elementById(e.id);
+            if (!pair || pair.b.kind === to) { return; }
+
+            snapshot();
+            moveToBand(pair, to);
+
+            // CLAMPED into the target band, unlike a drag: here the user named a BAND rather than a
+            // position, so the element belongs inside it. A Y left over from a taller band would put it
+            // out of sight below its new one, which looks exactly like the move having failed.
+            var target = band(to);
+            var room = Math.max(0, (target.heightMm || 0) - e.heightMm);
+            if (e.yMm > room) { e.yMm = room; }
+
+            renderAll();
+        });
+
         on("p-text", "input", function () { e.text = $("p-text").value; renderCanvas(); });
         on("p-field", "change", function () { edit(function () { e.fieldKey = $("p-field").value || null; }); });
         on("p-agg", "change", function () { edit(function () { e.aggregate = parseInt($("p-agg").value, 10); }); });
@@ -1414,6 +1865,7 @@
                 e.assetId = v === "" ? null : parseInt(v, 10);
             });
         });
+        on("p-asset-upload", "click", function () { requestImageFor(e); });
         on("p-fit", "change", function () { edit(function () { e.fit = parseInt($("p-fit").value, 10); }); });
 
         on("p-font", "change", function () { edit(function () { e.style.fontFamily = $("p-font").value || null; }); });
@@ -1660,6 +2112,51 @@
         });
     }
 
+    // The bytes behind an asset row are fetched by ID, and that fetch can 404 while the row is perfectly
+    // present — the row lives in the database, the file lives on the application's disk. Wherever such an
+    // image is drawn, this says so rather than leaving an empty box: in the picker as a red dashed
+    // thumbnail, on the canvas as a short label in place of the picture.
+    function markMissingImages(root) {
+        Array.prototype.forEach.call(root.querySelectorAll("img[src*='/studio/assets/']"), function (img) {
+            var flag = function () {
+                var thumb = img.closest(".cbd-asset");
+                if (thumb) {
+                    // The <img> is hidden rather than left to render its alt text: a broken-image glyph plus a
+                    // filename spills out of a 46px box and reads as damage to the screen, not to the file.
+                    img.style.display = "none";
+                    thumb.classList.add("missing");
+                    thumb.title = (AR ? "ملف الصورة غير موجود على هذا الخادم: " : "Image file missing on this server: ")
+                                + (img.getAttribute("alt") || "");
+                    return;
+                }
+                var host = img.parentNode;
+                if (!host || host.querySelector(".cbd-img-missing")) { return; }
+                img.style.display = "none";
+                var span = document.createElement("span");
+                span.className = "cbd-img-missing";
+                span.textContent = AR ? "ملف الصورة غير موجود" : "image file missing";
+                host.appendChild(span);
+            };
+            if (img.complete && img.naturalWidth === 0) { flag(); }
+            img.addEventListener("error", flag);
+        });
+    }
+
+    // "GIVE THIS ELEMENT A PICTURE." One place, two ways in: the button in the element's own Picture row,
+    // and a double-click on the element itself.
+    //
+    // The element's role is pushed into the role selector first, so an image imported for a signature is
+    // FILED as a signature — the user should not have to find a selector in the other rail to get that
+    // right. assetTarget is what makes the returned image land on this element instead of merely joining
+    // the list.
+    function requestImageFor(e) {
+        if (!e || e.kind !== KIND.Image) { return; }
+        var roleSelect = $("cbd-asset-role");
+        if (roleSelect) { roleSelect.value = String(e.imageRole); }
+        S.assetTarget = e.id;
+        $("cbd-asset-file").click();
+    }
+
     function renderAssets() {
         $("cbd-assets").innerHTML = S.assets.map(function (a) {
             return "<div class='cbd-asset' draggable='true' data-asset='" + a.id + "' title='" + esc(a.title || a.fileName) + "'>" +
@@ -1673,6 +2170,8 @@
             });
             node.addEventListener("click", function () { dropAsset(parseInt(node.getAttribute("data-asset"), 10), null); });
         });
+
+        markMissingImages($("cbd-assets"));
     }
 
     function renderAll() {
@@ -1692,6 +2191,7 @@
             templateId: S.templateId,
             datasetCode: S.datasetCode,
             name: $("cbd-name").value,
+            nameEn: $("cbd-name-en").value,
             columns: S.columns,
             filters: S.filters,
             sorts: S.sorts,
@@ -1819,6 +2319,74 @@
             });
     }
 
+    // =============================================================================================
+    // NEW AND CLEAR
+    //
+    // TWO DIFFERENT ERASERS, and the difference between them is the whole point:
+    //
+    //   CLEAR  empties the PAGE — every element in every band — and keeps everything around it: the
+    //          report name, the data set, the filters, the sorts, the paper setup. It is ONE undo step,
+    //          so Ctrl+Z brings the design straight back.
+    //   NEW    throws the DRAFT away and starts an untitled one: no template id, no data set, no
+    //          filters, and an empty undo history — which is precisely why it cannot be undone, and why
+    //          it asks the harder question. Nothing already SAVED is touched either way; neither of
+    //          these calls the server at all.
+    // =============================================================================================
+    function confirmThen(title, text, confirmLabel, fn) {
+        if (typeof Swal !== "undefined" && Swal && Swal.fire) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: confirmLabel,
+                cancelButtonText: AR ? "إلغاء" : "Cancel",
+                buttonsStyling: false,
+                customClass: { confirmButton: "btn btn-danger", cancelButton: "btn btn-light" }
+            }).then(function (r) { if (r && r.isConfirmed) { fn(); } });
+            return;
+        }
+        // Swal arrives with the shared plugin bundle. If that ever stops being true, a destructive action
+        // must still ASK rather than quietly become a one-click wipe.
+        if (window.confirm(title + "\n\n" + text)) { fn(); }
+    }
+
+    function clearPage() {
+        var count = S.layout.bands.reduce(function (a, b) { return a + b.elements.length; }, 0);
+        if (!count) { return; }   // nothing to clear, so nothing to ask about
+
+        confirmThen(
+            AR ? "مسح الصفحة؟" : "Clear the page?",
+            AR ? "سيتم حذف " + count + " عنصرًا من التصميم. الاسم ومجموعة البيانات والفلاتر وإعداد الورق تبقى كما هي، ويمكن التراجع بـ Ctrl+Z."
+               : count + " element(s) will be removed from the design. The name, data set, filters and paper setup stay as they are, and Ctrl+Z brings the design back.",
+            AR ? "مسح" : "Clear",
+            function () {
+                snapshot();
+                S.layout.bands.forEach(function (b) { b.elements = []; });
+                S.selection = [];
+                S.assetTarget = null;
+                showErrors(null);
+                renderAll();
+            });
+    }
+
+    function newReport() {
+        confirmThen(
+            AR ? "تقرير جديد؟" : "Start a new report?",
+            AR ? "سيتم البدء من صفحة فارغة: التصميم والاسم ومجموعة البيانات والفلاتر والترتيب كلها تُلغى، ولا يمكن التراجع عن ذلك. أي تقرير محفوظ لا يتأثر."
+               : "You will start from an empty page: the design, name, data set, filters and sorts are all discarded, and that cannot be undone. Anything already saved is untouched.",
+            AR ? "تقرير جديد" : "New report",
+            function () {
+                S.assetTarget = null;
+                showErrors(null);
+                applyDraft({
+                    templateId: 0, datasetCode: "", name: "", nameEn: "",
+                    columns: [], filters: [], sorts: [], parameters: {},
+                    visual: blankLayout()
+                });
+            });
+    }
+
     function applyDraft(dr) {
         if (!dr) { return; }
         S.templateId = dr.templateId || 0;
@@ -1832,6 +2400,7 @@
         undoStack.length = 0; redoStack.length = 0;
 
         $("cbd-name").value = dr.name || "";
+        $("cbd-name-en").value = dr.nameEn || "";
         $("cbd-dataset").value = S.datasetCode;
         syncPageInputs();
         loadDataset(S.datasetCode);
@@ -1881,14 +2450,7 @@
             $("cbd-zoom-label").textContent = Math.round(S.zoom * 100) + "%";
             renderCanvas();
         });
-        $("cbd-fit").addEventListener("click", function () {
-            var avail = $("cbd-scroll").clientWidth - 40;
-            var z = avail / (paper()[0] * (96 / 25.4));
-            S.zoom = Math.max(0.4, Math.min(2, z));
-            $("cbd-zoom").value = Math.round(S.zoom * 100);
-            $("cbd-zoom-label").textContent = Math.round(S.zoom * 100) + "%";
-            renderCanvas();
-        });
+        $("cbd-fit").addEventListener("click", fitToWidth);
     }
 
     // =============================================================================================
@@ -1940,6 +2502,9 @@
 
         $("cbd-dataset").addEventListener("change", function () { loadDataset($("cbd-dataset").value); });
 
+        $("cbd-new").addEventListener("click", newReport);
+        $("cbd-clear").addEventListener("click", clearPage);
+
         $("cbd-undo").addEventListener("click", undo);
         $("cbd-redo").addEventListener("click", redo);
         $("cbd-del").addEventListener("click", deleteSelection);
@@ -1958,8 +2523,70 @@
             });
         });
 
+        // ---- THE DOCK BAR --------------------------------------------------------------------
+        //
+        // ONE panel open at a time — a tab strip whose tabs all stay open at once is just two columns
+        // again. Each panel's own state is remembered per browser, because a toolbox that closes itself
+        // on every visit is a toolbox nobody uses twice; the TOOLS panel therefore defaults to OPEN, or
+        // a first-time designer opens a canvas with no visible way to add anything to it.
+        //
+        // localStorage can throw outright (a private window, site data blocked), so every touch of it is
+        // wrapped: the designer must not fail to load over a remembered tab state.
+        var DOCKS = [
+            { tab: "cbd-tools-tab", panel: "cbd-tools-panel", close: "cbd-tools-close",
+              key: "cbd-tools-open", autohide: false, dflt: "1" },
+            { tab: "cbd-saved-tab", panel: "cbd-saved-panel", close: "cbd-saved-close",
+              key: "cbd-saved-open", autohide: true, dflt: "0" }
+        ];
+
+        function dockSet(d, open) {
+            var panel = $(d.panel), tab = $(d.tab);
+            if (!panel || !tab) { return; }
+            panel.hidden = !open;
+            tab.classList.toggle("on", open);
+            tab.setAttribute("aria-expanded", open ? "true" : "false");
+            try { localStorage.setItem(d.key, open ? "1" : "0"); } catch (ignored) { }
+            if (open) {
+                DOCKS.forEach(function (other) { if (other !== d) { dockSet(other, false); } });
+            }
+        }
+        function dockByPanel(id) {
+            for (var i = 0; i < DOCKS.length; i++) { if (DOCKS[i].panel === id) { return DOCKS[i]; } }
+            return null;
+        }
+
+        DOCKS.forEach(function (d) {
+            var tab = $(d.tab), panel = $(d.panel);
+            if (!tab || !panel) { return; }
+            tab.addEventListener("click", function () { dockSet(d, panel.hidden); });
+            if ($(d.close)) { $(d.close).addEventListener("click", function () { dockSet(d, false); }); }
+
+            // The default is per SCREEN, not absolute: on a phone every panel is full width, so a
+            // toolbox that opens by default pushes the canvas a third of a page down before anything
+            // can be seen. A remembered choice always wins over the default, either way.
+            var dflt = (window.innerWidth < 768) ? "0" : d.dflt;
+            var remembered = null;
+            try { remembered = localStorage.getItem(d.key); } catch (ignored) { }
+            dockSet(d, (remembered === null ? dflt : remembered) === "1");
+        });
+
+        // CLICK AWAY dismisses the panels that ask for it — the reports list, not the toolbox. mousedown
+        // rather than click, so it is gone before the canvas acts on the same press, and nothing is
+        // prevented, so that press still lands where it was aimed.
+        document.addEventListener("mousedown", function (ev) {
+            if (ev.target.closest && ev.target.closest(".cbd-dockbar")) { return; }
+            DOCKS.forEach(function (d) {
+                var panel = $(d.panel);
+                if (d.autohide && panel && !panel.hidden) { dockSet(d, false); }
+            });
+        });
+
         Array.prototype.forEach.call(document.querySelectorAll("[data-open]"), function (b) {
-            b.addEventListener("click", function () { doOpen(parseInt(b.getAttribute("data-open"), 10)); });
+            b.addEventListener("click", function () {
+                doOpen(parseInt(b.getAttribute("data-open"), 10));
+                var d = dockByPanel("cbd-saved-panel");
+                if (d) { dockSet(d, false); }   // the picker's job is done the moment a report is chosen
+            });
         });
 
         $("cbd-add-filter").addEventListener("click", function () {
@@ -1984,17 +2611,54 @@
             fd.append("role", $("cbd-asset-role").value);
             fd.append("title", file.name);
 
+            // r.text() THEN parse, never r.json() straight — and a .catch at the end.
+            //
+            // The first version read r.json() directly with no catch, and that is how "I pick a file and
+            // nothing happens" is built: a refusal (404 from the author gate, 400 from anti-forgery, 500 from
+            // anything) answers with a body that is not JSON, r.json() rejects, the rejection is unhandled,
+            // and the screen shows no message of any kind. A failed upload must SAY it failed.
             fetch("/api/reports/studio/assets", {
                 method: "POST",
                 headers: { "RequestVerificationToken": token() },
                 body: fd
             })
-                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                .then(function (r) {
+                    return r.text().then(function (t) {
+                        var d = null;
+                        try { d = t ? JSON.parse(t) : null; } catch (ignored) { d = null; }
+                        return { ok: r.ok, status: r.status, d: d };
+                    });
+                })
                 .then(function (res) {
                     $("cbd-asset-file").value = "";
-                    if (!res.ok) { showErrors(res.d.errors || []); return; }
+                    if (!res.ok || !res.d || !res.d.asset) {
+                        S.assetTarget = null;
+                        showErrors((res.d && res.d.errors && res.d.errors.length ? res.d.errors : null)
+                            || [(AR ? "تعذّر رفع الصورة (HTTP " : "The image could not be uploaded (HTTP ") + res.status + ")"]);
+                        return;
+                    }
+                    showErrors(null);
                     S.assets.unshift(res.d.asset);
+
+                    // An upload started from an element's own Picture row places the image on that element.
+                    // Uploading and then having to pick the same file out of a list is a step nobody wants.
+                    var target = S.assetTarget ? elementById(S.assetTarget) : null;
+                    S.assetTarget = null;
+                    if (target) {
+                        snapshot();
+                        target.e.assetId = res.d.asset.id;
+                        renderAll();
+                        renderAssets();
+                        return;
+                    }
+
                     renderAssets(); renderProps();
+                })
+                .catch(function (err) {
+                    $("cbd-asset-file").value = "";
+                    S.assetTarget = null;
+                    showErrors([(AR ? "تعذّر رفع الصورة: " : "The image could not be uploaded: ") +
+                                ((err && err.message) ? err.message : String(err))]);
                 });
         });
 
@@ -2002,6 +2666,10 @@
         {
             <text>applyDraft(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(openDraft, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })));</text>
         }
+
+        // LAST, deliberately: the draft above can change the paper size, and fitting the previous one
+        // would be fitting the wrong sheet.
+        fitIfSheetOverflows();
     }
 
     if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", boot); }

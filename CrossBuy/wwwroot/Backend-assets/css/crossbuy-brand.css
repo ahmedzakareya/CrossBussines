@@ -1,118 +1,162 @@
 /* ============================================================
-   CrossBuy brand identity — overrides Metronic's blue primary
-   with the "ledger green + gold" palette across the whole app.
+   CrossBuy brand identity — Facebook Blue scale.
+   Overrides Metronic's own blue primary across the whole app.
    Loaded AFTER style.bundle(.rtl).css so it wins the cascade.
-   Palette: deep #13433a · mid #1f6253 · light #e9f1ee · gold #d4a017 / #f0c64b
+
+   The published scale (design tokens, --cb-blue-*):
+     50 #E7F0FF  100 #D0E1FF  200 #A8C5FF  300 #7DA9FF  400 #5B8CFF
+    500 #1877F2  600 #166FE5  700 #145DBF  800 #0E4A9E  900 #0B3D91
+
+   ROLES ARE NOT ONE COLOUR. 500 #1877F2 is the brand identity value, but a
+   small white label on it measures 4.23:1 — below the AA minimum of 4.5. This
+   is the same failure this sheet already records for Metronic's #1B84FF
+   (3.63:1) further down, so it is not re-introduced here. Instead the role
+   splits, and every step is the measured one:
+
+     identity / tint source   500 #1877F2   (never carries small white text)
+     solid fill, rest         600 #166FE5   white  4.73  PASS
+     solid fill, hover        700 #145DBF   white  6.27  PASS
+     solid fill, pressed      800 #0E4A9E   white  8.43  PASS
+     brand ink (text/border)  800 #0E4A9E   on white  8.43  PASS (was 11.10)
+     surface / light tint      50 #E7F0FF   ink on it 7.35  PASS
+
+   25 (#F3F7FF) is an interpolated step below 50, added because the design uses
+   two levels of near-white brand tint; it is a background only, never a text
+   or border colour.
+
+   Charts and other NON-TEXT graphics use the identity 500 #1877F2 directly —
+   WCAG's 4.5:1 text minimum does not apply to them, and the mockup's chart
+   series is that value.
    ============================================================ */
 :root,
 [data-bs-theme="light"] {
-    --bs-primary: #13433a;
-    --bs-primary-rgb: 19, 67, 58;
-    --bs-primary-active: #1f6253;
-    --bs-primary-light: #e9f1ee;
+    /* ---- published scale ---- */
+    --cb-blue-25: #F3F7FF;
+    --cb-blue-50: #E7F0FF;
+    --cb-blue-100: #D0E1FF;
+    --cb-blue-200: #A8C5FF;
+    --cb-blue-300: #7DA9FF;
+    --cb-blue-400: #5B8CFF;
+    --cb-blue-500: #1877F2;
+    --cb-blue-600: #166FE5;
+    --cb-blue-700: #145DBF;
+    --cb-blue-800: #0E4A9E;
+    --cb-blue-900: #0B3D91;
+    /* ---- roles ---- */
+    --cb-brand: var(--cb-blue-500);        /* identity */
+    --cb-brand-fill: var(--cb-blue-600);   /* solid, carries white text */
+    --cb-brand-ink: var(--cb-blue-800);    /* text and borders on light ground */
+    --cb-brand-surface: var(--cb-blue-50);
+
+    --bs-primary: #1877F2;
+    --bs-primary-rgb: 24, 119, 242;
+    --bs-primary-active: #145DBF;
+    --bs-primary-light: #E7F0FF;
     --bs-primary-inverse: #ffffff;
-    --bs-primary-clarity: rgba(19, 67, 58, 0.2);
-    --bs-primary-text-emphasis: #13433a;
-    --bs-primary-bg-subtle: #e9f1ee;
-    --bs-primary-border-subtle: #bcd6cd;
-    --bs-link-color: #1f6253;
-    --bs-link-color-rgb: 31, 98, 83;
-    --bs-link-hover-color: #13433a;
-    --bs-component-active-bg: #13433a;
-    --kt-primary: #13433a;
-    --kt-primary-active: #1f6253;
-    --kt-primary-light: #e9f1ee;
+    --bs-primary-clarity: rgba(24, 119, 242, 0.2);
+    --bs-primary-text-emphasis: #0E4A9E;
+    --bs-primary-bg-subtle: #E7F0FF;
+    --bs-primary-border-subtle: #A8C5FF;
+    --bs-link-color: #145DBF;
+    --bs-link-color-rgb: 20, 93, 191;
+    --bs-link-hover-color: #0E4A9E;
+    --bs-component-active-bg: #166FE5;
+    --kt-primary: #1877F2;
+    --kt-primary-active: #145DBF;
+    --kt-primary-light: #E7F0FF;
     --kt-primary-inverse: #ffffff;
-    --kt-text-primary: #13433a;
+    --kt-text-primary: #0E4A9E;
 }
 
-/* ---- solid primary buttons / backgrounds ---- */
+/* ---- solid primary buttons / backgrounds ----
+   Fill starts at 600, not 500: white on 500 is 4.23 (fail), on 600 it is 4.73. */
 .btn.btn-primary,
 .btn-primary {
-    --bs-btn-bg: #13433a;
-    --bs-btn-border-color: #13433a;
-    --bs-btn-hover-bg: #1f6253;
-    --bs-btn-hover-border-color: #1f6253;
-    --bs-btn-active-bg: #0c2e28;
-    --bs-btn-active-border-color: #0c2e28;
-    --bs-btn-disabled-bg: #13433a;
-    --bs-btn-disabled-border-color: #13433a;
-    background-color: #13433a;
-    border-color: #13433a;
+    --bs-btn-bg: #166FE5;
+    --bs-btn-border-color: #166FE5;
+    --bs-btn-hover-bg: #145DBF;
+    --bs-btn-hover-border-color: #145DBF;
+    --bs-btn-active-bg: #0E4A9E;
+    --bs-btn-active-border-color: #0E4A9E;
+    --bs-btn-disabled-bg: #166FE5;
+    --bs-btn-disabled-border-color: #166FE5;
+    background-color: #166FE5;
+    border-color: #166FE5;
     color: #fff;
 }
 .btn.btn-primary:hover, .btn.btn-primary:focus, .btn.btn-primary:active,
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
-    background-color: #1f6253 !important;
-    border-color: #1f6253 !important;
+    background-color: #145DBF !important;
+    border-color: #145DBF !important;
     color: #fff !important;
 }
-.bg-primary { background-color: #13433a !important; }
-.text-primary { color: #13433a !important; }
-.border-primary { border-color: #13433a !important; }
+/* bg-primary is a FILL (white text sits on it) -> 600. text/border are INK -> 800. */
+.bg-primary { background-color: #166FE5 !important; }
+.text-primary { color: #0E4A9E !important; }
+.border-primary { border-color: #166FE5 !important; }
 
 /* ---- soft "light-primary" variants (buttons, badges, backgrounds) ---- */
 .btn.btn-light-primary,
 .btn-light-primary {
-    --bs-btn-color: #13433a;
-    --bs-btn-bg: #e9f1ee;
-    --bs-btn-border-color: #e9f1ee;
+    --bs-btn-color: #0E4A9E;
+    --bs-btn-bg: #E7F0FF;
+    --bs-btn-border-color: #E7F0FF;
     --bs-btn-hover-color: #fff;
-    --bs-btn-hover-bg: #13433a;
-    --bs-btn-hover-border-color: #13433a;
+    --bs-btn-hover-bg: #0E4A9E;
+    --bs-btn-hover-border-color: #0E4A9E;
     --bs-btn-active-color: #fff;
-    --bs-btn-active-bg: #13433a;
-    color: #13433a;
-    background-color: #e9f1ee;
-    border-color: #e9f1ee;
+    --bs-btn-active-bg: #0E4A9E;
+    color: #0E4A9E;
+    background-color: #E7F0FF;
+    border-color: #E7F0FF;
 }
 .btn.btn-light-primary:hover, .btn-light-primary:hover,
 .btn.btn-active-light-primary:hover {
     color: #fff !important;
-    background-color: #13433a !important;
-    border-color: #13433a !important;
+    background-color: #0E4A9E !important;
+    border-color: #0E4A9E !important;
 }
-.bg-light-primary { background-color: #e9f1ee !important; }
-.badge-light-primary { color: #13433a; background-color: #e9f1ee; }
-.badge-primary { background-color: #13433a; color: #fff; }
+.bg-light-primary { background-color: #E7F0FF !important; }
+.badge-light-primary { color: #0E4A9E; background-color: #E7F0FF; }
+.badge-primary { background-color: #166FE5; color: #fff; }
 
 /* ---- text / links ---- */
-.text-active-primary.active, .text-hover-primary:hover, a.text-hover-primary:hover { color: #13433a !important; }
-.link-primary { color: #1f6253; }
-.link-primary:hover { color: #13433a; }
+.text-active-primary.active, .text-hover-primary:hover, a.text-hover-primary:hover { color: #0E4A9E !important; }
+.link-primary { color: #145DBF; }
+.link-primary:hover { color: #0E4A9E; }
 
 /* ================= sidebar menu — CrossBuy branded ================= */
 /* base links: rounded, comfortable */
 .app-sidebar .menu .menu-link{ border-radius:10px; font-weight:600; transition:background-color .15s ease, color .15s ease; }
 .app-sidebar .menu > .menu-item > .menu-link,
-.app-sidebar .menu .cb-cat > .menu-link{ font-weight:700; color:#3b4a45; }
+.app-sidebar .menu .cb-cat > .menu-link{ font-weight:700; color:#374151; }
 /* category icons + arrows in brand tone */
-.app-sidebar .menu .menu-icon i{ color:#7c9a90; transition:color .15s ease; }
-.app-sidebar .menu .menu-arrow:after{ color:#9fb3ab; }
-.app-sidebar .menu .bullet{ background:#c4d6cf; }
+.app-sidebar .menu .menu-icon i{ color:#5B8CFF; transition:color .15s ease; }
+.app-sidebar .menu .menu-arrow:after{ color:#7DA9FF; }
+.app-sidebar .menu .bullet{ background:#D0E1FF; }
 
 /* hover (any non-active link) */
-.app-sidebar .menu .menu-link:hover:not(.active){ background-color:#eef4f1 !important; color:#13433a !important; }
+.app-sidebar .menu .menu-link:hover:not(.active){ background-color:#E7F0FF !important; color:#0E4A9E !important; }
 .app-sidebar .menu .menu-link:hover:not(.active) .menu-icon i,
-.app-sidebar .menu .menu-link:hover:not(.active) .menu-title{ color:#13433a !important; }
+.app-sidebar .menu .menu-link:hover:not(.active) .menu-title{ color:#0E4A9E !important; }
 
 /* open/expanded category (here/show) → green title + icon */
 .app-sidebar .menu .menu-item.here > .menu-link,
 .app-sidebar .menu .cb-cat.here > .menu-link,
-.app-sidebar .menu .cb-cat.show > .menu-link{ color:#13433a !important; }
+.app-sidebar .menu .cb-cat.show > .menu-link{ color:#0E4A9E !important; }
 .app-sidebar .menu .menu-item.here > .menu-link .menu-icon i,
 .app-sidebar .menu .cb-cat.here > .menu-link .menu-icon i,
-.app-sidebar .menu .cb-cat.show > .menu-link .menu-icon i{ color:#1f6253 !important; }
+.app-sidebar .menu .cb-cat.show > .menu-link .menu-icon i{ color:#145DBF !important; }
 
 /* ACTIVE leaf item → solid green pill with gold bullet (the signature) */
 .app-sidebar .menu .menu-link.active{
-    background:linear-gradient(135deg,#1f6253,#13433a) !important;
+    background:linear-gradient(135deg,#166FE5,#145DBF) !important;
     color:#fff !important;
-    box-shadow:0 8px 20px rgba(19,67,58,.30);
+    box-shadow:0 8px 20px rgba(14,74,158,.30);
 }
 .app-sidebar .menu .menu-link.active .menu-title,
 .app-sidebar .menu .menu-link.active .menu-icon i{ color:#fff !important; }
-.app-sidebar .menu .menu-link.active .bullet{ background:#f0c64b !important; box-shadow:0 0 0 3px rgba(240,198,75,.25); }
+.app-sidebar .menu .menu-link.active .bullet{ background:#FBBF24 !important; box-shadow:0 0 0 3px rgba(251,191,36,.25); }
 /* selected/hover must be the SAME height as a normal item — only color differs, never the box.
    force identical padding & line-height across normal, hover AND active so no state is taller. */
 .app-sidebar .menu .menu-link,
@@ -131,23 +175,23 @@
 /* ---- Systems quick-switch (bottom of menu): colored dots + current-system highlight ---- */
 .app-sidebar .menu .cb-dot{ width:11px; height:11px; border-radius:50%; display:inline-block; }
 .app-sidebar .menu .menu-link.cb-sys{ padding-top:.5rem !important; padding-bottom:.5rem !important; border-radius:8px; }
-.app-sidebar .menu .menu-link.cb-sys:hover:not(.active){ background:#f3f7f5 !important; }
+.app-sidebar .menu .menu-link.cb-sys:hover:not(.active){ background:#F3F7FF !important; }
 /* current system = subtle light highlight (NOT the heavy green leaf-pill) */
-.app-sidebar .menu .menu-link.cb-sys.active{ background:#eef4f1 !important; box-shadow:inset 3px 0 0 #13433a !important; }
-.app-sidebar .menu .menu-link.cb-sys.active .menu-title{ color:#13433a !important; font-weight:700 !important; }
+.app-sidebar .menu .menu-link.cb-sys.active{ background:#E7F0FF !important; box-shadow:inset 3px 0 0 #0E4A9E !important; }
+.app-sidebar .menu .menu-link.cb-sys.active .menu-title{ color:#0E4A9E !important; font-weight:700 !important; }
 .app-sidebar .menu .menu-heading{ letter-spacing:.6px; }
 
 /* in-menu search box: brand focus */
-#kt_app_sidebar_menu .form-control:focus, #mainMenuSearch:focus{ border-color:#6e9c90; }
+#kt_app_sidebar_menu .form-control:focus, #mainMenuSearch:focus{ border-color:#5B8CFF; }
 
 /* ---- nav tabs / line tabs active ---- */
 .nav-line-tabs .nav-item .nav-link.active,
-.nav-line-tabs .nav-item .nav-link:hover:not(.disabled) { border-bottom-color: #13433a; color: #13433a; }
+.nav-line-tabs .nav-item .nav-link:hover:not(.disabled) { border-bottom-color: #0E4A9E; color: #0E4A9E; }
 
 /* ---- form controls focus + checks ---- */
-.form-check-input:checked { background-color: #13433a; border-color: #13433a; }
-.form-check-input:focus, .form-control:focus, .form-select:focus { border-color: #6e9c90; box-shadow: 0 0 0 .25rem rgba(19,67,58,.15); }
-.form-control.form-control-solid:focus, .form-select.form-select-solid:focus { border-color: #6e9c90; }
+.form-check-input:checked { background-color: #166FE5; border-color: #166FE5; }
+.form-check-input:focus, .form-control:focus, .form-select:focus { border-color: #5B8CFF; box-shadow: 0 0 0 .25rem rgba(14,74,158,.15); }
+.form-control.form-control-solid:focus, .form-select.form-select-solid:focus { border-color: #5B8CFF; }
 
 /* ---- select2 selected-option checkmark: fix RTL placement (was floating above the text) ----
    the option needs position:relative so the absolute ✓ centers within the row; in RTL move it to the trailing (left) edge */
@@ -157,24 +201,24 @@
 
 /* ---- select2 (used widely for dropdowns) ---- */
 .select2-container--bootstrap5 .select2-results__option--highlighted[aria-selected],
-.select2-container--bootstrap5 .select2-results__option[aria-selected="true"] { background-color: #13433a; color: #fff; }
+.select2-container--bootstrap5 .select2-results__option[aria-selected="true"] { background-color: #166FE5; color: #fff; }
 
 /* ---- Tagify multi-search field (brand green tags) ---- */
-.tagify{ --tag-bg:#e9f1ee; --tag-text-color:#13433a; --tag-remove-btn-color:#13433a; --tags-focus-border-color:#6e9c90; border-color:#e1e3ea; }
-.tagify__tag > div { color:#13433a; }
+.tagify{ --tag-bg:#E7F0FF; --tag-text-color:#0E4A9E; --tag-remove-btn-color:#0E4A9E; --tags-focus-border-color:#5B8CFF; border-color:#e1e3ea; }
+.tagify__tag > div { color:#0E4A9E; }
 .tagify__tag__removeBtn{ opacity:.85; pointer-events:auto; z-index:2; }
-.tagify__tag__removeBtn:hover{ opacity:1; background:#13433a; color:#fff; }
+.tagify__tag__removeBtn:hover{ opacity:1; background:#166FE5; color:#fff; }
 .tagify__dropdown{ z-index:1056; }
 .tagify__dropdown .tagify__dropdown__item--active,
-.tagify__dropdown .tagify__dropdown__item:hover{ background:#e9f1ee; color:#13433a; }
+.tagify__dropdown .tagify__dropdown__item:hover{ background:#E7F0FF; color:#0E4A9E; }
 
 /* ---- progress / spinner / active accents ---- */
-.progress-bar { background-color: #13433a; }
-.spinner-border.text-primary, .text-primary .spinner-border { color: #13433a !important; }
+.progress-bar { background-color: #1877F2; }
+.spinner-border.text-primary, .text-primary .spinner-border { color: #0E4A9E !important; }
 
 /* ---- page-heading accent already green in app; keep gold as the secondary accent ---- */
-.text-gold { color: #d4a017 !important; }
-.bg-gold { background-color: #d4a017 !important; }
+.text-gold { color: #F59E0B !important; }
+.bg-gold { background-color: #F59E0B !important; }
 
 /* ============================================================================
    Mobile fix: wide datatables must scroll INSIDE their card, not stretch the
@@ -196,18 +240,18 @@
 
 /* ===== CrossBuy brand — flatpickr (date picker) popup, applied app-wide ===== */
 .flatpickr-calendar { font-family: inherit !important; border: 1px solid #dde0e5 !important; border-radius: 12px !important; box-shadow: 0 8px 28px rgba(15,23,42,.10) !important; }
-.flatpickr-months .flatpickr-month, .flatpickr-current-month input.cur-year, .flatpickr-current-month .flatpickr-monthDropdown-months, .flatpickr-weekday { color: #1f6253 !important; }
-.flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.inRange { background: #1f7d57 !important; border-color: #1f7d57 !important; color: #fff !important; }
-.flatpickr-day:hover, .flatpickr-day.prevMonthDay:hover, .flatpickr-day.nextMonthDay:hover { background: #eaf3ef !important; color: #1f7d57 !important; }
-.flatpickr-day.today { border-color: #1f7d57 !important; }
-.flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill: #1f7d57 !important; }
+.flatpickr-months .flatpickr-month, .flatpickr-current-month input.cur-year, .flatpickr-current-month .flatpickr-monthDropdown-months, .flatpickr-weekday { color: #145DBF !important; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.inRange { background: #166FE5 !important; border-color: #166FE5 !important; color: #fff !important; }
+.flatpickr-day:hover, .flatpickr-day.prevMonthDay:hover, .flatpickr-day.nextMonthDay:hover { background: #E7F0FF !important; color: #0E4A9E !important; }
+.flatpickr-day.today { border-color: #166FE5 !important; }
+.flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill: #166FE5 !important; }
 
 /* date-field calendar icon → brand green (beats any theme !important on the glyph) */
-.cb-cal-ic, .cb-cal-ic::before, i.cb-cal-ic::before { color: #1f7d57 !important; }
+.cb-cal-ic, .cb-cal-ic::before, i.cb-cal-ic::before { color: #0E4A9E !important; }
 
 /* ===== CrossBuy brand — form-select dropdown chevron → brand green (no gray icons) ===== */
 .form-select, .form-select.form-select-solid {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2313433a' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230E4A9E' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
 }
 
 /* ============================================================
@@ -269,9 +313,9 @@
    ------------------------------------------------------------ */
 :root:not([data-bs-theme="dark"]),
 [data-bs-theme="light"] {
-    --bs-text-success: #094f21;
-    --bs-text-warning: #624d00;
-    --bs-text-danger: #631024;
+    --bs-text-success: #14532D;
+    --bs-text-warning: #92400E;
+    --bs-text-danger: #991B1B;
 }
 
 /* Light badges keep their semantic tint as BACKGROUND and take the matching
@@ -284,6 +328,17 @@
 .badge.badge-light-success { color: var(--bs-success-text-emphasis); }
 .badge.badge-light-warning { color: var(--bs-warning-text-emphasis); }
 .badge.badge-light-danger { color: var(--bs-danger-text-emphasis); }
+/* INFO was missing from the three rules above, so it kept painting --bs-info on its own
+   tint: #3B82F6 on #DBEAFE is 3.01. Its emphasis member measures 7.15 on the same tint. */
+.badge.badge-light-info { color: var(--bs-info-text-emphasis); }
+/* SECONDARY had NO fill - a "badge" with a transparent background and 1.16 against it, which
+   is how "Low priority" ended up looking like stray text. A real neutral tint from the
+   palette's own neutral: #374151 on #F1F5F9 measures 9.37, and it stays visibly quieter than
+   the coloured badges beside it, which is the point of using it for "Low". */
+.badge.badge-light-secondary {
+    background-color: #F1F5F9;
+    color: #374151;
+}
 
 /* Components that paint TEXT from the palette grays (--bs-gray-500/600) instead of
    the text tokens, so the block above cannot reach them. This list is derived from a
@@ -328,19 +383,22 @@
 /* ------------------------------------------------------------
    Active nav-pill — brand token gap, not a module bug.
    Metronic hardcodes  .nav-pills { --bs-nav-pills-link-active-bg: #1B84FF }  and this
-   brand sheet never rebranded it, so every active pill in the product still painted
-   Metronic blue while the rest of the app is CrossBuy green. Its white label measured
-   3.63:1 on that blue — below AA — which is why it surfaced as a contrast finding on
-   the Tasks report pills even though no Tasks view sets a colour.
+   brand sheet never rebranded it, so every active pill in the product painted Metronic
+   blue while the rest of the app carried the brand. Its white label measured 3.63:1 on
+   that blue — below AA — which is why it surfaced as a contrast finding on the Tasks
+   report pills even though no Tasks view sets a colour.
 
-       white on #1B84FF (Metronic blue)      3.63:1  FAIL
-       white on #13433A (--bs-primary)      11.10:1  PASS
+       white on #1B84FF (Metronic blue)   3.63:1  FAIL
+       white on #1877F2 (--bs-primary)    4.23:1  FAIL  <- the 500 identity, still short
+       white on #166FE5 (--cb-brand-fill) 4.73:1  PASS
 
-   Pointing the token at the existing brand primary fixes the contrast and removes a
-   stray blue from the palette at the same time. No new colour is introduced.
+   NOTE FOR THE BLUE REBRAND: the brand is now itself a blue, so the naive fix — point
+   this at --bs-primary — would land on 4.23:1 and quietly reinstate the very finding
+   this rule exists to close. It points at the FILL role (600) instead, which is the
+   step this sheet uses everywhere white text sits on brand colour.
    ------------------------------------------------------------ */
 .nav-pills {
-    --bs-nav-pills-link-active-bg: var(--bs-primary);
+    --bs-nav-pills-link-active-bg: var(--cb-brand-fill);
 }
 
 /* ============================================================
@@ -362,8 +420,8 @@
        btn-light-warning  #F6C000 on #FFF8DD   1.58  FAIL
        btn-danger         #FFFFFF on #F8285A   3.86  FAIL
        btn-light-danger   #F8285A on #FFEEF3   3.45  FAIL
-       btn-primary        #FFFFFF on #13433A  11.10  pass (already brand green)
-       btn-light-primary  #13433A on #E9F1EE   9.66  pass
+       btn-primary        #FFFFFF on #166FE5   4.73  pass (brand fill, 600)
+       btn-light-primary  #0E4A9E on #E7F0FF   7.35  pass
        btn-info           #FFFFFF on #7239EA   6.02  pass
        btn-light-info     #7239EA on #F8F5FF   5.59  pass
 
@@ -470,3 +528,546 @@
 .alert.alert-success { color: var(--bs-success-text-emphasis); }
 .alert.alert-warning { color: var(--bs-warning-text-emphasis); }
 .alert.alert-danger { color: var(--bs-danger-text-emphasis); }
+
+/* ============================================================
+   SEMANTIC PALETTE — the four families named in the design spec.
+   ------------------------------------------------------------
+       success  #16A34A      warning  #F59E0B
+       danger   #EF4444      info     #3B82F6      neutral  #6B7280
+
+   Each family is defined as a WHOLE family, not just a base, because Metronic
+   builds buttons, badges and alerts from -active / -light / -text-emphasis and a
+   base on its own would leave those members pointing at the previous palette.
+   The steps are the published ramp around each base.
+
+   LABEL COLOUR. Measured against every fill, white fails on all four of the
+   spec's values and the dark ink #071437 (gray-900, already the body text
+   colour) passes on all four:
+
+       fill        white   ink #071437
+       #16A34A      3.30    5.47  PASS      <- success rest
+       #22C55E      2.28    7.92  PASS      <- success hover
+       #F59E0B      2.15    8.40  PASS      <- warning rest
+       #FBBF24      1.67   10.80  PASS      <- warning hover
+       #EF4444      3.76    4.79  PASS      <- danger  rest
+       #F87171      2.77    6.52  PASS      <- danger  hover
+       #3B82F6      3.68    4.90  PASS      <- info    rest
+       #60A5FA      2.54    7.09  PASS      <- info    hover
+
+   So the FILLS ARE EXACTLY THE SPEC'S VALUES and the label is the ink. This is
+   the rule the sheet already applied to success and warning; danger and info now
+   join it, which is why the older danger rule below (white label on a fill moved
+   one step down its ramp) is superseded here — it was the only way to rescue
+   white on the previous red, and it is no longer the lane danger is in.
+
+   Hover BRIGHTENS by one step in all four families rather than darkening. That
+   direction is forced, not stylistic: darkening drops the ink label below AA in
+   three of the four (success #15803D 3.60, danger #DC2626 3.73, info #2563EB
+   3.49), while brightening keeps every state measured above.
+
+   Text on light ground keeps using the *-text-emphasis members, measured on
+   their own tint: #14532D on #DCFCE7 8.30 · #92400E on #FEF3C7 6.37 ·
+   #991B1B on #FEE2E2 6.80 · #1E40AF on #DBEAFE 7.15.
+
+   NOTE — info and primary are now neighbouring blues (#3B82F6 vs #1877F2). That
+   is what the spec specifies, and its own swatch strip shows both, but it does
+   mean an info surface no longer separates from a brand surface by hue alone.
+   ============================================================ */
+:root:not([data-bs-theme="dark"]),
+[data-bs-theme="light"] {
+    --bs-success: #16A34A;
+    --bs-success-rgb: 22, 163, 74;
+    --bs-success-active: #22C55E;
+    --bs-success-light: #DCFCE7;
+    --bs-success-inverse: #ffffff;   /* icons follow the label; success is white-labelled */
+    --bs-success-text-emphasis: #14532D;
+    --bs-success-bg-subtle: #DCFCE7;
+    --bs-success-border-subtle: #86EFAC;
+
+    --bs-warning: #F59E0B;
+    --bs-warning-rgb: 245, 158, 11;
+    --bs-warning-active: #FBBF24;
+    --bs-warning-light: #FEF3C7;
+    --bs-warning-inverse: #071437;   /* warning KEEPS the dark label, so its icon stays dark too */
+    --bs-warning-text-emphasis: #92400E;
+    --bs-warning-bg-subtle: #FEF3C7;
+    --bs-warning-border-subtle: #FCD34D;
+
+    --bs-danger: #EF4444;
+    --bs-danger-rgb: 239, 68, 68;
+    --bs-danger-active: #F87171;
+    --bs-danger-light: #FEE2E2;
+    --bs-danger-inverse: #ffffff;    /* icons follow the label; danger is white-labelled */
+    --bs-danger-text-emphasis: #991B1B;
+    --bs-danger-bg-subtle: #FEE2E2;
+    --bs-danger-border-subtle: #FCA5A5;
+    /* a red dark enough to carry a small WHITE label (4.83:1). Needed because
+       --bs-danger-active now BRIGHTENS for hover, so it can no longer serve as
+       the "darker red" a white-on-red chip requires. */
+    --cb-danger-strong: #DC2626;
+
+    /* WARNING NEEDED ITS OWN DEEPER STEP for the same reason danger did. White on the spec's
+       #F59E0B is 2.15 - under even the 3:1 a non-text graphic needs - so anything that shows a
+       white mark on amber sits here instead. Measured: white on #B45309 = 5.02 PASS. The hue is
+       unchanged, so warning still reads as warning; only its depth moves. */
+    --cb-warning-strong: #B45309;
+    /* the steps of success and info that can carry a small WHITE label, chosen the same
+       way --cb-danger-strong was: one step down the family ramp until white passes AA. */
+    --cb-success-strong: #15803D;    /* white 5.02 */
+    --cb-success-stronger: #166534;  /* white 7.13, hover */
+    --cb-info-strong: #2563EB;       /* white 5.17 */
+    --cb-info-stronger: #1D4ED8;     /* white 6.70, hover */
+    /* A non-semantic accent for categories that must not read as a status. Red, amber
+       and green belong to danger/warning/success, and info is now a near-neighbour of
+       the brand blue, so a second category needs its own hue. */
+    --cb-violet-strong: #7C3AED;     /* white 5.70 */
+
+    --bs-info: #3B82F6;
+    --bs-info-rgb: 59, 130, 246;
+    --bs-info-active: #60A5FA;
+    --bs-info-light: #DBEAFE;
+    --bs-info-inverse: #ffffff;      /* icons follow the label; info is white-labelled */
+    --bs-info-text-emphasis: #1E40AF;
+    --bs-info-bg-subtle: #DBEAFE;
+    --bs-info-border-subtle: #93C5FD;
+
+    --bs-secondary-color: #6B7280;   /* neutral, 4.83 on white */
+}
+
+/* Info joins the ink-label family: white on #3B82F6 is 3.68, its ink label 4.90.
+   Danger does NOT - see the block below; red keeps a white label the way it
+   conventionally does, and its fill moves instead. */
+.btn.btn-info,
+.btn.btn-info:focus:not(.btn-active), .btn.btn-info:hover:not(.btn-active),
+.btn.btn-info:active:not(.btn-active), .btn.btn-info.active, .btn.btn-info.show {
+    color: #071437;
+}
+
+/* DANGER KEEPS A WHITE LABEL, and the fill moves to carry it. White on the spec's
+   #EF4444 is 3.76 - below AA - so every state that shows a white label sits on a
+   darker step of the same red. Measured:
+       solid rest    white on #DC2626  4.83  PASS
+       solid hover   white on #991B1B  8.31  PASS
+       light hover   white on #DC2626  4.83  PASS
+   The hue is unchanged, so "danger" still reads as danger; only its depth moves. */
+.btn.btn-danger {
+    border-color: var(--cb-danger-strong);
+    background-color: var(--cb-danger-strong);
+    color: #fff;
+}
+.btn-check:checked + .btn.btn-danger, .btn-check:active + .btn.btn-danger,
+.btn.btn-danger:focus:not(.btn-active), .btn.btn-danger:hover:not(.btn-active),
+.btn.btn-danger:active:not(.btn-active),
+.btn.btn-danger.active, .btn.btn-danger.show, .show > .btn.btn-danger {
+    border-color: var(--bs-danger-text-emphasis);
+    background-color: var(--bs-danger-text-emphasis) !important;
+    color: #fff !important;
+}
+/* .btn-light-danger keeps its tint and dark label AT REST (6.80); only the hover,
+   which flips to a solid red, needs the white-on-darker-red treatment. */
+.btn-check:checked + .btn.btn-light-danger, .btn-check:active + .btn.btn-light-danger,
+.btn.btn-light-danger:focus:not(.btn-active), .btn.btn-light-danger:hover:not(.btn-active),
+.btn.btn-light-danger:active:not(.btn-active),
+.btn.btn-light-danger.active, .btn.btn-light-danger.show, .show > .btn.btn-light-danger {
+    border-color: var(--cb-danger-strong);
+    background-color: var(--cb-danger-strong) !important;
+    color: #fff !important;
+}
+
+/* ============================================================
+   PER-SYSTEM ACCENTS - one palette, used by the sidebar dots and the
+   portal orbs alike. Previously these were two different sets for the same
+   systems (Accounting was #3aa76a in the menu and #5fd38c in the portal),
+   both chosen for the old green ground.
+
+   Cool = platform / back-office, warm = commerce / operations, so the split
+   means something. No greens or reds: those belong to success and danger,
+   and a green system dot beside a green status badge is a false signal.
+
+   Measured as TEXT on the portal ground #0B3D91, which paints each system
+   name in its own accent:
+
+     Back-office / Administrative #22D3EE  cool  5.56
+     People / Employees           #A8C5FF  cool  5.79
+     Accounting                   #38BDF8  cool  4.69
+     Reports & Analytics          #5EEAD4  cool  5.33
+     Tasks                        #C4B5FD  cool  5.44
+     CRM / Support                #D8B4FE  cool  5.68
+     Calendar                     #F0ABFC  cool  5.49
+     Projects & Contracting       #2DD4BF  cool  5.40
+     Inventory                    #FBBF24  warm  6.02
+     Manufacturing                #FDBA74  warm  5.96
+     Hypermarket                  #F9A8D4  warm  5.54
+     Restaurant                   #FDA4AF  warm  5.31
+
+   Worst case 4.69:1 - all pass AA.
+   ============================================================ */
+:root {
+    --cb-sys-svc:     #22D3EE;   /* Back-office / Administrative */
+    --cb-sys-ppl:     #A8C5FF;   /* People / Employees */
+    --cb-sys-acc:     #38BDF8;   /* Accounting */
+    --cb-sys-reports: #5EEAD4;   /* Reports & Analytics */
+    --cb-sys-tasks:   #C4B5FD;   /* Tasks */
+    --cb-sys-crm:     #D8B4FE;   /* CRM / Support */
+    --cb-sys-cal:     #F0ABFC;   /* Calendar */
+    --cb-sys-proj:    #2DD4BF;   /* Projects & Contracting */
+    --cb-sys-inv:     #FBBF24;   /* Inventory */
+    --cb-sys-manuf:   #FDBA74;   /* Manufacturing */
+    --cb-sys-hyper:   #F9A8D4;   /* Hypermarket */
+    --cb-sys-rest:    #FDA4AF;   /* Restaurant */
+}
+
+
+/* ============================================================
+   SOLID success / info: WHITE label, fill one step down the ramp.
+   ------------------------------------------------------------
+   These two were left in the ink-label family so their fills could stay the spec values.
+   The label is what an icon inherits, so every icon inside them rendered near-black.
+
+       white on #16A34A  3.30 fail   ->  #15803D  5.02 PASS   (hover #166534 7.13)
+       white on #3B82F6  3.68 fail   ->  #2563EB  5.17 PASS   (hover #1D4ED8 6.70)
+
+   WARNING deliberately does NOT follow. The only amber that carries white is #B45309,
+   which reads brown rather than amber, and an amber that has gone brown no longer
+   signals "warning" at a glance. It keeps its bright fill and dark label - the same
+   choice Bootstrap makes with --bs-btn-color:#000 on .btn-warning.
+   ============================================================ */
+.btn.btn-success {
+    border-color: var(--cb-success-strong);
+    background-color: var(--cb-success-strong);
+    color: #fff;
+}
+.btn-check:checked + .btn.btn-success, .btn-check:active + .btn.btn-success,
+.btn.btn-success:focus:not(.btn-active), .btn.btn-success:hover:not(.btn-active),
+.btn.btn-success:active:not(.btn-active),
+.btn.btn-success.active, .btn.btn-success.show, .show > .btn.btn-success {
+    border-color: var(--cb-success-stronger);
+    background-color: var(--cb-success-stronger) !important;
+    color: #fff !important;
+}
+.btn.btn-info {
+    border-color: var(--cb-info-strong);
+    background-color: var(--cb-info-strong);
+    color: #fff;
+}
+.btn-check:checked + .btn.btn-info, .btn-check:active + .btn.btn-info,
+.btn.btn-info:focus:not(.btn-active), .btn.btn-info:hover:not(.btn-active),
+.btn.btn-info:active:not(.btn-active),
+.btn.btn-info.active, .btn.btn-info.show, .show > .btn.btn-info {
+    border-color: var(--cb-info-stronger);
+    background-color: var(--cb-info-stronger) !important;
+    color: #fff !important;
+}
+/* the light variants flip to the solid fill on hover, so they take the same white label */
+.btn.btn-light-success:hover:not(.btn-active), .btn.btn-light-success.show,
+.btn-check:checked + .btn.btn-light-success, .show > .btn.btn-light-success {
+    border-color: var(--cb-success-strong);
+    background-color: var(--cb-success-strong) !important;
+    color: #fff !important;
+}
+.btn.btn-light-info:hover:not(.btn-active), .btn.btn-light-info.show,
+.btn-check:checked + .btn.btn-light-info, .show > .btn.btn-light-info {
+    border-color: var(--cb-info-strong);
+    background-color: var(--cb-info-strong) !important;
+    color: #fff !important;
+}
+
+
+/* Solid semantic badges paint --bs-{sem}-inverse (now white) on --bs-{sem}. White on the
+   BASE step is the contrast that failed in the first place, so these take the same
+   -strong step the buttons use: 4.83 / 5.02 / 5.17. Warning is absent on purpose - it
+   keeps its bright fill and dark label. */
+.badge.badge-danger  { background-color: var(--cb-danger-strong);  color: #fff; }
+
+/* ---------------------------------------------------------------------------------------------
+   THE EVENT RAIL. Metronic ships .timeline / .timeline-line, and it is positioned for LTR:
+   measured on this build the line centre sits 19px off the icon centre - mirrored, so it is
+   wrong in BOTH directions, not only in Arabic. It was replaced once already for the task
+   activity feed and the replacement now lives here, so every screen that needs a rail uses the
+   same one instead of each rediscovering the same 19px.
+
+   Two columns and a ::before under the icon column, placed with LOGICAL properties - they flip
+   with the document, so there is no direction-specific rule left to get wrong.
+   --------------------------------------------------------------------------------------------- */
+.cb-tl { display: flex; flex-direction: column; }
+.cb-tl-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    column-gap: 14px;
+    padding-bottom: 22px;
+}
+.cb-tl-item:last-child { padding-bottom: 0; }
+.cb-tl-item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    top: 44px; bottom: 0;
+    inset-inline-start: 19px;          /* the centre of the 40px icon column, either direction */
+    border-inline-start: 2px dashed var(--bs-gray-300);
+}
+/* NO overflow:hidden - it clipped the corner badge. The rounding lives on the <img>. */
+.cb-tl-icon { width: 40px; height: 40px; border-radius: 50%; position: relative; }
+.cb-tl-icon > img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+.cb-tl-badge {
+    position: absolute; bottom: -1px; inset-inline-end: -1px;
+    width: 17px; height: 17px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 2px var(--bs-body-bg);
+}
+/* A rail row that carries an icon rather than a face still wants the icon centred in it. */
+.cb-tl-icon.cb-tl-icon-plain { display: flex; align-items: center; justify-content: center; }
+
+/* ---------------------------------------------------------------------------------------------
+   THE BADGE MARKER: a small dot in the family colour, and no glyph inside it.
+
+   It was briefly a 16px dot carrying a WHITE icon, because white directly on a light badge
+   measures 1.10-1.22:1 and a solid fill was the only ground it could be read on. That worked;
+   the owner did not want the look. So the glyph goes and the colour stays.
+
+   Losing the glyph means nothing has to be legible inside the mark, so it shrinks to 6px and
+   stops competing with the word next to it - and the word is what states the case anyway.
+
+   A 6px dot is a meaningful GRAPHIC, so the bar is 3:1 against the badge ground rather than the
+   4.5:1 text needs. These are the fills already measured for the white version, so nothing is
+   re-picked here: primary 4.73, success 5.02, danger 4.83, info 5.17, warning 5.02 - every one
+   of them clear of 3:1 with room to spare.
+
+   The neutral family deliberately has NO dot: a grey dark enough to register stops reading as
+   neutral and starts reading as another state.
+   --------------------------------------------------------------------------------------------- */
+/* A REPORT TABLE HEAD carries a brand rule under it. Two views had been writing that colour as
+   a literal in a style attribute - a token defined outside this layer, which is the one thing
+   this layer exists to prevent. Declared once here, consumed by both. */
+.table thead tr.cb-thead-rule > th,
+.table tr.cb-thead-rule > th {
+    border-bottom: 2px solid var(--cb-brand-ink) !important;   /* beats .table-row-dashed */
+}
+
+/* Figures that sit in a column must not change width as their digits change. */
+.cb-tabular { font-variant-numeric: tabular-nums; }
+
+.badge > .cb-glyph {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block; flex-shrink: 0;
+}
+/* Belt and braces: a call site I have not reached must not render a stray icon inside a 6px
+   circle. The dot is the whole mark. */
+.badge > .cb-glyph > * { display: none; }
+.badge.badge-light-primary > .cb-glyph { background-color: var(--cb-brand-fill); }
+.badge.badge-light-success > .cb-glyph { background-color: var(--cb-success-strong); }
+.badge.badge-light-danger  > .cb-glyph { background-color: var(--cb-danger-strong); }
+.badge.badge-light-info    > .cb-glyph { background-color: var(--cb-info-strong); }
+.badge.badge-light-warning > .cb-glyph { background-color: var(--cb-warning-strong); }
+.badge.badge-success { background-color: var(--cb-success-strong); color: #fff; }
+.badge.badge-info    { background-color: var(--cb-info-strong);    color: #fff; }
+
+/* THE PALE YELLOW IS NOT USABLE. Metronic's `warning` (#FFC700 on a #FFF8DD tint) fails 4.5:1
+   against white and reads as decoration rather than caution. --cb-warning-strong already
+   exists here for that reason; these four classes are what lets a view CONSUME it with the
+   same vocabulary as any other family, instead of writing the hex into a style attribute. */
+.text-warning-strong        { color: var(--cb-warning-strong) !important; }
+.bg-warning-strong         { background-color: var(--cb-warning-strong) !important; }
+.bg-light-warning-strong   { background-color: rgba(180, 83, 9, .10) !important; }
+.badge-light-warning-strong {
+    color: var(--cb-warning-strong);
+    background-color: rgba(180, 83, 9, .10);
+}
+
+/* A MENTION, WHEREVER IT IS RENDERED. This lived in a <style> block inside Tasks/Detail, so it
+   existed on one page only and the Workspace Mentions list had nowhere to get it from.
+
+   NO "@" IS DRAWN. The tint and the weight are what mark the name as a mention; the sign is
+   authoring syntax and the reader has no use for it. */
+.cb-mention {
+    color: var(--cb-brand-ink);
+    background: var(--cb-brand-surface);
+    border-radius: .35rem;
+    padding: 0 .3rem;
+    font-weight: 600;
+    unicode-bidi: isolate;          /* a Latin name inside Arabic prose keeps its own run */
+}
+
+/* AN UNREAD ROW carries a rule on its READING edge. border-inline-start is logical, so it sits
+   on the left under LTR and the right under RTL with no second rule and no mirrored override. */
+.cb-unread-row {
+    border-inline-start: 3px solid var(--cb-brand-ink);
+    padding-inline-start: .75rem;
+}
+
+/* UNREAD. A 8px brand dot, used ALONGSIDE a weight change and an edge rule - never on its own,
+   because a reader who cannot separate two blues would get no signal at all from colour. */
+.cb-unread-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--cb-brand-ink);
+    vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   THE WAREHOUSE FLOOR PLAN. A drawing, not a chart: the outer box is the warehouse, each block
+   inside it is a section, each slot inside that is a rack.
+
+   Every colour here CONSUMES a token. The one thing this layer exists to prevent is a colour
+   being defined inside a view, and a floor plan is exactly the kind of component that tempts
+   somebody to write a hex into a style attribute.
+   --------------------------------------------------------------------------------------------- */
+.cb-plan {
+    border: 2px dashed var(--bs-gray-300);
+    border-radius: .75rem;
+    padding: 1rem;
+    background:
+        linear-gradient(var(--bs-gray-100) 1px, transparent 1px) 0 0 / 100% 24px,
+        linear-gradient(90deg, var(--bs-gray-100) 1px, transparent 1px) 0 0 / 24px 100%;
+}
+
+/* A SECTION. flex-grow is set inline from the rack count - the only per-row value, and it is a
+   number, not a colour. */
+.cb-plan-section {
+    border: 1px solid var(--cb-blue-700);
+    border-radius: .5rem;
+    background: var(--bs-body-bg);
+    min-width: 190px;
+    overflow: hidden;
+}
+.cb-plan-section-head {
+    background: var(--cb-brand-surface);
+    border-bottom: 1px solid var(--cb-blue-700);
+    padding: .5rem .75rem;
+}
+
+/* A RACK. One fill for all of them: a rack is not a state. */
+.cb-plan-rack {
+    background: var(--cb-blue-700);
+    color: #fff;
+    border-radius: .25rem;
+    padding: .35rem .5rem;
+    font-size: .8rem;
+    font-weight: 600;
+    text-align: center;
+    unicode-bidi: isolate;      /* a Latin rack code inside an Arabic plan keeps its own run */
+}
+
+/* OPEN FLOOR - a section nobody has shelved yet. Hatched rather than blank, because "no racks"
+   is a real state of a warehouse and an empty box reads as a rendering failure. */
+.cb-plan-open {
+    border-radius: .25rem;
+    min-height: 46px;
+    background: repeating-linear-gradient(
+        45deg,
+        var(--bs-gray-200) 0 6px,
+        transparent 6px 12px);
+}
+
+/* ==== WAREHOUSE FLOOR PLAN =====================================================================
+   A drawing of a real place: walls, rooms, shelving, an aisle, dock doors.
+
+   THE ROOM PALETTE IS A KEY, NOT A STATE. The legend maps each colour to a named section so the
+   reader can find it in the plan - that is identity, the one job a colour rotation does honestly.
+   No semantic family is spent on it: danger/warning/success keep their meanings elsewhere.
+   ============================================================================================== */
+:root {
+    --cb-room-1-bg: #DBEAFE; --cb-room-1-line: #3B82F6; --cb-room-1-ink: #1D4ED8;
+    --cb-room-2-bg: #FEE2E2; --cb-room-2-line: #EF4444; --cb-room-2-ink: #B91C1C;
+    --cb-room-3-bg: #DCFCE7; --cb-room-3-line: #22C55E; --cb-room-3-ink: #15803D;
+    --cb-room-4-bg: #FEF3C7; --cb-room-4-line: #F59E0B; --cb-room-4-ink: #B45309;
+    --cb-room-5-bg: #EDE9FE; --cb-room-5-line: #8B5CF6; --cb-room-5-ink: #6D28D9;
+    --cb-room-6-bg: #CFFAFE; --cb-room-6-line: #06B6D4; --cb-room-6-ink: #0E7490;
+    --cb-wall: #2B3445;
+}
+
+/* THE SHELL. Thick walls, a pale concrete floor, and a faint grid so the rooms read as sitting
+   ON something rather than floating. */
+.cb-wh {
+    position: relative;
+    border: 10px solid var(--cb-wall);
+    border-radius: 10px;
+    padding: 18px;
+    background:
+        linear-gradient(var(--bs-gray-200) 1px, transparent 1px) 0 0 / 100% 26px,
+        linear-gradient(90deg, var(--bs-gray-200) 1px, transparent 1px) 0 0 / 26px 100%,
+        var(--bs-gray-100);
+}
+
+/* A ROOM. Every colour comes from the --cb-room-N-* trio the wrapper class sets. */
+.cb-room {
+    border: 2px solid var(--room-line);
+    background: var(--room-bg);
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 200px;
+}
+.cb-room-title { color: var(--room-ink); }
+.cb-room-1 { --room-bg: var(--cb-room-1-bg); --room-line: var(--cb-room-1-line); --room-ink: var(--cb-room-1-ink); }
+.cb-room-2 { --room-bg: var(--cb-room-2-bg); --room-line: var(--cb-room-2-line); --room-ink: var(--cb-room-2-ink); }
+.cb-room-3 { --room-bg: var(--cb-room-3-bg); --room-line: var(--cb-room-3-line); --room-ink: var(--cb-room-3-ink); }
+.cb-room-4 { --room-bg: var(--cb-room-4-bg); --room-line: var(--cb-room-4-line); --room-ink: var(--cb-room-4-ink); }
+.cb-room-5 { --room-bg: var(--cb-room-5-bg); --room-line: var(--cb-room-5-line); --room-ink: var(--cb-room-5-ink); }
+.cb-room-6 { --room-bg: var(--cb-room-6-bg); --room-line: var(--cb-room-6-line); --room-ink: var(--cb-room-6-ink); }
+
+/* A RACK, drawn as a shelving unit: uprights down the sides, three shelves across. It is a
+   picture of the thing, which is the entire point of a plan over a list. */
+.cb-shelf {
+    position: relative;
+    height: 34px;
+    border-radius: 3px;
+    border: 2px solid var(--room-ink);
+    background:
+        linear-gradient(var(--room-ink) 2px, transparent 2px) 0 8px / 100% 11px,
+        rgba(255,255,255,.65);
+    box-shadow: inset 3px 0 0 var(--room-ink), inset -3px 0 0 var(--room-ink);
+}
+.cb-shelf-code {
+    color: var(--room-ink);
+    font-size: .72rem;
+    font-weight: 700;
+    unicode-bidi: isolate;
+}
+
+/* THE AISLE between the rooms and the docks - dashed centre line, like a floor marking. */
+.cb-aisle {
+    min-height: 34px;
+    border-radius: 4px;
+    background: repeating-linear-gradient(90deg,
+        var(--bs-gray-400) 0 14px, transparent 14px 30px) 0 50% / 100% 3px no-repeat;
+}
+
+/* A DOCK ZONE - receiving or shipping. Neutral concrete, hazard-striped door. */
+.cb-dock {
+    border: 2px solid var(--bs-gray-500);
+    border-radius: 8px;
+    background: var(--bs-gray-200);
+    padding: 10px;
+    min-width: 190px;
+}
+.cb-dock-door {
+    height: 12px;
+    border-radius: 3px;
+    background: repeating-linear-gradient(45deg,
+        #F2C037 0 8px, var(--cb-wall) 8px 16px);
+}
+
+/* OPEN FLOOR - a section nobody has shelved yet. Hatched, never blank: "unshelved" is a real
+   state of a warehouse and an empty box reads as a rendering failure. */
+.cb-floor-open {
+    border-radius: 4px;
+    min-height: 40px;
+    background: repeating-linear-gradient(45deg,
+        rgba(255,255,255,.75) 0 7px, transparent 7px 14px);
+}
+
+/* The legend dot, so a colour in the list is the same object as the room in the plan. */
+.cb-legend-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--room-line);
+    flex-shrink: 0;
+}
+
+/* THE HOUSE NOTICE IN THE STRONG-WARNING TONE. It exists as a class rather than an inline style
+   because Metronic's .border utilities carry !important, so an inline border-color silently
+   loses to them - measured: the box rendered with the default rgb(241,241,244) edge. */
+.cb-notice-warn {
+    background: rgba(180, 83, 9, .10) !important;
+    border-color: var(--cb-warning-strong) !important;
+}
+.cb-notice-warn-tile { background: var(--cb-warning-strong) !important; }

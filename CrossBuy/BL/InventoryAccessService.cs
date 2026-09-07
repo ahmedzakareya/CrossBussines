@@ -275,7 +275,7 @@ namespace CrossBuy.BL
 				"InventoryAuditor" => isAr ? "مراجع مخزون" : "Inventory Auditor",
 				_ => r
 			};
-			return string.Join("، ", roles.Distinct().Select(name));
+			return string.Join(", ", roles.Distinct().Select(name));
 		}
 	}
 }

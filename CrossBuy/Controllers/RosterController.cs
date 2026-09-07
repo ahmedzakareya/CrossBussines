@@ -84,7 +84,7 @@ namespace CrossBuy.Controllers
             ViewBag.EmployeeFilter = employeeId;
             ViewBag.Branches = await _db.Branches.AsNoTracking()
                 .Where(b => b.CompanyID == ctx.CompanyId)
-                .Select(b => new { b.ID, b.Name, b.NameAr }).ToListAsync(ct);
+                .Select(b => new RosterBranchOption { ID = b.ID, Name = b.Name, NameAr = b.NameAr }).ToListAsync(ct);
             ViewBag.Shifts = await _db.Set<WorkShift>().AsNoTracking()
                 .Where(s => s.CompanyID == ctx.CompanyId && s.IsActive)
                 .OrderBy(s => s.StartTime).ToListAsync(ct);
@@ -189,5 +189,15 @@ namespace CrossBuy.Controllers
             TempData["RosterErr"] = code ?? "not_authorized";
             return RedirectToAction(nameof(Index), periodId is int p ? new { periodId = p } : null);
         }
+    }
+
+    // NAMED and public: Roster/Index reads ViewBag.Branches through IEnumerable<dynamic>,
+    // and an anonymous type is internal to this assembly - a runtime-compiled view lives in
+    // another one and cannot bind to it ("'object' does not contain a definition for ...").
+    public class RosterBranchOption
+    {
+        public int ID { get; set; }
+        public string? Name { get; set; }
+        public string? NameAr { get; set; }
     }
 }

@@ -53,8 +53,8 @@ namespace CrossBuy.BL
         // The SAME messages the MVC path uses, so a user sees one wording across the product — and deliberately
         // generic. They name no role, no company, no employee and no reason: an error that explains the rule is an
         // error that maps it. (A1/9: do not expose permission internals.)
-        private const string Forbidden = "ليست لديك صلاحية لتنفيذ هذا الإجراء";
-        private const string NoContext = "لا يمكن تحديد الشركة لهذا الطلب";
+        private const string Forbidden = "You do not have permission to perform this action";
+        private const string NoContext = "The company for this request could not be determined";
 
         private readonly IBusinessContextAccessor _contexts;
         private readonly IModuleAccessService _accounting;

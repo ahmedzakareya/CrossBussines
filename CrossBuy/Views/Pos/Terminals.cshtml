@@ -47,6 +47,7 @@
                             <form asp-action="SaveTerminal" method="post" class="row g-3" id="tForm">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" id="tId" value="0" /><input type="hidden" name="autoCreateCash" value="true" />
                                 <div class="col-6"><label class="required fw-semibold fs-8 mb-1">@SR["Code"]</label><input name="code" id="tCode" class="form-control form-control-solid form-control-sm" placeholder="T1" required /></div>
                                 <div class="col-6"><label class="fw-semibold fs-8 mb-1">@SR["Name"]</label><input name="name" id="tName" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["Cashier 1"]" /></div>
+                                <div class="col-6"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (English)"]</label><input name="nameEn" id="tNameEn" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["Cashier 1"]" /></div>
                                 <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Receipt prefix"]</label><input name="receiptPrefix" id="tPrefix" class="form-control form-control-solid form-control-sm" placeholder="@Localizer["auto: code + -"]" /></div>
                                 <div class="col-12"><label class="fw-semibold fs-8 mb-1">@Localizer["Terminal drawer"]</label>
                                     <select name="cashAccountId" id="tCash" class="form-select form-select-solid form-select-sm" data-control="select2">
@@ -77,10 +78,10 @@
                                     openShifts.TryGetValue(t.ID, out var sh);
                                     <div class="col-md-6"><div class="card border border-gray-300 border-dashed h-100"><div class="card-body p-4">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <div><span class="fw-bold text-gray-900 fs-5">@t.Code</span> <span class="text-muted">@t.Name</span>
+                                            <div><span class="fw-bold text-gray-900 fs-5">@t.Code</span> <span class="text-muted">@DisplayName.Of(t.Name, t.NameEn)</span>
                                                 @if (!t.IsActive) { <span class="badge badge-light-secondary fs-8 ms-1">@Localizer["Off"]</span> }</div>
                                             <div class="d-flex gap-1">
-                                                <button type="button" class="btn btn-icon btn-sm btn-light-primary t-edit" data-id="@t.ID" data-code="@t.Code" data-name="@t.Name" data-prefix="@t.ReceiptPrefix" data-cash="@t.CashAccountId" data-active="@t.IsActive.ToString().ToLower()" data-paper="@t.ReceiptPaperWidthMm" data-copies="@t.ReceiptCopies" data-printer="@t.ReceiptPrinterName"><i class="ki-outline ki-pencil fs-6"></i></button>
+                                                <button type="button" class="btn btn-icon btn-sm btn-light-primary t-edit" data-id="@t.ID" data-code="@t.Code" data-name="@t.Name" data-nameen="@t.NameEn" data-prefix="@t.ReceiptPrefix" data-cash="@t.CashAccountId" data-active="@t.IsActive.ToString().ToLower()" data-paper="@t.ReceiptPaperWidthMm" data-copies="@t.ReceiptCopies" data-printer="@t.ReceiptPrinterName"><i class="ki-outline ki-pencil fs-6"></i></button>
                                                 <form asp-action="DeleteTerminal" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete terminal? (its till account stays in the chart)"]">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@t.ID" /><button class="btn btn-icon btn-sm btn-light-danger"><i class="ki-outline ki-trash fs-6"></i></button></form>
                                             </div>
                                         </div>
@@ -126,6 +127,7 @@ if(brSel){var go=function(){var v=brSel.value||'';if(v)location.href=base+'?comp
   document.getElementById('tId').value=b.getAttribute('data-id');
   document.getElementById('tCode').value=b.getAttribute('data-code')||'';
   document.getElementById('tName').value=b.getAttribute('data-name')||'';
+  document.getElementById('tNameEn').value=b.getAttribute('data-nameen')||'';
   document.getElementById('tPrefix').value=b.getAttribute('data-prefix')||'';
   var cash=b.getAttribute('data-cash')||''; var el=document.getElementById('tCash'); el.value=cash; if(window.jQuery){jQuery(el).trigger('change');}
   document.getElementById('tPaper').value=b.getAttribute('data-paper')||'80';

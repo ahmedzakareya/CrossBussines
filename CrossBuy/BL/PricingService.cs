@@ -392,10 +392,10 @@ namespace CrossBuy.BL
 				if (pct > maxPct) maxPct = pct;
 			}
 			if (maxPct <= threshold) return (null, null);
-			string msg = $"خصم {maxPct:N1}% يتجاوز الحدّ المسموح {threshold:N1}%";
+			string msg = $"A discount of {maxPct:N1}% exceeds the permitted limit of {threshold:N1}%";
 			if (mode == "Block")
-				return canApprove ? (null, "تجاوز الخصم — معتمَد بصلاحية الإدارة: " + msg) : ("يتطلّب اعتماد الإدارة — " + msg, null);
-			return (null, "تنبيه الخصم — " + msg);
+				return canApprove ? (null, "Discount limit exceeded — approved under management authority: " + msg) : ("Requires management approval — " + msg, null);
+			return (null, "Discount alert — " + msg);
 		}
 
 		// ---------------- management ----------------
@@ -435,15 +435,15 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveAsync(int companyId, Models.Context.Inventory.PriceList dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "الكود والاسم مطلوبان", 0);
+			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "Code and name are required", 0);
 			var dupCode = await _context.PriceLists.AnyAsync(p => p.CompanyID == companyId && p.Code == dto.Code && p.ID != dto.ID);
-			if (dupCode) return (false, "كود قائمة الأسعار مستخدم من قبل", 0);
+			if (dupCode) return (false, "That price-list code is already in use", 0);
 
 			Models.Context.Inventory.PriceList entity;
 			if (dto.ID > 0)
 			{
 				entity = await _context.PriceLists.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == dto.ID)
-					?? throw new InvalidOperationException("قائمة الأسعار غير موجودة");
+					?? throw new InvalidOperationException("Price list not found");
 				var oldLines = _context.PriceListLines.Where(l => l.PriceListId == entity.ID);
 				_context.PriceListLines.RemoveRange(oldLines);
 			}
@@ -537,12 +537,12 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, List<BulkPreviewRow> rows)> BulkPreviewAsync(int companyId, int priceListId, int? itemCategoryId, string adjustType, decimal value, string priceRounding)
 		{
 			var pl = await _context.PriceLists.AsNoTracking().FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == priceListId);
-			if (pl == null) return (false, "قائمة الأسعار غير موجودة", new());
-			if (adjustType != "Percent" && adjustType != "Amount") return (false, "نوع تعديل غير معروف", new());
+			if (pl == null) return (false, "Price list not found", new());
+			if (adjustType != "Percent" && adjustType != "Amount") return (false, "Unknown adjustment type", new());
 			int functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
 			int dp = await _rounding.DecimalsAsync(companyId, pl.CurrencyId ?? functional);
 			decimal step = StepForRounding(priceRounding);
-			if (StepFinerThanCurrency(step, dp)) return (false, "خطوة التقريب أدقّ من دقّة العملة", new());
+			if (StepFinerThanCurrency(step, dp)) return (false, "The rounding step is finer than the currency precision", new());
 
 			var scope = await (from l in _context.PriceListLines.AsNoTracking()
 							   join i in _context.Items.AsNoTracking() on l.ItemId equals i.ID
@@ -555,7 +555,7 @@ namespace CrossBuy.BL
 			foreach (var s in scope)
 			{
 				var (ok, np) = ComputeNewPrice(s.UnitPrice!.Value, adjustType, value, step, dp);
-				if (!ok) return (false, $"التعديل ينتج سعرًا غير موجب للصنف {s.ItemCode}", new());
+				if (!ok) return (false, $"The adjustment produces a non-positive price for item {s.ItemCode}", new());
 				rows.Add(new BulkPreviewRow { ItemId = s.ItemId, UoMId = s.UoMId, ItemCode = s.ItemCode, ItemName = s.Name, OldPrice = s.UnitPrice!.Value, NewPrice = np });
 			}
 			return (true, null, rows);
@@ -566,14 +566,14 @@ namespace CrossBuy.BL
 		// or baseline drift rolls the whole batch back (single SaveChanges after full validation → all-or-nothing).
 		public async Task<(bool ok, string? error, Guid batchId, int changed)> BulkExecuteAsync(int companyId, int priceListId, int? itemCategoryId, string adjustType, decimal value, string priceRounding, string reason, List<BulkBaselineItem> baseline, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(reason)) return (false, "سبب التعديل مطلوب", Guid.Empty, 0);
+			if (string.IsNullOrWhiteSpace(reason)) return (false, "A reason for the adjustment is required", Guid.Empty, 0);
 			var pl = await _context.PriceLists.AsNoTracking().FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == priceListId);
-			if (pl == null) return (false, "قائمة الأسعار غير موجودة", Guid.Empty, 0);
-			if (adjustType != "Percent" && adjustType != "Amount") return (false, "نوع تعديل غير معروف", Guid.Empty, 0);
+			if (pl == null) return (false, "Price list not found", Guid.Empty, 0);
+			if (adjustType != "Percent" && adjustType != "Amount") return (false, "Unknown adjustment type", Guid.Empty, 0);
 			int functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
 			int dp = await _rounding.DecimalsAsync(companyId, pl.CurrencyId ?? functional);
 			decimal step = StepForRounding(priceRounding);
-			if (StepFinerThanCurrency(step, dp)) return (false, "خطوة التقريب أدقّ من دقّة العملة", Guid.Empty, 0);
+			if (StepFinerThanCurrency(step, dp)) return (false, "The rounding step is finer than the currency precision", Guid.Empty, 0);
 
 			var baseMap = (baseline ?? new()).ToDictionary(b => (b.ItemId, b.UoMId), b => b.ExpectedOld);
 
@@ -584,20 +584,20 @@ namespace CrossBuy.BL
 								   && l.PricingMode == "Fixed" && l.UnitPrice != null
 								   && (itemCategoryId == null || i.ItemCategoryId == itemCategoryId)
 							   select l).ToListAsync();
-			if (lines.Count == 0) return (false, "لا أسطر ضمن النطاق", Guid.Empty, 0);
+			if (lines.Count == 0) return (false, "No lines fall within the range", Guid.Empty, 0);
 
 			// PASS 1 — the whole shown set must still match the live set exactly (same lines + same old prices).
-			if (baseMap.Count != lines.Count) return (false, "تغيّرت الأسعار بعد المعاينة، أعِد المعاينة", Guid.Empty, 0);
+			if (baseMap.Count != lines.Count) return (false, "Prices changed after the preview — run the preview again", Guid.Empty, 0);
 			foreach (var l in lines)
 				if (!baseMap.TryGetValue((l.ItemId, l.UoMId), out var expOld) || expOld != l.UnitPrice!.Value)
-					return (false, "تغيّرت الأسعار بعد المعاينة، أعِد المعاينة", Guid.Empty, 0);
+					return (false, "Prices changed after the preview — run the preview again", Guid.Empty, 0);
 
 			// PASS 2 — compute + validate every new price BEFORE mutating anything.
 			var computed = new List<(Models.Context.Inventory.PriceListLine line, decimal np)>();
 			foreach (var l in lines)
 			{
 				var (ok, np) = ComputeNewPrice(l.UnitPrice!.Value, adjustType, value, step, dp);
-				if (!ok) return (false, "التعديل ينتج سعرًا غير موجب — أُلغيت الدفعة", Guid.Empty, 0);
+				if (!ok) return (false, "The adjustment produces a non-positive price — the batch was cancelled", Guid.Empty, 0);
 				computed.Add((l, np));
 			}
 
@@ -624,12 +624,12 @@ namespace CrossBuy.BL
 		// original. Refuses an empty reason and a double-undo.
 		public async Task<(bool ok, string? error, Guid newBatchId, int restored)> BulkUndoAsync(int companyId, Guid batchId, string reason, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(reason)) return (false, "سبب التراجع مطلوب", Guid.Empty, 0);
+			if (string.IsNullOrWhiteSpace(reason)) return (false, "A reason for the rollback is required", Guid.Empty, 0);
 			var logRows = await _context.PriceChangeLogs.AsNoTracking()
 				.Where(x => x.CompanyID == companyId && x.BatchId == batchId && x.AdjustType != "Undo").ToListAsync();
-			if (logRows.Count == 0) return (false, "الدفعة غير موجودة", Guid.Empty, 0);
+			if (logRows.Count == 0) return (false, "Batch not found", Guid.Empty, 0);
 			bool alreadyUndone = await _context.PriceChangeLogs.AnyAsync(x => x.CompanyID == companyId && x.ReversalOfBatchId == batchId);
-			if (alreadyUndone) return (false, "الدفعة متراجَع عنها من قبل", Guid.Empty, 0);
+			if (alreadyUndone) return (false, "The batch has already been rolled back", Guid.Empty, 0);
 
 			int plId = logRows[0].PriceListId;
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
@@ -694,24 +694,24 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, string? warning, int id)> SavePromotionAsync(int companyId, Models.Context.Inventory.Promotion dto, string? userId)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "الكود والاسم مطلوبان", null, 0);
+			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "Code and name are required", null, 0);
 			var dupCode = await _context.Promotions.AnyAsync(p => p.CompanyID == companyId && p.Code == dto.Code && p.ID != dto.ID);
-			if (dupCode) return (false, "كود العرض مستخدم من قبل", null, 0);
+			if (dupCode) return (false, "That offer code is already in use", null, 0);
 			var type = dto.DiscountType == "Amount" ? "Amount" : "Percent";
 			// HM-5 save guards (block): negative value, and percent over 100 (would zero/negate the price).
-			if (dto.Value < 0) return (false, "قيمة الخصم لا يمكن أن تكون سالبة", null, 0);
-			if (type == "Percent" && dto.Value > 100) return (false, "نسبة الخصم لا يمكن أن تتجاوز 100%", null, 0);
-			if (dto.ValidFrom.HasValue && dto.ValidTo.HasValue && dto.ValidTo < dto.ValidFrom) return (false, "تاريخ النهاية قبل البداية", null, 0);
+			if (dto.Value < 0) return (false, "The discount value cannot be negative", null, 0);
+			if (type == "Percent" && dto.Value > 100) return (false, "The discount percentage cannot exceed 100%", null, 0);
+			if (dto.ValidFrom.HasValue && dto.ValidTo.HasValue && dto.ValidTo < dto.ValidFrom) return (false, "The end date is before the start date", null, 0);
 			// HM-5 save guard (warn, non-blocking): an unusually high percent — a likely typo.
 			string? warning = (type == "Percent" && dto.Value > PromotionPercentWarnThreshold)
-				? $"نسبة خصم مرتفعة جدًّا ({dto.Value:0.##}%) — تأكّد أنها ليست خطأً مطبعيًّا"
+				? $"That discount percentage is very high ({dto.Value:0.##}%) — check it is not a typo"
 				: null;
 
 			Models.Context.Inventory.Promotion entity;
 			if (dto.ID > 0)
 			{
 				entity = await _context.Promotions.FirstOrDefaultAsync(p => p.CompanyID == companyId && p.ID == dto.ID)
-					?? throw new InvalidOperationException("العرض غير موجود");
+					?? throw new InvalidOperationException("Offer not found");
 			}
 			else
 			{

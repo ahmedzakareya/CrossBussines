@@ -59,9 +59,9 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveBrandAsync(Brand dto, IFormFile? logo, string? webRootPath, bool removeLogo = false)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "الكود والاسم مطلوبان", 0);
+			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Name)) return (false, "Code and name are required", 0);
 			var dup = await _db.Brands.AnyAsync(b => b.CompanyId == dto.CompanyId && b.Code == dto.Code && b.ID != dto.ID);
-			if (dup) return (false, "كود العلامة مستخدم من قبل", 0);
+			if (dup) return (false, "That brand code is already in use", 0);
 
 			Brand e;
 			bool isNew = dto.ID <= 0;
@@ -70,7 +70,7 @@ namespace CrossBuy.BL
 
 			e.Code = dto.Code.Trim(); e.Name = dto.Name.Trim(); e.NameEn = dto.NameEn; e.IsActive = dto.IsActive;
 			e.ColorPrimary = dto.ColorPrimary; e.ColorSecondary = dto.ColorSecondary; e.ColorAccent = dto.ColorAccent;
-			e.TradeName = dto.TradeName; e.Address = dto.Address; e.Phone = dto.Phone; e.Email = dto.Email; e.Website = dto.Website;
+			e.TradeName = dto.TradeName; e.TradeNameEn = dto.TradeNameEn; e.Address = dto.Address; e.Phone = dto.Phone; e.Email = dto.Email; e.Website = dto.Website;
 			e.ReceiptFooterAr = dto.ReceiptFooterAr; e.ReceiptFooterEn = dto.ReceiptFooterEn;
 
 			if (logo != null && logo.Length > 0 && !string.IsNullOrEmpty(webRootPath))
@@ -100,8 +100,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteBrandAsync(int companyId, int id)
 		{
 			var e = await _db.Brands.FirstOrDefaultAsync(b => b.ID == id && b.CompanyId == companyId);
-			if (e == null) return (false, "العلامة غير موجودة");
-			if (await _db.Branches.AnyAsync(b => b.BrandId == id)) return (false, "لا يمكن الحذف: توجد فروع مرتبطة بهذه العلامة");
+			if (e == null) return (false, "Brand not found");
+			if (await _db.Branches.AnyAsync(b => b.BrandId == id)) return (false, "Cannot delete: there are branches linked to this brand");
 			var node = await _db.Hierarchicals.FirstOrDefaultAsync(h => h.H_Type == BrandNodeType && h.H_ObjectID == id);
 			if (node != null) _db.Hierarchicals.Remove(node);
 			_db.Brands.Remove(e);
@@ -115,7 +115,7 @@ namespace CrossBuy.BL
 			if (brand == null)
 			{
 				var cname = await _db.Companies.AsNoTracking().Where(c => c.CompanyID == companyId).Select(c => c.ComoanyNameAr ?? c.CompanyName).FirstOrDefaultAsync();
-				brand = new Brand { CompanyId = companyId, Code = "DEFAULT", Name = string.IsNullOrWhiteSpace(cname) ? "العلامة الافتراضية" : cname!, IsActive = true, CreatedAt = DateTime.UtcNow };
+				brand = new Brand { CompanyId = companyId, Code = "DEFAULT", Name = string.IsNullOrWhiteSpace(cname) ? "Default brand" : cname!, IsActive = true, CreatedAt = DateTime.UtcNow };
 				_db.Brands.Add(brand);
 				await _db.SaveChangesAsync();
 			}

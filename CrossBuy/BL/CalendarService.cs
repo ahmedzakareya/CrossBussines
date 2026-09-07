@@ -5,16 +5,24 @@ using Microsoft.EntityFrameworkCore;
 namespace CrossBuy.BL
 {
     // FullCalendar event shape (+ extended props consumed by the view).
+    // `title` is the DISPLAY title, already resolved for the current culture before it leaves this
+    // service - the same contract TaskRowDto.Title follows, so no caller (the calendar screen, the
+    // unified agenda, the workspace) has to know the rule. `titleAr`/`titleEn` are the stored values,
+    // for an editor that must round-trip what is actually in the database.
     public record CalEventDto(int id, string title, string start, string? end, bool allDay,
         string className, string scope, string? description, string? location,
-        string ownerName, List<string> attendees, List<int> attendeeIds, bool canEdit);
+        string ownerName, List<string> attendees, List<int> attendeeIds, bool canEdit,
+        string titleAr = "", string? titleEn = null);
 
     public class CalEventInput
     {
         public int Id { get; set; }
         public string Title { get; set; } = "";
+        public string? TitleEn { get; set; }      // optional English twin
         public string? Description { get; set; }
+        public string? DescriptionEn { get; set; }  // optional English twin
         public string? Location { get; set; }
+        public string? LocationEn { get; set; }     // optional English twin
         public bool AllDay { get; set; }
         public DateTime StartAt { get; set; }
         public DateTime? EndAt { get; set; }
@@ -96,31 +104,43 @@ namespace CrossBuy.BL
             // owner + attendee names in one round-trip each
             var owners = await _db.Employee.AsNoTracking()
                 .Where(e => rows.Select(r => r.OwnerEmpId).Contains(e.ID))
-                .Select(e => new { e.ID, e.FullName }).ToListAsync();
+                .Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync();
             var atts = await _db.CalendarEventAttendees.AsNoTracking().Where(a => ids.Contains(a.EventId))
                 .Join(_db.Employee.AsNoTracking(), a => a.EmployeeId, e => e.ID,
-                    (a, e) => new { a.EventId, a.EmployeeId, e.FullName }).ToListAsync();
+                    (a, e) => new { a.EventId, a.EmployeeId, e.FullName, e.FullNameEn }).ToListAsync();
 
+            bool isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
             return rows.Select(r => new CalEventDto(
-                r.Id, r.Title, Iso(r.StartAt), r.EndAt.HasValue ? Iso(r.EndAt.Value) : null, r.AllDay,
+                r.Id, Display(r.Title, r.TitleEn, isEn), Iso(r.StartAt), r.EndAt.HasValue ? Iso(r.EndAt.Value) : null, r.AllDay,
                 r.Scope == "Company" ? "cbev-company" : "cbev-personal", r.Scope,
-                r.Description, r.Location,
-                owners.FirstOrDefault(o => o.ID == r.OwnerEmpId)?.FullName ?? "",
-                atts.Where(a => a.EventId == r.Id).Select(a => a.FullName).ToList(),
+                // Resolved the same way the title one line above already is - these two were the only
+                // fields on the reminder popup still reading from their Arabic column alone.
+                DisplayOpt(r.Description, r.DescriptionEn, isEn), DisplayOpt(r.Location, r.LocationEn, isEn),
+                // The people, in the same language as the title resolved one line above.
+                owners.Where(o => o.ID == r.OwnerEmpId)
+                      .Select(o => EmployeeNames.Of(o.FullName, o.FullNameEn)).FirstOrDefault() ?? "",
+                atts.Where(a => a.EventId == r.Id)
+                    .Select(a => EmployeeNames.Of(a.FullName, a.FullNameEn)).ToList(),
                 atts.Where(a => a.EventId == r.Id).Select(a => a.EmployeeId).ToList(),
-                r.OwnerEmpId == empId)).ToList();
+                r.OwnerEmpId == empId, r.Title, r.TitleEn)).ToList();
         }
 
         public async Task<CalEventDto?> GetAsync(int companyId, int empId, int id)
         {
             var r = await Visible(companyId, empId).FirstOrDefaultAsync(e => e.Id == id);
             if (r == null) return null;
-            var ownerName = await _db.Employee.AsNoTracking().Where(e => e.ID == r.OwnerEmpId).Select(e => e.FullName).FirstOrDefaultAsync() ?? "";
+            var ownerName = await _db.Employee.AsNoTracking().Where(e => e.ID == r.OwnerEmpId)
+                .Select(EmployeeNames.Display()).FirstOrDefaultAsync() ?? "";
             var atts = await _db.CalendarEventAttendees.AsNoTracking().Where(a => a.EventId == r.Id)
-                .Join(_db.Employee.AsNoTracking(), a => a.EmployeeId, e => e.ID, (a, e) => new { a.EmployeeId, e.FullName }).ToListAsync();
-            return new CalEventDto(r.Id, r.Title, Iso(r.StartAt), r.EndAt.HasValue ? Iso(r.EndAt.Value) : null, r.AllDay,
-                r.Scope == "Company" ? "cbev-company" : "cbev-personal", r.Scope, r.Description, r.Location, ownerName,
-                atts.Select(a => a.FullName).ToList(), atts.Select(a => a.EmployeeId).ToList(), r.OwnerEmpId == empId);
+                .Join(_db.Employee.AsNoTracking(), a => a.EmployeeId, e => e.ID,
+                    (a, e) => new { a.EmployeeId, e.FullName, e.FullNameEn }).ToListAsync();
+            bool isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+            return new CalEventDto(r.Id, Display(r.Title, r.TitleEn, isEn), Iso(r.StartAt), r.EndAt.HasValue ? Iso(r.EndAt.Value) : null, r.AllDay,
+                r.Scope == "Company" ? "cbev-company" : "cbev-personal", r.Scope,
+                DisplayOpt(r.Description, r.DescriptionEn, isEn), DisplayOpt(r.Location, r.LocationEn, isEn), ownerName,
+                atts.Select(a => EmployeeNames.Of(a.FullName, a.FullNameEn)).ToList(),
+                atts.Select(a => a.EmployeeId).ToList(), r.OwnerEmpId == empId,
+                r.Title, r.TitleEn);
         }
 
         public async Task<int> SaveAsync(int companyId, int empId, CalEventInput input)
@@ -150,7 +170,9 @@ namespace CrossBuy.BL
                 string newScope = input.Scope == "Company" ? "Company" : "Personal";
                 if (ev.Title != (input.Title ?? "").Trim()) changed.Add(nameof(ev.Title));
                 if (ev.Description != input.Description) changed.Add(nameof(ev.Description));
+                if (ev.DescriptionEn != input.DescriptionEn) changed.Add(nameof(ev.DescriptionEn));
                 if (ev.Location != input.Location) changed.Add(nameof(ev.Location));
+                if (ev.LocationEn != input.LocationEn) changed.Add(nameof(ev.LocationEn));
                 if (ev.AllDay != input.AllDay) changed.Add(nameof(ev.AllDay));
                 if (ev.Scope != newScope) changed.Add(nameof(ev.Scope));
             }
@@ -161,8 +183,11 @@ namespace CrossBuy.BL
                 isNew = true;
             }
             ev.Title = (input.Title ?? "").Trim();
+            ev.TitleEn = string.IsNullOrWhiteSpace(input.TitleEn) ? null : input.TitleEn.Trim();
             ev.Description = input.Description;
+            ev.DescriptionEn = string.IsNullOrWhiteSpace(input.DescriptionEn) ? null : input.DescriptionEn.Trim();
             ev.Location = input.Location;
+            ev.LocationEn = string.IsNullOrWhiteSpace(input.LocationEn) ? null : input.LocationEn.Trim();
             ev.AllDay = input.AllDay;
             ev.StartAt = input.StartAt;
             ev.EndAt = input.EndAt;
@@ -256,6 +281,18 @@ namespace CrossBuy.BL
         }
 
         // local time, no zone suffix → FullCalendar reads it as-is (matches the browser-entered value)
+        // One rule, one place: the twin when the UI is not Arabic and a twin exists, the stored title
+        // otherwise.
+        // The NULLABLE twin of Display, for Description and Location. A separate name because
+        // nullability is not part of a C# signature, so an overload differing only by string? would be
+        // a duplicate member. Null stays null on purpose: the reminder popup hides a row that has no
+        // value, and an empty string would leave an icon sitting beside nothing.
+        private static string? DisplayOpt(string? text, string? textEn, bool isEn) =>
+            isEn && !string.IsNullOrWhiteSpace(textEn) ? textEn : text;
+
+        private static string Display(string title, string? titleEn, bool isEn)
+            => (isEn && !string.IsNullOrWhiteSpace(titleEn)) ? titleEn! : title;
+
         private static string Iso(DateTime dt) => dt.ToString("yyyy-MM-ddTHH:mm:ss");
     }
 }

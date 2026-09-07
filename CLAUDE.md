@@ -1,4 +1,4 @@
-# CrossBuy — Project Rules (hypermarket track + shared platform)
+﻿# CrossBuy — Project Rules (hypermarket track + shared platform)
 
 This file is loaded every session. It records **our permanent rules** and the **shared-platform rules imposed by a
 parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of the parallel work:
@@ -21,11 +21,44 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
   `if (!AnyAsync) seed` drains; a fixed created-name asserted as "new" collides. We have found this THREE times (T6 batch
   name · hm1-b5b receipt numbers · HM-D12 manuf raws) — sweep for it, don't rediscover it a fourth. (Baseline note:
   `unbatched_inbound_tracked` = 19 after the HM-D12 MFGT stray-TrackExpiry repair, was 25.)
-- **Every user-facing string via Resources** (or the file's own convention — e.g. `PricingService` errors are hardcoded Arabic).
+- **Every user-facing string via Resources** (or the file's own convention — e.g. `PricingService` errors are hardcoded English).
   - **Declared exception (HM-6):** `StockService` and `ItemService` carry **no localizer by design** — every message in
-    them is hardcoded Arabic (file convention). New messages there follow that convention. Injecting an `IStringLocalizer`
+    them is a hardcoded literal (file convention). New messages there follow that convention. Injecting an `IStringLocalizer`
     into `StockService` (our stock writer) would itself be a **new constructor coupling that `writer_coupling` (HM-D53)
     flags** — so it is a deliberate exception, not an oversight. Controller-level and view strings still go via Resources.
+  - **The literal in an unlocalized file is ENGLISH, not Arabic (i18n sweep, 2026-09-01).** This rule used to read
+    "hardcoded Arabic", because Arabic was the default culture. It no longer is: `Program.cs` now defaults to `en`
+    (see the *English is the presentation language* rule below), so a hardcoded Arabic message is a message an English
+    operator cannot read, in the one place we deliberately have no localizer to save us. ~1,540 such literals were
+    translated across the services, controllers, views and app JS. **Do not "restore" Arabic here** — the constraint
+    the exception protects is *no localizer coupling in the writers*, not *the Arabic language*.
+- **English is the presentation language; Arabic and French stay one click away.** `DefaultRequestCulture = en` and
+  `Accept-Language` negotiation is removed, so only an explicit choice (`?culture=`, or the cookie the switcher writes)
+  changes the language — a browser advertising `ar` no longer silently pulls the whole UI back to Arabic.
+  - A **bilingual pair is never collapsed.** `T(ar,en)`, `tr(ar,en)`, `LabelAr/LabelEn`, `NameAr/NameEn`,
+    `NotifyAsync(…, arTitle, enTitle, arBody, enBody)` all keep both halves. Translating the Arabic half of a pair is a
+    regression, not a sweep — it silently deletes the Arabic UI.
+  - **Read a bilingual column pair through `DisplayName.Or(preferred, fallback)`** (`BL/DisplayName.cs`), never a bare
+    `isAr ? x.Name : x.NameEn`. The English column is nullable: with English as the default, an unfallbacked ternary
+    renders a **blank** account/warehouse/unit rather than a name. 132 sites were repaired; keep new ones fallbacked.
+    For an employee name use `EmployeeNames` — it adds the EF-translatable `Display()` that ORDER BY and search need.
+  - **Every named master-data table carries a PAIR.** Ten tables had a single name column and now
+    have an English twin (`deploy/sql/i18n_english_name_columns.sql`): ManufWorkCenters.NameEn,
+    ManufPlans.NameEn, MaintenanceSchedules.TitleEn, PosTerminals.NameEn,
+    BranchPaymentMethods.DisplayNameEn, Drivers.NameEn, CrmSlaPolicies.NameEn,
+    ManufRoutingOps.OperationNameEn, TaskChecklistItems.TitleEn, Brands.TradeNameEn. A new named
+    table follows the same shape: required Arabic column, nullable English twin, an optional input
+    beside the Arabic one, and `DisplayName.Of` at every read.
+  - **A snapshot column is NOT given a twin.** `PosOrderLines.ItemName`, `Payslips.EmployeeName`,
+    `FinalSettlements.EmployeeName`, `PosOrderLineModifiers.Name` freeze what a document said when
+    it was issued. They must not vary by UI language - same rule as `EmployeeNames.EnglishOf`.
+  - **A code column holds a CODE, never prose.** `MaintenanceSchedules.Type` is
+    `Preventive|Inspection|Calibration|Repair`; five seeded rows held Arabic prose there, so the
+    value was outside its own domain and any future branch on it would have missed. Repaired in the
+    same script. Check a code column's domain before translating what a screen shows.
+  - **An assertion that matches on a message substring matches the ENGLISH text.** `DevSeedController`'s self-checks and
+    `UatDatasetSeeder` grep service errors (`.Contains("منتهية")` → `.Contains("has expired")`); 21 were repointed. A new
+    matcher pins the English wording, so changing a message means changing its matcher.
 - **Capabilities via `IsCapabilityEnabledAsync`**; test on `ZZ-*` / demo-seed entities only.
 - **Company guard** at every gateway; cross-company operations are refused.
 - **Selective commits.** Commit only our files. Shared files (CrossDbContext, Program.cs, resx) get **our lines only**
@@ -34,6 +67,44 @@ parallel team's uncommitted work**, so no phase re-discovers them. Snapshot of t
   prior binary in `bin/Debug`. If a shared-tree break (e.g. parallel WIP) forces acceptance on an **older binary**, that
   MUST be declared in the report, with exactly what the old binary did not cover and how any later change was otherwise
   verified. (Origin: HM-D52 — parallel WIP broke the tree right after an acceptance run.)
+
+## Platform engineering rules (Stage 1; each one cost a real defect to learn)
+
+Detail lives in `docs/platform/ADR-023/024/025`, `docs/architecture/CORRECTION-004`, `docs/design/*`. Keep this list short.
+
+- **Never capture a scoped service instance in an EF model expression.** EF caches the model once per context type, so
+  a query filter closing over an injected object serves *every* request from the **first** request's value.
+- **A global filter resolves its state through the executing `DbContext`** (`db.CompanyScope`) — that is what makes the
+  value per-request. Also: EF does **not** short-circuit `x != null && x.Value`; it evaluates `.Value` while building
+  parameters. Compare against a non-matching sentinel (`CompanyId ?? 0`) instead of a null check.
+- **Every background worker binds an explicit company scope** (`WorkerScope.ForCompany`). An unbound worker reads
+  nothing and passes by examining zero rows.
+- **A hosted service is a SINGLETON — it may never inject a scoped service.** Take `IServiceScopeFactory` and create a
+  scope per run. Batch C's own `PermissionScopeStartupValidator` broke this and stopped the app from starting.
+- **A DI graph is not verified by unit tests that construct services by hand.** 112 green tests coexisted with an
+  application that could not boot. Any new hosted service, or any service injecting `IEnumerable<IModuleAccessService>`,
+  must be added to `Stage1DiWiringTests` — it builds the real graph with `ValidateOnBuild` + `ValidateScopes`.
+- **A service registered as `IModuleAccessService` must not inject `IEnumerable<IModuleAccessService>`** — that is a
+  circular dependency. Inject the concrete peer service instead (`ProjectsAccessService` → `AccountingAccessService`).
+- **An unresolved company scope reads no company-scoped data and writes none.** Fail closed; never default to a company.
+- **`IgnoreQueryFilters()` is forbidden** outside the bypass implementation — it removes isolation with no
+  authorization and no audit line. Enforced by a test.
+- **Cross-company access requires an explicit authorized, reasoned, scoped and audited bypass** (`ICompanyIsolationBypass`).
+  Read-only bypass kinds may not write.
+- **Public-company reads use the constrained public scope** (`BeginPublicCatalogRead`, pinned to configured
+  `Store:StoreCompanyId`) — never the administrative bypass.
+- **A custom build configuration must declare its compilation symbols.** `TestRun` was undeclared, so `DEBUG` was
+  undefined and every acceptance compiled a different program than Debug.
+- **Security and isolation metrics require independent reconciliation** before publication: reconcile source, scanner,
+  grep and inventory, and never credit an attribute that checks no role (CORRECTION-004).
+- **Authentication is not authorization, and a query filter is not an authorization control.** A request-supplied
+  `companyId` is compatibility-only: validate it against the resolved `BusinessContext` and reject a mismatch — never
+  coerce it. Hiding a UI control is not a control.
+- **Accounting is the visual identity reference** for future platform and administrative tools: Metronic 8 `app-*`
+  shell, the brand palette via Metronic tokens, RTL/LTR parity, `@Localizer` + ar/en/fr resx. Specialized operational
+  screens (POS, KDS, manufacturing floor, mobile attendance, storefront) keep their domain UX.
+  **NOTE:** the brand is ledger **green** `#13433a` + gold, not blue — `crossbuy-brand.css` overrides Metronic's blue
+  on purpose. Open item: A6.2's "preserve the CrossBuy blue identity" contradicts the code and needs an owner decision.
 
 ## Standing decisions
 

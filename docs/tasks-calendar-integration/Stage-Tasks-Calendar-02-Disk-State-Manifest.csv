@@ -1,0 +1,24 @@
+﻿Path,Change,Role,Purpose,Bytes,Lines,SHA256
+CrossBuy/BL/TasksCalendar/TaskCalendarEventPublisher.cs,CREATED,production-source,Publishes the Task/Calendar contracts as kernel events INSIDE the caller's transaction,13284,265,adcc09f1108fce658f47d78044d483fae3882a5d99bffbcbaa3921fe0262bc9a
+CrossBuy/BL/TaskService.cs,MODIFIED,production-source,"Transition wiring: events in-transaction, notifications post-commit, nothing on a refused write",22913,397,172724ff63863009edef9da353b18c3365ac696e1878975503723d0b565efbb6
+CrossBuy/BL/Platform/EntityRegistry.cs,MODIFIED,production-source-kernel,"Task + CalendarEvent registered (additive): 2 codes, 2 definitions, 2 search arms, 2 resolve arms",32927,542,104814f5964f60910fc82ffff1bf90da5599812a0b1fa73fa6df50b524d92610
+CrossBuy/BL/TasksCalendar/TaskCalendarIntegrationContracts.cs,MODIFIED,production-source,3 event names renamed to satisfy <EntityCode>.<Action> kernel validation,20887,431,517ada24fa2ae559bf8dd731ff5ec4936dfae7591ce9574e7bc5fc025bbc06e4
+CrossBuy/Program.cs,MODIFIED,production-source-shared,+1 AddScoped for the event publisher,42963,644,4fa1d8e2900ff44d02bd679d9b747544894526fd77e458dfc575dbdf4103a8a4
+CrossBuy/BL/TasksCalendar/TaskCalendarTime.cs,UNCHANGED,production-source,"Shared time model — UTC, explicit offsets, all-day as a local date",10564,220,e15d360831981250e3afc3195b95157ab58c5921ed80dc581fbb06f6224ac71d
+CrossBuy/BL/TasksCalendar/TaskNotificationService.cs,UNCHANGED,production-source,"Direct Task notifications, idempotent per occurrence",15223,294,6eda0e6e893849c07450880bbe592cf4805856d4eb784ca9c59b8a494dc27066
+CrossBuy/BL/TasksCalendar/TaskOverdueSweepService.cs,UNCHANGED,production-source,Overdue detection with one owner (TM-7 worker),5052,121,b7e2b0537ebeece0fd0e7cc7aa5f2e918b1e909987a3f562fce35a24d58b560a
+CrossBuy/BL/TasksCalendar/WorkspaceAgendaService.cs,UNCHANGED,production-source,Read-only Tasks+Calendar agenda union,12128,298,2b314d8e933537ab90a484678944be705047ab1f9779a4fe382571c1f98ec932
+CrossBuy/BL/TaskGeneratorHostedService.cs,UNCHANGED,production-source,Hosts the overdue sweep; no third worker,3810,74,29c466d1cb8902e9e577b07a99514e83f08eee44ac4058f0adc7aa2e1e365b88
+CrossBuy.Tests/TasksCalendarTransitionAndEventTests.cs,CREATED,test,"17 tests: transitions, registration, transactional publishing, rollback",20391,458,49ad3a5f28d9311d3551e4fd81949e8bd4a7f4b63d7000ae00e9df271867c4cc
+CrossBuy.Tests/TasksCalendarIntegrationTests.cs,MODIFIED,test,Employee seed now populates all ten NOT NULL columns,19553,439,d9d41fcbcb6945932527c0d87320ce22ed9680cdde9c38c7cb0195b034f6e28a
+CrossBuy.Tests/TasksCalendarTimeAndContractTests.cs,MODIFIED,test,Required-set assertion moved with the renamed events,18218,388,ce7b7f79da3a11e37069aa69e3a1d0516a7382103c6b1589ec665082b0cbc2f1
+CrossBuy.Tests/TasksCalendarAgendaTests.cs,UNCHANGED,test,16 agenda tests,18752,369,0503c66a55c4b7cf9fe43af5a2f41ae569a266dc72c3efb695c4cceefb9c5c07
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Notification-Wiring.md,CREATED,document,Phase 1,4344,81,bffb53951361a5b012266d8ad3ec3e8f8f00293d95bf82bfb4a277e589d8efac
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Registry-Onboarding.md,CREATED,document,Phase 2,4086,79,713c91730826bf2dd10a6556b7c84808456c4c2f14afcb1a813b8528deebb38d
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Business-Event-Evidence.md,CREATED,document,Phase 3,4918,96,9af23c236597f7cac3a80f82f44d2a1a0961029cd65d614962b3d6ea66100f81
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Agenda-Evidence.md,CREATED,document,Phase 4,2892,49,27f6e031616acb6923ef49a61194173c3a6dbe161cc0269c62d6dd71bad6c0b4
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Time-Evidence.md,CREATED,document,Phase 5,3330,58,4bbd842afbe453a7dc2eec9aa04e492e1eb291014052224c85dd3e7a78971208
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Test-Evidence.md,CREATED,document,Phase 6 + verification,4761,91,4e7c144196a916541eeab8c085d2f9a622f33a9b6ea05a81002998edb77717cf
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Delivery-Report.md,CREATED,document,Delivery report and gate,6264,117,6715874f4322460afa3b5706cd17c86b94b2e321810c0400e7e9316f459bd2e8
+docs/tasks-calendar-integration/Stage-Tasks-Calendar-02-Preservation-Report.md,CREATED,document,Preservation,3408,77,8e700d1b11bc96340d085f633cf091542b4d3397fb793c0ce38857ae893e32ef
+docs/tasks-calendar-integration/_generator/generate_tci02_manifest.py,CREATED,tooling,This script,8919,193,4d371fd22b737bc329869d211b6d5f5edcfc9e3b99ed6e61ee1507aeb7bed998

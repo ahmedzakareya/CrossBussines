@@ -168,6 +168,13 @@ BEGIN
     CREATE INDEX IX_ManufWoLabor_Wo ON ManufWorkOrderLabor(CompanyID, WorkOrderId);
 END
 GO
+-- The English twin of WorkerName. An external labour line is typed in by hand, so the Arabic name
+-- was the only one stored and the work-order screen showed it on the English UI too. NULL-able and
+-- with no default: a line that has no English name falls back to the Arabic one at read time, which
+-- is better than a blank "Name" cell.
+IF COL_LENGTH('ManufWorkOrderLabor','WorkerNameEn') IS NULL
+    ALTER TABLE ManufWorkOrderLabor ADD WorkerNameEn nvarchar(150) NULL;
+GO
 IF COL_LENGTH('Employee','ManufHourlyRate') IS NULL
     ALTER TABLE Employee ADD ManufHourlyRate decimal(19,4) NULL;
 GO

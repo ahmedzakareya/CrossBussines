@@ -16,7 +16,7 @@
     string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
     string iv(decimal d) => d.ToString(System.Globalization.CultureInfo.InvariantCulture);
     string Badge(string s) => s == "Posted" ? "success" : s == "Approved" ? "info" : "warning";
-    var brand = "#13433a";
+    var brand = "#0E4A9E";
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
@@ -48,7 +48,7 @@
                 else
                 {
                     <div class="table-responsive"><table class="table table-row-bordered align-middle">
-                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th>@Localizer["Subcontractor (vendor)"]</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Contract value"]</th><th class="text-center">@Localizer["Retention %"]</th><th></th></tr></thead>
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Subcontractor (vendor)"]</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Contract value"]</th><th class="text-center">@Localizer["Retention %"]</th><th></th></tr></thead>
                         <tbody>
                         @foreach (var s in subs)
                         {
@@ -97,7 +97,7 @@
                             else
                             {
                                 <div class="table-responsive"><table class="table table-row-bordered align-middle">
-                                    <thead><tr class="fw-bold text-muted fs-8 text-uppercase"><th>#</th><th>@SR["Date"]</th><th class="text-end">@Localizer["Gross work"]</th><th class="text-end">@Localizer["Net payable"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                                    <thead><tr class="fw-bold text-muted fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>#</th><th>@SR["Date"]</th><th class="text-end">@Localizer["Gross work"]</th><th class="text-end">@Localizer["Net payable"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
                                     <tbody>
                                     @foreach (var r in billings)
                                     {

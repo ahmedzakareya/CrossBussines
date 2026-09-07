@@ -19,11 +19,11 @@
                 <input type="text" id="s" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search..."]" autocomplete="off" />
             </div></div></div>
             <div class="card-body pt-0 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" id="t" style="font-variant-numeric:tabular-nums;">
-                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@SR["Code"]</th><th>@SR["Name"]</th><th class="text-center">@Localizer["Kind"]</th><th class="text-end">@Localizer["Rate"]</th><th class="text-center">@Localizer["Default"]</th><th class="text-center">@SR["Status"]</th><th class="text-end"></th></tr></thead>
+                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@SR["Code"]</th><th>@SR["Name"]</th><th class="text-center">@Localizer["Kind"]</th><th class="text-end">@Localizer["Rate"]</th><th class="text-center">@Localizer["Default"]</th><th class="text-center">@SR["Status"]</th><th class="text-end"></th></tr></thead>
                 <tbody>
                 @foreach (var c in Model) {
                     <tr class="r" data-s="@c.Code @c.Name @c.NameEn @c.Kind">
-                        <td><span class="badge fs-8 fw-bold" style="background:#e9f1ee;color:#13433a;">@c.Code</span></td>
+                        <td><span class="badge fs-8 fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@c.Code</span></td>
                         <td class="fw-bold text-gray-900">@(isAr ? c.Name : (c.NameEn ?? c.Name))</td>
                         <td class="text-center">@if (c.Kind=="VAT") { <span class="badge badge-light-primary fw-bold">@Localizer["VAT"]</span> } else { <span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@Localizer["WHT"]</span> }</td>
                         <td class="text-end fw-bold text-gray-900">@c.Rate.ToString("0.##")%</td>

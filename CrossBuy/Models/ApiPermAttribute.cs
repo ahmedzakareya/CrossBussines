@@ -96,7 +96,7 @@ namespace CrossBuy.Models
         {
             ok = false,
             // The project's own failure shape. Deliberately generic and identical for 401 and 403.
-            error = "ليست لديك صلاحية لتنفيذ هذا الإجراء",
+            error = "You do not have permission to perform this action",
         })
         { StatusCode = statusCode };
     }

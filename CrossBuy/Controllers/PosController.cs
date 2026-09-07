@@ -52,7 +52,7 @@ namespace CrossBuy.Controllers
 		/// Page-shaped refusal, matching what InvPerm already does to a denied page request.
 		private IActionResult CompanyRefusedView()
 		{
-			TempData["Err"] = "تعذّر تحديد الشركة لهذه الجلسة";
+			TempData["Err"] = "The company for this session could not be determined";
 			return RedirectToAction("Index", "Home");
 		}
 
@@ -323,9 +323,9 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
-		public async Task<IActionResult> SaveDriver(int branchId, int id, string name, string? phone, bool isActive = true)
+		public async Task<IActionResult> SaveDriver(int branchId, int id, string name, string? nameEn, string? phone, bool isActive = true)
 		{
-			var (ok, err) = await _pos.SaveDriverAsync(branchId, id, name, phone ?? "", isActive);
+			var (ok, err) = await _pos.SaveDriverAsync(branchId, id, name, nameEn, phone ?? "", isActive);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Driver saved"].Value : err;
 			return RedirectToAction(nameof(Drivers), new { branchId });
 		}
@@ -740,9 +740,9 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
-		public async Task<IActionResult> SavePaymentMethod(int branchId, int id, string paymentMethod, string? displayName, int? targetAccountId, int sort, bool isActive = true)
+		public async Task<IActionResult> SavePaymentMethod(int branchId, int id, string paymentMethod, string? displayName, string? displayNameEn, int? targetAccountId, int sort, bool isActive = true)
 		{
-			var (ok, err) = await _pos.SavePaymentMethodAsync(branchId, id, paymentMethod, displayName, targetAccountId, isActive, sort);
+			var (ok, err) = await _pos.SavePaymentMethodAsync(branchId, id, paymentMethod, displayName, displayNameEn, targetAccountId, isActive, sort);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Payment method saved"].Value : err;
 			return RedirectToAction(nameof(PaymentMethods), new { branchId });
 		}
@@ -758,8 +758,8 @@ namespace CrossBuy.Controllers
 		// ==================== CASHIER ROLES (setup only — assign branch employees to POS roles) ====================
 		public static readonly (string key, string ar, string en)[] PosRoleDefs = new[]
 		{
-			("pos-waiter", "جرسون", "Waiter"), ("pos-kitchen", "مطبخ", "Kitchen"),
-			("pos-cashier", "كاشير", "Cashier"), ("pos-manager", "مدير", "Manager"),
+			("pos-waiter", "Waiter", "Waiter"), ("pos-kitchen", "Kitchen", "Kitchen"),
+			("pos-cashier", "Cashier", "Cashier"), ("pos-manager", "Manager", "Manager"),
 		};
 
 		[HttpGet]
@@ -813,9 +813,9 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
-		public async Task<IActionResult> SaveTerminal(int branchId, int id, string code, string name, string? receiptPrefix, int? cashAccountId, bool autoCreateCash = true, bool isActive = true, int paperWidthMm = 80, int copies = 1, string? printerName = null)
+		public async Task<IActionResult> SaveTerminal(int branchId, int id, string code, string name, string? nameEn, string? receiptPrefix, int? cashAccountId, bool autoCreateCash = true, bool isActive = true, int paperWidthMm = 80, int copies = 1, string? printerName = null)
 		{
-			var (ok, err, _) = await _pos.SaveTerminalAsync(branchId, id, code, name, receiptPrefix, cashAccountId, autoCreateCash, isActive, paperWidthMm, copies, printerName);
+			var (ok, err, _) = await _pos.SaveTerminalAsync(branchId, id, code, name, nameEn, receiptPrefix, cashAccountId, autoCreateCash, isActive, paperWidthMm, copies, printerName);
 			TempData[ok ? "PosMsg" : "PosErr"] = ok ? L["Device saved"].Value : err;
 			return RedirectToAction(nameof(Terminals), new { branchId });
 		}

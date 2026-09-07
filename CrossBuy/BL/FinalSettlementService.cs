@@ -60,7 +60,12 @@ namespace CrossBuy.BL
 		public async Task<SettlementPreview> PreviewAsync(int companyId, int employeeId, DateTime terminationDate)
 		{
 			var emp = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == employeeId && e.EmpCompanyID == companyId);
-			var pv = new SettlementPreview { EmployeeId = employeeId, EmployeeName = emp?.FullName };
+			// A preview is a screen, so the name follows the UI language.
+			var pv = new SettlementPreview
+			{
+				EmployeeId = employeeId,
+				EmployeeName = emp is null ? null : CrossBuy.BL.EmployeeNames.Of(emp),
+			};
 			if (emp == null) return pv;
 			pv.AlreadyTerminated = !emp.IsActive;
 			pv.JoinDate = emp.DateOfJoining;
@@ -82,38 +87,41 @@ namespace CrossBuy.BL
 			decimal gratuity, decimal otherEarnings, decimal deductions, int payFromGlAccountId, int? userId)
 		{
 			var emp = await _context.Employee.FirstOrDefaultAsync(e => e.ID == employeeId && e.EmpCompanyID == companyId);
-			if (emp == null) return (false, "الموظف غير موجود");
-			if (!emp.IsActive) return (false, "الموظف منهٍ خدمته بالفعل");
-			if (gratuity < 0 || otherEarnings < 0 || deductions < 0) return (false, "القيم لا يمكن أن تكون سالبة");
+			if (emp == null) return (false, "Employee not found");
+			if (!emp.IsActive) return (false, "The employee has already been terminated");
+			if (gratuity < 0 || otherEarnings < 0 || deductions < 0) return (false, "Values cannot be negative");
 
 			var pv = await PreviewAsync(companyId, employeeId, terminationDate);
 			var leaveValue = pv.LeaveValue;
 			var gross = R(leaveValue + gratuity + otherEarnings);
 			var net = R(gross - deductions);
-			if (net < 0) return (false, "الاستقطاعات تتجاوز إجمالي المستحقات");
+			if (net < 0) return (false, "The deductions exceed the total entitlements");
 
 			var leaveAcc = await AccIdAsync(companyId, "520104");
 			var gratuityAcc = await AccIdAsync(companyId, "520107");
 			var salaryAcc = await AccIdAsync(companyId, "520101");
 			if (leaveAcc == null || gratuityAcc == null || salaryAcc == null)
-				return (false, "حسابات التسوية (520104/520107/520101) غير موجودة. شغّل بذرة المحاسبة.");
+				return (false, "The settlement accounts (520104/520107/520101) do not exist. Run the accounting seed.");
 
 			var ccId = await ResolveCostCenterAsync(companyId, emp.DepartmentID);   // 520101 requires a cost center
 
 			var lines = new List<JournalLineInput>();
-			if (leaveValue > 0) lines.Add(new() { AccountId = leaveAcc.Value, Debit = leaveValue, Credit = 0, Description = "بدل رصيد إجازات" });
-			if (gratuity > 0) lines.Add(new() { AccountId = gratuityAcc.Value, Debit = gratuity, Credit = 0, Description = "مكافأة نهاية الخدمة" });
-			if (otherEarnings > 0) lines.Add(new() { AccountId = salaryAcc.Value, Debit = otherEarnings, Credit = 0, CostCenterId = ccId, Description = "مستحقات أخرى" });
-			if (net > 0) lines.Add(new() { AccountId = payFromGlAccountId, Debit = 0, Credit = net, Description = "صافي التسوية المدفوع" });
+			if (leaveValue > 0) lines.Add(new() { AccountId = leaveAcc.Value, Debit = leaveValue, Credit = 0, Description = "Leave balance allowance" });
+			if (gratuity > 0) lines.Add(new() { AccountId = gratuityAcc.Value, Debit = gratuity, Credit = 0, Description = "End-of-service gratuity" });
+			if (otherEarnings > 0) lines.Add(new() { AccountId = salaryAcc.Value, Debit = otherEarnings, Credit = 0, CostCenterId = ccId, Description = "Other entitlements" });
+			if (net > 0) lines.Add(new() { AccountId = payFromGlAccountId, Debit = 0, Credit = net, Description = "Net settlement paid" });
 			// deductions recovered against salary expense (keeps the entry balanced without a new control account)
-			if (deductions > 0) lines.Add(new() { AccountId = salaryAcc.Value, Debit = 0, Credit = deductions, CostCenterId = ccId, Description = "استقطاعات نهاية الخدمة" });
+			if (deductions > 0) lines.Add(new() { AccountId = salaryAcc.Value, Debit = 0, Credit = deductions, CostCenterId = ccId, Description = "End-of-service deductions" });
 
-			if (lines.Sum(l => l.Debit) <= 0) return (false, "لا توجد مستحقات لترحيلها");
+			if (lines.Sum(l => l.Debit) <= 0) return (false, "There are no entitlements to post");
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = terminationDate.Date, JournalType = "Auto", SourceType = "FinalSettlement", SourceId = employeeId,
-				Description = $"تسوية نهاية خدمة — {emp.FullName}", DescriptionEn = $"Final settlement — {emp.FullName}",
+				// The English description carried the ARABIC name. EnglishOf, not Of: this text is stored and
+				// read by everyone later, so it must not depend on who pressed the button.
+				Description = $"تسوية نهاية خدمة — {emp.FullName}",
+				DescriptionEn = $"Final settlement — {CrossBuy.BL.EmployeeNames.EnglishOf(emp.FullName, emp.FullNameEn)}",
 				Lines = lines,
 			}, userId);
 			if (!ok) return (false, err);

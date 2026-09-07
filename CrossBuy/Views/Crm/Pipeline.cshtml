@@ -121,7 +121,7 @@
   document.getElementById('board').addEventListener('dragstart',function(e){ var c=e.target.closest('.kanban-card'); if(!c)return; dragged=c; fromCol=c.closest('.kanban-col'); c.style.opacity='0.4'; e.dataTransfer.effectAllowed='move'; });
   document.getElementById('board').addEventListener('dragend',function(e){ if(dragged)dragged.style.opacity=''; });
   [].slice.call(document.querySelectorAll('.kanban-col')).forEach(function(col){
-    col.addEventListener('dragover',function(e){ e.preventDefault(); col.style.background='#eef4f1'; });
+    col.addEventListener('dragover',function(e){ e.preventDefault(); col.style.background='#E7F0FF'; });
     col.addEventListener('dragleave',function(e){ col.style.background=''; });
     col.addEventListener('drop',function(e){ e.preventDefault(); col.style.background=''; if(!dragged||col===fromCol)return;
       var id=dragged.getAttribute('data-id'), stage=col.getAttribute('data-stage'), src=fromCol;

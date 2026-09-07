@@ -18,7 +18,9 @@
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Customer Statement"]</h1>
         <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Customers","Accounting")" class="text-muted">@SR["Customers"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@(cust == null ? "" : (isAr ? cust.Name : (cust.NameEn ?? cust.Name)))</li></ul></div>
-        <a href="@Url.Action("Customers","Accounting")" class="btn btn-sm btn-light">@SR["Back"]</a>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Customers","Accounting")" class="btn btn-sm btn-light">@SR["Back"]</a>
+        </div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card"><div class="card-header pt-6 align-items-center">
@@ -27,7 +29,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Date"]</th><th>@Localizer["Document"]</th><th>@SR["Description"]</th><th class="text-end">@SR["Debit"]</th><th class="text-end">@SR["Credit"]</th><th class="text-end pe-4">@SR["Balance"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Date"]</th><th>@Localizer["Document"]</th><th>@SR["Description"]</th><th class="text-end">@SR["Debit"]</th><th class="text-end">@SR["Credit"]</th><th class="text-end pe-4">@SR["Balance"]</th></tr></thead>
                 <tbody>
                 @if (rows.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-10">@Localizer["No movements"]</td></tr> }
                 @foreach (var r in rows)
@@ -43,8 +45,19 @@
                     </tr>
                 }
                 </tbody>
-                <tfoot><tr class="fw-bolder fs-5" style="background:#eaf3ef;border-top:2px solid #13433a;"><td colspan="5" class="text-end ps-4" style="color:#1f6253;">@Localizer["Outstanding balance"]</td><td class="text-end pe-4" style="color:@(bal>0?"#d92d20":"#13433a");">@bal.ToString("N2")</td></tr></tfoot>
+                <tfoot><tr class="fw-bolder fs-5" style="background:#E7F0FF;border-top:2px solid #0E4A9E;"><td colspan="5" class="text-end ps-4" style="color:#145DBF;">@Localizer["Outstanding balance"]</td><td class="text-end pe-4" style="color:@(bal>0?"#d92d20":"#0E4A9E");">@bal.ToString("N2")</td></tr></tfoot>
             </table></div>
         </div></div>
+
+        @{
+            // Platform Kernel slice 2 — the customer's activity timeline. The statement above is a financial
+            // ledger; this is the business history of the customer record itself (creation, edits, and any
+            // pre-kernel CRM activity reconstructed by CustomerLegacyTimelineAdapter).
+            // The comments widget is deliberately NOT added here: Customer.SupportsComments is false, so no
+            // screen outside the pilot's timeline scope changes.
+            ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.Customer;
+            ViewBag.TimelineEntityId = (int)ViewBag.Customer.ID;
+        }
+        @await Html.PartialAsync("_DocEventTimeline")
     </div></div>
 </div>

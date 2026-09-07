@@ -77,7 +77,7 @@ namespace CrossBuy.BL
 			if (dto.ID > 0)
 			{
 				t = await _db.RequiredDocumentTypes.FirstOrDefaultAsync(x => x.ID == dto.ID && x.CompanyID == companyId)
-					?? throw new InvalidOperationException("النوع غير موجود");
+					?? throw new InvalidOperationException("Type not found");
 			}
 			else
 			{
@@ -98,7 +98,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteDocTypeAsync(int companyId, int id)
 		{
 			var t = await _db.RequiredDocumentTypes.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (t == null) return (false, "النوع غير موجود");
+			if (t == null) return (false, "Type not found");
 			// don't hard-break history: if any application document references it, just deactivate
 			bool used = await _db.ApplicationDocuments.AnyAsync(d => d.RequiredDocumentTypeID == id);
 			if (used) { t.IsActive = false; await _db.SaveChangesAsync(); return (true, null); }
@@ -119,14 +119,14 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int id)> SaveApplicationAsync(int companyId, JobApplication input, int? userId)
 		{
 			if (string.IsNullOrWhiteSpace(input.FirstName) || string.IsNullOrWhiteSpace(input.LastName))
-				return (false, "الاسم الأول والأخير مطلوبان", 0);
+				return (false, "First and last name are required", 0);
 
 			JobApplication a;
 			if (input.ID > 0)
 			{
 				a = await _db.JobApplications.FirstOrDefaultAsync(x => x.ID == input.ID && x.CompanyID == companyId)
-					?? throw new InvalidOperationException("الطلب غير موجود");
-				if (a.Status == "Hired") return (false, "لا يمكن تعديل طلب تم تعيينه", 0);
+					?? throw new InvalidOperationException("Order not found");
+				if (a.Status == "Hired") return (false, "An application that has been hired cannot be edited", 0);
 			}
 			else
 			{
@@ -151,12 +151,12 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> MoveStageAsync(int companyId, int id, string stage, int? userId)
 		{
-			if (!RecruitmentStages.IsValid(stage)) return (false, "مرحلة غير صحيحة");
+			if (!RecruitmentStages.IsValid(stage)) return (false, "Invalid stage");
 			var a = await _db.JobApplications.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (a == null) return (false, "الطلب غير موجود");
+			if (a == null) return (false, "Order not found");
 			// Hired is reached ONLY via conversion to an employee (R3), never by drag
-			if (stage == "Hired") return (false, "التعيين يتم عبر زر «تعيين» فقط");
-			if (a.Status == "Hired") return (false, "الطلب معيَّن بالفعل");
+			if (stage == "Hired") return (false, "Hiring is done only through the Hire button");
+			if (a.Status == "Hired") return (false, "The application has already been hired");
 			a.Status = stage;
 			var now = DateTime.UtcNow;
 			if (stage == "Review" && a.ReviewedAt == null) a.ReviewedAt = now;
@@ -186,9 +186,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> AddApplicationDocAsync(int companyId, int appId, int? reqTypeId, IFormFile? file, string? docNumber, DateTime? issue, DateTime? expiry, string? webRootPath)
 		{
 			var app = await _db.JobApplications.AsNoTracking().FirstOrDefaultAsync(a => a.ID == appId && a.CompanyID == companyId);
-			if (app == null) return (false, "الطلب غير موجود");
-			if (file == null || file.Length == 0) return (false, "اختر ملفًا");
-			if (expiry.HasValue && issue.HasValue && expiry < issue) return (false, "تاريخ الانتهاء قبل الإصدار");
+			if (app == null) return (false, "Order not found");
+			if (file == null || file.Length == 0) return (false, "Choose a file");
+			if (expiry.HasValue && issue.HasValue && expiry < issue) return (false, "The expiry date is before the issue date");
 
 			string? docType = "Other";
 			if (reqTypeId.HasValue)
@@ -225,7 +225,7 @@ namespace CrossBuy.BL
 		{
 			var doc = await _db.ApplicationDocuments.Include(d => d.Application)
 				.FirstOrDefaultAsync(d => d.ID == docId && d.Application!.CompanyID == companyId);
-			if (doc == null) return (false, "المستند غير موجود", 0);
+			if (doc == null) return (false, "Document not found", 0);
 			int appId = doc.ApplicationID;
 			try
 			{
@@ -245,9 +245,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> HireFromApplicationAsync(int companyId, int appId, int employeeId)
 		{
 			var app = await _db.JobApplications.FirstOrDefaultAsync(a => a.ID == appId && a.CompanyID == companyId);
-			if (app == null) return (false, "الطلب غير موجود");
-			if (app.Status == "Hired" || app.HiredEmployeeID != null) return (false, "الطلب معيَّن بالفعل");
-			if (employeeId <= 0) return (false, "الموظف غير صالح");
+			if (app == null) return (false, "Order not found");
+			if (app.Status == "Hired" || app.HiredEmployeeID != null) return (false, "The application has already been hired");
+			if (employeeId <= 0) return (false, "Invalid employee");
 
 			// carry the applicant photo onto the new employee if HR didn't upload a different one during the wizard
 			if (!string.IsNullOrWhiteSpace(app.PhotoPath))

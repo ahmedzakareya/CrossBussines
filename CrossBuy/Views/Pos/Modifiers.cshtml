@@ -74,7 +74,7 @@
                     <div class="card mb-5"><div class="card-header"><div class="card-title flex-column"><h3>@Localizer["Options"]: @group.Name</h3><span class="text-muted fs-8">@TypeName(group.Type)</span></div></div>
                         <div class="card-body">
                             <div class="table-responsive mb-4"><table class="table table-row-dashed align-middle fs-7">
-                                <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@Localizer["Option"]</th><th>@Localizer["Linked item"]</th><th class="text-center">@Localizer["Qty deducted"]</th><th class="text-end">@Localizer["Extra price"]</th><th class="text-center">@Localizer["Default"]</th><th></th></tr></thead>
+                                <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Option"]</th><th>@Localizer["Linked item"]</th><th class="text-center">@Localizer["Qty deducted"]</th><th class="text-end">@Localizer["Extra price"]</th><th class="text-center">@Localizer["Default"]</th><th></th></tr></thead>
                                 <tbody>
                                     @if (!options.Any()) { <tr><td colspan="6" class="text-muted text-center py-4">@Localizer["No options yet."]</td></tr> }
                                     @foreach (var o in options)
@@ -147,7 +147,7 @@
                     <button type="button" id="imSearch" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-3"></i>@SR["Search"]</button>
                 </div>
                 <div class="table-responsive"><table class="table table-row-dashed align-middle fs-7">
-                    <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th id="imChkCol" style="width:30px"><input type="checkbox" id="imAll" class="form-check-input" /></th><th>@SR["Item"]</th><th>@Localizer["Barcode"]</th><th class="text-end">@SR["Price"]</th><th></th></tr></thead>
+                    <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th id="imChkCol" style="width:30px"><input type="checkbox" id="imAll" class="form-check-input" /></th><th>@SR["Item"]</th><th>@Localizer["Barcode"]</th><th class="text-end">@SR["Price"]</th><th></th></tr></thead>
                     <tbody id="imBody" class="fw-semibold text-gray-700"></tbody>
                 </table></div>
                 <div id="imEmpty" class="text-center text-muted py-6 d-none">@Localizer["No results."]</div>

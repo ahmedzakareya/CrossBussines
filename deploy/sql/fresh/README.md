@@ -15,17 +15,16 @@ the live verified schema (a fresh DB built from these files boots the app and lo
 > (`IF NOT EXISTS`), so a partial re-run is safe.
 
 ## Run it — option A: one command (sqlcmd)
-SQL Server 2022 Express, instance `SQLEXPRESS`:
 ```cmd
 cd deploy\sql\fresh
 run_all.cmd
 ```
-`run_all.cmd` defaults to `localhost\SQLEXPRESS`; edit the `SVR` line if your instance differs
-(e.g. `set "SVR=."` for a default instance).
+`run_all.cmd` defaults to `localhost` (the default instance); edit the `SVR` line if your instance
+differs (e.g. `set "SVR=localhost\SQLEXPRESS"` for a SQL Server Express named instance).
 
 ## Run it — option B: manual sqlcmd (one by one)
 ```cmd
-set SVR=localhost\SQLEXPRESS
+set SVR=localhost
 sqlcmd -S %SVR% -E -C -b -i "00_create_database.sql"
 sqlcmd -S %SVR% -d CrossBuyDB2 -E -C -b -i "01_schema.sql"
 sqlcmd -S %SVR% -d CrossBuyDB2 -E -C -b -i "03_seed_config.sql"

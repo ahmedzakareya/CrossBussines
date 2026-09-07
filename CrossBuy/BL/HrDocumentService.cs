@@ -77,7 +77,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveContractAsync(EmploymentContract c, IEnumerable<IFormFile>? files, string? webRootPath)
 		{
-			if (c.EndDate.HasValue && c.EndDate.Value < c.StartDate) return (false, "تاريخ نهاية العقد قبل بدايته");
+			if (c.EndDate.HasValue && c.EndDate.Value < c.StartDate) return (false, "The contract end date is before its start date");
 			var existing = c.ID > 0 ? await _context.EmploymentContracts.FirstOrDefaultAsync(x => x.ID == c.ID && x.CompanyID == c.CompanyID) : null;
 			int ownerId;
 			if (existing == null)
@@ -117,7 +117,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveDocumentAsync(EmployeeDocument d, IEnumerable<IFormFile>? files, string? webRootPath)
 		{
-			if (d.ExpiryDate.HasValue && d.IssueDate.HasValue && d.ExpiryDate.Value < d.IssueDate.Value) return (false, "تاريخ الانتهاء قبل تاريخ الإصدار");
+			if (d.ExpiryDate.HasValue && d.IssueDate.HasValue && d.ExpiryDate.Value < d.IssueDate.Value) return (false, "The expiry date is before the issue date");
 			var existing = d.ID > 0 ? await _context.EmployeeDocuments.FirstOrDefaultAsync(x => x.ID == d.ID && x.CompanyID == d.CompanyID) : null;
 			int ownerId;
 			if (existing == null)
@@ -239,7 +239,7 @@ namespace CrossBuy.BL
 			{
 				var what = i.Kind == "Contract" ? "عقد العمل" : "مستند";
 				var whatEn = i.Kind == "Contract" ? "employment contract" : "document";
-				var when = i.DaysLeft < 0 ? $"منتهٍ منذ {-i.DaysLeft} يوم" : $"ينتهي خلال {i.DaysLeft} يوم";
+				var when = i.DaysLeft < 0 ? $"Expired {-i.DaysLeft} day(s) ago" : $"Expires in {i.DaysLeft} day(s)";
 				await _notifications.NotifyAsync(i.EmployeeId,
 					$"تنبيه انتهاء: {what}", $"Expiry alert: {whatEn}",
 					$"{i.Label} — {when} ({i.Date:yyyy-MM-dd})", $"{i.Label} — expires {i.Date:yyyy-MM-dd}",

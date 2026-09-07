@@ -149,7 +149,7 @@ namespace CrossBuy.BL
                 .FindAsync(new object?[] { model.LeavePolicyTypeID }, ct);
 
             if (parentPolicy == null)
-                throw new KeyNotFoundException("السياسة الرئيسية غير موجودة.");
+                throw new KeyNotFoundException("The parent policy was not found.");
 
             AttendancePolicies entity;
 
@@ -164,7 +164,7 @@ namespace CrossBuy.BL
                     .FindAsync(new object?[] { model.ID }, ct);
 
                 if (entity == null)
-                    throw new KeyNotFoundException("لائحة الحضور والانصراف غير موجودة.");
+                    throw new KeyNotFoundException("The attendance policy was not found.");
             }
 
             entity.LeavePolicyTypeID = model.LeavePolicyTypeID;
@@ -226,7 +226,7 @@ namespace CrossBuy.BL
                 .FindAsync(new object?[] { model.LeavePolicyTypeID }, ct);
 
             if (parentPolicy == null)
-                throw new KeyNotFoundException("السياسة الرئيسية غير موجودة.");
+                throw new KeyNotFoundException("The parent policy was not found.");
 
             LeavePolicies entity;
 
@@ -238,7 +238,7 @@ namespace CrossBuy.BL
                                  && lp.LeaveTypeID == model.LeaveTypeID, ct);
 
                 if (exists)
-                    throw new InvalidOperationException("نوع الإجازة هذا مضاف بالفعل لهذه السياسة.");
+                    throw new InvalidOperationException("This leave type has already been added to this policy.");
 
                 entity = new LeavePolicies
                 {
@@ -261,13 +261,13 @@ namespace CrossBuy.BL
                                  && lp.ID != model.ID, ct);
 
                 if (exists)
-                    throw new InvalidOperationException("نوع الإجازة هذا مضاف بالفعل في سجل آخر، لا يمكن التعديل.");
+                    throw new InvalidOperationException("This leave type is already present on another record, so it cannot be changed.");
 
                 entity = await _context.LeavePolicies
                     .FindAsync(new object?[] { model.ID }, ct);
 
                 if (entity == null)
-                    throw new KeyNotFoundException("لائحة الإجازة غير موجودة.");
+                    throw new KeyNotFoundException("The leave policy was not found.");
 
                 entity.LeavePolicyTypeID = model.LeavePolicyTypeID;
                 entity.LeaveTypeID = model.LeaveTypeID.GetValueOrDefault();

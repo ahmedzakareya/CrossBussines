@@ -16,7 +16,7 @@ namespace CrossBuy.BL
 			if (!string.IsNullOrWhiteSpace(title))
 			{
 				var t = ws.Cell(r, 1); t.Value = title;
-				t.Style.Font.Bold = true; t.Style.Font.FontSize = 14; t.Style.Font.FontColor = XLColor.FromHtml("#13433a");
+				t.Style.Font.Bold = true; t.Style.Font.FontSize = 14; t.Style.Font.FontColor = XLColor.FromHtml("#0E4A9E");
 				ws.Range(r, 1, r, Math.Max(1, headers.Count)).Merge();
 				r += 2;
 			}
@@ -27,7 +27,7 @@ namespace CrossBuy.BL
 				cell.Value = headers[c];
 				cell.Style.Font.Bold = true;
 				cell.Style.Font.FontColor = XLColor.White;
-				cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#13433a");
+				cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#0E4A9E");
 				cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 			}
 			r = headerRow + 1;

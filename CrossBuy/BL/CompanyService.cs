@@ -386,7 +386,7 @@ namespace CrossBuy.BL
 							// Rollback the transaction in case of an error
 							await transaction.RollbackAsync();
 							Console.WriteLine($"Error in SaveCompanyAsync: {ex.Message}");
-							throw new Exception("حدث خطأ أثناء إضافة الشركة", ex);
+							throw new Exception("An error occurred while adding the company", ex);
 						}
 					}
 				}
@@ -395,7 +395,7 @@ namespace CrossBuy.BL
 			{
 				// Handle critical errors at the outer level
 				Console.WriteLine($"Critical Error in SaveCompanyAsync: {ex.Message}");
-				throw new Exception("حدث خطأ  أثناء إضافة الشركة", ex);
+				throw new Exception("An error occurred while adding the company", ex);
 			}
 		}
 
@@ -480,7 +480,7 @@ namespace CrossBuy.BL
 			catch (Exception ex)
 			{
 				Console.WriteLine($"Error in SaveCompanyImageAsync: {ex.Message}");
-				throw new Exception("حدث خطأ أثناء معالجة الصورة", ex);
+				throw new Exception("An error occurred while processing the image", ex);
 			}
 		}
 
@@ -566,7 +566,7 @@ namespace CrossBuy.BL
 			catch (Exception ex)
 			{
 				Console.WriteLine($"Error in SaveCompanyImageAsync: {ex.Message}");
-				throw new Exception("حدث خطأ أثناء معالجة الصورة", ex);
+				throw new Exception("An error occurred while processing the image", ex);
 			}
 		}
 		public async Task<BranchiesDto> SaveBranchAsync(BranchiesDto model, List<Models.Context.Admin.Attachment> attachments)
@@ -726,7 +726,7 @@ namespace CrossBuy.BL
 							// Rollback the transaction in case of an error
 							await transaction.RollbackAsync();
 							Console.WriteLine($"Error in SaveCompanyAsync: {ex.Message}");
-							throw new Exception("حدث خطأ أثناء إضافة الشركة", ex);
+							throw new Exception("An error occurred while adding the company", ex);
 						}
 					}
 				}
@@ -735,7 +735,7 @@ namespace CrossBuy.BL
 			{
 				// Handle critical errors at the outer level
 				Console.WriteLine($"Critical Error in SaveCompanyAsync: {ex.Message}");
-				throw new Exception("حدث خطأ  أثناء إضافة الشركة", ex);
+				throw new Exception("An error occurred while adding the company", ex);
 			}
 		}
 

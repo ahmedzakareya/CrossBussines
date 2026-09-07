@@ -7,7 +7,7 @@
    Usage:
      var s = cbTagify(inputEl, {
         suggestUrl: '/Inventory/ItemsSuggest', // optional
-        placeholder: 'ابحث…',
+        placeholder: 'Search…',
         onChange: function(terms){ ... }        // terms = "a|b|c"
      });
      s.terms()  -> current value as "a|b|c"
@@ -91,6 +91,8 @@
         var isAr = !!opts.isAr;
         var body = document.getElementById('rows');
         var loading = document.getElementById('loadingRow'), empty = document.getElementById('emptyRow');
+        // the genuine "no rows" markup, kept so an error can borrow the element and give it back
+        var emptyHtml = empty ? empty.innerHTML : '';
         var pager = document.getElementById('pager'), pageInfo = document.getElementById('pageInfo');
         var resultCount = document.getElementById('resultCount'), grand = document.getElementById('grandValue');
         var size = document.getElementById('f_size');
@@ -112,6 +114,11 @@
             if (body) body.innerHTML = '';
             fetch(opts.url + '?' + params(), { headers: { 'X-Requested-With': 'fetch' }, cache: 'no-store' })
                 .then(function (r) {
+                    // an expired session answers 200 with the LOGIN PAGE, because fetch follows the
+                    // redirect. Without this it is injected into the table as if it were rows.
+                    if (r.redirected && /\/Account\/Login/i.test(r.url)) { var se = new Error('session'); se.cbKind = 'session'; throw se; }
+                    // fetch only rejects on a network error, never on 4xx/5xx - so this must be explicit.
+                    if (!r.ok) { var he = new Error('http'); he.cbKind = 'http'; he.cbStatus = r.status; throw he; }
                     total = parseInt(r.headers.get('X-Total') || '0');
                     page = parseInt(r.headers.get('X-Page') || '1');
                     pages = parseInt(r.headers.get('X-Pages') || '1');
@@ -121,11 +128,27 @@
                 .then(function (html) {
                     if (loading) loading.classList.add('d-none');
                     if (body) body.innerHTML = html;
-                    if (empty) empty.classList.toggle('d-none', total !== 0);
+                    if (empty) { empty.innerHTML = emptyHtml; empty.classList.toggle('d-none', total !== 0); }
                     if (resultCount) resultCount.textContent = isAr ? ('النتائج: ' + total.toLocaleString()) : (total.toLocaleString() + ' results');
                     renderPager();
                 })
-                .catch(function () { if (loading) loading.classList.add('d-none'); if (empty) empty.classList.remove('d-none'); });
+                .catch(function (err) {
+                    if (loading) loading.classList.add('d-none');
+                    if (body) body.innerHTML = '';
+                    var kind = err && err.cbKind;
+                    var msg = kind === 'session'
+                        ? (isAr ? 'انتهت الجلسة. حدّث الصفحة وسجّل الدخول من جديد.' : 'Your session expired. Refresh the page and sign in again.')
+                        : kind === 'http'
+                            ? (isAr ? ('تعذّر تحميل البيانات (خطأ ' + err.cbStatus + ').') : ('Could not load the data (error ' + err.cbStatus + ').'))
+                            : (isAr ? 'تعذّر الوصول للخادم.' : 'Could not reach the server.');
+                    if (empty) {
+                        // NOT the "no matching entries" text: an error must never read as an empty table.
+                        empty.innerHTML = '<i class="ki-outline ki-information-5 fs-3x text-danger mb-4 d-block"></i>'
+                            + '<div class="text-danger fw-semibold">' + msg + '</div>';
+                        empty.classList.remove('d-none');
+                    }
+                    if (resultCount) resultCount.textContent = isAr ? 'تعذّر التحميل' : 'could not load';
+                });
         }
         function pageInfoText() {
             if (!pageInfo) return;
@@ -156,7 +179,7 @@
         // auto-inject an "Export Excel" button (uses the current filters/search) when an exportUrl is given
         if (opts.exportUrl) {
             var xbtn = document.createElement('button');
-            xbtn.type = 'button'; xbtn.className = 'btn btn-sm btn-light-success text-nowrap flex-shrink-0';
+            xbtn.type = 'button'; xbtn.className = 'btn btn-sm btn-light-primary text-nowrap flex-shrink-0';
             xbtn.innerHTML = '<i class="ki-outline ki-file-down fs-4"></i>' + (isAr ? 'تصدير Excel' : 'Export Excel');
             xbtn.addEventListener('click', function () { window.location = opts.exportUrl + '?' + params(); });
             if (size && size.parentNode) {
@@ -196,7 +219,7 @@
         var rtl = document.documentElement.getAttribute('dir') === 'rtl';
         var $sel = jQuery(sel);
         $sel.select2({
-            placeholder: opts.placeholder || (rtl ? 'ابحث عن صنف…' : 'Search item…'),
+            placeholder: opts.placeholder || (rtl ? 'Search for an item…' : 'Search item…'),
             allowClear: true,
             minimumInputLength: 1,
             dropdownParent: opts.dropdownParent || undefined,

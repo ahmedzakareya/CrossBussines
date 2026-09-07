@@ -1,0 +1,418 @@
+@using CrossBuy.Models.Context.Tasks
+@using CrossBuy.BL
+@using CrossBuy.BL.TasksCalendar
+@{
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+
+    var t = ViewBag.Task as TaskItem;
+    var checklist = ViewBag.Checklist as List<TaskChecklistItem> ?? new();
+    var deps = ViewBag.Dependencies as List<TaskDependencyView> ?? new();
+    var blocking = ViewBag.Blocking as TaskBlockingState;
+    var esc = ViewBag.Escalation as TaskEscalationStatus;
+    var lines = ViewBag.TimeLines as List<TimesheetLineDto> ?? new();
+    var cost = ViewBag.Cost as TaskCostDto;
+    var bill = ViewBag.Billing as TaskBillingDto;
+    var comments = ViewBag.Comments as IReadOnlyList<CrossBuy.Models.Communication.CommCommentDto>;
+
+    var title = t == null ? "" : DisplayName.Of(t.Title, t.TitleEn);
+    ViewData["Title"] = title;
+
+    var doneCount = checklist.Count(c => c.IsDone);
+    var pct = checklist.Count == 0 ? 0 : (int)Math.Round(doneCount * 100.0 / checklist.Count);
+    var loggedTotal = lines.Sum(l => l.Hours);
+
+    Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "info" };
+    Func<string, string> pl = p => p switch { "Low" => T("منخفضة", "Low"), "High" => T("عالية", "High"), "Urgent" => T("عاجلة", "Urgent"), _ => T("متوسطة", "Medium") };
+    Func<string, string> sc = s => s switch { "InProgress" => "info", "Done" => "success", _ => "primary" };
+    Func<string, string> sl = s => s switch { "InProgress" => T("جارية", "In progress"), "Done" => T("مكتملة", "Done"), _ => T("جديدة", "New") };
+}
+
+@* =================================================================================================
+   A READ-ONLY SUMMARY.
+
+   Everything about one task on one page, because the facts were spread over four tabs and two
+   kebab menus - three recorded timer runs looked like none, and every figure involved was
+   already correct.
+
+   READ-ONLY IS STRUCTURAL, not a coat of paint: there is no form, no composer, no checkbox that
+   can be ticked and no button that writes. The checklist states are rendered as marks rather
+   than inputs, so there is nothing here to submit by accident. Editing lives on /Tasks/Detail
+   and this page links to it.
+   ================================================================================================= *@
+
+<div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
+    <div class="page-title d-flex flex-column justify-content-center gap-1">
+        <h1 class="page-heading text-gray-900 fw-bold fs-3 m-0 d-flex align-items-center gap-2">
+            <span class="symbol symbol-30px"><span class="symbol-label bg-light-primary">
+                <i class="ki-outline ki-clipboard fs-4 text-primary"></i></span></span>
+            @title</h1>
+        <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0">
+            <li class="breadcrumb-item text-muted">@T("المهام", "Tasks")</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">@T("ملخّص", "Summary")</li>
+            <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+            <li class="breadcrumb-item text-muted">#@t?.ID</li>
+        </ul>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        @* PRINT, not export. The page is already the document; a separate export format would be a
+           second renderer to keep in step with this one. *@
+        <button type="button" class="btn btn-sm btn-light cb-noprint" onclick="window.print()">
+            <i class="ki-outline ki-printer fs-2"></i>@T("طباعة", "Print")</button>
+        <a href="/Tasks/Detail/@t?.ID" class="btn btn-sm btn-primary cb-noprint">
+            <i class="ki-outline ki-pencil fs-2"></i>@T("تعديل", "Edit")</a>
+    </div>
+</div></div>
+
+<div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+
+    @if (t == null)
+    {
+        <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-6">
+            <span class="symbol symbol-45px me-5"><span class="symbol-label bg-warning">
+                <i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>
+            <div><h4 class="text-gray-900 fw-bold mb-1">@T("المهمة غير موجودة", "Task not found")</h4></div>
+        </div>
+        return;
+    }
+
+    @* The state notices come FIRST and keep the form the rest of the app uses for them, so a
+       reader who knows the detail screen recognises them here without relearning anything. *@
+    @if (blocking != null && blocking.IsBlocked)
+    {
+        <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-4 mb-5">
+            <span class="symbol symbol-40px me-4"><span class="symbol-label bg-danger">
+                <i class="ki-outline ki-lock-2 fs-2 text-white"></i></span></span>
+            <div class="fw-semibold">
+                <h4 class="text-gray-900 fw-bold mb-1">@T("محجوبة", "Blocked")</h4>
+                <div class="fs-6 text-gray-700">@T("لا تبدأ قبل انتهاء:", "Cannot start until these finish:")
+                    <span class="fw-bold">@string.Join("، ", blocking.BlockedByTitles)</span></div>
+            </div>
+        </div>
+    }
+    @if (esc != null && (esc.State == TaskEscalationState.Escalated || esc.State == TaskEscalationState.Overdue))
+    {
+        <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-4 mb-5">
+            <span class="symbol symbol-40px me-4"><span class="symbol-label bg-danger">
+                <i class="ki-outline ki-arrow-up-right fs-2 text-white"></i></span></span>
+            <div class="fw-semibold">
+                <h4 class="text-gray-900 fw-bold mb-1">
+                    @(esc.State == TaskEscalationState.Overdue ? T("متأخرة", "Overdue") : T("مُصعَّدة", "Escalated"))</h4>
+                @if (!string.IsNullOrWhiteSpace(esc.ManagerName))
+                {
+                    <div class="fs-6 text-gray-700">@T("المدير المباشر:", "Direct manager:")
+                        <span class="fw-semibold">@esc.ManagerName</span></div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="row g-5">
+        <!-- ============================ THE FACTS ============================ -->
+        <div class="col-lg-4">
+            <div class="card card-flush mb-5">
+                <div class="card-header py-4"><h3 class="card-title fs-5">@T("التفاصيل", "Details")</h3></div>
+                <div class="card-body pt-0">
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                        <span class="text-muted fs-7">@T("الحالة", "Status")</span>
+                        <span class="badge badge-light-@sc(t.Status) fs-7 fw-bold py-2 d-inline-flex align-items-center">
+                            <span class="cb-glyph me-2"></span>@sl(t.Status)</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                        <span class="text-muted fs-7">@T("الأولوية", "Priority")</span>
+                        <span class="badge badge-light-@pc(t.Priority) fs-7 fw-bold py-2 d-inline-flex align-items-center">
+                            <span class="cb-glyph me-2"></span>@pl(t.Priority)</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                        <span class="text-muted fs-7">@T("المسؤول", "Assignee")</span>
+                        <span class="fs-7 fw-semibold text-gray-900">@(ViewBag.AssigneeName ?? ("#" + t.AssigneeEmployeeId))</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                        <span class="text-muted fs-7">@T("تاريخ الاستحقاق", "Due date")</span>
+                        @* dir + isolate on every date: a bare yyyy-MM-dd is a numeric run and reorders
+                           inside Arabic text. *@
+                        <span class="fs-7 fw-semibold text-gray-900" dir="ltr" style="unicode-bidi:isolate">
+                            @(t.DueDate?.ToString("yyyy-MM-dd") ?? "—")</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                        <span class="text-muted fs-7">@T("التقدّم", "Progress")</span>
+                        <span class="fs-7 fw-semibold text-gray-900" dir="ltr" style="unicode-bidi:isolate">@t.ProgressPct%</span>
+                    </div>
+                    <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                        <span class="text-muted fs-7">@T("الوقت المسجّل", "Logged time")</span>
+                        <span class="fs-7 fw-semibold text-gray-900" dir="ltr"
+                              style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">
+                            @loggedTotal.ToString("0.##")@(t.EstimatedHours > 0 ? " / " + t.EstimatedHours!.Value.ToString("0.##") : "")
+                            <span class="text-muted">@T("س", "h")</span></span>
+                    </div>
+                    <div class="d-flex flex-stack py-2">
+                        <span class="text-muted fs-7">@T("قائمة التحقق", "Checklist")</span>
+                        <span class="fs-7 fw-semibold" dir="ltr" style="unicode-bidi:isolate">@doneCount / @checklist.Count (@pct%)</span>
+                    </div>
+                    <div class="progress h-6px bg-light-primary">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width:@pct%"
+                             aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+
+            @* COST AND BILLING SIT WITH THE TIME they are read from, not in a corner of their own -
+               both are readings of the same timesheet lines, and separating them invites a reader to
+               treat them as independent numbers. *@
+            @if (cost != null || bill != null)
+            {
+                <div class="card card-flush">
+                    <div class="card-header py-4"><h3 class="card-title fs-5">@T("التكلفة والفوترة", "Cost and billing")</h3></div>
+                    <div class="card-body pt-0">
+                        @if (cost != null)
+                        {
+                            <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                                <span class="text-muted fs-7">@T("تكلفة العمالة", "Labour cost")</span>
+                                <span class="fs-7 fw-semibold text-gray-900" dir="ltr" style="unicode-bidi:isolate">@cost.Total.ToString("0.##")</span>
+                            </div>
+                            <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                                <span class="text-muted fs-7">@T("مُرحّلة لأمر تشغيل", "Posted to a work order")</span>
+                                <span class="badge badge-light-@(cost.LaborPosted ? "success" : "secondary") fs-8 fw-bold">
+                                    @(cost.LaborPosted ? T("نعم", "Yes") : T("لا", "No"))</span>
+                            </div>
+                        }
+                        @if (bill != null)
+                        {
+                            <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                                <span class="text-muted fs-7">@T("قابلة للفوترة", "Billable")</span>
+                                <span class="badge badge-light-@(bill.IsBillable ? "success" : "secondary") fs-8 fw-bold">
+                                    @(bill.IsBillable ? T("نعم", "Yes") : T("لا", "No"))</span>
+                            </div>
+                            @if (bill.IsBillable)
+                            {
+                                <div class="d-flex flex-stack py-2 border-bottom border-gray-200">
+                                    <span class="text-muted fs-7">@T("ساعات غير مفوترة", "Uninvoiced hours")</span>
+                                    <span class="fs-7 fw-semibold text-gray-900" dir="ltr" style="unicode-bidi:isolate">@bill.BillableHours.ToString("0.##")</span>
+                                </div>
+                                <div class="d-flex flex-stack py-2">
+                                    <span class="text-muted fs-7">@T("العميل", "Customer")</span>
+                                    <span class="fs-7 fw-semibold text-gray-900">@(bill.CustomerName ?? "—")</span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(bill.Reason))
+                                {
+                                    @* The platform's own sentence, kept as written: it says WHY this cannot be
+                                       invoiced, which a yes/no badge cannot. *@
+                                    <div class="fs-8 text-muted pt-2">@bill.Reason</div>
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- ============================ THE LISTS ============================ -->
+        <div class="col-lg-8">
+            @if (!string.IsNullOrWhiteSpace(t.Description))
+            {
+                <div class="card card-flush mb-5">
+                    <div class="card-header py-4"><h3 class="card-title fs-5">@T("الوصف", "Description")</h3></div>
+                    <div class="card-body pt-0">
+                        @* plaintext + auto: the description is authored text and may be in either language. *@
+                        <div class="fs-6 text-gray-800" dir="auto" style="unicode-bidi:plaintext;white-space:pre-wrap">@t.Description</div>
+                    </div>
+                </div>
+            }
+
+            <div class="card card-flush mb-5">
+                <div class="card-header py-4">
+                    <h3 class="card-title fs-5">@T("قائمة التحقق", "Checklist")</h3>
+                    <div class="card-toolbar"><span class="badge badge-light-primary fs-8 fw-bold" dir="ltr"
+                        style="unicode-bidi:isolate">@doneCount / @checklist.Count</span></div>
+                </div>
+                <div class="card-body pt-0">
+                    @if (checklist.Count == 0)
+                    {
+                        <div class="text-muted text-center fs-7 py-6">@T("لا بنود", "No items")</div>
+                    }
+                    @foreach (var c in checklist)
+                    {
+                        <div class="cb-row d-flex align-items-center gap-3 px-2 py-3">
+                            @* A MARK, NOT A CHECKBOX. An input on a read-only page invites a click that
+                               goes nowhere, and a disabled one reads as "you may not" rather than
+                               "this is a record". *@
+                            <i class="ki-solid @(c.IsDone ? "ki-check-circle text-success" : "ki-abstract-26 text-gray-400") fs-4"></i>
+                            <span class="flex-grow-1 fs-6 @(c.IsDone ? "text-muted text-decoration-line-through" : "text-gray-900")"
+                                  dir="auto">@DisplayName.Of(c.Title, c.TitleEn)</span>
+                            @if (c.IsDone && c.DoneAt.HasValue)
+                            {
+                                <span class="text-muted fs-8" dir="ltr" style="unicode-bidi:isolate">
+                                    @DateTime.SpecifyKind(c.DoneAt.Value, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card card-flush mb-5">
+                <div class="card-header py-4"><h3 class="card-title fs-5">@T("الاعتماديات", "Dependencies")</h3></div>
+                <div class="card-body pt-0">
+                    @if (deps.Count == 0)
+                    {
+                        <div class="text-muted text-center fs-7 py-6">@T("لا اعتماديات", "No dependencies")</div>
+                    }
+                    @foreach (var d in deps)
+                    {
+                        var otherIsPredecessor = d.SuccessorTaskId == t.ID;
+                        <div class="cb-row d-flex align-items-center gap-2 px-2 py-3">
+                            <i class="ki-outline @(otherIsPredecessor ? "ki-arrow-left" : "ki-arrow-right") fs-4 text-muted flex-shrink-0"></i>
+                            <span class="flex-grow-1 fs-7 min-w-0">
+                                <span class="text-muted">@(otherIsPredecessor ? T("تنتظر", "waits for") : T("يعتمد عليها", "is needed by"))</span>
+                                <a href="/Tasks/Summary/@(otherIsPredecessor ? d.PredecessorTaskId : d.SuccessorTaskId)" class="fw-semibold">
+                                    @(otherIsPredecessor ? d.PredecessorTitle : d.SuccessorTitle)</a>
+                            </span>
+                            @if (d.IsBlocking)
+                            {
+                                <span class="badge badge-light-danger fs-8 fw-bold">@T("حاجبة", "Blocking")</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card card-flush mb-5">
+                <div class="card-header py-4">
+                    <h3 class="card-title fs-5">@T("سجل الوقت", "Time log")</h3>
+                    <div class="card-toolbar">
+                        <span class="badge badge-light-primary fs-8 fw-bold" dir="ltr"
+                              style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@loggedTotal.ToString("0.##") @T("س", "h")</span>
+                    </div>
+                </div>
+                <div class="card-body pt-0">
+                    @if (lines.Count == 0)
+                    {
+                        <div class="text-muted text-center fs-7 py-6">@T("لا وقت مسجّل", "No time logged")</div>
+                    }
+                    @foreach (var l in lines)
+                    {
+                        <div class="cb-row d-flex align-items-center gap-3 px-2 py-3">
+                            <span class="badge badge-light-@(l.Running ? "warning" : "primary") fs-8 fw-bold d-inline-flex align-items-center">
+                                <span class="cb-glyph me-2"></span>@l.Source</span>
+                            <span class="flex-grow-1 fs-7 text-gray-900 min-w-0 text-truncate">@l.EmployeeName</span>
+                            @if (!string.IsNullOrWhiteSpace(l.Description))
+                            {
+                                <span class="text-muted fs-8 text-truncate" dir="auto">@l.Description</span>
+                            }
+                            <span class="text-muted fs-8" dir="ltr" style="unicode-bidi:isolate">@l.WorkDate.ToString("yyyy-MM-dd")</span>
+                            <span class="fw-bold fs-6 text-gray-900" dir="ltr"
+                                  style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@l.Hours.ToString("0.00")</span>
+                            <span class="text-muted fs-8">@T("س", "h")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card card-flush mb-5">
+                <div class="card-header py-4">
+                    <h3 class="card-title fs-5">@T("التعليقات", "Comments")</h3>
+                    @if (comments != null)
+                    {
+                        <div class="card-toolbar"><span class="badge badge-light-primary fs-8 fw-bold">@comments.Count</span></div>
+                    }
+                </div>
+                <div class="card-body pt-0">
+                    @if (comments == null)
+                    {
+                        @* A state of its own, not an empty list: "switched off" and "nothing said yet"
+                           are different facts and a summary must not blur them. *@
+                        <div class="text-muted text-center fs-7 py-6">
+                            @T("منصّة التواصل غير مُفعّلة", "The communication platform is not enabled")</div>
+                    }
+                    else if (comments.Count == 0)
+                    {
+                        <div class="text-muted text-center fs-7 py-6">@T("لا تعليقات", "No comments")</div>
+                    }
+                    else
+                    {
+                        @foreach (var c in comments.OrderByDescending(x => x.CreatedAt))
+                        {
+                            <div class="cb-row d-flex gap-3 px-2 py-4">
+                                @if (!string.IsNullOrWhiteSpace(c.Author.AvatarUrl))
+                                {
+                                    <div class="symbol symbol-circle symbol-40px flex-shrink-0">
+                                        <img src="@c.Author.AvatarUrl" alt="@c.Author.Display(isAr)" />
+                                    </div>
+                                }
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex align-items-center flex-wrap gap-1">
+                                        <span class="fw-bold fs-6 text-gray-900">@c.Author.Display(isAr)</span>
+                                        <span class="text-muted fs-8">·</span>
+                                        <span class="text-muted fs-8" dir="ltr" style="unicode-bidi:isolate">
+                                            @(c.CreatedAt.HasValue
+                                                ? DateTime.SpecifyKind(c.CreatedAt.Value, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                                : "")</span>
+                                        @if (c.EditedAt.HasValue)
+                                        {
+                                            <span class="text-muted fs-8">(@T("مُعدّل", "edited"))</span>
+                                        }
+                                    </div>
+                                    @* CLAMPED ON SCREEN, WHOLE ON PAPER. One 3000-character comment turned
+                                       this page into a transcript and buried every other section under it.
+                                       Print lifts the clamp, so the printed record stays complete - which is
+                                       the reason the body is rendered in full at all. No toggle: this page
+                                       has no interactive parts by design, and /Tasks/Detail is one click
+                                       away with the full feed and its read-more. *@
+                                    <div class="fs-6 text-gray-800 mt-1 cb-sum-body" dir="auto"
+                                         style="unicode-bidi:plaintext;white-space:pre-wrap;overflow-wrap:anywhere">@c.Body</div>
+                                    @if (c.Attachments.Count > 0)
+                                    {
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            @foreach (var a in c.Attachments)
+                                            {
+                                                <a href="@a.StorageKey" target="_blank" rel="noopener"
+                                                   class="btn btn-sm btn-light py-1 px-3 fs-8">
+                                                    <i class="ki-outline ki-paper-clip fs-6 me-1"></i>@a.FileName</a>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            @* THE ACTIVITY TRAIL comes from the SHARED partial, which is also what the detail screen
+               renders. It is fetched rather than server-rendered because it is a projection served by
+               the platform timeline endpoint - reading it through that endpoint is what keeps this
+               page from becoming a second interpretation of the same events, and sharing the partial
+               is what keeps it from being a second LOOK at them. *@
+            <div class="card card-flush">
+                <div class="card-header py-4"><h3 class="card-title fs-5">@T("السجل", "Activity")</h3></div>
+                <div class="card-body pt-0">
+                    @await Html.PartialAsync("_TaskActivity", t.ID)
+                </div>
+            </div>
+        </div>
+    </div>
+</div></div>
+
+<style>
+    /* Shared row treatment, same as every other list in the app. */
+    .cb-row { border-bottom: 1px solid var(--bs-gray-200); }
+    .cb-row:last-child { border-bottom: 0; }
+
+    /* Twelve lines is enough to know what a comment says; the whole thing is a click away on the
+       detail screen, and on paper the clamp is lifted. */
+    .cb-sum-body { display: -webkit-box; -webkit-line-clamp: 12; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* PRINT. The shell is chrome, not content: a printed summary should be the summary. */
+    @@media print {
+        .app-sidebar, .app-header, .app-footer, .cb-noprint { display: none !important; }
+        .app-content, .app-container { padding: 0 !important; margin: 0 !important; }
+        .card { border: 1px solid var(--bs-gray-300) !important; break-inside: avoid; }
+        a[href]::after { content: ""; }   /* no printed URLs - every link here is internal */
+        /* The printed copy is the RECORD, so nothing on it is truncated. */
+        .cb-sum-body { display: block; overflow: visible; -webkit-line-clamp: unset; }
+    }
+</style>
+
+

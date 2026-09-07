@@ -102,7 +102,7 @@ namespace CrossBuy.BL
 
 		// Surfaced to the user as-is, because "you cannot do that" without the reason is what makes a
 		// workflow control feel like a bug. Public so the view and the tests name the same string.
-		public const string SelfApprovalRefused = "لا يمكنك اعتماد مستخلص أعددتَه بنفسك";
+		public const string SelfApprovalRefused = "You cannot approve a certificate that you prepared yourself";
 
 		// ---- the lifecycle event ----
 		//
@@ -229,7 +229,8 @@ namespace CrossBuy.BL
 			var actorNames = actorIds.Count == 0
 				? new Dictionary<int, string>()
 				: await _db.Employee.AsNoTracking().Where(e => actorIds.Contains(e.ID))
-					.ToDictionaryAsync(e => e.ID, e => e.FullName ?? "");
+					.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+                .ToDictionaryAsync(e => e.ID, e => EmployeeNames.Of(e.FullName, e.FullNameEn));
 
 			BillingPreview pv;
 			if (pgId > 0) pv = await ComputeAsync(companyId, projectId, pgId, existing?.ID ?? 0, taxRate, note, date, nextNo, status);
@@ -253,22 +254,22 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int billingId, int progressId, DateTime date, decimal taxRate, string? note, int actorEmployeeId)
 		{
 			var project = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
-			if (project == null) return (false, "المشروع غير موجود", 0);
+			if (project == null) return (false, "Project not found", 0);
 			var progress = await _db.ProjectProgresses.AsNoTracking().FirstOrDefaultAsync(p => p.ID == progressId && p.CompanyID == companyId && p.ProjectId == projectId);
-			if (progress == null) return (false, "القياس غير موجود", 0);
-			if (progress.Status != "Confirmed") return (false, "لا يُفوتر إلا قياس مؤكَّد", 0);
+			if (progress == null) return (false, "Measurement not found", 0);
+			if (progress.Status != "Confirmed") return (false, "Only a confirmed measurement can be invoiced", 0);
 			// no double billing: one billing per measurement (except the one being edited)
 			var dupe = await _db.ProgressBillings.AnyAsync(b => b.CompanyID == companyId && b.ProjectId == projectId && b.ProgressId == progressId && b.ID != billingId);
-			if (dupe) return (false, "هذا القياس له مستخلص بالفعل", 0);
+			if (dupe) return (false, "This measurement already has a certificate", 0);
 			if (taxRate < 0) taxRate = 0;
 
 			ProgressBilling hdr;
 			if (billingId > 0)
 			{
-				hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstOrDefaultAsync(b => b.ID == billingId && b.CompanyID == companyId) ?? throw new InvalidOperationException("المستخلص غير موجود");
+				hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstOrDefaultAsync(b => b.ID == billingId && b.CompanyID == companyId) ?? throw new InvalidOperationException("Certificate not found");
 				// Draft AND Returned are editable - Returned exists so an approver can hand a billing back
 			// without deleting it. Submitted, Approved and Posted are not ordinary drafts.
-			if (!ProgressBillingStatuses.IsEditable(hdr.Status)) return (false, "لا يمكن تعديل مستخلص في هذه الحالة", 0);
+			if (!ProgressBillingStatuses.IsEditable(hdr.Status)) return (false, "A certificate in this status cannot be edited", 0);
 			// CreatedBy is NOT touched here. See the entity comment: rewriting the preparer on edit would
 			// let a preparer become eligible to approve their own billing.
 			hdr.UpdatedBy = actorEmployeeId; hdr.UpdatedAt = DateTime.UtcNow;
@@ -307,10 +308,10 @@ namespace CrossBuy.BL
 		{
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
-			if (hdr == null) return (false, "المستخلص غير موجود");
+			if (hdr == null) return (false, "Certificate not found");
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Submitted))
-				return (false, "الحالة لا تسمح بالإرسال للاعتماد");
-			if (hdr.GrossWork <= 0) return (false, "لا يوجد عمل لفوترته في هذه الفترة");
+				return (false, "The current status does not allow submitting for approval");
+			if (hdr.GrossWork <= 0) return (false, "There is no work to bill in this period");
 
 			hdr.Status = ProgressBillingStatuses.Submitted;
 			hdr.SubmittedBy = actorEmployeeId; hdr.SubmittedAt = DateTime.UtcNow;
@@ -333,15 +334,15 @@ namespace CrossBuy.BL
 		{
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
-			if (hdr == null) return (false, "المستخلص غير موجود");
+			if (hdr == null) return (false, "Certificate not found");
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Approved))
-				return (false, "الحالة لا تسمح بالاعتماد");
-			if (hdr.GrossWork <= 0) return (false, "لا يوجد عمل لفوترته في هذه الفترة");
+				return (false, "The current status does not allow approval");
+			if (hdr.GrossWork <= 0) return (false, "There is no work to bill in this period");
 
 			// The rule. A billing with no recorded preparer is refused rather than waved through - an
 			// unknown preparer cannot be shown to be someone other than this approver.
 			if (hdr.CreatedBy == null)
-				return (false, "لا يمكن اعتماد مستخلص بلا مُعِدّ مسجَّل");
+				return (false, "A certificate with no recorded preparer cannot be approved");
 			if (hdr.CreatedBy.Value == actorEmployeeId)
 				return (false, SelfApprovalRefused);
 
@@ -360,9 +361,9 @@ namespace CrossBuy.BL
 		{
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
 			var hdr = await _db.ProgressBillings.FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
-			if (hdr == null) return (false, "المستخلص غير موجود");
+			if (hdr == null) return (false, "Certificate not found");
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Returned))
-				return (false, "الحالة لا تسمح بالإعادة");
+				return (false, "The current status does not allow returning it");
 
 			hdr.Status = ProgressBillingStatuses.Returned;
 			hdr.UpdatedBy = actorEmployeeId; hdr.UpdatedAt = DateTime.UtcNow;
@@ -399,54 +400,54 @@ namespace CrossBuy.BL
 				var locked = (await _db.ProgressBillings
 					.FromSqlInterpolated($"SELECT * FROM ProgressBillings WITH (UPDLOCK) WHERE ID = {id} AND CompanyID = {companyId}")
 					.AsTracking().ToListAsync()).FirstOrDefault();
-				if (locked == null) return (false, "المستخلص غير موجود");
+				if (locked == null) return (false, "Certificate not found");
 			}
 			else if (!await _db.ProgressBillings.AnyAsync(b => b.ID == id && b.CompanyID == companyId))
 			{
-				return (false, "المستخلص غير موجود");
+				return (false, "Certificate not found");
 			}
 
 			var hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstAsync(b => b.ID == id);
-			if (hdr.Status == ProgressBillingStatuses.Posted) return (false, "المستخلص مُرحَّل بالفعل");   // no double posting
+			if (hdr.Status == ProgressBillingStatuses.Posted) return (false, "The certificate is already posted");   // no double posting
 			if (!ProgressBillingStatuses.CanMove(hdr.Status, ProgressBillingStatuses.Posted))
-					return (false, "يجب اعتماد المستخلص قبل الترحيل");
+					return (false, "The certificate must be approved before posting");
 			var project = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == hdr.ProjectId && p.CompanyID == companyId);
-			if (project?.CustomerId == null) return (false, "المشروع بلا عميل — عيّن عميلًا للمشروع أولًا");
+			if (project?.CustomerId == null) return (false, "The project has no customer — assign one to the project first");
 			int customerId = project.CustomerId.Value;
 
 			// recompute authoritatively (previously-billed may have changed since the draft)
 			var pv = await ComputeAsync(companyId, hdr.ProjectId, hdr.ProgressId, hdr.ID, hdr.TaxRate, hdr.Note, hdr.BillingDate, hdr.BillingNo, hdr.Status);
-			if (pv.GrossWork <= 0) return (false, "لا يوجد عمل لفوترته في هذه الفترة");
+			if (pv.GrossWork <= 0) return (false, "There is no work to bill in this period");
 
 			var rev = await AccIdAsync(companyId, "4102");
-			if (rev == null) return (false, "حساب إيراد عقود المقاولات (4102) غير مُهيّأ");
+			if (rev == null) return (false, "The construction-contract revenue account (4102) is not configured");
 			var acc1104 = await AccIdAsync(companyId, ContractService.RetentionAccountCode);
 			var acc2104 = await AccIdAsync(companyId, ContractService.AdvanceAccountCode);
 
 			// (1) invoice for the gross work (W) + tax (T) via ReceivableService — Dr 1102 / Cr 4102 / Cr 210201, ProjectId
 			var invLines = new List<SalesLineInput> {
-				new() { ItemDescription = $"مستخلص #{hdr.BillingNo} - {project.Code}", Qty = 1m, UnitPrice = pv.GrossWork, DiscountAmount = 0m, TaxRate = hdr.TaxRate, RevenueAccountId = rev.Value }
+				new() { ItemDescription = $"Certificate #{hdr.BillingNo} - {project.Code}", Qty = 1m, UnitPrice = pv.GrossWork, DiscountAmount = 0m, TaxRate = hdr.TaxRate, RevenueAccountId = rev.Value }
 			};
 			var (iok, ierr, inv) = await _ar.CreateSalesInvoiceAsync(companyId, customerId, hdr.BillingDate, invLines, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
-			if (!iok || inv == null) return (false, "تعذّر إنشاء فاتورة المستخلص: " + ierr);
+			if (!iok || inv == null) return (false, "Could not create the certificate invoice: " + ierr);
 
 			// (2) retention withheld (Dr 1104 / Cr 1102) — settlement receipt, ProjectId-tagged
 			int? retReceiptId = null, advReceiptId = null;
 			if (pv.RetentionAmount > 0)
 			{
-				if (acc1104 == null) return (false, "حساب المحتجز (1104) غير مُهيّأ");
+				if (acc1104 == null) return (false, "The retention account (1104) is not configured");
 				int before = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId).Select(r => (int?)r.ID).MaxAsync() ?? 0;
 				var (rok, rerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.RetentionAmount, "Retention", acc1104.Value, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
-				if (!rok) return (false, "تعذّر ترحيل المحتجز: " + rerr);
+				if (!rok) return (false, "Could not post the retention: " + rerr);
 				retReceiptId = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.ID > before).Select(r => (int?)r.ID).MaxAsync();
 			}
 			// (3) advance recovery (Dr 2104 / Cr 1102) — settlement receipt, ProjectId-tagged
 			if (pv.AdvanceRecoveryAmount > 0)
 			{
-				if (acc2104 == null) return (false, "حساب المقدّم (2104) غير مُهيّأ");
+				if (acc2104 == null) return (false, "The advance account (2104) is not configured");
 				int before = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId).Select(r => (int?)r.ID).MaxAsync() ?? 0;
 				var (aok, aerr) = await _ar.CreateReceiptAsync(companyId, customerId, hdr.BillingDate, pv.AdvanceRecoveryAmount, "AdvanceRecovery", acc2104.Value, hdr.Note, actorEmployeeId, projectId: hdr.ProjectId);
-				if (!aok) return (false, "تعذّر ترحيل استرداد المقدّم: " + aerr);
+				if (!aok) return (false, "Could not post the advance recovery: " + aerr);
 				advReceiptId = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == customerId && r.ID > before).Select(r => (int?)r.ID).MaxAsync();
 			}
 
@@ -530,12 +531,12 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)
 		{
 			var hdr = await _db.ProgressBillings.Include(b => b.Lines).FirstOrDefaultAsync(b => b.ID == id && b.CompanyID == companyId);
-			if (hdr == null) return (false, "المستخلص غير موجود");
+			if (hdr == null) return (false, "Certificate not found");
 			// Tightened to match the state machine: Draft and Returned may be deleted, Submitted and
 			// Approved may not - deleting a billing somebody is approving, or has approved, would erase the
 			// decision along with the document. Posted was already refused.
 			if (!ProgressBillingStatuses.IsEditable(hdr.Status))
-				return (false, "لا يمكن حذف مستخلص في هذه الحالة");
+				return (false, "A certificate in this status cannot be deleted");
 			_db.ProgressBillingLines.RemoveRange(hdr.Lines);
 			_db.ProgressBillings.Remove(hdr);
 			await _db.SaveChangesAsync();

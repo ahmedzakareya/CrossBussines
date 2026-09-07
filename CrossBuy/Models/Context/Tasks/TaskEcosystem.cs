@@ -25,6 +25,9 @@ namespace CrossBuy.Models.Context.Tasks
 		public int TaskId { get; set; }
 
 		public string Title { get; set; } = "";
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? TitleEn { get; set; }
 		public bool IsDone { get; set; }
 		public DateTime? DoneAt { get; set; }
 		public int? DoneByEmployeeId { get; set; }
@@ -80,6 +83,7 @@ namespace CrossBuy.Models.Context.Tasks
 		public string Name { get; set; } = "";
 		public string? NameEn { get; set; }
 		public string? Description { get; set; }
+		public string? DescriptionEn { get; set; }   // English twin; falls back to Description
 
 		public bool IsActive { get; set; } = true;
 
@@ -101,6 +105,7 @@ namespace CrossBuy.Models.Context.Tasks
 		public string Title { get; set; } = "";
 		public string? TitleEn { get; set; }
 		public string? Description { get; set; }
+		public string? DescriptionEn { get; set; }   // English twin; falls back to Description
 		public string Priority { get; set; } = "Normal";
 		public decimal? EstimatedHours { get; set; }
 

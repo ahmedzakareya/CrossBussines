@@ -25,9 +25,36 @@
 
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
 
-    <div class="alert alert-primary d-flex align-items-center py-3 mb-5">
-        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
-        <span class="fw-semibold">@T("مهام مجدولة لها أكثر من حركة مطابقة — أكّد الحركة الصحيحة لربط المهمة بها، أو ارفض المرشّح.", "Scheduled tasks with more than one matching movement — confirm the right one to link the task, or dismiss a candidate.")</span>
+    @* THE HOUSE NOTICE SHAPE, taken from /Accounting/IncomeStatement: a dashed-border panel, a symbol
+       tile carrying the icon, a bold headline with a muted line under it, and a badge on the trailing
+       edge. This was a flat one-line `alert` before, which is a different component entirely.
+
+       BUILT FROM METRONIC'S UTILITIES - bg-light-primary / border-primary / bg-primary - and NOT from
+       the inline hex the reference uses on its profit branch. That is not a deviation: the same file's
+       LOSS branch is written exactly this way (bg-light-danger / border-danger / symbol-label bg-danger),
+       so the utility form is already the precedent there, and it is the half that survives a theme change.
+
+       The single sentence became a headline plus a detail line because that is what the shape asks for -
+       and it already contained both halves: what these rows are, then what to do about them. *@
+    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+        <span class="symbol symbol-45px me-5">
+            <span class="symbol-label bg-primary"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span>
+        </span>
+        <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+            <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                <h4 class="text-gray-900 fw-bold mb-1">@T("مهام مجدولة لها أكثر من حركة مطابقة", "Scheduled tasks with more than one matching movement")</h4>
+                <div class="fs-6 text-gray-700">@T("أكّد الحركة الصحيحة لربط المهمة بها، أو ارفض المرشّح.", "Confirm the right one to link the task, or dismiss a candidate.")</div>
+            </div>
+            @* The badge states the size of the queue, which is the one fact this panel can add that the
+               sentence cannot. Rendered only when there IS a queue - on an empty page it would read
+               "0 awaiting confirmation" directly above a panel that already says there is nothing. *@
+            @if (groups.Any())
+            {
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0">
+                    <i class="ki-outline ki-time fs-6 text-white me-1"></i>@groups.Count @T("مهمة بانتظار التأكيد", "awaiting confirmation")
+                </span>
+            }
+        </div>
     </div>
 
     @if (!groups.Any())
@@ -41,21 +68,30 @@
     {
         foreach (var g in groups)
         {
-            <div class="card card-flush mb-5">
-                <div class="card-header border-0 pt-6 align-items-center">
-                    <div class="card-title d-flex flex-column">
-                        <span class="fs-4 fw-bold text-gray-900">@g.TaskTitle</span>
-                        <span class="fs-7 text-muted mt-1">
+            @* THE HOUSE CARD, same as /Accounting/IncomeStatement and the Tasks list: a plain `card`, a
+               `card-header card-header-stretch` whose title is an h3, and a `card-body px-0` so the table
+               runs edge to edge instead of floating inside the body padding. The task title is the card's
+               title - it was an fs-4 span, which looked like a heading without being one. *@
+            <div class="card mb-5">
+                @* card-header, NOT card-header-stretch. The stretch variant exists for a header whose
+                   content is a row of nav tabs: it stretches its children to the full header height. With
+                   a toolbar in it, the "N candidate(s)" badge came out as a 55px-tall block of colour
+                   instead of a badge. The reference uses the stretch variant because its header holds a
+                   title and nothing else. *@
+                <div class="card-header align-items-center">
+                    <div class="card-title d-flex flex-column align-items-start">
+                        <h3 class="m-0">@g.TaskTitle</h3>
+                        <span class="fs-7 text-muted mt-1 fw-semibold">
                             <span class="badge badge-light-primary me-2"><i class="ki-outline ki-calendar fs-8 me-1"></i>@T("مجدولة", "Scheduled")</span>
                             @typeLabel(g.ExpectedType)@(string.IsNullOrEmpty(g.PartyName) ? "" : " — " + g.PartyName)
                             @if (g.DueDate.HasValue) { <span class="text-muted ms-2">· @g.DueDate.Value.ToString("yyyy-MM-dd")</span> }
                         </span>
                     </div>
-                    <div class="card-toolbar"><span class="badge badge-light-secondary fs-7">@g.Candidates.Count @T("حركة مرشّحة", "candidate(s)")</span></div>
+                    <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@g.Candidates.Count @T("حركة مرشّحة", "candidate(s)")</span></div>
                 </div>
-                <div class="card-body pt-2">
+                <div class="card-body px-0 pt-0 pb-4">
                     <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-3 mb-0">
+                        <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
                             @* `text-gray-400` is the DECORATIVE tier (1.63:1 on white) — a
                                separator/placeholder colour, not a readable-text colour. The visual
                                authority deliberately left gray-400 alone when it repaired the text
@@ -70,15 +106,17 @@
                                literals are deliberately kept OUT of this file, because the colour
                                gate scans the whole view and a measurement written in a comment would
                                read to it as an invented palette.) *@
-                            <thead><tr class="text-start text-muted fw-semibold fs-7 text-uppercase">
-                                <th class="min-w-150px">@T("الحركة المرشّحة", "Candidate movement")</th>
-                                <th class="text-end min-w-200px pe-4">@T("إجراء", "Action")</th>
-                            </tr></thead>
-                            <tbody>
+                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                <tr class="text-start text-nowrap gs-0" style="border-bottom:2px solid #0E4A9E;">
+                                    <th class="min-w-150px ps-9">@T("الحركة المرشّحة", "Candidate movement")</th>
+                                    <th class="text-end min-w-200px pe-9">@T("إجراء", "Action")</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fw-semibold text-gray-700">
                                 @foreach (var c in g.Candidates)
                                 {
                                     <tr>
-                                        <td>
+                                        <td class="ps-9">
                                             <span class="d-flex align-items-center">
                                                 <i class="ki-outline ki-bill fs-2 text-primary me-3"></i>
                                                 <span class="d-flex flex-column">
@@ -87,14 +125,19 @@
                                                 </span>
                                             </span>
                                         </td>
-                                        <td class="text-end pe-4">
-                                            <form asp-action="ConfirmMatch" method="post" class="d-inline" data-cb-confirm data-cb-action="approve" data-cb-title="@T("ربط المهمة بهذه الحركة؟", "Link the task to this movement?")">
+                                        <td class="text-end pe-9">
+                                            <form asp-action="ConfirmMatch" method="post" class="d-inline-block" data-cb-confirm data-cb-action="approve" data-cb-title="@T("ربط المهمة بهذه الحركة؟", "Link the task to this movement?")">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="taskId" value="@g.TaskId" />
                                                 <input type="hidden" name="entityId" value="@c.EntityId" />
-                                                <button type="submit" class="btn btn-sm btn-success"><i class="ki-outline ki-check fs-5"></i>@T("تأكيد وربط", "Confirm & link")</button>
+                                                @* btn-primary, NOT btn-success. btn-success is Metronic's bright
+                                                   green, which is not this product's green - two different greens
+                                                   sat next to each other on the same row, and the louder one was
+                                                   the accent colour rather than the brand's. Primary IS the brand
+                                                   green here, and this is the row's primary action. *@
+                                                <button type="submit" class="btn btn-sm btn-primary"><i class="ki-outline ki-check fs-5"></i>@T("تأكيد وربط", "Confirm & link")</button>
                                             </form>
-                                            <form asp-action="DismissMatch" method="post" class="d-inline ms-2" data-cb-confirm data-cb-action="delete" data-cb-title="@T("رفض هذا المرشّح؟", "Dismiss this candidate?")">
+                                            <form asp-action="DismissMatch" method="post" class="d-inline-block ms-2" data-cb-confirm data-cb-action="delete" data-cb-title="@T("رفض هذا المرشّح؟", "Dismiss this candidate?")">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="suggestionId" value="@c.SuggestionId" />
                                                 <button type="submit" class="btn btn-sm btn-light-danger"><i class="ki-outline ki-cross fs-5"></i>@T("رفض", "Dismiss")</button>

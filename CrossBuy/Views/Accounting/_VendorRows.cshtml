@@ -11,10 +11,10 @@
         data-id="@v.ID" data-name="@v.Name" data-nameen="@v.NameEn" data-tax="@v.TaxRegNo" data-terms="@v.PaymentTermsDays"
         data-phone="@v.Phone" data-email="@v.Email" data-contact="@v.ContactPerson" data-segment="@v.Segment" data-address="@v.Address" data-active="@(v.IsActive ? "1" : "0")" style="border-bottom:1px dashed #eef1f6;">
         <td class="ps-4 fw-semibold text-gray-800">@(isAr ? v.Name : (v.NameEn ?? v.Name))<div class="text-muted fs-8">@v.TaxRegNo</div></td>
-        <td>@if (string.IsNullOrEmpty(v.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@v.Segment</span> }</td>
+        <td>@if (string.IsNullOrEmpty(v.Segment)) { <span class="text-muted">—</span> } else { <span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@v.Segment</span> }</td>
         <td class="text-muted">@(v.Phone ?? "—")</td>
         <td class="text-muted">@(v.ContactPerson ?? "—")</td>
-        <td class="text-center"><span class="badge fw-bold" style="@(v.IsActive ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@(v.IsActive?SR["Active"]:SR["Inactive"])</span></td>
+        <td class="text-center"><span class="badge fw-bold" style="@(v.IsActive ? "background:#E7F0FF;color:#0E4A9E;" : "background:#f2f4f7;color:#475467;")">@(v.IsActive?SR["Active"]:SR["Inactive"])</span></td>
         <td class="text-center pe-4">
             <button class="btn btn-sm btn-icon btn-light-primary me-1" title="@SR["Edit"]" onclick="vendEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
             <a href="@Url.Action("VendorStatement","Accounting", new { id = v.ID })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Statement"]"><i class="ki-outline ki-eye fs-6"></i></a>

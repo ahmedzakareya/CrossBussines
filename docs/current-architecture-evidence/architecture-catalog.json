@@ -1,0 +1,151 @@
+{
+  "generated": "2026-09-02",
+  "readOnly": true,
+  "refs": {
+    "master": "60dc115",
+    "tasksPhase3": "5eda60b",
+    "tasksPhase4": "7c6fcea"
+  },
+  "branchTopology": {
+    "tasksPhase4AheadOfMaster": 37,
+    "tasksPhase4BehindMaster": 0,
+    "merged": false
+  },
+  "repo": {
+    "worktrees": 18,
+    "stashes": 3,
+    "dirtyFiles": 772,
+    "remotes": 0
+  },
+  "counts": {
+    "controllers": 57,
+    "views": 361,
+    "blFiles": 306,
+    "entities": 106,
+    "dbContexts": 1,
+    "workers": 7,
+    "eventFamilies": 8,
+    "eventTypes": 34,
+    "registeredConsumers": {
+      "master": 3,
+      "phase4": 4
+    },
+    "taskCreationDoors": {
+      "master": 3,
+      "phase4": 4
+    },
+    "orchestrationRules": 1,
+    "reportDatasetProviders": 5,
+    "trackedTestFiles": 194,
+    "analyzerTestFiles": 11,
+    "modulesWithUi": 21
+  },
+  "authorizationBaseline": {
+    "mutating": 439,
+    "attributeProtected": 156,
+    "inBodyProtected": 190,
+    "gaps": 93
+  },
+  "taskCreationPaths": [
+    {
+      "door": "TaskService.SaveAsync",
+      "file": "CrossBuy/BL/TaskService.cs",
+      "line": 338,
+      "class": "CANONICAL",
+      "lifecycle": true,
+      "assigneeCompanyCheck": true,
+      "taskAutoLog": false,
+      "businessEvent": true,
+      "idempotency": true
+    },
+    {
+      "door": "TaskGeneratorService",
+      "file": "CrossBuy/BL/TaskGeneratorService.cs",
+      "line": 139,
+      "class": "GENERATOR",
+      "lifecycle": false,
+      "assigneeCompanyCheck": true,
+      "taskAutoLog": true,
+      "businessEvent": false,
+      "idempotency": true
+    },
+    {
+      "door": "DocumentExpiryProjection",
+      "file": "CrossBuy/BL/Documents/DocumentExpiryProjection.cs",
+      "line": 196,
+      "class": "DOCUMENT_EXPIRY",
+      "lifecycle": false,
+      "assigneeCompanyCheck": false,
+      "taskAutoLog": true,
+      "businessEvent": false,
+      "idempotency": true
+    },
+    {
+      "door": "TaskOrchestrationService",
+      "file": "CrossBuy/BL/Platform/Orchestration/TaskOrchestrationService.cs",
+      "line": 168,
+      "class": "ORCHESTRATION",
+      "phase4Only": true,
+      "lifecycle": true,
+      "assigneeCompanyCheck": true,
+      "taskAutoLog": true,
+      "businessEvent": false,
+      "idempotency": true
+    }
+  ],
+  "singleDoorVerdict": "FRAGMENTED",
+  "consumers": [
+    "TimelineProjectionConsumer",
+    "NotificationProjectionConsumer",
+    "AiProjectionConsumer",
+    "TaskOrchestrationConsumer (phase3/4 only)"
+  ],
+  "workers": [
+    "BusinessEventDispatchWorker",
+    "TaskEscalationHostedService",
+    "TaskGeneratorHostedService",
+    "TaskScheduleMatchHostedService",
+    "DocumentExpiryHostedService",
+    "CrmReminderHostedService",
+    "IntegrityCheckHostedService"
+  ],
+  "taskLifecycle": {
+    "states": [
+      "New",
+      "InProgress",
+      "Done"
+    ],
+    "terminal": [
+      "Done"
+    ],
+    "actionable": [
+      "New",
+      "InProgress"
+    ],
+    "cancelledState": false,
+    "cancelledEventDeclared": true,
+    "cancelledProducer": false,
+    "overdue": "DueDate != null && DueDate < now && Status != Done",
+    "overdueStored": false
+  },
+  "escalation": {
+    "graceHours": 24,
+    "levelAdvanceHours": 24,
+    "maxLevel": 2,
+    "origin": "Phase-2 technical defaults, explicitly NOT confirmed business policy",
+    "configurable": true,
+    "maxHops": 64,
+    "batchCap": 500
+  },
+  "orgHierarchy": {
+    "employeeHasManagerId": false,
+    "reportingLine": "Hierarchical tree",
+    "hierarchicalHasCompanyId": false,
+    "employeeNodeType": 5,
+    "cycleGuard": true,
+    "hopBound": 64
+  },
+  "phase4Recommendation": "REVISE",
+  "topGap": "F-02 automated task creation raises no business event",
+  "findings": 20
+}

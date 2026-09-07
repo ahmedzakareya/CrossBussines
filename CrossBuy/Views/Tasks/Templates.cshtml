@@ -33,53 +33,93 @@
 
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
 
-    <div class="alert alert-primary d-flex align-items-center py-3 mb-5">
-        <i class="ki-outline ki-information-5 fs-2 text-primary me-3"></i>
-        <span class="fs-7">
-            @T("مواعيد بنود القالب نسبية (عدد أيام من تاريخ البدء)، وتتحوّل إلى تواريخ حقيقية عند التطبيق.",
-               "Template due dates are relative — a number of days from the start date you choose — and become real dates when the template is applied.")
+    @* The house notice shape, same as /Tasks/MatchSuggestions and /Accounting/IncomeStatement, built
+       from Metronic utilities so there is no hex in this file. The one sentence carried both a fact and
+       its consequence, which is exactly the headline/detail split the shape asks for. *@
+    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+        <span class="symbol symbol-45px me-5">
+            <span class="symbol-label bg-primary"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span>
         </span>
+        <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+            <div class="mb-3 mb-md-0 fw-semibold pe-5">
+                <h4 class="text-gray-900 fw-bold mb-1">@T("مواعيد بنود القالب نسبية", "Template due dates are relative")</h4>
+                <div class="fs-6 text-gray-700">@T("كل بند يحمل عدد أيام من تاريخ البدء الذي تختاره، ويتحوّل إلى تاريخ حقيقي عند التطبيق.", "Each item carries a number of days from the start date you choose, and becomes a real date when the template is applied.")</div>
+            </div>
+            @if (templates.Count > 0)
+            {
+                <span class="badge badge-primary fs-7 fw-bold px-4 py-2 flex-shrink-0">
+                    <i class="ki-outline ki-element-11 fs-6 text-white me-1"></i>@templates.Count @T("قالب", "template(s)")
+                </span>
+            }
+        </div>
     </div>
 
-    <div class="card card-flush">
-        <div class="card-header align-items-center py-4">
-            <h3 class="card-title fw-bold text-gray-900">@T("القوالب", "Templates")</h3>
-            <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@templates.Count</span></div>
+    @* The house table: a plain card, a titled header, a body with no side padding so the table runs
+       edge to edge, ps-9/pe-9 on the outer columns, tabular numerals, and one 2px rule under a muted
+       small-caps header row. The count moved into the notice above, where it has a label. *@
+    <div class="card">
+        <div class="card-header align-items-center">
+            <div class="card-title"><h3 class="m-0">@T("القوالب", "Templates")</h3></div>
         </div>
-        <div class="card-body pt-0">
+        <div class="card-body px-0 pt-0 pb-4">
             <div class="table-responsive">
-                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3">
-                    <thead>
-                        <tr class="fw-bold text-muted fs-7 text-uppercase">
-                            <th class="min-w-200px">@T("الاسم", "Name")</th>
+                <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                        <tr class="text-start text-nowrap gs-0" style="border-bottom:2px solid #0E4A9E;">
+                            <th class="min-w-200px ps-9">@T("الاسم", "Name")</th>
                             <th class="min-w-80px text-center">@T("البنود", "Items")</th>
                             <th class="min-w-90px text-center">@T("الحالة", "Status")</th>
-                            <th class="min-w-250px text-end">@T("إجراءات", "Actions")</th>
+                            <th class="min-w-400px text-end pe-9">@T("إجراءات", "Actions")</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="fw-semibold text-gray-700">
                         @if (templates.Count == 0)
                         {
-                            <tr><td colspan="4" class="text-center text-muted py-10">@T("لا توجد قوالب بعد", "No templates yet")</td></tr>
+                            <tr><td colspan="4" class="text-center text-muted py-12"><i class="ki-outline ki-element-11 fs-3x mb-3 d-block"></i>@T("لا توجد قوالب بعد", "No templates yet")</td></tr>
                         }
                         @foreach (var tpl in templates)
                         {
+                            @* ONE display name per row, used by the cell, by the Apply dialog's title and by
+                               the toggle's dialog. Computed here so the three can never disagree - the first
+                               version resolved it in the cell only, and the confirmation dialog went on
+                               naming the template in Arabic inside an English UI. *@
+                            var tplName = (!isAr && !string.IsNullOrWhiteSpace(tpl.NameEn)) ? tpl.NameEn! : tpl.Name;
+                            var tplDesc = (!isAr && !string.IsNullOrWhiteSpace(tpl.DescriptionEn)) ? tpl.DescriptionEn! : tpl.Description;
                             <tr>
-                                <td>
-                                    <span class="fw-semibold text-gray-900">@tpl.Name</span>
-                                    @if (!string.IsNullOrWhiteSpace(tpl.Description))
+                                <td class="ps-9">
+                                    @* TaskTemplate.NameEn is saved by the service and was never read: the list
+                                       printed tpl.Name raw, so an English UI showed Arabic template names under
+                                       an English header. Same rule the rest of the module uses - the twin when
+                                       there is one, the primary name otherwise. *@
+                                    <span class="fw-bold text-gray-900">@tplName</span>
+                                    @* The description gets the same treatment as the name. It was the last raw
+                                       field on this screen: English names with Arabic descriptions under them. *@
+                                    @if (!string.IsNullOrWhiteSpace(tplDesc))
                                     {
-                                        <div class="text-muted fs-8">@tpl.Description</div>
+                                        <div class="text-muted fs-8">@tplDesc</div>
                                     }
                                 </td>
-                                <td class="text-center"><span class="badge badge-light-info fs-8">@tpl.Items.Count</span></td>
+                                @* badge-light-primary, not badge-light-info: info is a Metronic accent that is
+                                   not in this product's palette, and it was the loudest thing in the row. *@
+                                <td class="text-center"><span class="badge badge-light-primary fs-8 fw-bold">@tpl.Items.Count</span></td>
                                 <td class="text-center">
-                                    <span class="badge badge-light-@(tpl.IsActive ? "success" : "secondary") fs-8">
+                                    <span class="badge badge-light-@(tpl.IsActive ? "primary" : "secondary") fs-8 fw-bold">
                                         @(tpl.IsActive ? T("نشط", "Active") : T("موقوف", "Inactive"))
                                     </span>
                                 </td>
-                                <td class="text-end">
-                                    <form asp-action="TemplateApply" method="post" class="d-inline-flex align-items-center gap-2">
+                                @* ONE NOWRAP GROUP, and the two buttons given the same footing.
+                                   The row held a date box, a select and two buttons in a 250px column, so
+                                   the Apply button was squeezed until its own icon and label wrapped onto
+                                   two lines - a different height and width on every row - while the
+                                   Deactivate button next to it had no icon at all. The column is wide
+                                   enough now, both buttons carry an icon, both are text-nowrap with a
+                                   minimum width, and neither may shrink. *@
+                                <td class="text-end pe-9">
+                                    <div class="d-flex align-items-center justify-content-end gap-2 flex-nowrap">
+                                    <form asp-action="TemplateApply" method="post" class="d-flex align-items-center gap-2"
+                                          data-cb-confirm data-cb-action="save"
+                                          data-cb-title="@T($"تطبيق القالب «{tplName}»؟", $"Apply the template “{tplName}”?")"
+                                          data-cb-text="@T("ستُنشأ مهمة لكل بند في القالب، بتواريخ محسوبة من تاريخ البدء المختار.", "One task will be created for every item in the template, with dates counted from the start date you picked.")">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@tpl.ID" />
                                         @* ACCESSIBLE NAMES, not visible labels. This is a compact per-row
@@ -91,23 +131,35 @@
                                            unchanged — aria-label renders nothing. *@
                                         <input type="date" name="anchorDate" required
                                                value="@DateTime.Today.ToString("yyyy-MM-dd")"
-                                               aria-label="@T($"تاريخ البدء للقالب {tpl.Name}", $"Start date for template {tpl.Name}")"
+                                               aria-label="@T($"تاريخ البدء للقالب {tplName}", $"Start date for template {tplName}")"
                                                class="form-control form-control-sm form-control-solid w-140px" />
                                         <select name="assigneeOverride" class="form-select form-select-sm form-select-solid w-160px"
-                                                aria-label="@T($"المسؤول للقالب {tpl.Name}", $"Assignee for template {tpl.Name}")">
+                                                aria-label="@T($"المسؤول للقالب {tplName}", $"Assignee for template {tplName}")">
                                             <option value="">@T("المسؤول الافتراضي", "Default assignee")</option>
                                             @foreach (var e in employees)
                                             {
                                                 <option value="@e.Id">@e.Name</option>
                                             }
                                         </select>
-                                        <button type="submit" class="btn btn-sm btn-primary" @(tpl.IsActive ? "" : "disabled")>
+                                        <button type="submit" class="btn btn-sm btn-primary text-nowrap flex-shrink-0 min-w-100px" @(tpl.IsActive ? "" : "disabled")>
                                             <i class="ki-outline ki-rocket fs-4"></i>@T("تطبيق", "Apply")
                                         </button>
                                     </form>
-                                    <button type="button" class="btn btn-sm btn-light ms-1" onclick="cbTemplateToggle(@tpl.ID, @(tpl.IsActive ? "false" : "true"))">
-                                        @(tpl.IsActive ? T("إيقاف", "Deactivate") : T("تنشيط", "Activate"))
+                                    @* Deactivating is the destructive direction and activating is not, so the two
+                                       do not share a colour: light-danger for the one that takes a template out of
+                                       use, light-primary for the one that puts it back. *@
+                                    @* THE NAME TRAVELS AS A DATA ATTRIBUTE, not as an onclick argument. Passing
+                                       it as a JSON string put double quotes inside a double-quoted onclick
+                                       attribute, so the attribute ended at the first one: the browser received
+                                       `cbTemplateToggle(28, false, ` and reported "Unexpected end of input",
+                                       and the button silently did nothing at all. Razor escapes an attribute
+                                       value properly, so the name can carry any character. *@
+                                    <button type="button" class="btn btn-sm text-nowrap flex-shrink-0 min-w-125px @(tpl.IsActive ? "btn-light-danger" : "btn-light-primary")"
+                                            data-tpl-id="@tpl.ID" data-tpl-active="@(tpl.IsActive ? "false" : "true")" data-tpl-name="@tplName"
+                                            onclick="cbTemplateToggle(this)">
+                                        <i class="ki-outline @(tpl.IsActive ? "ki-cross-circle" : "ki-check-circle") fs-4"></i>@(tpl.IsActive ? T("إيقاف", "Deactivate") : T("تنشيط", "Activate"))
                                     </button>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -133,13 +185,28 @@
                        nothing: a label that neither wraps its control nor names it by id is decoration.
                        axe did not report them only because the modal is display:none while closed and
                        hidden nodes are skipped — the defect was real the moment a user opened it. *@
-                    <div class="col-md-6">
-                        <label for="cbTplName" class="form-label required fs-7">@T("اسم القالب", "Template name")</label>
+                    @* THREE FIELDS, because the service already stores an English name and nothing could
+                       supply one. TaskTemplateService.SaveAsync reads input.NameEn and item.TitleEn, and the
+                       modal posted neither - so both columns were dead on arrival and every applied task
+                       inherited an Arabic-only title. Optional: no twin means the primary name is used in
+                       both languages, which is the documented fallback. *@
+                    <div class="col-md-4">
+                        <label for="cbTplName" class="form-label required fs-7">@T("اسم القالب", "Template name") <span class="text-muted fs-8">(@T("عربي", "Arabic"))</span></label>
                         <input type="text" id="cbTplName" class="form-control form-control-sm form-control-solid" />
                     </div>
-                    <div class="col-md-6">
-                        <label for="cbTplDesc" class="form-label fs-7">@T("الوصف", "Description")</label>
+                    <div class="col-md-4">
+                        <label for="cbTplNameEn" class="form-label fs-7">@T("الاسم (إنجليزي)", "Name (English)")</label>
+                        <input type="text" id="cbTplNameEn" dir="ltr" class="form-control form-control-sm form-control-solid"
+                               placeholder="@T("اختياري", "Optional")" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="cbTplDesc" class="form-label fs-7">@T("الوصف", "Description") <span class="text-muted fs-8">(@T("عربي", "Arabic"))</span></label>
                         <input type="text" id="cbTplDesc" class="form-control form-control-sm form-control-solid" />
+                    </div>
+                    <div class="col-md-4">
+                        <label for="cbTplDescEn" class="form-label fs-7">@T("الوصف (إنجليزي)", "Description (English)")</label>
+                        <input type="text" id="cbTplDescEn" dir="ltr" class="form-control form-control-sm form-control-solid"
+                               placeholder="@T("اختياري", "Optional")" />
                     </div>
                 </div>
 
@@ -152,9 +219,10 @@
                 <div class="table-responsive">
                     <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-2">
                         <thead>
-                            <tr class="fw-bold text-muted fs-8 text-uppercase">
+                            <tr class="fw-bold text-muted fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                                 <th class="w-40px">#</th>
                                 <th class="min-w-180px">@T("العنوان", "Title")</th>
+                                <th class="min-w-180px">@T("العنوان (إنجليزي)", "Title (English)")</th>
                                 <th class="w-110px">@T("أيام", "Days")</th>
                                 <th class="w-120px">@T("الأولوية", "Priority")</th>
                                 <th class="w-110px">@T("يعتمد على", "Depends on")</th>
@@ -192,7 +260,9 @@
 
         function cbTemplateNew() {
             document.getElementById('cbTplName').value = '';
+            document.getElementById('cbTplNameEn').value = '';
             document.getElementById('cbTplDesc').value = '';
+            document.getElementById('cbTplDescEn').value = '';
             document.getElementById('cbTplRows').innerHTML = '';
             document.getElementById('cbTplError').classList.add('d-none');
             cbTplSeq = 0;
@@ -211,6 +281,7 @@
                 // saw them on a static page load - they were unlabelled all the same.
                 '<td class="fw-bold text-muted" data-cb-num>' + n + '</td>' +
                 '<td><input type="text" class="form-control form-control-sm form-control-solid" data-cb-title aria-label="@T("عنوان البند", "Item title") ' + n + '" /></td>' +
+                '<td><input type="text" dir="ltr" class="form-control form-control-sm form-control-solid" data-cb-titleen placeholder="@T("اختياري", "Optional")" aria-label="@T("عنوان البند بالإنجليزية", "Item title in English") ' + n + '" /></td>' +
                 '<td><input type="number" class="form-control form-control-sm form-control-solid" data-cb-days value="0" aria-label="@T("أيام الإزاحة للبند", "Offset days for item") ' + n + '" /></td>' +
                 '<td><select class="form-select form-select-sm form-select-solid" data-cb-prio aria-label="@T("أولوية البند", "Priority for item") ' + n + '">' +
                     '<option value="Urgent">@T("عاجلة", "Urgent")</option>' +
@@ -246,8 +317,10 @@
                 if (!title) { continue; }
                 var pred = r.querySelector('[data-cb-pred]').value.trim();
                 var check = r.querySelector('[data-cb-check]').value.trim();
+                var titleEn = r.querySelector('[data-cb-titleen]').value.trim();
                 items.push({
                     Title: title,
+                    TitleEn: titleEn === '' ? null : titleEn,
                     SortOrder: i + 1,
                     DueOffsetDays: parseInt(r.querySelector('[data-cb-days]').value || '0', 10),
                     Priority: r.querySelector('[data-cb-prio]').value,
@@ -258,9 +331,13 @@
                 });
             }
 
+            var nameEn = document.getElementById('cbTplNameEn').value.trim();
+            var descEn = document.getElementById('cbTplDescEn').value.trim();
             var payload = JSON.stringify({
                 Name: document.getElementById('cbTplName').value.trim(),
+                NameEn: nameEn === '' ? null : nameEn,
                 Description: document.getElementById('cbTplDesc').value.trim(),
+                DescriptionEn: descEn === '' ? null : descEn,
                 IsActive: true,
                 Items: items
             });
@@ -278,14 +355,74 @@
                 .catch(function () { err.textContent = '@T("تعذّر الاتصال بالخادم", "Could not reach the server")'; err.classList.remove('d-none'); });
         }
 
-        function cbTemplateToggle(id, active) {
-            var body = new FormData();
-            body.append('id', id);
-            body.append('active', active);
-            body.append('__RequestVerificationToken', cbTplToken());
-            fetch('/Tasks/TemplateSetActive', { method: 'POST', body: body })
-                .then(function (r) { return r.json(); })
-                .then(function () { location.reload(); });
+        // ASKS FIRST. This one flipped a template's state on a single click with no confirmation, unlike
+        // every other state-changing control in the module.
+        //
+        // It goes through CB.confirm rather than the declarative data-cb-url route on purpose: that route
+        // posts through the helper's own AJAX, which does not attach the anti-forgery token, and
+        // TemplateSetActive carries [ValidateAntiForgeryToken]. The dialog is the shared one either way;
+        // only the send stays here, where the token already works.
+        // REPORTED THROUGH THE DIALOG, not through a toast.
+        //
+        // CB.toast.error IS reached - traced: `TOAST.error: You do not have permission to perform this
+        // action` - and nothing appears on screen: toastr answers `typeof !== 'undefined'` on this layout
+        // but never creates its #toast-container, so the message goes nowhere and the button looks dead
+        // all over again. Swal is the mechanism this page has already been shown to render (it draws the
+        // confirmation a moment earlier), so the refusal is reported with that, and alert() covers the
+        // case where neither is loaded. A message the user cannot see is not a message.
+        function cbTplShowError(msg) {
+            if (window.Swal && Swal.fire) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '@T("لم يتم التنفيذ", "Not done")',
+                    text: msg,
+                    buttonsStyling: false,
+                    confirmButtonText: '@T("حسنًا", "OK")',
+                    customClass: { confirmButton: 'btn btn-light', popup: 'cb-swal' }
+                });
+                return;
+            }
+            if (window.CB && CB.toast) { CB.toast.error(msg); return; }
+            window.alert(msg);
+        }
+
+        function cbTemplateToggle(el) {
+            var id = el.getAttribute('data-tpl-id');
+            var active = el.getAttribute('data-tpl-active');
+            var name = el.getAttribute('data-tpl-name') || '';
+            var goingActive = (active === 'true');
+            // IT REPORTS THE ANSWER. This posted and then reloaded unconditionally, ignoring the {ok,error}
+            // the endpoint returns - so when the server REFUSED, the dialog closed, the page reloaded, and
+            // the row was unchanged with nothing said. The button looked broken while working exactly as
+            // written. Measured: POST /Tasks/TemplateSetActive -> 200
+            // {"ok":false,"error":"You do not have permission to perform this action"}.
+            var send = function () {
+                var body = new FormData();
+                body.append('id', id);
+                body.append('active', active);
+                body.append('__RequestVerificationToken', cbTplToken());
+                return fetch('/Tasks/TemplateSetActive', { method: 'POST', body: body })
+                    .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                    .then(function (res) {
+                        if (res && res.ok) { location.reload(); return; }
+                        cbTplShowError((res && res.error) || '@T("تعذّر تغيير حالة القالب", "The template state could not be changed")');
+                    })
+                    .catch(function () {
+                        cbTplShowError('@T("تعذّر الاتصال بالخادم", "Could not reach the server")');
+                    });
+            };
+
+            var title = goingActive
+                ? '@T("تنشيط القالب؟", "Activate the template?")'
+                : '@T("إيقاف القالب؟", "Deactivate the template?")';
+            var text = (name ? '\u00ab' + name + '\u00bb — ' : '') + (goingActive
+                ? '@T("سيصبح القالب متاحًا للتطبيق مرة أخرى.", "The template becomes available to apply again.")'
+                : '@T("لن يظهر القالب للتطبيق حتى تنشّطه مرة أخرى. البنود والمهام المنشأة منه لا تتأثر.", "It will not be offered for applying until you activate it again. Its items and any tasks already created from it are untouched.")');
+
+            if (window.CB && CB.confirm) {
+                CB.confirm({ type: goingActive ? 'save' : 'reject', title: title, text: text }).then(function (ok) { if (ok) { send(); } });
+            }
+            else if (window.confirm(title + '\n\n' + text)) { send(); }
         }
     </script>
 }

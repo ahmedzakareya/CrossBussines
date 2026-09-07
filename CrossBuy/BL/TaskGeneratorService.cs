@@ -57,14 +57,22 @@ namespace CrossBuy.BL
 		{
 			await EnsureRulesAsync(companyId);
 			var r = await _db.TaskAutoRules.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.RuleType == ruleType);
-			if (r == null) return (false, "القاعدة غير موجودة");
+			if (r == null) return (false, "Rule not found");
 			r.IsActive = isActive; r.DefaultAssigneeEmployeeId = defaultAssigneeEmployeeId > 0 ? defaultAssigneeEmployeeId : null;
 			await _db.SaveChangesAsync();
 			return (true, null);
 		}
 
 		// candidate source records for a rule → (sourceId, title)
-		private async Task<List<(int id, string title)>> CandidatesAsync(int companyId, string ruleType)
+		// BOTH TITLES, composed at the same place and from the same subject.
+		//
+		// These titles are WRITTEN BY THE SYSTEM, so an English twin is not a translation someone has to
+		// remember to type — it is the same sentence in the other language, and the subject (an invoice
+		// number, a work-order number, an item, an employee) is carried across unchanged or taken from
+		// that record's own English name. Before this, every generated task stored an Arabic sentence and
+		// nothing else, so TaskItems.TitleEn was null on all 328 of them and an English UI had nothing to
+		// fall back to.
+		private async Task<List<(int id, string title, string titleEn)>> CandidatesAsync(int companyId, string ruleType)
 		{
 			var today = DateTime.Today;
 			switch (ruleType)
@@ -76,6 +84,7 @@ namespace CrossBuy.BL
 					if (settings.Count == 0) return new();
 					var itemIds = settings.Select(s => s.ItemId).Distinct().ToList();
 					var names = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.IsActive && itemIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.Name);
+					var namesEn = await _db.Items.AsNoTracking().Where(i => i.CompanyID == companyId && i.IsActive && itemIds.Contains(i.ID)).ToDictionaryAsync(i => i.ID, i => i.NameEn);
 					var stock = (await _db.StockBalances.AsNoTracking().Where(b => b.CompanyID == companyId && itemIds.Contains(b.ItemId)).Select(b => new { b.ItemId, b.WarehouseId, b.QtyOnHand }).ToListAsync())
 						.ToDictionary(x => (x.ItemId, x.WarehouseId), x => x.QtyOnHand);
 					var low = new HashSet<int>();
@@ -85,16 +94,26 @@ namespace CrossBuy.BL
 						var q = stock.TryGetValue((s.ItemId, s.WarehouseId), out var qty) ? qty : 0m;
 						if (q < s.Rop) low.Add(s.ItemId);
 					}
-					return low.Take(CapPerRule).Select(id => (id, $"اطلب بضاعة: {names[id]}")).ToList();
+					return low.Take(CapPerRule).Select(id => (id,
+						$"Order goods: {names[id]}",
+						$"Reorder stock: {(namesEn.TryGetValue(id, out var ne) && !string.IsNullOrWhiteSpace(ne) ? ne : names[id])}")).ToList();
 				}
 				case "OverdueInvoice":
-					return (await _db.SalesInvoices.AsNoTracking().Where(v => v.CompanyID == companyId && v.Status == "Posted" && v.InvoiceDate < today.AddDays(-30)).OrderBy(v => v.ID).Take(CapPerRule).Select(v => new { v.ID, v.InvoiceNo }).ToListAsync()).Select(v => (v.ID, $"حصّل فاتورة متأخرة: {v.InvoiceNo ?? ("#" + v.ID)}")).ToList();
+					return (await _db.SalesInvoices.AsNoTracking().Where(v => v.CompanyID == companyId && v.Status == "Posted" && v.InvoiceDate < today.AddDays(-30)).OrderBy(v => v.ID).Take(CapPerRule).Select(v => new { v.ID, v.InvoiceNo }).ToListAsync()).Select(v => (v.ID,
+						$"Collect an overdue invoice: {v.InvoiceNo ?? ("#" + v.ID)}",
+						$"Collect an overdue invoice: {v.InvoiceNo ?? ("#" + v.ID)}")).ToList();
 				case "WorkOrderQc":
-					return (await _db.ManufWorkOrders.AsNoTracking().Where(w => w.CompanyID == companyId && w.Status == "Completed").OrderBy(w => w.ID).Take(CapPerRule).Select(w => new { w.ID, w.WoNo }).ToListAsync()).Select(w => (w.ID, $"راجع جودة أمر التشغيل: {w.WoNo ?? ("#" + w.ID)}")).ToList();
+					return (await _db.ManufWorkOrders.AsNoTracking().Where(w => w.CompanyID == companyId && w.Status == "Completed").OrderBy(w => w.ID).Take(CapPerRule).Select(w => new { w.ID, w.WoNo }).ToListAsync()).Select(w => (w.ID,
+						$"Check the quality of work order: {w.WoNo ?? ("#" + w.ID)}",
+						$"Review work-order quality: {w.WoNo ?? ("#" + w.ID)}")).ToList();
 				case "DeliveryReady":
-					return (await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == companyId && o.OrderType == "Delivery" && o.DeliveryStatus == null && o.Status != "Voided").OrderBy(o => o.ID).Take(CapPerRule).Select(o => new { o.ID, o.ReceiptNo }).ToListAsync()).Select(o => (o.ID, $"وصّل الطلب: {o.ReceiptNo ?? ("#" + o.ID)}")).ToList();
+					return (await _db.PosOrders.AsNoTracking().Where(o => o.CompanyId == companyId && o.OrderType == "Delivery" && o.DeliveryStatus == null && o.Status != "Voided").OrderBy(o => o.ID).Take(CapPerRule).Select(o => new { o.ID, o.ReceiptNo }).ToListAsync()).Select(o => (o.ID,
+						$"Deliver the order: {o.ReceiptNo ?? ("#" + o.ID)}",
+						$"Deliver the order: {o.ReceiptNo ?? ("#" + o.ID)}")).ToList();
 				case "NewEmployeeOnboard":
-					return (await _db.Employee.AsNoTracking().Where(e => e.DateOfJoining >= today.AddDays(-14)).OrderBy(e => e.ID).Take(CapPerRule).Select(e => new { e.ID, e.FullName }).ToListAsync()).Select(e => (e.ID, $"جهّز أوراق موظف جديد: {e.FullName}")).ToList();
+					return (await _db.Employee.AsNoTracking().Where(e => e.DateOfJoining >= today.AddDays(-14)).OrderBy(e => e.ID).Take(CapPerRule).Select(e => new { e.ID, e.FullName, e.FullNameEn }).ToListAsync()).Select(e => (e.ID,
+						$"Prepare the paperwork for a new employee: {e.FullName}",
+						$"New employee paperwork: {(string.IsNullOrWhiteSpace(e.FullNameEn) ? e.FullName : e.FullNameEn)}")).ToList();
 				default: return new();
 			}
 		}
@@ -122,7 +141,7 @@ namespace CrossBuy.BL
 					if (existingSet.Contains(key)) continue;   // already generated for this (rule, source) → dedupe
 					var task = new TaskItem
 					{
-						CompanyId = companyId, Title = c.title, Description = null,
+						CompanyId = companyId, Title = c.title, TitleEn = c.titleEn, Description = null,
 						AssigneeEmployeeId = rule.DefaultAssigneeEmployeeId ?? 0,   // 0 = unassigned (manager routes it)
 						CreatedByEmployeeId = 0,                                    // 0 = system/auto
 						Priority = def.priority, Status = "New", ActualHours = 0m,

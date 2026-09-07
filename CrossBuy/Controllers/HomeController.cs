@@ -12,13 +12,16 @@ namespace CrossBuy.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly IStringLocalizer<SharedResources> _localizer;
         private readonly CrossBuy.BL.IStoreCatalogService _catalog;   // E-commerce Phase 1 (display only)
-        private const int StoreCompanyId = 1;
+        // Stage 1 Batch B / B3: from configuration via the public catalogue scope, not a bare constant. See StoreController.
+        private int StoreCompanyId => _isolation.PublicCatalogCompanyId;
+        private readonly CrossBuy.BL.Platform.ICompanyIsolationBypass _isolation;
 
-        public HomeController(ILogger<HomeController> logger , IStringLocalizer<SharedResources> localizer, CrossBuy.BL.IStoreCatalogService catalog)
+        public HomeController(ILogger<HomeController> logger , IStringLocalizer<SharedResources> localizer, CrossBuy.BL.IStoreCatalogService catalog, CrossBuy.BL.Platform.ICompanyIsolationBypass isolation)
         {
             _logger = logger;
             _localizer = localizer;
             _catalog = catalog;
+            _isolation = isolation;
         }
 
         public IActionResult Index()
@@ -42,6 +45,8 @@ namespace CrossBuy.Controllers
         public async Task<IActionResult> Store()
         {
             ViewBag.WelcomeMessage = CrossBuy.Resources.SharedResources.WelcomeMessage;
+            // Explicit public catalogue scope — pinned to the configured company, read-only, not cross-company.
+            using var publicScope = _isolation.BeginPublicCatalogRead("Anonymous storefront: catalogue home.");
             var vm = new CrossBuy.ViewModel.StoreCatalogVM
             {
                 Categories = await _catalog.GetCategoriesAsync(StoreCompanyId),

@@ -193,7 +193,7 @@
                             <div class="d-flex flex-wrap gap-2">
                                 @foreach (var s in stages.Where(x => x != "Hired" && x != Model.Status))
                                 {
-                                    <form asp-action="ChangeApplicationStage" method="post" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Move this applicant to"] @stageName(s)؟">
+                                    <form asp-action="ChangeApplicationStage" method="post" data-cb-confirm data-cb-action="edit" data-cb-text="@Localizer["Move this applicant to"] @stageName(s)?">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@Model.ID" /><input type="hidden" name="stage" value="@s" />
                                         <button class="btn btn-sm btn-light-@stageCls(s)"><span class="bullet bullet-dot bg-@stageCls(s) me-2"></span>@stageName(s)</button>

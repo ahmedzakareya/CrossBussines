@@ -1,23 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" fill="none" role="img" aria-label="CrossBuy Restaurant Cashier">
   <defs>
     <linearGradient id="cbScreen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2f9e6e"/><stop offset="1" stop-color="#1f6253"/>
+      <stop offset="0" stop-color="#1877F2"/><stop offset="1" stop-color="#166FE5"/>
     </linearGradient>
     <linearGradient id="cbGold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f0c64b"/><stop offset="1" stop-color="#d4a017"/>
+      <stop offset="0" stop-color="#FBBF24"/><stop offset="1" stop-color="#F59E0B"/>
     </linearGradient>
   </defs>
 
   <!-- soft ground -->
-  <ellipse cx="260" cy="372" rx="205" ry="26" fill="#0c2e28" opacity="0.35"/>
+  <ellipse cx="260" cy="372" rx="205" ry="26" fill="#0B3D91" opacity="0.35"/>
 
   <!-- ===== POS terminal ===== -->
   <!-- stand -->
-  <rect x="238" y="300" width="44" height="46" rx="6" fill="#0c2e28"/>
-  <rect x="196" y="338" width="128" height="18" rx="9" fill="#0c2e28"/>
+  <rect x="238" y="300" width="44" height="46" rx="6" fill="#0B3D91"/>
+  <rect x="196" y="338" width="128" height="18" rx="9" fill="#0B3D91"/>
   <!-- body -->
   <rect x="118" y="120" width="284" height="196" rx="20" fill="#ffffff"/>
-  <rect x="118" y="120" width="284" height="196" rx="20" fill="#0c2e28" opacity="0.06"/>
+  <rect x="118" y="120" width="284" height="196" rx="20" fill="#0B3D91" opacity="0.06"/>
   <!-- screen -->
   <rect x="138" y="142" width="244" height="132" rx="12" fill="url(#cbScreen)"/>
   <!-- screen: order rows -->
@@ -27,18 +27,18 @@
   <rect x="158" y="222" width="96"  height="10" rx="5" fill="#ffffff" opacity="0.65"/>
   <!-- total pill -->
   <rect x="300" y="196" width="66" height="60" rx="10" fill="url(#cbGold)"/>
-  <path d="M316 232l7 7 15-16" stroke="#0c2e28" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="310" y="208" width="46" height="9" rx="4.5" fill="#0c2e28" opacity="0.55"/>
+  <path d="M316 232l7 7 15-16" stroke="#0B3D91" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="310" y="208" width="46" height="9" rx="4.5" fill="#0B3D91" opacity="0.55"/>
   <!-- camera dot -->
-  <circle cx="260" cy="132" r="3" fill="#0c2e28" opacity="0.4"/>
+  <circle cx="260" cy="132" r="3" fill="#0B3D91" opacity="0.4"/>
 
   <!-- ===== receipt curling out of the printer ===== -->
-  <rect x="150" y="292" width="120" height="18" rx="9" fill="#0c2e28"/>
+  <rect x="150" y="292" width="120" height="18" rx="9" fill="#0B3D91"/>
   <path d="M168 300h84c10 0 10 82 0 92 -10 8 -20 -2 -30 6 -10 8 -20 -2 -30 6 -10 8 -22 0 -24 -12z" fill="#ffffff"/>
-  <rect x="182" y="320" width="60" height="7" rx="3.5" fill="#1f6253" opacity="0.85"/>
-  <rect x="182" y="336" width="46" height="6" rx="3" fill="#cdd8d3"/>
-  <rect x="182" y="350" width="52" height="6" rx="3" fill="#cdd8d3"/>
-  <rect x="182" y="364" width="38" height="6" rx="3" fill="#cdd8d3"/>
+  <rect x="182" y="320" width="60" height="7" rx="3.5" fill="#166FE5" opacity="0.85"/>
+  <rect x="182" y="336" width="46" height="6" rx="3" fill="#D0E1FF"/>
+  <rect x="182" y="350" width="52" height="6" rx="3" fill="#D0E1FF"/>
+  <rect x="182" y="364" width="38" height="6" rx="3" fill="#D0E1FF"/>
 
   <!-- ===== coffee cup ===== -->
   <path d="M392 250h58l-7 74a14 14 0 0 1-14 12h-16a14 14 0 0 1-14-12z" fill="#ffffff"/>
@@ -51,7 +51,7 @@
   <circle cx="96" cy="234" r="3" fill="#ffffff" opacity="0.9"/>
   <circle cx="118" cy="228" r="3" fill="#ffffff" opacity="0.9"/>
   <circle cx="140" cy="234" r="3" fill="#ffffff" opacity="0.9"/>
-  <rect x="66" y="252" width="104" height="12" rx="6" fill="#2f9e6e"/>
+  <rect x="66" y="252" width="104" height="12" rx="6" fill="#1877F2"/>
   <rect x="66" y="266" width="104" height="12" rx="6" fill="#b3471f"/>
   <path d="M70 280h96a30 30 0 0 1-96 0z" fill="url(#cbGold)"/>
 </svg>

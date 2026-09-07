@@ -17,6 +17,21 @@
     var day = Model.Day;
     ViewData["Title"] = T("عرض الموارد", "Resource view");
 
+    // The stored resource kinds. An unrecognised code falls through to itself rather than to a blank,
+    // so a kind added later is visibly untranslated instead of silently invisible.
+    // Same deep link the timeline uses: the booking opens on the calendar, on this day, with the
+    // event's own dialog already showing. A double-booked cell links to the FIRST of its bookings -
+    // the badge is one element and cannot be two links, and the tooltip already names them all.
+    Func<int, string> eventHref = id => $"/Calendar/Index?eventId={id}&day={day:yyyy-MM-dd}";
+
+    Func<string, string> kindLabel = k => k switch
+    {
+        "Room" => T("قاعة", "Room"),
+        "Vehicle" => T("مركبة", "Vehicle"),
+        "Equipment" => T("معدات", "Equipment"),
+        _ => k,
+    };
+
     const int StartHour = 7, EndHour = 20;
     var hours = Enumerable.Range(StartHour, EndHour - StartHour).ToList();
 }
@@ -51,7 +66,7 @@
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
     <div class="card card-flush">
         <div class="card-header align-items-center py-4">
-            <h3 class="card-title fw-bold text-gray-900">@T("الموارد", "Resources")</h3>
+            <div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@T("الموارد", "Resources")</h3></div>
             <div class="card-toolbar"><span class="badge badge-light-primary fs-7 fw-bold">@Model.Resources.Count</span></div>
         </div>
         <div class="card-body pt-0">
@@ -70,7 +85,7 @@
                      aria-label="@T("شبكة ساعات الموارد", "Resource hour grid")">
                     <table class="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-2">
                         <thead>
-                            <tr class="fw-bold text-muted fs-8">
+                            <tr class="fw-bold text-muted fs-8" style="border-bottom:2px solid #0E4A9E;">
                                 <th class="min-w-150px">@T("المورد", "Resource")</th>
                                 @foreach (var h in hours)
                                 {
@@ -86,8 +101,10 @@
                                 var mine = r.Occurrences;
                                 <tr>
                                     <td>
-                                        <span class="fw-semibold text-gray-900 fs-7">@r.Name</span>
-                                        <div class="text-muted fs-8">@r.Kind@(r.Capacity.HasValue ? $" · {r.Capacity}" : "")</div>
+                                        <span class="fw-semibold text-gray-900 fs-7"><bdi>@r.Name</bdi></span>
+                                        <div class="text-muted fs-8">
+                                            @kindLabel(r.Kind)@(r.Capacity.HasValue ? " · " + T("يتّسع لـ", "seats") + " " + r.Capacity : "")
+                                        </div>
                                     </td>
                                     @foreach (var h in hours)
                                     {
@@ -100,18 +117,18 @@
                                                exists to make visible. It is shown, not hidden behind the
                                                first booking. *@
                                             <td class="text-center p-1">
-                                                <span class="badge badge-light-danger fs-8 w-100 text-truncate d-inline-block"
-                                                      title="@string.Join(" / ", hits.Select(x => x.Title))">
+                                                <a href="@eventHref(hits[0].EventId)" class="badge badge-light-danger fs-8 w-100 text-truncate d-inline-block"
+                                                   title="@string.Join(" / ", hits.Select(x => x.Title))">
                                                     @hits.Count ⚠
-                                                </span>
+                                                </a>
                                             </td>
                                         }
                                         else if (hits.Count == 1)
                                         {
                                             <td class="text-center p-1">
-                                                <span class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block" title="@hits[0].Title">
+                                                <a href="@eventHref(hits[0].EventId)" class="badge badge-light-primary fs-8 w-100 text-truncate d-inline-block" title="@hits[0].Title">
                                                     @hits[0].Title@(hits[0].IsRepeat ? " ↻" : "")
-                                                </span>
+                                                </a>
                                             </td>
                                         }
                                         else

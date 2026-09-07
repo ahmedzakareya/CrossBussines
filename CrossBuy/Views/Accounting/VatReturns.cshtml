@@ -18,7 +18,7 @@
                 <input type="text" id="s" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search..."]" autocomplete="off" />
             </div></div></div>
             <div class="card-body pt-0 pb-4"><div class="table-responsive"><table class="table table-row-dashed align-middle gy-4 mb-0" id="t" style="font-variant-numeric:tabular-nums;">
-                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><tr><th>@Localizer["Period"]</th><th class="text-end">@Localizer["Output VAT"]</th><th class="text-end">@Localizer["Input VAT"]</th><th class="text-end">@Localizer["Net due"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@Localizer["Open"]</th></tr></thead>
+                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><tr style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Period"]</th><th class="text-end">@Localizer["Output VAT"]</th><th class="text-end">@Localizer["Input VAT"]</th><th class="text-end">@Localizer["Net due"]</th><th class="text-center">@SR["Status"]</th><th class="text-center">@Localizer["Open"]</th></tr></thead>
                 <tbody>
                 @foreach (var r in Model) {
                     <tr class="r" data-s="@r.PeriodStart.ToString("yyyy/MM/dd") @r.PeriodEnd.ToString("yyyy/MM/dd")">

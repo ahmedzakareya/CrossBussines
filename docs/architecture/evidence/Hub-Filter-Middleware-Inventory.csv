@@ -1,0 +1,10 @@
+﻿kind,cls,file,detail,authorize
+SignalR Hub,ChatHub,CrossBuy/Hubs/ChatHub.cs,JoinConversation;LeaveConversation;Typing,True
+SignalR Hub,NotificationsHub,CrossBuy/Hubs/NotificationsHub.cs,,True
+SignalR Hub,PosHub,CrossBuy/Hubs/PosHub.cs,,True
+Filter/Attribute,AccPermAttribute,CrossBuy/Models/AccPermAttribute.cs,"Attribute, IAsyncActionFilter",
+Filter/Attribute,CrmPermAttribute,CrossBuy/Models/CrmPermAttribute.cs,"Attribute, IAsyncActionFilter",
+Filter/Attribute,InvPermAttribute,CrossBuy/Models/InvPermAttribute.cs,"Attribute, IAsyncActionFilter",
+Filter/Attribute,PosLaneActivityGuardAttribute,CrossBuy/Models/PosLaneActivityGuardAttribute.cs,ActionFilterAttribute,
+Filter/Attribute,SessionValidationAttribute,CrossBuy/Models/SessionValidationAttribute.cs,ActionFilterAttribute,
+Middleware,SessionValidationMiddleware,CrossBuy/Models/SessionValidationMiddleware.cs,,

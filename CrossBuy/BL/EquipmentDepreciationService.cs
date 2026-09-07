@@ -92,17 +92,17 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int allocId, EquipmentAllocInput input, int? userId)
 		{
 			var prj = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
-			if (prj == null) return (false, "المشروع غير موجود", 0);
+			if (prj == null) return (false, "Project not found", 0);
 			var asset = await _db.FixedAssets.AsNoTracking().FirstOrDefaultAsync(a => a.ID == input.FixedAssetId && a.CompanyID == companyId);
-			if (asset == null) return (false, "اختر معدة (أصلًا ثابتًا) صحيحة", 0);
+			if (asset == null) return (false, "Choose a valid piece of equipment (a fixed asset)", 0);
 			var amount = R(input.Amount);
-			if (amount <= 0) return (false, "أدخل حصة إهلاك أكبر من صفر", 0);
+			if (amount <= 0) return (false, "Enter a depreciation share greater than zero", 0);
 
 			EquipmentDepreciationAllocation hdr;
 			if (allocId > 0)
 			{
-				hdr = await _db.EquipmentDepreciationAllocations.FirstOrDefaultAsync(x => x.ID == allocId && x.CompanyID == companyId) ?? throw new InvalidOperationException("التحميل غير موجود");
-				if (hdr.Status != "Draft") return (false, "لا يمكن تعديل تحميل مرحّل", 0);
+				hdr = await _db.EquipmentDepreciationAllocations.FirstOrDefaultAsync(x => x.ID == allocId && x.CompanyID == companyId) ?? throw new InvalidOperationException("Allocation not found");
+				if (hdr.Status != "Draft") return (false, "A posted allocation cannot be edited", 0);
 			}
 			else
 			{
@@ -123,21 +123,21 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> PostAsync(int companyId, int id, int? userId)
 		{
 			var hdr = await _db.EquipmentDepreciationAllocations.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (hdr == null) return (false, "التحميل غير موجود");
-			if (hdr.Status == "Posted") return (false, "التحميل مرحّل بالفعل");   // post-once
-			if (hdr.Amount <= 0) return (false, "حصة الإهلاك صفر");
+			if (hdr == null) return (false, "Allocation not found");
+			if (hdr.Status == "Posted") return (false, "The allocation is already posted");   // post-once
+			if (hdr.Amount <= 0) return (false, "The depreciation share is zero");
 
 			var asset = await _db.FixedAssets.AsNoTracking().FirstOrDefaultAsync(a => a.ID == hdr.FixedAssetId && a.CompanyID == companyId);
-			if (asset == null) return (false, "المعدة غير موجودة");
-			if (asset.DepExpenseAccountId <= 0) return (false, "المعدة بلا حساب مصروف إهلاك مُهيّأ");
+			if (asset == null) return (false, "Equipment not found");
+			if (asset.DepExpenseAccountId <= 0) return (false, "The equipment has no depreciation expense account configured");
 
 			var costAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == ProjectCostAccountCode).Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (costAcc == null) return (false, $"حساب تكلفة التنفيذ ({ProjectCostAccountCode}) غير مُهيّأ");
+			if (costAcc == null) return (false, $"The execution cost account ({ProjectCostAccountCode}) is not configured");
 
 			// both legs need a cost center (RequireCostCenter): asset's → project's → first company cost center
 			var prjCc = await _db.Projects.AsNoTracking().Where(p => p.ID == hdr.ProjectId).Select(p => p.CostCenterId).FirstOrDefaultAsync();
 			int? cc = asset.CostCenterId ?? prjCc ?? await _db.CostCenters.AsNoTracking().Where(x => x.CompanyID == companyId).OrderBy(x => x.ID).Select(x => (int?)x.ID).FirstOrDefaultAsync();
-			if (cc == null) return (false, "القيد يتطلب مركز تكلفة ولا يوجد مركز تكلفة معرّف");
+			if (cc == null) return (false, "The entry requires a cost centre and no cost centre is defined");
 
 			var amount = R(hdr.Amount);
 			var curId = await _db.Currencies.Select(c => c.ID).FirstOrDefaultAsync();
@@ -149,7 +149,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = costAcc.Value, Debit = amount, Credit = 0, ProjectId = hdr.ProjectId, CostCenterId = cc, Description = "حصة إهلاك المعدة (تكلفة المشروع)" },
-					new() { AccountId = asset.DepExpenseAccountId, Debit = 0, Credit = amount, ProjectId = null, CostCenterId = cc, Description = "إعادة تصنيف مصروف الإهلاك إلى المشروع" },
+					new() { AccountId = asset.DepExpenseAccountId, Debit = 0, Credit = amount, ProjectId = null, CostCenterId = cc, Description = "Reclassification of depreciation expense to the project" },
 				}
 			};
 			var (ok, jerr, entry) = await _je.CreateAndPostAsync(input, userId);
@@ -162,8 +162,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)
 		{
 			var hdr = await _db.EquipmentDepreciationAllocations.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (hdr == null) return (false, "التحميل غير موجود");
-			if (hdr.Status == "Posted") return (false, "لا يمكن حذف تحميل مرحّل");
+			if (hdr == null) return (false, "Allocation not found");
+			if (hdr.Status == "Posted") return (false, "A posted allocation cannot be deleted");
 			_db.EquipmentDepreciationAllocations.Remove(hdr);
 			await _db.SaveChangesAsync();
 			return (true, null);

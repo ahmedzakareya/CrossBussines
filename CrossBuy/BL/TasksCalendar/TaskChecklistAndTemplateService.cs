@@ -29,9 +29,12 @@ namespace CrossBuy.BL.TasksCalendar
 	public interface ITaskChecklistService
 	{
 		Task<List<TaskChecklistItem>> ForTaskAsync(int companyId, int taskId, CancellationToken ct = default);
-		Task<(bool ok, string? error, int id)> AddAsync(int companyId, int taskId, string title, int? actorEmployeeId, CancellationToken ct = default);
+		// titleEn is OPTIONAL and defaulted, so the template-apply path that passes one line keeps
+		// compiling. Blank stores NULL, which is what makes DisplayName.Of fall back to the Arabic
+		// line rather than render an empty row.
+		Task<(bool ok, string? error, int id)> AddAsync(int companyId, int taskId, string title, int? actorEmployeeId, CancellationToken ct = default, string? titleEn = null);
 		Task<(bool ok, string? error)> SetDoneAsync(int companyId, int id, bool done, int? actorEmployeeId, CancellationToken ct = default);
-		Task<(bool ok, string? error)> RenameAsync(int companyId, int id, string title, CancellationToken ct = default);
+		Task<(bool ok, string? error)> RenameAsync(int companyId, int id, string title, CancellationToken ct = default, string? titleEn = null);
 		Task<(bool ok, string? error)> RemoveAsync(int companyId, int id, CancellationToken ct = default);
 		Task<(bool ok, string? error)> ReorderAsync(int companyId, int taskId, IReadOnlyList<int> orderedIds, CancellationToken ct = default);
 		Task<Dictionary<int, ChecklistProgress>> ProgressManyAsync(int companyId, IReadOnlyCollection<int> taskIds, CancellationToken ct = default);
@@ -53,14 +56,14 @@ namespace CrossBuy.BL.TasksCalendar
 				.ToListAsync(ct);
 
 		public async Task<(bool ok, string? error, int id)> AddAsync(
-			int companyId, int taskId, string title, int? actorEmployeeId, CancellationToken ct = default)
+			int companyId, int taskId, string title, int? actorEmployeeId, CancellationToken ct = default, string? titleEn = null)
 		{
-			if (companyId <= 0) return (false, "الشركة غير محددة (unresolved company)", 0);
-			if (string.IsNullOrWhiteSpace(title)) return (false, "نص البند مطلوب (a checklist line needs text)", 0);
+			if (companyId <= 0) return (false, "Unresolved company", 0);
+			if (string.IsNullOrWhiteSpace(title)) return (false, "A checklist line needs text", 0);
 
 			// The task must belong to THIS company — the company comes from the task row, never the caller.
 			if (!await _db.TaskItems.AnyAsync(t => t.ID == taskId && t.CompanyId == companyId, ct))
-				return (false, "المهمة غير موجودة (task not found)", 0);
+				return (false, "Task not found", 0);
 
 			int next = (await _db.TaskChecklistItems
 				.Where(c => c.CompanyId == companyId && c.TaskId == taskId)
@@ -69,6 +72,7 @@ namespace CrossBuy.BL.TasksCalendar
 			var item = new TaskChecklistItem
 			{
 				CompanyId = companyId, TaskId = taskId, Title = title.Trim(),
+				TitleEn = string.IsNullOrWhiteSpace(titleEn) ? null : titleEn.Trim(),
 				SortOrder = next, CreatedAt = TaskCalendarTime.UtcNow(), CreatedByEmployeeId = actorEmployeeId
 			};
 			_db.TaskChecklistItems.Add(item);
@@ -80,7 +84,7 @@ namespace CrossBuy.BL.TasksCalendar
 			int companyId, int id, bool done, int? actorEmployeeId, CancellationToken ct = default)
 		{
 			var item = await _db.TaskChecklistItems.FirstOrDefaultAsync(c => c.ID == id && c.CompanyId == companyId, ct);
-			if (item == null) return (false, "البند غير موجود (checklist line not found)");
+			if (item == null) return (false, "Checklist line not found");
 
 			if (item.IsDone == done) return (true, null);   // idempotent, and writes nothing
 
@@ -91,13 +95,14 @@ namespace CrossBuy.BL.TasksCalendar
 			return (true, null);
 		}
 
-		public async Task<(bool ok, string? error)> RenameAsync(int companyId, int id, string title, CancellationToken ct = default)
+		public async Task<(bool ok, string? error)> RenameAsync(int companyId, int id, string title, CancellationToken ct = default, string? titleEn = null)
 		{
-			if (string.IsNullOrWhiteSpace(title)) return (false, "نص البند مطلوب (a checklist line needs text)");
+			if (string.IsNullOrWhiteSpace(title)) return (false, "A checklist line needs text");
 			var item = await _db.TaskChecklistItems.FirstOrDefaultAsync(c => c.ID == id && c.CompanyId == companyId, ct);
-			if (item == null) return (false, "البند غير موجود (checklist line not found)");
+			if (item == null) return (false, "Checklist line not found");
 
 			item.Title = title.Trim();
+			item.TitleEn = string.IsNullOrWhiteSpace(titleEn) ? null : titleEn.Trim();
 			await _db.SaveChangesAsync(ct);
 			return (true, null);
 		}
@@ -105,7 +110,7 @@ namespace CrossBuy.BL.TasksCalendar
 		public async Task<(bool ok, string? error)> RemoveAsync(int companyId, int id, CancellationToken ct = default)
 		{
 			var item = await _db.TaskChecklistItems.FirstOrDefaultAsync(c => c.ID == id && c.CompanyId == companyId, ct);
-			if (item == null) return (false, "البند غير موجود (checklist line not found)");
+			if (item == null) return (false, "Checklist line not found");
 
 			_db.TaskChecklistItems.Remove(item);
 			await _db.SaveChangesAsync(ct);
@@ -124,7 +129,7 @@ namespace CrossBuy.BL.TasksCalendar
 
 			var known = items.Select(i => i.ID).ToHashSet();
 			if (orderedIds.Any(id => !known.Contains(id)))
-				return (false, "ترتيب يحتوي بندًا لا يخص هذه المهمة (the order names a line that is not on this task)");
+				return (false, "The order names a line that is not on this task");
 
 			int n = 1;
 			foreach (var id in orderedIds)
@@ -214,11 +219,11 @@ namespace CrossBuy.BL.TasksCalendar
 		public async Task<(bool ok, string? error, int id)> SaveAsync(
 			int companyId, TaskTemplate input, int? actorEmployeeId, CancellationToken ct = default)
 		{
-			if (companyId <= 0) return (false, "الشركة غير محددة (unresolved company)", 0);
-			if (string.IsNullOrWhiteSpace(input.Name)) return (false, "اسم القالب مطلوب (a template needs a name)", 0);
+			if (companyId <= 0) return (false, "Unresolved company", 0);
+			if (string.IsNullOrWhiteSpace(input.Name)) return (false, "A template needs a name", 0);
 
 			var items = (input.Items ?? new()).Where(i => !string.IsNullOrWhiteSpace(i.Title)).ToList();
-			if (items.Count == 0) return (false, "القالب يحتاج بندًا واحدًا على الأقل (a template needs at least one task)", 0);
+			if (items.Count == 0) return (false, "A template needs at least one task", 0);
 
 			// A predecessor must name a sort order that exists in this template, and never itself —
 			// otherwise applying the template would produce an edge the dependency service must reject,
@@ -228,9 +233,9 @@ namespace CrossBuy.BL.TasksCalendar
 			{
 				if (i.PredecessorSortOrder is not int p) continue;
 				if (p == i.SortOrder)
-					return (false, $"البند «{i.Title}» يعتمد على نفسه (template item '{i.Title}' depends on itself)", 0);
+					return (false, $"Template item '{i.Title}' depends on itself", 0);
 				if (!orders.Contains(p))
-					return (false, $"البند «{i.Title}» يشير إلى ترتيب غير موجود (template item '{i.Title}' names a predecessor that is not in this template)", 0);
+					return (false, $"Template item '{i.Title}' names a predecessor that is not in this template", 0);
 			}
 
 			TaskTemplate entity;
@@ -258,6 +263,7 @@ namespace CrossBuy.BL.TasksCalendar
 			entity.Name = input.Name.Trim();
 			entity.NameEn = string.IsNullOrWhiteSpace(input.NameEn) ? null : input.NameEn.Trim();
 			entity.Description = input.Description;
+			entity.DescriptionEn = string.IsNullOrWhiteSpace(input.DescriptionEn) ? null : input.DescriptionEn.Trim();
 			entity.IsActive = input.IsActive;
 
 			int order = 1;
@@ -269,6 +275,7 @@ namespace CrossBuy.BL.TasksCalendar
 					Title = i.Title.Trim(),
 					TitleEn = string.IsNullOrWhiteSpace(i.TitleEn) ? null : i.TitleEn.Trim(),
 					Description = i.Description,
+					DescriptionEn = string.IsNullOrWhiteSpace(i.DescriptionEn) ? null : i.DescriptionEn.Trim(),
 					Priority = i.Priority,
 					EstimatedHours = i.EstimatedHours,
 					DueOffsetDays = i.DueOffsetDays,
@@ -287,7 +294,7 @@ namespace CrossBuy.BL.TasksCalendar
 		public async Task<(bool ok, string? error)> SetActiveAsync(int companyId, int id, bool active, CancellationToken ct = default)
 		{
 			var t = await _db.TaskTemplates.FirstOrDefaultAsync(x => x.ID == id && x.CompanyId == companyId, ct);
-			if (t == null) return (false, "القالب غير موجود (template not found)");
+			if (t == null) return (false, "Template not found");
 			t.IsActive = active;
 			await _db.SaveChangesAsync(ct);
 			return (true, null);
@@ -303,12 +310,12 @@ namespace CrossBuy.BL.TasksCalendar
 			int companyId, int templateId, DateTime anchorLocalDate, int? assigneeOverride,
 			int currentEmployeeId, CancellationToken ct = default)
 		{
-			if (companyId <= 0) return (false, "الشركة غير محددة (unresolved company)", null);
+			if (companyId <= 0) return (false, "Unresolved company", null);
 
 			var template = await GetAsync(companyId, templateId, ct);
-			if (template == null) return (false, "القالب غير موجود (template not found)", null);
-			if (!template.IsActive) return (false, "القالب غير نشط (template is not active)", null);
-			if (template.Items.Count == 0) return (false, "القالب بلا بنود (template has no items)", null);
+			if (template == null) return (false, "Template not found", null);
+			if (!template.IsActive) return (false, "The template is not active", null);
+			if (template.Items.Count == 0) return (false, "The template has no items", null);
 
 			var createdBySortOrder = new Dictionary<int, int>();
 			var createdIds = new List<int>();
@@ -321,6 +328,11 @@ namespace CrossBuy.BL.TasksCalendar
 				var input = new TaskSaveInput
 				{
 					Title = item.Title,
+					// TaskTemplateItem.TitleEn was stored by SaveAsync and then dropped here, so applying a
+					// template produced tasks with TitleEn = null - the template knew both languages and the
+					// tasks it created knew one. Carried across so an applied task reads in the UI language
+					// exactly as its template item does.
+					TitleEn = item.TitleEn,
 					Description = item.Description,
 					AssigneeEmployeeId = assignee,
 					Priority = item.Priority,
@@ -332,7 +344,7 @@ namespace CrossBuy.BL.TasksCalendar
 
 				var (ok, err, id) = await _tasks.SaveAsync(companyId, input, currentEmployeeId);
 				if (!ok)
-					return (false, $"تعذّر إنشاء «{item.Title}»: {err} (could not create '{item.Title}')", null);
+					return (false, $"Could not create '{item.Title}': {err}", null);
 
 				createdIds.Add(id);
 				createdBySortOrder[item.SortOrder] = id;

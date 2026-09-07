@@ -27,7 +27,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" Version="1.62.0" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.0" />
@@ -48,6 +47,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Caching.SqlServer" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.62.0" />
     <PackageReference Include="QRCoder" Version="1.8.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.23" />
@@ -63,10 +63,7 @@
        No PackageReference changes: the analyzer's two Roslyn packages are PrivateAssets="all", so nothing flows here.
        =========================================================================================================== -->
   <ItemGroup>
-    <ProjectReference Include="..\CrossBuy.Analyzers\CrossBuy.Analyzers.csproj"
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false"
-                      PrivateAssets="all" />
+    <ProjectReference Include="..\CrossBuy.Analyzers\CrossBuy.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- The frozen debt baseline is a DECLARED INPUT. An analyzer may not open files — the compiler sandboxes it so a
@@ -93,9 +90,7 @@
        engineering/authorization-baseline.json would build GREEN while enforcing nothing. That is the one failure mode
        of this integration that looks identical to success, so it is made loud here instead. -->
   <Target Name="CrossBuyVerifyAuthorizationBaseline" BeforeTargets="CoreCompile">
-    <Error Condition="!Exists('$(MSBuildThisFileDirectory)..\engineering\authorization-baseline.json')"
-           Code="CBA000"
-           Text="engineering/authorization-baseline.json is missing, so the authorization analyzer would build green while enforcing nothing (CBA001 and CBA004 degrade to silent without a baseline). Restore the file, or remove the AdditionalFiles entry deliberately." />
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)..\engineering\authorization-baseline.json')" Code="CBA000" Text="engineering/authorization-baseline.json is missing, so the authorization analyzer would build green while enforcing nothing (CBA001 and CBA004 degrade to silent without a baseline). Restore the file, or remove the AdditionalFiles entry deliberately." />
   </Target>
 
   <ItemGroup>

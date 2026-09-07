@@ -1,0 +1,27 @@
+path,state,phase,bytes,sha256,role
+CrossBuy/Controllers/Api/ReportsCenterWriteEndpoints.cs.pending,new,1,16887,c85dcb84cb68222848613950dee2bded1543de997aef03d8c9e5ab9d4c57a56b,"The seven write endpoints, complete and NOT compiled pending the CBA001 gate"
+CrossBuy.Tests/ReportingWriteAuthorizationTests.cs,new,1,15349,02d6a9a2610b4d5a7c60c0d38a0df64aac06552298340c87d3d30d5d855059e4,"Write authorization: company scope, stale version, reorder isolation, gate consistency"
+CrossBuy/BL/Reporting/ReportsCenterPresenter.cs,new,"2,3,6",50528,a86cca5aa319ca0f1c0bc94b38fc8f8c7f61f113ec6f17202a49d3eac222ce1e,View models + the presenter that owns every UI safety rule
+CrossBuy/Controllers/ReportsController.cs,new,"2,3",13400,b29c2fe81962d29eaa4dbcd52f789d78463e920a690207b041c1e90aa9ddb7da,"MVC surface, GET-only, decides nothing"
+CrossBuy/Views/Reports/Index.cshtml,new,2,26410,0f17ed584ca808b5a82d2efa55975a43a71d045e0dd58f9dcd2db773889e647e,The Reports Center — Inventory components only
+CrossBuy/Views/Reports/_ReportCard.cshtml,new,2,2235,54108bfcc22d32fb2eee0882ec1d5ca58760204a37f4b90a35d5a2110c0ef253,"One catalog card, shared by favourites and every category group"
+CrossBuy/Views/Reports/Viewer.cshtml,new,3,27915,f11a45b73988b2ae41dde86ae1741b95eae7bccd1e463158ace0a7d17383eb95,The Report Viewer — Inventory ValuationReport pattern
+CrossBuy/Resources/Views/Reports/Index.en.resx,new,2,9532,e44560145f9f98c3f25a450560c402515ab0cb0587058fb4c8030175bcd7f9ac,Reports Center strings (en)
+CrossBuy/Resources/Views/Reports/Index.ar.resx,new,2,10410,77a4769b71ccb09831c1b2fa71fee0fdbb08b54def7b79b4cd1f0fb92ae3a321,Reports Center strings (ar)
+CrossBuy/Resources/Views/Reports/Index.fr.resx,new,2,9663,882039bcb1456d964e18ba7685ba94056dbc45cb91e24642fdaa594cd500e821,Reports Center strings (fr)
+CrossBuy/Resources/Views/Reports/Viewer.en.resx,new,3,8485,4d53696a4f7c88dd3034255332a52e31419514820a151bba20dad291ca14197d,Report Viewer strings (en)
+CrossBuy/Resources/Views/Reports/Viewer.ar.resx,new,3,9195,0874ea28f25d46436266d70b1c99389a8a49718120e45df76b7c32b920a683ee,Report Viewer strings (ar)
+CrossBuy/Resources/Views/Reports/Viewer.fr.resx,new,3,8579,8828570cd798346f23ea2fd8f27c683c0b448d5e6385ff225dde49b36a8e8f89,Report Viewer strings (fr)
+CrossBuy/BL/Reporting/BusinessEventsDataset.cs,modified,4,48593,03d27c5d478a72cc47d77e49350822f423c65be4c2f75996b2538412635ff8e5,Dataset v1.2: delivery fields + investigative filters
+CrossBuy/BL/Reporting/ReportingWorkspaceSource.cs,new,5,12010,88a2875eb01363f392bd26812fbc4b5d856fc70e280187508cbe0dd66412e41a,The ONLY file referencing CrossBuy.BL.Workspace
+CrossBuy/BL/Reporting/ReportingRegistration.cs,modified,"2,5",12514,3c92451d81d1cb9068e55f69697a55125a4a47973ddee40da9e6d7f152444a9d,Presenter + workspace source registration
+CrossBuy.Tests/ReportingUiSafetyTests.cs,new,6,39268,6a139740b7df90aad6794debceba0b12f3f94e69005236da896cfc82c61c2257,UI safety proofs + localisation + visual-authority + schema-missing guards
+CrossBuy.Tests/ReportingPilotAndWorkspaceTests.cs,new,"4,5",25241,591a9125c703200346490552e585812bd167ce4af9ea9d6cfb0e32a879142122,Pilot filters + Workspace contribution + containment
+CrossBuy.Tests/ReportingTestHost.cs,modified,"2,3,6",21410,72eea14bd62ee312cfa1968e2c92763a892f6a93e3e8ff5ce274bc9c5d1605d9,Presenter / ReportService / dataset-registry helpers
+docs/platform/Stage-Reporting-UI-01-Reports-Center.md,new,doc,9704,0d33f2da37572607fd52edf352938fa6fab1f17185003f28fdcaf485f9efe429,Deliverable 1
+docs/platform/Stage-Reporting-UI-02-Report-Viewer.md,new,doc,6936,094dc79cc9433b78f3841d7c6151d7adb9de0572c6ded1c15315cdd385a82a06,Deliverable 2
+docs/platform/Stage-Reporting-UI-03-Write-Endpoint-Evidence.md,new,doc,9054,4be5a4412a61b4f054f9d76c56fd1221626f3cd9f2af3039ae93e5f3d74a2ec3,Deliverable 3
+docs/platform/Stage-Reporting-UI-04-Business-Events-Pilot.md,new,doc,6834,f2641900646da8f94149b147eca3f97e07f0d3ed307d30766cc291bd296dfc36,Deliverable 4
+docs/platform/Stage-Reporting-UI-05-Workspace-Integration.md,new,doc,8504,bb06d9f315f098e282e6a1455bb80a3e3d6c85fe94d1f5eb72c1fa2ef09f5830,Deliverable 5
+docs/platform/Stage-Reporting-UI-Delivery-Report.md,new,doc,13293,dee08dbbde9c2955bee1646f1bfe003ba482d230f38170aa95111af028b834fb,Deliverable 6
+docs/platform/Stage-Reporting-UI-Preservation-Report.md,new,doc,3410,09df1c8f4621487f095d5f009d38e3025c2b2342014498eded92d619cf4de73a,Deliverable 8

@@ -78,7 +78,9 @@ namespace CrossBuy.BL.Workspace
         // The contract's own maximum page. Asking for it means the widened window is not silently trimmed by
         // a second, tighter cap invented here; anything beyond it is still reported through the panel's Total
         // and through the service's own DegradedSources note.
-        private const int AgendaPageSize = 200;
+        // 25, not 200. 200 was not a page size, it was "everything" - the screen rendered every row it
+        // was given in one list. 25 matches the Tasks list, which is the other long list in the product.
+        private const int AgendaPageSize = 25;
 
         // Slots the dashboard's 8-row agenda summary reserves for the past. Without a reserve, a head-of-list
         // cap on a chronological list fills every slot with the OLDEST late work and pushes today and
@@ -152,7 +154,9 @@ namespace CrossBuy.BL.Workspace
             // TrimAgenda, not Trim: the range now opens BEFORE today, and a plain head-of-list cap on a
             // chronological list would fill all eight summary slots with the oldest overdue rows and push
             // today and tomorrow off the dashboard entirely.
-            var agenda = TrimAgenda(await SafeAsync("Agenda", () => LoadAgendaAsync(context, 7, cancellationToken)),
+            // Page 1 explicitly: the dashboard shows the head of the agenda and trims it to AgendaShown
+            // itself, so it wants the first page and nothing else.
+            var agenda = TrimAgenda(await SafeAsync("Agenda", () => LoadAgendaAsync(context, 7, 1, cancellationToken)),
                 AgendaShown);
 
             var notifications = await SafeAsync("Notifications",
@@ -233,14 +237,18 @@ namespace CrossBuy.BL.Workspace
             return await SafeAsync("Mentions", () => LoadMentionsAsync(context, take, cancellationToken));
         }
 
+        // PAGING. Added on the repository owner's explicit instruction, in TAB-6's tree: the agenda
+        // service (TAB-5) has supported Page/PageSize with a deterministic tie-broken order from the
+        // start and this screen never used it - it asked for 200 rows on page 1 and rendered all of
+        // them, 52 items and 4695px of page at days=30, with no pager and no statement of the total.
         public async Task<WorkspacePanel<WorkspaceAgendaRow>> GetAgendaAsync(
-            int days = 7, CancellationToken cancellationToken = default)
+            int days = 7, int page = 1, CancellationToken cancellationToken = default)
         {
             var context = await _contexts.TryGetCurrentAsync(cancellationToken);
             if (context == null || context.CompanyId <= 0)
                 return WorkspacePanel<WorkspaceAgendaRow>.AccessDenied("No company is resolved for this session.");
 
-            return await SafeAsync("Agenda", () => LoadAgendaAsync(context, days, cancellationToken));
+            return await SafeAsync("Agenda", () => LoadAgendaAsync(context, days, page, cancellationToken));
         }
 
         // ================================================================================================
@@ -252,7 +260,7 @@ namespace CrossBuy.BL.Workspace
         // and nothing else.
         // ================================================================================================
         private async Task<WorkspacePanel<WorkspaceAgendaRow>> LoadAgendaAsync(
-            BusinessContext context, int days, CancellationToken cancellationToken)
+            BusinessContext context, int days, int page, CancellationToken cancellationToken)
         {
             var agenda = _services.GetService<IWorkspaceAgendaService>();
             if (agenda == null)
@@ -290,6 +298,9 @@ namespace CrossBuy.BL.Workspace
                     // Stated, not inherited. See AgendaOverdueLookbackDays for why the number is TAB 5's.
                     OverdueLookbackDays = AgendaOverdueLookbackDays,
 
+                    // Clamped here as well as in the service: a page below 1 is a caller mistake, and
+                    // letting it reach the service as 0 would silently show page 1 instead of saying so.
+                    Page = page < 1 ? 1 : page,
                     PageSize = AgendaPageSize,
                 }, cancellationToken);
             }
@@ -337,11 +348,27 @@ namespace CrossBuy.BL.Workspace
             // panel's PartiallyAvailable state rather than being flattened away — "showing the agenda without
             // Calendar" is a different promise from "here is your agenda".
             if (result.DegradedSources.Count > 0)
-                return WorkspacePanel<WorkspaceAgendaRow>.Partial(rows, result.DegradedSources,
+            {
+                var partial = WorkspacePanel<WorkspaceAgendaRow>.Partial(rows, result.DegradedSources,
                     $"Showing the agenda without {string.Join(", ", result.DegradedSources)} — those entries " +
                     "are missing from this list.");
 
-            return WorkspacePanel<WorkspaceAgendaRow>.From(rows, result.TotalMatched);
+                // A degraded agenda is still a PAGED agenda; dropping the paging facts here would leave the
+                // pager off exactly when the list is least complete.
+                return new WorkspacePanel<WorkspaceAgendaRow>
+                {
+                    State = partial.State, Items = partial.Items, Reason = partial.Reason,
+                    MissingSources = partial.MissingSources,
+                    Total = result.TotalMatched, Page = result.Page, PageSize = result.PageSize,
+                };
+            }
+
+            var ready = WorkspacePanel<WorkspaceAgendaRow>.From(rows, result.TotalMatched);
+            return new WorkspacePanel<WorkspaceAgendaRow>
+            {
+                State = ready.State, Items = ready.Items, Total = ready.Total,
+                Page = result.Page, PageSize = result.PageSize,
+            };
         }
 
         // OVERDUE / TODAY / UPCOMING, by the row's own LOCAL DATE.
@@ -595,6 +622,10 @@ namespace CrossBuy.BL.Workspace
                 EntityLabel = m.Entity.Key,
                 Excerpt = m.Excerpt,
                 MentionedBy = m.MentionedBy?.Display(WorkspaceCulture.IsArabic()),
+                // Already resolved upstream - carried, not re-fetched.
+                MentionedByAvatarUrl = m.MentionedBy?.AvatarUrl,
+                MentionedByEmployeeId = m.MentionedBy?.EmployeeId ?? 0,
+                IsRead = m.ReadAt != null,
                 ViaKind = m.ViaKind,
                 At = m.CreatedAt,
                 Url = null,
@@ -886,11 +917,11 @@ namespace CrossBuy.BL.Workspace
         // produced by the read model, not by a view, and the file already carries its Arabic this way.
         private static string ReasonAr(WorkspaceAttentionReason r) => r switch
         {
-            WorkspaceAttentionReason.OverdueTask => "متأخرة",
-            WorkspaceAttentionReason.ApprovalWaiting => "بانتظار اعتمادك",
-            WorkspaceAttentionReason.DueToday => "مستحقة اليوم",
-            WorkspaceAttentionReason.UrgentTask => "عاجلة",
-            _ => "إشارة إليك",
+            WorkspaceAttentionReason.OverdueTask => "Overdue",
+            WorkspaceAttentionReason.ApprovalWaiting => "Awaiting your approval",
+            WorkspaceAttentionReason.DueToday => "Due today",
+            WorkspaceAttentionReason.UrgentTask => "Urgent",
+            _ => "You were mentioned",
         };
 
         private static string ReasonEn(WorkspaceAttentionReason r) => r switch

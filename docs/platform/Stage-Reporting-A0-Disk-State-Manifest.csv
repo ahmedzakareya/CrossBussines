@@ -1,0 +1,17 @@
+path,state,kind,bytes,sha256,role
+CrossBuy/deploy/sql/reporting_platform.sql,modified,slice,32228,53db921a777c4612ee6a1a2943dd4ac8090df1df106e1e996af277f63ed75199,The canonical Reporting DDL; A0 added the 7 vocabulary CHECK constraints
+CrossBuy/deploy/sql/manifest.json,modified,governance,146549,36bfcc55d1518b1693c53e49c77fd9e56cd5812d3455cbdc0fc6cd6d4800b0cd,Regenerated with the existing generator; Reporting hash refreshed
+CrossBuy.Tests/SqlServer/ReportingSchemaDeploymentTests.cs,new,proof,31106,1e85dbda6f8db1f275bd2d7ba76dd6907670531a3725f41e4093be3f0dba66d5,"13 tests: from-empty, idempotency, parity, constraints, history, runtime, cleanup"
+CrossBuy.Tests/ReportingDeploymentGovernanceTests.cs,new,proof,12845,d0ff4bf3ed9c6e29c80621c01d6064b2b101bdfe1cfa3d9d3084ff29a903d9f6,"7 UNGATED tests: canonical location, single copy, manifest freshness, model coverage, no EnsureCreated"
+CrossBuy.Tests/ReportingTestHost.cs,modified,proof,23037,2bfa64fb6c452435d1b5dde19674b7d2783f77d98c664613320c1b3abf465998,The 'EnsureCreated is not deployment evidence' warning
+docs/platform/Stage-Reporting-A0-Existing-DDL-Discovery.md,new,doc,4029,9e56179fd2d055ab32b8688465df0f22818ad14c2554509e7bb9313c92711deb,Deliverable 1
+docs/platform/Stage-Reporting-A0-Model-Schema-Parity.md,new,doc,5587,2c558f28fc4819cf79d3472eef99a1c380651dc47e43df820fbdcadb81402d9d,Deliverable 2
+docs/platform/Stage-Reporting-A0-SQL-Design.md,new,doc,4583,670b8ecf897ec852fa83da49f65c44fbbc5750b523de5e28f42154412c6c290b,Deliverable 3
+docs/platform/Stage-Reporting-A0-Idempotency-Evidence.md,new,doc,2691,2ee8d720910cf1a06049d1d72a38a3d64816a22795c97eabf8e8ec328a113dfd,Deliverable 4
+docs/platform/Stage-Reporting-A0-Constraint-Evidence.md,new,doc,3208,e65d20220478aa087f83a7e473d430dba019e629fa2249cb0c9f104e48430e69,Deliverable 5
+docs/platform/Stage-Reporting-A0-PlatformSchemaHistory-Evidence.md,new,doc,2965,492c708cd2adbb52a62c35dc6f45e0a658ce899e68942b4dd2037082c900f818,Deliverable 6
+docs/platform/Stage-Reporting-A0-Runtime-Smoke-Evidence.md,new,doc,2512,4da2938f58fb7b5e8cc737e72e065909e8fc748b76cd0787ef03383fa464f190,Deliverable 7
+docs/platform/Stage-Reporting-A0-Deployment-Runbook.md,new,doc,5578,170b94329567aaa4aca59b6a7c47216967b102c623ae900110f0c83ec7c3a423,"Deliverable 8 — prepared, NOT executed"
+docs/platform/Stage-Reporting-A0-Test-Evidence.md,new,doc,4454,7dd605f50498e37b58fe14446f90c0fca06bec34582e2b220d283bfadb60be9f,Deliverable 9
+docs/platform/Stage-Reporting-A0-Delivery-Report.md,new,doc,4929,a3df570edd4e945fa726198f128d95da0dd67f660151fdcb09286d9be1bf1e8c,Deliverable 10
+docs/platform/Stage-Reporting-A0-Preservation-Report.md,new,doc,2196,6231ba287332cc1278556f2aa4e96bd8b0408079cafb4a9da8a204778ff51a5c,Deliverable 12

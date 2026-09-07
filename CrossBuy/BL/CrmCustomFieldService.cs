@@ -35,7 +35,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveFieldAsync(CrmCustomField dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Label)) return (false, "التسمية مطلوبة", 0);
+			if (string.IsNullOrWhiteSpace(dto.Label)) return (false, "A label is required", 0);
 			var et = new[] { "Lead", "Opportunity", "Account", "Activity" }.Contains(dto.EntityType) ? dto.EntityType : "Lead";
 			var ft = new[] { "Text", "Number", "Date", "Select", "Checkbox" }.Contains(dto.FieldType) ? dto.FieldType : "Text";
 			// derive a stable key if not supplied

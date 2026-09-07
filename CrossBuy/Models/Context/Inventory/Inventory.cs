@@ -165,6 +165,7 @@ namespace CrossBuy.Models.Context.Inventory
 		public int WarehouseId { get; set; }
 		public string Code { get; set; } = "";
 		public string? Name { get; set; }
+		public string? NameEn { get; set; }                     // English twin — shown when the UI is not Arabic
 		public int? ParentId { get; set; }               // Rack: parent = its Section
 		public string LocationType { get; set; } = "Section";   // Section (top under warehouse) | Rack (under a Section) | Bin. Pure locational dimension — NEVER carries value/GL.
 		public bool IsActive { get; set; } = true;
@@ -662,6 +663,7 @@ namespace CrossBuy.Models.Context.Inventory
 		public int LandedCostId { get; set; }
 		public int LineNo { get; set; }
 		public string? Description { get; set; }
+		public string? DescriptionEn { get; set; }          // English twin — shown when the UI is not Arabic
 		public decimal Amount { get; set; }
 		public int AccountId { get; set; }
 	}
@@ -716,6 +718,11 @@ namespace CrossBuy.Models.Context.Inventory
 		public int CompanyID { get; set; }
 		public string? Code { get; set; }
 		public string Name { get; set; } = "";
+		// The English twin of Name, matching Item/ItemCategory/Warehouse in this same file. A work
+		// centre is master data that appears in the routing and manufacturing screens, and it was
+		// the only one of them with no English column -- so an English UI had nothing to show but
+		// the Arabic name. Nullable and never required: read it through DisplayName.Or(NameEn, Name).
+		public string? NameEn { get; set; }
 		public decimal CostPerHour { get; set; }
 		public decimal OverheadPerHour { get; set; }
 		public bool IsActive { get; set; } = true;
@@ -731,6 +738,9 @@ namespace CrossBuy.Models.Context.Inventory
 		public int Seq { get; set; } = 1;
 		public int WorkCenterId { get; set; }
 		public string? OperationName { get; set; }
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? OperationNameEn { get; set; }
 		public decimal SetupMins { get; set; }
 		public decimal RunMinsPerUnit { get; set; }
 		public DateTime? CreatedAt { get; set; }
@@ -742,6 +752,9 @@ namespace CrossBuy.Models.Context.Inventory
 		public int ID { get; set; }
 		public int CompanyID { get; set; }
 		public string Name { get; set; } = "";
+		// English twin of Name -- see ManufWorkCenter.NameEn. A production plan is named by the
+		// planner and shown on the Production Planning list, so it needs the same pair.
+		public string? NameEn { get; set; }
 		public DateTime? PlanDate { get; set; }
 		public string Status { get; set; } = "Draft"; // Draft / Generated
 		public string? CreatedBy { get; set; }
@@ -770,6 +783,7 @@ namespace CrossBuy.Models.Context.Inventory
 		public string SourceType { get; set; } = "Applied";   // Employee | External | Applied
 		public int? EmployeeId { get; set; }
 		public string? WorkerName { get; set; }
+		public string? WorkerNameEn { get; set; }   // English twin — shown when the UI language is not Arabic
 		public decimal Hours { get; set; }
 		public decimal RatePerHour { get; set; }
 		public decimal Amount { get; set; }

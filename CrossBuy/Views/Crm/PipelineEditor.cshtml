@@ -28,9 +28,40 @@
 
             <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@Localizer["Stages"]</div><div class="card-toolbar"><button type="button" id="addStage" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add stage"]</button></div></div>
                 <div class="card-body">
-                    <div class="alert alert-light-primary border border-primary border-dashed p-3 mb-4 fs-8 text-gray-700">@Localizer["Order top-to-bottom. Each stage has a probability%. Flag the Won and Lost stages — reaching the Won stage recognizes the win and links the financial customer automatically."]</div>
+                                        @* THE NOTICE, as this app already builds it (Accounting/JournalEntry): a brand-blue
+                       dashed box, a SOLID brand tile carrying a white icon, then a bold title with the
+                       body under it.
+
+                       I had replaced this with a neutral grey box on the reasoning that primary is
+                       identity and never a state. The premise was right and the conclusion was wrong:
+                       this is not a state badge, it IS the identity - the house note style, used the
+                       same way in AccountEditor, CrmRoles, Currencies and Structure. Draining it to
+                       grey did not apply the identity, it removed it. *@
+                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-5">
+                        <span class="symbol symbol-45px me-5">
+                            <span class="symbol-label bg-primary"><i class="ki-outline ki-information-5 fs-2x text-white"></i></span>
+                        </span>
+                        <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap">
+                            <div class="fw-semibold pe-5">
+                                <h4 class="text-gray-900 fw-bold mb-1">@Localizer["Stages"]</h4>
+                                <div class="fs-6 text-gray-700">@Localizer["Order top-to-bottom. Each stage has a probability%. Flag the Won and Lost stages — reaching the Won stage recognizes the win and links the financial customer automatically."]</div>
+                            </div>
+                        </div>
+                    </div>
+                    @* THE REFUSAL LANDS HERE, in the same notice shape as the note above it but in
+                       `danger`, because this one IS a state: the action was refused. Hidden until it
+                       has something to say - an empty box reserving space is noise. *@
+                    @* d-none, NOT the `hidden` attribute: `hidden` works through display:none in the UA
+                       stylesheet, and the d-flex on this same element overrides it - which rendered the
+                       box permanently, and empty. *@
+                    <div id="stageMsg" class="notice d-flex bg-light-danger rounded border-danger border border-dashed p-4 mb-4 d-none">
+                        <span class="symbol symbol-35px me-4">
+                            <span class="symbol-label bg-danger"><i class="ki-outline ki-information-5 fs-2 text-white"></i></span>
+                        </span>
+                        <div class="fw-semibold text-gray-800 align-self-center" id="stageMsgText"></div>
+                    </div>
                     <div class="table-responsive"><table class="table table-row-bordered align-middle gy-2">
-                        <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th style="width:40px">#</th><th>@Localizer["Code/Name"]</th><th style="width:140px">@Localizer["Probability%"]</th><th class="text-center" style="width:90px">@Localizer["Won"]</th><th class="text-center" style="width:90px">@Localizer["Lost"]</th><th class="w-50px"></th></tr></thead>
+                        <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0 cb-thead-rule"><th style="width:40px">#</th><th>@Localizer["Code/Name"]</th><th style="width:140px">@Localizer["Probability%"]</th><th class="text-center" style="width:90px">@Localizer["Won"]</th><th class="text-center" style="width:90px">@Localizer["Lost"]</th><th class="w-50px"></th></tr></thead>
                         <tbody id="stageRows"></tbody>
                     </table></div>
                 </div>
@@ -52,9 +83,49 @@
       '<td class="text-center"><input type="checkbox" class="form-check-input lost"'+(s.isLost?' checked':'')+'></td>'+
       '<td class="text-end"><button type="button" class="btn btn-sm btn-icon btn-light-danger" data-rm="'+i+'"><i class="ki-outline ki-trash fs-6"></i></button></td>';
     tb.appendChild(tr); }); }
-  tb.addEventListener('click',function(e){ var b=e.target.closest('[data-rm]'); if(!b)return; sync(); ST.splice(parseInt(b.getAttribute('data-rm')),1); render(); });
+  function removeAt(i){ ST.splice(i,1); render(); clearMsg(); }
+  // A NAMED STAGE IS SOMEBODY'S WORK. Deleting it is asked about; deleting a blank row is not,
+  // because there is nothing to lose and a prompt over an empty row is just friction.
+  //
+  // CB.confirm is the house dialog (crossbuy-confirm.js, loaded by this layout) and it already
+  // has a 'delete' preset - so the wording, the button classes and the RTL button order come
+  // from one place instead of being restated here. It falls back to window.confirm when
+  // SweetAlert is missing, so the guard holds even then.
+  tb.addEventListener('click',function(e){
+    var b=e.target.closest('[data-rm]'); if(!b)return;
+    sync();
+    var i=parseInt(b.getAttribute('data-rm'));
+    var nm=(ST[i]&&ST[i].name||'').trim();
+    if(!nm){ removeAt(i); return; }
+    var ask=(window.CB&&CB.confirm)
+      ? CB.confirm({ type:'delete' })   // preset text: already bilingual, already built
+      : Promise.resolve(window.confirm(nm));
+    ask.then(function(ok){ if(ok===true||(ok&&ok.confirmed)){ removeAt(i); } });
+  });
   function sync(){ var rows=tb.querySelectorAll('tr'); ST=[]; rows.forEach(function(r){ ST.push({ name:r.querySelector('.nm').value, probability:parseInt(r.querySelector('.pr').value)||0, isWon:r.querySelector('.won').checked, isLost:r.querySelector('.lost').checked }); }); }
-  document.getElementById('addStage').addEventListener('click',function(){ sync(); ST.push({name:'',probability:0}); render(); });
+  var msg=document.getElementById('stageMsg'), msgText=document.getElementById('stageMsgText');
+  // SR["Name is required"] is already in SharedResources in Arabic ("الاسم مطلوب") and already
+  // built. A new key would have rendered as English until the next rebuild - which is exactly
+  // what it did.
+  var EMPTY_MSG=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Name is required"].Value));
+  function clearMsg(){ if(msg){ msg.classList.add('d-none'); } tb.querySelectorAll('.nm.is-invalid').forEach(function(i){ i.classList.remove('is-invalid'); }); }
+  // REFUSE WHILE A BLANK ROW IS ALREADY THERE. Adding another would stack rows the submit
+  // handler silently drops (it filters out unnamed stages), so the user would be doing work
+  // that disappears on save. The row they need already exists - point at it.
+  document.getElementById('addStage').addEventListener('click',function(){
+    sync(); clearMsg();
+    var blank=-1; for(var i=0;i<ST.length;i++){ if(!(ST[i].name||'').trim()){ blank=i; break; } }
+    if(blank>=0){
+      if(msg&&msgText){ msgText.textContent=EMPTY_MSG; msg.classList.remove('d-none'); }
+      var input=tb.querySelectorAll('tr')[blank].querySelector('.nm');
+      input.classList.add('is-invalid'); input.focus(); input.select();
+      return;
+    }
+    ST.push({name:'',probability:0}); render();
+    var rows=tb.querySelectorAll('tr'); rows[rows.length-1].querySelector('.nm').focus();
+  });
+  // Typing a name answers the refusal, so it clears itself rather than sitting there stale.
+  tb.addEventListener('input',function(e){ if(e.target.classList.contains('nm')&&e.target.value.trim()){ clearMsg(); } });
   document.getElementById('plForm').addEventListener('submit',function(){ sync(); document.getElementById('stagesJson').value=JSON.stringify(ST.filter(function(s){return (s.name||'').trim();}).map(function(s){return {Name:s.name,Probability:s.probability,IsWon:s.isWon,IsLost:s.isLost};})); });
   render();
 })();

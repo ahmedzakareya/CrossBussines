@@ -114,11 +114,11 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? id)> CreateAsync(int companyId, string code, string nameAr, string nameEn,
 			int accountTypeId, int? parentId, bool isPostable, bool requireCostCenter, string? cashFlowCategory, int? userId)
 		{
-			if (string.IsNullOrWhiteSpace(code)) return (false, "كود الحساب مطلوب", null);
-			if (string.IsNullOrWhiteSpace(nameAr)) return (false, "اسم الحساب مطلوب", null);
-			if (!await _context.AccountTypes.AnyAsync(t => t.ID == accountTypeId)) return (false, "نوع الحساب غير صحيح", null);
-			if (await _context.Accounts.AnyAsync(a => a.CompanyID == companyId && a.Code == code)) return (false, $"الكود {code} مستخدم بالفعل", null);
-			if (parentId.HasValue && !await _context.Accounts.AnyAsync(a => a.ID == parentId.Value && a.CompanyID == companyId)) return (false, "الحساب الأب غير موجود", null);
+			if (string.IsNullOrWhiteSpace(code)) return (false, "Account code is required", null);
+			if (string.IsNullOrWhiteSpace(nameAr)) return (false, "Account name is required", null);
+			if (!await _context.AccountTypes.AnyAsync(t => t.ID == accountTypeId)) return (false, "Invalid account type", null);
+			if (await _context.Accounts.AnyAsync(a => a.CompanyID == companyId && a.Code == code)) return (false, $"Code {code} is already in use", null);
+			if (parentId.HasValue && !await _context.Accounts.AnyAsync(a => a.ID == parentId.Value && a.CompanyID == companyId)) return (false, "The parent account was not found", null);
 
 			var acc = new Account
 			{
@@ -135,9 +135,9 @@ namespace CrossBuy.BL
 			bool isPostable, bool isActive, bool requireCostCenter, string? cashFlowCategory, int? userId)
 		{
 			var acc = await _context.Accounts.FirstOrDefaultAsync(a => a.ID == id && a.CompanyID == companyId);
-			if (acc == null) return (false, "الحساب غير موجود");
-			if (string.IsNullOrWhiteSpace(code)) return (false, "كود الحساب مطلوب");
-			if (await _context.Accounts.AnyAsync(a => a.CompanyID == companyId && a.Code == code && a.ID != id)) return (false, $"الكود {code} مستخدم بالفعل");
+			if (acc == null) return (false, "Account not found");
+			if (string.IsNullOrWhiteSpace(code)) return (false, "Account code is required");
+			if (await _context.Accounts.AnyAsync(a => a.CompanyID == companyId && a.Code == code && a.ID != id)) return (false, $"Code {code} is already in use");
 			// can't make a header (with children) postable-incompatible silently; allow flag but warn-free
 			var hasChildren = await _context.Accounts.AnyAsync(a => a.ParentId == id);
 			if (hasChildren && isPostable) return (false, "لا يمكن جعل حساب له فروع قابلًا للترحيل");

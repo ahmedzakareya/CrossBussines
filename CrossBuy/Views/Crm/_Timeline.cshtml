@@ -42,13 +42,13 @@
                 @foreach (var a in Model)
                 {
                     var overdue = !a.Done && a.DueDate.HasValue && a.DueDate.Value.Date < DateTime.Today;
-                    var stBg = a.Done ? "#eaf3ef" : (overdue ? "#fdeaea" : "#fef3e2");
-                    var stFg = a.Done ? "#13433a" : (overdue ? "#d92d20" : "#b96a00");
+                    var stBg = a.Done ? "#E7F0FF" : (overdue ? "#fdeaea" : "#fef3e2");
+                    var stFg = a.Done ? "#0E4A9E" : (overdue ? "#d92d20" : "#b96a00");
                     var stTxt = a.Done ? Localizer["Done"].Value : (overdue ? Localizer["overdue"].Value : Localizer["Open"].Value);
                     <div class="timeline-item">
                         <div class="timeline-line w-40px"></div>
                         <div class="timeline-icon symbol symbol-40px">
-                            <div class="symbol-label" style="background:#13433a;"><i class="ki-outline @tIcon(a.Type) fs-3 text-white"></i></div>
+                            <div class="symbol-label" style="background:#0E4A9E;"><i class="ki-outline @tIcon(a.Type) fs-3 text-white"></i></div>
                         </div>
                         <div class="timeline-content mb-8 ms-4">
                             <div class="d-flex flex-stack">

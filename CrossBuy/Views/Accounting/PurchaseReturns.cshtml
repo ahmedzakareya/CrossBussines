@@ -21,7 +21,7 @@
                 <input type="text" id="s" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search no / vendor..."]" autocomplete="off" />
             </div></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" id="t" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Note No"]</th><th>@SR["Date"]</th><th>@SR["Vendor"]</th><th>@Localizer["Orig. invoice"]</th><th class="text-end">@SR["Total"]</th><th class="text-center">@Localizer["JE"]</th><th class="text-center pe-4">@Localizer["Open"]</th></tr></thead>
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Note No"]</th><th>@SR["Date"]</th><th>@SR["Vendor"]</th><th>@Localizer["Orig. invoice"]</th><th class="text-end">@SR["Total"]</th><th class="text-center">@Localizer["JE"]</th><th class="text-center pe-4">@Localizer["Open"]</th></tr></thead>
                 <tbody>
                 @foreach (var r in Model)
                 {
@@ -31,10 +31,10 @@
                         <td>@vName(r.VendorId)</td>
                         <td class="text-muted">@(r.OriginalInvoiceId.HasValue ? "#" + r.OriginalInvoiceId : "—")</td>
                         <td class="text-end fw-bold text-danger">-@r.GrandTotal.ToString("N2")</td>
-                        <td class="text-center">@if (r.JournalEntryId != null) { <a href="@Url.Action("JournalEntry","Accounting", new { id = r.JournalEntryId })" class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">#@r.JournalEntryId</a> } else { <span class="text-muted">—</span> }</td>
+                        <td class="text-center">@if (r.JournalEntryId != null) { <a href="@Url.Action("JournalEntry","Accounting", new { id = r.JournalEntryId })" class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">#@r.JournalEntryId</a> } else { <span class="text-muted">—</span> }</td>
                         <td class="text-center pe-4"><div class="d-flex justify-content-center gap-1">
                             <a href="@Url.Action("PurchaseReturnDetail","Accounting", new { id = r.ID })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-5"></i></a>
-                            @if (r.Status == "Posted") { <a href="@Url.Action("EditPurchaseReturn","Accounting", new { id = r.ID })" class="btn btn-sm btn-icon" style="background:#eaf3ef;color:#13433a;" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></a> }
+                            @if (r.Status == "Posted") { <a href="@Url.Action("EditPurchaseReturn","Accounting", new { id = r.ID })" class="btn btn-sm btn-icon" style="background:#E7F0FF;color:#0E4A9E;" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></a> }
                         </div></td>
                     </tr>
                 }

@@ -76,7 +76,7 @@
                     <div class="card card-flush mb-5">
                         <div class="card-header"><div class="card-title"><h2>@Localizer["Awaiting your approval"]</h2></div></div>
                         <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
-                            <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@Localizer["Request"]</th><th>@Localizer["Requester"]</th><th class="text-end">@Localizer["Decision"]</th></tr></thead>
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Request"]</th><th>@Localizer["Requester"]</th><th class="text-end">@Localizer["Decision"]</th></tr></thead>
                             <tbody>
                             @foreach (var r in Model.Pending)
                             {
@@ -97,7 +97,7 @@
                 <div class="card card-flush">
                     <div class="card-header"><div class="card-title"><h2>@Localizer["My requests"]</h2></div></div>
                     <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-bordered align-middle gy-3">
-                        <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th>@Localizer["Request"]</th><th class="text-center">@SR["Status"]</th><th class="text-end">@Localizer["Action"]</th></tr></thead>
+                        <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Request"]</th><th class="text-center">@SR["Status"]</th><th class="text-end">@Localizer["Action"]</th></tr></thead>
                         <tbody>
                         @if (!Model.Mine.Any()) { <tr><td colspan="3" class="text-center text-muted py-8">@Localizer["No requests yet"]</td></tr> }
                         @foreach (var r in Model.Mine)

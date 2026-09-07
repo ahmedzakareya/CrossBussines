@@ -40,21 +40,22 @@
                 <div class="card-body">
                     <form asp-action="SaveDriver" method="post" class="row g-2 align-items-end mb-5">@Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="0" />
                         <div class="col-md-5"><label class="required fw-semibold fs-8 mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid form-control-sm" required /></div>
+                        <div class="col-md-5"><label class="fw-semibold fs-8 mb-1">@Localizer["Name (English)"]</label><input name="nameEn" class="form-control form-control-solid form-control-sm" /></div>
                         <div class="col-md-4"><label class="fw-semibold fs-8 mb-1">@SR["Phone"]</label><input name="phone" class="form-control form-control-solid form-control-sm" /></div>
                         <div class="col-md-3"><button class="btn btn-sm btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div>
                     </form>
                     <table class="table table-row-dashed align-middle fs-7">
-                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Name"]</th><th>@SR["Phone"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Name"]</th><th>@SR["Phone"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
                         <tbody>
                         @foreach (var d in drivers)
                         {
                             <tr>
-                                <td class="fw-bold text-gray-800">@d.Name</td>
+                                <td class="fw-bold text-gray-800">@DisplayName.Of(d.Name, d.NameEn)</td>
                                 <td class="text-muted">@(string.IsNullOrWhiteSpace(d.Phone) ? "—" : d.Phone)</td>
                                 <td class="text-center"><span class="badge badge-light-@(d.IsActive ? "success" : "secondary")">@(d.IsActive ? SR["Active"].Value : SR["Inactive"].Value)</span></td>
                                 <td class="text-end">
                                     <form asp-action="SaveDriver" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@(d.IsActive ? Localizer["Deactivate driver?"].Value : Localizer["Activate driver?"].Value)">
-                                        @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="name" value="@d.Name" /><input type="hidden" name="phone" value="@d.Phone" /><input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLower())" />
+                                        @Html.AntiForgeryToken()<input type="hidden" name="branchId" value="@fB" /><input type="hidden" name="id" value="@d.ID" /><input type="hidden" name="name" value="@d.Name" /><input type="hidden" name="nameEn" value="@d.NameEn" /><input type="hidden" name="phone" value="@d.Phone" /><input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLower())" />
                                         <button class="btn btn-icon btn-sm btn-light-@(d.IsActive ? "warning" : "success") me-1" title="@(d.IsActive ? Localizer["Deactivate"].Value : Localizer["Activate"].Value)"><i class="ki-outline ki-@(d.IsActive ? "cross" : "check") fs-5"></i></button>
                                     </form>
                                     <form asp-action="DeleteDriver" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete driver?"]">

@@ -1,0 +1,124 @@
+# =============================================================================================
+# R1 - integration gate CI.
+#
+# Runs on every pull request into the protected integration branch. A merge is accepted only when
+# this workflow is green.
+#
+#     No tab may leave the shared integration branch unbuildable.
+#
+# The gate is the SAME script a tab runs locally (governance/tools/integration-gate.ps1), so CI
+# cannot drift from what developers check. A CI-only copy of the rules would be a second
+# implementation of one concept - the exact defect the two deploy/sql trees demonstrate.
+#
+# TAB ATTRIBUTION: the branch name carries the tab id (tab/tab-1-..., tab/tab-2-...), which is how
+# the ownership check knows whose paths to allow. A branch that does not follow the convention
+# fails fast with a clear message rather than being silently checked against the wrong tab.
+# =============================================================================================
+name: Integration Gate
+
+on:
+  pull_request:
+    branches: [integration]
+  push:
+    branches: [integration]
+  workflow_dispatch:
+    inputs:
+      tabId:
+        description: 'Tab id to check ownership against (TAB-1 .. TAB-5)'
+        required: false
+        default: 'TAB-0'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  gate:
+    name: Integration gate
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out (full history - the gate diffs against the base)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve tab id from the branch name
+        id: tab
+        shell: pwsh
+        run: |
+          $branch = "${{ github.head_ref }}"
+          if ([string]::IsNullOrWhiteSpace($branch)) { $branch = "${{ github.ref_name }}" }
+          $tab = "${{ github.event.inputs.tabId }}"
+          if ([string]::IsNullOrWhiteSpace($tab)) { $tab = 'TAB-0' }
+          if ($branch -match 'tab[/-](tab-\d+)') { $tab = $Matches[1].ToUpper() }
+          elseif ($branch -eq 'integration') { $tab = 'TAB-0' }
+          Write-Host "branch '$branch' -> tab '$tab'"
+          "tabId=$tab" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      # ---- registries must be current before anything is checked against them -----------------
+      - name: Set up Python (registry generator)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Registries are regenerated and unchanged
+        shell: pwsh
+        run: |
+          python docs/roadmap-v2/_generator/generate_roadmap_v2.py
+          $diff = git status --porcelain governance/registry docs/roadmap-v2
+          if ($diff) {
+            Write-Host "::error::Generated registries are stale. Re-run the generator and commit."
+            $diff | ForEach-Object { Write-Host "  $_" }
+            exit 1
+          }
+          Write-Host "registries current"
+
+      # ---- SQL governance: authored side, no database needed ----------------------------------
+      - name: SQL governance
+        shell: pwsh
+        run: |
+          ./governance/tools/validate-sql-governance.ps1
+          $code = $LASTEXITCODE
+          if ($code -eq 2) { Write-Host "::error::A script in the tree must not be deployed." }
+          if ($code -eq 4) { Write-Host "::error::manifest.json is stale - re-run scan-sql-manifest.ps1." }
+          exit $code
+
+      # ---- ownership --------------------------------------------------------------------------
+      - name: File ownership
+        shell: pwsh
+        run: |
+          $base = "origin/${{ github.base_ref }}"
+          if ("${{ github.base_ref }}" -eq "") { $base = "HEAD~1" }
+          ./governance/tools/check-file-ownership.ps1 -TabId ${{ steps.tab.outputs.tabId }} -Base $base
+          exit $LASTEXITCODE
+
+      # ---- the full gate ----------------------------------------------------------------------
+      # -RequireAll so a check that could not run fails CI. A quiet skip in CI is how a gate
+      # stops meaning anything, and no coverage is ever claimed from a skip.
+      - name: Integration gate (12 checks)
+        shell: pwsh
+        run: |
+          $base = "origin/${{ github.base_ref }}"
+          if ("${{ github.base_ref }}" -eq "") { $base = "HEAD~1" }
+          ./governance/tools/integration-gate.ps1 `
+            -TabId ${{ steps.tab.outputs.tabId }} `
+            -Base $base `
+            -RequireAll
+          exit $LASTEXITCODE
+
+      - name: Gate summary
+        if: always()
+        shell: pwsh
+        run: |
+          "## Integration gate" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "Tab: ``${{ steps.tab.outputs.tabId }}``" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "Result: ``${{ job.status }}``" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "No tab may leave the shared integration branch unbuildable." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append

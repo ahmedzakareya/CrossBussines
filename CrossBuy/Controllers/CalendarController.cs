@@ -91,8 +91,9 @@ namespace CrossBuy.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Save(int id, string title, string? description, string? location,
-            bool allDay, DateTime start, DateTime? end, string? scope, string? attendees)
+        public async Task<IActionResult> Save(int id, string title, string? titleEn, string? description, string? location,
+            bool allDay, DateTime start, DateTime? end, string? scope, string? attendees,
+            string? descriptionEn = null, string? locationEn = null)
         {
             var me = await MeAsync(); if (me == null) return Unauthorized();
             if (string.IsNullOrWhiteSpace(title)) return Json(new { ok = false, error = "title_required" });
@@ -102,7 +103,9 @@ namespace CrossBuy.Controllers
             {
                 var newId = await _cal.SaveAsync(me.Value.companyId, me.Value.empId, new CalEventInput
                 {
-                    Id = id, Title = title, Description = description, Location = location,
+                    Id = id, Title = title, TitleEn = titleEn,
+                    Description = description, DescriptionEn = descriptionEn,
+                    Location = location, LocationEn = locationEn,
                     AllDay = allDay, StartAt = start, EndAt = end,
                     Scope = scope == "Company" ? "Company" : "Personal", Attendees = att
                 });
@@ -171,8 +174,10 @@ namespace CrossBuy.Controllers
                 .Select(e => e.Email!).Distinct().ToListAsync();
             if (emails.Count == 0) return 0;
             var owner = await _db.Employee.AsNoTracking()
-                .Where(e => e.ID == ev.OwnerEmpId).Select(e => new { e.FullName, e.Email }).FirstOrDefaultAsync();
-            var ownerName = owner?.FullName ?? "";
+                .Where(e => e.ID == ev.OwnerEmpId)
+                .Select(e => new { e.FullName, e.FullNameEn, e.Email }).FirstOrDefaultAsync();
+            // The organiser on the invitation, in the language of whoever is sending it.
+            var ownerName = owner is null ? "" : CrossBuy.BL.EmployeeNames.Of(owner.FullName, owner.FullNameEn);
             var organizerEmail = string.IsNullOrWhiteSpace(owner?.Email) ? "noreply@crossbuy.local" : owner!.Email!.Trim();
 
             var end = ev.EndAt ?? ev.StartAt.AddHours(1);

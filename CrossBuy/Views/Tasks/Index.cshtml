@@ -43,30 +43,40 @@
     }
 
     Func<string, string> pl = p => p switch { "Low" => T("منخفضة", "Low"), "High" => T("عالية", "High"), "Urgent" => T("عاجلة", "Urgent"), _ => T("متوسطة", "Medium") };
-    Func<string, string> pc = p => p switch { "Low" => "secondary", "High" => "warning", "Urgent" => "danger", _ => "info" };
-    Func<string, string> pi = p => p switch { "Low" => "ki-arrow-down", "High" => "ki-arrow-up", "Urgent" => "ki-information-5", _ => "ki-minus" };
-    // priority marker HTML — urgent uses a filled red triangle (▲) like the mockup
+    @* PRIORITY IS A RISK RAMP, so it keeps colour - but only where there is risk. Medium is the
+       DEFAULT priority and Low is below it: neither is something to flag, and colouring them
+       spent the palette on the two values that mean "nothing special". Medium was info, which
+       also collided with the In-progress status one column over. *@
+    Func<string, string> pc = p => p switch { "Urgent" => "danger", "High" => "warning", _ => "secondary" };
+    // The marker rides a solid dot of its family so the mark itself can be white - see the
+    // .cb-glyph block in crossbuy-brand.css for the measurements. Urgent keeps its filled
+    // triangle; it is a text glyph, and the dot carries it exactly as it carries an icon.
     Func<string, string> priMark = p => p switch
     {
-        "Urgent" => "<span class='me-1' style='font-size:.6rem;line-height:1;'>&#9650;</span>",
-        "High" => "<i class='ki-outline ki-arrow-up fs-8 me-1'></i>",
-        "Low" => "<i class='ki-outline ki-arrow-down fs-8 me-1'></i>",
-        _ => "<i class='ki-outline ki-minus fs-8 me-1'></i>"
+        "Urgent" => "<span class='cb-glyph me-2'></span>",
+        "High" => "<span class='cb-glyph me-2'></span>",
+        "Low" => "<span class='cb-glyph me-2'></span>",
+        _ => "<span class='cb-glyph me-2'></span>"
     };
     Func<string, string> sl = s => s switch { "InProgress" => T("جارية", "In progress"), "Done" => T("مكتملة", "Done"), _ => T("جديدة", "New") };
-    Func<string, string> sc = s => s switch { "InProgress" => "info", "Done" => "success", _ => "primary" };
-    Func<string, string> si = s => s switch { "InProgress" => "ki-timer", "Done" => "ki-check-circle", _ => "ki-abstract-26" };
+    @* STATUS: Done is the one positive terminal state, so it keeps success. In progress keeps
+       info, which now means ONLY "work in flight". New goes neutral - a task nobody has started
+       is the definition of normal, and it was wearing the BRAND colour, which is identity and
+       not a state. Overdue overrides all of this with danger, further down. *@
+    Func<string, string> sc = s => s switch { "InProgress" => "info", "Done" => "success", _ => "secondary" };
     Func<int, string> progColor = pct => pct >= 100 ? "success" : pct >= 60 ? "primary" : pct >= 30 ? "info" : pct > 0 ? "warning" : "secondary";
     // Metronic design tokens, not invented hex: the ring inherits whatever the brand stylesheet
     // defines for these semantic roles, so it can never drift from the Inventory palette.
-    Func<int, string> progHex = pct => pct >= 100 ? "var(--bs-success)" : pct >= 60 ? "var(--bs-primary)" : pct >= 30 ? "var(--bs-info)" : pct > 0 ? "var(--bs-warning)" : "var(--bs-gray-300)";
     Func<DateTime, string> tfmt = d => isAr ? d.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("ar")) : d.ToString("hh:mm tt");
     (string text, string color) Rem(CrossBuy.BL.TaskRowDto x)
     {
         // correct Arabic number agreement: 3-10 → "أيام/ساعات"، غير كده → "يوم/ساعة"، والمثنى "ساعتان"
         string DayTxt(int n) => $"{n} " + ((n >= 3 && n <= 10) ? "أيام" : "يوم");
         string HourTxt(int n) => n == 1 ? "ساعة" : n == 2 ? "ساعتان" : $"{n} " + ((n >= 3 && n <= 10) ? "ساعات" : "ساعة");
-        if (x.Status == "Done") return (T("منتهي", "Finished"), "danger");
+        // FINISHED IS NOT A DANGER. This returned "danger", so the best possible outcome was
+        // painted red in every completed row. A finished task has no time left to watch, which
+        // is neutral - and its Done badge one column over already carries the good news.
+        if (x.Status == "Done") return (T("منتهي", "Finished"), "secondary");
         if (!x.DueDate.HasValue) return ("—", "muted");
         @* The "x hours late / in y days" label is RELATIVE TO NOW, so it changes as wall-clock time
            passes and made this screen the last non-deterministic capture in the certification matrix
@@ -80,8 +90,8 @@
         if (due < now2)
         {
             var late = now2 - due;
-            if (late.TotalHours < 24) { int h = Math.Max(1, (int)Math.Ceiling(late.TotalHours)); return (T($"متأخر {HourTxt(h)}", $"{h}h late"), "danger"); }
-            int d = (int)Math.Ceiling(late.TotalDays); return (T($"متأخر -{DayTxt(d)}", $"-{d}d late"), "danger");
+            if (late.TotalHours < 24) { int h = Math.Max(1, (int)Math.Ceiling(late.TotalHours)); return (T($"{HourTxt(h)} late", $"{h}h late"), "danger"); }
+            int d = (int)Math.Ceiling(late.TotalDays); return (T($"{DayTxt(d)} late", $"-{d}d late"), "danger");
         }
         var hrs = (due - now2).TotalHours;
         if (hrs < 24) { int h = (int)Math.Ceiling(hrs); return (T(HourTxt(h), $"{h}h"), "warning"); }
@@ -97,7 +107,11 @@
     var kpiCards = new[] {
         (key: "done",       cls: "success", label: T("مكتملة", "Done"),         val: kpis.Done,       icon: "ki-check-circle"),
         (key: "inprogress", cls: "info",    label: T("جارية", "In progress"),   val: kpis.InProgress, icon: "ki-timer"),
-        (key: "overdue",    cls: "warning", label: T("متأخرة", "Overdue"),      val: kpis.Overdue,    icon: "ki-time"),
+        @* DANGER, to match the ROW. An overdue row is painted danger in the table below; this card
+           called the same fact warning, so one screen gave one fact two colours. Two danger cards
+           is the honest result - overdue and urgent both demand attention - and agreeing with the
+           table matters more than spreading the palette around. *@
+        (key: "overdue",    cls: "danger",  label: T("متأخرة", "Overdue"),      val: kpis.Overdue,    icon: "ki-time"),
         (key: "urgent",     cls: "danger",  label: T("عاجلة", "Urgent"),        val: kpis.Urgent,     icon: "ki-information-5"),
         (key: "all",        cls: "primary", label: T("إجمالي المهام", "Total"), val: kpis.Total,      icon: "ki-calendar"),
     };
@@ -123,21 +137,133 @@
 <!--end::Toolbar-->
 
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
+    @* The instant is pinned to UTC before any conversion. The column holds UTC (StartAsync writes
+       DateTime.UtcNow) but EF hands it back Kind=Unspecified, so ToUniversalTime() used to add the
+       local offset a second time - the bar read 6h for a timer that had run 3h11m. SpecifyKind on a
+       value that is already Utc is a no-op, so this and the service fix cannot compound. *@
     @if (running != null)
     {
-        <div class="alert alert-primary d-flex flex-stack align-items-center py-3 mb-5">
-            <span class="d-flex align-items-center gap-3">
-                <i class="ki-outline ki-time fs-2 text-primary"></i>
-                <span><span class="fw-bold">@T("مؤقّت شغّال:", "Timer running:")</span> @running.TaskTitle
-                    <span class="text-muted ms-2">@T("منذ", "since") @running.StartedAt.ToLocalTime().ToString("HH:mm")</span></span>
-            </span>
-            <form asp-action="StopTimer" method="post" class="m-0">@Html.AntiForgeryToken()<input type="hidden" name="scope" value="@scope" />
-                <button type="submit" class="btn btn-sm btn-danger"><i class="ki-outline ki-cross-circle fs-5"></i>@T("إيقاف وتسجيل", "Stop & log")</button>
-            </form>
+        @* THE HOUSE NOTICE, in brand. Same shape as Blocked and Escalated on /Tasks/Detail:
+           dashed border, icon tile, heading, body. A running timer is a state of this screen,
+           not an alert, and it is an ACTIVE state - so brand, not danger. *@
+        <div class="notice d-flex align-items-center bg-light-primary rounded border-primary border border-dashed p-4 mb-5">
+            <span class="symbol symbol-40px me-4"><span class="symbol-label bg-primary">
+                <i class="ki-outline ki-time fs-2 text-white"></i></span></span>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap flex-md-nowrap gap-4">
+                <div class="fw-semibold pe-5 min-w-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <h4 class="text-gray-900 fw-bold m-0">@T("المؤقّت شغّال", "Timer running")</h4>
+                        @* THE LIVE CUE. Without it a running timer and a stopped one differ only by a
+                           seconds field nobody is watching. Reduced motion turns it into a fade. *@
+                        <span class="cb-live-dot bg-primary rounded-circle"></span>
+                    </div>
+                    <div class="fs-6 text-gray-700 text-truncate" title="@running.TaskTitle">@running.TaskTitle</div>
+                </div>
+                @* A hairline groups the right-hand side. Logical border, so it lands on the reading
+                   edge in both directions. *@
+                <div class="d-flex align-items-center gap-5 flex-shrink-0 ps-5 cb-timer-sep">
+                    @* ELAPSED, AND IT SAYS SO. "3:01:14" reads as easily as a wall clock; written
+                       units cannot. The units live HERE so they are localised - the ticker writes
+                       digits only, which is also why it needs to know nothing about the language.
+
+                       The instant is emitted as ISO-8601 UTC ("o") and the browser counts from it,
+                       so this needs no polling and cannot drift with the server clock.
+
+                       dir + isolate on every digit run: they sit inside Arabic text, which is the
+                       shape that reorders. tabular-nums so the row does not shift on each tick. *@
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="cb-elapsed d-flex align-items-baseline gap-1"
+                             data-since="@DateTime.SpecifyKind(running.StartedAt, DateTimeKind.Utc).ToString("o")">
+                            @* The hours pair is hidden below an hour - "0 h" is noise for the first
+                               hour of every timer. Hidden as a PAIR so a unit never sits alone. *@
+                            <span class="cb-el-hpair align-items-baseline gap-1">
+                                <span class="cb-el-h fs-2hx fw-bold text-primary" dir="ltr"
+                                      style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">0</span>
+                                <span class="fs-4 fw-semibold text-primary opacity-75">@T("س", "h")</span>
+                            </span>
+                            <span class="cb-el-m fs-2hx fw-bold text-primary ms-3" dir="ltr"
+                                  style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">00</span>
+                            <span class="fs-4 fw-semibold text-primary opacity-75">@T("د", "m")</span>
+                            @* The seconds ride along small: nobody logs work to the second, and a
+                               ticking 32px field is the loudest thing on the screen. *@
+                            <span class="cb-el-s fs-6 fw-semibold text-primary opacity-75 ms-2" dir="ltr"
+                                  style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">00</span>
+                            <span class="fs-8 fw-semibold text-primary opacity-75">@T("ث", "s")</span>
+                        </div>
+                        @* SINCE WHEN, on the page. It was on a title attribute - invisible on a touch
+                           device and to anyone scanning - and it is what names the big number. *@
+                        <div class="fs-8 text-muted" title="@DateTime.SpecifyKind(running.StartedAt, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd HH:mm")">
+                            @T("منقضي منذ", "elapsed since")
+                            <span dir="ltr" style="unicode-bidi:isolate">@DateTime.SpecifyKind(running.StartedAt, DateTimeKind.Utc).ToLocalTime().ToString("HH:mm")</span>
+                        </div>
+                    </div>
+                    <form asp-action="StopTimer" method="post" class="m-0">@Html.AntiForgeryToken()<input type="hidden" name="scope" value="@scope" />
+                        @* RED AND FLAT, as asked. btn-danger is already the brand red with a measured
+                           white label (white on #DC2626, 4.83 PASS), so no new colour enters here -
+                           cb-btn-flat only removes the lift. *@
+                        <button type="submit" class="btn btn-sm btn-danger cb-btn-flat text-nowrap">
+                            <i class="ki-outline ki-cross-circle fs-5"></i>@T("إيقاف وتسجيل", "Stop & log")</button>
+                    </form>
+                </div>
+            </div>
         </div>
     }
 
-    <form method="get" asp-action="@listAction" id="taskFilterForm">
+    @* The clock turns once every two seconds - slow enough not to pull the eye away from the
+   list, fast enough to read as "running". prefers-reduced-motion switches it to a quiet
+   pulse, because a permanently spinning element is exactly what that setting exists for. *@
+<style>
+    /* Every declaration below either consumes a token through var() or sets a non-colour
+       property - nothing here DEFINES a colour, a typeface or a custom property, which is what
+       the conformance gate on inline <style> actually forbids. */
+    .cb-timer-sep { border-inline-start: 1px solid var(--bs-primary); }
+    .cb-btn-flat { box-shadow: none !important; }
+    .cb-el-hpair { display: none; }
+    .cb-el-hpair.is-on { display: inline-flex; }
+    .cb-live-dot { width: 8px; height: 8px; animation: cbLiveDot 1.6s ease-in-out infinite; }
+    @@keyframes cbLiveDot { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+    @@keyframes cbTimerSpin { to { transform: rotate(360deg); } }
+    .cb-timer-spin { display: inline-block; animation: cbTimerSpin 2s linear infinite; }
+    @@media (prefers-reduced-motion: reduce) {
+        @@keyframes cbTimerPulse { 50% { opacity: .35; } }
+        .cb-timer-spin { animation: cbTimerPulse 1.6s ease-in-out infinite; }
+        /* The dot stops moving but stays visible: it is the only thing that says "running". */
+        .cb-live-dot { animation: none; opacity: .85; }
+    }
+</style>
+<script>
+(function () {
+    // One interval for the page, however many badges there are - so this already works
+    // unchanged if several timers are ever allowed to run at once.
+    function paint() {
+        var now = Date.now();
+        document.querySelectorAll(".cb-elapsed").forEach(function (el) {
+            // DIGITS ONLY. The units are markup, written by the view in the reader's language, so
+            // this function carries no strings to translate and cannot disagree with the labels.
+            var put = function (sel, v) { var x = el.querySelector(sel); if (x) x.textContent = v; };
+            var t0 = Date.parse(el.getAttribute("data-since"));
+            if (isNaN(t0)) { put(".cb-el-h", "--"); put(".cb-el-m", "--"); put(".cb-el-s", "--"); return; }
+            var s = Math.floor((now - t0) / 1000);
+            if (s < 0) s = 0;                      // clock skew reads as zero, never negative
+            var p = function (n) { return (n < 10 ? "0" : "") + n; };
+            // Hours are NOT folded into days: "51 h 20 m" is unambiguous, and a fourth unit slot
+            // would sit empty almost always.
+            var h = Math.floor(s / 3600);
+            put(".cb-el-h", h);
+            // Show the hours only once there are any. The unit is markup, so this toggles a class
+            // and never has to know the language.
+            var hp = el.querySelector(".cb-el-hpair");
+            if (hp) hp.classList.toggle("is-on", h > 0);
+            put(".cb-el-m", p(Math.floor((s % 3600) / 60)));
+            put(".cb-el-s", p(s % 60));
+        });
+    }
+    paint();
+    setInterval(paint, 1000);
+})();
+</script>
+
+<form method="get" asp-action="@listAction" id="taskFilterForm">
         <input type="hidden" name="view" value="@view" />
         <input type="hidden" name="sort" value="@curSort" />
 
@@ -217,29 +343,47 @@
     </form>
 
     <!--begin::Results card-->
-    <div class="card card-flush">
-        <div class="card-header align-items-center py-4">
-            <div class="card-title"><span class="text-muted fs-7">@total</span></div>
-            <div class="card-toolbar"></div>
+    @* ---- THE RESULTS TABLE ---------------------------------------------------------------------
+       Brought into line with /Accounting/IncomeStatement, which is the house pattern for a data table:
+       a plain `card` with a titled `card-header card-header-stretch`, a `card-body px-0` so the table
+       runs edge to edge instead of floating inside 2rem of padding, `ps-9`/`pe-9` on the outer columns,
+       tabular numerals so dates and percentages line up down their columns, and the header row carrying
+       ONE 2px rule underneath it.
+
+       THE HEADER ROW WAS A CAGE. `border-bottom border-2 border-primary` reads as "a 2px primary bottom
+       border" and is not: `border-bottom` sets only the bottom WIDTH, while `border-2` sets the width on
+       all four sides and `border-primary` the colour on all four. Every th came out boxed in 2px of brand
+       green - measured 2px solid rgb(14,74,158) on top, bottom, inline-start and inline-end - so the whole
+       thead rendered as a caged strip floating inside the card. The reference states the rule once, on
+       the thead itself, which is what is used here.
+    *@
+    <div class="card">
+        <div class="card-header card-header-stretch">
+            <div class="card-title">
+                <h3 class="m-0">@(scope == "all" ? T("كل المهام", "All tasks") : T("مهامي", "My tasks"))</h3>
+            </div>
+            @* THE BARE COUNT IS GONE FROM HERE ON PURPOSE. It was a naked "51" with no label, and
+               card-header-stretch aligns a toolbar to the TOP of the header rather than to the title's
+               line, so it floated above "My tasks" in the corner. The same number is already stated
+               properly under the table - "Page 1 / 3 . 51 task(s)" - where it has a label and the page
+               context that makes it mean something. Repeating it unlabelled here added nothing. *@
         </div>
-        <div class="card-body pt-0">
+        <div class="card-body px-0 pt-0 pb-4">
             <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-4">
-                    <thead>
-                        @* border-primary is Metronic's own primary border colour, so this rule needs
-                           no literal and no inline style at all. *@
-                        <tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0 text-nowrap border-bottom border-2 border-primary">
-                            <th class="min-w-100px ps-3">@T("المسؤول", "Assignee")</th>
-                            <th class="min-w-100px">@T("المهمة", "Task")</th>
-                            <th class="min-w-70px"><a href="@SortHref("priority")" class="text-gray-600 text-hover-primary text-nowrap">@T("الأولوية", "Priority") @Html.Raw(SortMark("priority"))</a></th>
-                            <th class="min-w-70px"><a href="@SortHref("status")" class="text-gray-600 text-hover-primary text-nowrap">@T("الحالة", "Status") @Html.Raw(SortMark("status"))</a></th>
-                            <th class="min-w-50px"><a href="@SortHref("progress")" class="text-gray-600 text-hover-primary text-nowrap">@T("التقدم", "Progress") @Html.Raw(SortMark("progress"))</a></th>
-                            <th class="min-w-75px"><a href="@SortHref("due")" class="text-gray-600 text-hover-primary text-nowrap">@T("الموعد النهائي", "Due date") @Html.Raw(SortMark("due"))</a></th>
-                            <th class="min-w-75px"><a href="@SortHref("due")" class="text-gray-600 text-hover-primary text-nowrap">@T("الوقت المتبقي", "Time left") @Html.Raw(SortMark("due"))</a></th>
-                            <th class="text-end min-w-50px pe-3">@T("إجراءات", "Actions")</th>
+                <table class="table table-row-dashed align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
+                    <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                        <tr class="text-start text-nowrap gs-0" style="border-bottom:2px solid #0E4A9E;">
+                            <th class="min-w-100px ps-9">@T("المسؤول", "Assignee")</th>
+                            <th class="min-w-175px">@T("المهمة", "Task")</th>
+                            <th class="min-w-70px"><a href="@SortHref("priority")" class="text-muted text-hover-primary text-nowrap">@T("الأولوية", "Priority") @Html.Raw(SortMark("priority"))</a></th>
+                            <th class="min-w-70px"><a href="@SortHref("status")" class="text-muted text-hover-primary text-nowrap">@T("الحالة", "Status") @Html.Raw(SortMark("status"))</a></th>
+                            <th class="min-w-100px"><a href="@SortHref("progress")" class="text-muted text-hover-primary text-nowrap">@T("التقدم", "Progress") @Html.Raw(SortMark("progress"))</a></th>
+                            <th class="min-w-75px"><a href="@SortHref("due")" class="text-muted text-hover-primary text-nowrap">@T("الموعد النهائي", "Due date") @Html.Raw(SortMark("due"))</a></th>
+                            <th class="min-w-75px"><a href="@SortHref("due")" class="text-muted text-hover-primary text-nowrap">@T("الوقت المتبقي", "Time left") @Html.Raw(SortMark("due"))</a></th>
+                            <th class="text-end min-w-50px pe-9">@T("إجراءات", "Actions")</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="fw-semibold text-gray-700">
                         @if (!tasks.Any())
                         {
                             <tr><td colspan="8" class="text-center text-muted py-12"><i class="ki-outline ki-abstract-26 fs-3x mb-3 d-block"></i>@T("لا توجد مهام.", "No tasks yet.")</td></tr>
@@ -249,11 +393,10 @@
                             var links = ViewBag.Links as Dictionary<int, CrossBuy.BL.TaskLinkDto>;
                             CrossBuy.BL.TaskLinkDto link = null; links?.TryGetValue(t.Id, out link);
                             var stColor = (t.IsOverdue && t.Status != "Done") ? "danger" : sc(t.Status);
-                            var stIcon = (t.IsOverdue && t.Status != "Done") ? "ki-time" : si(t.Status);
                             var stText = (t.IsOverdue && t.Status != "Done") ? T("متأخرة", "Overdue") : sl(t.Status);
                             var rem = Rem(t);
                             <tr>
-                                <td class="ps-4">
+                                <td class="ps-9">
                                     <div class="d-flex align-items-center">
                                         <div class="symbol symbol-35px symbol-circle me-2 position-relative">
                                             @if (!string.IsNullOrWhiteSpace(t.AssigneePhoto))
@@ -261,16 +404,45 @@
                                             else
                                             { <span class="symbol-label bg-light-primary text-primary fw-bold">@initials(t.AssigneeName)</span> }
                                         </div>
+                                        @* NO max-width HERE. These two were clamped to 80px inside a column
+                                           measuring 134px, so every name was cut with an ellipsis while a
+                                           third of the column stood empty. text-truncate with min-width:0 on
+                                           the flex parent already ellipsizes at the COLUMN's edge, which is
+                                           the width the header reserved for it. *@
                                         <div class="d-flex flex-column" style="min-width:0;">
-                                            <span class="text-gray-900 fw-bold fs-7 text-truncate d-block" style="max-width:80px;">@t.AssigneeName</span>
-                                            @if (!string.IsNullOrWhiteSpace(t.AssigneeJobTitle)) { <span class="text-muted fw-semibold fs-8 text-truncate d-block" style="max-width:80px;">@t.AssigneeJobTitle</span> }
+                                            <span class="text-gray-900 fw-bold fs-7 text-truncate d-block">@t.AssigneeName</span>
+                                            @if (!string.IsNullOrWhiteSpace(t.AssigneeJobTitle)) { <span class="text-muted fw-semibold fs-8 text-truncate d-block">@t.AssigneeJobTitle</span> }
                                         </div>
                                     </div>
                                 </td>
-                                <td>
-                                    <div class="d-flex align-items-center mb-2">
-                                        <span class="bullet bullet-dot h-8px w-8px me-2 flex-shrink-0 bg-primary"></span>
-                                        <a href="javascript:;" class="text-gray-900 fw-bold text-hover-primary fs-7 text-truncate d-inline-block align-middle" style="max-width:105px;">@t.Title</a>
+                                @* max-width:0 IS THE CONSTRAINT, and it is not a typo. In an auto-layout
+                                   table a cell grows to fit its content, so lifting the 105px cap off the
+                                   title made this column 890px wide and pushed the table 300px past its
+                                   own scroll box. max-width:0 tells the layout this column may be as narrow
+                                   as it likes: the other seven take their content width, this one absorbs
+                                   whatever is left of the 100% table, and the title ellipsizes exactly at
+                                   that edge. The width is decided by the table, not by a magic number. *@
+                                <td style="max-width:0;">
+                                    @* THE WORST OF IT: the title was capped at 105px inside a column 455px
+                                       wide, so every row read as an ellipsis while two thirds of the column
+                                       sat empty. The cap is gone; min-width:0 on the row and flex-grow on
+                                       the link let the title use the column and ellipsize at ITS edge. *@
+                                    <div class="d-flex align-items-center mb-2" style="min-width:0;">
+                                        @* THE LIST SAYS WHICH TASK IS BEING TIMED. Before, only the bar at the
+                                           top did, so a row gave no sign its timer was running. The clock spins
+                                           while the entry is open and stops existing when it is stopped. *@
+                                        @if (running != null && running.TaskId == t.Id)
+                                        {
+                                            <i class="ki-outline ki-timer fs-5 text-primary me-1 cb-timer-spin"
+                                               title="@T("المؤقّت شغّال", "Timer running")"></i>
+                                        }
+                                        @* OPENS THE TASK. This was href="javascript:;" with no handler bound to it,
+                                           so the list had no route to /Tasks/Detail - and Detail is where the Activity
+                                           tab (the platform timeline for this task) and the comments live. The Board
+                                           view already linked it; the list simply never did. *@
+                                        <a href="@Url.Action("Detail", "Tasks", new { id = t.Id })"
+                                           class="text-gray-900 fw-bold text-hover-primary fs-7 text-truncate flex-grow-1"
+                                           title="@T("فتح المهمة والنشاط", "Open task and activity")">@t.Title</a>
                                     </div>
                                     <div class="d-flex align-items-center flex-wrap gap-2 ms-4">
                                         @if (t.IsScheduled && !t.MatchedAt.HasValue)
@@ -295,21 +467,24 @@
                                     </div>
                                 </td>
                                 <td><span class="badge badge-light-@pc(t.Priority) fs-7 fw-bold py-2 d-inline-flex align-items-center">@Html.Raw(priMark(t.Priority))@pl(t.Priority)</span></td>
-                                <td><span class="badge badge-light-@stColor fs-7 fw-bold py-2"><i class="ki-outline @stIcon fs-8 me-1 text-@stColor"></i>@stText</span></td>
+                                <td><span class="badge badge-light-@stColor fs-7 fw-bold py-2 d-inline-flex align-items-center"><span class="cb-glyph me-2"></span>@stText</span></td>
                                 <td>
-                                    @{
-                                        var _ci = System.Globalization.CultureInfo.InvariantCulture;
-                                        var _circ = 2 * Math.PI * 19.0;
-                                        var _off = _circ * (1 - t.ProgressPct / 100.0);
-                                        var _circS = _circ.ToString("0.##", _ci);
-                                        var _offS = _off.ToString("0.##", _ci);
-                                    }
-                                    <div class="d-flex align-items-center justify-content-center">
-                                        <svg width="44" height="44" viewBox="0 0 44 44">
-                                            <circle cx="22" cy="22" r="19" fill="none" stroke="var(--bs-gray-200)" stroke-width="5"></circle>
-                                            <circle cx="22" cy="22" r="19" fill="none" stroke="@progHex(t.ProgressPct)" stroke-width="5" stroke-linecap="round" stroke-dasharray="@_circS" stroke-dashoffset="@_offS" transform="rotate(-90 22 22)"></circle>
-                                            <text x="22" y="22" text-anchor="middle" dominant-baseline="central" font-size="10.5" font-weight="800" fill="var(--bs-gray-900)">@(t.ProgressPct)%</text>
-                                        </svg>
+                                    @* A BAR, NOT A RING. This is a column, and a column is for comparing
+                                       rows - a fixed-width bar starting on the same edge every time can be
+                                       scanned, twelve rings cannot. Colour says FINISHED or not; the length
+                                       already says how much, so it does not need saying twice. *@
+                                    @{ var _tone = t.ProgressPct >= 100 ? "success" : "primary"; }
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress h-6px bg-light-@_tone flex-shrink-0" style="width:64px"
+                                             role="progressbar" aria-valuenow="@t.ProgressPct"
+                                             aria-valuemin="0" aria-valuemax="100"
+                                             aria-label="@T("التقدم", "Progress")">
+                                            <div class="progress-bar bg-@_tone" style="width:@t.ProgressPct%"></div>
+                                        </div>
+                                        @* dir + isolate because "40%" is a numeric run inside an RTL row, and
+                                           tabular figures so the column does not shift as the digits change. *@
+                                        <span class="fs-8 fw-semibold @(t.ProgressPct > 0 ? "text-gray-800" : "text-muted")"
+                                              dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@(t.ProgressPct)%</span>
                                     </div>
                                 </td>
                                 <td>
@@ -324,14 +499,14 @@
                                 </td>
                                 <td>
                                     @if (rem.color == "muted") { <span class="text-muted">@rem.text</span> }
-                                    else { <span class="badge badge-light-@rem.color fw-bold py-2 d-inline-flex align-items-center"><i class="ki-solid ki-time fs-8 me-1 text-@rem.color"></i>@rem.text</span> }
+                                    else { <span class="badge badge-light-@rem.color fw-bold py-2 d-inline-flex align-items-center"><span class="cb-glyph me-2"></span>@rem.text</span> }
                                 </td>
-                                <td class="text-end pe-4">
+                                <td class="text-end pe-9">
                                     <!--begin::Actions kebab-->
                                     @* ACCESSIBLE NAME, NAMED BY ROW. The trigger is icon-only, so it had no
                                        accessible name at all — a screen reader announced "button" twenty-five
                                        times per page. `@SR["Actions"]` is the EXISTING shared vocabulary
-                                       (ar "الإجراءات", en "Actions", fr "Actions"), not a new string, and the
+                                       (ar "Actions", en "Actions", fr "Actions"), not a new string, and the
                                        task title is appended so the twenty-five triggers are distinguishable
                                        from one another rather than being twenty-five identical "Actions".
                                        aria-haspopup states what the control actually does — it opens a menu —
@@ -345,6 +520,15 @@
                                         <i class="ki-outline ki-dots-vertical fs-2" aria-hidden="true"></i>
                                     </button>
                                     <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-700 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-3" data-kt-menu="true">
+                                        @* THE READ VIEW COMES FIRST, and above the separator that starts the
+                                           actions: everything below this writes something. It was the one
+                                           entry missing, which is why a page with every fact on it could not
+                                           be reached from the list at all. *@
+                                        <div class="menu-item px-3">
+                                            <a class="menu-link px-3" href="/Tasks/Summary/@t.Id">
+                                                <i class="ki-outline ki-clipboard fs-6 me-2"></i>@T("الملخّص", "Summary")</a>
+                                        </div>
+                                        <div class="separator my-2"></div>
                                         <form asp-action="ChangeStatus" method="post">
                                             @Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.Id" /><input type="hidden" name="scope" value="@scope" />
                                             @if (t.Status == "New")
@@ -374,7 +558,7 @@
                                             </form>
                                         }
                                         <div class="menu-item px-3"><a class="menu-link px-3" href="javascript:;" onclick='cbOpenTimesheet(@t.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(t.Title)))'><i class="ki-outline ki-timer fs-6 me-2"></i>@T("سجل الوقت", "Timesheet")</a></div>
-                                        <div class="menu-item px-3"><a class="menu-link px-3" href="javascript:;" data-bs-toggle="modal" data-bs-target="#taskModal" onclick='cbTaskEdit(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { id = t.Id, title = t.Title, description = t.Description, assignee = t.AssigneeEmployeeId, priority = t.Priority, due = t.DueDate?.ToString("yyyy-MM-dd"), est = t.EstimatedHours, progress = t.ProgressPct, category = t.Category, entityType = t.EntityType, entityId = t.EntityId, entityLabel = (link?.Label), isBillable = t.IsBillable, billRate = t.BillRate, customerId = t.CustomerId, customerName = t.CustomerName, isScheduled = t.IsScheduled, expType = t.ExpectedEntityType, expPartyId = t.ExpectedPartyId, expPartyName = t.ExpectedPartyName, expFrom = t.ExpectedFrom?.ToString("yyyy-MM-dd"), expTo = t.ExpectedTo?.ToString("yyyy-MM-dd") })))'><i class="ki-outline ki-pencil fs-6 me-2"></i>@T("تعديل", "Edit")</a></div>
+                                        <div class="menu-item px-3"><a class="menu-link px-3" href="javascript:;" data-bs-toggle="modal" data-bs-target="#taskModal" onclick='cbTaskEdit(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(new { id = t.Id, title = t.TitleAr, titleEn = t.TitleEn, description = t.Description, assignee = t.AssigneeEmployeeId, priority = t.Priority, due = t.DueDate?.ToString("yyyy-MM-dd"), est = t.EstimatedHours, progress = t.ProgressPct, category = t.Category, entityType = t.EntityType, entityId = t.EntityId, entityLabel = (link?.Label), isBillable = t.IsBillable, billRate = t.BillRate, customerId = t.CustomerId, customerName = t.CustomerName, isScheduled = t.IsScheduled, expType = t.ExpectedEntityType, expPartyId = t.ExpectedPartyId, expPartyName = t.ExpectedPartyName, expFrom = t.ExpectedFrom?.ToString("yyyy-MM-dd"), expTo = t.ExpectedTo?.ToString("yyyy-MM-dd") })))'><i class="ki-outline ki-pencil fs-6 me-2"></i>@T("تعديل", "Edit")</a></div>
                                         <div class="separator my-2"></div>
                                         <form asp-action="Delete" method="post" data-cb-confirm data-cb-action="delete">
                                             @Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.Id" /><input type="hidden" name="scope" value="@scope" />
@@ -394,7 +578,7 @@
                 {
                     @* PAGINATION ACCESSIBLE NAMES. Both arrows were glyph-only anchors, so their entire
                        accessible name was empty. `@SR["Previous"]`/`@SR["Next"]` are the EXISTING shared
-                       vocabulary (ar "السابق"/"التالي", en, fr) — no new strings.
+                       vocabulary (ar "Previous"/"Next", en, fr) — no new strings.
 
                        The ARROW DIRECTION FLIPS in RTL and the NAME MUST NOT: in Arabic "previous" is the
                        right-pointing glyph, so naming by glyph would tell an Arabic screen-reader user the
@@ -429,9 +613,26 @@
 </div></div>
 <!--end::Content-->
 
+<style>
+    /* DATE FIELDS IN THIS MODAL SIT ON THEIR LABEL'S LINE AND ARE 220px WIDE, unlike every other control
+       in the same grid. flatpickr wraps each date input in `<div class="flatpickr-wrapper">`, and that
+       wrapper is display:inline-block with an intrinsic 220px - so the inline <label> before it stays on
+       the same line and the field stops short of the column edge. Invisible while the dialog was narrow
+       and one field per row; obvious the moment the form became a 3-up grid. Scoped to #taskModal so the
+       shared flatpickr styling is untouched. */
+    #taskModal .flatpickr-wrapper { display: block; width: 100%; }
+    #taskModal .flatpickr-wrapper > .flatpickr-input { width: 100%; }
+</style>
+
 <!--begin::Task modal-->
 <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    @* modal-xl + a 3-COLUMN body. Fourteen fields in a 500px dialog stacked into eleven rows and ran off
+       the bottom of the screen: the form had to be scrolled to reach Save, and the two optional sections
+       at the end were invisible until you did. Widened to modal-xl and every field placed on a 3-up grid,
+       which fits the whole form in one screen at 1080p. modal-dialog-scrollable keeps the header and the
+       footer - the Save button - pinned if the viewport really is too short, instead of pushing them out
+       of reach. *@
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
         <div class="modal-content">
             <form asp-action="Save" method="post" data-cb-confirm data-cb-action="save" data-cb-confirm-if="#tId">
                 @Html.AntiForgeryToken()
@@ -442,16 +643,28 @@
                     <button type="button" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal"><i class="ki-outline ki-cross fs-2"></i></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-4">
-                        <label class="form-label required">@T("العنوان", "Title")</label>
-                        <input type="text" id="tTitle" name="Title" class="form-control form-control-solid" required />
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label">@T("الوصف", "Description")</label>
-                        <textarea id="tDesc" name="Description" rows="2" class="form-control form-control-solid"></textarea>
+                    @* TWO TITLES, one row. TaskItems.TitleEn existed in the entity and in the database with
+                       no way to fill it from anywhere in the product, so it was null on every row and an
+                       English UI had nothing to fall back to but the Arabic title. Optional on purpose: a
+                       task with no English twin still displays its Arabic title in either language, which is
+                       the documented fallback, not a blank cell. *@
+                    <div class="row g-4 mb-2">
+                        <div class="col-md-4">
+                            <label class="form-label required">@T("العنوان", "Title") <span class="text-muted fs-8">(@T("عربي", "Arabic"))</span></label>
+                            <input type="text" id="tTitle" name="Title" class="form-control form-control-solid" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">@T("العنوان (إنجليزي)", "Title (English)")</label>
+                            <input type="text" id="tTitleEn" name="TitleEn" class="form-control form-control-solid" dir="ltr"
+                                   placeholder="@T("اختياري", "Optional")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">@T("الوصف", "Description")</label>
+                            <textarea id="tDesc" name="Description" rows="1" class="form-control form-control-solid"></textarea>
+                        </div>
                     </div>
                     <div class="row g-4">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label required">@T("المسؤول", "Assignee")</label>
                             <select id="tAssignee" name="AssigneeEmployeeId" class="form-select form-select-solid" data-control="select2" data-dropdown-parent="#taskModal" required>
                                 <option value="">@T("اختر الموظف", "Select employee")</option>
@@ -461,7 +674,7 @@
                                 }
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">@T("الأولوية", "Priority")</label>
                             <select id="tPriority" name="Priority" class="form-select form-select-solid">
                                 <option value="Low">@pl("Low")</option>
@@ -470,82 +683,98 @@
                                 <option value="Urgent">@pl("Urgent")</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">@T("ميعاد التسليم", "Due date")</label>
                             <input type="date" id="tDue" name="DueDate" class="form-control form-control-solid" />
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">@T("الوقت المقدّر (ساعات)", "Estimated hours")</label>
                             <input type="number" step="0.5" min="0" id="tEst" name="EstimatedHours" class="form-control form-control-solid" />
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label d-flex justify-content-between">@T("نسبة الإنجاز", "Progress") <span id="tProgLbl" class="text-muted fw-bold">0%</span></label>
                             <input type="range" min="0" max="100" step="5" id="tProgress" name="ProgressPct" value="0" class="form-range mt-2" oninput="document.getElementById('tProgLbl').textContent=this.value+'%'" />
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label">@T("الوسم / التصنيف", "Tag / Category")</label>
                             <input type="text" id="tCategory" name="Category" class="form-control form-control-solid" placeholder="@T("مثال: اختبار الأداء", "e.g. Performance")" />
                         </div>
                     </div>
                     <!--begin::Linked record (TM-2, optional)-->
-                    <div class="separator separator-dashed my-5"></div>
+                    <div class="separator separator-dashed my-4"></div>
                     <div class="row g-4">
                         <div class="col-12"><label class="form-label text-muted fs-7">@T("السجل المرتبط (اختياري)", "Linked record (optional)")</label></div>
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <select id="tEntityType" name="EntityType" class="form-select form-select-solid">
                                 <option value="">@T("— بلا ربط —", "— No link —")</option>
                                 @foreach (var lt in (ViewBag.LinkTypes as List<CrossBuy.BL.TaskLinkTypeDto> ?? new()))
                                 {
-                                    <option value="@lt.Key">@(isAr ? lt.LabelAr : lt.LabelEn)</option>
+                                    <option value="@lt.Key">@(isAr ? lt.LabelAr : DisplayName.Or(lt.LabelEn, lt.LabelAr))</option>
                                 }
                             </select>
                         </div>
-                        <div class="col-md-7">
-                            <select id="tEntityId" name="EntityId" class="form-select form-select-solid" data-dropdown-parent="#taskModal"></select>
+                        <div class="col-md-8">
+                            @* data-no-select2 IS THE FIX, and an empty <option> is what makes the placeholder appear.
+
+                               _LayoutInventory.cshtml runs a global enhance() that select2-ifies EVERY
+                               select.form-select inside #kt_app_content or a .modal - at DOMContentLoaded,
+                               so before this modal is ever opened - with a PLAIN, non-ajax config. These
+                               three pickers are ajax pickers, and their own initialisers all start with
+                               `if ($x.data('select2')) return;`. The layout got there first every time, so
+                               that guard fired on the FIRST call: no ajax source was ever attached and the
+                               #tEntityType change handler was never bound. Measured before this change:
+                               bound=true, hasAjax=false on all three, and the record box stayed
+                               disabled with opacity .5 no matter which type was chosen - three dead
+                               dropdowns. The layout already publishes the opt-out attribute; using it
+                               leaves that shared file untouched. *@
+                            <select id="tEntityId" name="EntityId" class="form-select form-select-solid" data-no-select2
+                                    data-dropdown-parent="#taskModal"><option></option></select>
                         </div>
                     </div>
                     <!--end::Linked record-->
                     <!--begin::Billing (TM-5, optional)-->
-                    <div class="separator separator-dashed my-5"></div>
+                    <div class="separator separator-dashed my-4"></div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="tBillable" name="IsBillable" value="true" onchange="cbToggleBill()" />
                         <label class="form-check-label fw-semibold" for="tBillable">@T("قابلة للفوترة لعميل", "Billable to a customer")</label>
                     </div>
                     <div id="tBillBox" class="row g-4 d-none">
-                        <div class="col-md-7">
+                        <div class="col-md-4">
                             <label class="form-label fs-8 text-muted mb-1">@T("العميل", "Customer")</label>
-                            <select id="tCustomer" name="CustomerId" class="form-select form-select-solid" data-dropdown-parent="#taskModal"></select>
+                            <select id="tCustomer" name="CustomerId" class="form-select form-select-solid" data-no-select2
+                                    data-dropdown-parent="#taskModal"><option></option></select>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <label class="form-label fs-8 text-muted mb-1">@T("سعر ساعة الفوترة", "Bill rate / hour")</label>
                             <input type="number" step="0.01" min="0" id="tBillRate" name="BillRate" class="form-control form-control-solid" />
                         </div>
                     </div>
                     <!--end::Billing-->
                     <!--begin::Scheduled (TM-9, optional)-->
-                    <div class="separator separator-dashed my-5"></div>
+                    <div class="separator separator-dashed my-4"></div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="tScheduled" name="IsScheduled" value="true" onchange="cbToggleSched()" />
                         <label class="form-check-label fw-semibold" for="tScheduled">@T("مهمة مجدولة (تنتظر حركة)", "Scheduled (awaiting a movement)")</label>
                     </div>
                     <div id="tSchedBox" class="row g-4 d-none">
                         <div class="col-12"><span class="text-muted fs-8">@T("عند إنشاء الحركة المطابقة، النظام يربطها بالمهمة تلقائيًّا (المطابقة في مرحلة تالية).", "When a matching movement is created, it will be auto-linked (matching comes later).")</span></div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <label class="form-label fs-8 text-muted mb-1">@T("نوع الحركة المتوقّع", "Expected movement")</label>
                             <select id="tExpType" name="ExpectedEntityType" class="form-select form-select-solid" onchange="cbSchedTypeChanged()">
                                 <option value="PurchaseInvoice">@T("فاتورة مشتريات", "Purchase invoice")</option>
                                 <option value="SalesInvoice">@T("فاتورة مبيعات", "Sales invoice")</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <label class="form-label fs-8 text-muted mb-1"><span id="tExpPartyLbl">@T("المورّد", "Supplier")</span></label>
-                            <select id="tExpParty" name="ExpectedPartyId" class="form-select form-select-solid" data-dropdown-parent="#taskModal"></select>
+                            <select id="tExpParty" name="ExpectedPartyId" class="form-select form-select-solid" data-no-select2
+                                    data-dropdown-parent="#taskModal"><option></option></select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <label class="form-label fs-8 text-muted mb-1">@T("النافذة الزمنية من", "Expected window from")</label>
                             <input type="date" id="tExpFrom" name="ExpectedFrom" class="form-control form-control-solid" />
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <label class="form-label fs-8 text-muted mb-1">@T("إلى", "to")</label>
                             <input type="date" id="tExpTo" name="ExpectedTo" class="form-control form-control-solid" />
                         </div>
@@ -585,7 +814,7 @@
                 <div class="separator separator-dashed mb-4"></div>
                 <div class="table-responsive">
                     <table class="table table-row-dashed align-middle fs-7 mb-0">
-                        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase">
+                        <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                             <th>@T("الموظف", "Employee")</th><th class="w-110px">@T("التاريخ", "Date")</th><th class="w-90px">@T("ساعات", "Hours")</th><th>@T("الوصف", "Description")</th><th class="w-90px">@T("المصدر", "Source")</th><th class="w-50px"></th>
                         </tr></thead>
                         <tbody id="tsLines"><tr><td colspan="6" class="text-center text-muted py-6">…</td></tr></tbody>
@@ -638,11 +867,17 @@
     }
     function toggleRec() {
         var has = !!jQuery('#tEntityType').val();
-        jQuery('#tEntityId').prop('disabled', !has).closest('.col-md-7').css('opacity', has ? 1 : .5);
+        // .col-md-8 since the linked-record row was regridded; a stale selector here silently stops
+        // dimming the disabled picker (closest() returns nothing and the chain is a no-op).
+        jQuery('#tEntityId').prop('disabled', !has).closest('.col-md-8').css('opacity', has ? 1 : .5);
     }
     function preselectRec(id, label) {
         var $rec = jQuery('#tEntityId');
         $rec.find('option').remove();
+        // The empty option goes back first: select2 renders its placeholder for a single select ONLY when
+        // the underlying select has one, and without it the closed control is a blank grey box with no
+        // hint that it is a picker at all.
+        $rec.append(new Option('', '', false, false));
         if (id && label) { var o = new Option(label, id, true, true); $rec.append(o); }
         $rec.trigger('change');
     }
@@ -656,7 +891,7 @@
             ajax: { url: '/Tasks/LinkSearch', dataType: 'json', delay: 250, data: function (p) { return { entityType: 'Customer', term: p.term || '' }; }, processResults: function (d) { return { results: (d && d.results) || [] }; } }
         });
     }
-    function preselectCust(id, label) { var $c = jQuery('#tCustomer'); $c.find('option').remove(); if (id && label) $c.append(new Option(label, id, true, true)); $c.trigger('change'); }
+    function preselectCust(id, label) { var $c = jQuery('#tCustomer'); $c.find('option').remove(); $c.append(new Option('', '', false, false)); if (id && label) $c.append(new Option(label, id, true, true)); $c.trigger('change'); }
     function cbToggleBill() { document.getElementById('tBillBox').classList.toggle('d-none', !document.getElementById('tBillable').checked); }
 
     // TM-9: scheduled task — party picker (Supplier for purchase, Customer for sales)
@@ -669,7 +904,7 @@
             ajax: { url: '/Tasks/LinkSearch', dataType: 'json', delay: 250, data: function (pr) { return { entityType: schedPartyType(), term: pr.term || '' }; }, processResults: function (d) { return { results: (d && d.results) || [] }; } }
         });
     }
-    function preselectSchedParty(id, label) { var $p = jQuery('#tExpParty'); $p.find('option').remove(); if (id && label) $p.append(new Option(label, id, true, true)); $p.trigger('change'); }
+    function preselectSchedParty(id, label) { var $p = jQuery('#tExpParty'); $p.find('option').remove(); $p.append(new Option('', '', false, false)); if (id && label) $p.append(new Option(label, id, true, true)); $p.trigger('change'); }
     function cbToggleSched() {
         var on = document.getElementById('tScheduled').checked;
         document.getElementById('tSchedBox').classList.toggle('d-none', !on);
@@ -684,6 +919,7 @@
     function cbTaskNew() {
         document.getElementById('tId').value = '0';
         document.getElementById('tTitle').value = '';
+        document.getElementById('tTitleEn').value = '';
         document.getElementById('tDesc').value = '';
         document.getElementById('tDue').value = '';
         document.getElementById('tEst').value = '';
@@ -699,6 +935,7 @@
     function cbTaskEdit(t) {
         document.getElementById('tId').value = t.id;
         document.getElementById('tTitle').value = t.title || '';
+        document.getElementById('tTitleEn').value = t.titleEn || '';
         document.getElementById('tDesc').value = t.description || '';
         document.getElementById('tDue').value = t.due || '';
         document.getElementById('tEst').value = (t.est != null ? t.est : '');

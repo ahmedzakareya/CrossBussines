@@ -66,15 +66,15 @@
         <div class="card"><div class="card-header"><div class="card-title fw-bold">@Localizer["Rules"] (@rules.Count)</div></div>
             <div class="card-body">
                 <div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Name"]</th><th>@Localizer["Condition"]</th><th class="text-center">@Localizer["Points"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Name"]</th><th>@Localizer["Condition"]</th><th class="text-center">@Localizer["Points"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
                     <tbody>
                     @foreach (var r in rules)
                     {
                         <tr data-id="@r.ID" data-name="@r.Name" data-nameen="@r.NameEn" data-field="@r.Field" data-op="@r.Operator" data-value="@r.Value" data-points="@r.Points" data-active="@(r.IsActive ? "true" : "false")" style="border-bottom:1px dashed #eef1f6;">
                             <td class="ps-4 fw-bold text-gray-800">@(isEn ? (string.IsNullOrWhiteSpace(r.NameEn) ? r.Name : r.NameEn) : r.Name)</td>
                             <td class="text-muted fs-7">@fNm(r.Field) @oNm(r.Operator) <span class="fw-bold text-gray-700">@r.Value</span></td>
-                            <td class="text-center"><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">+@r.Points</span></td>
-                            <td class="text-center"><span class="badge fw-bold" style="@(r.IsActive ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@(r.IsActive ? SR["Active"].Value : Localizer["Off"].Value)</span></td>
+                            <td class="text-center"><span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">+@r.Points</span></td>
+                            <td class="text-center"><span class="badge fw-bold" style="@(r.IsActive ? "background:#E7F0FF;color:#0E4A9E;" : "background:#f2f4f7;color:#475467;")">@(r.IsActive ? SR["Active"].Value : Localizer["Off"].Value)</span></td>
                             <td class="text-end pe-4"><button class="btn btn-sm btn-icon btn-light-primary" onclick="ruleEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button></td>
                         </tr>
                     }

@@ -25,7 +25,7 @@
     function kLabel(s) { return s === 'Ready' ? L.kReady : (s === 'Preparing' ? L.kPrep : L.kNew); }
 
     function cbConfirm(text, danger) {
-        if (window.CB && window.CB.confirm) return window.CB.confirm({ type: 'generic', icon: 'question', title: TL('تأكيد', 'Confirm'), text: text, confirmText: TL('تأكيد', 'Confirm'), confirmClass: danger ? 'btn btn-success' : 'btn btn-primary' });
+        if (window.CB && window.CB.confirm) return window.CB.confirm({ type: 'generic', icon: 'question', title: TL('Confirm', 'Confirm'), text: text, confirmText: TL('Confirm', 'Confirm'), confirmClass: danger ? 'btn btn-success' : 'btn btn-primary' });
         return Promise.resolve(window.confirm(text));
     }
     function toastOk(m) { if (window.CB && window.CB.toast) window.CB.toast.success(m); }
@@ -78,7 +78,7 @@
             return '<div class="col-md-6 col-xl-4"><div class="card hover-elevate-up shadow-xs h-100" data-order="' + o.orderId + '">'
                 + '<div class="card-header border-0 pt-7">'
                 + '<div class="card-title m-0"><div class="symbol symbol-45px w-45px bg-light-' + badgeColor + ' me-3"><span class="symbol-label"><i class="ki-outline ki-scooter fs-2 text-' + badgeColor + '"></i></span></div>'
-                + '<div class="d-flex flex-column"><span class="fs-4 fw-bold text-gray-900">' + (o.customerName ? esc(o.customerName) : TL('عميل', 'Customer')) + '</span><span class="fs-7 fw-semibold text-gray-500">' + esc(L.order) + ' #' + o.orderId + '</span></div></div>'
+                + '<div class="d-flex flex-column"><span class="fs-4 fw-bold text-gray-900">' + (o.customerName ? esc(o.customerName) : TL('Customer', 'Customer')) + '</span><span class="fs-7 fw-semibold text-gray-500">' + esc(L.order) + ' #' + o.orderId + '</span></div></div>'
                 + '<div class="card-toolbar"><span class="badge badge-light-' + badgeColor + ' fw-bold px-4 py-3">' + esc(badgeLabel) + '</span></div></div>'
                 + '<div class="card-body pt-3 pb-4 px-8">' + stats + addr + driverRow + '</div>'
                 + foot + '</div></div>';

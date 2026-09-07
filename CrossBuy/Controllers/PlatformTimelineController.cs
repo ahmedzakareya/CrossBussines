@@ -54,6 +54,10 @@ namespace CrossBuy.Controllers
                 title = isArabic ? i.TitleAr : i.TitleEn,
                 description = isArabic ? i.DescriptionAr : i.DescriptionEn,
                 actorName = i.ActorDisplayName,
+                // The model carried the actor's ID all along; only the NAME was being sent, so a
+                // caller could say who acted but never show their face. A UI that wants an avatar
+                // has nothing to resolve it from without this.
+                actorEmployeeId = i.ActorEmployeeId,
                 icon = i.Icon,
                 color = i.Color,
                 createdAt = i.CreatedAt,

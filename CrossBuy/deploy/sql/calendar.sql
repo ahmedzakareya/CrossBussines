@@ -32,3 +32,24 @@ BEGIN
     CREATE INDEX IX_CalendarEventAttendees_Event ON dbo.CalendarEventAttendees (EventId);
     CREATE INDEX IX_CalendarEventAttendees_Emp   ON dbo.CalendarEventAttendees (EmployeeId);
 END
+
+-- ---- ADDITIVE: CalendarEvents.TitleEn -----------------------------------------------------
+--
+-- OUTSIDE the CREATE TABLE guard on purpose: that block only runs for a database that does not
+-- have the table yet, so a column added inside it never reaches an existing one.
+--
+-- An event title had no English twin at all, so the unified agenda showed Arabic event titles in
+-- an English UI beside task titles that resolve correctly. Nullable, no default, no backfill.
+IF COL_LENGTH('dbo.CalendarEvents', 'TitleEn') IS NULL
+    ALTER TABLE dbo.CalendarEvents ADD TitleEn nvarchar(300) NULL;
+GO
+-- ---- ADDITIVE: the other two free-text fields on an event -----------------------------------
+-- TitleEn landed on its own, which fixed the reminder popup's heading and left the two lines under
+-- it Arabic: the location and the description are typed by hand and had one column each. Same shape,
+-- same NULL-able fallback - no English text means the Arabic is shown rather than a blank line.
+IF COL_LENGTH('dbo.CalendarEvents', 'DescriptionEn') IS NULL
+    ALTER TABLE dbo.CalendarEvents ADD DescriptionEn nvarchar(max) NULL;
+GO
+IF COL_LENGTH('dbo.CalendarEvents', 'LocationEn') IS NULL
+    ALTER TABLE dbo.CalendarEvents ADD LocationEn nvarchar(300) NULL;
+GO

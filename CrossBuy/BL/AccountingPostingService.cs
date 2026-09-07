@@ -229,8 +229,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? entryId)> PostPayrollRunAsync(int companyId, int year, int month, int? userId)
 		{
 			var pre = await PreviewPayrollAsync(companyId, year, month);
-			if (pre.AlreadyPosted) return (false, $"تم ترحيل رواتب هذه الفترة مسبقًا (القيد {pre.PostedEntryNo})", null);
-			if (pre.Employees.Count == 0 || pre.TotalGross <= 0) return (false, "لا توجد رواتب قابلة للترحيل في هذه الفترة", null);
+			if (pre.AlreadyPosted) return (false, $"Payroll for this period has already been posted (entry {pre.PostedEntryNo})", null);
+			if (pre.Employees.Count == 0 || pre.TotalGross <= 0) return (false, "There is no postable payroll in this period", null);
 
 			// posting rules → account ids
 			var rules = await _context.PostingRules.AsNoTracking()
@@ -244,7 +244,7 @@ namespace CrossBuy.BL
 			var taxAcc = Cr("IncomeTax");
 			var siPayAcc = Cr("SocialInsPayable");
 			if (salaryAcc == null || netAcc == null)
-				return (false, "قواعد الترحيل غير مكتملة (رواتب/مستحق). شغّل بذرة المحاسبة.", null);
+				return (false, "The posting rules are incomplete (payroll/accrual). Run the accounting seed.", null);
 
 			var lines = new List<JournalLineInput>();
 
@@ -252,23 +252,23 @@ namespace CrossBuy.BL
 			foreach (var g in pre.Employees.GroupBy(x => x.CostCenterId))
 			{
 				var amt = R(g.Sum(x => x.EarningExpense));
-				if (amt > 0) lines.Add(new JournalLineInput { AccountId = salaryAcc.Value, Debit = amt, Credit = 0, CostCenterId = g.Key, Description = "رواتب وأجور (شامل الإضافي وخصومات الحضور)" });
+				if (amt > 0) lines.Add(new JournalLineInput { AccountId = salaryAcc.Value, Debit = amt, Credit = 0, CostCenterId = g.Key, Description = "Salaries and wages (including overtime and attendance deductions)" });
 			}
 			// Dr employer social insurance, grouped by cost center
 			if (pre.TotalSiCompany > 0 && siExpAcc != null)
 				foreach (var g in pre.Employees.GroupBy(x => x.CostCenterId))
 				{
 					var amt = R(g.Sum(x => x.SiCompany));
-					if (amt > 0) lines.Add(new JournalLineInput { AccountId = siExpAcc.Value, Debit = amt, Credit = 0, CostCenterId = g.Key, Description = "تأمينات اجتماعية - حصة الشركة" });
+					if (amt > 0) lines.Add(new JournalLineInput { AccountId = siExpAcc.Value, Debit = amt, Credit = 0, CostCenterId = g.Key, Description = "Social insurance - employer share" });
 				}
 
 			// Credits
-			lines.Add(new JournalLineInput { AccountId = netAcc.Value, Debit = 0, Credit = pre.TotalNet, Description = "صافي رواتب مستحقة الدفع" });
+			lines.Add(new JournalLineInput { AccountId = netAcc.Value, Debit = 0, Credit = pre.TotalNet, Description = "Net salaries payable" });
 			if (pre.TotalTax > 0 && taxAcc != null)
-				lines.Add(new JournalLineInput { AccountId = taxAcc.Value, Debit = 0, Credit = pre.TotalTax, Description = "ضريبة كسب عمل مستحقة" });
+				lines.Add(new JournalLineInput { AccountId = taxAcc.Value, Debit = 0, Credit = pre.TotalTax, Description = "Payroll tax payable" });
 			var siTotal = R(pre.TotalSiEmployee + pre.TotalSiCompany);
 			if (siTotal > 0 && siPayAcc != null)
-				lines.Add(new JournalLineInput { AccountId = siPayAcc.Value, Debit = 0, Credit = siTotal, Description = "تأمينات اجتماعية مستحقة" });
+				lines.Add(new JournalLineInput { AccountId = siPayAcc.Value, Debit = 0, Credit = siTotal, Description = "Social insurance payable" });
 
 			var input = new JournalEntryInput
 			{
@@ -346,12 +346,12 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DisbursePayrollAsync(int companyId, int year, int month, int payFromGlAccountId, DateTime date, int? userId)
 		{
 			var src = SourceIdFor(year, month);
-			if (await SettlementExistsAsync(companyId, "PayrollPay", src)) return (false, "تم صرف رواتب هذه الفترة مسبقًا");
+			if (await SettlementExistsAsync(companyId, "PayrollPay", src)) return (false, "Payroll for this period has already been paid");
 			var (netAcc, _, _) = await PayrollLiabilityAccountsAsync(companyId);
 			var net = await AccruedAsync(companyId, src, netAcc);
-			if (netAcc == null) return (false, "حساب الرواتب المستحقة غير معرّف في قواعد الترحيل");
-			if (net <= 0) return (false, "لا يوجد صافي رواتب مستحق لهذه الفترة (هل رُحِّل قيد الرواتب؟)");
-			if (payFromGlAccountId == netAcc.Value) return (false, "حساب الدفع غير صالح");
+			if (netAcc == null) return (false, "The salaries-payable account is not defined in the posting rules");
+			if (net <= 0) return (false, "There is no net payroll payable for this period (has the payroll entry been posted?)");
+			if (payFromGlAccountId == netAcc.Value) return (false, "Invalid payment account");
 			var (ok, err, _) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date.Date, JournalType = "Auto", SourceType = "PayrollPay", SourceId = src,
@@ -359,7 +359,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = netAcc.Value, Debit = net, Credit = 0, Description = "تصفية الرواتب المستحقة" },
-					new() { AccountId = payFromGlAccountId, Debit = 0, Credit = net, Description = "صرف من البنك/الخزينة" },
+					new() { AccountId = payFromGlAccountId, Debit = 0, Credit = net, Description = "Payment from bank/cash" },
 				},
 			}, userId);
 			return (ok, err);
@@ -373,11 +373,11 @@ namespace CrossBuy.BL
 			var sourceType = isTax ? "PayrollRemitTax" : "PayrollRemitSI";
 			var liabAcc = isTax ? taxAcc : siAcc;
 			var label = isTax ? "ضريبة كسب العمل" : "التأمينات الاجتماعية";
-			if (await SettlementExistsAsync(companyId, sourceType, src)) return (false, $"تم توريد {label} لهذه الفترة مسبقًا");
-			if (liabAcc == null) return (false, "حساب الالتزام غير معرّف في قواعد الترحيل");
+			if (await SettlementExistsAsync(companyId, sourceType, src)) return (false, $"{label} for this period has already been remitted");
+			if (liabAcc == null) return (false, "The liability account is not defined in the posting rules");
 			var amount = await AccruedAsync(companyId, src, liabAcc);
-			if (amount <= 0) return (false, $"لا يوجد {label} مستحق لهذه الفترة");
-			if (payFromGlAccountId == liabAcc.Value) return (false, "حساب الدفع غير صالح");
+			if (amount <= 0) return (false, $"There is no {label} payable for this period");
+			if (payFromGlAccountId == liabAcc.Value) return (false, "Invalid payment account");
 			var (ok, err, _) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date.Date, JournalType = "Auto", SourceType = sourceType, SourceId = src,
@@ -385,7 +385,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = liabAcc.Value, Debit = amount, Credit = 0, Description = $"تصفية {label} المستحقة" },
-					new() { AccountId = payFromGlAccountId, Debit = 0, Credit = amount, Description = "سداد من البنك/الخزينة" },
+					new() { AccountId = payFromGlAccountId, Debit = 0, Credit = amount, Description = "Settlement from bank/cash" },
 				},
 			}, userId);
 			return (ok, err);

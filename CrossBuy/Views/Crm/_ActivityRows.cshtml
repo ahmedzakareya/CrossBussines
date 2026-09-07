@@ -14,10 +14,10 @@
         <td class="ps-4"><span class="badge fw-bold" style="background:#f2f4f7;color:#475467;"><i class="ki-outline @tIcon(a.Type) fs-7 me-1"></i>@tName(a.Type)</span></td>
         <td class="fw-semibold @(a.Done?"text-muted text-decoration-line-through":"text-gray-800")">@(isEn ? (string.IsNullOrWhiteSpace(a.SubjectEn) ? a.Subject : a.SubjectEn) : a.Subject)</td>
         <td class="@(overdue?"text-danger fw-bold":"text-muted")">@(a.DueDate?.ToString("yyyy-MM-dd") ?? "—")</td>
-        <td class="text-center"><span class="badge fw-bold" style="@(a.Done?"background:#eaf3ef;color:#13433a;":"background:#fef3e2;color:#b96a00;")">@(a.Done?Localizer["Done"]:Localizer["Open"])</span></td>
+        <td class="text-center"><span class="badge fw-bold" style="@(a.Done?"background:#E7F0FF;color:#0E4A9E;":"background:#fef3e2;color:#b96a00;")">@(a.Done?Localizer["Done"]:Localizer["Open"])</span></td>
         <td class="text-center pe-4">
             <form asp-action="ToggleActivity" method="post" class="d-inline" data-cb-confirm data-cb-action="generic" data-cb-text="@(a.Done?Localizer["Reopen this activity?"]:Localizer["Mark this activity as done?"])">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@a.ID" />
-                <button class="btn btn-sm btn-icon" style="@(a.Done?"background:#fef3e2;color:#b96a00;":"background:#eaf3ef;color:#13433a;")" title="@(a.Done?Localizer["Reopen"]:Localizer["Mark done"])"><i class="ki-outline @(a.Done?"ki-arrows-circle":"ki-check") fs-6"></i></button>
+                <button class="btn btn-sm btn-icon" style="@(a.Done?"background:#fef3e2;color:#b96a00;":"background:#E7F0FF;color:#0E4A9E;")" title="@(a.Done?Localizer["Reopen"]:Localizer["Mark done"])"><i class="ki-outline @(a.Done?"ki-arrows-circle":"ki-check") fs-6"></i></button>
             </form>
             <button class="btn btn-sm btn-icon btn-light-primary" title="@SR["Edit"]" onclick="actEdit(this)"><i class="ki-outline ki-pencil fs-6"></i></button>
         </td>

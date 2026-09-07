@@ -576,6 +576,68 @@ namespace CrossBuy.Controllers
 			return View("Detail");
 		}
 
+		// ONE READ-ONLY PAGE with every fact about a task on it: details, checklist, dependencies,
+		// the time log, cost, billing, comments and the activity trail. It exists because three
+		// recorded timer runs looked like none - the figures were all correct and all unreachable,
+		// spread over four tabs and two kebab menus.
+		//
+		// Every value comes from the SAME read the owning screen uses. A summary that re-derived
+		// anything would be a second answer to the same question, and this page is precisely where
+		// two answers would sit side by side without anyone noticing.
+		public async Task<IActionResult> Summary(int id, CancellationToken ct = default)
+		{
+			var gate = await TaskGateAsync(TasksActions.Read, id);
+			if (!gate.Ok) return Forbid();
+
+			int co = gate.CompanyId;
+			var row = await _tasks.GetAsync(co, id);
+			if (row == null) return NotFound();
+
+			ViewBag.SidebarMenu = MainMenu.Tasks();
+			ViewBag.Task = row;
+			ViewBag.Checklist = await _checklist.ForTaskAsync(co, id);
+			ViewBag.Dependencies = await _deps.ForTaskAsync(co, id);
+			ViewBag.Blocking = await _deps.BlockingStateAsync(co, id);
+			ViewBag.Escalation = await _escalation.EvaluateAsync(co, id);
+
+			// The assignee by NAME. ActiveEmployeesAsync already resolves the display language, and it
+			// is the same list every other Tasks screen names people from.
+			ViewBag.AssigneeName = (await _tasks.ActiveEmployeesAsync(co))
+				.Where(e => e.Id == row.AssigneeEmployeeId)
+				.Select(e => e.Name)
+				.FirstOrDefault();
+
+			// The time log, and the two figures derived FROM it. Kept together deliberately: cost and
+			// billing are readings of these same lines, so showing them apart invites the reader to
+			// treat them as independent numbers.
+			ViewBag.TimeLines = await _ts.GetEntriesAsync(co, id);
+			ViewBag.Cost = await _cost.GetTaskCostAsync(co, id);
+			ViewBag.Billing = await _billing.GetBillingAsync(co, id);
+
+			// COMMUNICATION IS OPTIONAL. Without it the page loses its comment section and keeps
+			// everything else - every other fact here is still true, and refusing the whole page
+			// because one platform is switched off would be the wrong trade.
+			ViewBag.Comments = null;
+			var comm = TryCommunication();
+			if (comm != null)
+			{
+				var ctx = await CommContextAsync(ct);
+				if (ctx != null)
+				{
+					var thread = await comm.Value.Threads.GetOrCreateAsync(ctx,
+						new CrossBuy.Models.Communication.CommThreadRequest
+						{
+							Entity = new CrossBuy.Models.Communication.CommEntityRef(
+								CrossBuy.BL.TasksCalendar.TaskCalendarEntityCodes.Task, id)
+						}, ct);
+					var page = await comm.Value.Comments.ListAsync(ctx, thread.Id, null, ct);
+					ViewBag.Comments = page.Items;
+				}
+			}
+
+			return View("Summary");
+		}
+
 		// Candidate predecessors/successors for the dependency picker: same company, never the task
 		// itself. The cycle rule is enforced on ADD, not here — a picker that pre-filtered every
 		// reachable task would hide the very edge whose refusal explains the graph.
@@ -614,12 +676,17 @@ namespace CrossBuy.Controllers
 		}
 
 		[HttpPost][ValidateAntiForgeryToken]
-		public async Task<IActionResult> ChecklistAdd(int taskId, string title)
+		public async Task<IActionResult> ChecklistAdd(int taskId, string title, string? titleEn = null)
 		{
 			var gate = await TaskGateAsync(TasksActions.Edit, taskId);
-			if (!gate.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action") }); }
+			if (!gate.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"),
+				// The KIND of refusal, so the view can dress a missing permission differently from a
+				// validation refusal. Branching on the message text would break the moment the UI
+				// language changed.
+				code = "forbidden" }); }
 
-			var (ok, err, id) = await _checklist.AddAsync(gate.CompanyId, taskId, title, CurrentEmployeeId());
+			var (ok, err, id) = await _checklist.AddAsync(gate.CompanyId, taskId, title, CurrentEmployeeId(),
+				default, titleEn);
 			return Json(new { ok, error = err, id });
 		}
 
@@ -637,7 +704,11 @@ namespace CrossBuy.Controllers
 
 			var owner = await _checklist.OwningTaskIdAsync(co, id);
 			var gate = owner == null ? new TaskGate() : await TaskGateAsync(TasksActions.Edit, owner.Value);
-			if (!gate.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action") }); }
+			if (!gate.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"),
+				// The KIND of refusal, so the view can dress a missing permission differently from a
+				// validation refusal. Branching on the message text would break the moment the UI
+				// language changed.
+				code = "forbidden" }); }
 
 			var (ok, err) = await _checklist.SetDoneAsync(co, id, done, CurrentEmployeeId());
 			return Json(new { ok, error = err });
@@ -651,7 +722,11 @@ namespace CrossBuy.Controllers
 
 			var owner = await _checklist.OwningTaskIdAsync(co, id);
 			var gate = owner == null ? new TaskGate() : await TaskGateAsync(TasksActions.Edit, owner.Value);
-			if (!gate.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action") }); }
+			if (!gate.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"),
+				// The KIND of refusal, so the view can dress a missing permission differently from a
+				// validation refusal. Branching on the message text would break the moment the UI
+				// language changed.
+				code = "forbidden" }); }
 
 			var (ok, err) = await _checklist.RemoveAsync(co, id);
 			return Json(new { ok, error = err });
@@ -692,7 +767,11 @@ namespace CrossBuy.Controllers
 			// edit only one of the pair may not create it.
 			var g1 = await TaskGateAsync(TasksActions.Edit, predecessorTaskId);
 			var g2 = await TaskGateAsync(TasksActions.Edit, successorTaskId);
-			if (!g1.Ok || !g2.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action") }); }
+			if (!g1.Ok || !g2.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"),
+				// The KIND of refusal, so the view can dress a missing permission differently from a
+				// validation refusal. Branching on the message text would break the moment the UI
+				// language changed.
+				code = "forbidden" }); }
 
 			// Either gate's company would do — both passed, and both verified their end's row against the SAME
 			// resolved context, so g1.CompanyId == g2.CompanyId by construction.
@@ -714,7 +793,11 @@ namespace CrossBuy.Controllers
 			var ends = await _deps.EndpointsAsync(co, id);
 			var g1 = ends == null ? new TaskGate() : await TaskGateAsync(TasksActions.Edit, ends.Value.predecessorTaskId);
 			var g2 = ends == null ? new TaskGate() : await TaskGateAsync(TasksActions.Edit, ends.Value.successorTaskId);
-			if (!g1.Ok || !g2.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action") }); }
+			if (!g1.Ok || !g2.Ok) { return Json(new { ok = false, error = T("ليست لديك صلاحية لتنفيذ هذا الإجراء", "You do not have permission to perform this action"),
+				// The KIND of refusal, so the view can dress a missing permission differently from a
+				// validation refusal. Branching on the message text would break the moment the UI
+				// language changed.
+				code = "forbidden" }); }
 
 			var (ok, err) = await _deps.RemoveAsync(co, id);
 			return Json(new { ok, error = err });
@@ -761,6 +844,114 @@ namespace CrossBuy.Controllers
 			          "The Communication Platform is not activated in this environment, so discussion and attachments are unavailable. The rest of Tasks works normally.")
 		});
 
+		// Employee id -> photo, for the activity timeline. TimelineItemViewModel carries the actor's
+		// ID and NAME but no avatar, and that DTO belongs to Models/Platform (another tab), so the
+		// ids it returns are resolved here instead of widening the platform contract.
+		// Company-scoped and capped: this answers "what does this person look like", nothing more.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> ActorAvatars(string? ids, CancellationToken ct = default)
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return Json(new Dictionary<string, string>());
+
+			var wanted = (ids ?? "")
+				.Split(',', StringSplitOptions.RemoveEmptyEntries)
+				.Select(s => int.TryParse(s.Trim(), out var n) ? n : 0)
+				.Where(n => n > 0)
+				.Distinct()
+				.Take(100)
+				.ToList();
+			if (wanted.Count == 0) return Json(new Dictionary<string, string>());
+
+			// Resolved through _services, the same lazy pattern this controller already uses for the
+			// Communication platform - rather than adding a DbContext to a constructor that
+			// deliberately takes services only.
+			var db = _services.GetRequiredService<CrossBuy.Models.Context.CrossDbContext>();
+			var rows = await db.Employee.AsNoTracking()
+				.Where(e => e.EmpCompanyID == co && wanted.Contains(e.ID)
+					&& e.ProfileImage != null && e.ProfileImage != "")
+				.Select(e => new { e.ID, e.ProfileImage })
+				.ToListAsync(ct);
+
+			return Json(rows.ToDictionary(r => r.ID.ToString(), r => r.ProfileImage));
+		}
+
+		// WHAT THE CHECKLIST PANE RENDERS. It used to be drawn by Razor and repainted by a full page
+		// reload after every add, toggle and delete - which discarded the open tab, the scroll position
+		// and any unsent comment draft, and re-ran every query on the page to redraw one row.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> ChecklistList(int taskId)
+		{
+			var gate = await TaskGateAsync(TasksActions.Read, taskId);
+			if (!gate.Ok) return Forbid();
+
+			var rows = await _checklist.ForTaskAsync(gate.CompanyId, taskId);
+			return Json(rows.Select(c => new
+			{
+				id = c.ID,
+				done = c.IsDone,
+				title = CrossBuy.BL.DisplayName.Of(c.Title, c.TitleEn)
+			}));
+		}
+
+		// The same, for the dependency pane. Which END the other task sits on decides the arrow and the
+		// wording, and only this action knows which task the page is about - so it is resolved here
+		// rather than sending both ends and leaving the view to work it out.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> DependencyList(int taskId)
+		{
+			var gate = await TaskGateAsync(TasksActions.Read, taskId);
+			if (!gate.Ok) return Forbid();
+
+			var rows = await _deps.ForTaskAsync(gate.CompanyId, taskId);
+			return Json(rows.Select(d => new
+			{
+				id = d.Id,
+				otherIsPredecessor = d.SuccessorTaskId == taskId,
+				otherId = d.SuccessorTaskId == taskId ? d.PredecessorTaskId : d.SuccessorTaskId,
+				otherTitle = d.SuccessorTaskId == taskId ? d.PredecessorTitle : d.SuccessorTitle,
+				isBlocking = d.IsBlocking
+			}));
+		}
+
+		// @-MENTION SUGGESTIONS for the comment composer. The platform already owns everything that
+		// happens AFTER the text is written: CommBodyPolicy parses "@[Name](employee:12)" out of the body,
+		// CommMentionService writes the mention, the audit entry and the timeline source, and
+		// CommNotificationService delivers it - skipping the author, because
+		// ExcludeActorFromOwnNotifications is on. What was missing was only the list to pick FROM.
+		//
+		// The caller is left OUT of the list. Mentioning yourself notifies nobody by design, so offering
+		// your own name would advertise an action that does nothing.
+		[SessionValidation][HttpGet]
+		public async Task<IActionResult> MentionSearch(string? q, CancellationToken ct = default)
+		{
+			var co = await CompanyIdAsync();
+			if (co == 0) return Json(Array.Empty<object>());
+
+			var term = (q ?? "").Trim();
+			var me = CurrentEmployeeId();
+			var db = _services.GetRequiredService<CrossBuy.Models.Context.CrossDbContext>();
+
+			// Matched on EITHER name, whichever language the person typed in - somebody writing Latin
+			// letters must still find a colleague whose stored name is Arabic, and the reverse.
+			var rows = await db.Employee.AsNoTracking()
+				.Where(e => e.EmpCompanyID == co && e.FullName != null && e.FullName != "" && e.ID != me)
+				.Where(e => term == ""
+					|| e.FullName!.Contains(term)
+					|| (e.FullNameEn != null && e.FullNameEn.Contains(term)))
+				.OrderBy(e => e.FullName)
+				.Take(8)
+				.Select(e => new { e.ID, e.FullName, e.FullNameEn, e.ProfileImage })
+				.ToListAsync(ct);
+
+			return Json(rows.Select(r => new
+			{
+				id = r.ID,
+				name = (!IsAr && !string.IsNullOrWhiteSpace(r.FullNameEn)) ? r.FullNameEn! : r.FullName!,
+				avatar = r.ProfileImage
+			}));
+		}
+
 		[HttpGet]
 		public async Task<IActionResult> TaskComments(int taskId, CancellationToken ct = default)
 		{
@@ -787,12 +978,31 @@ namespace CrossBuy.Controllers
 				id = c.CommentId,
 				body = c.Body,
 				author = c.Author.Display(IsAr),
+				// The actor already carries a photo (CommActorDto.AvatarUrl); only the display name was
+				// being sent, so every comment rendered a bare initial in its avatar circle.
+				authorAvatar = c.Author.AvatarUrl,
 				createdAt = c.CreatedAt,
 				editedAt = c.EditedAt,
+				// The RESOLVED labels, so the reader sees a name where the author typed a token. The label was
+				// frozen when the mention was made (CommMentionService), which is the point: a renamed
+				// department was not the department that was mentioned.
+				mentions = c.Mentions.Select(m => new
+				{
+					kind = m.TargetKind,
+					targetId = m.TargetId,
+					targetKey = m.TargetKey,
+					label = IsAr ? (m.LabelAr ?? m.LabelEn) : (m.LabelEn ?? m.LabelAr)
+				}),
 				attachments = c.Attachments.Select(a => new
 				{
 					id = a.AttachmentId, fileName = a.FileName, contentType = a.ContentType,
 					sizeBytes = a.SizeBytes,
+					// The platform ALREADY classifies whether a file can be shown inline and what kind of
+					// preview it is (Module 11, CommFilePreviewDto). None of it was being sent, so the UI
+					// could only offer a download link for an image it was allowed to display.
+					previewKind = a.Preview.Kind,
+					canInline = a.Preview.CanInline,
+					previewReason = a.Preview.Reason,
 					// The StorageKey IS the deployment's path. The platform resolves no url by contract;
 					// this controller does, because it owns the store the key points into.
 					url = a.StorageKey

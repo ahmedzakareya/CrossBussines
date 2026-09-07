@@ -259,45 +259,45 @@ namespace CrossBuy.Controllers
         // ---- suggested wording. Resource-driven, so Arabic is a translation and not a copy ----
         private string ComposeTitle(string key, string subject) => key switch
         {
-            "task.title.stockout" => T($"نفاد مخزون — {subject}", $"Out of stock — {subject}"),
-            "task.title.reorder" => T($"إعادة طلب — {subject}", $"Reorder — {subject}"),
-            "task.title.slowstock" => T($"مراجعة مخزون راكد — {subject}", $"Review slow stock — {subject}"),
-            "task.title.oppOverdue" => T($"متابعة فرصة متأخرة — {subject}", $"Follow up overdue opportunity — {subject}"),
-            "task.title.oppClosingSoon" => T($"فرصة قرب الإغلاق — {subject}", $"Opportunity closing soon — {subject}"),
-            "task.title.oppFollowUp" => T($"متابعة فرصة — {subject}", $"Follow up opportunity — {subject}"),
-            "task.title.acctDeclining" => T($"مراجعة تراجع التفاعل — {subject}", $"Review declining engagement — {subject}"),
-            "task.title.acctOverdue" => T($"انكشاف صفقات متأخرة — {subject}", $"Overdue deal exposure — {subject}"),
-            _ => T($"متابعة — {subject}", $"Follow up — {subject}"),
+            "task.title.stockout" => T($"Out of stock — {subject}", $"Out of stock — {subject}"),
+            "task.title.reorder" => T($"Reorder — {subject}", $"Reorder — {subject}"),
+            "task.title.slowstock" => T($"Review slow-moving stock — {subject}", $"Review slow stock — {subject}"),
+            "task.title.oppOverdue" => T($"Follow up an overdue opportunity — {subject}", $"Follow up overdue opportunity — {subject}"),
+            "task.title.oppClosingSoon" => T($"Opportunity nearing close — {subject}", $"Opportunity closing soon — {subject}"),
+            "task.title.oppFollowUp" => T($"Opportunity follow-up — {subject}", $"Follow up opportunity — {subject}"),
+            "task.title.acctDeclining" => T($"Review declining engagement — {subject}", $"Review declining engagement — {subject}"),
+            "task.title.acctOverdue" => T($"Overdue deal exposure — {subject}", $"Overdue deal exposure — {subject}"),
+            _ => T($"Follow-up — {subject}", $"Follow up — {subject}"),
         };
 
         private string ComposeReason(string key, string subject) => key switch
         {
             "task.reason.stockout" => T(
-                $"أُنشئت من تحليلات مخاطر المخزون: الصنف {subject} نفد مخزونه مع وجود طلب حديث.",
+                $"Created from inventory risk analytics: item {subject} is out of stock while there is recent demand.",
                 $"Created from Inventory Risk Insights: {subject} is out of stock with recent demand."),
             "task.reason.reorder" => T(
-                $"أُنشئت من تحليلات مخاطر المخزون: الصنف {subject} تحت نقطة إعادة الطلب أو تغطيته منخفضة.",
+                $"Created from inventory risk analytics: item {subject} is below its reorder point, or its cover is low.",
                 $"Created from Inventory Risk Insights: {subject} is below its reorder point or has low days-of-cover."),
             "task.reason.slowstock" => T(
-                $"أُنشئت من تحليلات مخاطر المخزون: الصنف {subject} راكد ولم يُصرف خلال النافذة المحددة.",
+                $"Created from inventory risk analytics: item {subject} is slow-moving and has not been issued within the given window.",
                 $"Created from Inventory Risk Insights: {subject} is slow moving with no issues in the window."),
             "task.reason.oppOverdue" => T(
-                $"أُنشئت من تحليلات الفرص: الفرصة {subject} تجاوزت تاريخ الإغلاق المتوقع.",
+                $"Created from opportunity analytics: opportunity {subject} is past its expected close date.",
                 $"Created from CRM Opportunity Insights: {subject} is past its expected close date."),
             "task.reason.oppClosingSoon" => T(
-                $"أُنشئت من تحليلات الفرص: الفرصة {subject} قرب الإغلاق ولا توجد متابعة مفتوحة.",
+                $"Created from opportunity analytics: opportunity {subject} is nearing close and has no open follow-up.",
                 $"Created from CRM Opportunity Insights: {subject} is closing soon with no open follow-up."),
             "task.reason.oppFollowUp" => T(
-                $"أُنشئت من تحليلات الفرص: الفرصة {subject} تحتاج متابعة.",
+                $"Created from opportunity analytics: opportunity {subject} needs a follow-up.",
                 $"Created from CRM Opportunity Insights: {subject} needs attention."),
             "task.reason.acctDeclining" => T(
-                $"أُنشئت من تحليلات صحة الحسابات: تراجع التفاعل مع {subject} مقارنة بالفترة السابقة.",
+                $"Created from account health analytics: engagement with {subject} has declined against the previous period.",
                 $"Created from CRM Account Health: engagement with {subject} declined against the previous window."),
             "task.reason.acctOverdue" => T(
-                $"أُنشئت من تحليلات صحة الحسابات: لدى {subject} صفقات تجاوزت تاريخ الإغلاق المتوقع.",
+                $"Created from account health analytics: {subject} has deals past their expected close date.",
                 $"Created from CRM Account Health: {subject} has deals past their expected close date."),
             _ => T(
-                $"أُنشئت من تحليلات CRM: {subject} يحتاج متابعة.",
+                $"Created from CRM analytics: {subject} needs a follow-up.",
                 $"Created from CRM insights: {subject} needs attention."),
         };
     }

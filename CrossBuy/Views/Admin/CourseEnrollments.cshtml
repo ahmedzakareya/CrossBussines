@@ -11,8 +11,8 @@
     string stName(string s) => s switch { "Attended" => Localizer["Attended"].Value, "Completed" => Localizer["Completed"].Value, "Cancelled" => Localizer["Cancelled"].Value, _ => Localizer["Planned"].Value };
     // brand-safe status styling (green family + gray; no blue/mint/yellow)
     string stStyle(string s) => s switch {
-        "Completed" => "background:#eaf3ef;color:#13433a;",
-        "Attended"  => "background:#e9f1ee;color:#1f6253;",
+        "Completed" => "background:#E7F0FF;color:#0E4A9E;",
+        "Attended"  => "background:#E7F0FF;color:#145DBF;",
         "Cancelled" => "background:#f2f4f7;color:#98a2b3;",
         _            => "background:#f2f4f7;color:#475467;" };
 }
@@ -31,7 +31,7 @@
                     <input type="hidden" name="courseId" value="@course?.ID" />
                     <div class="flex-grow-1"><label class="fw-semibold fs-7 mb-1">@SR["Employees"]</label>
                         <select name="employeeIds" class="form-select form-select-solid" data-control="select2" multiple data-placeholder="@Localizer["Select employees…"]">
-                            @foreach (var e in ViewBag.Employees) { <option value="@e.ID">@e.FullName</option> }
+                            @foreach (var e in ViewBag.Employees) { <option value="@e.ID">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }
                         </select></div>
                     <button class="btn btn-primary"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Enroll"]</button>
                 </form>
@@ -39,7 +39,7 @@
         </div>
 
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3 mb-0">
-            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th class="text-center">@SR["Status"]</th><th style="min-width:360px">@SR["Update"]</th><th class="text-end pe-4"></th></tr></thead>
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Employee"]</th><th class="text-center">@SR["Status"]</th><th style="min-width:360px">@SR["Update"]</th><th class="text-end pe-4"></th></tr></thead>
             <tbody class="fw-semibold text-gray-700">
             @if (!Model.Any()) { <tr><td colspan="4" class="text-center text-muted py-8">@Localizer["No enrollments"]</td></tr> }
             @foreach (var en in Model)

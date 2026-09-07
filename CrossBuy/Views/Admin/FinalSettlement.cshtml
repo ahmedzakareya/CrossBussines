@@ -52,7 +52,7 @@
                             <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Daily rate"]</span><span class="fw-bold">@Money(pv.DailyRate)</span></div>
                             <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Encashable leave"]</span><span class="fw-bold">@pv.LeaveDays @Localizer["d"]</span></div>
                             <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">@Localizer["Leave value"]</span><span class="fw-bold text-primary">@Money(pv.LeaveValue)</span></div>
-                            <div class="d-flex justify-content-between py-3"><span class="text-muted">@Localizer["Suggested gratuity"]<span class="fs-8 d-block">@Localizer["({0} days/yr)", Money(pv.GratuityDaysPerYear)]</span></span><span class="fw-bold" style="color:#1f6253;">@Money(pv.SuggestedGratuity)</span></div>
+                            <div class="d-flex justify-content-between py-3"><span class="text-muted">@Localizer["Suggested gratuity"]<span class="fs-8 d-block">@Localizer["({0} days/yr)", Money(pv.GratuityDaysPerYear)]</span></span><span class="fw-bold" style="color:#145DBF;">@Money(pv.SuggestedGratuity)</span></div>
                         </div>
                     </div>
                 </div>
@@ -83,7 +83,7 @@
             <div class="card-body pt-2">
                 <div class="table-responsive">
                 <table class="table align-middle fs-7 gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                         <th class="ps-4">@SR["Employee"]</th><th>@SR["Date"]</th><th class="text-end">@Localizer["Years"]</th><th class="text-end">@Localizer["Leave"]</th><th class="text-end">@Localizer["Gratuity"]</th><th class="text-end pe-4">@Localizer["Net"]</th></tr></thead>
                     <tbody class="fw-semibold text-gray-700">
                     @foreach (var s in history)
@@ -94,7 +94,7 @@
                             <td class="text-end">@Money(s.ServiceYears)</td>
                             <td class="text-end @(s.LeaveValue > 0 ? "" : "text-gray-300")">@(s.LeaveValue > 0 ? Money(s.LeaveValue) : "—")</td>
                             <td class="text-end @(s.Gratuity > 0 ? "" : "text-gray-300")">@(s.Gratuity > 0 ? Money(s.Gratuity) : "—")</td>
-                            <td class="text-end pe-4 fw-bolder" style="color:#13433a;">@Money(s.NetSettlement)</td>
+                            <td class="text-end pe-4 fw-bolder" style="color:#0E4A9E;">@Money(s.NetSettlement)</td>
                         </tr>
                     }
                     </tbody>

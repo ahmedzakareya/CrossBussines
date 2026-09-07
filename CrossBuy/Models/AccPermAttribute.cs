@@ -17,7 +17,7 @@ namespace CrossBuy.Models
 			if (acc == null) { await next(); return; }
 			if (!await acc.CanAsync(_action))
 			{
-				if (context.Controller is Controller c) c.TempData["AccErr"] = "ليست لديك صلاحية لتنفيذ هذا الإجراء";
+				if (context.Controller is Controller c) c.TempData["AccErr"] = "You do not have permission to perform this action";
 				context.Result = new RedirectToActionResult("Index", "Accounting", null);
 				return;
 			}

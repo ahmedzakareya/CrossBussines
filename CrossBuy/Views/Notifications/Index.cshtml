@@ -1,4 +1,4 @@
-@using CrossBuy.Models.Context.Admin
+﻿@using CrossBuy.Models.Context.Admin
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @model List<Notification>
@@ -11,8 +11,12 @@
     int page = ViewBag.Page; int pages = ViewBag.Pages; int total = ViewBag.Total; int unreadCount = ViewBag.UnreadCount;
     var categories = ViewBag.Categories as List<string> ?? new();
     var actorAvatars = ViewBag.ActorAvatars as Dictionary<int, string> ?? new();
-    var catColor = new Dictionary<string, string> { ["HR"] = "primary", ["Sales"] = "success", ["Purchasing"] = "info", ["Inventory"] = "warning", ["Accounting"] = "success", ["CRM"] = "primary", ["Governance"] = "danger", ["Chat"] = "info", ["General"] = "secondary" };
-    string cc(string? c) => c != null && catColor.TryGetValue(c, out var v) ? v : "secondary";
+    @* The category colour now comes from BL/NotificationCategories.cs, which the bell dropdown
+       reads too. This local dictionary was one of the two copies, and it was missing Tasks (227
+       rows, the most common category here), Announcement and Calendar - all three fell to its
+       "secondary" default, where a text-secondary icon on a bg-light-secondary tile measures 1.07
+       and is invisible. Its `info` entries also put the small category badge at 3.01. *@
+    string cc(string? c) => CrossBuy.BL.NotificationCategories.ColorOf(c);
     string qs(int p) => $"?q={Uri.EscapeDataString(q ?? "")}&category={Uri.EscapeDataString(category ?? "")}&unread={(unread == true ? "true" : "")}&page={p}";
 }
 
@@ -39,19 +43,23 @@
         <div class="card card-flush">
             <div class="card-header align-items-center py-5 gap-3">
                 <form method="get" class="d-flex flex-wrap align-items-center gap-3 w-100">
-                    <div class="d-flex align-items-center position-relative my-1">
-                        <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                    <div class="position-relative my-1">
+                        <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4 top-50 translate-middle-y"></i>
                         <input type="text" name="q" value="@q" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" />
                     </div>
-                    <select name="category" class="form-select form-select-solid w-175px" data-control="select2" data-placeholder="@Localizer["All categories"]" onchange="this.form.submit()">
-                        <option value="">@Localizer["All categories"]</option>
-                        @foreach (var c in categories) { <option value="@c" selected="@(category == c)">@c</option> }
-                    </select>
+                    @* wrap the select in a fixed-width box: select2 renders at width:100% and would otherwise take a full
+                       row, stacking the controls vertically. Constraining the parent keeps them all on one line. *@
+                    <div class="w-200px">
+                        <select name="category" class="form-select form-select-solid" data-control="select2" data-placeholder="@Localizer["All categories"]" onchange="this.form.submit()">
+                            <option value="">@Localizer["All categories"]</option>
+                            @foreach (var c in categories) { <option value="@c" selected="@(category == c)">@c</option> }
+                        </select>
+                    </div>
                     <label class="form-check form-switch form-check-custom form-check-solid">
                         <input class="form-check-input" type="checkbox" name="unread" value="true" onchange="this.form.submit()" checked="@(unread == true)" />
-                        <span class="form-check-label fw-semibold ms-2">@Localizer["Unread only"]</span>
+                        <span class="form-check-label fw-semibold ms-2 text-nowrap">@Localizer["Unread only"]</span>
                     </label>
-                    <button class="btn btn-sm btn-primary"><i class="ki-outline ki-filter fs-4"></i>@Localizer["Apply"]</button>
+                    <button class="btn btn-sm btn-primary text-nowrap"><i class="ki-outline ki-filter fs-4"></i>@Localizer["Apply"]</button>
                 </form>
             </div>
             <div class="card-body pt-2">
@@ -63,7 +71,7 @@
                 {
                     foreach (var n in Model)
                     {
-                        var title = (isAr ? n.TitleAr : n.TitleEn) ?? n.TitleEn ?? n.TitleAr ?? "";
+                        var title = (isAr ? n.TitleAr : DisplayName.Or(n.TitleEn, n.TitleAr)) ?? n.TitleEn ?? n.TitleAr ?? "";
                         var body = (isAr ? n.BodyAr : n.BodyEn) ?? n.BodyEn ?? n.BodyAr ?? "";
                         var color = cc(n.Category);
                         var icon = string.IsNullOrEmpty(n.Icon) ? "ki-notification-status" : n.Icon;

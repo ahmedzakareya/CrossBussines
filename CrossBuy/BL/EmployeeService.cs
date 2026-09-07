@@ -52,7 +52,9 @@ namespace CrossBuy.BL
 		public async Task<List<ViewModel.EmployeeListItemDto>> GetAllAsync()
 		{
 			return await _context.Employee.AsNoTracking()
-				.OrderBy(e => e.FullName)
+				// The DTO below hands the view both names, which is right - only the ORDER was decided by
+				// the Arabic one, so an English list came out looking unsorted.
+				.OrderByDisplayName()
 				.Select(e => new ViewModel.EmployeeListItemDto
 				{
 					ID            = e.ID,

@@ -1,0 +1,93 @@
+/* CrossBusiness Platform token reference. Documentation only; not production-wired. */
+:root,
+[data-bs-theme="light"] {
+  --cb-brand-900: #0b1f3d;
+  --cb-brand-800: #102c55;
+  --cb-brand-700: #16407c;
+  --cb-brand-600: #1f5fd0;
+  --cb-brand-500: #3a78e0;
+  --cb-brand-300: #8fb4ee;
+  --cb-brand-100: #e6effc;
+  --cb-brand-50: #f4f8fe;
+  --cb-financial-900: #13433a;
+  --cb-financial-700: #1f6253;
+  --cb-financial-100: #e9f1ee;
+  --cb-financial-gold: #d4a017;
+  --cb-color-success: #17845c;
+  --cb-color-success-soft: #e7f5ef;
+  --cb-color-warning: #a86a12;
+  --cb-color-warning-soft: #fef3e2;
+  --cb-color-danger: #c22a4d;
+  --cb-color-danger-soft: #fdebed;
+  --cb-color-info: var(--cb-brand-600);
+  --cb-color-info-soft: var(--cb-brand-50);
+  --cb-text: #131a26;
+  --cb-text-secondary: #566173;
+  --cb-text-tertiary: #8a94a6;
+  --cb-border: #dfe4ec;
+  --cb-border-soft: #eef1f6;
+  --cb-surface: #ffffff;
+  --cb-canvas: #f5f7fb;
+  --cb-focus: #1f5fd0;
+  --cb-focus-ring: rgba(31, 95, 208, .18);
+  --cb-space-0: 0;
+  --cb-space-1: .25rem;
+  --cb-space-2: .5rem;
+  --cb-space-3: .75rem;
+  --cb-space-4: 1rem;
+  --cb-space-5: 1.25rem;
+  --cb-space-6: 1.5rem;
+  --cb-space-8: 2rem;
+  --cb-space-10: 2.5rem;
+  --cb-space-12: 3rem;
+  --cb-space-16: 4rem;
+  --cb-radius-sm: .375rem;
+  --cb-radius-md: .625rem;
+  --cb-radius-lg: 1rem;
+  --cb-radius-pill: 999px;
+  --cb-shadow-sm: 0 1px 2px rgba(11, 31, 61, .06);
+  --cb-shadow-md: 0 1px 2px rgba(11, 31, 61, .06), 0 4px 16px rgba(11, 31, 61, .06);
+  --cb-shadow-lg: 0 8px 32px rgba(11, 31, 61, .14);
+  --cb-font-ar: "Cairo", system-ui, sans-serif;
+  --cb-font-en: "Inter", system-ui, sans-serif;
+  --cb-font-size-caption: .75rem;
+  --cb-font-size-compact: .8125rem;
+  --cb-font-size-body: .875rem;
+  --cb-font-size-card-title: 1rem;
+  --cb-font-size-section: 1.125rem;
+  --cb-font-size-page: 1.5rem;
+  --cb-line-caption: 1.125rem;
+  --cb-line-body: 1.375rem;
+  --cb-line-title: 1.5rem;
+  --cb-duration-instant: 80ms;
+  --cb-duration-fast: 120ms;
+  --cb-duration-medium: 180ms;
+  --cb-duration-slow: 240ms;
+  --cb-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --cb-control-compact: 2.25rem;
+  --cb-control-standard: 2.5rem;
+  --cb-control-touch: 2.75rem;
+  --cb-content-max: 90rem;
+}
+
+[data-bs-theme="dark"] {
+  --cb-brand-600: #4b86e8;
+  --cb-brand-100: #16294a;
+  --cb-brand-50: #111d33;
+  --cb-text: #e6eaf2;
+  --cb-text-secondary: #9aa6ba;
+  --cb-text-tertiary: #6c7789;
+  --cb-border: #24304a;
+  --cb-border-soft: #1a2338;
+  --cb-surface: #151f33;
+  --cb-canvas: #0d1523;
+  --cb-focus: #4b86e8;
+  --cb-focus-ring: rgba(75, 134, 232, .25);
+  --cb-shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+  --cb-shadow-md: 0 1px 2px rgba(0, 0, 0, .35), 0 4px 16px rgba(0, 0, 0, .30);
+  --cb-shadow-lg: 0 8px 32px rgba(0, 0, 0, .45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --cb-duration-fast: 0ms; --cb-duration-medium: 0ms; --cb-duration-slow: 0ms; }
+}

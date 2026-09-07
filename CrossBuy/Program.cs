@@ -64,15 +64,30 @@ var appCultures = new[] { enCulture, arCulture, frCulture };
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
     // register the SAME normalized instances the middleware returns by name on each request
-    options.DefaultRequestCulture = new RequestCulture(arCulture);
+    // EN-DEFAULT: English is the product's presentation language. Arabic and French stay fully
+    // supported and one click away (Account/SetLanguage writes the culture cookie), but a request
+    // that expresses NO explicit choice renders English — not Arabic as it did before.
+    options.DefaultRequestCulture = new RequestCulture(enCulture);
     options.SupportedCultures     = appCultures;
     options.SupportedUICultures   = appCultures;   // UI language unchanged
+
+    // Drop Accept-Language negotiation. It is the only provider the user cannot see or override
+    // from inside the app: a browser advertising `ar` would silently pull the whole UI back to
+    // Arabic and make the English default unobservable. Explicit choice only — ?culture= for a
+    // one-off, and the cookie the language switcher writes for a sticky choice.
+    for (var i = options.RequestCultureProviders.Count - 1; i >= 0; i--)
+    {
+        if (options.RequestCultureProviders[i] is AcceptLanguageHeaderRequestCultureProvider)
+            options.RequestCultureProviders.RemoveAt(i);
+    }
 });
 
 // Threads OUTSIDE the request pipeline (hosted services / scheduled / background / logging):
-// keep English NUMBER+DATE formatting (no injected RTL marks in date strings / collation), but Arabic UI text.
+// English NUMBER+DATE formatting (no injected RTL marks in date strings / collation) AND English UI
+// text. EN-DEFAULT: the UI culture used to be Arabic here, which is what made a background-generated
+// notification body, a scheduled report and a log line come out Arabic even for an English operator.
 CultureInfo.DefaultThreadCurrentCulture   = enCulture;
-CultureInfo.DefaultThreadCurrentUICulture = arCulture;
+CultureInfo.DefaultThreadCurrentUICulture = enCulture;
 
 
 builder.Services.AddDbContext<CrossDbContext>(options =>
@@ -320,6 +335,23 @@ builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<ICrmCustomFieldService, CrmCustomFieldService>();
 builder.Services.AddScoped<ICrmAutomationService, CrmAutomationService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+// STARTUP FIX, on the repository owner's instruction. BoqService took a dependency on
+// IConstructionAuditService (CrossBuy/BL/Construction/, an untracked slice) and nothing registered it, so
+// DI validation refused to build the container and the application would not start at all:
+//
+//   AggregateException: Error while validating the service descriptor 'ServiceType: CrossBuy.BL.IBoqService
+//   ... Unable to resolve service for type 'CrossBuy.BL.Construction.IConstructionAuditService' while
+//   attempting to activate 'CrossBuy.BL.BoqService'.
+//
+// SCOPED, because ConstructionAuditService(CrossDbContext) holds the request's DbContext and nothing else;
+// a singleton would capture that context across requests. Placed immediately beside the same tab's own
+// IBoqService line rather than in a new block, per SHF-01: append in the tab's region, reorder nothing.
+//
+// Its two siblings in that slice - ISubcontractScopeService and ICommercialRevisionService - are NOT
+// registered here. They are deliberately left alone: no controller resolves them yet, so they break
+// nothing, and registering a service nobody asks for is a guess about how their owner intends to wire it.
+builder.Services.AddScoped<CrossBuy.BL.Construction.IConstructionAuditService,
+                           CrossBuy.BL.Construction.ConstructionAuditService>();
 builder.Services.AddScoped<IBoqService, BoqService>();   // Projects & Contracting P1 BOQ
 builder.Services.AddScoped<IContractService, ContractService>();   // Projects & Contracting P2 contract (advance/retention)
 builder.Services.AddScoped<IProgressService, ProgressService>();   // Projects & Contracting P3 execution/progress (operational)
@@ -872,6 +904,18 @@ app.UseMiddleware<SessionValidationMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Resolve the company scope ONCE per request, before any controller runs.
+//
+// The twelve pilot entities are filtered by ICompanyScopeHolder.FilterCompanyId, which is published
+// only as a side effect of resolving a BusinessContext. A plain Accounting or Inventory screen
+// queries CrossDbContext directly and resolves none, so its scope stayed 0 and the filter matched
+// nothing: the Journals grid reported "0 results" against 2,740 rows that were sitting in the table.
+//
+// This middleware was written for exactly that and documents it in its own header; it had never been
+// added to the pipeline. It does not throw, does not invent a company, and does not authorize - an
+// anonymous request stays unresolved and simply reads no pilot rows.
+app.UseMiddleware<CrossBuy.BL.Platform.CompanyScopeMiddleware>();
 
 app.UseHttpsRedirection();
 

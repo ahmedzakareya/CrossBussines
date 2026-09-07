@@ -234,6 +234,9 @@ namespace CrossBuy.Models.Context.Crm
 		public int ID { get; set; }
 		public int CompanyID { get; set; }
 		public string Name { get; set; } = "";
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? NameEn { get; set; }
 		public string Priority { get; set; } = "Normal";   // Low | Normal | High | Urgent
 		public int FirstResponseMins { get; set; } = 240;
 		public int ResolutionMins { get; set; } = 1440;

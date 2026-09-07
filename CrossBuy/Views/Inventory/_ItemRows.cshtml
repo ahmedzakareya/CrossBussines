@@ -23,7 +23,7 @@
                 <div class="symbol symbol-50px me-3"><span class="symbol-label bg-light" style="background-image:url('@imgUrl');background-size:contain;background-repeat:no-repeat;background-position:center;"></span></div>
                 <div class="d-flex flex-column">
                     <a href="@Url.Action("EditItem","Inventory", new { id = i.ID })" class="text-gray-800 text-hover-primary fw-bold mb-1">@(isAr ? i.Name : (string.IsNullOrEmpty(i.NameEn) ? i.Name : i.NameEn))</a>
-                    <span class="text-muted fs-7">@(catById.TryGetValue(i.ItemCategoryId, out var c) ? (isAr ? c.Name : c.NameEn) : "—") · @(uById.TryGetValue(i.BaseUoMId, out var u) ? (isAr ? u.Name : u.NameEn) : "")</span>
+                    <span class="text-muted fs-7">@(catById.TryGetValue(i.ItemCategoryId, out var c) ? (isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name)) : "—") · @(uById.TryGetValue(i.BaseUoMId, out var u) ? (isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name)) : "")</span>
                 </div>
             </div>
         </td>

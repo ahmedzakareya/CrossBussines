@@ -16,10 +16,10 @@
     }).ToList<object>();
 }
 <style>
-    .boq-card{background:#fbfdfc;border:1px solid var(--bs-gray-200);border-radius:1rem}
-    .boq-ic .symbol-label{background:#f2f8f5}
-    .boq-ic i{color:#13433a}
-    .boq-ro{background:#eef6f2!important;border-color:#cfe5da!important}
+    .boq-card{background:#F3F7FF;border:1px solid var(--bs-gray-200);border-radius:1rem}
+    .boq-ic .symbol-label{background:#E7F0FF}
+    .boq-ic i{color:#0E4A9E}
+    .boq-ro{background:#E7F0FF!important;border-color:#cfe5da!important}
     #rows .form-control,#rows .form-select{height:44px}
 </style>
 <form asp-action="SaveBoq" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
@@ -68,7 +68,7 @@ function addRow(kind){
  c.className='boq-card p-6 mb-5';
  c.innerHTML=
   '<div class="d-flex align-items-center mb-5 pb-3 border-bottom border-gray-200 boq-num">'+
-    '<span class="symbol symbol-35px"><span class="symbol-label fw-bold" style="background:#13433a;color:#fff;"></span></span>'+
+    '<span class="symbol symbol-35px"><span class="symbol-label fw-bold" style="background:#0E4A9E;color:#fff;"></span></span>'+
   '</div>'+
   '<div class="row g-5 mb-2">'+
     '<div class="col-md-2"><label class="d-block fs-8 fw-semibold text-muted mb-2 text-center">@Localizer["Type"]</label>'+

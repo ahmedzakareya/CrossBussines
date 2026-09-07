@@ -759,9 +759,6 @@
   <data name="Note" xml:space="preserve">
     <value>Remarque</value>
   </data>
-  <data name="Notes" xml:space="preserve">
-    <value>Remarques</value>
-  </data>
   <data name="All" xml:space="preserve">
     <value>Tous</value>
   </data>
@@ -905,9 +902,6 @@
   </data>
   <data name="POS" xml:space="preserve">
     <value>Point de vente</value>
-  </data>
-  <data name="Logout" xml:space="preserve">
-    <value>Se déconnecter</value>
   </data>
   <data name="Profile" xml:space="preserve">
     <value>Profil</value>
@@ -1301,9 +1295,6 @@
   </data>
   <data name="Document saved" xml:space="preserve">
     <value>Document enregistré</value>
-  </data>
-  <data name="Document deleted" xml:space="preserve">
-    <value>Document supprimé</value>
   </data>
   <data name="Sent {0} alert(s)" xml:space="preserve">
     <value>{0} alerte(s) envoyée(s)</value>
@@ -2289,17 +2280,11 @@
   <data name="Receivables" xml:space="preserve">
     <value>Clients</value>
   </data>
-  <data name="Sales invoices" xml:space="preserve">
-    <value>Factures de vente</value>
-  </data>
   <data name="Sales returns" xml:space="preserve">
     <value>Retours de vente</value>
   </data>
   <data name="AR aging" xml:space="preserve">
     <value>Balance âgée clients</value>
-  </data>
-  <data name="Customer analytics" xml:space="preserve">
-    <value>Analyses clients</value>
   </data>
   <data name="CRM dashboard" xml:space="preserve">
     <value>Tableau de bord CRM</value>
@@ -2354,9 +2339,6 @@
   </data>
   <data name="Payables" xml:space="preserve">
     <value>Fournisseurs</value>
-  </data>
-  <data name="Purchase invoices" xml:space="preserve">
-    <value>Factures d'achat</value>
   </data>
   <data name="Purchase returns" xml:space="preserve">
     <value>Retours d'achat</value>
@@ -2601,27 +2583,168 @@
   <data name="Restaurant dashboard">
     <value>Tableau de bord du restaurant</value>
   </data>
+  <data name="Best regards" xml:space="preserve">
+    <value>Cordialement</value>
+  </data>
+  <data name="Subject" xml:space="preserve">
+    <value>Objet</value>
+  </data>
+  <data name="dated" xml:space="preserve">
+    <value>datée du</value>
+  </data>
+  <data name="Communications log" xml:space="preserve">
+    <value>Journal des communications</value>
+  </data>
+  <data name="Recipient is required" xml:space="preserve">
+    <value>Le destinataire est requis</value>
+  </data>
+  <data name="Send by email" xml:space="preserve">
+    <value>Envoyer par e-mail</value>
+  </data>
+  <data name="Subject is required" xml:space="preserve">
+    <value>L'objet est requis</value>
+  </data>
+  <data name="Send failed" xml:space="preserve">
+    <value>Échec de l'envoi</value>
+  </data>
+  <data name="SMTP is not configured — the message will be queued and sent automatically once email settings are set." xml:space="preserve">
+    <value>SMTP n'est pas configuré — le message sera mis en file d'attente et envoyé automatiquement une fois les paramètres définis.</value>
+  </data>
+  <data name="Dear" xml:space="preserve">
+    <value>Cher</value>
+  </data>
+  <data name="Email sent" xml:space="preserve">
+    <value>E-mail envoyé</value>
+  </data>
+  <data name="Queued — will be sent once SMTP is configured" xml:space="preserve">
+    <value>En file d'attente — sera envoyé une fois SMTP configuré</value>
+  </data>
+  <data name="Cc" xml:space="preserve">
+    <value>Cc</value>
+  </data>
+  <data name="Please find the details of your sales invoice" xml:space="preserve">
+    <value>Veuillez trouver les détails de votre facture de vente</value>
+  </data>
+  <data name="Reply" xml:space="preserve">
+    <value>Répondre</value>
+  </data>
+  <data name="Forward email" xml:space="preserve">
+    <value>Transférer</value>
+  </data>
+  <data name="Attach files" xml:space="preserve">
+    <value>Joindre des fichiers</value>
+  </data>
+  <data name="Forwarded attachments" xml:space="preserve">
+    <value>Pièces jointes transférées</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>Commentaires</value>
+  </data>
+  <data name="No comments yet" xml:space="preserve">
+    <value>Aucun commentaire</value>
+  </data>
+  <data name="Loading..." xml:space="preserve">
+    <value>Chargement...</value>
+  </data>
+  <data name="Announcements" xml:space="preserve">
+    <value>Annonces</value>
+  </data>
+  <data name="Write a comment…" xml:space="preserve">
+    <value>Écrire un commentaire…</value>
+  </data>
+  <data name="Purchase Invoice" xml:space="preserve">
+    <value>Facture d'achat</value>
+  </data>
   <data name="The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry." xml:space="preserve">
     <value>The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry.</value>
   </data>
-  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>Cette succursale appartient à une autre société — les opérations inter-sociétés sont bloquées.</value></data>
-  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>Ce terminal appartient à une autre société — les opérations inter-sociétés sont bloquées.</value></data>
-  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve"><value>Votre compte appartient à une autre société que cette succursale — les opérations inter-sociétés sont bloquées.</value></data>
-  <data name="No item matches this barcode." xml:space="preserve"><value>Aucun article ne correspond à ce code-barres.</value></data>
-  <data name="Open a shift before taking payment." xml:space="preserve"><value>Ouvrez une session avant d'encaisser.</value></data>
-  <data name="The cart is empty." xml:space="preserve"><value>Le panier est vide.</value></data>
-  <data name="Paid — invoice #{0} created." xml:space="preserve"><value>Payé — facture #{0} créée.</value></data>
-  <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve"><value>Cet article n'est pas dans la liste de prix de la succursale — il ne peut être vendu tant qu'il n'est pas tarifé.</value></data>
-  <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>Ce code-barres est enregistré sur plus d'un article — les données doivent être corrigées.</value></data>
-  <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>Les codes-barres multiples ne sont pas activés sur cette succursale.</value></data>
-  <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>Aucune conversion n'est définie pour cette unité sur l'article — il ne peut être vendu.</value></data>
-  <data name="No item is linked to this scale code." xml:space="preserve"><value>Aucun article n'est lié à ce code balance.</value></data>
-  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>Les codes-barres balance à prix intégré ne sont pas encore pris en charge.</value></data>
-  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>Le chiffre de contrôle du code-barres balance est invalide.</value></data>
-  <data name="The scale barcode format is invalid." xml:space="preserve"><value>Le format du code-barres balance est invalide.</value></data>
-  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>Ceci est un code-barres de produit fixe dans la plage réservée à la balance — les données doivent être corrigées.</value></data>
-  <data name="This item is not sold by weight." xml:space="preserve"><value>Cet article n'est pas vendu au poids.</value></data>
+  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve">
+    <value>Cette succursale appartient à une autre société — les opérations inter-sociétés sont bloquées.</value>
+  </data>
+  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve">
+    <value>Ce terminal appartient à une autre société — les opérations inter-sociétés sont bloquées.</value>
+  </data>
+  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve">
+    <value>Votre compte appartient à une autre société que cette succursale — les opérations inter-sociétés sont bloquées.</value>
+  </data>
+  <data name="No item matches this barcode." xml:space="preserve">
+    <value>Aucun article ne correspond à ce code-barres.</value>
+  </data>
+  <data name="Open a shift before taking payment." xml:space="preserve">
+    <value>Ouvrez une session avant d'encaisser.</value>
+  </data>
+  <data name="The cart is empty." xml:space="preserve">
+    <value>Le panier est vide.</value>
+  </data>
+  <data name="Paid — invoice #{0} created." xml:space="preserve">
+    <value>Payé — facture #{0} créée.</value>
+  </data>
+  <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve">
+    <value>Cet article n'est pas dans la liste de prix de la succursale — il ne peut être vendu tant qu'il n'est pas tarifé.</value>
+  </data>
+  <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve">
+    <value>Ce code-barres est enregistré sur plus d'un article — les données doivent être corrigées.</value>
+  </data>
+  <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve">
+    <value>Les codes-barres multiples ne sont pas activés sur cette succursale.</value>
+  </data>
+  <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve">
+    <value>Aucune conversion n'est définie pour cette unité sur l'article — il ne peut être vendu.</value>
+  </data>
   <data name="Weighted selling is not enabled on this branch." xml:space="preserve"><value>La vente au poids n'est pas activée sur cette succursale.</value></data>
+  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>Ceci est un code-barres de produit fixe dans la plage réservée à la balance — les données doivent être corrigées.</value></data>
+  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>Le chiffre de contrôle du code-barres balance est invalide.</value></data>
+  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>Les codes-barres balance à prix intégré ne sont pas encore pris en charge.</value></data>
+  <data name="The scale barcode format is invalid." xml:space="preserve"><value>Le format du code-barres balance est invalide.</value></data>
+  <data name="No item is linked to this scale code." xml:space="preserve"><value>Aucun article n'est lié à ce code balance.</value></data>
+  <data name="This item is not sold by weight." xml:space="preserve"><value>Cet article n'est pas vendu au poids.</value></data>
+  <data name="Calendar" xml:space="preserve"><value>Calendrier</value></data>
+  <data name="File Manager" xml:space="preserve"><value>Gestionnaire de fichiers</value></data>
+  <data name="Attach from library" xml:space="preserve"><value>Joindre depuis la bibliothèque</value></data>
+  <data name="Attach" xml:space="preserve"><value>Joindre</value></data>
+  <data name="Attach a copy" xml:space="preserve"><value>Joindre une copie</value></data>
+  <data name="Insert link" xml:space="preserve"><value>Insérer un lien</value></data>
+  <data name="Library" xml:space="preserve"><value>Bibliothèque</value></data>
+  <data name="This folder is empty" xml:space="preserve"><value>Ce dossier est vide</value></data>
+  <data name="From the library" xml:space="preserve"><value>Depuis la bibliothèque</value></data>
+  <data name="Invitation" xml:space="preserve"><value>Invitation</value></data>
+  <data name="You've been invited to this event" xml:space="preserve"><value>Vous êtes invité à cet événement</value></data>
+  <data name="invited you to an event" xml:space="preserve"><value>vous a invité à un événement</value></data>
+  <data name="When" xml:space="preserve"><value>Quand</value></data>
+  <data name="Where" xml:space="preserve"><value>Où</value></data>
+  <data name="Event starting now" xml:space="preserve"><value>Événement commençant maintenant</value></data>
+  <data name="starts soon" xml:space="preserve"><value>commence bientôt</value></data>
+  <data name="Open calendar" xml:space="preserve"><value>Ouvrir le calendrier</value></data>
+  <data name="Got it" xml:space="preserve"><value>Compris</value></data>
+  <data name="Business event monitor" xml:space="preserve"><value>Moniteur des événements</value></data>
+  <data name="evt_status_Done" xml:space="preserve"><value>Terminé</value></data>
+  <data name="evt_status_Failed" xml:space="preserve"><value>Échoué</value></data>
+  <data name="evt_status_Claimed" xml:space="preserve"><value>En cours</value></data>
+  <data name="evt_status_Pending" xml:space="preserve"><value>En attente</value></data>
+  <data name="evt_status_Exhausted" xml:space="preserve"><value>Épuisé</value></data>
+  <data name="evt_vis_Internal" xml:space="preserve"><value>Interne</value></data>
+  <data name="evt_vis_Public" xml:space="preserve"><value>Public</value></data>
+  <data name="evt_vis_Confidential" xml:space="preserve"><value>Confidentiel</value></data>
+  <data name="evt_vis_Restricted" xml:space="preserve"><value>Restreint</value></data>
+  <data name="evt_vis_System" xml:space="preserve"><value>Système</value></data>
+  <data name="evt_consumer_NotificationProjection" xml:space="preserve"><value>Projection des notifications</value></data>
+  <data name="evt_consumer_TimelineProjection" xml:space="preserve"><value>Projection de la chronologie</value></data>
+  <data name="evt_role_Primary" xml:space="preserve"><value>Principal</value></data>
+  <data name="evt_role_Standby" xml:space="preserve"><value>En veille</value></data>
+  <data name="evt_role_Unrestricted" xml:space="preserve"><value>Non restreint</value></data>
+  <data name="evt_role_Unknown" xml:space="preserve"><value>Inconnu</value></data>
+  <data name="evt_type_PurchaseInvoice.Created" xml:space="preserve"><value>Facture d'achat créée</value></data>
+  <data name="evt_type_SalesInvoice.Created" xml:space="preserve"><value>Facture de vente créée</value></data>
+  <data name="evt_type_SalesInvoice.Posted" xml:space="preserve"><value>Facture de vente comptabilisée</value></data>
+  <data name="evt_type_JournalEntry.Reversed" xml:space="preserve"><value>Écriture contrepassée</value></data>
+  <data name="evt_type_Quotation.Created" xml:space="preserve"><value>Devis créé</value></data>
+  <data name="evt_type_WorkOrder.Released" xml:space="preserve"><value>Ordre de fabrication lancé</value></data>
+  <data name="evt_type_WorkOrder.Completed" xml:space="preserve"><value>Ordre de fabrication terminé</value></data>
+  <data name="Activity timeline" xml:space="preserve"><value>Journal d'activité</value></data>
+  <data name="Historical" xml:space="preserve"><value>Historique</value></data>
+  <data name="No activity yet" xml:space="preserve"><value>Aucune activité pour le moment</value></data>
+  <data name="You are not authorised to view this activity" xml:space="preserve"><value>Vous n'êtes pas autorisé à consulter cette activité</value></data>
+  <data name="Could not load the activity timeline" xml:space="preserve"><value>Impossible de charger le journal d'activité</value></data>
   <data name="Bulk price change" xml:space="preserve"><value>Modification groupée des prix</value></data>
   <data name="Choose a price list" xml:space="preserve"><value>Choisir une liste de prix</value></data>
   <data name="Category (all)" xml:space="preserve"><value>Catégorie (toutes)</value></data>
@@ -2652,5 +2775,118 @@
   <data name="KWD" xml:space="preserve"><value>KWD</value></data>
   <data name="Pricing" xml:space="preserve"><value>Tarification</value></data>
   <data name="The discount reduces the price to zero or below — the line was rejected." xml:space="preserve"><value>La remise réduit le prix à zéro ou moins — la ligne a été rejetée.</value></data>
-  <data name="No pending approvals" xml:space="preserve"><value>Aucune approbation en attente</value></data>
+  <data name="evt_entity_SalesInvoice" xml:space="preserve">
+    <value>Facture de vente</value>
+  </data>
+  <data name="evt_entity_PurchaseInvoice" xml:space="preserve">
+    <value>Facture d'achat</value>
+  </data>
+  <data name="evt_entity_Customer" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="evt_entity_Supplier" xml:space="preserve">
+    <value>Fournisseur</value>
+  </data>
+  <data name="evt_entity_JournalEntry" xml:space="preserve">
+    <value>Écriture comptable</value>
+  </data>
+  <data name="evt_entity_ManufWorkOrder" xml:space="preserve">
+    <value>Ordre de fabrication</value>
+  </data>
+  <data name="evt_entity_PosOrder" xml:space="preserve">
+    <value>Commande PDV</value>
+  </data>
+  <data name="evt_entity_Employee" xml:space="preserve">
+    <value>Employé</value>
+  </data>
+  <data name="evt_entity_Project" xml:space="preserve">
+    <value>Projet</value>
+  </data>
+  <data name="evt_entity_Item" xml:space="preserve">
+    <value>Article</value>
+  </data>
+  <data name="evt_entity_Quotation" xml:space="preserve">
+    <value>Devis</value>
+  </data>
+  <data name="evt_type_SalesInvoice.Updated" xml:space="preserve">
+    <value>Facture de vente modifiée</value>
+  </data>
+  <data name="evt_type_SalesInvoice.Cancelled" xml:space="preserve">
+    <value>Facture de vente annulée</value>
+  </data>
+  <data name="evt_type_PurchaseInvoice.Updated" xml:space="preserve">
+    <value>Facture d'achat modifiée</value>
+  </data>
+  <data name="evt_type_PurchaseInvoice.Cancelled" xml:space="preserve">
+    <value>Facture d'achat annulée</value>
+  </data>
+  <data name="evt_type_Customer.Created" xml:space="preserve">
+    <value>Client créé</value>
+  </data>
+  <data name="evt_type_Customer.Updated" xml:space="preserve">
+    <value>Client modifié</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Created" xml:space="preserve">
+    <value>Ordre créé</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Updated" xml:space="preserve">
+    <value>Ordre modifié</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Released" xml:space="preserve">
+    <value>Ordre lancé</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Completed" xml:space="preserve">
+    <value>Ordre terminé</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Cancelled" xml:space="preserve">
+    <value>Ordre annulé</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Produced" xml:space="preserve">
+    <value>Production partielle</value>
+  </data>
+  <data name="evt_block_Done" xml:space="preserve">
+    <value>Terminé — un rejeu pourrait dupliquer ses effets</value>
+  </data>
+  <data name="evt_block_Pending" xml:space="preserve">
+    <value>Déjà en file</value>
+  </data>
+  <data name="evt_block_HeldByWorker" xml:space="preserve">
+    <value>Un worker le traite actuellement</value>
+  </data>
+  <data name="evt_block_AttemptsExhausted" xml:space="preserve">
+    <value>Tentatives épuisées — dérogation élevée requise</value>
+  </data>
+  <data name="evt_outcome_Requeued" xml:space="preserve">
+    <value>Remis en file — pris au prochain passage</value>
+  </data>
+  <data name="evt_outcome_NotFound" xml:space="preserve">
+    <value>Ligne introuvable</value>
+  </data>
+  <data name="evt_outcome_AlreadyDone" xml:space="preserve">
+    <value>Ce consommateur a déjà terminé</value>
+  </data>
+  <data name="evt_outcome_AlreadyPending" xml:space="preserve">
+    <value>Déjà en file</value>
+  </data>
+  <data name="evt_outcome_HeldByWorker" xml:space="preserve">
+    <value>Un worker le traite actuellement</value>
+  </data>
+  <data name="evt_outcome_AttemptsExhausted" xml:space="preserve">
+    <value>Tentatives épuisées — dérogation avec motif requise</value>
+  </data>
+  <data name="evt_outcome_ReasonRequired" xml:space="preserve">
+    <value>Un motif est requis pour auditer</value>
+  </data>
+  <data name="evt_outcome_NotAuthorized" xml:space="preserve">
+    <value>La dérogation exige des droits admin</value>
+  </data>
+  <data name="evt_outcome_RaceLost" xml:space="preserve">
+    <value>La ligne a changé — rafraîchissez</value>
+  </data>
+  <data name="evt_mask_Restricted" xml:space="preserve">
+    <value>Charge masquée : événement restreint</value>
+  </data>
+  <data name="evt_mask_System" xml:space="preserve">
+    <value>Charge masquée : événement système</value>
+  </data>
 </root>

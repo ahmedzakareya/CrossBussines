@@ -168,10 +168,36 @@ namespace CrossBuy.BL.Reporting
 
             // Same bytes, same company, already stored: reuse the row. Re-uploading a logo on every template
             // would otherwise fill the disk with identical files.
+            //
+            // BUT THE ROW IS ONLY REUSABLE IF ITS FILE IS STILL THERE. A row can outlive its bytes — the row
+            // is in the database and the file is on this application's own disk, so a re-published instance,
+            // or a second instance pointed at the same database, has rows whose GET answers 404. Reusing such
+            // a row unconditionally makes the damage PERMANENT and invisible: the obvious repair, uploading
+            // the very same image again, matches the same hash and hands back the same broken row, so the
+            // picker keeps listing a picture that can never appear no matter how many times it is uploaded.
+            // Found exactly that way — a re-upload of an identical logo returned the orphaned row untouched.
+            //
+            // So the bytes are RESTORED to the stored path instead. Same row, same id, every layout that
+            // already references it starts working again.
             var existing = await _db.ReportAssets
                 .FirstOrDefaultAsync(a => a.CompanyID == context.CompanyId && a.ContentHash == hash
                                           && a.DeletedAt == null, cancellationToken);
-            if (existing != null) return Summarise(existing);
+            if (existing != null)
+            {
+                var reusedRoot = Path.GetFullPath(_options.RootPath);
+                var reusedPath = Path.GetFullPath(Path.Combine(reusedRoot, existing.StoredPath));
+
+                // The same containment check ReadAsync makes, for the same reason: the path came from a
+                // database row, and a row edited by hand must not be able to write outside the root.
+                if (reusedPath.StartsWith(reusedRoot, StringComparison.OrdinalIgnoreCase)
+                    && !File.Exists(reusedPath))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(reusedPath)!);
+                    await File.WriteAllBytesAsync(reusedPath, bytes, cancellationToken);
+                }
+
+                return Summarise(existing);
+            }
 
             // THE PATH IS COMPUTED. The company segment keeps one tenant's files out of another's directory,
             // and the name is a guid — the caller's filename is kept only as a label on the row.

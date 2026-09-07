@@ -228,7 +228,7 @@ namespace CrossBuy.BL
 				"Auditor" => isAr ? "مدقّق" : "Auditor",
 				_ => r
 			};
-			return string.Join("، ", roles.Select(name));
+			return string.Join(", ", roles.Select(name));
 		}
 	}
 }

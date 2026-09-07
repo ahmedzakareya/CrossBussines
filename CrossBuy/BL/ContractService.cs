@@ -61,13 +61,13 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int? entryId)> ReceiveAdvanceAsync(int companyId, int projectId, decimal amount, int cashAccountId, DateTime date, int? userId)
 		{
-			if (amount <= 0) return (false, "المبلغ يجب أن يكون أكبر من صفر", null);
+			if (amount <= 0) return (false, "The amount must be greater than zero", null);
 			var prj = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
-			if (prj == null) return (false, "المشروع غير موجود", null);
+			if (prj == null) return (false, "Project not found", null);
 			var cash = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.ID == cashAccountId && a.CompanyID == companyId && a.IsPostable && a.IsActive);
-			if (cash == null) return (false, "حساب النقدية/البنك غير صالح", null);
+			if (cash == null) return (false, "Invalid cash/bank account", null);
 			var advAcc = await AccountIdByCodeAsync(companyId, AdvanceAccountCode);
-			if (advAcc == 0) return (false, "حساب «دفعات مقدمة من عملاء» غير موجود", null);
+			if (advAcc == 0) return (false, "The customer advances account does not exist", null);
 			var curId = await _db.Currencies.Select(c => c.ID).FirstOrDefaultAsync();   // functional currency (single-currency books)
 
 			var input = new JournalEntryInput
@@ -83,7 +83,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = cashAccountId, Debit = amount, Credit = 0, ProjectId = projectId, Description = "استلام دفعة مقدمة" },
-					new() { AccountId = advAcc,        Debit = 0, Credit = amount, ProjectId = projectId, Description = "دفعة مقدمة من العميل (التزام)" },
+					new() { AccountId = advAcc,        Debit = 0, Credit = amount, ProjectId = projectId, Description = "Customer advance (liability)" },
 				}
 			};
 			var (ok, err, entry) = await _je.CreateAndPostAsync(input, userId);
@@ -94,15 +94,15 @@ namespace CrossBuy.BL
 		// Dr cash/bank · Cr 1104, both tagged ProjectId. Does NOT touch 1102 (AR) → ar_sub unaffected → direct JE is safe.
 		public async Task<(bool ok, string? error, int? entryId)> ReleaseRetentionAsync(int companyId, int projectId, decimal amount, int cashAccountId, DateTime date, int? userId)
 		{
-			if (amount <= 0) return (false, "المبلغ يجب أن يكون أكبر من صفر", null);
+			if (amount <= 0) return (false, "The amount must be greater than zero", null);
 			var prj = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
-			if (prj == null) return (false, "المشروع غير موجود", null);
+			if (prj == null) return (false, "Project not found", null);
 			var cash = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.ID == cashAccountId && a.CompanyID == companyId && a.IsPostable && a.IsActive);
-			if (cash == null) return (false, "حساب النقدية/البنك غير صالح", null);
+			if (cash == null) return (false, "Invalid cash/bank account", null);
 			var retAcc = await AccountIdByCodeAsync(companyId, RetentionAccountCode);
-			if (retAcc == 0) return (false, "حساب «أرصدة محتجزة لدى العملاء» غير موجود", null);
+			if (retAcc == 0) return (false, "The customer retention account does not exist", null);
 			var balance = (await GetSummaryAsync(companyId, projectId)).RetentionBalance;
-			if (amount > balance) return (false, $"المبلغ ({amount:N2}) يتجاوز رصيد المحتجز للمشروع ({balance:N2})", null);
+			if (amount > balance) return (false, $"The amount ({amount:N2}) exceeds the project's retention balance ({balance:N2})", null);
 			var curId = await _db.Currencies.Select(c => c.ID).FirstOrDefaultAsync();
 
 			var input = new JournalEntryInput
@@ -113,7 +113,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = cashAccountId, Debit = amount, Credit = 0, ProjectId = projectId, Description = "تحصيل المحتجز" },
-					new() { AccountId = retAcc, Debit = 0, Credit = amount, ProjectId = projectId, Description = "رد رصيد محتجز" },
+					new() { AccountId = retAcc, Debit = 0, Credit = amount, ProjectId = projectId, Description = "Retention release" },
 				}
 			};
 			var (ok, err, entry) = await _je.CreateAndPostAsync(input, userId);
@@ -135,15 +135,15 @@ namespace CrossBuy.BL
 		// Does NOT touch the vendor control (AP) → ap_sub unaffected → direct JE is safe (mirror P6-ب for the customer side).
 		public async Task<(bool ok, string? error, int? entryId)> ReleaseSubRetentionAsync(int companyId, int projectId, decimal amount, int cashAccountId, DateTime date, int? userId)
 		{
-			if (amount <= 0) return (false, "المبلغ يجب أن يكون أكبر من صفر", null);
+			if (amount <= 0) return (false, "The amount must be greater than zero", null);
 			var prj = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.ID == projectId && p.CompanyID == companyId);
-			if (prj == null) return (false, "المشروع غير موجود", null);
+			if (prj == null) return (false, "Project not found", null);
 			var cash = await _db.Accounts.AsNoTracking().FirstOrDefaultAsync(a => a.ID == cashAccountId && a.CompanyID == companyId && a.IsPostable && a.IsActive);
-			if (cash == null) return (false, "حساب النقدية/البنك غير صالح", null);
+			if (cash == null) return (false, "Invalid cash/bank account", null);
 			var retAcc = await AccountIdByCodeAsync(companyId, SubRetentionAccountCode);
-			if (retAcc == 0) return (false, "حساب «محتجزات مقاولي الباطن» غير موجود", null);
+			if (retAcc == 0) return (false, "The subcontractor retention account does not exist", null);
 			var balance = await SubRetentionBalanceAsync(companyId, projectId);
-			if (amount > balance) return (false, $"المبلغ ({amount:N2}) يتجاوز رصيد محتجز الباطن للمشروع ({balance:N2})", null);
+			if (amount > balance) return (false, $"The amount ({amount:N2}) exceeds the project's subcontractor retention balance ({balance:N2})", null);
 			var curId = await _db.Currencies.Select(c => c.ID).FirstOrDefaultAsync();
 
 			var input = new JournalEntryInput
@@ -154,7 +154,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = retAcc, Debit = amount, Credit = 0, ProjectId = projectId, Description = "رد محتجز مقاول الباطن" },
-					new() { AccountId = cashAccountId, Debit = 0, Credit = amount, ProjectId = projectId, Description = "دفع محتجز الباطن" },
+					new() { AccountId = cashAccountId, Debit = 0, Credit = amount, ProjectId = projectId, Description = "Subcontractor retention payment" },
 				}
 			};
 			var (ok, err, entry) = await _je.CreateAndPostAsync(input, userId);

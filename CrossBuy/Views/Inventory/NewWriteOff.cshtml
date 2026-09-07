@@ -30,7 +30,7 @@
         </div>
         <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
             <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
-                <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select to load items"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select to load items"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input type="text" name="writeOffDate" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" /></div>
             <div class="col-md-3"><label class="fw-semibold fs-6 mb-2">@Localizer["Default reason"]</label>
                 <select name="reason" class="form-select form-select-solid" data-control="select2" data-hide-search="true">@foreach (var r in reasons) { <option value="@r.Item1">@r.Item2</option> }</select></div>
@@ -44,7 +44,7 @@
         else
         {
             <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Items to write off"]</h3><div class="card-toolbar d-flex gap-2"><div class="position-relative d-flex align-items-center"><i class="ki-outline ki-barcode fs-2 position-absolute ms-3"></i><input class="form-control form-control-solid form-control-sm w-220px ps-10 js-barcode-scan" placeholder="@Localizer["Scan to add item"]" autocomplete="off" /></div></div></div>
-            <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted">
+            <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                 <th style="min-width:240px">@SR["Item"]</th><th class="text-end" style="width:110px">@Localizer["Available"]</th><th class="text-end" style="width:120px">@Localizer["Write-off qty"]</th><th style="min-width:200px">@Localizer["Picked from (section/rack)"]</th><th style="width:150px">@Localizer["Reason"]</th><th style="width:120px">@Localizer["Batch"]</th><th style="width:120px">@Localizer["Serial"]</th><th style="width:40px"></th>
             </tr></thead><tbody id="rows">
                 @foreach (var b in book)

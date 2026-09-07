@@ -1,0 +1,70 @@
+# Stage-Construction-17 — Screen Inventory (future screens)
+
+> **Generated file — do not edit by hand.**
+> Source of truth: `docs/construction/_generator/generate_construction_catalogs.py`.
+> Regenerate with `python docs/construction/_generator/generate_construction_catalogs.py`.
+> The paired CSV in this folder is emitted from the same dataset in the same run.
+
+**No visual layouts are designed here, and none may be invented later.** See the theme-first rule below — it is a
+binding constraint on every screen in this list.
+
+## Theme-first UI rule (binding)
+
+For every screen in this inventory:
+
+1. **Do not invent the design.** Request the approved Metronic/theme reference for that screen type first.
+2. **Use the supplied theme screen or component as the design source** — the approved reference is the input, not an
+   afterthought.
+3. **Preserve CrossBusiness Platform visual identity** — the Metronic 8 `app-*` shell, the brand palette via Metronic
+   tokens, RTL/LTR parity, and `@Localizer` with ar/en/fr resx for every user-facing string.
+4. **Do not create a speculative replacement component where an approved theme component exists.**
+
+Specialised operational surfaces (site store, mobile site capture) keep their domain UX, exactly as POS and the
+manufacturing floor do — but they still take their components from the approved theme.
+
+This rule is restated in `Stage-Construction-14-Mobile-and-Site-UX-Contract.md`, which is the construction UX
+contract of record.
+
+## Inventory (32 screens)
+
+| ID | Screen | Purpose | Roles | Data | Actions | Validation | States | Permissions | MobileNeeds | Reports | Integrations | UnresolvedDecisions |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Construction Dashboard | Portfolio health for construction projects | Executive, Construction Director, PM | projects, progress, cost, certificates, cash | drill to project workspace | read-only | live | construction.project.read | summary tiles | Executive Project Dashboard | Reporting | which KPIs are confidential |
+| 2 | Construction Projects | List and create construction projects | PM, Commercial, Admin | project master + contract summary | create, edit, archive | code unique per company; no company-1 fallback | active/on-hold/closed | construction.project.read/manage | list only | BOQ Summary | Projects | one or many client contracts per project |
+| 3 | Project Workspace | Single project cockpit | PM, QS, Site Engineer | everything scoped to one project | navigate to every sub-screen | membership or role required | by project status | construction.project.read | summary | Physical vs Financial Progress | all | which tabs a Member vs Observer sees |
+| 4 | WBS Designer | Build and restructure the work breakdown | PM, Planner | WbsNode tree | add, move, archive; impact preview | depth limit; no cross-project parent; no silent re-parent after financial use | draft/active/archived | construction.wbs.manage | read-only tree | Cost Code Analysis | - | max depth; re-parent policy after cost exists |
+| 5 | BOQ Workspace | Maintain BOQ by revision | QS, Commercial | BoqRevision + items | new revision, submit, approve, compare | approved revision immutable; qty change needs revision or variation | draft/approved/superseded | construction.boq.manage/approve | read-only | BOQ Summary | - | one BOQ or separate client/internal structures |
+| 6 | Cost Code Designer | Maintain the cost code set | Commercial, Finance | CostCode | add, deactivate, map to account | cannot delete a code with postings | active/inactive | construction.costcode.manage | none | Cost Code Analysis | Accounting | who may change a code after use |
+| 7 | Project Budget | Versioned budget by WBS x CostCode | Commercial, Finance | ProjectBudget lines | new version, transfer, approve | approved version immutable; transfer needs approval | draft/approved/superseded | construction.budget.manage/approve | read-only | Budget vs Committed vs Actual | Accounting | overspend blocks or warns |
+| 8 | Cost Control | Budget/committed/actual/forecast/EAC | Commercial, PM, Finance | CostAllocation aggregates | set forecast, explain variance | forecast is a stated method, never silent | live | construction.cost.read + confidential view | read-only | Forecast at Completion | Accounting, Purchasing | forecast methodology |
+| 9 | Client Contract | The contract and its terms | Commercial, Legal, PM | ClientContract + bonds/insurance | create, amend, approve | amendment keeps previous values | draft/active/closed | construction.contract.manage/approve | read-only | Client Certificate Register | Accounting | multiple active contracts per project |
+| 10 | Subcontractor Contracts | Subcontracts and allocated scope | Commercial, PM | Subcontract + SubcontractScope | create, allocate scope, approve | allocated qty cannot exceed available BOQ scope without approval | draft/active/terminated | construction.subcontract.manage/approve | read-only | Subcontractor Certificate Register | Purchasing | over-certification policy |
+| 11 | Client Certificates | Raise and progress a client certificate | QS, PM, Commercial, Finance | Certificate + lines | submit, review, approve, post | cumulative cannot exceed approved quantity without a variation; previous certified immutable | full review chain | construction.certificate.create/review/approve/post | approve only | Client Certificate Register | Accounting | approval limits by value |
+| 12 | Subcontractor Certificates | Certify subcontractor work | QS, PM, Finance | Subcontract certificate + lines | submit, review, approve, post | capped at allocated scope | full review chain | construction.subcertificate.* | approve only | Subcontractor Certificate Register | Purchasing, Accounting | retention release schedule |
+| 13 | Variation Orders | Raise, estimate and approve variations | PM, QS, Commercial | Variation + lines + impacts | estimate, submit, approve, implement | approval emits a BOQ revision, never an in-place edit | full VO chain | construction.variation.create/estimate/approve | read-only | Variation Register | Accounting | who approves what value |
+| 14 | Claims | Claim register and entitlement | Commercial, Legal | Claim + evidence | raise, respond, settle | settlement needs an authority | draft/submitted/settled | construction.claim.manage | evidence capture | Claim Register | - | claim approval authority |
+| 15 | Delay Events | Record delays and EOT | PM, Planner | DelayEvent | record, classify, request EOT | excusable/compensable classified explicitly | open/closed | construction.claim.manage | capture on site | Claim Register | - | EOT approval route |
+| 16 | Material Requests | Site demand for material | Site Engineer, Storekeeper | MaterialRequest lines | raise, approve, reserve | must carry project + WBS + cost code | draft/approved/issued | construction.materialrequest.* | full | Material Consumption | Inventory | cross-site warehouse access |
+| 17 | Site Store | Site stock view and issue/return | Storekeeper | stock balances for site warehouses | issue, return, transfer | issue goes through StockService only | live | construction.site.operate | full | Material Consumption | Inventory | who may issue |
+| 18 | Daily Site Reports | Structured daily record | Site Engineer, PM | DSR + child logs | create, submit, review, approve | quantities reference WBS/BOQ | draft/submitted/approved | construction.sitereport.create/review | offline draft + photo | Daily Site Report | HR, Inventory | what makes a DSR mandatory |
+| 19 | Manpower Log | Daily manpower by trade | Site Engineer | ManpowerLog | record, submit | attendance reference where an employee exists | draft/approved | construction.sitereport.create | full | Manpower Report | HR | subcontractor labor identity |
+| 20 | Equipment Log | Daily equipment hours and downtime | Site Engineer | EquipmentLog | record, submit | asset must exist in FixedAssets or be a rental line | draft/approved | construction.sitereport.create | full | Equipment Utilization | Accounting, Maintenance | rented vs owned rate source |
+| 21 | RFIs | Raise and answer RFIs | Site Engineer, Consultant liaison | Rfi | raise, respond, close | response due date tracked | open/answered/closed | construction.rfi.create/respond/approve | create + photo | RFI Register | - | external consultant access |
+| 22 | Inspections | Request and record inspections | QC, Site Engineer | InspectionRequest | request, inspect, approve/reject | no cover-up before approval where configured | requested/passed/failed | construction.inspection.* | full + signature | Inspection Register | - | who signs off |
+| 23 | Material Submittals | Approved-material control | QC, Technical Office | Submittal | submit, review, approve | approved material list drives procurement checks | draft/approved/rejected | construction.submittal.* | read-only | Inspection Register | Purchasing | binding on procurement or advisory |
+| 24 | Method Statements | Method approval | Technical Office, QC | MethodStatement | submit, review, approve | linked to the WBS it governs | draft/approved | construction.submittal.* | read-only | - | - | - |
+| 25 | Drawing Register | Controlled drawing register | Document Controller | DocumentRegister + revisions | issue revision, supersede, distribute | only one current revision; superseded is visibly blocked | current/superseded | construction.drawing.manage/approve | read + warning | Drawing Register | Platform files | drawing approval workflow |
+| 26 | Document Revision Viewer | View a revision safely | everyone on the project | DocumentRevision | open, download | a superseded revision must warn and be marked | current/superseded | construction.drawing.read | read | Drawing Register | Platform files | whether superseded download is blocked or warned |
+| 27 | Progress Workspace | Planned/actual/approved/certified progress | PM, QS, Planner | ProgressRecord per WBS | record, submit, approve | physical progress never derived from invoice value | draft/approved | construction.progress.* | record on site | Physical vs Financial Progress | - | physical progress method per project |
+| 28 | Project Cash Flow | Forward inflow/outflow | Commercial, Finance | CashFlowPlan lines | plan, scenario, compare | planned vs committed vs actual separated | planned/forecast | construction.cost.read + financial detail | read-only | Project Cash Flow | Accounting | forecast methodology |
+| 29 | Project Cost Analysis | Cost by code, WBS, source | Commercial, Finance | CostAllocation | drill, export | confidential commercial data gated | live | construction.cost.read + confidential | read-only | Cost Code Analysis | Accounting | who sees margin |
+| 30 | Handover and Closeout | Practical completion and closeout | PM, Commercial | handover checklist, as-builts | complete, close | closeout locks new cost and certificates | open/handed-over/closed | construction.project.close | checklist | Project Profitability | Accounting | closeout rules |
+| 31 | Defects Liability | DLP tracking and retention release | PM, Commercial, Finance | DLP dates, defects, retention | log defect, release retention | retention release gated by DLP end | active/expired | construction.certificate.post + budget | defect capture | Retention Report | Accounting | retention release trigger |
+| 32 | Construction Settings | Module policy and defaults | Construction Admin | policies, methods, limits | configure | policy changes are audited | - | construction.project.manage | none | - | Platform capabilities | which policies are per-company vs per-project |
+
+## Screens deliberately absent from this list
+
+- A construction *reporting* screen: report presentation is the second tab's Report Studio. Construction supplies
+  data sources and DTOs only (`Stage-Construction-13-Reporting-Requirements.md`).
+- A construction *comments/timeline* panel: that is the third tab's infrastructure, requested per entity.
+- A construction *permission admin* screen: authorization UI is the first tab's Security Console.

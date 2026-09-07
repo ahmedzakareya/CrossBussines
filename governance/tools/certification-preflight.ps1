@@ -17,7 +17,7 @@
     is a refusal, and reset is a separate, explicit, destructive operation.
 
         powershell -File governance/tools/certification-preflight.ps1 `
-            -ConnectionString "Server=localhost\SQLEXPRESS;Database=CrossBuyCert;Trusted_Connection=True;TrustServerCertificate=True"
+            -ConnectionString "Server=localhost;Database=CrossBuyCert;Trusted_Connection=True;TrustServerCertificate=True"
 
     Exit code 0 = cleared for capture. Any other value = ABORT.
 

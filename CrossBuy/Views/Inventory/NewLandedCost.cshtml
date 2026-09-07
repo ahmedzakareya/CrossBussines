@@ -36,7 +36,7 @@
             <div class="row">
                 <div class="col-lg-6">
                     <div class="card mb-5"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Receipt items"]</h3></div>
-                    <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-7"><thead><tr class="fw-bold text-muted"><th>@SR["Item"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Value"]</th></tr></thead><tbody>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-7"><thead><tr class="fw-bold text-muted" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Item"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Value"]</th></tr></thead><tbody>
                         @foreach (var l in gr.Lines)
                         {
                             <tr><td>@(itemNames.TryGetValue(l.ItemId, out var n) ? n : ("#"+l.ItemId))</td><td class="text-end">@l.Qty.ToString("0.##")</td><td class="text-end fw-bold">@l.LineTotal.ToString("N2")</td></tr>
@@ -46,7 +46,7 @@
                 </div>
                 <div class="col-lg-6">
                     <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Additional charges"]</h3><div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@SR["Add"]</button></div></div>
-                    <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th style="min-width:140px">@SR["Description"]</th><th style="width:120px">@SR["Amount"]</th><th style="min-width:160px">@Localizer["Credit account"]</th><th style="width:40px"></th></tr></thead><tbody id="rows"></tbody>
+                    <div class="card-body pt-2"><div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th style="min-width:140px">@SR["Description"] (AR)</th><th style="min-width:140px">@SR["Description"] (EN)</th><th style="width:120px">@SR["Amount"]</th><th style="min-width:160px">@Localizer["Credit account"]</th><th style="width:40px"></th></tr></thead><tbody id="rows"></tbody>
                         <tfoot><tr class="fw-bold"><td class="text-end">@Localizer["Total charges"]</td><td class="text-end" id="tot">0.00</td><td colspan="2"></td></tr></tfoot></table></div>
                     <div class="text-muted fs-7 mt-2">@Localizer["These are allocated over the receipt items, raising their cost (Dr Inventory / Cr these accounts)."]</div></div></div>
                 </div>
@@ -58,14 +58,14 @@
 <script>
 var grSel=document.getElementById('grSel');
 if(grSel){var go=function(){location.href='?grId='+(grSel.value||'');};if(window.jQuery&&jQuery(grSel).data('select2'))jQuery(grSel).on('change',go);else grSel.addEventListener('change',go);}
-var ACC=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a=>new{a.Id,a.Code,name=(isAr?a.Name:a.NameEn)})));
+var ACC=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a=>new{a.Id,a.Code,name=(isAr?a.Name:DisplayName.Or(a.NameEn, a.Name))})));
 function aopts(){var o='<option value="">—</option>';ACC.forEach(function(a){o+='<option value="'+a.id+'">'+a.code+' — '+a.name+'</option>';});return o;}
 var rowsEl=document.getElementById('rows');
 function calc(){var t=0;if(rowsEl)[].slice.call(rowsEl.querySelectorAll('tr')).forEach(function(tr){t+=parseFloat(tr.querySelector('.amt').value)||0;});var el=document.getElementById('tot');if(el)el.textContent=t.toFixed(2);}
-function addRow(){if(!rowsEl)return;var tr=document.createElement('tr');tr.innerHTML='<td><input class="form-control form-control-solid desc" placeholder="@Localizer["Freight / customs"]"></td><td><input type="number" step="0.01" min="0" class="form-control form-control-solid amt text-end" value="0"></td><td><select class="form-select form-select-solid acc">'+aopts()+'</select></td><td class="text-center"><button type="button" class="btn btn-icon btn-light-danger btn-sm del"><i class="ki-outline ki-trash fs-5"></i></button></td>';rowsEl.appendChild(tr);}
+function addRow(){if(!rowsEl)return;var tr=document.createElement('tr');tr.innerHTML='<td><input class="form-control form-control-solid desc" dir="rtl" placeholder="@Localizer["Freight / customs"]"></td><td><input class="form-control form-control-solid descEn" dir="ltr" placeholder="Freight / customs"></td><td><input type="number" step="0.01" min="0" class="form-control form-control-solid amt text-end" value="0"></td><td><select class="form-select form-select-solid acc">'+aopts()+'</select></td><td class="text-center"><button type="button" class="btn btn-icon btn-light-danger btn-sm del"><i class="ki-outline ki-trash fs-5"></i></button></td>';rowsEl.appendChild(tr);}
 var addBtn=document.getElementById('add'); if(addBtn)addBtn.addEventListener('click',addRow);
 if(rowsEl){rowsEl.addEventListener('input',calc);rowsEl.addEventListener('click',function(e){if(e.target.closest('.del')){e.target.closest('tr').remove();calc();}});addRow();}
 var save=document.getElementById('save');
-if(save)save.addEventListener('click',function(){var arr=[];[].slice.call(rowsEl.querySelectorAll('tr')).forEach(function(tr){var amt=parseFloat(tr.querySelector('.amt').value)||0,acc=tr.querySelector('.acc').value;if(amt>0&&acc)arr.push({description:tr.querySelector('.desc').value,amount:amt,accountId:parseInt(acc)});});if(!arr.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add a charge with amount & account"].Value)));return;}document.getElementById('chargesJson').value=JSON.stringify(arr);document.getElementById('f').submit();});
+if(save)save.addEventListener('click',function(){var arr=[];[].slice.call(rowsEl.querySelectorAll('tr')).forEach(function(tr){var amt=parseFloat(tr.querySelector('.amt').value)||0,acc=tr.querySelector('.acc').value;if(amt>0&&acc)arr.push({description:tr.querySelector('.desc').value,descriptionEn:tr.querySelector('.descEn').value,amount:amt,accountId:parseInt(acc)});});if(!arr.length){alert(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Add a charge with amount & account"].Value)));return;}document.getElementById('chargesJson').value=JSON.stringify(arr);document.getElementById('f').submit();});
 </script>
 }

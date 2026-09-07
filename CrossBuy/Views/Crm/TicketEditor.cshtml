@@ -59,7 +59,7 @@
                 {
                     <div class="card mb-5"><div class="card-header"><div class="card-title fw-bold">@SR["Status"]</div></div>
                         <div class="card-body">
-                            @{ var stColor = Model.Status == "Pending" ? "background:#fef3e2;color:#b96a00;" : (Model.Status == "Closed" ? "background:#f2f4f7;color:#475467;" : "background:#eaf3ef;color:#13433a;"); }
+                            @{ var stColor = Model.Status == "Pending" ? "background:#fef3e2;color:#b96a00;" : (Model.Status == "Closed" ? "background:#f2f4f7;color:#475467;" : "background:#E7F0FF;color:#0E4A9E;"); }
                             <div class="mb-4"><span class="badge fw-bold fs-6" style="@stColor">@stNm(Model.Status)</span></div>
                             <div class="d-flex flex-wrap gap-2">
                                 @foreach (var st in statuses)
@@ -91,7 +91,7 @@
                             }
                             else if (Model.FirstResponseDueAt.HasValue)
                             {
-                                <div class="d-flex align-items-center mt-2 mb-0 py-2 px-3 rounded" style="background:#eaf3ef;"><i class="ki-outline ki-check-circle fs-3 me-2" style="color:#13433a;"></i><span class="fs-7" style="color:#13433a;">@Localizer["Within SLA"]</span></div>
+                                <div class="d-flex align-items-center mt-2 mb-0 py-2 px-3 rounded" style="background:#E7F0FF;"><i class="ki-outline ki-check-circle fs-3 me-2" style="color:#0E4A9E;"></i><span class="fs-7" style="color:#0E4A9E;">@Localizer["Within SLA"]</span></div>
                             }
                             else
                             {

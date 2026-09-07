@@ -10,10 +10,16 @@
     var tType = (ViewBag.TimelineEntityType as string) ?? "";
     var tId = ViewBag.TimelineEntityId?.ToString() ?? "0";
 }
-<div class="card mt-5" id="cbEventTimeline" data-type="@tType" data-id="@tId">
-    <div class="card-header">
-        <div class="card-title fw-bold fs-5">
-            <i class="ki-outline ki-time fs-3 text-primary me-2"></i>@SR["Activity timeline"]
+@* SHARED PARTIAL (SHF-20), used by three document views, edited on the repository owner's approval to
+   bring it onto the house card. card-flush + an h3 title is what the other 121 cards use; a plain .card
+   next to flush ones is the difference the owner pointed at on the work-order screen. The icon stays -
+   it is this partial's own affordance, not a colour decision. *@
+<div class="card card-flush mt-5" id="cbEventTimeline" data-type="@tType" data-id="@tId">
+    <div class="card-header align-items-center py-4">
+        <div class="card-title">
+            <h3 class="fw-bold text-gray-900 fs-4 m-0">
+                <i class="ki-outline ki-time fs-3 text-primary me-2"></i>@SR["Activity timeline"]
+            </h3>
         </div>
     </div>
     <div class="card-body">

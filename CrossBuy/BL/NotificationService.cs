@@ -10,12 +10,28 @@ namespace CrossBuy.BL
 	{
 		private readonly CrossDbContext _context;
 		private readonly IHubContext<NotificationsHub> _hub;
+		private readonly CrossBuy.BL.Platform.ICompanyIsolationBypass _bypass;
+		private readonly CrossBuy.BL.Platform.ICompanyScopeHolder _scope;
 
-		public NotificationService(CrossDbContext context, IHubContext<NotificationsHub> hub)
+		public NotificationService(CrossDbContext context, IHubContext<NotificationsHub> hub,
+			CrossBuy.BL.Platform.ICompanyIsolationBypass bypass, CrossBuy.BL.Platform.ICompanyScopeHolder scope)
 		{
 			_context = context;
 			_hub = hub;
+			_bypass = bypass;
+			_scope = scope;
 		}
+
+		// Stage 1 Batch B / B3 — this service delivers to a RECIPIENT, whose company may differ from the company
+		// the calling scope operates as (NotifyAsync resolves the company from the recipient's own Employee row).
+		// Its dedup read and its recipient lookups therefore have to be able to see across companies, or Batch B's
+		// filter on Notification would break de-duplication and the recipient resolution below it.
+		//
+		// Held for the shortest possible span, and released deterministically. When the caller already holds a
+		// bypass (the outbox dispatcher does), this re-uses it rather than nesting — the holder refuses nesting on
+		// purpose, so that "which right is in force" is never ambiguous.
+		private IDisposable? BeginRecipientScope(string reason)
+			=> _scope.ActiveBypass == null ? _bypass.BeginPlatformDispatch(reason) : null;
 
 		public async Task NotifyAsync(int recipientEmployeeId, string? titleAr, string? titleEn,
 			string? bodyAr, string? bodyEn, string type, int? refId = null,
@@ -24,7 +40,16 @@ namespace CrossBuy.BL
 			DateTime? expiresAt = null, string? icon = null,
 			string? entityType = null, int? entityId = null)
 		{
+			// The recipient may be in another company than this scope — see BeginRecipientScope.
+			using var recipientScope = BeginRecipientScope(
+				$"Notification delivery to employee {recipientEmployeeId} (type '{type}') — the dedup check and the " +
+				"recipient's company are resolved from the recipient, not from the calling scope.");
+
 			// Dedup: if an unread notification with the same key already exists for this recipient, skip.
+			// NOTE: this is a NOISE guard, not idempotency — it only matches UNREAD rows, so a redelivery
+			// after the user has read the notification would create a second one. A caller that needs true
+			// idempotency (NotificationProjection, which can be retried by the outbox) must check for itself;
+			// see BusinessEventNotificationDelivery.
 			if (!string.IsNullOrEmpty(dedupKey) &&
 				await _context.Notifications.AnyAsync(x => x.RecipientEmployeeID == recipientEmployeeId && x.DedupKey == dedupKey && !x.IsRead))
 				return;

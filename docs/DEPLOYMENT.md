@@ -96,7 +96,7 @@ WITH MOVE 'CrossBuyDB2'     TO N'C:\SQLData\CrossBuyDB2.mdf',
 الفعلية ومُختبَرة — قاعدة جديدة منها تشغّل التطبيق وتسجّل دخول Admin). على السيرفر:
 ```cmd
 cd deploy\sql\fresh
-REM عدّل سطر SVR داخل الملف لو الـ instance مختلف (الافتراضي localhost\SQLEXPRESS)
+REM عدّل سطر SVR داخل الملف لو الـ instance مختلف (الافتراضي localhost)
 run_all.cmd
 ```
 تنشئ CrossBuyDB2 + كل الجداول/الفهارس/القيود + seed الإعداد الأساسي فقط (دليل حسابات، عملات، فترات،

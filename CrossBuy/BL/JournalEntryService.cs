@@ -64,9 +64,10 @@ namespace CrossBuy.BL
 		// Census verified: no "discount allowed" account exists; no P&L-type tax account (VAT is a liability). All balance-sheet
 		// accounts (AR/AP/inventory/GRNI/tax/cash/bank) are auto-excluded by the "P&L only" (AccountType 4/5) eligibility rule.
 		private static readonly HashSet<string> ForbiddenDiffAccounts = new() { "4902", "4903", "5902", "5903", "520111", "520109" };
-		public JournalEntryService(CrossDbContext context, IFiscalPeriodService periods, IServiceScopeFactory scopes, IConfiguration config, ICurrencyRounding rounding, IStringLocalizer<CrossBuy.SharedResources> localizer, ILogger<JournalEntryService> logger)
+		private readonly CrossBuy.BL.Platform.IBusinessEventService _events;   // Platform Kernel: durable business facts (in-transaction)
+		public JournalEntryService(CrossDbContext context, IFiscalPeriodService periods, IServiceScopeFactory scopes, IConfiguration config, ICurrencyRounding rounding, IStringLocalizer<CrossBuy.SharedResources> localizer, ILogger<JournalEntryService> logger, CrossBuy.BL.Platform.IBusinessEventService events)
 		{
-			_context = context; _periods = periods; _scopes = scopes; _config = config; _rounding = rounding; L = localizer; _logger = logger;
+			_context = context; _periods = periods; _scopes = scopes; _config = config; _rounding = rounding; L = localizer; _logger = logger; _events = events;
 		}
 
 		private async Task<int> ResolveCurrencyAsync(int currencyId, int companyId)
@@ -109,7 +110,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, JournalEntry? entry)> CreateDraftAsync(JournalEntryInput input, int? userId)
 		{
 			if (input == null || input.Lines == null || input.Lines.Count == 0)
-				return (false, "القيد يجب أن يحتوي على سطر واحد على الأقل", null);
+				return (false, "The entry must contain at least one line", null);
 
 			var curId = await ResolveCurrencyAsync(input.CurrencyId, input.CompanyID);
 			var period = await _periods.ResolveAsync(input.CompanyID, input.EntryDate);
@@ -120,7 +121,7 @@ namespace CrossBuy.BL
 			// the both-debit-and-credit sanity now runs on the ROUNDED lines (moved from raw, so a caller error is caught at draft time on final values)
 			foreach (var l in entry.Lines)
 				if (l.Debit > 0 && l.Credit > 0)
-					return (false, "السطر لا يمكن أن يكون مدينًا ودائنًا في آن واحد", null);
+					return (false, "A line cannot be both a debit and a credit", null);
 			_context.JournalEntries.Add(entry);
 			await _context.SaveChangesAsync();
 			return (true, null, entry);
@@ -180,8 +181,8 @@ namespace CrossBuy.BL
 		{
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			var entry = await _context.JournalEntries.Include(e => e.Lines).FirstOrDefaultAsync(e => e.ID == entryId);
-			if (entry == null) return (false, "القيد غير موجود");
-			if (entry.Status != "Draft" && entry.Status != "Submitted") return (false, "لا يمكن ترحيل قيد مُرحَّل أو مُلغى");
+			if (entry == null) return (false, "Journal entry not found");
+			if (entry.Status != "Draft" && entry.Status != "Submitted") return (false, "An entry that is already posted or cancelled cannot be posted");
 
 			var (ok, err) = await PostInternalAsync(entry, userId);
 			if (!ok) return (false, err);
@@ -223,20 +224,20 @@ namespace CrossBuy.BL
 		private async Task<(bool ok, string? error)> PostInternalAsync(JournalEntry entry, int? userId)
 		{
 			var lines = entry.Lines.ToList();
-			if (lines.Count < 2) return (false, "القيد يجب أن يحتوي على سطرين على الأقل");
+			if (lines.Count < 2) return (false, "The entry must contain at least two lines");
 
 			foreach (var l in lines)
 			{
-				if (l.Debit < 0 || l.Credit < 0) return (false, "لا يُسمح بقيم سالبة");
-				if ((l.Debit > 0) == (l.Credit > 0)) return (false, "كل سطر يجب أن يكون مدينًا أو دائنًا (وليس الاثنين أو لا شيء)");
+				if (l.Debit < 0 || l.Credit < 0) return (false, "Negative values are not allowed");
+				if ((l.Debit > 0) == (l.Credit > 0)) return (false, "Every line must be either a debit or a credit (not both, and not neither)");
 			}
 
 			// HM-2: lines are already rounded to functional dp AND balanced by ApplyCurrencyRoundingAsync (at draft build),
 			// so this is the pure sum of rounded values — zero tolerance stays absolute.
 			var totalD = lines.Sum(l => l.Debit);
 			var totalC = lines.Sum(l => l.Credit);
-			if (totalD != totalC) return (false, $"القيد غير متوازن: مدين {totalD} ≠ دائن {totalC}");
-			if (totalD <= 0) return (false, "إجمالي القيد يجب أن يكون أكبر من صفر");
+			if (totalD != totalC) return (false, $"The entry is out of balance: debit {totalD} ≠ credit {totalC}");
+			if (totalD <= 0) return (false, "The entry total must be greater than zero");
 
 			// accounts: must exist in the company, be active and postable (control/header accounts blocked)
 			var accIds = lines.Select(l => l.AccountId).Distinct().ToList();
@@ -249,24 +250,24 @@ namespace CrossBuy.BL
 			var isSystem = !string.IsNullOrWhiteSpace(entry.SourceType);
 			foreach (var id in accIds)
 			{
-				if (!byId.TryGetValue(id, out var a)) return (false, $"الحساب رقم {id} غير موجود في هذه الشركة");
-				if (!a.IsActive) return (false, $"الحساب {a.Code} غير نشط");
-				if (!a.IsPostable && !isSystem) return (false, $"الحساب {a.Code} ({a.Name}) تجميعي/تحكّم — لا يُرحَّل عليه مباشرة");
+				if (!byId.TryGetValue(id, out var a)) return (false, $"Account {id} does not exist in this company");
+				if (!a.IsActive) return (false, $"Account {a.Code} is not active");
+				if (!a.IsPostable && !isSystem) return (false, $"Account {a.Code} ({a.Name}) is a group/control account — it cannot be posted to directly");
 			}
 			// cost-center requirement (cost centers arrive in Phase 2; enforced here for correctness)
 			foreach (var l in lines)
 				if (byId[l.AccountId].RequireCostCenter && l.CostCenterId == null)
-					return (false, $"الحساب {byId[l.AccountId].Code} يتطلب مركز تكلفة");
+					return (false, $"Account {byId[l.AccountId].Code} requires a cost centre");
 
 			// fiscal period must exist and not be Closed
 			var period = await _periods.ResolveAsync(entry.CompanyID, entry.EntryDate);
-			if (period == null) return (false, "لا توجد فترة مالية تشمل تاريخ القيد");
+			if (period == null) return (false, "No fiscal period covers the entry date");
 			// BlocksPosting, not a literal: SoftClosed was accepted by FiscalPeriodService.SetStatusAsync and
 			// honoured by NOTHING, so the middle state existed in name only and a soft-closed period still took
 			// postings. One predicate now answers for both closed states, so a future caller cannot test for one
 			// and miss the other.
 			if (AccountingPeriodStatuses.BlocksPosting(period.Status))
-				return (false, "الفترة المالية مقفولة — لا يمكن الترحيل فيها");
+				return (false, "The fiscal period is closed — posting into it is not allowed");
 			entry.FiscalPeriodId = period.ID;
 
 			// reserve the entry number (per company per fiscal year). In Isolated mode this opens a short-lived separate
@@ -278,7 +279,7 @@ namespace CrossBuy.BL
 			}
 			catch (Exception)
 			{
-				return (false, "تعذّر حجز رقم القيد المحاسبي (تسلسل الترقيم أو الاتصال بقاعدة البيانات) — لم يُرحَّل القيد، أعد المحاولة");
+				return (false, "Could not reserve the journal entry number (numbering sequence or database connection) — the entry was not posted, please try again");
 			}
 			entry.Status = "Posted";
 			entry.PostedBy = userId;
@@ -335,8 +336,8 @@ UPDATE dbo.NumberSequences SET NextNumber = NextNumber + 1 OUTPUT deleted.NextNu
 		{
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 			var entry = await _context.JournalEntries.Include(e => e.Lines).FirstOrDefaultAsync(e => e.ID == entryId);
-			if (entry == null) return (false, "القيد غير موجود", null);
-			if (entry.Status != "Posted") return (false, "لا يمكن عكس قيد غير مُرحَّل", null);
+			if (entry == null) return (false, "Journal entry not found", null);
+			if (entry.Status != "Posted") return (false, "An entry that is not posted cannot be reversed", null);
 
 			// build the mirror entry (debit ↔ credit swapped), dated today (current open period)
 			var reversal = new JournalEntry
@@ -366,13 +367,48 @@ UPDATE dbo.NumberSequences SET NextNumber = NextNumber + 1 OUTPUT deleted.NextNu
 			await _context.SaveChangesAsync();
 
 			var (ok, err) = await PostInternalAsync(reversal, userId);
-			if (!ok) { await tx.RollbackAsync(); return (false, $"تعذّر ترحيل قيد العكس: {err}", null); }
+			if (!ok) { await tx.RollbackAsync(); return (false, $"Could not post the reversing entry: {err}", null); }
 
 			entry.Status = "Reversed";
 			entry.ReversedByEntryId = reversal.ID;
 			entry.ModifiedBy = userId;
 			entry.ModifiedAt = DateTime.UtcNow;
 			await _context.SaveChangesAsync();
+
+			// Platform Kernel (ADR-001): reversal is the most audit-relevant operation in the system and until
+			// Stage 0 it left no durable trace beyond the two entry rows. Recorded INSIDE this transaction and
+			// BEFORE the commit, so the event shares the fate of the mirror entry AND the original's status flip.
+			// No try/catch: if the event cannot be written, the reversal must not stand.
+			//
+			// Visibility = Confidential (not Internal): the payload carries the entry TOTAL, a monetary fact, so
+			// it sits behind the accounting "post" right via AccountingPermissionAdapter (ViewConfidential -> post).
+			// This is the first non-Internal event the platform produces.
+			//
+			// DedupKey: a posted entry can only be reversed once (the Status guard above blocks a repeat), so the
+			// key is pinned and a retried command cannot double-record it.
+			await _events.RecordAsync(new CrossBuy.Models.Platform.BusinessEventRecord
+			{
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.JournalEntry,
+				EntityId = entry.ID,
+				EventType = CrossBuy.BL.Platform.JournalEntryEvents.Reversed,
+				PayloadVersion = CrossBuy.Models.Platform.JournalEntryEventPayload.Version,
+				Visibility = CrossBuy.Models.Platform.BusinessEventVisibility.Confidential,
+				DedupKey = $"JournalEntry.Reversed:{entry.ID}",
+				CompanyIdOverride = entry.CompanyID,
+				Payload = new CrossBuy.Models.Platform.JournalEntryEventPayload
+				{
+					OriginalJournalEntryId = entry.ID,
+					OriginalJournalNumber = entry.EntryNo,
+					ReversingJournalEntryId = reversal.ID,
+					ReversingJournalNumber = reversal.EntryNo,
+					OriginalSourceType = entry.SourceType,
+					OriginalSourceId = entry.SourceId,
+					ReversalReason = string.IsNullOrWhiteSpace(reason) ? null : reason,
+					OriginalAmount = entry.Lines.Sum(l => l.Debit),
+					ReversedAt = entry.ModifiedAt,
+				},
+			});
+
 			await tx.CommitAsync();
 			return (true, null, reversal.ID);
 		}

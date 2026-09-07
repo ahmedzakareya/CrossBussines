@@ -5,7 +5,7 @@
 @{
     var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
     // stage palette — matches the pipeline stat cards on the Opportunities page
-    var stgHex = new Dictionary<string, string> { ["Prospecting"] = "#7239ea", ["Qualification"] = "#0d9edc", ["Proposal"] = "#f6c000", ["Negotiation"] = "#f1416c", ["Won"] = "#13433a", ["Lost"] = "#d92d20" };
+    var stgHex = new Dictionary<string, string> { ["Prospecting"] = "#7239ea", ["Qualification"] = "#0d9edc", ["Proposal"] = "#f6c000", ["Negotiation"] = "#f1416c", ["Won"] = "#0E4A9E", ["Lost"] = "#d92d20" };
     string hex(string s) => stgHex.TryGetValue(s, out var h) ? h : "#7239ea";
     string nm(string s) => s switch { "Prospecting" => Localizer["Prospecting"].Value, "Qualification" => Localizer["Qualification"].Value, "Proposal" => Localizer["Proposal"].Value, "Negotiation" => Localizer["Negotiation"].Value, "Won" => Localizer["Won"].Value, "Lost" => Localizer["Lost"].Value, _ => s };
 }

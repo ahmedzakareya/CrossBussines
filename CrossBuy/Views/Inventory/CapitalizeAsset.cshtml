@@ -19,7 +19,7 @@
             <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Asset item"]</label>
                 <select name="itemId" class="form-select form-select-solid" data-control="select2" required>@foreach (var i in items) { <option value="@i.ID">@i.ItemCode — @(isAr ? i.Name : (string.IsNullOrEmpty(i.NameEn) ? i.Name : i.NameEn))</option> }</select></div>
             <div class="col-md-3"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
-                <select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                <select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Quantity"]</label><input name="qty" type="number" step="0.0001" min="0" class="form-control form-control-solid" required /></div>
             <div class="col-md-2"><label class="required fw-semibold fs-6 mb-2">@SR["Date"]</label><input name="date" type="text" class="form-control form-control-solid" data-control="flatpickr" value="@DateTime.Today.ToString("yyyy-MM-dd")" required /></div>
         </div></div></div>

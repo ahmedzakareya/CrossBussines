@@ -259,7 +259,8 @@ namespace CrossBuy.BL.TasksCalendar
 				? new Dictionary<int, string>()
 				: await _db.Employee.AsNoTracking()
 					.Where(e => managerIds.Contains(e.ID) && e.EmpCompanyID == companyId)
-					.ToDictionaryAsync(e => e.ID, e => e.FullName ?? "", ct);
+					.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+                .ToDictionaryAsync(e => e.ID, e => EmployeeNames.Of(e.FullName, e.FullNameEn), ct);
 
 			foreach (var t in tasks)
 			{

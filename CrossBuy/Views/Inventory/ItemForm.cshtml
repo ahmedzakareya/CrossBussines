@@ -13,8 +13,8 @@
     var units = ViewBag.Units as List<UnitOfMeasure> ?? new();
     var taxes = ViewBag.TaxCodes as List<TaxCode> ?? new();
     var itemTypes = new (string v, string ar, string en)[] {
-        ("Stockable","صنف مخزون","Stockable"),("NonStockable","مستهلك","Non-stockable"),
-        ("Service","خدمة","Service"),("Asset","أصل","Asset") };
+        ("Stockable","Stock item","Stockable"),("NonStockable","Consumable","Non-stockable"),
+        ("Service","Service","Service"),("Asset","Asset","Asset") };
     string num(decimal? d) => d?.ToString(CultureInfo.InvariantCulture) ?? "";
     var blank = Url.Content("~/Backend-assets/media/svg/files/blank-image.svg");
     var hasImg = !string.IsNullOrWhiteSpace(Model.ImagePath);
@@ -143,7 +143,7 @@
                                     <div class="d-flex align-items-center gap-2 mb-3"><i class="ki-outline ki-delivery-3 fs-4 text-primary"></i><span class="fw-bold text-gray-800">@Localizer["On hand per warehouse"]</span></div>
                                     <div class="table-responsive">
                                         <table class="table table-row-bordered align-middle gy-3 mb-0">
-                                            <thead><tr class="fw-bold text-muted text-uppercase fs-8">
+                                            <thead><tr class="fw-bold text-muted text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;">
                                                 <th>@SR["Warehouse"]</th>
                                                 <th class="text-end" style="width:110px">@SR["Quantity"]</th>
                                                 <th class="text-end" style="width:130px">@Localizer["Value"]</th>
@@ -202,8 +202,8 @@
                                     <div class="col-md-6 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="NameEn" class="form-control form-control-solid" value="@Model.NameEn" /></div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Category"]</label><select name="ItemCategoryId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var c in cats) { <option value="@c.ID" selected="@(Model.ItemCategoryId==c.ID)">@c.Code — @(isAr ? c.Name : c.NameEn)</option> }</select></div>
-                                    <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Base UoM"]</label><select name="BaseUoMId" id="f_baseuom" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.BaseUoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></div>
+                                    <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Category"]</label><select name="ItemCategoryId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var c in cats) { <option value="@c.ID" selected="@(Model.ItemCategoryId==c.ID)">@c.Code — @(isAr ? c.Name : DisplayName.Or(c.NameEn, c.Name))</option> }</select></div>
+                                    <div class="col-md-6 mb-5"><label class="required fw-semibold fs-6 mb-2">@Localizer["Base UoM"]</label><select name="BaseUoMId" id="f_baseuom" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.BaseUoMId==u.ID)">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }</select></div>
                                 </div>
                                 <div class="separator separator-dashed my-5"></div>
                                 <div class="row align-items-center">
@@ -236,8 +236,8 @@
                             <!--begin::Pricing-->
                             <div id="tabAdvanced">
                                 <div class="row">
-                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Purchase UoM"]</label><select name="PurchaseUoMId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.PurchaseUoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></div>
-                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Sales UoM"]</label><select name="SalesUoMId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.SalesUoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></div>
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Purchase UoM"]</label><select name="PurchaseUoMId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.PurchaseUoMId==u.ID)">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }</select></div>
+                                    <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Sales UoM"]</label><select name="SalesUoMId" class="form-select form-select-solid" data-control="select2"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(Model.SalesUoMId==u.ID)">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }</select></div>
                                     <div class="col-md-4 mb-5"><label class="fw-semibold fs-6 mb-2">@Localizer["Costing"]</label><select name="CostingMethod" class="form-select form-select-solid" data-control="select2" data-hide-search="true"><option value="" selected="@string.IsNullOrEmpty(Model.CostingMethod)">@Localizer["From category"]</option><option value="Moving" selected="@(Model.CostingMethod=="Moving")">@Localizer["Moving Average"]</option><option value="FIFO" selected="@(Model.CostingMethod=="FIFO")">FIFO</option></select></div>
                                 </div>
                                 <div class="row">
@@ -303,12 +303,12 @@
                                 <div class="alert alert-light-primary d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@Localizer["Stock is kept in the base unit. Define larger units (carton, dozen…) and how many base units each equals, with an optional barcode per unit."]</div></div>
                                 <div class="table-responsive">
                                     <table class="table align-middle table-row-dashed gy-3" id="unitsTable">
-                                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th class="min-w-150px">@Localizer["Unit"]</th><th class="min-w-150px">@Localizer["= base units"]</th><th class="min-w-150px">@Localizer["Barcode"]</th><th class="w-50px"></th></tr></thead>
+                                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th class="min-w-150px">@Localizer["Unit"]</th><th class="min-w-150px">@Localizer["= base units"]</th><th class="min-w-150px">@Localizer["Barcode"]</th><th class="w-50px"></th></tr></thead>
                                         <tbody id="unitsBody">
                                             @for (int i = 0; i < itemUnits.Count; i++)
                                             {
                                                 <tr class="grid-row">
-                                                    <td><select name="Units[@i].UoMId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID" selected="@(itemUnits[i].UoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                                    <td><select name="Units[@i].UoMId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID" selected="@(itemUnits[i].UoMId==u.ID)">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }</select></td>
                                                     <td><input name="Units[@i].Factor" type="number" step="0.0001" min="0" class="form-control form-control-solid" value="@itemUnits[i].Factor.ToString(CultureInfo.InvariantCulture)" /></td>
                                                     <td><input name="Units[@i].Barcode" class="form-control form-control-solid" value="@itemUnits[i].Barcode" /></td>
                                                     <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
@@ -320,7 +320,7 @@
                                 <button type="button" class="btn btn-light-primary btn-sm" id="addUnitRow"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add unit"]</button>
                                 <template id="unitRowTpl">
                                     <tr class="grid-row">
-                                        <td><select name="Units[__I__].UoMId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                        <td><select name="Units[__I__].UoMId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }</select></td>
                                         <td><input name="Units[__I__].Factor" type="number" step="0.0001" min="0" class="form-control form-control-solid" /></td>
                                         <td><input name="Units[__I__].Barcode" class="form-control form-control-solid" /></td>
                                         <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
@@ -348,7 +348,7 @@
                                             <div class="col-md-7">
                                                 <div class="fw-bold text-gray-700 fs-7 mb-2">@Localizer["Manufactured from"]</div>
                                                 <div class="table-responsive"><table class="table table-row-dashed align-middle gy-1 mb-0">
-                                                    <thead><tr class="fs-8 text-muted text-uppercase"><th>@Localizer["Component"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Scrap %"]</th><th class="text-end">@Localizer["Unit cost"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
+                                                    <thead><tr class="fs-8 text-muted text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Component"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@Localizer["Scrap %"]</th><th class="text-end">@Localizer["Unit cost"]</th><th class="text-end">@SR["Total"]</th></tr></thead>
                                                     <tbody>
                                                     @if (!bomLines.Any()) { <tr><td colspan="5" class="text-muted text-center py-3">@Localizer["No components yet — add them below."]</td></tr> }
                                                     @foreach (var bl in bomLines)
@@ -383,7 +383,7 @@
                                 <div class="alert alert-light-warning d-flex align-items-center p-4 mb-5"><i class="ki-outline ki-information-5 fs-2 me-3"></i><div>@Localizer["Components of the composite item. On sale (bundle) or assembly, these are deducted from stock."]</div></div>
                                 <div class="table-responsive">
                                     <table class="table align-middle table-row-dashed gy-3" id="compTable">
-                                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th class="min-w-250px">@Localizer["Component"]</th><th class="min-w-120px">@Localizer["Qty"]</th><th class="min-w-100px">@Localizer["Scrap %"]</th><th class="min-w-150px">@Localizer["Unit"]</th><th class="w-50px"></th></tr></thead>
+                                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th class="min-w-250px">@Localizer["Component"]</th><th class="min-w-120px">@Localizer["Qty"]</th><th class="min-w-100px">@Localizer["Scrap %"]</th><th class="min-w-150px">@Localizer["Unit"]</th><th class="w-50px"></th></tr></thead>
                                         <tbody id="compBody">
                                             @for (int i = 0; i < itemComps.Count; i++)
                                             {
@@ -391,7 +391,7 @@
                                                     <td><select name="Components[@i].ComponentItemId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var it in allItems) { <option value="@it.ID" selected="@(itemComps[i].ComponentItemId==it.ID)">@it.ItemCode — @(isAr ? it.Name : (string.IsNullOrEmpty(it.NameEn) ? it.Name : it.NameEn))</option> }</select></td>
                                                     <td><input name="Components[@i].Quantity" type="number" step="0.0001" min="0" class="form-control form-control-solid" value="@itemComps[i].Quantity.ToString(CultureInfo.InvariantCulture)" /></td>
                                                     <td><input name="Components[@i].ScrapPct" type="number" step="0.01" min="0" class="form-control form-control-solid" value="@itemComps[i].ScrapPct.ToString(CultureInfo.InvariantCulture)" /></td>
-                                                    <td><select name="Components[@i].UoMId" class="form-select form-select-solid grid-select"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(itemComps[i].UoMId==u.ID)">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                                    <td><select name="Components[@i].UoMId" class="form-select form-select-solid grid-select"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID" selected="@(itemComps[i].UoMId==u.ID)">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }</select></td>
                                                     <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
                                                 </tr>
                                             }
@@ -404,7 +404,7 @@
                                         <td><select name="Components[__I__].ComponentItemId" class="form-select form-select-solid grid-select"><option value="">@Localizer["Select"]</option>@foreach (var it in allItems) { <option value="@it.ID">@it.ItemCode — @(isAr ? it.Name : (string.IsNullOrEmpty(it.NameEn) ? it.Name : it.NameEn))</option> }</select></td>
                                         <td><input name="Components[__I__].Quantity" type="number" step="0.0001" min="0" class="form-control form-control-solid" value="1" /></td>
                                         <td><input name="Components[__I__].ScrapPct" type="number" step="0.01" min="0" class="form-control form-control-solid" value="0" /></td>
-                                        <td><select name="Components[__I__].UoMId" class="form-select form-select-solid grid-select"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : u.NameEn)</option> }</select></td>
+                                        <td><select name="Components[__I__].UoMId" class="form-select form-select-solid grid-select"><option value="">—</option>@foreach (var u in units) { <option value="@u.ID">@(isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name))</option> }</select></td>
                                         <td><button type="button" class="btn btn-icon btn-light-danger btn-sm row-del"><i class="ki-outline ki-trash fs-5"></i></button></td>
                                     </tr>
                                 </template>
@@ -513,7 +513,7 @@
   new ApexCharts(el, {
     chart: { type: 'area', height: 200, fontFamily: 'inherit', toolbar: { show: false }, sparkline: { enabled: false } },
     series: [ { name: '@SR["Balance"]', data: bal } ],
-    colors: ['#1f6253'],
+    colors: ['#145DBF'],
     xaxis: { categories: cats, labels: { show: false }, axisTicks: { show: false }, axisBorder: { show: false } },
     yaxis: { labels: { style: { colors: '#99A1B7', fontSize: '10px' } } },
     stroke: { curve: 'stepline', width: 2 },

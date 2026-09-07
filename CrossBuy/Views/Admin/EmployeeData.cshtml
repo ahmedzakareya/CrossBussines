@@ -26,9 +26,9 @@
 <style>
 /* ── tokens ──────────────────────────────────────────────────── */
 :root {
-    --er-primary:     #13433a;
-    --er-primary-lt:  #e9f1ee;
-    --er-primary-bd:  #b7d3c9;
+    --er-primary:     #0E4A9E;
+    --er-primary-lt:  #E7F0FF;
+    --er-primary-bd:  #A8C5FF;
     --er-success:     #0F6E56;
     --er-success-lt:  #E1F5EE;
     --er-success-bd:  #9FE1CB;
@@ -364,7 +364,7 @@ select.form-control-er + .select2 .select2-selection__placeholder {
     font-size: 13px; font-weight: 500; color: #0C447C;
 }
 .er-bc-node.dim { color: #aac5e0; }
-.er-bc-sep { color: #b7d3c9; font-size: 14px; font-weight: 300; }
+.er-bc-sep { color: #A8C5FF; font-size: 14px; font-weight: 300; }
 .er-bc-pill {
     background: var(--er-primary);
     color: #fff; font-size: 12px; font-weight: 500;
@@ -458,12 +458,12 @@ select.form-control-er + .select2 .select2-selection__placeholder {
 
 .er-pcard-icon {
     width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
-    background: linear-gradient(135deg, #3B82C4 0%, #13433a 100%);
+    background: linear-gradient(135deg, #3B82C4 0%, #0E4A9E 100%);
     display: flex; align-items: center; justify-content: center;
     transition: background .18s;
 }
 .er-pcard-icon i, .er-pcard-icon i::before { color: #fff !important; font-size: 20px; }
-.er-pcard.selected .er-pcard-icon { background: linear-gradient(135deg, #13433a 0%, #0C447C 100%); }
+.er-pcard.selected .er-pcard-icon { background: linear-gradient(135deg, #0E4A9E 0%, #0C447C 100%); }
 .er-pcard-body { flex: 1; min-width: 0; }
 .er-pcard-name { font-size: 13px; font-weight: 700; color: #1e293b; line-height: 1.35; }
 .er-pcard.selected .er-pcard-name { color: #0C447C; }
@@ -486,7 +486,7 @@ select.form-control-er + .select2 .select2-selection__placeholder {
 .er-pol-head-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
 .er-pol-icon {
     width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0;
-    background: linear-gradient(135deg, #13433a 0%, #3B99DE 100%);
+    background: linear-gradient(135deg, #0E4A9E 0%, #3B99DE 100%);
     display: flex; align-items: center; justify-content: center;
 }
 .er-pol-icon i, .er-pol-icon i::before { color: #fff !important; font-size: 26px; }
@@ -627,7 +627,7 @@ select.form-control-er + .select2 .select2-selection__placeholder {
     font-size: 10px; font-weight: 700; color: var(--er-success);
     text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px;
 }
-.er-sal2-base-num { font-size: 28px; font-weight: 900; color: #0a4f3a; line-height: 1; }
+.er-sal2-base-num { font-size: 28px; font-weight: 900; color: #0E4A9E; line-height: 1; }
 
 /* allowances list */
 .er-sal2-allow-wrap { border: 1px solid #EEF1F6; border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
@@ -999,7 +999,7 @@ body[dir="rtl"] .er-review-row,
     background: var(--er-primary); color: #fff;
     border-color: var(--er-primary);
 }
-.er-btn-next:hover { background: #0f2e28; filter: brightness(1.08); }
+.er-btn-next:hover { background: #0B3D91; filter: brightness(1.08); }
 .er-btn-save {
     background: var(--er-success); color: #fff;
     border-color: var(--er-success);
@@ -1548,7 +1548,7 @@ body[dir="rtl"] .er-review-row,
                                 <!--begin::Breadcrumb preview-->
                                 <div class="col-12">
                                     <label class="er-label" style="margin-bottom:8px">
-                                        <i class="ki-outline ki-abstract-26 me-1" style="color:#13433a"></i>
+                                        <i class="ki-outline ki-abstract-26 me-1" style="color:#0E4A9E"></i>
                                         @Localizer["Placement preview"]
                                     </label>
                                     <div class="er-breadcrumb-wrap" id="erBreadcrumb">
@@ -2378,7 +2378,7 @@ body[dir="rtl"] .er-review-row,
         $('#erRvPhone').text($.trim($('#PhoneNumber').val()) || '—');
         $('#erRvJoining').text($.trim($('#DateOfJoining').val()) || '—');
 
-        var g1 = reviewGroup('ki-user', 'linear-gradient(135deg,#13433a,#6EA8DC)', '@Localizer["Personal information"]',
+        var g1 = reviewGroup('ki-user', 'linear-gradient(135deg,#0E4A9E,#6EA8DC)', '@Localizer["Personal information"]',
             reviewItem('@Localizer["Full name"]',      $('#FullName').val()) +
             reviewItem('@SR["Email"]',          $('#Email').val()) +
             reviewItem('@Localizer["Phone number"]',   $('#PhoneNumber').val()) +

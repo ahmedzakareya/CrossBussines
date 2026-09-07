@@ -75,10 +75,33 @@ namespace CrossBuy.BL.Reporting
 
         public bool HasItems => Items.Count > 0;
 
+        // PAGING, set only by the panels that page. Null everywhere else, which is how the view tells
+        // "one page of many" from "this is all of it" without inferring anything from Items.Count.
+        public int Page { get; init; } = 1;
+        public int PageSize { get; init; }
+        public int Total { get; init; }
+
+        // Whether this panel pages at all. Set by Paged() and by nothing else, so the view asks one question
+        // instead of testing three nullables.
+        public bool IsPaged { get; init; }
+
+        public int Pages => PageSize <= 0 ? 1 : Math.Max(1, (int)Math.Ceiling(Total / (double)PageSize));
+
         public static ReportPanel<T> From(IReadOnlyList<T> items) => new()
         {
             State = items.Count == 0 ? ReportPanelState.Empty : ReportPanelState.Ready,
             Items = items,
+        };
+
+        // The paged twin of From(). Same states, plus the three numbers an ordinary pager needs.
+        public static ReportPanel<T> Paged(IReadOnlyList<T> items, int page, int pageSize, int total) => new()
+        {
+            State = items.Count == 0 ? ReportPanelState.Empty : ReportPanelState.Ready,
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            Total = total,
+            IsPaged = true,
         };
 
         public static ReportPanel<T> Unavailable(string reasonCode) =>
@@ -257,6 +280,12 @@ namespace CrossBuy.BL.Reporting
         public string? Tag { get; init; }
         public bool FavoritesOnly { get; init; }
         public bool Arabic { get; init; }
+
+        // 1-based, one per paged table. Two numbers rather than one because the two tables are on the SAME
+        // screen: a single `page` would move both at once and there would be no way to be on page 3 of the
+        // saved reports while still looking at the first page of the run history.
+        public int SavedPage { get; init; } = 1;
+        public int RecentPage { get; init; } = 1;
     }
 
     public sealed class ReportsCenterModel
@@ -406,7 +435,14 @@ namespace CrossBuy.BL.Reporting
 
     public sealed class ReportsCenterPresenter : IReportsCenterPresenter
     {
+        // RecentRuns is now a PAGE SIZE, not a ceiling. It used to be the only thing standing between the
+        // screen and 273 run rows: the table showed the newest 12 and said nothing about the rest, so the
+        // other 261 were simply unreachable from this page.
         private const int RecentRuns = 12;
+
+        // The saved-reports table had NO limit at all - the loop below appends every template of every
+        // visible report, which was 61 rows in one card on a screen that already carries eight others.
+        private const int SavedPageSize = 10;
         private const int ArchiveRows = 12;
         private const int ViewerHistoryRows = 8;
 
@@ -526,8 +562,17 @@ namespace CrossBuy.BL.Reporting
 
             var titles = visible.ToDictionary(d => d.Code, d => d.Title(query.Arabic), StringComparer.Ordinal);
 
+            // RUN HISTORY, one page of it. It used to be Take = 12 with no way to ask for row 13, so 261 of
+            // this company's 273 run rows were unreachable from this screen.
+            int recentTotal = await Safe(() => _history.CountAsync(new ReportHistoryQuery(), context,
+                cancellationToken), 0, SchemaMissing);
+            int recentPages = Math.Max(1, (int)Math.Ceiling(recentTotal / (double)RecentRuns));
+            int recentPage = Math.Clamp(query.RecentPage, 1, recentPages);
+
             var recent = (await Safe(
-                    () => _history.QueryAsync(new ReportHistoryQuery { Take = RecentRuns }, context, cancellationToken),
+                    () => _history.QueryAsync(
+                        new ReportHistoryQuery { Skip = (recentPage - 1) * RecentRuns, Take = RecentRuns },
+                        context, cancellationToken),
                     Array.Empty<ReportHistoryRow>(), SchemaMissing))
                 .Select(r => Run(r, query.Arabic, titles.ContainsKey(r.ReportCode)))
                 .ToList();
@@ -540,13 +585,30 @@ namespace CrossBuy.BL.Reporting
             // SAVED REPORTS across the catalog. Listed per report the caller can already see, which is what
             // makes "template visibility never grants data permission" structural: a template of a report that
             // was filtered out of `definitions` is never asked for.
-            var saved = new List<SavedReportModel>();
+            var savedAll = new List<SavedReportModel>();
             foreach (var definition in visible)
             {
                 var list = await Safe(() => _templates.ListAsync(definition.Code, context, cancellationToken),
                     Array.Empty<ReportTemplateSummary>(), SchemaMissing);
-                saved.AddRange(list.Select(t => Saved(t, definition.Title(query.Arabic), query.Arabic)));
+                savedAll.AddRange(list.Select(t => Saved(t, definition.Title(query.Arabic), query.Arabic)));
             }
+
+            // ORDERED BEFORE IT IS PAGED, and every tie broken. The list is assembled by looping over
+            // definitions, so its natural order is "grouped by report, in whatever order each report's
+            // templates came back" - stable enough to look fine on one page and not stable enough to page:
+            // two rows sharing an Updated instant could swap and appear on both page 1 and page 2.
+            // Newest-updated first, which is the column the table already shows.
+            savedAll = savedAll
+                .OrderByDescending(x => x.UpdatedAt)
+                .ThenBy(x => x.Name, StringComparer.CurrentCulture)
+                .ThenBy(x => x.Id)
+                .ToList();
+
+            // CLAMPED, so ?savedPage=999 shows the last real page instead of an empty table.
+            int savedPages = Math.Max(1, (int)Math.Ceiling(savedAll.Count / (double)SavedPageSize));
+            int savedPage = Math.Clamp(query.SavedPage, 1, savedPages);
+
+            var saved = savedAll.Skip((savedPage - 1) * SavedPageSize).Take(SavedPageSize).ToList();
 
             var datasets = (await Safe(() => _datasets.ListForStudioAsync(context, cancellationToken),
                     Array.Empty<ReportDatasetDefinition>(), SchemaMissing))
@@ -554,8 +616,8 @@ namespace CrossBuy.BL.Reporting
                 {
                     DatasetCode = d.DatasetCode,
                     Module = d.Module,
-                    Title = query.Arabic ? d.TitleAr : d.TitleEn,
-                    Description = query.Arabic ? d.DescriptionAr : d.DescriptionEn,
+                    Title = query.Arabic ? d.TitleAr : DisplayName.Or(d.TitleEn, d.TitleAr),
+                    Description = query.Arabic ? d.DescriptionAr : DisplayName.Or(d.DescriptionEn, d.DescriptionAr),
                     Version = d.Version.ToString(),
 
                     // Never-sensitivity fields are not counted. The strip reports what a person could build
@@ -595,8 +657,8 @@ namespace CrossBuy.BL.Reporting
                     }).ToList()),
                 Tags = ReportPanel<ReportTagChip>.From(tags),
                 Favorites = ReportPanel<ReportCardModel>.From(cards.Where(c => c.IsFavorite).ToList()),
-                Saved = ReportPanel<SavedReportModel>.From(saved),
-                Recent = ReportPanel<ReportRunModel>.From(recent),
+                Saved = ReportPanel<SavedReportModel>.Paged(saved, savedPage, SavedPageSize, savedAll.Count),
+                Recent = ReportPanel<ReportRunModel>.Paged(recent, recentPage, RecentRuns, recentTotal),
                 Archive = ReportPanel<ReportArchiveModel>.From(archive),
                 Datasets = schemaMissing
                     ? ReportPanel<ReportDatasetStatusModel>.Unavailable(ReportPanelReasons.SchemaMissing)
@@ -690,7 +752,7 @@ namespace CrossBuy.BL.Reporting
                 Code = definition.Code,
                 Module = definition.Module,
                 Title = definition.Title(query.Arabic),
-                Description = query.Arabic ? definition.DescriptionAr : definition.DescriptionEn,
+                Description = query.Arabic ? definition.DescriptionAr : DisplayName.Or(definition.DescriptionEn, definition.DescriptionAr),
                 Icon = definition.Icon,
                 Color = definition.Color,
                 DefinitionVersion = definition.DefinitionVersion,
@@ -730,7 +792,7 @@ namespace CrossBuy.BL.Reporting
                 .Select(c => new ReportColumnModel
                 {
                     Key = c.Key,
-                    Title = arabic ? c.TitleAr : c.TitleEn,
+                    Title = arabic ? c.TitleAr : DisplayName.Or(c.TitleEn, c.TitleAr),
                     Type = c.Type.ToString(),
                     Align = c.EffectiveAlign.ToString(),
                     VisibleByDefault = c.VisibleByDefault,
@@ -754,7 +816,7 @@ namespace CrossBuy.BL.Reporting
                 .Select(p => new ReportParameterModel
                 {
                     Key = p.Key,
-                    Title = query.Arabic ? p.TitleAr : p.TitleEn,
+                    Title = query.Arabic ? p.TitleAr : DisplayName.Or(p.TitleEn, p.TitleAr),
                     Type = p.Type.ToString(),
                     Required = p.Required,
                     AllowMultiple = p.AllowMultiple,
@@ -768,7 +830,7 @@ namespace CrossBuy.BL.Reporting
                     MinValue = p.MinValue,
                     MaxValue = p.MaxValue,
                     Options = p.Options
-                        .Select(o => (o.Value, query.Arabic ? o.LabelAr : o.LabelEn))
+                        .Select(o => (o.Value, query.Arabic ? o.LabelAr : DisplayName.Or(o.LabelEn, o.LabelAr)))
                         .ToList(),
                     ValidationMessage = fieldErrors.GetValueOrDefault(p.Key),
                 })
@@ -824,7 +886,7 @@ namespace CrossBuy.BL.Reporting
             Code = d.Code,
             Module = d.Module,
             Title = d.Title(arabic),
-            Description = arabic ? d.DescriptionAr : d.DescriptionEn,
+            Description = arabic ? d.DescriptionAr : DisplayName.Or(d.DescriptionEn, d.DescriptionAr),
             CategoryKey = d.CategoryKey,
             Tags = d.Tags,
             Icon = d.Icon,
@@ -851,7 +913,7 @@ namespace CrossBuy.BL.Reporting
             ReportAvailable = reportAvailable,
             Id = r.Id,
             ReportCode = r.ReportCode,
-            ReportTitle = (arabic ? r.ReportTitleAr : r.ReportTitleEn) ?? r.ReportCode,
+            ReportTitle = (arabic ? r.ReportTitleAr : DisplayName.Or(r.ReportTitleEn, r.ReportTitleAr)) ?? r.ReportCode,
             Format = r.Format,
             Kind = r.Kind,
             Status = r.Status,

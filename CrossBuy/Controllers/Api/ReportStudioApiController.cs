@@ -247,10 +247,16 @@ namespace CrossBuy.Controllers.Api
 
         // UPLOAD. The browser sends BYTES; it does not send a path, and there is no property on this action
         // that could carry one. What gets stored, where, and under what name is decided by the service.
+        // [FromForm] IS NOT DECORATION. The designer sends role and title as multipart FORM FIELDS beside
+        // the file, and [ApiController] infers [FromQuery] — not [FromForm] — for every simple-typed
+        // parameter without an explicit source. So without these attributes both values bind from nothing:
+        // every uploaded image is filed as role 0 (Other) with an empty title, whatever the picker's role
+        // selector said. MEASURED, not reasoned about: the same upload sent with role=3&title=… in the QUERY
+        // STRING stored role 3 and the title, while the identical values sent as form fields stored 0 and "".
         [HttpPost("assets")]
         [RequestSizeLimit(8 * 1024 * 1024)]
-        public async Task<IActionResult> UploadAsset(IFormFile file, ReportImageRole role, string? title,
-            CancellationToken ct)
+        public async Task<IActionResult> UploadAsset(IFormFile file, [FromForm] ReportImageRole role,
+            [FromForm] string? title, CancellationToken ct)
         {
             if (!await AuthorizeAuthorAsync(ct)) return NotFound();
 

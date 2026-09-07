@@ -33,7 +33,7 @@
         </form></div></div>
 
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3 mb-0">
-            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="w-60px ps-4"></th><th>@SR["Code"]</th><th>@SR["Name"]</th><th>@Localizer["Trade name"]</th><th class="text-center">@Localizer["Identity"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4">@SR["Actions"]</th></tr></thead>
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="w-60px ps-4"></th><th>@SR["Code"]</th><th>@SR["Name"]</th><th>@Localizer["Trade name"]</th><th class="text-center">@Localizer["Identity"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4">@SR["Actions"]</th></tr></thead>
             <tbody>
             @if (!Model.Any()) { <tr><td colspan="7" class="text-center text-muted py-8">@Localizer["No brands — create one or activate the default brand"]</td></tr> }
             @foreach (var b in Model)
@@ -48,7 +48,7 @@
                         @if (!string.IsNullOrEmpty(b.ColorSecondary)) { <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:@b.ColorSecondary;margin-inline-start:3px;"></span> }
                         @if (!string.IsNullOrEmpty(b.ColorAccent)) { <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:@b.ColorAccent;margin-inline-start:3px;"></span> }
                     </td>
-                    <td class="text-center">@if (b.IsActive) { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@SR["Active"]</span> } else { <span class="badge badge-light-secondary fw-bold">@SR["Inactive"]</span> }</td>
+                    <td class="text-center">@if (b.IsActive) { <span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@SR["Active"]</span> } else { <span class="badge badge-light-secondary fw-bold">@SR["Inactive"]</span> }</td>
                     <td class="text-end pe-4">
                         <a href="@Url.Action("BrandEditor","Brand", new { id = b.ID })" class="btn btn-sm btn-icon btn-light-primary me-1"><i class="ki-outline ki-pencil fs-5"></i></a>
                         <form asp-action="DeleteBrand" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete brand?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@b.ID" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form>

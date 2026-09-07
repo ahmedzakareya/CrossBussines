@@ -106,7 +106,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> WorkDays()
 		{
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(CurrentUserId ?? "");
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var flags = await _dashboard.WorkDayFlagsAsync(emp.ID);
 			if (flags == null)
@@ -120,7 +120,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> My()
 		{
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(CurrentUserId ?? "");
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var list = await _context.LeaveRequests.AsNoTracking()
 				.Include(r => r.LeaveType)
@@ -138,8 +138,8 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Create([FromBody] CreateLeaveDto dto)
 		{
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(CurrentUserId ?? "");
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 
 			// SELF-SERVICE, on the API path. `employee-request` is self-only by construction in
 			// HrAccessService — no role widens it and a null subject refuses — so the subject is taken
@@ -148,13 +148,13 @@ namespace CrossBuy.Controllers.Api
 			// absence is the design rather than an omission.
 			var ctx = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
 			if (ctx is not { CompanyId: > 0 } || ctx.EmployeeId is not > 0)
-				return NotFound(new { success = false, message = "غير مصرح" });
+				return NotFound(new { success = false, message = "Not authorised" });
 
 			bool maySubmit = await _hrAccess.CanAsync(
 				ctx, CrossBuy.BL.HrActions.EmployeeRequest,
 				CrossBuy.Models.Platform.PermissionTarget.ForSubjectEmployee(ctx.EmployeeId.Value, ctx.CompanyId),
 				HttpContext.RequestAborted);
-			if (!maySubmit) return NotFound(new { success = false, message = "غير مصرح" });
+			if (!maySubmit) return NotFound(new { success = false, message = "Not authorised" });
 
 			var (ok, error, req) = await _workflow.CreateAsync(ctx.EmployeeId.Value, dto.LeaveTypeID, dto.StartDate, dto.EndDate, dto.Reason);
 			if (!ok) return BadRequest(new { success = false, message = error });
@@ -167,7 +167,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Pending()
 		{
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(CurrentUserId ?? "");
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 
 			var list = await _context.LeaveRequests.AsNoTracking()
 				.Include(r => r.LeaveType)
@@ -190,9 +190,9 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Decision(int id, [FromBody] DecisionDto dto)
 		{
 			var emp = await _employeeService.GetEmployeeByUserIdAsync(CurrentUserId ?? "");
-			if (emp == null) return NotFound(new { success = false, message = "الموظف غير موجود" });
+			if (emp == null) return NotFound(new { success = false, message = "Employee not found" });
 			if (dto == null || (dto.Approve != true && dto.Approve != false))
-				return BadRequest(new { success = false, message = "قرار غير صحيح" });
+				return BadRequest(new { success = false, message = "Invalid decision" });
 
 			// MANAGERIAL APPROVAL, so it gets the approval authority — deliberately NOT the same treatment
 			// as Create directly above, which is self-service. `leave-approve` is record-level: it is never
@@ -200,7 +200,7 @@ namespace CrossBuy.Controllers.Api
 			// through the company-intersected hierarchy and refuses self-approval. This is the same gate
 			// PeopleController.DecideLeave applies to the browser path; the mobile/API path had none.
 			var hrContext = await _businessContexts.TryGetCurrentAsync(HttpContext.RequestAborted);
-			if (hrContext == null) return NotFound(new { success = false, message = "غير مصرح" });
+			if (hrContext == null) return NotFound(new { success = false, message = "Not authorised" });
 
 			// The subject comes from the request ROW. A posted id is only ever a lookup key.
 			int? subjectEmployeeId = await _context.LeaveRequests.AsNoTracking()
@@ -209,13 +209,13 @@ namespace CrossBuy.Controllers.Api
 
 			// A request that does not exist and one this caller may not decide answer identically, so the
 			// endpoint cannot be used to probe which request ids exist.
-			if (subjectEmployeeId == null) return NotFound(new { success = false, message = "غير مصرح" });
+			if (subjectEmployeeId == null) return NotFound(new { success = false, message = "Not authorised" });
 
 			bool mayDecide = await _hrAccess.CanAsync(
 				hrContext, CrossBuy.BL.HrActions.LeaveApprove,
 				CrossBuy.Models.Platform.PermissionTarget.ForSubjectEmployee(subjectEmployeeId.Value, hrContext.CompanyId),
 				HttpContext.RequestAborted);
-			if (!mayDecide) return NotFound(new { success = false, message = "غير مصرح" });
+			if (!mayDecide) return NotFound(new { success = false, message = "Not authorised" });
 
 			var (ok, error) = await _workflow.DecideAsync(id, emp.ID, dto.Approve == true, dto.Note);
 			if (!ok) return BadRequest(new { success = false, message = error });

@@ -109,4 +109,40 @@
   <data name="Delete rack?" xml:space="preserve">
     <value>حذف الرف؟</value>
   </data>
+  <data name="Receiving" xml:space="preserve">
+    <value>منطقة الاستلام</value>
+  </data>
+  <data name="Shipping" xml:space="preserve">
+    <value>منطقة الصرف</value>
+  </data>
+  <data name="Warehouse layout" xml:space="preserve">
+    <value>مخطط المخزن</value>
+  </data>
+  <data name="Total racks" xml:space="preserve">
+    <value>إجمالي الرفوف</value>
+  </data>
+  <data name="Total sections" xml:space="preserve">
+    <value>إجمالي السيكشنات</value>
+  </data>
+  <data name="Locations" xml:space="preserve">
+    <value>المواقع</value>
+  </data>
+  <data name="Occupancy" xml:space="preserve">
+    <value>نسبة الإشغال</value>
+  </data>
+  <data name="View details" xml:space="preserve">
+    <value>عرض التفاصيل</value>
+  </data>
+  <data name="Shows how the warehouse is divided into sections and storage locations." xml:space="preserve">
+    <value>يوضّح تقسيم المخزن إلى سيكشنات ومواقع التخزين</value>
+  </data>
+  <data name="No sections yet" xml:space="preserve">
+    <value>لا توجد سيكشنات بعد</value>
+  </data>
+  <data name="Locations need the Bin level, which has no rows yet." xml:space="preserve">
+    <value>المواقع تحتاج مستوى Bin ولا يوجد منه أي صف بعد.</value>
+  </data>
+  <data name="Occupancy needs a capacity per rack, which is not stored yet." xml:space="preserve">
+    <value>نسبة الإشغال تحتاج سعة لكل رف وهي غير مخزّنة بعد.</value>
+  </data>
 </root>

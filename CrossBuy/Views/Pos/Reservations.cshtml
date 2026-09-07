@@ -39,7 +39,7 @@
     #rzSlots .rz-seat .rz-dot.bk{background:#e5484d}
     #rzSlots .rz-slot.free{border-color:#c3e6d4;color:#16a34a}
     #rzSlots .rz-slot.free:hover{background:#16a34a;color:#fff;border-color:#16a34a}
-    #rzSlots .rz-slot.free.active{background:#13433a;color:#fff;border-color:#13433a;box-shadow:0 0 0 3px rgba(19,67,58,.2)}
+    #rzSlots .rz-slot.free.active{background:#0E4A9E;color:#fff;border-color:#0E4A9E;box-shadow:0 0 0 3px rgba(14,74,158,.2)}
     #rzSlots .rz-slot.partial{border-color:#f6c000;color:#a17a00;background:#fff8e1;cursor:not-allowed}
     #rzSlots .rz-slot.full{border-color:#e5484d;color:#e5484d;background:#fdecec;cursor:not-allowed}
     #rzSlots .rz-slot.past{opacity:.45;cursor:not-allowed}
@@ -86,7 +86,7 @@
                 <div class="card-header"><div class="card-title"><h3>@Localizer["Today & upcoming"]</h3></div></div>
                 <div class="card-body">
                     <table class="table table-row-dashed align-middle fs-7">
-                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8"><th>@SR["Time"]</th><th>@Localizer["Table"]</th><th>@Localizer["Guest"]</th><th>@SR["Phone"]</th><th class="text-center">@Localizer["Party"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <thead><tr class="text-gray-500 fw-bold text-uppercase fs-8" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Time"]</th><th>@Localizer["Table"]</th><th>@Localizer["Guest"]</th><th>@SR["Phone"]</th><th class="text-center">@Localizer["Party"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
                         <tbody>
                         @foreach (var r in reservations)
                         {

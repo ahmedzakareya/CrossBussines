@@ -23,7 +23,7 @@
         </form></div></div>
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive">
             <table class="table align-middle fs-6 gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                     <th class="ps-4">@SR["Employee"]</th><th class="text-center">@Localizer["Work days"]</th><th class="text-center">@Localizer["Present"]</th>
                     <th class="text-center">@Localizer["Late count"]</th><th class="text-center">@Localizer["Late min"]</th><th class="text-center">@Localizer["OT min"]</th>
                     <th class="text-center">@Localizer["Leave"]</th><th class="text-center pe-4">@Localizer["Absent"]</th>
@@ -34,10 +34,10 @@
                     <tr style="border-bottom:1px dashed #eef1f6;">
                         <td class="ps-4 fw-bold text-gray-900">@r.EmployeeName</td>
                         <td class="text-center">@r.WorkDays</td>
-                        <td class="text-center fw-bold" style="color:#1f6253;">@r.PresentDays</td>
+                        <td class="text-center fw-bold" style="color:#145DBF;">@r.PresentDays</td>
                         <td class="text-center @(r.LateCount>0?"text-gray-900 fw-bold":"text-gray-400")">@r.LateCount</td>
                         <td class="text-center @(r.LateMinutes>0?"text-gray-900 fw-bold":"text-gray-400")">@r.LateMinutes</td>
-                        <td class="text-center @(r.OvertimeMinutes>0?"fw-bold":"text-gray-400")" style="@(r.OvertimeMinutes>0?"color:#1f6253;":"")">@r.OvertimeMinutes</td>
+                        <td class="text-center @(r.OvertimeMinutes>0?"fw-bold":"text-gray-400")" style="@(r.OvertimeMinutes>0?"color:#145DBF;":"")">@r.OvertimeMinutes</td>
                         <td class="text-center text-muted">@r.LeaveDays</td>
                         <td class="text-center pe-4 @(r.AbsentDays>0?"text-danger fw-bold":"text-gray-400")">@r.AbsentDays</td>
                     </tr>

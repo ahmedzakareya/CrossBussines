@@ -6,7 +6,15 @@
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var whs = ViewBag.Warehouses as List<Warehouse> ?? new();
     int? fWh = ViewBag.FilterWarehouseId;
-}
+
+    @* A new resource key needs a rebuilt satellite assembly, and IViewLocalizer returns the KEY
+       when it cannot resolve one - which is why these read as English. Resource first, Arabic
+       literal only as the fallback, so this heals itself on the next build. *@
+    Func<string, string, string> Lz = (key, arFallback) =>
+    {
+        var v = Localizer[key].Value;
+        return (isAr && string.Equals(v, key, StringComparison.Ordinal)) ? arFallback : v;
+    };}
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Stock movements"]</h1>
@@ -19,20 +27,65 @@
             <div class="col-md-6"><label class="fw-semibold fs-7 text-muted mb-1"><i class="ki-outline ki-magnifier fs-5 me-1"></i>@Localizer["Multi-search (item / type / warehouse)"]</label>
                 <input type="text" id="f_q" class="form-control form-control-solid" autocomplete="off" placeholder="@Localizer["Add search terms…"]" /></div>
             <div class="col-md-4"><label class="fw-semibold fs-7 text-muted mb-1">@SR["Warehouse"]</label>
-                <select id="f_wh" class="form-select form-select-solid cb-filter" data-control="select2" data-placeholder="@Localizer["All warehouses"]"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                <select id="f_wh" class="form-select form-select-solid cb-filter" data-control="select2" data-placeholder="@Localizer["All warehouses"]"><option value="">@Localizer["All warehouses"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
             <div class="col-md-2"><button type="button" id="f_reset" class="btn btn-light w-100"><i class="ki-outline ki-arrows-circle fs-3"></i> @SR["Reset"]</button></div>
         </div></div></div>
 
-        <div class="card card-flush">
+        
+    @* ================================================================================================
+       THE TICKER. Everything here is computed on the server over the WHOLE filter, never from the 25
+       rows on screen - a total that changes when you turn the page is worse than no total.
+       ================================================================================================ *@
+    <div class="row g-4 mb-5" id="smTicker">
+        @foreach (var tile in new[] {
+            (id: "tkIn",  label: Lz("In", "داخل"),  sub: Lz("Quantity received", "الكمية الواردة"), icon: "ki-entrance-left",  tone: "success"),
+            (id: "tkOut", label: Lz("Out", "خارج"), sub: Lz("Quantity issued", "الكمية المنصرفة"),  icon: "ki-entrance-right", tone: "danger"),
+            (id: "tkNet", label: Lz("Net", "الصافي"), sub: Lz("In minus out", "الوارد ناقص المنصرف"),     icon: "ki-arrow-up-down",  tone: "secondary"),
+            (id: "tkVal", label: Lz("Net value", "صافي القيمة"), sub: Lz("Cost of the net movement", "تكلفة صافي الحركة"), icon: "ki-dollar", tone: "secondary") })
+        {
+            <div class="col-6 col-xl-3">
+                <div class="card card-flush h-100">
+                    <div class="card-body d-flex align-items-center p-5">
+                        <span class="symbol symbol-45px me-4 flex-shrink-0">
+                            <span class="symbol-label @(tile.tone == "secondary" ? "bg-light" : "bg-light-" + tile.tone)"><i class="ki-outline @tile.icon fs-2x @(tile.tone == "secondary" ? "text-gray-700" : "text-" + tile.tone)"></i></span>
+                        </span>
+                        <div class="min-w-0">
+                            @* The figure is isolated and tabular: an Arabic label beside a number reorders
+                               it without the isolate, and the tile twitches as digits change without the
+                               tabular figures. *@
+                            <div class="fs-2x fw-bold text-gray-900 lh-1" id="@tile.id" dir="ltr"
+                                 style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">&mdash;</div>
+                            <div class="fs-7 fw-semibold text-gray-800 mt-1">@tile.label</div>
+                            <div class="fs-8 fw-semibold text-gray-500">@tile.sub</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="card card-flush mb-5" id="smMovers">
+        <div class="card-header pt-6">
+            <h3 class="card-title align-items-start flex-column">
+                <span class="card-label fw-bold text-gray-900">@Lz("Most active items", "أكثر الأصناف حركة")</span>
+                <span class="text-gray-500 mt-1 fw-semibold fs-7">@Lz("By total quantity moved, across the current filter", "حسب إجمالي الكمية المتحرّكة ضمن الفلتر الحالي")</span>
+            </h3>
+        </div>
+        <div class="card-body pt-2">
+            <div id="smMoversChart" style="min-height:300px"></div>
+            <div id="smMoversBody" class="text-gray-500 fw-semibold fs-7"></div>
+        </div>
+    </div>
+<div class="card card-flush">
             <div class="card-header align-items-center py-4"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
                 <div class="card-toolbar"><div class="d-flex align-items-center gap-2"><button type="button" id="f_export" class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0"><i class="ki-outline ki-file-down fs-4"></i>@Localizer["Export Excel"]</button><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div></div>
             </div>
             <div class="card-body pt-0">
                 <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-4" id="t">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                         <th class="min-w-100px">@SR["Date"]</th><th class="min-w-200px">@SR["Item"]</th><th class="min-w-120px">@SR["Warehouse"]</th><th class="min-w-100px">@Localizer["Location"]</th>
-                        <th class="text-center min-w-90px">@SR["Type"]</th><th class="text-end min-w-90px">@Localizer["In"]</th><th class="text-end min-w-90px">@Localizer["Out"]</th>
+                        <th class="text-center min-w-90px">@SR["Type"]</th><th class="text-end min-w-110px">@Lz("Movement", "الحركة")</th>
                         <th class="text-end min-w-90px">@Localizer["Unit cost"]</th><th class="text-end min-w-100px">@Localizer["Value"]</th><th class="text-center min-w-60px">@Localizer["JE"]</th>
                     </tr></thead>
                     <tbody class="fw-semibold text-gray-700" id="rows"></tbody>
@@ -47,8 +100,125 @@
 </div>
 @section Scripts {
 <script>
+var AR = @(isAr ? "true" : "false");
+var nf = function (v, dec) { return Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: dec||0, maximumFractionDigits: dec||0 }); };
+// The SIGN is written explicitly, not left to the colour - a reader who cannot separate green
+// from red still has to be able to tell an inbound total from an outbound one.
+var signed = function (v, dec) { var n = Number(v || 0); return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + nf(Math.abs(n), dec); };
+
+// DECLARED BEFORE cbServerList, not after. cbServerList calls addParams synchronously while it
+// is being constructed, so loadTicker runs before this line would otherwise be reached - and
+// `++undefined` is NaN, which made the stale-response guard below compare NaN to NaN and throw
+// away every answer it was meant to protect.
+var tickerReq = 0;
 var sl = cbServerList({ url:'@Url.Action("StockMovementsData","Inventory")', suggestUrl:'@Url.Action("ItemsSuggest","Inventory")', isAr:@(isAr ? "true" : "false"),
-  addParams:function(p){ var w=document.getElementById('f_wh'); if(w&&w.value)p.set('warehouseId',w.value); } });
+  addParams:function(p){
+    var w=document.getElementById('f_wh'); if(w&&w.value)p.set('warehouseId',w.value);
+    // HOOKED HERE ON PURPOSE. cbServerList calls addParams on every load, so the ticker is
+    // refreshed with exactly the parameters the table is about to be loaded with - it cannot
+    // end up describing a different filter than the rows underneath it.
+    var t=new URLSearchParams(); var qv=p.get('q'); if(qv)t.set('q',qv);
+    var wv=p.get('warehouseId'); if(wv)t.set('warehouseId',wv);
+    loadTicker(t.toString());
+  } });
+
+
+function loadTicker(qs) {
+  var mine = ++tickerReq;
+  fetch('@Url.Action("StockMovementsSummary","Inventory")?' + qs, { headers:{ 'X-Requested-With':'fetch' }, cache:'no-store' })
+    .then(function (r) { if (!r.ok) { throw new Error('http ' + r.status); } return r.json(); })
+    .then(function (d) {
+      if (mine !== tickerReq) { return; }   // a slower earlier request must not overwrite a newer answer
+      set('tkIn',  nf(d.inQty), 'text-success');
+      set('tkOut', nf(d.outQty), 'text-danger');
+      set('tkNet', signed(d.netQty), d.netQty > 0 ? 'text-success' : d.netQty < 0 ? 'text-danger' : 'text-gray-900');
+      set('tkVal', signed(d.netValue, 2), d.netValue > 0 ? 'text-success' : d.netValue < 0 ? 'text-danger' : 'text-gray-900');
+      renderMovers(d.movers || []);
+    })
+    .catch(function () {
+      if (mine !== tickerReq) { return; }
+      // A FAILED TOTAL SHOWS NOTHING, never a zero. Zero is a real answer and this is not it.
+      ['tkIn','tkOut','tkNet','tkVal'].forEach(function (id) { set(id, '\u2014', 'text-gray-400'); });
+      document.getElementById('smMoversBody').innerHTML =
+        '<div class="text-gray-500 fw-semibold fs-7 py-4">' + (AR ? '\u062a\u0639\u0630\u0651\u0631 \u062d\u0633\u0627\u0628 \u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a\u0627\u062a.' : 'Could not compute the totals.') + '</div>';
+    });
+}
+function set(id, txt, cls) {
+  var el = document.getElementById(id); if (!el) { return; }
+  el.textContent = txt;
+  el.className = 'fs-2x fw-bold lh-1 ' + cls;
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]; }); }
+var moversChart = null;
+// Built on Metronic's own chartsWidget38 (demo39/assets/js/widgets.bundle.js) - the column chart
+// with the value above each bar that the owner pointed at. The theme's numbers, not mine.
+function renderMovers(rows) {
+  var el = document.getElementById('smMoversChart');
+  var note = document.getElementById('smMoversBody');
+  if (!rows.length) {
+    if (moversChart) { moversChart.destroy(); moversChart = null; }
+    el.innerHTML = '';
+    note.textContent = AR ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u062d\u0631\u0643\u0627\u062a' : 'No movements';
+    return;
+  }
+  note.textContent = '';
+  if (!window.ApexCharts) {
+    // Say so rather than leave an empty card, which reads as no data.
+    note.textContent = AR ? '\u062a\u0639\u0630\u0651\u0631 \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0631\u0633\u0645.' : 'The chart library did not load.';
+    return;
+  }
+
+  var cssv = function (n) { return (window.KTUtil && KTUtil.getCssVariableValue) ? KTUtil.getCssVariableValue(n) : ''; };
+  var labelColor  = cssv('--bs-gray-900') || '#181C32';
+  var borderColor = cssv('--bs-border-dashed-color') || '#E4E6EF';
+  var axisColor   = cssv('--bs-gray-500') || '#99A1B7';
+  var brand       = cssv('--bs-primary') || '#1877F2';
+
+  var names = rows.map(function (r) { return r.name; });
+  var nets  = rows.map(function (r) { return Number(r.net) || 0; });
+
+  var options = {
+    series: [{ name: AR ? '\u0627\u0644\u0643\u0645\u064a\u0629 \u0627\u0644\u0645\u062a\u062d\u0631\u0651\u0643\u0629' : 'Quantity moved',
+               data: rows.map(function (r) { return Math.abs(Number(r.gross) || 0); }) }],
+    chart: { fontFamily: 'inherit', type: 'bar', height: 320, toolbar: { show: false } },
+    plotOptions: { bar: { horizontal: false, columnWidth: ['28%'], borderRadius: 5,
+                         dataLabels: { position: 'top' }, startingShape: 'flat' } },
+    legend: { show: false },
+    dataLabels: { enabled: true, offsetY: -28,
+                  style: { fontSize: '13px', colors: [labelColor] },
+                  formatter: function (val) { return nf(val); } },
+    stroke: { show: true, width: 2, colors: ['transparent'] },
+    xaxis: {
+      categories: rows.map(function (r) { return r.code; }),
+      axisBorder: { show: false }, axisTicks: { show: false },
+      labels: { style: { colors: axisColor, fontSize: '13px' } },
+      crosshairs: { fill: { gradient: { opacityFrom: 0, opacityTo: 0 } } }
+    },
+    // NO 'M' SUFFIX. The demo counts millions; these are units of stock.
+    yaxis: { labels: { style: { colors: axisColor, fontSize: '13px' }, formatter: function (val) { return nf(val); } } },
+    fill: { opacity: 1 },
+    states: { normal: { filter: { type: 'none', value: 0 } },
+              hover:  { filter: { type: 'none', value: 0 } },
+              active: { allowMultipleDataPointsSelection: false, filter: { type: 'none', value: 0 } } },
+    tooltip: {
+      style: { fontSize: '12px' },
+      // THE BAR IS GROSS MOVEMENT. 5,180 moved can be 2,710 in and 2,470 out, so the net goes
+      // in the tooltip - the height cannot carry it, and leaving it out invites the wrong read.
+      y: { formatter: function (val, o) {
+        var i = o.dataPointIndex;
+        return nf(val) + '  \u2014  ' + names[i] + '  (' + (AR ? '\u0627\u0644\u0635\u0627\u0641\u064a' : 'net') + ' ' + signed(nets[i]) + ')';
+      } }
+    },
+    colors: [brand],
+    grid: { borderColor: borderColor, strokeDashArray: 4, yaxis: { lines: { show: true } } }
+  };
+
+  if (moversChart) { moversChart.updateOptions(options, true, true); return; }
+  moversChart = new ApexCharts(el, options);
+  // The demo defers the first render so the parent has settled its width; without it the chart
+  // measures a collapsed container and draws at the wrong size.
+  setTimeout(function () { moversChart.render(); }, 200);
+}
 document.getElementById('f_export').addEventListener('click', function(){
   var p=new URLSearchParams(); var t=(sl.search&&sl.search.terms)?sl.search.terms():''; if(t)p.set('q',t);
   var w=document.getElementById('f_wh'); if(w&&w.value)p.set('warehouseId',w.value);

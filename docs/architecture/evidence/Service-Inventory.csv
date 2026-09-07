@@ -1,0 +1,340 @@
+﻿module,cls,interface,di_lifetime,file,implements,is_background_worker,uses_dbcontext,uses_scopedtx,scopedtx_sites,uses_notify,uses_businessevent,uses_httpcontext,lines
+AI,AiInsightsService,IAiInsightsService,Scoped,CrossBuy/BL/AiInsightsService.cs,IAiInsightsService,False,True,False,0,False,False,False,137
+AI,AiService,IAiService,(not registered),CrossBuy/BL/AiService.cs,IAiService,False,False,False,0,False,False,False,30
+Accounting,AccountingAccessService,IAccountingAccessService,Scoped,CrossBuy/BL/AccountingAccessService.cs,IAccountingAccessService,False,True,False,0,False,False,True,77
+Accounting,AccountingDashboardDto,,(not registered),CrossBuy/BL/AccountingDashboardService.cs,,False,True,False,0,False,False,False,195
+Accounting,AccountingDashboardService,IAccountingDashboardService,Scoped,CrossBuy/BL/AccountingDashboardService.cs,IAccountingDashboardService,False,True,False,0,False,False,False,195
+Accounting,AccountingPostingService,IAccountingPostingService,Scoped,CrossBuy/BL/AccountingPostingService.cs,IAccountingPostingService,False,True,False,0,False,False,False,395
+Accounting,BankService,IBankService,Scoped,CrossBuy/BL/BankService.cs,IBankService,False,True,False,0,False,False,False,135
+Accounting,ChartOfAccountsService,IChartOfAccountsService,Scoped,CrossBuy/BL/ChartOfAccountsService.cs,IChartOfAccountsService,False,True,False,0,False,False,False,153
+Accounting,ClosingService,IClosingService,Scoped,CrossBuy/BL/ClosingService.cs,IClosingService,False,True,False,0,False,False,False,152
+Accounting,CostCenterNode,,(not registered),CrossBuy/BL/CostCenterService.cs,,False,True,False,0,False,False,False,137
+Accounting,CostCenterService,ICostCenterService,Scoped,CrossBuy/BL/CostCenterService.cs,ICostCenterService,False,True,False,0,False,False,False,137
+Accounting,CurrencyRounding,ICurrencyRounding,Scoped,CrossBuy/BL/CurrencyRounding.cs,ICurrencyRounding,False,True,False,0,False,False,False,45
+Accounting,CurrencyService,ICurrencyService,Scoped,CrossBuy/BL/CurrencyService.cs,ICurrencyService,False,True,False,0,False,False,False,111
+Accounting,EtaInvoiceServiceStub,IEtaInvoiceService,Scoped,CrossBuy/BL/TaxService.cs,IEtaInvoiceService,False,True,False,0,False,False,False,205
+Accounting,EtaSubmitResult,,(not registered),CrossBuy/BL/TaxService.cs,,False,True,False,0,False,False,False,205
+Accounting,FinancialStatementService,IFinancialStatementService,Scoped,CrossBuy/BL/FinancialStatementService.cs,IFinancialStatementService,False,True,False,0,False,False,False,182
+Accounting,FiscalPeriodRow,,(not registered),CrossBuy/BL/FiscalPeriodService.cs,,False,True,False,0,False,False,False,83
+Accounting,FiscalPeriodService,IFiscalPeriodService,Scoped,CrossBuy/BL/FiscalPeriodService.cs,IFiscalPeriodService,False,True,False,0,False,False,False,83
+Accounting,FxRevaluationService,IFxRevaluationService,Scoped,CrossBuy/BL/FxRevaluationService.cs,IFxRevaluationService,False,True,False,0,False,False,False,196
+Accounting,GeneralLedgerService,IGeneralLedgerService,Scoped,CrossBuy/BL/GeneralLedgerService.cs,IGeneralLedgerService,False,True,False,0,False,False,False,140
+Accounting,JournalEntryInput,,(not registered),CrossBuy/BL/JournalEntryService.cs,,False,True,True,3,False,False,False,376
+Accounting,JournalEntryService,IJournalEntryService,Scoped,CrossBuy/BL/JournalEntryService.cs,IJournalEntryService,False,True,True,3,False,False,False,376
+Accounting,OpeningBalanceService,IOpeningBalanceService,Scoped,CrossBuy/BL/OpeningBalanceService.cs,IOpeningBalanceService,False,True,False,0,False,False,False,245
+Accounting,PayableService,IPayableService,Scoped,CrossBuy/BL/PayableService.cs,IPayableService,False,True,True,4,True,True,False,681
+Accounting,ReceivableService,IReceivableService,Scoped,CrossBuy/BL/ReceivableService.cs,IReceivableService,False,True,True,7,True,True,False,959
+Accounting,TaxService,ITaxService,Scoped,CrossBuy/BL/TaxService.cs,ITaxService,False,True,False,0,False,False,False,205
+Admin,AccTopAccount,,(not registered),CrossBuy/BL/AccountingDashboardService.cs,,False,True,False,0,False,False,False,195
+Admin,AccountNode,,(not registered),CrossBuy/BL/ChartOfAccountsService.cs,,False,True,False,0,False,False,False,153
+Admin,AccountRow,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Admin,AccountStatement,,(not registered),CrossBuy/BL/GeneralLedgerService.cs,,False,True,False,0,False,False,False,140
+Admin,AdminDashboardDto,,(not registered),CrossBuy/BL/AdminDashboardDto.cs,,False,False,False,0,False,False,False,43
+Admin,CashAccountDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Admin,CompanyService,ICompanyService,Scoped,CrossBuy/BL/CompanyService.cs,ICompanyService,False,True,True,2,False,False,True,780
+Admin,ExecutiveDashboardService,IExecutiveDashboardService,Scoped,CrossBuy/BL/ExecutiveDashboardService.cs,IExecutiveDashboardService,False,True,False,0,False,False,False,146
+Admin,TokenService,ITokenService,Scoped,CrossBuy/BL/TokenService.cs,ITokenService,False,False,False,0,False,False,False,46
+Admin,UserService,IUserService,Scoped,CrossBuy/BL/UserService.cs,IUserService,False,False,False,0,False,False,False,21
+CRM,CrmAccessService,ICrmAccessService,Scoped,CrossBuy/BL/CrmAccessService.cs,ICrmAccessService,False,True,False,0,False,False,True,122
+CRM,CrmAutomationService,ICrmAutomationService,Scoped,CrossBuy/BL/CrmAutomationService.cs,ICrmAutomationService,False,True,False,0,True,False,False,86
+CRM,CrmCustomFieldService,ICrmCustomFieldService,Scoped,CrossBuy/BL/CrmCustomFieldService.cs,ICrmCustomFieldService,False,True,False,0,False,False,False,87
+CRM,CrmCustomerLink,ICrmCustomerLink,Scoped,CrossBuy/BL/CrmCustomerLink.cs,ICrmCustomerLink,False,True,False,0,False,False,False,39
+CRM,CrmFieldWithValue,,(not registered),CrossBuy/BL/CrmCustomFieldService.cs,,False,True,False,0,False,False,False,87
+CRM,CrmReminderHostedService,,HostedService,CrossBuy/BL/CrmReminderHostedService.cs,BackgroundService,True,False,False,0,True,False,False,50
+CRM,CrmReport,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+CRM,CrmService,ICrmService,Scoped,CrossBuy/BL/CrmService.cs,ICrmService,False,True,False,0,True,False,False,1184
+Communication,AnnouncementDto,,(not registered),CrossBuy/BL/AnnouncementService.cs,,False,True,False,0,True,False,False,110
+Communication,AnnouncementService,IAnnouncementService,Scoped,CrossBuy/BL/AnnouncementService.cs,IAnnouncementService,False,True,False,0,True,False,False,110
+Communication,CalendarService,ICalendarService,Scoped,CrossBuy/BL/CalendarService.cs,ICalendarService,False,True,False,0,False,False,False,132
+Communication,ChatDirectoryDto,,(not registered),CrossBuy/BL/ChatService.cs,,False,True,False,0,True,False,False,426
+Communication,ChatHeaderDto,,(not registered),CrossBuy/BL/ChatService.cs,,False,True,False,0,True,False,False,426
+Communication,ChatMemberRead,,(not registered),CrossBuy/BL/ChatService.cs,,False,True,False,0,True,False,False,426
+Communication,ChatMsgDto,,(not registered),CrossBuy/BL/ChatService.cs,,False,True,False,0,True,False,False,426
+Communication,ChatReactionDto,,(not registered),CrossBuy/BL/ChatService.cs,,False,True,False,0,True,False,False,426
+Communication,ChatService,IChatService,Scoped,CrossBuy/BL/ChatService.cs,IChatService,False,True,False,0,True,False,False,426
+Communication,CommService,ICommService,Scoped,CrossBuy/BL/CommService.cs,ICommService,False,True,False,0,False,False,False,232
+Communication,DocCommentDto,,(not registered),CrossBuy/BL/DocCommentService.cs,,False,True,False,0,True,False,False,96
+Communication,DocCommentService,IDocCommentService,Scoped,CrossBuy/BL/DocCommentService.cs,IDocCommentService,False,True,False,0,True,False,False,96
+Communication,FileManagerService,IFileManagerService,Scoped,CrossBuy/BL/FileManagerService.cs,IFileManagerService,False,True,False,0,False,False,False,252
+Communication,NotificationService,INotificationService,Scoped,CrossBuy/BL/NotificationService.cs,INotificationService,False,True,False,0,True,False,False,137
+Communication,NotificationTypes,,(not registered),CrossBuy/BL/NotificationTypes.cs,,False,False,False,0,False,False,False,101
+FixedAssets,EquipmentDepreciationService,IEquipmentDepreciationService,Scoped,CrossBuy/BL/EquipmentDepreciationService.cs,IEquipmentDepreciationService,False,True,False,0,False,False,False,173
+FixedAssets,FixedAssetInput,,(not registered),CrossBuy/BL/FixedAssetService.cs,,False,True,False,0,False,False,False,322
+FixedAssets,FixedAssetService,IFixedAssetService,Scoped,CrossBuy/BL/FixedAssetService.cs,IFixedAssetService,False,True,False,0,False,False,False,322
+FixedAssets,MaintenanceDueRow,,(not registered),CrossBuy/BL/MaintenanceService.cs,,False,True,False,0,False,False,False,113
+FixedAssets,MaintenanceService,IMaintenanceService,Scoped,CrossBuy/BL/MaintenanceService.cs,IMaintenanceService,False,True,False,0,False,False,False,113
+HR,AdministrativeBodiesCompanyService,IAdministrativeBodiesCompanyService,Scoped,CrossBuy/BL/AdministrativeBodiesCompanyService.cs,IAdministrativeBodiesCompanyService,False,True,False,0,False,False,False,61
+HR,AdministrativeStructureService,IAdministrativeStructureService,Scoped,CrossBuy/BL/AdministrativeStructureService.cs,IAdministrativeStructureService,False,True,False,0,False,False,True,169
+HR,AppraisalService,IAppraisalService,Scoped,CrossBuy/BL/AppraisalService.cs,IAppraisalService,False,True,False,0,True,False,False,202
+HR,AttendanceMonthRow,,(not registered),CrossBuy/BL/AttendanceService.cs,,False,True,False,0,False,False,False,168
+HR,AttendanceService,IAttendanceService,Scoped,CrossBuy/BL/AttendanceService.cs,IAttendanceService,False,True,False,0,False,False,False,168
+HR,BranchEmployeeDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+HR,ContractService,IContractService,Scoped,CrossBuy/BL/ContractService.cs,IContractService,False,True,False,0,False,False,False,165
+HR,ContractSummary,,(not registered),CrossBuy/BL/ContractService.cs,,False,True,False,0,False,False,False,165
+HR,EmployeeCostService,IEmployeeCostService,Scoped,CrossBuy/BL/EmployeeCostService.cs,IEmployeeCostService,False,True,False,0,False,False,False,32
+HR,EmployeeRequestService,IEmployeeRequestService,Scoped,CrossBuy/BL/EmployeeRequestService.cs,IEmployeeRequestService,False,True,False,0,True,False,False,138
+HR,EmployeeService,IEmployeeService,Scoped,CrossBuy/BL/EmployeeService.cs,IEmployeeService,False,True,False,0,False,False,False,222
+HR,FinalSettlementService,IFinalSettlementService,Scoped,CrossBuy/BL/FinalSettlementService.cs,IFinalSettlementService,False,True,False,0,False,False,False,147
+HR,HolidayService,IHolidayService,Scoped,CrossBuy/BL/HolidayService.cs,IHolidayService,False,True,False,0,False,False,False,74
+HR,HoursReportEmployeeDto,,(not registered),CrossBuy/BL/TimesheetService.cs,,False,True,False,0,False,False,False,171
+HR,HrDocumentService,IHrDocumentService,Scoped,CrossBuy/BL/HrDocumentService.cs,IHrDocumentService,False,True,False,0,True,False,False,252
+HR,HrHolidayRow,,(not registered),CrossBuy/BL/AdminDashboardDto.cs,,False,False,False,0,False,False,False,43
+HR,HrLeaveRow,,(not registered),CrossBuy/BL/AdminDashboardDto.cs,,False,False,False,0,False,False,False,43
+HR,JobTitleService,IJobTitles,Scoped,CrossBuy/BL/JobTitleService.cs,IJobTitles,False,True,False,0,False,False,False,63
+HR,LeaveAccrualService,ILeaveAccrualService,Scoped,CrossBuy/BL/LeaveAccrualService.cs,ILeaveAccrualService,False,True,False,0,False,False,False,248
+HR,LeaveBalanceRow,,(not registered),CrossBuy/BL/LeaveDashboardService.cs,,False,True,False,0,False,False,False,270
+HR,LeaveDashboardService,ILeaveDashboardService,Scoped,CrossBuy/BL/LeaveDashboardService.cs,ILeaveDashboardService,False,True,False,0,False,False,False,270
+HR,LeaveWorkflowService,ILeaveWorkflowService,Scoped,CrossBuy/BL/LeaveWorkflowService.cs,ILeaveWorkflowService,False,True,False,0,True,False,False,287
+HR,PayrollDisbursementView,,(not registered),CrossBuy/BL/AccountingPostingService.cs,,False,True,False,0,False,False,False,395
+HR,PayrollEmployeeLine,,(not registered),CrossBuy/BL/AccountingPostingService.cs,,False,True,False,0,False,False,False,395
+HR,PayrollRunPreview,,(not registered),CrossBuy/BL/AccountingPostingService.cs,,False,True,False,0,False,False,False,395
+HR,PeopleDashboardDto,,(not registered),CrossBuy/BL/LeaveDashboardService.cs,,False,True,False,0,False,False,False,270
+HR,PolicesService,IPolicesService,Scoped,CrossBuy/BL/PolicesService.cs,IPolicesService,False,True,False,0,False,False,True,617
+HR,RecruitmentService,IRecruitmentService,Scoped,CrossBuy/BL/RecruitmentService.cs,IRecruitmentService,False,True,False,0,False,False,False,276
+HR,RecruitmentStages,,(not registered),CrossBuy/BL/RecruitmentService.cs,,False,True,False,0,False,False,False,276
+HR,RevisedContract,,(not registered),CrossBuy/BL/VariationOrderService.cs,,False,True,False,0,False,False,False,165
+HR,TrainingService,ITrainingService,Scoped,CrossBuy/BL/TrainingService.cs,ITrainingService,False,True,False,0,False,False,False,109
+Inventory,BrandIdentity,,(not registered),CrossBuy/BL/BrandService.cs,,False,True,False,0,False,False,False,153
+Inventory,BrandService,IBrandService,Scoped,CrossBuy/BL/BrandService.cs,IBrandService,False,True,False,0,False,False,False,153
+Inventory,ChatConvListItem,,(not registered),CrossBuy/BL/ChatService.cs,,False,True,False,0,True,False,False,426
+Inventory,ChecklistItem,,(not registered),CrossBuy/BL/RecruitmentService.cs,,False,True,False,0,False,False,False,276
+Inventory,ExpiryItem,,(not registered),CrossBuy/BL/HrDocumentService.cs,,False,True,False,0,True,False,False,252
+Inventory,IntegrityCheck,,(not registered),CrossBuy/BL/IntegrityCheckService.cs,,False,True,False,0,True,False,False,377
+Inventory,IntegrityCheckHostedService,,HostedService,CrossBuy/BL/IntegrityCheckHostedService.cs,BackgroundService,True,False,False,0,False,False,False,36
+Inventory,IntegrityCheckService,IIntegrityCheckService,Scoped,CrossBuy/BL/IntegrityCheckService.cs,IIntegrityCheckService,False,True,False,0,True,False,False,377
+Inventory,InventoryAccessService,IInventoryAccessService,Scoped,CrossBuy/BL/InventoryAccessService.cs,IInventoryAccessService,False,True,False,0,False,False,True,91
+Inventory,InventoryApprovalService,IInventoryApprovalService,Scoped,CrossBuy/BL/InventoryApprovalService.cs,IInventoryApprovalService,False,True,False,0,True,False,False,141
+Inventory,ItemCategoryNode,,(not registered),CrossBuy/BL/ItemService.cs,,False,True,False,0,False,False,False,473
+Inventory,ItemInput,,(not registered),CrossBuy/BL/ItemService.cs,,False,True,False,0,False,False,False,473
+Inventory,ItemService,IItemService,Scoped,CrossBuy/BL/ItemService.cs,IItemService,False,True,False,0,False,False,False,473
+Inventory,MailListItem,,(not registered),CrossBuy/BL/CommService.cs,,False,True,False,0,False,False,False,232
+Inventory,OpeningStockLineInput,,(not registered),CrossBuy/BL/StockService.cs,,False,True,True,15,False,False,False,1724
+Inventory,PosQuickMenuItemDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Inventory,PosTopItem,,(not registered),CrossBuy/BL/PosDashboardDto.cs,,False,False,False,0,False,False,False,29
+Inventory,PricingService,IPricingService,Scoped,CrossBuy/BL/PricingService.cs,IPricingService,False,True,False,0,False,False,False,532
+Inventory,ProcurementService,IProcurementService,Scoped,CrossBuy/BL/ProcurementService.cs,IProcurementService,False,True,False,0,True,False,False,243
+Inventory,ProjectStockRow,,(not registered),CrossBuy/BL/ProjectMaterialIssueService.cs,,False,True,False,0,False,False,False,125
+Inventory,SellingService,ISellingService,Scoped,CrossBuy/BL/SellingService.cs,ISellingService,False,True,False,0,True,False,False,270
+Inventory,StockBalanceRow,,(not registered),CrossBuy/BL/StockService.cs,,False,True,True,15,False,False,False,1724
+Inventory,StockService,IStockService,Scoped,CrossBuy/BL/StockService.cs,IStockService,False,True,True,15,False,False,False,1724
+Inventory,StoreCatalogService,IStoreCatalogService,Scoped,CrossBuy/BL/StoreCatalogService.cs,IStoreCatalogService,False,True,False,0,False,False,False,157
+Inventory,ThreeWayMatchService,IThreeWayMatchService,Scoped,CrossBuy/BL/ThreeWayMatchService.cs,IThreeWayMatchService,False,True,False,0,False,False,False,84
+Inventory,WarehouseService,IWarehouseService,Scoped,CrossBuy/BL/WarehouseService.cs,IWarehouseService,False,True,False,0,False,False,False,94
+Manufacturing,ManufReport,,(not registered),CrossBuy/BL/ManufService.cs,,False,True,True,7,False,True,False,692
+Manufacturing,ManufService,IManufService,Scoped,CrossBuy/BL/ManufService.cs,IManufService,False,True,True,7,False,True,False,692
+Manufacturing,ManufWoCostRow,,(not registered),CrossBuy/BL/ManufService.cs,,False,True,True,7,False,True,False,692
+POS,PosAccessService,IPosAccessService,Scoped,CrossBuy/BL/PosAccessService.cs,IPosAccessService,False,True,False,0,False,False,False,74
+POS,PosDashboardDto,,(not registered),CrossBuy/BL/PosDashboardDto.cs,,False,False,False,0,False,False,False,29
+POS,PosDayPoint,,(not registered),CrossBuy/BL/PosDashboardDto.cs,,False,False,False,0,False,False,False,29
+POS,PosLoginContext,,(not registered),CrossBuy/BL/PosAccessService.cs,,False,True,False,0,False,False,False,74
+POS,PosOrderDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+POS,PosOrderLineDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+POS,PosOrderLineModifierDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+POS,PosOrderService,IPosOrderService,Scoped,CrossBuy/BL/PosOrderService.cs,IPosOrderService,False,True,True,5,False,False,False,1910
+POS,PosQuickMenuGroupDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+POS,PosRecentOrder,,(not registered),CrossBuy/BL/PosDashboardDto.cs,,False,False,False,0,False,False,False,29
+POS,PosSetupService,IPosSetupService,Scoped,CrossBuy/BL/PosSetupService.cs,IPosSetupService,False,True,True,1,False,False,False,1129
+POS,PosSyncLineInput,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+POS,PosSyncOrderInput,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+POS,PosSyncTipInput,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+POS,PosTenderInput,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+POS,PosTypeSlice,,(not registered),CrossBuy/BL/PosDashboardDto.cs,,False,False,False,0,False,False,False,29
+Platform,AccountingPermissionAdapter,IModulePermissionAdapter,Scoped,CrossBuy/BL/Platform/PlatformPermissionProvider.cs,IModulePermissionAdapter,False,False,False,0,False,False,False,242
+Platform,BusinessContextAccessor,IBusinessContextAccessor,Scoped,CrossBuy/BL/Platform/BusinessContextAccessor.cs,IBusinessContextAccessor,False,True,False,0,False,False,True,115
+Platform,BusinessEventDispatchOptions,,(not registered),CrossBuy/BL/Platform/IEventDispatchStore.cs,,False,False,False,0,False,False,False,64
+Platform,BusinessEventDispatchWorker,,HostedService,CrossBuy/BL/Platform/BusinessEventDispatchWorker.cs,BackgroundService,True,True,False,0,False,True,False,129
+Platform,BusinessEventNotificationMapper,IBusinessEventNotificationMapper,Scoped,CrossBuy/BL/Platform/BusinessEventNotificationMapper.cs,IBusinessEventNotificationMapper,False,False,False,0,False,False,False,167
+Platform,BusinessEventService,IBusinessEventService,Scoped,CrossBuy/BL/Platform/BusinessEventService.cs,IBusinessEventService,False,True,False,0,False,True,False,221
+Platform,BusinessEventTypes,,(not registered),CrossBuy/BL/Platform/BusinessEventTypes.cs,,False,False,False,0,False,False,False,147
+Platform,CrmPermissionAdapter,IModulePermissionAdapter,Scoped,CrossBuy/BL/Platform/PlatformPermissionProvider.cs,IModulePermissionAdapter,False,False,False,0,False,False,False,242
+Platform,CustomerEvents,,(not registered),CrossBuy/BL/Platform/BusinessEventTypes.cs,,False,False,False,0,False,False,False,147
+Platform,CustomerLegacyTimelineAdapter,ILegacyTimelineAdapter,Scoped,CrossBuy/BL/Platform/CustomerLegacyTimelineAdapter.cs,ILegacyTimelineAdapter,False,True,False,0,False,False,False,121
+Platform,DefaultPermissionAdapter,IModulePermissionAdapter,Scoped,CrossBuy/BL/Platform/PlatformPermissionProvider.cs,IModulePermissionAdapter,False,False,False,0,False,False,False,242
+Platform,DispatchWorkItem,,(not registered),CrossBuy/BL/Platform/IEventDispatchStore.cs,,False,False,False,0,False,False,False,64
+Platform,EntityCodeNotRegisteredException,InvalidOperationException,(not registered),CrossBuy/BL/Platform/IEntityRegistry.cs,InvalidOperationException,False,False,False,0,False,False,False,51
+Platform,EntityRegistry,IEntityRegistry,Scoped,CrossBuy/BL/Platform/EntityRegistry.cs,IEntityRegistry,False,True,False,0,False,False,False,345
+Platform,InventoryPermissionAdapter,IModulePermissionAdapter,Scoped,CrossBuy/BL/Platform/PlatformPermissionProvider.cs,IModulePermissionAdapter,False,False,False,0,False,False,False,242
+Platform,ManufWorkOrderEvents,,(not registered),CrossBuy/BL/Platform/BusinessEventTypes.cs,,False,False,False,0,False,False,False,147
+Platform,ManufWorkOrderLegacyTimelineAdapter,ILegacyTimelineAdapter,Scoped,CrossBuy/BL/Platform/ManufWorkOrderLegacyTimelineAdapter.cs,ILegacyTimelineAdapter,False,True,False,0,False,False,False,130
+Platform,ManufacturingPermissionAdapter,IModulePermissionAdapter,Scoped,CrossBuy/BL/Platform/PlatformPermissionProvider.cs,IModulePermissionAdapter,False,False,False,0,False,False,False,242
+Platform,NotificationProjectionConsumer,IBusinessEventConsumer,Scoped,CrossBuy/BL/Platform/NotificationProjectionConsumer.cs,IBusinessEventConsumer,False,True,False,0,True,False,False,193
+Platform,PlatformPermissionProvider,IPlatformPermissionProvider,Scoped,CrossBuy/BL/Platform/PlatformPermissionProvider.cs,IPlatformPermissionProvider,False,False,False,0,False,False,False,242
+Platform,PosPermissionAdapter,IModulePermissionAdapter,Scoped,CrossBuy/BL/Platform/PlatformPermissionProvider.cs,IModulePermissionAdapter,False,False,False,0,False,False,False,242
+Platform,Presentation,,(not registered),CrossBuy/BL/Platform/TimelineEventPresenter.cs,,False,False,False,0,False,False,False,369
+Platform,PurchaseInvoiceEvents,,(not registered),CrossBuy/BL/Platform/BusinessEventTypes.cs,,False,False,False,0,False,False,False,147
+Platform,PurchaseInvoiceLegacyTimelineAdapter,ILegacyTimelineAdapter,Scoped,CrossBuy/BL/Platform/PurchaseInvoiceLegacyTimelineAdapter.cs,ILegacyTimelineAdapter,False,True,False,0,False,False,False,85
+Platform,SalesInvoiceEvents,,(not registered),CrossBuy/BL/Platform/BusinessEventTypes.cs,,False,False,False,0,False,False,False,147
+Platform,SalesInvoiceLegacyTimelineAdapter,ILegacyTimelineAdapter,Scoped,CrossBuy/BL/Platform/SalesInvoiceLegacyTimelineAdapter.cs,ILegacyTimelineAdapter,False,True,False,0,False,False,False,121
+Platform,SqlEventDispatchStore,IEventDispatchStore,Scoped,CrossBuy/BL/Platform/SqlEventDispatchStore.cs,IEventDispatchStore,False,True,False,0,False,False,False,239
+Platform,TimelineEventPresenter,,(not registered),CrossBuy/BL/Platform/TimelineEventPresenter.cs,,False,False,False,0,False,False,False,369
+Platform,TimelineProjectionConsumer,IBusinessEventConsumer,Scoped,CrossBuy/BL/Platform/TimelineProjectionConsumer.cs,IBusinessEventConsumer,False,False,False,0,False,False,False,61
+Platform,TimelineProjectionService,ITimelineProjectionService,Scoped,CrossBuy/BL/Platform/TimelineProjectionService.cs,ITimelineProjectionService,False,True,False,0,False,False,False,221
+Projects,BoqRowInput,,(not registered),CrossBuy/BL/BoqService.cs,,False,True,False,0,False,False,False,152
+Projects,BoqService,IBoqService,Scoped,CrossBuy/BL/BoqService.cs,IBoqService,False,True,False,0,False,False,False,152
+Projects,BoqSummary,,(not registered),CrossBuy/BL/BoqService.cs,,False,True,False,0,False,False,False,152
+Projects,ProgressBillingService,IProgressBillingService,Scoped,CrossBuy/BL/ProgressBillingService.cs,IProgressBillingService,False,True,False,0,False,False,False,273
+Projects,ProgressEditModel,,(not registered),CrossBuy/BL/ProgressService.cs,,False,True,False,0,False,False,False,292
+Projects,ProgressLineView,,(not registered),CrossBuy/BL/ProgressService.cs,,False,True,False,0,False,False,False,292
+Projects,ProgressRowInput,,(not registered),CrossBuy/BL/ProgressService.cs,,False,True,False,0,False,False,False,292
+Projects,ProgressService,IProgressService,Scoped,CrossBuy/BL/ProgressService.cs,IProgressService,False,True,False,0,False,False,False,292
+Projects,ProgressSummary,,(not registered),CrossBuy/BL/ProgressService.cs,,False,True,False,0,False,False,False,292
+Projects,ProjectBudgetService,IProjectBudgetService,Scoped,CrossBuy/BL/ProjectBudgetService.cs,IProjectBudgetService,False,True,False,0,False,False,False,86
+Projects,ProjectDashboardDto,,(not registered),CrossBuy/BL/ProjectDashboardDto.cs,,False,False,False,0,False,False,False,32
+Projects,ProjectLaborRow,,(not registered),CrossBuy/BL/ProjectLaborService.cs,,False,True,False,0,False,False,False,112
+Projects,ProjectLaborService,IProjectLaborService,Scoped,CrossBuy/BL/ProjectLaborService.cs,IProjectLaborService,False,True,False,0,False,False,False,112
+Projects,ProjectMaterialIssueService,IProjectMaterialIssueService,Scoped,CrossBuy/BL/ProjectMaterialIssueService.cs,IProjectMaterialIssueService,False,True,False,0,False,False,False,125
+Projects,ProjectPnlRow,,(not registered),CrossBuy/BL/ProjectService.cs,,False,True,False,0,False,False,False,143
+Projects,ProjectService,IProjectService,Scoped,CrossBuy/BL/ProjectService.cs,IProjectService,False,True,False,0,False,False,False,143
+Projects,SubcontractBillingService,ISubcontractBillingService,Scoped,CrossBuy/BL/SubcontractBillingService.cs,ISubcontractBillingService,False,True,False,0,False,False,False,186
+Projects,VariationOrderService,IVariationOrderService,Scoped,CrossBuy/BL/VariationOrderService.cs,IVariationOrderService,False,True,False,0,False,False,False,165
+Tasks,AutoTaskRow,,(not registered),CrossBuy/BL/TaskReportService.cs,,False,True,False,0,False,False,False,146
+Tasks,OverdueTaskRow,,(not registered),CrossBuy/BL/TaskReportService.cs,,False,True,False,0,False,False,False,146
+Tasks,TaskAutoRuleDto,,(not registered),CrossBuy/BL/TaskGeneratorService.cs,,False,True,False,0,False,False,False,143
+Tasks,TaskBillingDto,,(not registered),CrossBuy/BL/TaskBillingService.cs,,False,True,False,0,False,False,False,84
+Tasks,TaskBillingService,ITaskBillingService,Scoped,CrossBuy/BL/TaskBillingService.cs,ITaskBillingService,False,True,False,0,False,False,False,84
+Tasks,TaskCostDto,,(not registered),CrossBuy/BL/TaskCostService.cs,,False,True,False,0,False,False,False,85
+Tasks,TaskCostLineDto,,(not registered),CrossBuy/BL/TaskCostService.cs,,False,True,False,0,False,False,False,85
+Tasks,TaskCostService,ITaskCostService,Scoped,CrossBuy/BL/TaskCostService.cs,ITaskCostService,False,True,False,0,False,False,False,85
+Tasks,TaskGeneratorHostedService,,HostedService,CrossBuy/BL/TaskGeneratorHostedService.cs,BackgroundService,True,False,False,0,False,False,False,36
+Tasks,TaskGeneratorService,ITaskGeneratorService,Scoped,CrossBuy/BL/TaskGeneratorService.cs,ITaskGeneratorService,False,True,False,0,False,False,False,143
+Tasks,TaskKpiDto,,(not registered),CrossBuy/BL/TaskService.cs,,False,True,False,0,False,False,False,303
+Tasks,TaskLinkDto,,(not registered),CrossBuy/BL/TaskLinkResolver.cs,,False,False,False,0,False,False,False,77
+Tasks,TaskLinkOptionDto,,(not registered),CrossBuy/BL/TaskLinkResolver.cs,,False,False,False,0,False,False,False,77
+Tasks,TaskLinkResolver,ITaskLinkResolver,Scoped,CrossBuy/BL/TaskLinkResolver.cs,ITaskLinkResolver,False,False,False,0,False,False,False,77
+Tasks,TaskLinkTypeDto,,(not registered),CrossBuy/BL/TaskLinkResolver.cs,,False,False,False,0,False,False,False,77
+Tasks,TaskReportService,ITaskReportService,Scoped,CrossBuy/BL/TaskReportService.cs,ITaskReportService,False,True,False,0,False,False,False,146
+Tasks,TaskRowDto,,(not registered),CrossBuy/BL/TaskService.cs,,False,True,False,0,False,False,False,303
+Tasks,TaskSaveInput,,(not registered),CrossBuy/BL/TaskService.cs,,False,True,False,0,False,False,False,303
+Tasks,TaskScheduleMatchHostedService,,HostedService,CrossBuy/BL/TaskScheduleMatchHostedService.cs,BackgroundService,True,False,False,0,False,False,False,36
+Tasks,TaskScheduleMatcher,ITaskScheduleMatcher,Scoped,CrossBuy/BL/TaskScheduleMatcher.cs,ITaskScheduleMatcher,False,True,False,0,False,False,False,151
+Tasks,TaskService,ITaskService,Scoped,CrossBuy/BL/TaskService.cs,ITaskService,False,True,False,0,False,False,False,303
+Tasks,TaskStatusSummary,,(not registered),CrossBuy/BL/TaskReportService.cs,,False,True,False,0,False,False,False,146
+Tasks,TimesheetLineDto,,(not registered),CrossBuy/BL/TimesheetService.cs,,False,True,False,0,False,False,False,171
+Tasks,TimesheetService,ITimesheetService,Scoped,CrossBuy/BL/TimesheetService.cs,ITimesheetService,False,True,False,0,False,False,False,171
+Unclassified,AccMonthPoint,,(not registered),CrossBuy/BL/AccountingDashboardService.cs,,False,True,False,0,False,False,False,195
+Unclassified,AccRecentEntry,,(not registered),CrossBuy/BL/AccountingDashboardService.cs,,False,True,False,0,False,False,False,195
+Unclassified,AgingBuckets,,(not registered),CrossBuy/BL/ExecutiveDashboardService.cs,,False,True,False,0,False,False,False,146
+Unclassified,AgingRow,,(not registered),CrossBuy/BL/ReceivableService.cs,,False,True,True,7,True,True,False,959
+Unclassified,ApprovalInboxRow,,(not registered),CrossBuy/BL/ApprovalInboxDto.cs,,False,False,False,0,False,False,False,17
+Unclassified,BalanceSheet,,(not registered),CrossBuy/BL/FinancialStatementService.cs,,False,True,False,0,False,False,False,182
+Unclassified,BillableCustomerRow,,(not registered),CrossBuy/BL/TaskReportService.cs,,False,True,False,0,False,False,False,146
+Unclassified,BillingLineView,,(not registered),CrossBuy/BL/ProgressBillingService.cs,,False,True,False,0,False,False,False,273
+Unclassified,BillingPreview,,(not registered),CrossBuy/BL/ProgressBillingService.cs,,False,True,False,0,False,False,False,273
+Unclassified,BranchRoleDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,BranchSourcingRowDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,BudgetLineRow,,(not registered),CrossBuy/BL/ProjectBudgetService.cs,,False,True,False,0,False,False,False,86
+Unclassified,BudgetReport,,(not registered),CrossBuy/BL/ProjectBudgetService.cs,,False,True,False,0,False,False,False,86
+Unclassified,CalEventInput,,(not registered),CrossBuy/BL/CalendarService.cs,,False,True,False,0,False,False,False,132
+Unclassified,CampaignDetail,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,CampaignRow,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,CarryOverRow,,(not registered),CrossBuy/BL/LeaveAccrualService.cs,,False,True,False,0,False,False,False,248
+Unclassified,CashFlowStatement,,(not registered),CrossBuy/BL/FinancialStatementService.cs,,False,True,False,0,False,False,False,182
+Unclassified,ComponentRowInput,,(not registered),CrossBuy/BL/ItemService.cs,,False,True,False,0,False,False,False,473
+Unclassified,CostRow,,(not registered),CrossBuy/BL/TaskReportService.cs,,False,True,False,0,False,False,False,146
+Unclassified,CountApprovalPayload,,(not registered),CrossBuy/BL/InventoryApprovalService.cs,,False,True,False,0,True,False,False,141
+Unclassified,CountLineInput,,(not registered),CrossBuy/BL/StockService.cs,,False,True,True,15,False,False,False,1724
+Unclassified,CustomerAddressDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,CustomerAnalytics,,(not registered),CrossBuy/BL/ReceivableService.cs,,False,True,True,7,True,True,False,959
+Unclassified,CustomerAnalyticsRow,,(not registered),CrossBuy/BL/ReceivableService.cs,,False,True,True,7,True,True,False,959
+Unclassified,DeliveryLineInput,,(not registered),CrossBuy/BL/SellingService.cs,,False,True,False,0,True,False,False,270
+Unclassified,DeliveryOrderDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,DeliveryZoneDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,EncashableBalance,,(not registered),CrossBuy/BL/LeaveAccrualService.cs,,False,True,False,0,False,False,False,248
+Unclassified,EquipmentAllocInput,,(not registered),CrossBuy/BL/EquipmentDepreciationService.cs,,False,True,False,0,False,False,False,173
+Unclassified,EquipmentAssetRow,,(not registered),CrossBuy/BL/EquipmentDepreciationService.cs,,False,True,False,0,False,False,False,173
+Unclassified,ExcelExporter,,(not registered),CrossBuy/BL/ExcelExporter.cs,,False,False,False,0,False,False,False,71
+Unclassified,ExecTopCustomer,,(not registered),CrossBuy/BL/ExecutiveDashboardService.cs,,False,True,False,0,False,False,False,146
+Unclassified,ExecutiveDashboardDto,,(not registered),CrossBuy/BL/ExecutiveDashboardService.cs,,False,True,False,0,False,False,False,146
+Unclassified,FloorHallDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,FloorTableDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,ForecastRow,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,FxRevalLine,,(not registered),CrossBuy/BL/FxRevaluationService.cs,,False,True,False,0,False,False,False,196
+Unclassified,FxRevalPreview,,(not registered),CrossBuy/BL/FxRevaluationService.cs,,False,True,False,0,False,False,False,196
+Unclassified,HeldOrderDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,HoursReportDto,,(not registered),CrossBuy/BL/TimesheetService.cs,,False,True,False,0,False,False,False,171
+Unclassified,HoursReportLineDto,,(not registered),CrossBuy/BL/TimesheetService.cs,,False,True,False,0,False,False,False,171
+Unclassified,HrDistRow,,(not registered),CrossBuy/BL/AdminDashboardDto.cs,,False,False,False,0,False,False,False,43
+Unclassified,HrExpiryRow,,(not registered),CrossBuy/BL/AdminDashboardDto.cs,,False,False,False,0,False,False,False,43
+Unclassified,HrMonthPoint,,(not registered),CrossBuy/BL/AdminDashboardDto.cs,,False,False,False,0,False,False,False,43
+Unclassified,IdProtector,IIdProtector,Singleton,CrossBuy/BL/IdProtector.cs,IIdProtector,False,False,False,0,False,False,False,31
+Unclassified,IncomeStatement,,(not registered),CrossBuy/BL/FinancialStatementService.cs,,False,True,False,0,False,False,False,182
+Unclassified,JournalLineInput,,(not registered),CrossBuy/BL/JournalEntryService.cs,,False,True,True,3,False,False,False,376
+Unclassified,KitchenLineDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,KitchenTicketDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,LandedChargeInput,,(not registered),CrossBuy/BL/StockService.cs,,False,True,True,15,False,False,False,1724
+Unclassified,LedgerLine,,(not registered),CrossBuy/BL/GeneralLedgerService.cs,,False,True,False,0,False,False,False,140
+Unclassified,ListRow,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,MailAttachmentDto,,(not registered),CrossBuy/BL/CommService.cs,,False,True,False,0,False,False,False,232
+Unclassified,MailFull,,(not registered),CrossBuy/BL/CommService.cs,,False,True,False,0,False,False,False,232
+Unclassified,MarginCheckResult,,(not registered),CrossBuy/BL/PricingService.cs,,False,True,False,0,False,False,False,532
+Unclassified,MatchLine,,(not registered),CrossBuy/BL/ThreeWayMatchService.cs,,False,True,False,0,False,False,False,84
+Unclassified,MatchResult,,(not registered),CrossBuy/BL/ThreeWayMatchService.cs,,False,True,False,0,False,False,False,84
+Unclassified,MatchRunSummary,,(not registered),CrossBuy/BL/TaskScheduleMatcher.cs,,False,True,False,0,False,False,False,151
+Unclassified,MaterialLineInput,,(not registered),CrossBuy/BL/ProjectMaterialIssueService.cs,,False,True,False,0,False,False,False,125
+Unclassified,MemberRow,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,ModChooserGroupDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,ModChooserOptionDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,ModifierAttachDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,ModifierOptionDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,MonthPoint,,(not registered),CrossBuy/BL/LeaveDashboardService.cs,,False,True,False,0,False,False,False,270
+Unclassified,MovementRequest,,(not registered),CrossBuy/BL/StockService.cs,,False,True,True,15,False,False,False,1724
+Unclassified,MrpRow,,(not registered),CrossBuy/BL/ManufService.cs,,False,True,True,7,False,True,False,692
+Unclassified,OpeningCheck,,(not registered),CrossBuy/BL/OpeningBalanceService.cs,,False,True,False,0,False,False,False,245
+Unclassified,OpeningGlLineInput,,(not registered),CrossBuy/BL/OpeningBalanceService.cs,,False,True,False,0,False,False,False,245
+Unclassified,OppRow,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,OwnerPerf,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,PipelineStage,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,PoApprovalPayload,,(not registered),CrossBuy/BL/InventoryApprovalService.cs,,False,True,False,0,True,False,False,141
+Unclassified,PoLineInput,,(not registered),CrossBuy/BL/ProcurementService.cs,,False,True,False,0,True,False,False,243
+Unclassified,PredicateBuilder,,(not registered),CrossBuy/BL/PredicateBuilder.cs,,False,False,False,0,False,False,False,54
+Unclassified,PriceListRow,,(not registered),CrossBuy/BL/PricingService.cs,,False,True,False,0,False,False,False,532
+Unclassified,PriceResult,,(not registered),CrossBuy/BL/PricingService.cs,,False,True,False,0,False,False,False,532
+Unclassified,PrjBarRow,,(not registered),CrossBuy/BL/ProjectDashboardDto.cs,,False,False,False,0,False,False,False,32
+Unclassified,PrjPnlRow,,(not registered),CrossBuy/BL/ProjectDashboardDto.cs,,False,False,False,0,False,False,False,32
+Unclassified,PrjRecentRow,,(not registered),CrossBuy/BL/ProjectDashboardDto.cs,,False,False,False,0,False,False,False,32
+Unclassified,PrjStatusSlice,,(not registered),CrossBuy/BL/ProjectDashboardDto.cs,,False,False,False,0,False,False,False,32
+Unclassified,ProductivityRow,,(not registered),CrossBuy/BL/TaskReportService.cs,,False,True,False,0,False,False,False,146
+Unclassified,PromotionRow,,(not registered),CrossBuy/BL/PricingService.cs,,False,True,False,0,False,False,False,532
+Unclassified,ProvisionPreview,,(not registered),CrossBuy/BL/LeaveAccrualService.cs,,False,True,False,0,False,False,False,248
+Unclassified,PurchaseLineInput,,(not registered),CrossBuy/BL/PayableService.cs,,False,True,True,4,True,True,False,681
+Unclassified,ReceiptLineInput,,(not registered),CrossBuy/BL/ProcurementService.cs,,False,True,False,0,True,False,False,243
+Unclassified,RecipeComp,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,ReconLine,,(not registered),CrossBuy/BL/BankService.cs,,False,True,False,0,False,False,False,135
+Unclassified,RequiredDocTypeDto,,(not registered),CrossBuy/BL/RecruitmentService.cs,,False,True,False,0,False,False,False,276
+Unclassified,ReservationDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,ReservationEventDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,RunningTimerDto,,(not registered),CrossBuy/BL/TimesheetService.cs,,False,True,False,0,False,False,False,171
+Unclassified,SalesLineInput,,(not registered),CrossBuy/BL/ReceivableService.cs,,False,True,True,7,True,True,False,959
+Unclassified,ScaleBarcodeConfig,,(not registered),CrossBuy/BL/ScaleBarcodeParser.cs,,False,False,False,0,False,False,False,84
+Unclassified,ScaleBarcodeParser,,(not registered),CrossBuy/BL/ScaleBarcodeParser.cs,,False,False,False,0,False,False,False,84
+Unclassified,ScaleParseResult,,(not registered),CrossBuy/BL/ScaleBarcodeParser.cs,,False,False,False,0,False,False,False,84
+Unclassified,ScopedTx,IAsyncDisposable,(not registered),CrossBuy/BL/ScopedTx.cs,IAsyncDisposable,False,False,False,0,False,False,False,55
+Unclassified,SearchTerms,,(not registered),CrossBuy/BL/PredicateBuilder.cs,,False,False,False,0,False,False,False,54
+Unclassified,SegmentRollup,,(not registered),CrossBuy/BL/ReceivableService.cs,,False,True,True,7,True,True,False,959
+Unclassified,SettlementPreview,,(not registered),CrossBuy/BL/FinalSettlementService.cs,,False,True,False,0,False,False,False,147
+Unclassified,SmtpOptions,,(not registered),CrossBuy/BL/CommService.cs,,False,True,False,0,False,False,False,232
+Unclassified,SoLineInput,,(not registered),CrossBuy/BL/SellingService.cs,,False,True,False,0,True,False,False,270
+Unclassified,SourcingOverviewRow,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,SplitAllocation,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,StatementGroup,,(not registered),CrossBuy/BL/FinancialStatementService.cs,,False,True,False,0,False,False,False,182
+Unclassified,StatementLine,,(not registered),CrossBuy/BL/FinancialStatementService.cs,,False,True,False,0,False,False,False,182
+Unclassified,SubBillingPreview,,(not registered),CrossBuy/BL/SubcontractBillingService.cs,,False,True,False,0,False,False,False,186
+Unclassified,SuggestionCandidateDto,,(not registered),CrossBuy/BL/TaskScheduleMatcher.cs,,False,True,False,0,False,False,False,151
+Unclassified,SuggestionGroupDto,,(not registered),CrossBuy/BL/TaskScheduleMatcher.cs,,False,True,False,0,False,False,False,151
+Unclassified,SyncConflictDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,TableOrderDto,,(not registered),CrossBuy/BL/PosOrderService.cs,,False,True,True,5,False,False,False,1910
+Unclassified,TicketRow,,(not registered),CrossBuy/BL/CrmService.cs,,False,True,False,0,True,False,False,1184
+Unclassified,TransferApprovalPayload,,(not registered),CrossBuy/BL/InventoryApprovalService.cs,,False,True,False,0,True,False,False,141
+Unclassified,TransferLineInput,,(not registered),CrossBuy/BL/StockService.cs,,False,True,True,15,False,False,False,1724
+Unclassified,TrialBalanceResult,,(not registered),CrossBuy/BL/GeneralLedgerService.cs,,False,True,False,0,False,False,False,140
+Unclassified,TrialBalanceRow,,(not registered),CrossBuy/BL/GeneralLedgerService.cs,,False,True,False,0,False,False,False,140
+Unclassified,TypeSlice,,(not registered),CrossBuy/BL/LeaveDashboardService.cs,,False,True,False,0,False,False,False,270
+Unclassified,UoMRowInput,,(not registered),CrossBuy/BL/ItemService.cs,,False,True,False,0,False,False,False,473
+Unclassified,VoLineInput,,(not registered),CrossBuy/BL/VariationOrderService.cs,,False,True,False,0,False,False,False,165
+Unclassified,WorkCenterLoadRow,,(not registered),CrossBuy/BL/ManufService.cs,,False,True,True,7,False,True,False,692
+Unclassified,WorkOrderRow,,(not registered),CrossBuy/BL/ManufService.cs,,False,True,True,7,False,True,False,692
+Unclassified,WriteOffApprovalPayload,,(not registered),CrossBuy/BL/InventoryApprovalService.cs,,False,True,False,0,True,False,False,141
+Unclassified,WriteOffLineInput,,(not registered),CrossBuy/BL/StockService.cs,,False,True,True,15,False,False,False,1724
+Unclassified,YearClosePreview,,(not registered),CrossBuy/BL/ClosingService.cs,,False,True,False,0,False,False,False,152
+Unclassified,ZPayLine,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129
+Unclassified,ZReportDto,,(not registered),CrossBuy/BL/PosSetupService.cs,,False,True,True,1,False,False,False,1129

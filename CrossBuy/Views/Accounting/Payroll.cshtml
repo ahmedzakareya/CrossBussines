@@ -87,8 +87,8 @@
                     {
                         <div class="table-responsive">
                             <table class="table table-row-dashed align-middle gy-4 mb-5" id="prTable" style="font-variant-numeric:tabular-nums;">
-                                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
-                                    <tr>
+                                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
+                                    <tr style="border-bottom:2px solid #0E4A9E;">
                                         <th>@SR["Employee"]</th>
                                         <th>@Localizer["Cost Center"]</th>
                                         <th class="text-end">@Localizer["Gross"]</th>
@@ -101,7 +101,7 @@
                                     @foreach (var e in Model.Employees)
                                     {
                                         <tr class="pr-row" data-search="@e.Name @e.NameEn @e.CostCenterName">
-                                            <td class="fw-bold text-gray-900">@(isAr ? e.Name : e.NameEn)</td>
+                                            <td class="fw-bold text-gray-900">@(isAr ? e.Name : DisplayName.Or(e.NameEn, e.Name))</td>
                                             <td class="text-muted">@(e.CostCenterName ?? "—")</td>
                                             <td class="text-end text-gray-800">@e.Gross.ToString("N2")</td>
                                             <td class="text-end text-muted">@e.SiEmployee.ToString("N2")</td>
@@ -111,7 +111,7 @@
                                     }
                                 </tbody>
                                 <tfoot>
-                                    <tr class="fw-bolder fs-6" style="background:#e9f1ee;border-top:2px solid #13433a;">
+                                    <tr class="fw-bolder fs-6" style="background:#E7F0FF;border-top:2px solid #0E4A9E;">
                                         <td colspan="2" class="text-end text-primary">@Localizer["Totals"]</td>
                                         <td class="text-end text-primary">@Model.TotalGross.ToString("N2")</td>
                                         <td class="text-end text-primary">@Model.TotalSiEmployee.ToString("N2")</td>

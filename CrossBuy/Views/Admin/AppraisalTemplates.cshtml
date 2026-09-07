@@ -15,14 +15,14 @@
         @if (TempData["HrMsg"] != null) { <div class="alert alert-success">@TempData["HrMsg"]</div> }
         @if (TempData["HrErr"] != null) { <div class="alert alert-danger">@TempData["HrErr"]</div> }
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3 mb-0">
-            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Name"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4">@SR["Actions"]</th></tr></thead>
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Name"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4">@SR["Actions"]</th></tr></thead>
             <tbody class="fw-semibold text-gray-700">
             @if (!Model.Any()) { <tr><td colspan="3" class="text-center text-muted py-8">@Localizer["No templates"]</td></tr> }
             @foreach (var t in Model)
             {
                 <tr style="border-bottom:1px dashed #eef1f6;">
                     <td class="ps-4 fw-bold text-gray-900">@(isAr ? t.Name : (string.IsNullOrEmpty(t.NameEn) ? t.Name : t.NameEn))</td>
-                    <td class="text-center">@if (t.IsActive) { <span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@SR["Active"]</span> } else { <span class="badge badge-light-secondary fw-bold">@SR["Inactive"]</span> }</td>
+                    <td class="text-center">@if (t.IsActive) { <span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@SR["Active"]</span> } else { <span class="badge badge-light-secondary fw-bold">@SR["Inactive"]</span> }</td>
                     <td class="text-end pe-4">
                         <a href="@Url.Action("AppraisalTemplateEditor","Admin", new { id = t.ID })" class="btn btn-sm btn-icon btn-light-primary me-1"><i class="ki-outline ki-pencil fs-5"></i></a>
                         <form asp-action="DeleteAppraisalTemplate" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete template?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.ID" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form>

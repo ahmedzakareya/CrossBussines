@@ -43,15 +43,15 @@
                             {
                                 <div class="table-responsive">
                                 <table class="table align-middle table-row-dashed fs-6 gy-3">
-                                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["LeaveType"]</th><th>@SR["Balance"]</th><th>@Localizer["Daily rate"]</th><th>@Localizer["Value"]</th><th class="text-end pe-4">@Localizer["Encash"]</th></tr></thead>
+                                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["LeaveType"]</th><th>@SR["Balance"]</th><th>@Localizer["Daily rate"]</th><th>@Localizer["Value"]</th><th class="text-end pe-4">@Localizer["Encash"]</th></tr></thead>
                                     <tbody class="fw-semibold text-gray-700">
                                     @foreach (var b in balances)
                                     {
                                         <tr style="border-bottom:1px dashed #eef1f6;">
-                                            <td class="ps-4 fw-bold text-gray-900">@(isAr ? b.NameAr : b.NameEn)</td>
+                                            <td class="ps-4 fw-bold text-gray-900">@(isAr ? b.NameAr : DisplayName.Or(b.NameEn, b.NameAr))</td>
                                             <td>@b.RemainingDays @Localizer["d"]</td>
                                             <td>@Money(b.DailyRate)</td>
-                                            <td class="fw-bolder" style="color:#13433a;">@Money(b.Amount)</td>
+                                            <td class="fw-bolder" style="color:#0E4A9E;">@Money(b.Amount)</td>
                                             <td class="text-end pe-4">
                                                 <form asp-action="Encash" method="post" class="d-flex gap-2 justify-content-end align-items-center" data-cb-confirm data-cb-action="generic" data-cb-text="@Localizer["Pay out this leave balance in cash?"]">@Html.AntiForgeryToken()
                                                     <input type="hidden" name="employeeId" value="@selEmp" /><input type="hidden" name="leaveTypeId" value="@b.LeaveTypeId" />
@@ -82,7 +82,7 @@
                         {
                             <form asp-action="SaveLeaveTypeEncashable" method="post" class="d-flex align-items-center justify-content-between border-bottom py-2">@Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@t.ID" />
-                                <span class="fw-semibold text-gray-800">@(isAr ? t.NameAr : t.NameEn)</span>
+                                <span class="fw-semibold text-gray-800">@(isAr ? t.NameAr : DisplayName.Or(t.NameEn, t.NameAr))</span>
                                 <div class="form-check form-switch">
                                     <input type="hidden" name="isEncashable" value="false" />
                                     <input class="form-check-input" type="checkbox" name="isEncashable" value="true" @(t.IsEncashable ? "checked" : "") onchange="this.form.submit()" />

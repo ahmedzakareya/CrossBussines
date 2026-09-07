@@ -61,15 +61,15 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveDraftAsync(int companyId, int projectId, int voId, string? description, string? descriptionEn, string? reason, List<VoLineInput> lines, int? userId)
 		{
-			if (!await _db.Projects.AnyAsync(p => p.ID == projectId && p.CompanyID == companyId)) return (false, "المشروع غير موجود", 0);
+			if (!await _db.Projects.AnyAsync(p => p.ID == projectId && p.CompanyID == companyId)) return (false, "Project not found", 0);
 			var clean = (lines ?? new()).Where(l => (l.Kind == "Adjust" && l.BoqItemId > 0) || (l.Kind == "New" && !string.IsNullOrWhiteSpace(l.Description))).ToList();
-			if (clean.Count == 0) return (false, "أضف سطرًا واحدًا على الأقل (بند جديد أو تعديل)", 0);
+			if (clean.Count == 0) return (false, "Add at least one line (a new item or an amendment)", 0);
 
 			VariationOrder vo;
 			if (voId > 0)
 			{
-				vo = await _db.VariationOrders.Include(v => v.Lines).FirstOrDefaultAsync(v => v.ID == voId && v.CompanyID == companyId) ?? throw new InvalidOperationException("أمر التغيير غير موجود");
-				if (vo.Status != "Draft") return (false, "لا يمكن تعديل أمر تغيير معتمد", 0);
+				vo = await _db.VariationOrders.Include(v => v.Lines).FirstOrDefaultAsync(v => v.ID == voId && v.CompanyID == companyId) ?? throw new InvalidOperationException("Variation order not found");
+				if (vo.Status != "Draft") return (false, "An approved variation order cannot be edited", 0);
 				_db.VariationOrderLines.RemoveRange(vo.Lines); vo.Lines.Clear();
 			}
 			else
@@ -89,7 +89,7 @@ namespace CrossBuy.BL
 				if (l.Kind == "Adjust" && l.BoqItemId > 0)
 				{
 					var it = await _db.BoqItems.AsNoTracking().FirstOrDefaultAsync(b => b.ID == l.BoqItemId!.Value && b.ProjectId == projectId && b.CompanyID == companyId);
-					if (it == null) return (false, "بند التعديل غير موجود", 0);
+					if (it == null) return (false, "The amended line was not found", 0);
 					oldQ = it.Quantity; oldP = it.UnitPrice;
 				}
 				var line = new VariationOrderLine
@@ -112,9 +112,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> ApproveAsync(int companyId, int id, int? userId)
 		{
 			var vo = await _db.VariationOrders.Include(v => v.Lines).FirstOrDefaultAsync(v => v.ID == id && v.CompanyID == companyId);
-			if (vo == null) return (false, "أمر التغيير غير موجود");
-			if (vo.Status != "Draft") return (false, "أمر التغيير معتمد بالفعل");
-			if (vo.Lines.Count == 0) return (false, "لا سطور في أمر التغيير");
+			if (vo == null) return (false, "Variation order not found");
+			if (vo.Status != "Draft") return (false, "The variation order is already approved");
+			if (vo.Lines.Count == 0) return (false, "The variation order has no lines");
 
 			int sort = ((await _db.BoqItems.Where(b => b.CompanyID == companyId && b.ProjectId == vo.ProjectId).Select(b => (int?)b.SortOrder).MaxAsync()) ?? 0) + 1;
 			decimal total = 0m;
@@ -123,7 +123,7 @@ namespace CrossBuy.BL
 				if (l.Kind == "Adjust" && l.BoqItemId > 0)
 				{
 					var it = await _db.BoqItems.FirstOrDefaultAsync(b => b.ID == l.BoqItemId!.Value && b.ProjectId == vo.ProjectId && b.CompanyID == companyId);
-					if (it == null) return (false, $"بند التعديل #{l.BoqItemId} غير موجود");
+					if (it == null) return (false, $"The amended line #{l.BoqItemId} was not found");
 					l.OldQuantity = it.Quantity; l.OldUnitPrice = it.UnitPrice;   // re-snapshot the actual current values
 					it.Quantity = l.Quantity; it.UnitPrice = l.UnitPrice;
 					if (l.MaterialCost.HasValue) it.MaterialCost = l.MaterialCost;
@@ -153,8 +153,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DeleteAsync(int companyId, int id)
 		{
 			var vo = await _db.VariationOrders.Include(v => v.Lines).FirstOrDefaultAsync(v => v.ID == id && v.CompanyID == companyId);
-			if (vo == null) return (false, "أمر التغيير غير موجود");
-			if (vo.Status != "Draft") return (false, "لا يمكن حذف أمر تغيير معتمد");
+			if (vo == null) return (false, "Variation order not found");
+			if (vo.Status != "Draft") return (false, "An approved variation order cannot be deleted");
 			_db.VariationOrderLines.RemoveRange(vo.Lines);
 			_db.VariationOrders.Remove(vo);
 			await _db.SaveChangesAsync();

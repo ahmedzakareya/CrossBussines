@@ -78,12 +78,17 @@ namespace CrossBuy.BL
 
             // History is included — an ended membership is a fact about who worked on this project, and the
             // screen shows it as ended rather than hiding it. Active first, then most recent departures.
+            var arabic = CrossBuy.BL.EmployeeNames.Arabic;
             return await (from m in _db.ProjectMembers.AsNoTracking()
                           join e in _db.Employee.AsNoTracking() on m.EmployeeId equals e.ID
                           where m.ProjectId == projectId && m.CompanyID == context.CompanyId
                           orderby m.IsActive descending, m.JoinedAt descending, m.ID descending
                           select new ProjectMemberRow(
-                              m.ID, m.EmployeeId, e.FullName ?? "", m.RoleOnProject,
+                              // Resolved in SQL through a captured flag: this is a query expression, so a
+                              // method call on the row would not translate.
+                              m.ID, m.EmployeeId,
+                              (arabic || e.FullNameEn == null || e.FullNameEn == "" ? e.FullName : e.FullNameEn) ?? "",
+                              m.RoleOnProject,
                               m.AllocationPct, m.JoinedAt, m.LeftAt, m.IsActive))
                          .ToListAsync(cancellationToken);
         }

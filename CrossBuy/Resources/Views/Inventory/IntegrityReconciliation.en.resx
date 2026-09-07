@@ -118,4 +118,67 @@
   <data name="A scheduled daily check runs automatically and notifies managers on any deviation." xml:space="preserve">
     <value>A scheduled daily check runs automatically and notifies managers on any deviation.</value>
   </data>
+  <data name="Counted" xml:space="preserve">
+    <value>Counted</value>
+  </data>
+<data name="Counted, not an invariant - this check never fails" xml:space="preserve">
+    <value>Counted, not an invariant - this check never fails</value>
+  </data>
+  <data name="All invariants hold" xml:space="preserve">
+    <value>All invariants hold</value>
+  </data>
+  <data name="checks" xml:space="preserve">
+    <value>checks</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>of</value>
+  </data>
+  <data name="Largest deviation" xml:space="preserve">
+    <value>Largest deviation</value>
+  </data>
+  <data name="Observations to watch" xml:space="preserve">
+    <value>Observations to watch</value>
+  </data>
+  <data name="invariants hold" xml:space="preserve">
+    <value>invariants hold</value>
+  </data>
+  <data name="Last runs" xml:space="preserve">
+    <value>Last runs</value>
+  </data>
+  <data name="DeviationsFound" xml:space="preserve">
+    <value>deviations</value>
+  </data>
+  <data name="consecutive clean runs" xml:space="preserve">
+    <value>consecutive clean runs</value>
+  </data>
+  <data name="clean since the last deviation" xml:space="preserve">
+    <value>clean since the last deviation</value>
+  </data>
+  <data name="The last run deviated" xml:space="preserve">
+    <value>The last run deviated</value>
+  </data>
+  <data name="over" xml:space="preserve">
+    <value>over</value>
+  </data>
+<data name="Last run" xml:space="preserve">
+    <value>Last run</value>
+  </data>
+  <data name="days_few" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="days_many" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="days_one" xml:space="preserve">
+    <value>day</value>
+  </data>
+  <data name="DeviationsShort" xml:space="preserve">
+    <value>Deviations</value>
+  </data>
+  <data name="No deviations" xml:space="preserve">
+    <value>No deviations</value>
+  </data>
+  <data name="never fails" xml:space="preserve">
+    <value>never fails</value>
+  </data>
 </root>

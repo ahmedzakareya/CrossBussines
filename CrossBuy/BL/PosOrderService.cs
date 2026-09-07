@@ -256,7 +256,7 @@ namespace CrossBuy.BL
 				await _db.Database.ExecuteSqlRawAsync("UPDATE dbo.PosTerminals SET NextReceiptNo = CASE WHEN NextReceiptNo <= {1} THEN {1} + 1 ELSE NextReceiptNo END WHERE ID = {0}", term.ID, n);
 				return (true, null);
 			}
-			return (false, $"رقم الإيصال أوفلاين «{rno}» لا يطابق بادئة سلسلة الترمينال «{pfx}» — لم يُقدَّم العدّاد (يلزم مراجعة)");
+			return (false, $"Offline receipt number «{rno}» does not match the terminal series prefix «{pfx}» — the counter was not advanced (review required)");
 		}
 
 		// RC-6a: re-stamp the order with the terminal's CURRENTLY-open shift at pay time, so Z-report aggregation
@@ -389,21 +389,21 @@ namespace CrossBuy.BL
 				if (debit == 0) debit = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "110102").Select(a => a.ID).FirstOrDefaultAsync();
 			}
 			var tips = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == "210207").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (debit == 0 || tips == null) return (false, "حساب النقدية/البطاقة أو حساب الإكراميات المستحقة (210207) غير موجود");
+			if (debit == 0 || tips == null) return (false, "The cash/card account or the tips-payable account (210207) does not exist");
 			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2: tip in the order's document currency
 			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			decimal amt = R(tipAmount);
 			var (jok, jerr, je) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Auto", SourceType = "PosTip", SourceId = o.ID,
-				Description = $"إكرامية — طلب كاشير #{o.ID}",
+				Description = $"Tip — cashier order #{o.ID}",
 				Lines = new List<JournalLineInput>
 				{
-					new JournalLineInput { AccountId = debit, Debit = amt, Credit = 0, Description = "إكرامية مستلمة" },
-					new JournalLineInput { AccountId = tips.Value, Debit = 0, Credit = amt, Description = "إكراميات مستحقة للعاملين" },
+					new JournalLineInput { AccountId = debit, Debit = amt, Credit = 0, Description = "Tip received" },
+					new JournalLineInput { AccountId = tips.Value, Debit = 0, Credit = amt, Description = "Tips payable to staff" },
 				},
 			}, userId);
-			if (!jok) return (false, "تعذّر ترحيل قيد الإكرامية: " + jerr);
+			if (!jok) return (false, "Could not post the tip entry: " + jerr);
 			o.TipAmount = amt; o.TipMethod = m; o.TipJournalEntryId = je!.ID;
 			return (true, null);
 		}
@@ -554,15 +554,15 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int orderId)> AddOrderOnTableAsync(int companyId, int branchId, int tableId, int? userId, int? terminalId = null, int? shiftId = null)
 		{
 			var tbl = await _db.RestaurantTables.AsNoTracking().FirstOrDefaultAsync(t => t.ID == tableId);
-			if (tbl == null) return (false, "الطاولة غير موجودة", 0);
-			if (tbl.Status == "Closed") return (false, "الطاولة مغلقة", 0);
+			if (tbl == null) return (false, "Table not found", 0);
+			if (tbl.Status == "Closed") return (false, "The table is closed", 0);
 			// «طلب جديد على نفس الطاولة» is an EXPLICIT action → always seats a DISTINCT party (even if empty),
 			// up to the seat count. (Accidental duplicates are prevented at the client by the tap-lock, and because
 			// tapping an occupied table recalls instead of creating.)
 			int seats = tbl.Seats > 0 ? tbl.Seats : 1;
 			// cap by FREE CHAIRS (guests already seated across all parties), NOT by party count — free chairs ⇒ allow another party
 			int usedGuests = await _db.PosOrders.Where(o => o.CompanyId == companyId && o.BranchId == branchId && o.Status == "Open" && o.TableId == tableId).SumAsync(o => (int?)o.Guests) ?? 0;
-			if (usedGuests >= seats) return (false, $"لا توجد مقاعد فارغة على الطاولة ({seats})", 0);
+			if (usedGuests >= seats) return (false, $"There are no free seats at the table ({seats})", 0);
 			return await CreateOrderAsync(companyId, branchId, "Dine-in", tableId, userId, terminalId, shiftId);
 		}
 
@@ -570,10 +570,10 @@ namespace CrossBuy.BL
 		{
 			if (qty <= 0) qty = 1;
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "لا يمكن التعديل على طلب غير مفتوح");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "An order that is not open cannot be edited");
 			var item = await _db.Items.FirstOrDefaultAsync(i => i.ID == itemId && i.CompanyID == companyId);
-			if (item == null) return (false, "الصنف غير موجود");
+			if (item == null) return (false, "Item not found");
 			// HM-2 UNIT GUARD: the sold unit must be the item's base unit OR have a defined conversion to base on THIS item —
 			// else reject (never a silent factor-1). The unit is stored on the line and re-read at pay time (not re-derived from
 			// the barcode, which may change/vanish between add and pay).
@@ -607,14 +607,14 @@ namespace CrossBuy.BL
 					int cnt = chosen.Count(x => x.GroupId == g.ID);
 					if (g.Type == "Choice")
 					{
-						if (cnt != 1) return (false, $"يجب اختيار عنصر واحد من: {g.Name}");   // no "item without a size"
+						if (cnt != 1) return (false, $"You must choose one option from: {g.Name}");   // no "item without a size"
 					}
 					else // AddOn
 					{
 						int min = Math.Max(0, g.MinSelect);
 						int max = g.MaxSelect <= 0 ? int.MaxValue : g.MaxSelect;   // 0 = unlimited
-						if (cnt < min) return (false, $"اختر على الأقل {min} من: {g.Name}");
-						if (cnt > max) return (false, $"الحد الأقصى {max} من: {g.Name}");
+						if (cnt < min) return (false, $"Choose at least {min} from: {g.Name}");
+						if (cnt > max) return (false, $"At most {max} from: {g.Name}");
 					}
 				}
 			}
@@ -709,14 +709,14 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetLineQtyAsync(int companyId, int orderId, int lineId, decimal qty)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "لا يمكن التعديل على طلب غير مفتوح");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "An order that is not open cannot be edited");
 			var l = await _db.PosOrderLines.FirstOrDefaultAsync(x => x.ID == lineId && x.OrderId == orderId);
-			if (l == null) return (false, "السطر غير موجود");
+			if (l == null) return (false, "Line not found");
 			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2: document currency
 			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			// POS-4b: can't reduce below (or delete) what's already gone to the kitchen
-			if (l.SentQty > 0 && qty < l.SentQty) return (false, "لا يمكن تقليل كمية صنف مُرسل للمطبخ");
+			if (l.SentQty > 0 && qty < l.SentQty) return (false, "The quantity of an item already sent to the kitchen cannot be reduced");
 			if (qty <= 0) { _db.PosOrderLines.Remove(l); }
 			else { l.Qty = qty; l.DiscountAmount = R(l.DiscountAmount / (l.Qty == 0 ? 1 : l.Qty) * qty); l.LineTotal = R(l.UnitPrice * qty - l.DiscountAmount); }
 			await _db.SaveChangesAsync();
@@ -728,11 +728,11 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> RemoveLineAsync(int companyId, int orderId, int lineId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "لا يمكن التعديل على طلب غير مفتوح");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "An order that is not open cannot be edited");
 			var l = await _db.PosOrderLines.FirstOrDefaultAsync(x => x.ID == lineId && x.OrderId == orderId);
-			if (l == null) return (false, "السطر غير موجود");
-			if (l.SentQty > 0) return (false, "لا يمكن حذف صنف مُرسل للمطبخ");   // POS-4b
+			if (l == null) return (false, "Line not found");
+			if (l.SentQty > 0) return (false, "An item already sent to the kitchen cannot be deleted");   // POS-4b
 			_db.PosOrderLines.Remove(l);
 			await _db.SaveChangesAsync();
 			await RecomputeAsync(o);
@@ -744,15 +744,15 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> MoveOrderToTableAsync(int companyId, int orderId, int toTableId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
-			if (o.TableId == toTableId) return (false, "نفس الطاولة");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
+			if (o.TableId == toTableId) return (false, "Same table");
 			var areaIds = _db.DiningAreas.Where(a => a.BranchId == o.BranchId).Select(a => a.ID);
 			var t = await _db.RestaurantTables.FirstOrDefaultAsync(x => x.ID == toTableId && areaIds.Contains(x.DiningAreaId) && x.IsActive);
-			if (t == null) return (false, "الطاولة غير موجودة");
-			if (t.Status == "Closed") return (false, "الطاولة مغلقة");
+			if (t == null) return (false, "Table not found");
+			if (t.Status == "Closed") return (false, "The table is closed");
 			var occupied = await _db.PosOrders.AnyAsync(x => x.BranchId == o.BranchId && x.Status == "Open" && x.TableId == toTableId && x.ID != orderId);
-			if (occupied) return (false, "الطاولة مشغولة — استخدم الدمج");
+			if (occupied) return (false, "The table is occupied — use merge instead");
 			o.OrderType = "Dine-in"; o.TableId = toTableId;
 			await _db.SaveChangesAsync();   // just re-tags the table; no journal entry, no stock
 			return (true, null);
@@ -763,17 +763,17 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SeatOrderOnTableAsync(int companyId, int orderId, int toTableId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
 			if (o.TableId == toTableId) return (true, null);   // already seated here
 			var areaIds = _db.DiningAreas.Where(a => a.BranchId == o.BranchId).Select(a => a.ID);
 			var t = await _db.RestaurantTables.FirstOrDefaultAsync(x => x.ID == toTableId && areaIds.Contains(x.DiningAreaId) && x.IsActive);
-			if (t == null) return (false, "الطاولة غير موجودة");
-			if (t.Status == "Closed") return (false, "الطاولة مغلقة");
+			if (t == null) return (false, "Table not found");
+			if (t.Status == "Closed") return (false, "The table is closed");
 			int seats = t.Seats > 0 ? t.Seats : 1;
 			// cap by FREE CHAIRS (guests seated), not party count
 			int usedGuests = await _db.PosOrders.Where(x => x.BranchId == o.BranchId && x.Status == "Open" && x.TableId == toTableId && x.ID != orderId).SumAsync(x => (int?)x.Guests) ?? 0;
-			if (usedGuests >= seats) return (false, $"لا توجد مقاعد فارغة على الطاولة ({seats})");
+			if (usedGuests >= seats) return (false, $"There are no free seats at the table ({seats})");
 			o.OrderType = "Dine-in"; o.TableId = toTableId;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -783,10 +783,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetOrderCustomerAsync(int companyId, int orderId, int customerId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
 			var exists = await _db.Customers.AnyAsync(x => x.ID == customerId && x.CompanyID == companyId);
-			if (!exists) return (false, "العميل غير موجود");
+			if (!exists) return (false, "Customer not found");
 			o.CustomerId = customerId;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -796,8 +796,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetGuestsAsync(int companyId, int orderId, int guests)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
 			// a dine-in order can't have more guests than the TABLE's seats; takeaway keeps a sane 1..50 cap
 			int max = 50;
 			if (o.TableId != null) { var seats = await _db.RestaurantTables.Where(t => t.ID == o.TableId).Select(t => t.Seats).FirstOrDefaultAsync(); if (seats > 0) max = seats; }
@@ -810,15 +810,15 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> VoidOrderAsync(int companyId, int orderId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
 
 			// CANCELLED AFTER IT WAS COOKED IS NOT THE SAME AS CANCELLED BEFORE.
 			// Nothing prepared ⇒ nothing consumed ⇒ this is a no-op and the order simply voids, as it always did.
 			// Already prepared ⇒ the food is gone: the stock STAYS consumed (reversing it would claim ingredients
 			// went back on the shelf, which the next count would contradict) and the cost is reclassified out of
 			// cost-of-sales into inventory adjustments, because nothing was sold.
-			var (wok, werr, _) = await _prep.RecordWasteForCancelledOrderAsync(companyId, orderId, "إلغاء طلب", null);
+			var (wok, werr, _) = await _prep.RecordWasteForCancelledOrderAsync(companyId, orderId, "Order cancellation", null);
 			if (!wok) return (false, werr);
 
 			o.Status = "Void"; o.ClosedAt = DateTime.UtcNow;
@@ -831,13 +831,13 @@ namespace CrossBuy.BL
 		// parties (orderCount reflects the combined parties). NO GL/stock.
 		public async Task<(bool ok, string? error)> MergeTablesAsync(int companyId, int branchId, int sourceTableId, int targetTableId)
 		{
-			if (sourceTableId == targetTableId) return (false, "نفس الطاولة");
+			if (sourceTableId == targetTableId) return (false, "Same table");
 			var areaIds = _db.DiningAreas.Where(a => a.BranchId == branchId).Select(a => a.ID);
 			var tgt = await _db.RestaurantTables.FirstOrDefaultAsync(x => x.ID == targetTableId && areaIds.Contains(x.DiningAreaId) && x.IsActive);
-			if (tgt == null) return (false, "الطاولة الهدف غير موجودة");
-			if (tgt.Status == "Closed") return (false, "الطاولة الهدف مغلقة");
+			if (tgt == null) return (false, "The target table was not found");
+			if (tgt.Status == "Closed") return (false, "The target table is closed");
 			var srcOrders = await _db.PosOrders.Where(o => o.CompanyId == companyId && o.BranchId == branchId && o.Status == "Open" && o.TableId == sourceTableId).ToListAsync();
-			if (srcOrders.Count == 0) return (false, "الطاولة المصدر لا تحمل طلبًا مفتوحًا");
+			if (srcOrders.Count == 0) return (false, "The source table has no open order");
 			foreach (var o in srcOrders) { o.TableId = targetTableId; o.OrderType = "Dine-in"; }
 			await _db.SaveChangesAsync();   // just re-tags the table; parties stay as separate bills; no GL/stock
 			return (true, null);
@@ -847,14 +847,14 @@ namespace CrossBuy.BL
 		// (kept as SEPARATE lines, preserving SentQty/SentAt/prices), recompute target, then Void the source. NO GL/stock.
 		public async Task<(bool ok, string? error)> MergeOrdersAsync(int companyId, int sourceOrderId, int targetOrderId)
 		{
-			if (sourceOrderId == targetOrderId) return (false, "لا يمكن دمج الطلب مع نفسه");
+			if (sourceOrderId == targetOrderId) return (false, "An order cannot be merged with itself");
 			var src = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == sourceOrderId && x.CompanyId == companyId);
 			var tgt = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == targetOrderId && x.CompanyId == companyId);
-			if (src == null || tgt == null) return (false, "الطلب غير موجود");
-			if (src.Status != "Open" || tgt.Status != "Open") return (false, "الطلبان يجب أن يكونا مفتوحين");
-			if (src.BranchId != tgt.BranchId) return (false, "لا يمكن الدمج بين فرعين");
+			if (src == null || tgt == null) return (false, "Order not found");
+			if (src.Status != "Open" || tgt.Status != "Open") return (false, "Both orders must be open");
+			if (src.BranchId != tgt.BranchId) return (false, "Orders from two different branches cannot be merged");
 			var srcLines = await _db.PosOrderLines.Where(l => l.OrderId == sourceOrderId).OrderBy(l => l.Sort).ToListAsync();
-			if (srcLines.Count == 0) return (false, "الطلب المصدر فارغ");
+			if (srcLines.Count == 0) return (false, "The source order is empty");
 			var sort = (await _db.PosOrderLines.Where(l => l.OrderId == targetOrderId).MaxAsync(l => (int?)l.Sort) ?? 0);
 			// re-point each source line to the target as-is (kept separate; SentQty/SentAt/prices untouched)
 			foreach (var l in srcLines) { l.OrderId = targetOrderId; l.Sort = ++sort; }
@@ -870,10 +870,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> HoldOrderAsync(int companyId, int orderId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
-			if (o.TableId != null) return (false, "طلبات الصالة تُدار من مخطط الطاولات");
-			if (!await _db.PosOrderLines.AnyAsync(l => l.OrderId == orderId)) return (false, "لا يمكن تعليق طلب فارغ");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
+			if (o.TableId != null) return (false, "Dine-in orders are managed from the table plan");
+			if (!await _db.PosOrderLines.AnyAsync(l => l.OrderId == orderId)) return (false, "An empty order cannot be parked");
 			o.IsHeld = true; o.HeldAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -941,8 +941,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> RecallHeldAsync(int companyId, int orderId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
 			o.IsHeld = false; o.HeldAt = null;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -952,10 +952,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int sentLines)> SendToKitchenAsync(int companyId, int orderId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود", 0);
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", 0);
+			if (o == null) return (false, "Order not found", 0);
+			if (o.Status != "Open") return (false, "The order is not open", 0);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId && l.SentQty < l.Qty).ToListAsync();
-			if (lines.Count == 0) return (false, "لا توجد أصناف جديدة لإرسالها", 0);
+			if (lines.Count == 0) return (false, "There are no new items to send", 0);
 			var now = DateTime.UtcNow;
 			// RC-3e: resolve each newly-sent line's kitchen station (its menu tab → station; else default = first active Kitchen station).
 			var stations = await _db.KitchenStations.AsNoTracking().Where(s => s.BranchId == o.BranchId && s.IsActive).OrderBy(s => s.ID).ToListAsync();
@@ -1002,15 +1002,15 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetLineKdsStatusAsync(int companyId, int orderId, int lineId, string status)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
 			var l = await _db.PosOrderLines.FirstOrDefaultAsync(x => x.ID == lineId && x.OrderId == orderId);
-			if (l == null) return (false, "السطر غير موجود");
-			if (l.SentQty <= 0) return (false, "الصنف لم يُرسل للمطبخ");
+			if (l == null) return (false, "Line not found");
+			if (l.SentQty <= 0) return (false, "The item has not been sent to the kitchen");
 			var ti = Array.IndexOf(KdsFlow, status);
-			if (ti < 0) return (false, "حالة غير صحيحة");
+			if (ti < 0) return (false, "Invalid status");
 			var ci = Array.IndexOf(KdsFlow, string.IsNullOrEmpty(l.KdsStatus) ? "New" : l.KdsStatus); if (ci < 0) ci = 0;
-			if (ti < ci) return (false, "لا يمكن إرجاع حالة الصنف");   // forward-only
+			if (ti < ci) return (false, "The item status cannot be moved backwards");   // forward-only
 			l.KdsStatus = status;
 			await _db.SaveChangesAsync();   // operational only — no journal entry, no stock movement
 			return (true, null);
@@ -1097,7 +1097,7 @@ namespace CrossBuy.BL
 							   select new PosOrderLineDto
 							   {
 								   Id = l.ID, ItemId = l.ItemId, Name = isAr ? l.ItemName : (i.NameEn != null && i.NameEn != "" ? i.NameEn : l.ItemName), Image = i.ImagePath,
-								   UoMId = l.UoMId, UoMName = l.UoMId == null ? null : _db.UnitsOfMeasure.Where(u => u.ID == l.UoMId).Select(u => isAr ? u.Name : u.NameEn).FirstOrDefault(),
+								   UoMId = l.UoMId, UoMName = l.UoMId == null ? null : _db.UnitsOfMeasure.Where(u => u.ID == l.UoMId).Select(u => isAr ? u.Name : DisplayName.Or(u.NameEn, u.Name)).FirstOrDefault(),
 								   Qty = l.Qty, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate, LineTotal = l.LineTotal,
 								   SentQty = l.SentQty, KdsStatus = l.KdsStatus,
 							   }).ToListAsync();
@@ -1137,7 +1137,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? invoiceId)> PayAsync(int companyId, int orderId, string method, int? userId, int splitParts = 1, decimal tipAmount = 0, string? tipMethod = null, string? idempotencyToken = null)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود", null);
+			if (o == null) return (false, "Order not found", null);
 			// HM-10 slice A: idempotent replay FAST-PATH — a sequential resubmit of the same pay intent returns the FIRST
 			// invoice instead of re-posting (and instead of the "not open" error below). This is only a fast path; the
 			// AUTHORITATIVE guard is the in-transaction UNIQUE INSERT of the token row before commit (mirrors PosSyncLog).
@@ -1147,30 +1147,30 @@ namespace CrossBuy.BL
 					.Select(t => t.InvoiceId).FirstOrDefaultAsync();
 				if (prior != null) return (true, null, prior);
 			}
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", null);
+			if (o.Status != "Open") return (false, "The order is not open", null);
 			// RC-2: Cash only, on top of the flexible PosPayment structure. Other methods added later as types.
-			if (method != "Cash") return (false, "طريقة الدفع غير مدعومة بعد في هذه المرحلة (النقدي فقط)", null);
+			if (method != "Cash") return (false, "This payment method is not supported yet at this stage (cash only)", null);
 			// HM-2: split-receipt portions round to the order's document currency.
 			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
 			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).OrderBy(l => l.Sort).ToListAsync();
-			if (lines.Count == 0) return (false, "لا يمكن دفع طلب فارغ", null);
+			if (lines.Count == 0) return (false, "An empty order cannot be paid", null);
 
 			await RecomputeAsync(o);
 			await _db.SaveChangesAsync();
 
 			int revenue = await RevenueAccountAsync(companyId);
-			if (revenue == 0) return (false, "لا يوجد حساب إيراد مُعرّف", null);
+			if (revenue == 0) return (false, "No revenue account is defined", null);
 			// cash target account priority: the TERMINAL's own drawer (POS-2) → branch Cash payment method → default cash box
 			var terminal = o.TerminalId != null ? await _db.PosTerminals.FirstOrDefaultAsync(t => t.ID == o.TerminalId) : null;
 			int cash = terminal?.CashAccountId ?? 0;
 			if (cash == 0) cash = await _db.BranchPaymentMethods.Where(p => p.BranchId == o.BranchId && p.IsActive && p.PaymentMethod == "Cash" && p.TargetAccountId != null)
 				.Select(p => p.TargetAccountId!.Value).FirstOrDefaultAsync();
 			if (cash == 0) cash = await CashAccountAsync(companyId);
-			if (cash == 0) return (false, "لا يوجد حساب نقدية مُعرّف (خزنة الجهاز أو طريقة دفع «نقدي» أو 110101)", null);
+			if (cash == 0) return (false, "No cash account is defined (terminal drawer, a Cash payment method, or 110101)", null);
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == o.BranchId);
 			int? whId = setting?.DefaultSalesWarehouseId;
-			if (whId == null) return (false, "لم يُحدَّد مخزن البيع الافتراضي للفرع (إعدادات نقاط البيع)", null);
+			if (whId == null) return (false, "The branch default sales warehouse is not set (POS settings)", null);
 			var currencyId = o.CurrencyId ?? setting?.DefaultCurrencyId;
 
 			// invoice on the ORDER's customer (defaults to the global Walk-in); null → Walk-in for legacy rows
@@ -1190,7 +1190,7 @@ namespace CrossBuy.BL
 			if (o.ServiceAmount > 0)
 			{
 				var dv = await DefaultVatRateAsync(companyId);
-				invLines.Add(new SalesLineInput { ItemDescription = "رسوم خدمة", Qty = 1, UnitPrice = o.ServiceAmount, DiscountAmount = 0, TaxRate = dv, RevenueAccountId = revenue, ItemId = null, WarehouseId = null });
+				invLines.Add(new SalesLineInput { ItemDescription = "Service charge", Qty = 1, UnitPrice = o.ServiceAmount, DiscountAmount = 0, TaxRate = dv, RevenueAccountId = revenue, ItemId = null, WarehouseId = null });
 			}
 			// POS-C1: delivery fee → its own invoice line, mapped to the delivery-income account (fallback = sales revenue),
 			// taxed unless exempt. Flows through the SAME sales-invoice path — NO new GL writer.
@@ -1198,15 +1198,15 @@ namespace CrossBuy.BL
 			{
 				int delAcct = setting?.DeliveryRevenueAccountId ?? revenue;
 				decimal delTax = (setting?.DeliveryTaxExempt == true) ? 0m : await DefaultVatRateAsync(companyId);
-				invLines.Add(new SalesLineInput { ItemDescription = "رسوم توصيل", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct, ItemId = null, WarehouseId = null });
+				invLines.Add(new SalesLineInput { ItemDescription = "Delivery fee", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct, ItemId = null, WarehouseId = null });
 			}
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the WHOLE settlement (invoice + COGS + receipts + tip + receipt-no)
 			// so a cashier sale is all-or-nothing. own-or-join: the inner services (CreateSalesInvoiceAsync / CreateReceiptAsync
 			// / PostTip → CreateAndPost/PostMovement) JOIN this transaction instead of opening their own.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
-			var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"طلب كاشير #{o.ID}", userId, currencyId);
-			if (!iok || inv == null) return (false, ierr ?? "فشل إنشاء الفاتورة", null);
+			var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"Cashier order #{o.ID}", userId, currencyId);
+			if (!iok || inv == null) return (false, ierr ?? "Failed to create the invoice", null);
 
 			// settle the full invoice to cash (document currency, so AR nets to zero).
 			// POS-4d-3a EQUAL SPLIT: ONE invoice (revenue/stock/tax once) but N cash receipts (total ÷ N),
@@ -1219,11 +1219,11 @@ namespace CrossBuy.BL
 			// HM-2 (4-أ): the rounding remainder loads on the LARGEST portion (consistent with JES "largest line bears remainder").
 			// In an EQUAL split every portion is identical, so the tie-break (lowest index) puts it on the FIRST part — was the last.
 			portions[0] = R(portions[0] + (total - each * parts));   // remainder → largest (first on tie); Σ == total
-			var note = parts > 1 ? $"تحصيل نقدي (تقسيم {parts}) — طلب كاشير #{o.ID}" : $"تحصيل نقدي — طلب كاشير #{o.ID}";
+			var note = parts > 1 ? $"Cash collection (split {parts}) — cashier order #{o.ID}" : $"Cash collection — cashier order #{o.ID}";
 			foreach (var p in portions)
 			{
 				var (rok, rerr) = await _receivables.CreateReceiptAsync(companyId, cust.ID, DateTime.Today, p, "Cash", cash, note, userId, inv.CurrencyId);
-				if (!rok) return (false, rerr ?? "فشل التحصيل النقدي", null);
+				if (!rok) return (false, rerr ?? "Cash collection failed", null);
 				var rid = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == cust.ID).OrderByDescending(r => r.ID).Select(r => (int?)r.ID).FirstOrDefaultAsync();
 				_db.PosPayments.Add(new PosPayment { OrderId = o.ID, PaymentMethod = "Cash", Amount = p, TargetAccountId = cash, ReceiptId = rid, CreatedAt = DateTime.UtcNow });   // RC-6c link
 			}
@@ -1273,23 +1273,23 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? invoiceId)> PayTendersAsync(int companyId, int orderId, List<PosTenderInput> tenders, int? userId, decimal tipAmount = 0, string? tipMethod = null)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود", null);
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", null);
+			if (o == null) return (false, "Order not found", null);
+			if (o.Status != "Open") return (false, "The order is not open", null);
 			tenders = (tenders ?? new()).Where(t => t.Amount > 0 && !string.IsNullOrWhiteSpace(t.Method)).ToList();
-			if (tenders.Count == 0) return (false, "لا توجد وسيلة دفع", null);
+			if (tenders.Count == 0) return (false, "No payment method", null);
 			// HM-2 (4-أ): tender amounts round to the order's DOCUMENT currency (was the static 2dp R → dropped fils on KWD).
 			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
 			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).OrderBy(l => l.Sort).ToListAsync();
-			if (lines.Count == 0) return (false, "لا يمكن دفع طلب فارغ", null);
+			if (lines.Count == 0) return (false, "An empty order cannot be paid", null);
 
 			await RecomputeAsync(o); await _db.SaveChangesAsync();
 			int revenue = await RevenueAccountAsync(companyId);
-			if (revenue == 0) return (false, "لا يوجد حساب إيراد مُعرّف", null);
+			if (revenue == 0) return (false, "No revenue account is defined", null);
 			var terminal = o.TerminalId != null ? await _db.PosTerminals.FirstOrDefaultAsync(t => t.ID == o.TerminalId) : null;
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == o.BranchId);
 			int? whId = setting?.DefaultSalesWarehouseId;
-			if (whId == null) return (false, "لم يُحدَّد مخزن البيع الافتراضي للفرع (إعدادات نقاط البيع)", null);
+			if (whId == null) return (false, "The branch default sales warehouse is not set (POS settings)", null);
 			var currencyId = o.CurrencyId ?? setting?.DefaultCurrencyId;
 
 			// resolve the GL account each tender settles to
@@ -1305,7 +1305,7 @@ namespace CrossBuy.BL
 			{
 				int acct = method == "Cash" ? await CashAcct()
 					: await _db.BranchPaymentMethods.Where(p => p.BranchId == o.BranchId && p.IsActive && p.PaymentMethod == method && p.TargetAccountId != null).Select(p => p.TargetAccountId!.Value).FirstOrDefaultAsync();
-				if (acct == 0) return (false, $"طريقة الدفع «{method}» غير مُعرّفة أو بلا حساب لهذا الفرع (إعداد طرق الدفع)", null);
+				if (acct == 0) return (false, $"Payment method «{method}» is not defined, or has no account for this branch (payment-method setup)", null);
 				acctFor[method] = acct;
 			}
 
@@ -1321,20 +1321,20 @@ namespace CrossBuy.BL
 				var bomErr = await AppendSaleLinesAsync(companyId, methodByItem, compNames, modsByLine, l, l.Qty, l.DiscountAmount, revenue, whId, invLines, consumedLineIds);   // BIS-2
 				if (bomErr != null) return (false, bomErr, null);
 			}
-			if (o.ServiceAmount > 0) { var dv = await DefaultVatRateAsync(companyId); invLines.Add(new SalesLineInput { ItemDescription = "رسوم خدمة", Qty = 1, UnitPrice = o.ServiceAmount, DiscountAmount = 0, TaxRate = dv, RevenueAccountId = revenue }); }
-			if (o.DeliveryFee > 0) { int delAcct = setting?.DeliveryRevenueAccountId ?? revenue; decimal delTax = (setting?.DeliveryTaxExempt == true) ? 0m : await DefaultVatRateAsync(companyId); invLines.Add(new SalesLineInput { ItemDescription = "رسوم توصيل", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct }); }
+			if (o.ServiceAmount > 0) { var dv = await DefaultVatRateAsync(companyId); invLines.Add(new SalesLineInput { ItemDescription = "Service charge", Qty = 1, UnitPrice = o.ServiceAmount, DiscountAmount = 0, TaxRate = dv, RevenueAccountId = revenue }); }
+			if (o.DeliveryFee > 0) { int delAcct = setting?.DeliveryRevenueAccountId ?? revenue; decimal delTax = (setting?.DeliveryTaxExempt == true) ? 0m : await DefaultVatRateAsync(companyId); invLines.Add(new SalesLineInput { ItemDescription = "Delivery fee", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct }); }
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole multi-tender settlement (invoice + COGS + receipts + tip).
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_db);
-			var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"طلب كاشير #{o.ID}", userId, currencyId);
-			if (!iok || inv == null) return (false, ierr ?? "فشل إنشاء الفاتورة", null);
+			var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"Cashier order #{o.ID}", userId, currencyId);
+			if (!iok || inv == null) return (false, ierr ?? "Failed to create the invoice", null);
 
 			// tenders must cover the grand total; the LARGEST tender absorbs the rounding/change so Σ receipts == grand EXACTLY.
 			// HM-2 (4-أ): remainder → LARGEST tender (was the LAST), consistent with JES "largest line bears remainder". The sum is
 			// validated at the DOCUMENT-currency unit so a legitimate 3dp KWD tender sum is neither rejected nor truncated.
 			decimal grand = inv.GrandTotal, sum = R(tenders.Sum(t => t.Amount));
 			decimal unit = 1m; for (int u = 0; u < __dp; u++) unit /= 10m;
-			if (sum < grand - unit) return (false, $"المدفوع {sum} أقل من الإجمالي {grand}", null);
+			if (sum < grand - unit) return (false, $"The amount paid {sum} is less than the total {grand}", null);
 			var parts = tenders.Select(t => new { t.Method, Amount = R(t.Amount) }).ToList();
 			int big = 0; for (int i = 1; i < parts.Count; i++) if (parts[i].Amount > parts[big].Amount) big = i;   // lowest-index tie-break
 			decimal others = R(parts.Where((p, i) => i != big).Sum(p => p.Amount));
@@ -1347,8 +1347,8 @@ namespace CrossBuy.BL
 			}
 			foreach (var (method, amt) in recv)
 			{
-				var (rok, rerr) = await _receivables.CreateReceiptAsync(companyId, cust.ID, DateTime.Today, amt, method, acctFor[method], $"تحصيل {method} — طلب كاشير #{o.ID}", userId, inv.CurrencyId);
-				if (!rok) return (false, rerr ?? "فشل التحصيل", null);
+				var (rok, rerr) = await _receivables.CreateReceiptAsync(companyId, cust.ID, DateTime.Today, amt, method, acctFor[method], $"{method} collection — cashier order #{o.ID}", userId, inv.CurrencyId);
+				if (!rok) return (false, rerr ?? "Collection failed", null);
 				var rid = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == cust.ID).OrderByDescending(r => r.ID).Select(r => (int?)r.ID).FirstOrDefaultAsync();
 				_db.PosPayments.Add(new PosPayment { OrderId = o.ID, PaymentMethod = method, Amount = amt, TargetAccountId = acctFor[method], ReceiptId = rid, CreatedAt = DateTime.UtcNow });   // RC-6c link
 			}
@@ -1371,26 +1371,26 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, List<int> invoiceIds)> PaySplitByItemAsync(int companyId, int orderId, List<List<SplitAllocation>> bills, string method, int? userId, decimal tipAmount = 0, string? tipMethod = null)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود", new());
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", new());
-			if (method != "Cash") return (false, "طريقة الدفع غير مدعومة بعد (النقدي فقط)", new());
+			if (o == null) return (false, "Order not found", new());
+			if (o.Status != "Open") return (false, "The order is not open", new());
+			if (method != "Cash") return (false, "This payment method is not supported yet (cash only)", new());
 			// HM-2 (4-أ): per-bill amounts round to the order's DOCUMENT currency (was the static 2dp R → dropped fils on KWD).
 			int __dp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);
 			decimal R(decimal v) => Math.Round(v, __dp, MidpointRounding.AwayFromZero);
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).OrderBy(l => l.Sort).ToListAsync();
-			if (lines.Count == 0) return (false, "لا يمكن دفع طلب فارغ", new());
-			if (bills == null || bills.Count == 0) return (false, "لا توجد حسابات للتقسيم", new());
+			if (lines.Count == 0) return (false, "An empty order cannot be paid", new());
+			if (bills == null || bills.Count == 0) return (false, "There are no bills to split", new());
 
 			// ---- STRICT GUARD: every unit covered exactly once (no unit double-billed or missed) ----
 			var allocByLine = new Dictionary<int, decimal>();
 			foreach (var bill in bills)
 			{
-				if (bill == null || bill.Count == 0) return (false, "يوجد حساب فارغ في التقسيم", new());
+				if (bill == null || bill.Count == 0) return (false, "One of the split bills is empty", new());
 				foreach (var a in bill)
 				{
-					if (a.Qty <= 0) return (false, "كمية تخصيص غير صحيحة", new());
+					if (a.Qty <= 0) return (false, "Invalid allocation quantity", new());
 					var ln = lines.FirstOrDefault(l => l.ID == a.LineId);
-					if (ln == null) return (false, "سطر لا يخص هذا الطلب", new());
+					if (ln == null) return (false, "That line does not belong to this order", new());
 					allocByLine[a.LineId] = (allocByLine.TryGetValue(a.LineId, out var v) ? v : 0) + a.Qty;
 				}
 			}
@@ -1398,21 +1398,21 @@ namespace CrossBuy.BL
 			{
 				var alloc = allocByLine.TryGetValue(l.ID, out var v) ? v : 0m;
 				if (Math.Abs(alloc - l.Qty) > 0.0001m)
-					return (false, $"توزيع «{l.ItemName}» غير مطابق (المخصَّص {alloc} ≠ الكمية {l.Qty})", new());
+					return (false, $"The allocation of «{l.ItemName}» does not match (allocated {alloc} ≠ quantity {l.Qty})", new());
 			}
 
 			await RecomputeAsync(o); await _db.SaveChangesAsync();
 
 			int revenue = await RevenueAccountAsync(companyId);
-			if (revenue == 0) return (false, "لا يوجد حساب إيراد مُعرّف", new());
+			if (revenue == 0) return (false, "No revenue account is defined", new());
 			var terminal = o.TerminalId != null ? await _db.PosTerminals.FirstOrDefaultAsync(t => t.ID == o.TerminalId) : null;
 			int cash = terminal?.CashAccountId ?? 0;
 			if (cash == 0) cash = await _db.BranchPaymentMethods.Where(p => p.BranchId == o.BranchId && p.IsActive && p.PaymentMethod == "Cash" && p.TargetAccountId != null).Select(p => p.TargetAccountId!.Value).FirstOrDefaultAsync();
 			if (cash == 0) cash = await CashAccountAsync(companyId);
-			if (cash == 0) return (false, "لا يوجد حساب نقدية مُعرّف", new());
+			if (cash == 0) return (false, "No cash account is defined", new());
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == o.BranchId);
 			int? whId = setting?.DefaultSalesWarehouseId;
-			if (whId == null) return (false, "لم يُحدَّد مخزن البيع الافتراضي للفرع", new());
+			if (whId == null) return (false, "The branch default sales warehouse is not set", new());
 			var currencyId = o.CurrencyId ?? setting?.DefaultCurrencyId;
 			decimal svcPct = setting?.ServiceChargePct ?? 0m;
 			decimal vat = await DefaultVatRateAsync(companyId);
@@ -1454,14 +1454,14 @@ namespace CrossBuy.BL
 					if (bomErr != null) return (false, bomErr, new());
 					billSub += R(a.Qty * l.UnitPrice - disc);
 				}
-				if (svcPct > 0) { var svc = R(billSub * svcPct / 100m); if (svc > 0) invLines.Add(new SalesLineInput { ItemDescription = "رسوم خدمة", Qty = 1, UnitPrice = svc, DiscountAmount = 0, TaxRate = vat, RevenueAccountId = revenue, ItemId = null, WarehouseId = null }); }
-				if (bi == 0 && o.DeliveryFee > 0) invLines.Add(new SalesLineInput { ItemDescription = "رسوم توصيل", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct, ItemId = null, WarehouseId = null });
-					if (bi == bigBill && residual != 0m) invLines.Add(new SalesLineInput { ItemDescription = "تسوية تقريب", Qty = 1, UnitPrice = residual, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = revenue, ItemId = null, WarehouseId = null });
+				if (svcPct > 0) { var svc = R(billSub * svcPct / 100m); if (svc > 0) invLines.Add(new SalesLineInput { ItemDescription = "Service charge", Qty = 1, UnitPrice = svc, DiscountAmount = 0, TaxRate = vat, RevenueAccountId = revenue, ItemId = null, WarehouseId = null }); }
+				if (bi == 0 && o.DeliveryFee > 0) invLines.Add(new SalesLineInput { ItemDescription = "Delivery fee", Qty = 1, UnitPrice = o.DeliveryFee, DiscountAmount = 0, TaxRate = delTax, RevenueAccountId = delAcct, ItemId = null, WarehouseId = null });
+					if (bi == bigBill && residual != 0m) invLines.Add(new SalesLineInput { ItemDescription = "Rounding adjustment", Qty = 1, UnitPrice = residual, DiscountAmount = 0, TaxRate = 0, RevenueAccountId = revenue, ItemId = null, WarehouseId = null });
 
-				var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"طلب كاشير #{o.ID} — تقسيم {bi + 1}/{bills.Count}", userId, currencyId);
-				if (!iok || inv == null) return (false, ierr ?? "فشل إنشاء فاتورة التقسيم", new());
-				var (rok, rerr) = await _receivables.CreateReceiptAsync(companyId, cust.ID, DateTime.Today, inv.GrandTotal, "Cash", cash, $"تحصيل تقسيم {bi + 1}/{bills.Count} — طلب #{o.ID}", userId, inv.CurrencyId);
-				if (!rok) return (false, rerr ?? "فشل تحصيل التقسيم", new());
+				var (iok, ierr, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, cust.ID, DateTime.Today, invLines, $"Cashier order #{o.ID} — split {bi + 1}/{bills.Count}", userId, currencyId);
+				if (!iok || inv == null) return (false, ierr ?? "Failed to create the split invoice", new());
+				var (rok, rerr) = await _receivables.CreateReceiptAsync(companyId, cust.ID, DateTime.Today, inv.GrandTotal, "Cash", cash, $"Split collection {bi + 1}/{bills.Count} — order #{o.ID}", userId, inv.CurrencyId);
+				if (!rok) return (false, rerr ?? "Split collection failed", new());
 				var rid = await _db.Receipts.Where(r => r.CompanyID == companyId && r.CustomerId == cust.ID).OrderByDescending(r => r.ID).Select(r => (int?)r.ID).FirstOrDefaultAsync();
 				_db.PosPayments.Add(new PosPayment { OrderId = o.ID, PaymentMethod = "Cash", Amount = inv.GrandTotal, TargetAccountId = cash, ReceiptId = rid, CreatedAt = DateTime.UtcNow });   // RC-6c link
 				invoiceIds.Add(inv.ID);
@@ -1489,15 +1489,15 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> VoidPaidOrderAsync(int companyId, int orderId, int? userId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status == "Voided") return (false, "الفاتورة ملغاة بالفعل");
-			if (o.Status != "Paid") return (false, "لا يمكن إلغاء إلا فاتورة مدفوعة");
+			if (o == null) return (false, "Order not found");
+			if (o.Status == "Voided") return (false, "The invoice is already cancelled");
+			if (o.Status != "Paid") return (false, "Only a paid invoice can be cancelled");
 
 			// all invoices of this order (single for PayAsync/PayTenders; N for split-by-item) — matched by the cashier note
-			string note = $"طلب كاشير #{o.ID}";
+			string note = $"Cashier order #{o.ID}";
 			var invoices = await _db.SalesInvoices.Where(i => i.CompanyID == companyId && i.Notes != null && (i.Notes == note || i.Notes.StartsWith(note + " —"))).ToListAsync();
 			if (invoices.Count == 0 && o.InvoiceId != null) { var iv = await _db.SalesInvoices.FirstOrDefaultAsync(i => i.ID == o.InvoiceId); if (iv != null) invoices.Add(iv); }
-			if (invoices.Count == 0) return (false, "لم يُعثر على فاتورة الطلب");
+			if (invoices.Count == 0) return (false, "The invoice for this order was not found");
 			var date = DateTime.Today;
 
 			// HM-1-أ ب-3: ONE ambient transaction wraps the whole void (stock return + all JE reversals) so it is all-or-nothing.
@@ -1510,14 +1510,14 @@ namespace CrossBuy.BL
 				foreach (var m in moves)
 				{
 					var (sok, serr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest
-					{ Date = date, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = 1, Qty = m.QtyBase, UnitCostInBase = m.UnitCost, SourceType = "SalesInvoiceReversal", SourceId = inv.ID, PostToGl = true, Notes = $"إلغاء فاتورة {inv.InvoiceNo}" }, userId?.ToString());
-					if (!sok) return (false, "تعذّر إرجاع المخزون: " + serr);
+					{ Date = date, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = 1, Qty = m.QtyBase, UnitCostInBase = m.UnitCost, SourceType = "SalesInvoiceReversal", SourceId = inv.ID, PostToGl = true, Notes = $"Cancellation of invoice {inv.InvoiceNo}" }, userId?.ToString());
+					if (!sok) return (false, "Could not return the stock: " + serr);
 				}
 				// reverse the invoice JE (AR/revenue/VAT)
 				if (inv.JournalEntryId != null)
 				{
-					var (jok, jerr, _) = await _journals.ReverseAsync(inv.JournalEntryId.Value, userId, $"إلغاء فاتورة كاشير {inv.InvoiceNo}");
-					if (!jok) return (false, "تعذّر عكس قيد الفاتورة: " + jerr);
+					var (jok, jerr, _) = await _journals.ReverseAsync(inv.JournalEntryId.Value, userId, $"Cancellation of cashier invoice {inv.InvoiceNo}");
+					if (!jok) return (false, "Could not reverse the invoice entry: " + jerr);
 				}
 				inv.Status = "Reversed";
 			}
@@ -1530,8 +1530,8 @@ namespace CrossBuy.BL
 				if (rc == null || rc.Status == "Reversed") continue;
 				if (rc.JournalEntryId != null)
 				{
-					var (jok, jerr, _) = await _journals.ReverseAsync(rc.JournalEntryId.Value, userId, $"إلغاء سند قبض {rc.ReceiptNo}");
-					if (!jok) return (false, "تعذّر عكس قيد السند: " + jerr);
+					var (jok, jerr, _) = await _journals.ReverseAsync(rc.JournalEntryId.Value, userId, $"Cancellation of receipt voucher {rc.ReceiptNo}");
+					if (!jok) return (false, "Could not reverse the voucher entry: " + jerr);
 				}
 				rc.Status = "Reversed";
 			}
@@ -1539,8 +1539,8 @@ namespace CrossBuy.BL
 			// RC-5: reverse the tip JE too (tip is part of the operation being voided → cash out / liability cleared)
 			if (o.TipJournalEntryId != null)
 			{
-				var (jok, jerr, _) = await _journals.ReverseAsync(o.TipJournalEntryId.Value, userId, $"إلغاء إكرامية — طلب #{o.ID}");
-				if (!jok) return (false, "تعذّر عكس قيد الإكرامية: " + jerr);
+				var (jok, jerr, _) = await _journals.ReverseAsync(o.TipJournalEntryId.Value, userId, $"Tip cancellation — order #{o.ID}");
+				if (!jok) return (false, "Could not reverse the tip entry: " + jerr);
 				o.TipJournalEntryId = null; o.TipAmount = 0m;
 			}
 
@@ -1557,27 +1557,27 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? returnId)> ReturnOrderLinesAsync(int companyId, int orderId, List<SplitAllocation> allocations, int? userId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود", null);
-			if (o.Status != "Paid") return (false, "المرتجع الجزئي متاح للفواتير المدفوعة فقط", null);
+			if (o == null) return (false, "Order not found", null);
+			if (o.Status != "Paid") return (false, "A partial return is only available for paid invoices", null);
 			int __ddp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2 Batch 5: order document dp (no static R)
 			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			allocations = (allocations ?? new()).Where(a => a.Qty > 0).ToList();
-			if (allocations.Count == 0) return (false, "اختر صنفًا وكمية للإرجاع", null);
+			if (allocations.Count == 0) return (false, "Choose an item and a quantity to return", null);
 
 			var lines = await _db.PosOrderLines.Where(l => l.OrderId == orderId).ToListAsync();
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == o.BranchId);
 			int? whId = setting?.DefaultSalesWarehouseId;
-			if (whId == null) return (false, "لم يُحدَّد مخزن البيع الافتراضي للفرع", null);
+			if (whId == null) return (false, "The branch default sales warehouse is not set", null);
 			int revenue = await RevenueAccountAsync(companyId);
-			if (revenue == 0) return (false, "لا يوجد حساب إيراد مُعرّف", null);
+			if (revenue == 0) return (false, "No revenue account is defined", null);
 			var cust = o.CustomerId != null ? await _db.Customers.FirstOrDefaultAsync(x => x.ID == o.CustomerId && x.CompanyID == companyId) : await EnsureWalkInAsync(companyId);
-			if (cust == null) return (false, "العميل غير موجود", null);
+			if (cust == null) return (false, "Customer not found", null);
 			// drawer to refund from: terminal drawer → branch Cash method → 110101
 			var terminal = o.TerminalId != null ? await _db.PosTerminals.AsNoTracking().FirstOrDefaultAsync(t => t.ID == o.TerminalId) : null;
 			int drawer = terminal?.CashAccountId ?? 0;
 			if (drawer == 0) drawer = await _db.BranchPaymentMethods.Where(p => p.BranchId == o.BranchId && p.IsActive && p.PaymentMethod == "Cash" && p.TargetAccountId != null).Select(p => p.TargetAccountId!.Value).FirstOrDefaultAsync();
 			if (drawer == 0) drawer = await CashAccountAsync(companyId);
-			if (drawer == 0) return (false, "لا يوجد حساب نقدية مُعرّف", null);
+			if (drawer == 0) return (false, "No cash account is defined", null);
 
 			var modsByLine = await LoadLineModifiersAsync(lines.Select(l => l.ID).ToList());
 			// BIS-4: build the return lines by MIRRORING the sale (AppendSaleLines) — so a RecipeAtSale (method 4) item returns
@@ -1589,8 +1589,8 @@ namespace CrossBuy.BL
 			foreach (var a in allocations)
 			{
 				var l = lines.FirstOrDefault(x => x.ID == a.LineId);
-				if (l == null) return (false, "سطر لا يخص هذا الطلب", null);
-				if (a.Qty > l.Qty + 0.0001m) return (false, $"كمية الإرجاع أكبر من المُباع لـ«{l.ItemName}»", null);
+				if (l == null) return (false, "That line does not belong to this order", null);
+				if (a.Qty > l.Qty + 0.0001m) return (false, $"The return quantity exceeds the quantity sold for «{l.ItemName}»", null);
 				var disc = R(l.DiscountAmount * a.Qty / (l.Qty == 0 ? 1 : l.Qty));
 				// The return runs the SAME explosion the sale ran, so it reverses exactly what was issued — one
 				// service, one rounding, symmetric quantities. A second formula here is how a return drifts.
@@ -1598,8 +1598,8 @@ namespace CrossBuy.BL
 				if (bomErr != null) return (false, bomErr, null);
 			}
 
-			var (rok, rerr, ret) = await _receivables.CreateSalesReturnAsync(companyId, cust.ID, o.InvoiceId, DateTime.Today, retLines, $"مرتجع جزئي — طلب كاشير #{o.ID}", userId, o.CurrencyId);
-			if (!rok || ret == null) return (false, rerr ?? "فشل إنشاء المرتجع", null);
+			var (rok, rerr, ret) = await _receivables.CreateSalesReturnAsync(companyId, cust.ID, o.InvoiceId, DateTime.Today, retLines, $"Partial return — cashier order #{o.ID}", userId, o.CurrencyId);
+			if (!rok || ret == null) return (false, rerr ?? "Failed to create the return", null);
 
 			// cash refund: close the AR credit the return opened + take the cash out of the drawer.
 			// Modeled as a NEGATIVE receipt: the JE is Dr AR-control / Cr drawer (via JournalEntryService), and a matching
@@ -1619,24 +1619,24 @@ namespace CrossBuy.BL
 				decimal fxNet = cashOutBase - arBase;
 				var refund = new List<JournalLineInput>
 				{
-					new JournalLineInput { AccountId = cust.ControlAccountId, Debit = arBase, Credit = 0, Description = $"رد نقدي مرتجع {ret.ReturnNo}" },
-					new JournalLineInput { AccountId = drawer, Debit = 0, Credit = cashOutBase, Description = $"رد نقدي من الدرج — مرتجع {ret.ReturnNo}" },
+					new JournalLineInput { AccountId = cust.ControlAccountId, Debit = arBase, Credit = 0, Description = $"Cash refund for return {ret.ReturnNo}" },
+					new JournalLineInput { AccountId = drawer, Debit = 0, Credit = cashOutBase, Description = $"Cash refund from the drawer — return {ret.ReturnNo}" },
 				};
 				if (fxNet != 0)
 				{
 					var fxAcc = await _db.Accounts.Where(a => a.CompanyID == companyId && a.Code == (fxNet > 0 ? "5902" : "4902")).Select(a => (int?)a.ID).FirstOrDefaultAsync();
-					if (fxAcc == null) return (false, "حساب فروق العملة المحققة (4902/5902) غير مُهيّأ", null);
-					if (fxNet > 0) refund.Add(new JournalLineInput { AccountId = fxAcc.Value, Debit = fxNet, Credit = 0, Description = "خسارة فرق عملة محققة — مرتجع" });
-					else refund.Add(new JournalLineInput { AccountId = fxAcc.Value, Debit = 0, Credit = -fxNet, Description = "ربح فرق عملة محقق — مرتجع" });
+					if (fxAcc == null) return (false, "The realised exchange-difference account (4902/5902) is not configured", null);
+					if (fxNet > 0) refund.Add(new JournalLineInput { AccountId = fxAcc.Value, Debit = fxNet, Credit = 0, Description = "Realised exchange loss — return" });
+					else refund.Add(new JournalLineInput { AccountId = fxAcc.Value, Debit = 0, Credit = -fxNet, Description = "Realised exchange gain — return" });
 				}
 				var (jok, jerr, jentry) = await _journals.CreateAndPostAsync(new JournalEntryInput
-				{ CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Auto", SourceType = "PosRefund", SourceId = ret.ID, CurrencyId = ordCur, Description = $"رد نقدي مرتجع {ret.ReturnNo} — طلب #{o.ID}", Lines = refund }, userId);
-				if (!jok) return (false, "تعذّر ترحيل قيد الرد النقدي: " + jerr, null);
+				{ CompanyID = companyId, EntryDate = DateTime.Today, JournalType = "Auto", SourceType = "PosRefund", SourceId = ret.ID, CurrencyId = ordCur, Description = $"Cash refund for return {ret.ReturnNo} — order #{o.ID}", Lines = refund }, userId);
+				if (!jok) return (false, "Could not post the cash-refund entry: " + jerr, null);
 				var refundReceipt = new CrossBuy.Models.Context.Accounting.Receipt
 				{
 					CompanyID = companyId, CustomerId = cust.ID, ReceiptDate = DateTime.Today, Amount = -ret.GrandTotal, AmountBase = -arBase,
 					Method = "Cash", CashAccountId = drawer, Status = "Posted", JournalEntryId = jentry!.ID, CurrencyId = ordCur, ExchangeRate = todayRate,
-					Notes = $"رد نقدي مرتجع {ret.ReturnNo} — طلب #{o.ID}", CreatedAt = DateTime.UtcNow,
+					Notes = $"Cash refund for return {ret.ReturnNo} — order #{o.ID}", CreatedAt = DateTime.UtcNow,
 				};
 				_db.Receipts.Add(refundReceipt);
 				await _db.SaveChangesAsync();
@@ -1652,12 +1652,12 @@ namespace CrossBuy.BL
 		// invariants sourced from the server. Honors the OFFLINE line prices the customer paid; COGS uses server cost at post.
 		public async Task<(bool ok, string? error, int? invoiceId, bool alreadySynced)> SyncPaidOrderAsync(int companyId, PosSyncOrderInput p, int? userId)
 		{
-			if (p == null || string.IsNullOrWhiteSpace(p.LocalGuid)) return (false, "localGuid مطلوب", null, false);
-			if (p.Lines == null || p.Lines.Count == 0) return (false, "الطلب فارغ", null, false);
+			if (p == null || string.IsNullOrWhiteSpace(p.LocalGuid)) return (false, "localGuid is required", null, false);
+			if (p.Lines == null || p.Lines.Count == 0) return (false, "The order is empty", null, false);
 
 			var term = p.TerminalId != null ? await _db.PosTerminals.FirstOrDefaultAsync(t => t.ID == p.TerminalId) : null;
 			int branchId = term?.BranchId ?? 0;
-			if (branchId == 0) return (false, "الترمينال غير معروف", null, false);
+			if (branchId == 0) return (false, "Unknown terminal", null, false);
 
 			// HM-D5-أ 5ب-1: the WHOLE replay — rebuild + pay (invoice/COGS/receipt/tip) + the PosSyncLog idempotency KEY —
 			// is ONE ambient own-or-join transaction. Nothing is durable until the sync-log commits WITH the post, so a failure
@@ -1680,7 +1680,7 @@ namespace CrossBuy.BL
 				foreach (var l in p.Lines)
 				{
 					var (aok, aerr) = await AddLineAsync(companyId, orderId, l.ItemId, l.Qty, l.OptionIds);
-					if (!aok) { await tx.RollbackAsync(); return (false, "تعذّرت إعادة بناء السطر: " + aerr, null, false); }
+					if (!aok) { await tx.RollbackAsync(); return (false, "Could not rebuild the line: " + aerr, null, false); }
 				}
 				// 2) honor the OFFLINE prices the customer actually paid (server re-pricing may differ if prices changed mid-outage)
 				var lines = await _db.PosOrderLines.Where(x => x.OrderId == orderId).OrderBy(x => x.Sort).ThenBy(x => x.ID).ToListAsync();
@@ -1697,7 +1697,7 @@ namespace CrossBuy.BL
 				bool payOk; string? payErr;
 				if ((p.Method ?? "Cash") == "Cash") { var r = await PayAsync(companyId, orderId, "Cash", userId, 1, tipA, tipM); payOk = r.ok; payErr = r.error; invId = r.invoiceId; }
 				else { var r = await PayTendersAsync(companyId, orderId, new List<PosTenderInput> { new PosTenderInput { Method = p.Method!, Amount = grand } }, userId, tipA, tipM); payOk = r.ok; payErr = r.error; invId = r.invoiceId; }
-				if (!payOk) { await tx.RollbackAsync(); return (false, "تعذّر الترحيل: " + payErr, null, false); }
+				if (!payOk) { await tx.RollbackAsync(); return (false, "Could not post: " + payErr, null, false); }
 
 				// 4) keep the offline receipt no + advance the terminal counter (suffix-only; anomaly recorded AFTER commit)
 				var ord = await _db.PosOrders.FirstAsync(x => x.ID == orderId);
@@ -1758,11 +1758,11 @@ namespace CrossBuy.BL
 				{
 					if (!items.TryGetValue(l.ItemId, out var it)) continue;
 					if (!it.IsActive)
-						conflicts.Add(new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "InactiveItem", ItemId = l.ItemId, Detail = $"«{it.Name}» أصبح غير نشط بعد البيع أوفلاين", Status = "Open", CreatedAt = now });
+						conflicts.Add(new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "InactiveItem", ItemId = l.ItemId, Detail = $"«{it.Name}» became inactive after the offline sale", Status = "Open", CreatedAt = now });
 					decimal extras = (l.OptionIds ?? new List<int>()).Sum(oid => optExtra.TryGetValue(oid, out var e) ? e : 0m);
 					decimal expected = R((it.SalesPrice ?? 0m) + extras);
 					if (Math.Abs(expected - l.UnitPrice) > 0.01m)
-						conflicts.Add(new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "PriceDiff", ItemId = l.ItemId, Detail = $"سعر «{it.Name}» أوفلاين {l.UnitPrice:0.##} ≠ الكتالوج {expected:0.##}", OfflineValue = l.UnitPrice, ServerValue = expected, Status = "Open", CreatedAt = now });
+						conflicts.Add(new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "PriceDiff", ItemId = l.ItemId, Detail = $"Offline price of «{it.Name}» {l.UnitPrice:0.##} ≠ catalogue {expected:0.##}", OfflineValue = l.UnitPrice, ServerValue = expected, Status = "Open", CreatedAt = now });
 				}
 				// negative stock: check every item the invoice actually deducted (exact deduction set incl. recipe/modifier lines)
 				if (invoiceId != null)
@@ -1773,7 +1773,7 @@ namespace CrossBuy.BL
 					{
 						var (bal, _, _) = await _stock.GetBalanceAsync(companyId, d.ItemId!.Value, d.WarehouseId!.Value);
 						if (bal < 0)
-							conflicts.Add(new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "NegativeStock", ItemId = d.ItemId, Detail = $"رصيد «{(nameById.TryGetValue(d.ItemId!.Value, out var nm) ? nm : d.ItemId)}» أصبح سالبًا ({bal:0.##}) بعد الترحيل", ServerValue = bal, Status = "Open", CreatedAt = now });
+							conflicts.Add(new PosSyncConflict { CompanyId = companyId, SyncLogId = syncLogId, OrderId = orderId, ConflictType = "NegativeStock", ItemId = d.ItemId, Detail = $"The balance of «{(nameById.TryGetValue(d.ItemId!.Value, out var nm) ? nm : d.ItemId)}» went negative ({bal:0.##}) after posting", ServerValue = bal, Status = "Open", CreatedAt = now });
 					}
 				}
 				if (conflicts.Count > 0) { _db.PosSyncConflicts.AddRange(conflicts); await _db.SaveChangesAsync(); }
@@ -1789,13 +1789,13 @@ namespace CrossBuy.BL
 		// EXISTING TransferAsync (goods-in-transit 110302 nets to 0). The sale then deducts the finished (BIS-2). No new writer.
 		public async Task<(bool ok, string? error, int? transferId)> ReplenishFinishedFromBranchAsync(int companyId, int branchId, int itemId, decimal qty, DateTime date, string? userId)
 		{
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", null);
+			if (qty <= 0) return (false, "Quantity must be greater than zero", null);
 			var s = await _db.BranchItemSourcings.AsNoTracking().FirstOrDefaultAsync(x => x.BranchId == branchId && x.ItemId == itemId && x.IsActive);
-			if (s == null || s.Method != "FinishedFromBranch") return (false, "الصنف ليس «جاهز من فرع آخر» في هذا الفرع", null);
-			if (s.SourceBranchId == null) return (false, "لا يوجد فرع مصدر", null);
+			if (s == null || s.Method != "FinishedFromBranch") return (false, "The item is not set to Ready from another branch in this branch", null);
+			if (s.SourceBranchId == null) return (false, "There is no source branch", null);
 			int toWh = await BranchWarehouseAsync(branchId), fromWh = await BranchWarehouseAsync(s.SourceBranchId.Value);
-			if (toWh == 0 || fromWh == 0) return (false, "مخزن البيع غير محدَّد لأحد الفرعين", null);
-			var (ok, err, tr) = await _stock.TransferAsync(companyId, fromWh, toWh, date, $"تجهيز صنف جاهز — فرع {branchId} من فرع {s.SourceBranchId}",
+			if (toWh == 0 || fromWh == 0) return (false, "The sales warehouse is not set for one of the two branches", null);
+			var (ok, err, tr) = await _stock.TransferAsync(companyId, fromWh, toWh, date, $"Ready-item fulfilment — branch {branchId} from branch {s.SourceBranchId}",
 				new List<TransferLineInput> { new() { ItemId = itemId, Qty = qty } }, userId);
 			return (ok, err, tr?.ID);
 		}
@@ -1805,24 +1805,24 @@ namespace CrossBuy.BL
 		// cost + local components + labor/overhead). The sale then deducts the finished (BIS-2). No new writer.
 		public async Task<(bool ok, string? error, int? workOrderId)> PrepareSemiFinishedAsync(int companyId, int branchId, int itemId, decimal qty, decimal labor, decimal overhead, DateTime date, string? userId)
 		{
-			if (qty <= 0) return (false, "الكمية يجب أن تكون أكبر من صفر", null);
+			if (qty <= 0) return (false, "Quantity must be greater than zero", null);
 			var s = await _db.BranchItemSourcings.AsNoTracking().FirstOrDefaultAsync(x => x.BranchId == branchId && x.ItemId == itemId && x.IsActive);
-			if (s == null || s.Method != "SemiFromBranchComplete") return (false, "الصنف ليس «نصف-مصنّع + إكمال» في هذا الفرع", null);
-			if (s.SourceBranchId == null || s.SemiFinishedItemId == null) return (false, "الفرع المصدر أو نصف-المصنّع غير محدَّد", null);
+			if (s == null || s.Method != "SemiFromBranchComplete") return (false, "The item is not set to Semi-finished + finishing in this branch", null);
+			if (s.SourceBranchId == null || s.SemiFinishedItemId == null) return (false, "The source branch or the semi-finished item is not set", null);
 			int toWh = await BranchWarehouseAsync(branchId), fromWh = await BranchWarehouseAsync(s.SourceBranchId.Value);
-			if (toWh == 0 || fromWh == 0) return (false, "مخزن البيع غير محدَّد لأحد الفرعين", null);
+			if (toWh == 0 || fromWh == 0) return (false, "The sales warehouse is not set for one of the two branches", null);
 			// how much semi the WO will consume = its BOM qty × qty × (1+scrap)
 			var semiComp = await _db.ItemComponents.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyID == companyId && c.ParentItemId == itemId && c.ComponentItemId == s.SemiFinishedItemId);
-			if (semiComp == null) return (false, "نصف-المصنّع ليس ضمن قائمة مواد الصنف التام", null);
+			if (semiComp == null) return (false, "The semi-finished item is not part of the finished item's bill of materials", null);
 			decimal semiNeed = Math.Round(semiComp.Quantity * qty * (1 + semiComp.ScrapPct / 100m), 4, MidpointRounding.AwayFromZero);
-			var (tok, terr, _) = await _stock.TransferAsync(companyId, fromWh, toWh, date, $"تحويل نصف-مصنّع للإكمال — فرع {branchId}",
+			var (tok, terr, _) = await _stock.TransferAsync(companyId, fromWh, toWh, date, $"Semi-finished transfer for finishing — branch {branchId}",
 				new List<TransferLineInput> { new() { ItemId = s.SemiFinishedItemId.Value, Qty = semiNeed } }, userId);
-			if (!tok) return (false, "تعذّر تحويل نصف-المصنّع: " + terr, null);
+			if (!tok) return (false, "Could not transfer the semi-finished item: " + terr, null);
 			// complete a work order at this branch (BOM incl. the semi) — cost rolls up
-			var (cok, cerr, woId) = await _manuf.CreateAsync(companyId, itemId, qty, toWh, date, date, labor, overhead, $"إكمال من نصف-مصنّع — فرع {branchId}", userId);
-			if (!cok) return (false, "تعذّر إنشاء أمر التشغيل: " + cerr, null);
+			var (cok, cerr, woId) = await _manuf.CreateAsync(companyId, itemId, qty, toWh, date, date, labor, overhead, $"Finishing from a semi-finished item — branch {branchId}", userId);
+			if (!cok) return (false, "Could not create the work order: " + cerr, null);
 			var (dok, derr, _) = await _manuf.CompleteAsync(companyId, woId, date, userId);
-			if (!dok) return (false, "تعذّر إكمال أمر التشغيل: " + derr, null);
+			if (!dok) return (false, "Could not complete the work order: " + derr, null);
 			return (true, null, woId);
 		}
 
@@ -1830,14 +1830,14 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetOrderDeliveryAsync(int companyId, int orderId, int? customerId, int? zoneId, string? address, string? area, string? phone)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
-			if (o.OrderType != "Delivery") return (false, "هذا الطلب ليس توصيلًا");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
+			if (o.OrderType != "Delivery") return (false, "This order is not a delivery");
 			int __ddp = await _rounding.DecimalsAsync(companyId, o.CurrencyId, o.BranchId);   // HM-2 Batch 5: order document dp (no static R)
 			decimal R(decimal v) => Math.Round(v, __ddp, MidpointRounding.AwayFromZero);
 			if (customerId != null && await _db.Customers.AnyAsync(c => c.ID == customerId && c.CompanyID == companyId)) o.CustomerId = customerId;
 			DeliveryZone? zone = null;
-			if (zoneId != null) { zone = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.ID == zoneId && z.BranchId == o.BranchId && z.IsActive); if (zone == null) return (false, "منطقة التوصيل غير صحيحة"); }
+			if (zoneId != null) { zone = await _db.DeliveryZones.FirstOrDefaultAsync(z => z.ID == zoneId && z.BranchId == o.BranchId && z.IsActive); if (zone == null) return (false, "Invalid delivery zone"); }
 			var setting = await _db.BranchPosSettings.AsNoTracking().FirstOrDefaultAsync(s => s.BranchId == o.BranchId);
 			// fee = the zone's fee; else the branch default; else 0. FROZEN on the order.
 			o.DeliveryZoneId = zone?.ID;
@@ -1861,8 +1861,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int? id)> AddCustomerAddressAsync(int companyId, int customerId, int? zoneId, string area, string address, string phone, bool isDefault)
 		{
-			if (!await _db.Customers.AnyAsync(c => c.ID == customerId && c.CompanyID == companyId)) return (false, "العميل غير موجود", null);
-			if (string.IsNullOrWhiteSpace(address)) return (false, "العنوان مطلوب", null);
+			if (!await _db.Customers.AnyAsync(c => c.ID == customerId && c.CompanyID == companyId)) return (false, "Customer not found", null);
+			if (string.IsNullOrWhiteSpace(address)) return (false, "Address is required", null);
 			if (isDefault)
 			{
 				var others = await _db.CustomerAddresses.Where(a => a.CompanyId == companyId && a.CustomerId == customerId && a.IsDefault).ToListAsync();
@@ -1942,8 +1942,8 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? orderId)> ArriveReservationAsync(int companyId, int reservationId, int? terminalId, int? shiftId)
 		{
 			var r = await _db.Reservations.FirstOrDefaultAsync(x => x.ID == reservationId && x.CompanyId == companyId);
-			if (r == null) return (false, "الحجز غير موجود", null);
-			if (r.Status != "Booked") return (false, "الحجز غير نشط", null);
+			if (r == null) return (false, "Reservation not found", null);
+			if (r.Status != "Booked") return (false, "The reservation is not active", null);
 			var (ok, err, oid) = await CreateOrderAsync(companyId, r.BranchId, "Dine-in", r.TableId, r.CustomerId, terminalId, shiftId);
 			if (!ok) return (false, err, null);
 			if (r.PartySize > 1) await SetGuestsAsync(companyId, oid, r.PartySize);   // party size → guests (clamped to seats)
@@ -1956,10 +1956,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> AssignDriverAsync(int companyId, int orderId, int? driverId)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود");
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا");
-			if (o.OrderType != "Delivery") return (false, "هذا الطلب ليس توصيلًا");
-			if (driverId != null && !await _db.Drivers.AnyAsync(d => d.ID == driverId && d.BranchId == o.BranchId && d.IsActive)) return (false, "السائق غير صحيح");
+			if (o == null) return (false, "Order not found");
+			if (o.Status != "Open") return (false, "The order is not open");
+			if (o.OrderType != "Delivery") return (false, "This order is not a delivery");
+			if (driverId != null && !await _db.Drivers.AnyAsync(d => d.ID == driverId && d.BranchId == o.BranchId && d.IsActive)) return (false, "Invalid driver");
 			o.DriverId = driverId;
 			await _db.SaveChangesAsync();
 			return (true, null);
@@ -1971,18 +1971,18 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, string? deliveryStatus)> SetDeliveryStatusAsync(int companyId, int orderId, string status)
 		{
 			var o = await _db.PosOrders.FirstOrDefaultAsync(x => x.ID == orderId && x.CompanyId == companyId);
-			if (o == null) return (false, "الطلب غير موجود", null);
-			if (o.Status != "Open") return (false, "الطلب ليس مفتوحًا", null);
-			if (o.OrderType != "Delivery") return (false, "هذا الطلب ليس توصيلًا", null);
+			if (o == null) return (false, "Order not found", null);
+			if (o.Status != "Open") return (false, "The order is not open", null);
+			if (o.OrderType != "Delivery") return (false, "This order is not a delivery", null);
 			int ti = Array.IndexOf(DeliveryFlow, status);
-			if (ti < 0) return (false, "حالة توصيل غير صحيحة", null);
+			if (ti < 0) return (false, "Invalid delivery status", null);
 			int ci = o.DeliveryStatus == null ? -1 : Array.IndexOf(DeliveryFlow, o.DeliveryStatus);
-			if (ti <= ci) return (false, "لا يمكن إرجاع أو تكرار حالة التوصيل", null);   // forward-only, no repeat/back
+			if (ti <= ci) return (false, "The delivery status cannot be moved backwards or repeated", null);   // forward-only, no repeat/back
 			if (status == "OutForDelivery")
 			{
 				var sent = await _db.PosOrderLines.AsNoTracking().Where(l => l.OrderId == orderId && l.SentQty > 0).Select(l => new { l.SentQty, l.KdsStatus }).ToListAsync();
 				var kds = DeriveOrderKds(sent.Select(x => (x.SentQty, x.KdsStatus)));
-				if (kds != "Ready") return (false, "لا يمكن الخروج للتوصيل قبل أن يصبح الطلب جاهزًا", null);
+				if (kds != "Ready") return (false, "The driver cannot depart before the order is ready", null);
 			}
 			o.DeliveryStatus = status;
 			await _db.SaveChangesAsync();

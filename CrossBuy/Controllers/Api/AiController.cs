@@ -198,7 +198,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> Diag([FromBody] DiagInput? input)
 		{
 			var msg = string.IsNullOrWhiteSpace(input?.Message)
-				? "من فضلك رد بجملة عربية قصيرة تؤكد أن الاتصال يعمل."
+				? "Please reply with one short sentence confirming that the connection works."
 				: input!.Message!;
 			var tier = input?.Tier == "smart" ? "smart" : "fast";
 

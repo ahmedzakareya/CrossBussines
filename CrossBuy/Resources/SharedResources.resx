@@ -727,7 +727,6 @@
   <data name="Currency" xml:space="preserve"><value>Currency</value></data>
   <data name="Quantity" xml:space="preserve"><value>Quantity</value></data>
   <data name="Note" xml:space="preserve"><value>Note</value></data>
-  <data name="Notes" xml:space="preserve"><value>Notes</value></data>
   <data name="All" xml:space="preserve"><value>All</value></data>
   <data name="View" xml:space="preserve"><value>View</value></data>
   <data name="Approve" xml:space="preserve"><value>Approve</value></data>
@@ -776,7 +775,6 @@
   <data name="HumanResources" xml:space="preserve"><value>Human Resources</value></data>
   <data name="CRM" xml:space="preserve"><value>CRM</value></data>
   <data name="POS" xml:space="preserve"><value>Point of Sale</value></data>
-  <data name="Logout" xml:space="preserve"><value>Sign Out</value></data>
   <data name="Profile" xml:space="preserve"><value>Profile</value></data>
   <data name="Settings" xml:space="preserve"><value>Settings</value></data>
   <data name="Notifications" xml:space="preserve"><value>Notifications</value></data>
@@ -908,7 +906,6 @@
   <data name="Contract saved" xml:space="preserve"><value>Contract saved</value></data>
   <data name="Contract deleted" xml:space="preserve"><value>Contract deleted</value></data>
   <data name="Document saved" xml:space="preserve"><value>Document saved</value></data>
-  <data name="Document deleted" xml:space="preserve"><value>Document deleted</value></data>
   <data name="Sent {0} alert(s)" xml:space="preserve"><value>Sent {0} alert(s)</value></data>
   <data name="Leave allowance disbursed" xml:space="preserve"><value>Leave allowance disbursed</value></data>
   <data name="Carried over {0} record(s) to year {1}" xml:space="preserve"><value>Carried over {0} record(s) to year {1}</value></data>
@@ -1237,10 +1234,8 @@
   <data name="Functional currency setup" xml:space="preserve"><value>Functional currency setup</value></data>
   <data name="FX revaluation" xml:space="preserve"><value>FX revaluation</value></data>
   <data name="Receivables" xml:space="preserve"><value>Receivables</value></data>
-  <data name="Sales invoices" xml:space="preserve"><value>Sales invoices</value></data>
   <data name="Sales returns" xml:space="preserve"><value>Sales returns</value></data>
   <data name="AR aging" xml:space="preserve"><value>AR aging</value></data>
-  <data name="Customer analytics" xml:space="preserve"><value>Customer analytics</value></data>
   <data name="CRM dashboard" xml:space="preserve"><value>CRM dashboard</value></data>
   <data name="Accounts" xml:space="preserve"><value>Accounts</value></data>
   <data name="Leads" xml:space="preserve"><value>Leads</value></data>
@@ -1259,7 +1254,6 @@
   <data name="Automation rules" xml:space="preserve"><value>Automation rules</value></data>
   <data name="CRM roles" xml:space="preserve"><value>CRM roles</value></data>
   <data name="Payables" xml:space="preserve"><value>Payables</value></data>
-  <data name="Purchase invoices" xml:space="preserve"><value>Purchase invoices</value></data>
   <data name="Purchase returns" xml:space="preserve"><value>Purchase returns</value></data>
   <data name="AP aging" xml:space="preserve"><value>AP aging</value></data>
   <data name="Banks &amp; cash" xml:space="preserve"><value>Banks &amp; cash</value></data>
@@ -1333,24 +1327,51 @@
   <data name="The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry." xml:space="preserve">
     <value>The exchange rate is {0} days old — today's rate is not entered. Ask the branch accountant to enter it in the Exchange Rates screen, then retry.</value>
   </data>
-  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>This branch belongs to another company — cross-company operations are blocked.</value></data>
-  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve"><value>This terminal belongs to another company — cross-company operations are blocked.</value></data>
-  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve"><value>Your account belongs to another company than this branch — cross-company operations are blocked.</value></data>
-  <data name="No item matches this barcode." xml:space="preserve"><value>No item matches this barcode.</value></data>
-  <data name="Open a shift before taking payment." xml:space="preserve"><value>Open a shift before taking payment.</value></data>
-  <data name="The cart is empty." xml:space="preserve"><value>The cart is empty.</value></data>
-  <data name="Paid — invoice #{0} created." xml:space="preserve"><value>Paid — invoice #{0} created.</value></data>
-  <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve"><value>This item is not in the branch price list — it cannot be sold until it is priced.</value></data>
-  <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve"><value>This barcode is registered on more than one item — the data must be corrected.</value></data>
-  <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve"><value>Multiple barcodes are not enabled on this branch.</value></data>
-  <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve"><value>This unit has no conversion defined for the item — it cannot be sold.</value></data>
-  <data name="No item is linked to this scale code." xml:space="preserve"><value>No item is linked to this scale code.</value></data>
-  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>Price-embedded scale barcodes are not supported yet.</value></data>
-  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>The scale barcode check digit is invalid.</value></data>
-  <data name="The scale barcode format is invalid." xml:space="preserve"><value>The scale barcode format is invalid.</value></data>
-  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>This is a fixed product barcode inside the reserved scale range — the data must be corrected.</value></data>
-  <data name="This item is not sold by weight." xml:space="preserve"><value>This item is not sold by weight.</value></data>
+  <data name="This branch belongs to another company — cross-company operations are blocked." xml:space="preserve">
+    <value>This branch belongs to another company — cross-company operations are blocked.</value>
+  </data>
+  <data name="This terminal belongs to another company — cross-company operations are blocked." xml:space="preserve">
+    <value>This terminal belongs to another company — cross-company operations are blocked.</value>
+  </data>
+  <data name="Your account belongs to another company than this branch — cross-company operations are blocked." xml:space="preserve">
+    <value>Your account belongs to another company than this branch — cross-company operations are blocked.</value>
+  </data>
+  <data name="No item matches this barcode." xml:space="preserve">
+    <value>No item matches this barcode.</value>
+  </data>
+  <data name="Open a shift before taking payment." xml:space="preserve">
+    <value>Open a shift before taking payment.</value>
+  </data>
+  <data name="The cart is empty." xml:space="preserve">
+    <value>The cart is empty.</value>
+  </data>
+  <data name="Paid — invoice #{0} created." xml:space="preserve">
+    <value>Paid — invoice #{0} created.</value>
+  </data>
+  <data name="This item is not in the branch price list — it cannot be sold until it is priced." xml:space="preserve">
+    <value>This item is not in the branch price list — it cannot be sold until it is priced.</value>
+  </data>
+  <data name="This barcode is registered on more than one item — the data must be corrected." xml:space="preserve">
+    <value>This barcode is registered on more than one item — the data must be corrected.</value>
+  </data>
+  <data name="Multiple barcodes are not enabled on this branch." xml:space="preserve">
+    <value>Multiple barcodes are not enabled on this branch.</value>
+  </data>
+  <data name="This unit has no conversion defined for the item — it cannot be sold." xml:space="preserve">
+    <value>This unit has no conversion defined for the item — it cannot be sold.</value>
+  </data>
   <data name="Weighted selling is not enabled on this branch." xml:space="preserve"><value>Weighted selling is not enabled on this branch.</value></data>
+  <data name="This is a fixed product barcode inside the reserved scale range — the data must be corrected." xml:space="preserve"><value>This is a fixed product barcode inside the reserved scale range — the data must be corrected.</value></data>
+  <data name="The scale barcode check digit is invalid." xml:space="preserve"><value>The scale barcode check digit is invalid.</value></data>
+  <data name="Price-embedded scale barcodes are not supported yet." xml:space="preserve"><value>Price-embedded scale barcodes are not supported yet.</value></data>
+  <data name="The scale barcode format is invalid." xml:space="preserve"><value>The scale barcode format is invalid.</value></data>
+  <data name="No item is linked to this scale code." xml:space="preserve"><value>No item is linked to this scale code.</value></data>
+  <data name="This item is not sold by weight." xml:space="preserve"><value>This item is not sold by weight.</value></data>
+  <data name="Activity timeline" xml:space="preserve"><value>Activity timeline</value></data>
+  <data name="Historical" xml:space="preserve"><value>Historical</value></data>
+  <data name="No activity yet" xml:space="preserve"><value>No activity yet</value></data>
+  <data name="You are not authorised to view this activity" xml:space="preserve"><value>You are not authorised to view this activity</value></data>
+  <data name="Could not load the activity timeline" xml:space="preserve"><value>Could not load the activity timeline</value></data>
   <data name="Bulk price change" xml:space="preserve"><value>Bulk price change</value></data>
   <data name="Choose a price list" xml:space="preserve"><value>Choose a price list</value></data>
   <data name="Category (all)" xml:space="preserve"><value>Category (all)</value></data>
@@ -1381,5 +1402,169 @@
   <data name="KWD" xml:space="preserve"><value>KWD</value></data>
   <data name="Pricing" xml:space="preserve"><value>Pricing</value></data>
   <data name="The discount reduces the price to zero or below — the line was rejected." xml:space="preserve"><value>The discount reduces the price to zero or below — the line was rejected.</value></data>
-  <data name="No pending approvals" xml:space="preserve"><value>No pending approvals</value></data>
+  <data name="evt_status_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="evt_status_Claimed" xml:space="preserve">
+    <value>Claimed</value>
+  </data>
+  <data name="evt_status_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="evt_status_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="evt_vis_Internal" xml:space="preserve">
+    <value>Internal</value>
+  </data>
+  <data name="evt_vis_Confidential" xml:space="preserve">
+    <value>Confidential</value>
+  </data>
+  <data name="evt_vis_Restricted" xml:space="preserve">
+    <value>Restricted</value>
+  </data>
+  <data name="evt_vis_System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="evt_consumer_TimelineProjection" xml:space="preserve">
+    <value>Timeline projection</value>
+  </data>
+  <data name="evt_consumer_NotificationProjection" xml:space="preserve">
+    <value>Notification projection</value>
+  </data>
+  <data name="evt_entity_SalesInvoice" xml:space="preserve">
+    <value>Sales invoice</value>
+  </data>
+  <data name="evt_entity_PurchaseInvoice" xml:space="preserve">
+    <value>Purchase invoice</value>
+  </data>
+  <data name="evt_entity_Customer" xml:space="preserve">
+    <value>Customer</value>
+  </data>
+  <data name="evt_entity_Supplier" xml:space="preserve">
+    <value>Supplier</value>
+  </data>
+  <data name="evt_entity_JournalEntry" xml:space="preserve">
+    <value>Journal entry</value>
+  </data>
+  <data name="evt_entity_ManufWorkOrder" xml:space="preserve">
+    <value>Work order</value>
+  </data>
+  <data name="evt_entity_PosOrder" xml:space="preserve">
+    <value>POS order</value>
+  </data>
+  <data name="evt_entity_Employee" xml:space="preserve">
+    <value>Employee</value>
+  </data>
+  <data name="evt_entity_Project" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="evt_entity_Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="evt_entity_Quotation" xml:space="preserve">
+    <value>Quotation</value>
+  </data>
+  <data name="evt_type_SalesInvoice.Created" xml:space="preserve">
+    <value>Sales invoice created</value>
+  </data>
+  <data name="evt_type_SalesInvoice.Updated" xml:space="preserve">
+    <value>Sales invoice updated</value>
+  </data>
+  <data name="evt_type_SalesInvoice.Cancelled" xml:space="preserve">
+    <value>Sales invoice cancelled</value>
+  </data>
+  <data name="evt_type_PurchaseInvoice.Created" xml:space="preserve">
+    <value>Purchase invoice created</value>
+  </data>
+  <data name="evt_type_PurchaseInvoice.Updated" xml:space="preserve">
+    <value>Purchase invoice updated</value>
+  </data>
+  <data name="evt_type_PurchaseInvoice.Cancelled" xml:space="preserve">
+    <value>Purchase invoice cancelled</value>
+  </data>
+  <data name="evt_type_Customer.Created" xml:space="preserve">
+    <value>Customer created</value>
+  </data>
+  <data name="evt_type_Customer.Updated" xml:space="preserve">
+    <value>Customer updated</value>
+  </data>
+  <data name="evt_type_JournalEntry.Reversed" xml:space="preserve">
+    <value>Journal entry reversed</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Created" xml:space="preserve">
+    <value>Work order created</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Updated" xml:space="preserve">
+    <value>Work order updated</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Released" xml:space="preserve">
+    <value>Work order released</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Completed" xml:space="preserve">
+    <value>Work order completed</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Cancelled" xml:space="preserve">
+    <value>Work order cancelled</value>
+  </data>
+  <data name="evt_type_ManufWorkOrder.Produced" xml:space="preserve">
+    <value>Partial production</value>
+  </data>
+  <data name="evt_block_Done" xml:space="preserve">
+    <value>Completed — replaying could duplicate its side effects</value>
+  </data>
+  <data name="evt_block_Pending" xml:space="preserve">
+    <value>Already queued</value>
+  </data>
+  <data name="evt_block_HeldByWorker" xml:space="preserve">
+    <value>A worker is processing this row</value>
+  </data>
+  <data name="evt_block_AttemptsExhausted" xml:space="preserve">
+    <value>All attempts used — needs an elevated override</value>
+  </data>
+  <data name="evt_outcome_Requeued" xml:space="preserve">
+    <value>Re-queued — the dispatcher will pick it up next pass</value>
+  </data>
+  <data name="evt_outcome_NotFound" xml:space="preserve">
+    <value>Dispatch row not found</value>
+  </data>
+  <data name="evt_outcome_AlreadyDone" xml:space="preserve">
+    <value>This consumer already completed</value>
+  </data>
+  <data name="evt_outcome_AlreadyPending" xml:space="preserve">
+    <value>Already queued</value>
+  </data>
+  <data name="evt_outcome_HeldByWorker" xml:space="preserve">
+    <value>A worker is processing this row right now</value>
+  </data>
+  <data name="evt_outcome_AttemptsExhausted" xml:space="preserve">
+    <value>All attempts used — an elevated override with a reason is required</value>
+  </data>
+  <data name="evt_outcome_ReasonRequired" xml:space="preserve">
+    <value>A reason is required so the retry can be audited</value>
+  </data>
+  <data name="evt_outcome_NotAuthorized" xml:space="preserve">
+    <value>An elevated override requires platform-admin rights</value>
+  </data>
+  <data name="evt_outcome_RaceLost" xml:space="preserve">
+    <value>The row changed while the retry was being prepared — refresh and try again</value>
+  </data>
+  <data name="evt_role_Primary" xml:space="preserve">
+    <value>Single-process enforced — this instance is PRIMARY</value>
+  </data>
+  <data name="evt_role_Standby" xml:space="preserve">
+    <value>Single-process enforced — this instance is STANDBY, workers idle</value>
+  </data>
+  <data name="evt_role_Unrestricted" xml:space="preserve">
+    <value>Not enforced — workers run unrestricted</value>
+  </data>
+  <data name="evt_role_Unknown" xml:space="preserve">
+    <value>Evaluating</value>
+  </data>
+  <data name="evt_mask_Restricted" xml:space="preserve">
+    <value>Payload hidden: this event is Restricted and requires elevated platform rights</value>
+  </data>
+  <data name="evt_mask_System" xml:space="preserve">
+    <value>Payload hidden: this event is System and requires elevated platform rights</value>
+  </data>
 </root>

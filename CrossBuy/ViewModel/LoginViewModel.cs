@@ -4,14 +4,14 @@ namespace CrossBuy.ViewModel
 {
     public class LoginViewModel
     {
-        [Required(ErrorMessage = "اسم المستخدم مطلوب")]
+        [Required(ErrorMessage = "Username is required")]
         public string UserName { get; set; }
 
-        [Required(ErrorMessage = "كلمة المرور مطلوبة")]
+        [Required(ErrorMessage = "Password is required")]
         [DataType(DataType.Password)]
         public string Password { get; set; }
 
-        [Display(Name = "تذكرني")]
+        [Display(Name = "Remember me")]
         public bool RememberMe { get; set; }
     }
 }

@@ -88,17 +88,17 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, EmployeeRequest? req)> CreateAsync(EmployeeRequest draft)
 		{
-			if (draft.EmployeeID <= 0) return (false, "الموظف مطلوب", null);
+			if (draft.EmployeeID <= 0) return (false, "Employee is required", null);
 			if (draft.RequestType == "Permission")
 			{
 				if (draft.PermissionDate == null || draft.FromTime == null || draft.ToTime == null)
-					return (false, "التاريخ ووقت البداية/النهاية مطلوبة للإذن", null);
-				if (draft.ToTime <= draft.FromTime) return (false, "وقت النهاية يجب أن يكون بعد البداية", null);
+					return (false, "The date and the start/end time are required for a permission request", null);
+				if (draft.ToTime <= draft.FromTime) return (false, "The end time must be after the start time", null);
 			}
 			else
 			{
 				draft.RequestType = "Letter";
-				if (string.IsNullOrWhiteSpace(draft.LetterType)) return (false, "نوع الخطاب مطلوب", null);
+				if (string.IsNullOrWhiteSpace(draft.LetterType)) return (false, "Letter type is required", null);
 			}
 
 			// Approver selection is SHARED with LeaveWorkflowService, so the company boundary that Batch C.1
@@ -110,7 +110,7 @@ namespace CrossBuy.BL
 			var chainResult = await _chain.ApproverChainAsync(draft.EmployeeID);
 			var chain = chainResult.Approvers;
 			if (chain.Count == 0 && chainResult.HierarchyDefect)
-				return (false, "لا يمكن تحديد سلسلة الموافقة لهذا الموظف — الهيكل التنظيمي غير صحيح. راجع إدارة الموارد البشرية.", null);
+				return (false, "The approval chain for this employee cannot be determined — the organisation structure is not correct. Please contact HR.", null);
 			draft.CreatedAt = DateTime.UtcNow;
 			draft.CreatedBy = draft.EmployeeID;
 			if (chain.Count == 0)
@@ -138,7 +138,7 @@ namespace CrossBuy.BL
 				var rAr = requester?.FullName ?? "موظف";
 				var rEn = requester?.FullNameEn ?? requester?.FullName ?? "An employee";
 				await _notifications.NotifyAsync(chain[0],
-					$"طلب {Label(draft, true)} جديد", $"New {Label(draft, false)} request",
+					$"New {Label(draft, true)} request", $"New {Label(draft, false)} request",
 					$"قدّم {rAr} {Label(draft, true)} بانتظار اعتمادك.",
 					$"{rEn} submitted a {Label(draft, false)} request awaiting your approval.",
 					"emp_request_submitted", draft.ID);
@@ -149,11 +149,11 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DecideAsync(int requestId, int approverEmployeeId, bool approve, string? note)
 		{
 			var req = await _context.EmployeeRequests.Include(r => r.ApprovalSteps).FirstOrDefaultAsync(r => r.ID == requestId);
-			if (req == null) return (false, "الطلب غير موجود");
-			if (req.Status != 0) return (false, "تم البتّ في الطلب مسبقًا");
-			if (req.CurrentApproverEmployeeID != approverEmployeeId) return (false, "لا تملك صلاحية اعتماد هذا الطلب");
+			if (req == null) return (false, "Order not found");
+			if (req.Status != 0) return (false, "The request has already been decided");
+			if (req.CurrentApproverEmployeeID != approverEmployeeId) return (false, "You do not have permission to approve this request");
 			var step = req.ApprovalSteps.FirstOrDefault(s => s.Level == req.CurrentLevel && s.Status == 0);
-			if (step == null) return (false, "خطوة الاعتماد غير موجودة");
+			if (step == null) return (false, "Approval step not found");
 
 			var approver = await _context.Employee.AsNoTracking().FirstOrDefaultAsync(e => e.ID == approverEmployeeId);
 			var aAr = approver?.FullName ?? "المدير";

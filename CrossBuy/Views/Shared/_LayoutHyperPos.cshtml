@@ -17,23 +17,23 @@
 	<title>@ViewData["Title"] · CrossBuy Hyper</title>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
-	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
-	<meta name="theme-color" content="#13433a" />
+	<meta name="theme-color" content="#0E4A9E" />
 	@if (isAr)
 	{
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 		<style>html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }</style>
 	}
 	else
 	{
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 	}
 	<script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 	@await RenderSectionAsync("Styles", required: false)
@@ -50,7 +50,7 @@
 				<div class="d-flex flex-stack flex-grow-1 px-lg-8">
 					<div class="app-header-logo d-flex align-items-center gap-4" id="kt_app_header_logo">
 						<a href="/hyper/pos/start" class="app-sidebar-logo">
-							<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" />
+							<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo.svg" class="h-28px" asp-append-version="true" />
 						</a>
 						<span class="badge badge-light-warning fw-semibold fs-7"><i class="ki-outline ki-basket fs-7 me-1"></i>@(isAr ? "هايبر ماركت" : "Hypermarket")</span>
 						@if (!string.IsNullOrEmpty(ctx?.BranchName))
@@ -107,8 +107,8 @@
 		</div>
 	</div>
 	<script>var hostUrl = "~/Backend-assets/";</script>
-	<script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
-	<script src="~/Backend-assets/js/scripts.bundle.js"></script>
+	<script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+	<script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
 	@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

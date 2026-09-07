@@ -9,7 +9,7 @@
     string nm(string ar, string? en) => isAr ? ar : (string.IsNullOrEmpty(en) ? ar : en);
     string Raw(decimal v) => v.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
     bool saving = Model.TotalVariance >= 0;
-    var brand = "#13433a";
+    var brand = "#0E4A9E";
 }
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
@@ -36,7 +36,7 @@
                 </div>
                 <div class="col">
                     <div class="card card-dashed flex-center min-w-175px my-3 p-6">
-                        <span class="fs-4 fw-semibold pb-1 px-2 @(saving ? "" : "text-danger")" style="@(saving ? "color:#13433a" : "")">@Localizer["Total variance"]</span>
+                        <span class="fs-4 fw-semibold pb-1 px-2 @(saving ? "" : "text-danger")" style="@(saving ? "color:#0E4A9E" : "")">@Localizer["Total variance"]</span>
                         <span class="fs-lg-2tx fw-bold d-flex justify-content-center @(saving ? "" : "text-danger")" data-kt-countup="true" data-kt-countup-value="@Raw(Model.TotalVariance)" data-kt-countup-decimal-places="2">@Model.TotalVariance.ToString("N2")</span>
                     </div>
                 </div>
@@ -46,7 +46,7 @@
 
         <div class="card card-flush"><div class="card-body pt-6 pb-4">
             <div class="table-responsive"><table class="table table-row-dashed align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid @brand;"><tr>
+                <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid @brand;"><tr style="border-bottom:2px solid #0E4A9E;">
                     <th>@SR["Code"]</th><th>@Localizer["BOQ item"]</th><th class="text-end">@Localizer["Estimated"]</th>
                     <th class="text-end">@Localizer["Actual"]</th><th class="text-end">@Localizer["Variance"]</th><th class="text-center">—</th></tr></thead>
                 <tbody>
@@ -54,7 +54,7 @@
                 @foreach (var l in Model.Lines)
                 {
                     <tr>
-                        <td><span class="badge fs-8 fw-bold" style="background:#e9f1ee;color:@brand;">@(string.IsNullOrEmpty(l.Code) ? "—" : l.Code)</span></td>
+                        <td><span class="badge fs-8 fw-bold" style="background:#E7F0FF;color:@brand;">@(string.IsNullOrEmpty(l.Code) ? "—" : l.Code)</span></td>
                         <td class="fw-bold text-gray-900">@l.Description</td>
                         <td class="text-end">@l.EstimatedCost.ToString("N2")</td>
                         <td class="text-end">@l.ActualCost.ToString("N2")</td>

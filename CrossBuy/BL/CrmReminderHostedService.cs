@@ -98,7 +98,7 @@ namespace CrossBuy.BL
 				if (a.OwnerEmployeeId is int emp && emp > 0)
 				{
 					await notify.NotifyAsync(emp,
-						"تذكير نشاط: " + a.Subject, "Activity reminder: " + a.Subject,
+						"Activity reminder: " + a.Subject, "Activity reminder: " + a.Subject,
 						a.Notes, a.Notes, "crm-reminder", a.ID);
 				}
 

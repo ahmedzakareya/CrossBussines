@@ -619,14 +619,14 @@ namespace CrossBuy.BL.Platform
         private static string TotalDelta(decimal? before, decimal? after, bool isArabic)
         {
             if (before == null || after == null || before == after) return "";
-            return isArabic ? $" — الإجمالي {before.Value:N2} ← {after.Value:N2}"
+            return isArabic ? $" — total {before.Value:N2} → {after.Value:N2}"
                             : $" — total {before.Value:N2} → {after.Value:N2}";
         }
 
         private static string StatusDelta(ManufWorkOrderEventPayload? p, bool isArabic)
         {
             if (p?.OldStatus == null || p.NewStatus == null || p.OldStatus == p.NewStatus) return "";
-            return isArabic ? $" — الحالة {p.OldStatus} ← {p.NewStatus}"
+            return isArabic ? $" — status {p.OldStatus} → {p.NewStatus}"
                             : $" — status {p.OldStatus} → {p.NewStatus}";
         }
 
@@ -637,7 +637,7 @@ namespace CrossBuy.BL.Platform
         {
             if (fields == null || fields.Length == 0) return "";
             var names = string.Join(isArabic ? "، " : ", ", fields.Select(f => FieldLabel(f, isArabic)));
-            return isArabic ? $" — الحقول: {names}" : $" — fields: {names}";
+            return isArabic ? $" — fields: {names}" : $" — fields: {names}";
         }
 
         // Field names come from the producer as invoice property names; anything unmapped shows as-is.
@@ -679,7 +679,7 @@ namespace CrossBuy.BL.Platform
         {
             if (p?.TotalBefore == null || p.TotalAfter == null || p.TotalBefore == p.TotalAfter) return "";
             return isArabic
-                ? $" — الإجمالي {p.TotalBefore.Value:N2} ← {p.TotalAfter.Value:N2}"
+                ? $" — total {p.TotalBefore.Value:N2} → {p.TotalAfter.Value:N2}"
                 : $" — total {p.TotalBefore.Value:N2} → {p.TotalAfter.Value:N2}";
         }
     }

@@ -281,7 +281,7 @@ namespace CrossBuy.BL.TasksCalendar
 				{
 					ItemType = AgendaItemType.Task,
 					SourceId = t.Id,
-					Title = t.Title,
+					Title = CrossBuy.BL.DisplayName.Of(t.Title, t.TitleEn),
 					Start = start,
 					End = null,
 					IsAllDay = false,
@@ -400,7 +400,7 @@ namespace CrossBuy.BL.TasksCalendar
 				{
 					ItemType = AgendaItemType.CalendarEvent,
 					SourceId = e.id,
-					Title = redact ? "مشغول (Busy)" : e.title,
+					Title = redact ? "Busy" : e.title,
 					Start = start,
 					End = end,
 					IsAllDay = e.allDay,

@@ -149,12 +149,12 @@ namespace CrossBuy.BL.Reporting
             // needs to know the document is provisional or incomplete.
             if (context.IsPreview)
                 sb.Append($"<div class=\"cbrep-banner cbrep-banner-preview\">{E(context.IsArabic
-                    ? "معاينة — عدد الصفوف محدود وهذه ليست النسخة النهائية"
+                    ? "Preview — the number of rows is limited and this is not the final version"
                     : "PREVIEW — row count is limited; this is not the final document")}</div>");
 
             if (context.View.Truncated)
                 sb.Append($"<div class=\"cbrep-banner cbrep-banner-truncated\">{E(context.IsArabic
-                    ? "تم قطع النتيجة: هناك صفوف غير معروضة"
+                    ? "The result was truncated: some rows are not shown"
                     : "TRUNCATED — rows are missing from this output")}</div>");
         }
 
@@ -355,11 +355,11 @@ namespace CrossBuy.BL.Reporting
             sb.Append(".cbrep-start{text-align:start;}.cbrep-end{text-align:end;}.cbrep-center{text-align:center;}");
             sb.Append(".cbrep-empty td{text-align:center;color:#a1a5b7;padding:14px;}");
 
-            sb.Append(".cbrep-group td{background:#eef3f1;font-weight:600;color:").Append(brand).Append(";}");
-            sb.Append(".cbrep-group-1 td{background:#f5f8f7;}");
+            sb.Append(".cbrep-group td{background:#E7F0FF;font-weight:600;color:").Append(brand).Append(";}");
+            sb.Append(".cbrep-group-1 td{background:#F3F7FF;}");
             sb.Append(".cbrep-group-col{color:#7e8299;font-weight:500;}");
             sb.Append(".cbrep-group-count{color:#a1a5b7;font-weight:400;margin-inline-start:6px;}");
-            sb.Append(".cbrep-subtotal td{background:#f5f8f7;font-weight:600;border-block-start:1px solid ")
+            sb.Append(".cbrep-subtotal td{background:#F3F7FF;font-weight:600;border-block-start:1px solid ")
               .Append(brand).Append("33;}");
             sb.Append(".cbrep-grand td{background:").Append(brand)
               .Append(";color:#fff;font-weight:700;border:1px solid ").Append(brand).Append(";}");

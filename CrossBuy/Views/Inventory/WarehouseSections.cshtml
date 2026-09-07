@@ -15,33 +15,409 @@
     <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Index","Inventory")" class="text-muted text-hover-primary">@SR["Inventory"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Localizer["Warehouses"]</li></ul></div>
 </div></div>
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
-    @if (TempData["InvErr"] != null) { <div class="alert alert-danger">@TempData["InvErr"]</div> }
-    <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
+    @if (TempData["InvErr"] != null)
+    {
+        <div class="notice d-flex align-items-center bg-light-danger rounded border-danger border border-dashed p-4 mb-5">
+            <i class="ki-outline ki-information-5 fs-2 text-danger me-3"></i>
+            <span class="fw-semibold fs-7 text-gray-800">@TempData["InvErr"]</span>
+        </div>
+    }
+    <div class="card card-flush mb-5"><div class="card-body"><div class="row g-5 align-items-end">
         <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
-            <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+            <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr || string.IsNullOrWhiteSpace(w.NameEn) ? w.Name : w.NameEn)</option> }</select></div>
         <div class="col-md-7"><div class="text-muted fs-7">@Localizer["Split the warehouse into sections, each into racks (optional). Purely organizational/locational — accounting stays at warehouse level."]</div></div>
     </div></div></div>
 
     @if (fWh == null)
     {
-        <div class="card"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-information-5 fs-3x mb-3 d-block"></i>@Localizer["Select a warehouse to manage sections and racks."]</div></div>
+        <div class="card card-flush"><div class="card-body text-center text-muted py-15"><i class="ki-outline ki-information-5 fs-3x mb-3 d-block"></i>@Localizer["Select a warehouse to manage sections and racks."]</div></div>
     }
     else
     {
+        @* ==========================================================================================
+           THE WAREHOUSE PLAN, built to the reference supplied.
+
+           It is ONE SVG generated server-side from `sections` and `racksBySection` - the collections
+           this view already had. Nothing is fetched and no number is invented; the geometry is
+           computed from the row counts, so adding a section or a rack redraws the plan.
+
+           SVG rather than boxes because the reference is a DRAWING: walls with column breaks, real
+           shelving units, floor markings, docks with hazard doors, trucks, pallets, forklifts. Those
+           are shapes, and shapes belong in a drawing surface.
+           ========================================================================================== *@
+        @* `<text>` is Razor's own literal-content tag and cannot carry attributes, so SVG text has
+           to be emitted rather than written. Content is encoded - a section name is user data. *@
+        Func<object, object, string, string, Microsoft.AspNetCore.Html.IHtmlContent> svgText = (tx, ty, attrs, content) =>
+            new Microsoft.AspNetCore.Html.HtmlString(
+                $"<text x=\"{tx}\" y=\"{ty}\" {attrs}>{System.Net.WebUtility.HtmlEncode(content ?? "")}</text>");
+        @* A new resource key needs a rebuilt satellite assembly. Until then IViewLocalizer
+           returns the KEY itself rather than a translation. Resource first,
+           literal only as the fallback - so this heals itself on the next build. *@
+        Func<string, string, string> Lz = (key, arFallback) =>
+        {
+            var v = Localizer[key].Value;
+            return (isAr && string.Equals(v, key, StringComparison.Ordinal)) ? arFallback : v;
+        };
+        var planWh = whs.FirstOrDefault(w => w.ID == fWh);
+        var totalRacks = sections.Sum(s => racksBySection.TryGetValue(s.ID, out var rr0) ? rr0.Count : 0);
+
+        @* The room key. Six triples, cycled - the legend beside the plan maps each back to a section,
+           which is what makes a colour rotation carry identity rather than decorate. *@
+        var ROOMS = new[] {
+            (bg: "#DBEAFE", line: "#93C5FD", ink: "#1D4ED8", shelf: "#94A3B8", shelfInk: "#475569"),
+            (bg: "#FEE2E2", line: "#FCA5A5", ink: "#B91C1C", shelf: "#9CA3AF", shelfInk: "#4B5563"),
+            (bg: "#DCFCE7", line: "#86EFAC", ink: "#15803D", shelf: "#86A18C", shelfInk: "#3F6B4A"),
+            (bg: "#FEF3C7", line: "#FCD34D", ink: "#B45309", shelf: "#A8A29E", shelfInk: "#57534E"),
+            (bg: "#EDE9FE", line: "#C4B5FD", ink: "#6D28D9", shelf: "#A5A0B8", shelfInk: "#4C4668"),
+            (bg: "#CFFAFE", line: "#67E8F9", ink: "#0E7490", shelf: "#94A9AE", shelfInk: "#3F5F66"),
+        };
+
+        Func<BinLocation, string> roomIcon = s =>
+        {
+            var k = ((s.Code ?? "") + " " + (s.Name ?? "") + " " + (s.NameEn ?? "")).ToLowerInvariant();
+            if (k.Contains("chill") || k.Contains("cold") || k.Contains("freez") || k.Contains("مبرد") || k.Contains("مجمد") || k.Contains("تبريد")) return "snow";
+            if (k.Contains("home") || k.Contains("منزل")) return "home";
+            if (k.Contains("dry") || k.Contains("جاف")) return "box";
+            return "box";
+        };
+
+        <div class="row g-5 mb-5">
+            <div class="col-12 col-xxl-8">
+                <div class="card card-flush h-100">
+                    <div class="card-header pt-6">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bold text-gray-900">@Lz("Warehouse layout", "مخطط المخزن")</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-7">@Lz("Shows how the warehouse is divided into sections and storage locations.", "يوضّح تقسيم المخزن إلى سيكشنات ومواقع التخزين")</span>
+                        </h3>
+                    </div>
+                    <div class="card-body pt-2">
+                        @if (sections.Count == 0)
+                        {
+                            <div class="text-center text-gray-500 fw-semibold py-15">@Lz("No sections yet", "لا توجد سيكشنات بعد")</div>
+                        }
+                        else
+                        {
+                            @* ---- GEOMETRY, measured off the supplied drawing (858 x 470 there).
+                                 Fixed: wall thickness, paddings, rack size, dock band height.
+                                 Data-driven: how many rooms, how wide each one is, how many shelving
+                                 units it holds, and therefore how TALL it is - and the whole canvas
+                                 grows with the tallest room, so a section with ten racks cannot
+                                 collide with the dock band below it. ---- *@
+                            @* OUT is the strip OUTSIDE the building. Without it a trailer backed onto a
+                               door has nowhere to stand and gets drawn over the door itself. *@
+                            @* No strip outside the shell any more: the trailers that stood in it are gone. *@
+                            const int OUT = 6;
+                            const int W = 858 + OUT * 2;
+                            const int WALL = 14;
+                            @* THE FLOOR SHOWING AROUND THE ROOMS. At 8 the rooms were effectively glued to
+                               the wall - in the reference there is a clear band of floor on every side, and
+                               it is what makes the rooms read as standing INSIDE a building rather than
+                               being the building. Same value all round, so the border is even. *@
+                            const int MARGIN = 26;                // floor margin inside the wall
+                            const int ROOM_TOP = 14 + 26;         // wall/2 + the same margin, so the top matches the sides
+                            const int ROOM_GAP = 40;              // white aisle between rooms
+                            const int ROOM_PAD = 18;
+                            const int HEAD_H = 62;                // room header block
+                            const int RACK_H = 30, RACK_SLOT = 48, LABEL_W = 56;
+
+                            int shellL = OUT, shellR = W - OUT;
+                            int innerL = shellL + WALL / 2 + MARGIN;
+                            int innerR = shellR - WALL / 2 - MARGIN;
+
+                            var rackCounts = sections
+                                .Select(s => racksBySection.TryGetValue(s.ID, out var q) ? q.Count : 0)
+                                .ToList();
+                            @* EQUAL WIDTHS. Sizing a room by its rack count was my own addition and it is
+                               not what the reference does - three rooms holding 3, 4 and 3 racks are all
+                               about the same width there. The count still drives the room HEIGHT, which is
+                               where it belongs. *@
+                            int roomsN = Math.Max(1, sections.Count);
+                            int usableW = (innerR - innerL) - ROOM_GAP * Math.Max(0, sections.Count - 1);
+
+                            Func<int, int> roomH = n => HEAD_H + Math.Max(1, n) * RACK_SLOT + ROOM_PAD;
+                            int tallest = rackCounts.Count == 0 ? roomH(1) : rackCounts.Max(c => roomH(c));
+                            @* The canvas ends just under the tallest room. The dock band that used to sit
+                               below it was floor furniture, not data, so it has gone and nothing is left
+                               reserving the space. *@
+                            int H = ROOM_TOP + tallest + MARGIN + WALL / 2;
+
+                            <div class="rounded-3 overflow-hidden">
+                            <svg viewBox="0 0 @W @H" width="100%" role="img"
+                                 aria-label="@Localizer["Warehouse layout"]" style="display:block">
+
+                                @* ---- SHELL ---- *@
+                                <rect x="@(shellL + WALL / 2)" y="@(WALL / 2)" width="@(shellR - shellL - WALL)" height="@(H - WALL)"
+                                      rx="5" fill="#F4F5F7" stroke="#2E3846" stroke-width="@WALL"></rect>
+
+                                @* wall breaks - lighter segments, as in the drawing *@
+                                @foreach (var b in new[] { shellL + (int)((shellR - shellL) * 0.16), shellL + (int)((shellR - shellL) * 0.72) })
+                                {
+                                    <rect x="@(b - 55)" y="@(WALL / 2 - 6)" width="110" height="12" rx="2" fill="#A8B0BC"></rect>
+                                }
+                                @foreach (var b in new[] { shellL + (int)((shellR - shellL) * 0.22), shellL + (int)((shellR - shellL) * 0.43), shellL + (int)((shellR - shellL) * 0.78) })
+                                {
+                                    <rect x="@(b - 40)" y="@(H - WALL / 2 - 6)" width="80" height="12" rx="2" fill="#A8B0BC"></rect>
+                                }
+                                <rect x="@(shellL + WALL / 2 - 6)" y="@(H / 2 - 35)" width="12" height="70" rx="2" fill="#A8B0BC"></rect>
+                                <rect x="@(shellR - WALL / 2 - 6)" y="@(H / 2 - 35)" width="12" height="70" rx="2" fill="#A8B0BC"></rect>
+
+                                @* ---- ROOMS ---- *@
+                                @{
+                                    int rx0 = innerL;
+                                    int rIdx = 0;
+                                }
+                                @foreach (var sec in sections)
+                                {
+                                    var rks = racksBySection.TryGetValue(sec.ID, out var rl) ? rl : new List<BinLocation>();
+                                    var pal = ROOMS[rIdx % ROOMS.Length];
+                                    int rw = usableW / roomsN;
+                                    if (rIdx == sections.Count - 1) { rw = innerR - rx0; }
+                                    int rh = roomH(rks.Count);
+                                    var nmR = isAr || string.IsNullOrWhiteSpace(sec.NameEn) ? sec.Name : sec.NameEn;
+                                    var ic = roomIcon(sec);
+
+                                    <g>
+                                        <rect x="@rx0" y="@ROOM_TOP" width="@rw" height="@rh" rx="12"
+                                              fill="@pal.bg" stroke="@pal.line" stroke-width="2"></rect>
+
+                                        @* THE HEADER IS HTML, NOT SVG TEXT. An Arabic run in <text> is
+                                           anchored at x and lays out leftwards, so the name ran back over
+                                           the code and the icon. Inside a foreignObject the browser does
+                                           the bidi, `dir` is inherited from the page, and the icon is the
+                                           real Keenicons glyph instead of one I drew by hand. *@
+                                        <foreignObject x="@(rx0 + 10)" y="@(ROOM_TOP + 8)" width="@(rw - 20)" height="@(HEAD_H - 12)">
+                                            @* CENTRED, and laid out LTR: in the drawing the icon sits to the
+                                               left of the code with the Arabic name under it, which is the one
+                                               place on this page that does not follow the page direction. *@
+                                            <div xmlns="http://www.w3.org/1999/xhtml" dir="ltr"
+                                                 style="display:flex;align-items:center;justify-content:flex-start;gap:12px;height:100%;padding-inline-start:8px;font-family:inherit">
+                                                <i class="ki-outline @(ic == "snow" ? "ki-abstract-25" : ic == "home" ? "ki-home-2" : "ki-parcel")"
+                                                   style="font-size:30px;color:@pal.ink;flex:0 0 auto;line-height:1"></i>
+                                                <div style="min-width:0;line-height:1.25">
+                                                    <div style="font-size:20px;font-weight:700;color:#2B3648">@sec.Code</div>
+                                                    @if (!string.IsNullOrWhiteSpace(nmR))
+                                                    {
+                                                        <div dir="rtl" style="font-size:14px;font-weight:600;color:#5A6472;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@nmR</div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </foreignObject>
+
+                                        @* ---- SHELVING UNITS ---- *@
+                                        @{
+                                            int ux = rx0 + ROOM_PAD;
+                                            int uw = rw - ROOM_PAD * 2 - LABEL_W;
+                                            int uy = ROOM_TOP + HEAD_H;
+                                        }
+                                        @if (rks.Count == 0)
+                                        {
+                                            <rect x="@ux" y="@uy" width="@(rw - ROOM_PAD * 2)" height="@RACK_H" rx="3"
+                                                  fill="#FFFFFF" fill-opacity=".6" stroke="@pal.line" stroke-dasharray="6 6"></rect>
+                                            @svgText(rx0 + rw / 2, uy + 18, "fill='#6B7280' font-size='12' font-weight='600' text-anchor='middle'", Localizer["No racks (optional)"].Value)
+                                        }
+                                        else
+                                        {
+                                            foreach (var rk in rks)
+                                            {
+                                                <g>
+                                                    @* body, a lighter top edge for depth, five bays, heavy end posts *@
+                                                    @* A SHELVING UNIT as it is drawn in the reference: a translucent
+                                                       body, one shelf line splitting it into two levels, five bays,
+                                                       and heavy end posts that OVERHANG top and bottom - the posts
+                                                       are what make it read as a rack instead of a bar. *@
+                                                    <rect x="@ux" y="@uy" width="@uw" height="@RACK_H" rx="2"
+                                                          fill="@pal.shelf" fill-opacity=".75" stroke="@pal.shelfInk" stroke-width="2"></rect>
+                                                    <rect x="@ux" y="@uy" width="@uw" height="7" rx="2"
+                                                          fill="#FFFFFF" fill-opacity=".5"></rect>
+                                                    <line x1="@ux" y1="@(uy + RACK_H / 2)" x2="@(ux + uw)" y2="@(uy + RACK_H / 2)"
+                                                          stroke="@pal.shelfInk" stroke-width="1.8" stroke-opacity=".85"></line>
+                                                    @for (int b = 1; b < 6; b++)
+                                                    {
+                                                        int bx = ux + (int)Math.Round((double)uw * b / 6);
+                                                        <line x1="@bx" y1="@uy" x2="@bx" y2="@(uy + RACK_H)"
+                                                              stroke="@pal.shelfInk" stroke-width="1.4" stroke-opacity=".75"></line>
+                                                    }
+                                                    <rect x="@(ux - 5)" y="@(uy - 3)" width="10" height="@(RACK_H + 6)" rx="2" fill="@pal.shelfInk"></rect>
+                                                    <rect x="@(ux + uw - 5)" y="@(uy - 3)" width="10" height="@(RACK_H + 6)" rx="2" fill="@pal.shelfInk"></rect>
+                                                    @svgText(ux + uw + 20, uy + RACK_H / 2 + 6, "fill='#2B3648' font-size='15' font-weight='700' direction='ltr'", rk.Code)
+                                                </g>
+                                                uy += RACK_SLOT;
+                                            }
+                                        }
+                                    </g>
+
+                                    @* the white lane between this room and the next, carried down as a
+                                       dashed floor marking - it is in the drawing and it is what makes the
+                                       rooms read as separate bays rather than one striped block *@
+                                    @* A WHITE LANE, not a gap in the floor colour. It runs the full height
+                                       of the room band with the marking on it, which is what makes the rooms
+                                       read as separate bays. *@
+                                    @if (rIdx < sections.Count - 1)
+                                    {
+                                        int lx = rx0 + rw + ROOM_GAP / 2;
+                                        <rect x="@(rx0 + rw)" y="@ROOM_TOP" width="@ROOM_GAP" height="@(tallest - 4)"
+                                              fill="#FFFFFF"></rect>
+                                        <line x1="@lx" y1="@(ROOM_TOP + 6)" x2="@lx" y2="@(ROOM_TOP + tallest - 8)"
+                                              stroke="#C7CCD4" stroke-width="2" stroke-dasharray="9 9"></line>
+                                    }
+
+                                    rx0 += rw + ROOM_GAP;
+                                    rIdx++;
+                                }
+
+                            </svg>
+                            </div>
+
+                            <div class="text-gray-500 fw-semibold fs-8 mt-2">
+                                @Lz("Rooms and racks are drawn from your data.", "الغرف والرفوف مرسومة من بياناتك.")
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* ---- LEGEND + TOTALS ---- *@
+            <div class="col-12 col-xxl-4">
+                <div class="card card-flush mb-5">
+                    <div class="card-header pt-6"><h3 class="card-title fw-bold text-gray-900">@Lz("Sections", "السيكشنات")</h3></div>
+                    <div class="card-body pt-2">
+                        @{ int li = 0; }
+                        @foreach (var sec in sections)
+                        {
+                            var lrk = racksBySection.TryGetValue(sec.ID, out var ll) ? ll.Count : 0;
+                            var lnm = isAr || string.IsNullOrWhiteSpace(sec.NameEn) ? sec.Name : sec.NameEn;
+                            var lp = ROOMS[li % ROOMS.Length];
+                            li++;
+                            <div class="d-flex align-items-center gap-3 py-3">
+                                <span class="d-inline-block rounded-circle flex-shrink-0"
+                                      style="width:18px;height:18px;background:@lp.ink"></span>
+                                <span class="fw-bold text-gray-900 fs-7 flex-grow-1 text-truncate">
+                                    <span dir="ltr" style="unicode-bidi:isolate">@sec.Code</span>
+                                    @if (!string.IsNullOrWhiteSpace(lnm)) { <span class="text-gray-600 fw-semibold">&mdash; @lnm</span> }
+                                </span>
+                                <span class="text-gray-600 fw-semibold fs-8 flex-shrink-0">
+                                    <span dir="ltr" style="unicode-bidi:isolate">@lrk</span> @Lz("Racks", "رفوف")
+                                </span>
+                            </div>
+                            @if (li < sections.Count) { <div class="separator separator-dashed"></div> }
+                        }
+                    </div>
+                </div>
+
+                @foreach (var tile in new[] {
+                    (icon: "ki-parcel", value: totalRacks.ToString(), label: Lz("Total racks", "إجمالي الرفوف")),
+                    (icon: "ki-geolocation", value: sections.Count.ToString(), label: Lz("Total sections", "إجمالي السيكشنات")) })
+                {
+                    <div class="card card-flush mb-5">
+                        <div class="card-body d-flex align-items-center p-5">
+                            <span class="symbol symbol-45px me-4"><span class="symbol-label bg-light-primary"><i class="ki-outline @tile.icon fs-2x text-primary"></i></span></span>
+                            <div>
+                                <div class="fs-2x fw-bold text-gray-900 lh-1" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@tile.value</div>
+                                <div class="fs-7 text-gray-500 fw-semibold mt-1">@tile.label</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ==========================================================================================
+           SECTION CARDS - built to the reference, and DYNAMIC: one card per Section row, for any
+           warehouse, any number of sections, any codes. Nothing about "S-CHILL" or "S-DRY" is written
+           anywhere; the colour comes from the row's position and the icon is derived from the row's
+           own code/name, so a section added tomorrow gets both without a code change.
+           ========================================================================================== *@
+        <div class="row g-5 mb-5" dir="ltr">
+            @{ int cIdx = 0; }
+            @foreach (var sec in sections)
+            {
+                var cRacks = racksBySection.TryGetValue(sec.ID, out var cList) ? cList.Count : 0;
+                var cName = isAr || string.IsNullOrWhiteSpace(sec.NameEn) ? sec.Name : sec.NameEn;
+                var cPal = ROOMS[cIdx % ROOMS.Length];
+                var cKind = roomIcon(sec);
+                cIdx++;
+
+                @* Two icons, as in the reference: the leading one names the section, the trailing one
+                   is its quieter echo. Both derived from the same kind - only names that exist in the
+                   installed Keenicons set (checked; there is no snowflake or thermometer in it). *@
+                var iconMain = cKind == "snow" ? "ki-abstract-25" : cKind == "home" ? "ki-home-2" : "ki-parcel";
+                var iconEcho = cKind == "snow" ? "ki-abstract-26" : cKind == "home" ? "ki-home-3" : "ki-package";
+
+                <div class="col-md-6 col-xl-4" dir="rtl">
+                    <div class="card card-flush h-100 overflow-hidden border border-gray-200">
+
+                        @* ---- tinted header: icon + code + name, with the echo icon on the far edge ---- *@
+                        <div class="d-flex align-items-center justify-content-between p-5" style="background:@cPal.bg">
+                            <div class="d-flex align-items-center gap-3 min-w-0">
+                                <i class="ki-outline @iconMain fs-2x" style="color:@cPal.ink"></i>
+                                <div class="d-flex flex-column min-w-0">
+                                    <span class="fw-bold fs-4 lh-1" style="color:@cPal.ink"
+                                          dir="ltr" style="unicode-bidi:isolate">@sec.Code</span>
+                                    @if (!string.IsNullOrWhiteSpace(cName))
+                                    {
+                                        <span class="fw-semibold fs-7 text-gray-700 text-truncate mt-1">@cName</span>
+                                    }
+                                </div>
+                            </div>
+                            <i class="ki-outline @iconEcho fs-2x flex-shrink-0" style="color:@cPal.ink;opacity:.45"></i>
+                        </div>
+
+                        @* ---- three figures, divided ---- *@
+                        <div class="card-body p-5">
+                            <div class="d-flex text-center">
+                                <div class="flex-grow-1 px-2">
+                                    <div class="fw-bold fs-4 text-gray-900" dir="ltr"
+                                         style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">@cRacks</div>
+                                    <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("Racks", "رفوف")</div>
+                                </div>
+
+                                @* NOT COMPUTED, AND SAID SO RATHER THAN FILLED IN. "Locations" needs the
+                                   third level (BinLocation.LocationType = "Bin") and the database holds
+                                   NONE - 15 racks, 8 sections, zero bins. *@
+                                <div class="flex-grow-1 px-2 border-start border-gray-300"
+                                     title='@Lz("Locations need the Bin level, which has no rows yet.", "المواقع تحتاج مستوى Bin ولا يوجد منه أي صف بعد.")'>
+                                    <div class="fw-bold fs-4 text-gray-400">&mdash;</div>
+                                    <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("Locations", "المواقع")</div>
+                                </div>
+
+                                @* Occupancy needs a capacity per rack: BinLocations has no capacity
+                                   column at all, and BinStocks holds one row in the whole database. A
+                                   percentage without a denominator would be a number somebody acts on. *@
+                                <div class="flex-grow-1 px-2 border-start border-gray-300"
+                                     title='@Lz("Occupancy needs a capacity per rack, which is not stored yet.", "نسبة الإشغال تحتاج سعة لكل رف وهي غير مخزّنة بعد.")'>
+                                    <div class="fw-bold fs-4 text-gray-400">&mdash;</div>
+                                    <div class="fs-8 text-gray-500 fw-semibold mt-1">@Lz("Occupancy", "نسبة الإشغال")</div>
+                                </div>
+                            </div>
+
+                            <a href="@Url.Action("ItemLocations", "Inventory", new { warehouseId = fWh })"
+                               class="btn w-100 fw-bold text-white mt-5 d-flex align-items-center justify-content-center gap-2"
+                               style="background:@cPal.ink">
+                                <span>@Lz("View details", "عرض التفاصيل")</span>
+                                <i class="ki-outline ki-arrow-left fs-4 text-white"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+
         <div class="row g-5">
             <!-- add forms -->
             <div class="col-lg-4">
-                <div class="card mb-5"><div class="card-header"><div class="card-title"><h3>@Localizer["Add section"]</h3></div></div>
+                <div class="card card-flush mb-5"><div class="card-header align-items-center py-4"><div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Add section"]</h3></div></div>
                     <div class="card-body">
                         <form asp-action="SaveBinLocation" method="post">@Html.AntiForgeryToken()
                             <input type="hidden" name="warehouseId" value="@fWh" /><input type="hidden" name="locationType" value="Section" />
                             <div class="mb-3"><label class="required fw-semibold fs-7 mb-1">@SR["Code"]</label><input name="code" class="form-control form-control-solid" required /></div>
-                            <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" /></div>
+                            <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"] (AR)</label><input name="name" class="form-control form-control-solid" dir="rtl" /></div>
+                            <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"] (EN)</label><input name="nameEn" class="form-control form-control-solid" dir="ltr" /></div>
                             <button type="submit" class="btn btn-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add section"]</button>
                         </form>
                     </div>
                 </div>
-                <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Add rack"]</h3></div></div>
+                <div class="card card-flush"><div class="card-header align-items-center py-4"><div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Add rack"]</h3></div></div>
                     <div class="card-body">
                         @if (sections.Count == 0) { <div class="text-muted fs-7">@Localizer["Add a section first."]</div> }
                         else
@@ -49,9 +425,10 @@
                             <form asp-action="SaveBinLocation" method="post">@Html.AntiForgeryToken()
                                 <input type="hidden" name="warehouseId" value="@fWh" /><input type="hidden" name="locationType" value="Rack" />
                                 <div class="mb-3"><label class="required fw-semibold fs-7 mb-1">@Localizer["Section"]</label>
-                                    <select name="parentId" class="form-select form-select-solid" data-control="select2" required>@foreach (var s in sections) { <option value="@s.ID">@s.Code@(string.IsNullOrEmpty(s.Name) ? "" : " — " + s.Name)</option>}</select></div>
+                                    <select name="parentId" class="form-select form-select-solid" data-control="select2" required>@foreach (var s in sections) { var secNm = isAr || string.IsNullOrWhiteSpace(s.NameEn) ? s.Name : s.NameEn; <option value="@s.ID">@s.Code@(string.IsNullOrEmpty(secNm) ? "" : " — " + secNm)</option>}</select></div>
                                 <div class="mb-3"><label class="required fw-semibold fs-7 mb-1">@SR["Code"]</label><input name="code" class="form-control form-control-solid" required /></div>
-                                <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"]</label><input name="name" class="form-control form-control-solid" /></div>
+                                <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"] (AR)</label><input name="name" class="form-control form-control-solid" dir="rtl" /></div>
+                            <div class="mb-3"><label class="fw-semibold fs-7 mb-1">@SR["Name"] (EN)</label><input name="nameEn" class="form-control form-control-solid" dir="ltr" /></div>
                                 <button type="submit" class="btn btn-light-primary w-100"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add rack"]</button>
                             </form>
                         }
@@ -60,7 +437,7 @@
             </div>
             <!-- tree -->
             <div class="col-lg-8">
-                <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Structure"]</h3></div>
+                <div class="card card-flush"><div class="card-header align-items-center py-4"><div class="card-title"><h3 class="fw-bold text-gray-900 fs-4 m-0">@Localizer["Structure"]</h3></div>
                     <div class="card-toolbar"><span class="badge badge-light-primary fs-7">@sections.Count @Localizer["sections"]</span></div></div>
                     <div class="card-body">
                         @if (sections.Count == 0)
@@ -77,7 +454,7 @@
                                         <span class="symbol symbol-45px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-abstract-26 fs-2 text-primary"></i></span></span>
                                         <div>
                                             <div class="fw-bold text-gray-900 fs-5">@sec.Code @if (!sec.IsActive) { <span class="badge badge-light-danger ms-2">@SR["Inactive"]</span> }</div>
-                                            <div class="text-muted fs-7">@sec.Name</div>
+                                            <div class="text-muted fs-7">@(isAr || string.IsNullOrWhiteSpace(sec.NameEn) ? sec.Name : sec.NameEn)</div>
                                         </div>
                                     </div>
                                     <div class="d-flex align-items-center gap-3">
@@ -97,7 +474,8 @@
                                         <span class="d-inline-flex align-items-center bg-light-primary text-gray-800 rounded px-3 py-2 fs-7">
                                             <i class="ki-outline ki-row-horizontal fs-5 text-primary me-2"></i>
                                             <span class="fw-semibold">@rk.Code</span>
-                                            @if (!string.IsNullOrEmpty(rk.Name)) { <span class="text-muted ms-2">@rk.Name</span> }
+                                            @{ var rkNm = isAr || string.IsNullOrWhiteSpace(rk.NameEn) ? rk.Name : rk.NameEn; }
+                                            @if (!string.IsNullOrEmpty(rkNm)) { <span class="text-muted ms-2">@rkNm</span> }
                                             <form asp-action="DeleteBinLocation" method="post" class="d-inline ms-3" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete rack?"]"><input type="hidden" name="id" value="@rk.ID" /><input type="hidden" name="warehouseId" value="@fWh" />@Html.AntiForgeryToken()<button class="btn btn-icon btn-active-color-danger p-0 w-15px h-15px" title="@SR["Delete"]"><i class="ki-outline ki-cross fs-6"></i></button></form>
                                         </span>
                                     }

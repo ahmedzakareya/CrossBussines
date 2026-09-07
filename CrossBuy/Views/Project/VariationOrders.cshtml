@@ -18,8 +18,8 @@
     var editJson = System.Text.Json.JsonSerializer.Serialize((edit?.Lines ?? new()).Select(l => new { kind = l.Kind, boqItemId = l.BoqItemId, code = l.Code, desc = l.Description, unit = l.Unit, q = l.Quantity, p = l.UnitPrice, mat = l.MaterialCost, lab = l.LaborCost, sub = l.SubcontractCost, equip = l.EquipmentCost }));
 }
 <style>
-    .text-brand{color:#13433a!important}
-    .vo-card{background:#fbfdfc;border:1px solid var(--bs-gray-200);border-radius:1rem}
+    .text-brand{color:#0E4A9E!important}
+    .vo-card{background:#F3F7FF;border:1px solid var(--bs-gray-200);border-radius:1rem}
     #vorows .form-control,#vorows .form-select{height:42px}
 </style>
 <form asp-action="SaveVariationOrder" method="post" id="f" class="d-flex flex-column flex-column-fluid">@Html.AntiForgeryToken()
@@ -44,7 +44,7 @@
             <div class="col-md-4"><div class="text-muted fs-7">@Localizer["Approved changes"]</div>
                 <div class="fs-2 fw-bold @(rev.ApprovedChanges >= 0 ? "text-brand" : "text-danger")" data-kt-countup="true" data-kt-countup-value="@iv(rev.ApprovedChanges)" data-kt-countup-decimal-places="2" data-kt-countup-separator="," @Html.Raw(rev.ApprovedChanges >= 0 ? "data-kt-countup-prefix=\"+\"" : "")>@(rev.ApprovedChanges >= 0 ? "+" : "")@rev.ApprovedChanges.ToString("N2")</div></div>
             <div class="col-md-4"><div class="text-muted fs-7">@Localizer["Revised contract"]</div>
-                <div class="fs-2 fw-bold" style="color:#13433a;" data-kt-countup="true" data-kt-countup-value="@iv(rev.Revised)" data-kt-countup-decimal-places="2" data-kt-countup-separator=",">@rev.Revised.ToString("N2")</div></div>
+                <div class="fs-2 fw-bold" style="color:#0E4A9E;" data-kt-countup="true" data-kt-countup-value="@iv(rev.Revised)" data-kt-countup-decimal-places="2" data-kt-countup-separator=",">@rev.Revised.ToString("N2")</div></div>
         </div></div></div>
         <!--end::Revised-->
 
@@ -54,7 +54,7 @@
                 else
                 {
                     <div class="table-responsive"><table class="table table-row-bordered align-middle">
-                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th>#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Value"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Value"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
                         <tbody>
                         @foreach (var o in orders)
                         {
@@ -79,7 +79,7 @@
 
         <div class="card"><div class="card-header">
             <h3 class="card-title fw-bold">@(edit == null ? Localizer["New order"] : Localizer["Order"] + " #" + edit.VoNo)
-                @if (edit != null && edit.Status != "Draft") { <span class="badge ms-2" style="background:#eaf3ef;color:#13433a;">@Localizer["Approved"]</span> }</h3>
+                @if (edit != null && edit.Status != "Draft") { <span class="badge ms-2" style="background:#E7F0FF;color:#0E4A9E;">@Localizer["Approved"]</span> }</h3>
             @if (editable) { <div class="card-toolbar"><button type="button" class="btn btn-sm btn-light-primary" id="add"><i class="ki-outline ki-plus fs-3"></i>@Localizer["Add line"]</button></div> }
         </div>
             <div class="card-body">
@@ -89,7 +89,7 @@
                     <div class="col-md-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Reason"]</label><input name="reason" class="form-control form-control-solid" value="@edit?.Reason" @(editable ? "" : "disabled") /></div>
                 </div>
                 <div id="vorows"></div>
-                <div class="d-flex justify-content-end border-top pt-4 mt-2"><div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Total value change"]</div><div class="fs-3 fw-bold" id="voTotal" style="color:#13433a;">0.00</div></div></div>
+                <div class="d-flex justify-content-end border-top pt-4 mt-2"><div class="text-end"><div class="fs-8 text-muted text-uppercase">@Localizer["Total value change"]</div><div class="fs-3 fw-bold" id="voTotal" style="color:#0E4A9E;">0.00</div></div></div>
             </div>
         </div>
     </div></div>
@@ -114,7 +114,7 @@ function line(d){d=d||{};var dis=EDITABLE?'':'disabled';var isAdj=(d.kind==='Adj
     '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Qty"]</label><input type="number" step="0.01" class="form-control form-control-solid q text-end" value="'+(d.q!=null?d.q:0)+'" '+dis+'></div>'+
     '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Unit price"]</label><input type="number" step="0.01" class="form-control form-control-solid p text-end" value="'+(d.p!=null?d.p:0)+'" '+dis+'></div>'+
     '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Line value"]</label><div class="form-control form-control-solid text-end fw-bold val">0.00</div></div>'+
-    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Value change"]</label><div class="form-control form-control-solid text-end fw-bold chg" style="color:#13433a;">0.00</div></div>'+
+    '<div class="col-md-2"><label class="fs-8 fw-semibold text-muted mb-1 d-block">@Localizer["Value change"]</label><div class="form-control form-control-solid text-end fw-bold chg" style="color:#0E4A9E;">0.00</div></div>'+
     '<div class="col-md-2 d-flex justify-content-end">'+(EDITABLE?'<button type="button" class="btn btn-light-danger del"><i class="ki-outline ki-trash fs-5"></i>@SR["Delete"]</button>':'')+'</div>'+
   '</div>'+
   '<div class="row g-4 mt-1">'+

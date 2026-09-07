@@ -1,0 +1,212 @@
+@using System.Globalization
+@using System.Text.Json
+@using CrossBuy.BL.Workspace
+@using CrossBuy.ViewModel
+@{
+    var rtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+
+    var employeeJson = Context.Session.GetString("Employee");
+    var employee = employeeJson != null ? JsonSerializer.Deserialize<EmployeeViewModel>(employeeJson) : null;
+
+    // The shell reads counts from whatever the page put in ViewBag, so the rail badges and the page agree
+    // without the layout calling a service itself (a layout that queried would run on every render, including
+    // error pages).
+    var unreadNotifications = (int?)ViewBag.UnreadNotifications ?? 0;
+    var unreadMentions      = (int?)ViewBag.UnreadMentions ?? 0;
+    var openWork            = (int?)ViewBag.OpenWork ?? 0;
+
+    // Capabilities come from the PAGE, so the rail reflects what this deployment and this caller can actually
+    // reach. A layout that resolved them itself would run a service call on every render, including error pages.
+    var capabilities = (ViewBag.Capabilities as WorkspaceCapabilities) ?? WorkspaceCapabilities.None;
+    var nav = WorkspaceNavigation.Build(capabilities, unreadNotifications, unreadMentions, openWork);
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction     = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+}
+<!DOCTYPE html>
+<html lang="@lang" dir="@(rtl ? "rtl" : "ltr")">
+<head>
+    <title>@(ViewData["Title"] ?? (arabic ? "مساحة العمل" : "Workspace")) · CrossBusiness</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+
+    @*
+        Load order matters and is deliberate:
+          1. Metronic plugins + style bundle  — the framework
+          2. crossbuy-brand.css               — the app-wide ledger-green identity (UNCHANGED by this product)
+          3. crossbusiness-workspace.css      — CrossBusiness Blue, scoped to .cbw only
+
+        The Workspace does NOT override the brand file. Blue applies inside .cbw and nowhere else, so every
+        existing module screen keeps the green identity it has today. See the header of the workspace stylesheet.
+    *@
+    @if (rtl)
+    {
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    }
+    else
+    {
+        <link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+        <link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    }
+    <link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+    <link href="~/Backend-assets/css/crossbusiness-workspace.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+@* Metronic's app-* shell attributes, matching the other backend layouts so the framework's drawer/toggle
+   JavaScript behaves identically here. `cbw` is what scopes the Blue design system. *@
+<body id="kt_app_body"
+      class="app-default cbw cbw-body"
+      data-kt-app-header-fixed="true"
+      data-kt-app-header-fixed-mobile="true"
+      data-kt-app-sidebar-enabled="true"
+      data-kt-app-sidebar-fixed="true"
+      data-kt-app-sidebar-push-header="true"
+      data-kt-app-sidebar-push-toolbar="true">
+
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+
+        @* ============================ HEADER ============================ *@
+        <div id="kt_app_header" class="app-header cbw-header">
+            <div class="app-container container-fluid d-flex align-items-stretch justify-content-between">
+
+                @* Mobile sidebar toggle — hidden from lg up, where the sidebar is always present. *@
+                <div class="d-flex align-items-center d-lg-none ms-n2 me-2">
+                    <button class="cbw-iconbtn" id="kt_app_sidebar_mobile_toggle"
+                            aria-label="@(arabic ? "القائمة" : "Menu")">
+                        <i class="ki-outline ki-abstract-14 fs-2"></i>
+                    </button>
+                </div>
+
+                <div class="d-flex align-items-center flex-grow-1 gap-3 py-3">
+                    @* Global search. Presentational in R1–R3: the Workspace does not own a search index, and
+                       building one would duplicate a capability that belongs to a search service. *@
+                    <div class="cbw-search d-none d-md-block">
+                        <i class="ki-outline ki-magnifier cbw-search-icon"></i>
+                        <label class="cbw-visually-hidden" for="cbw-global-search">
+                            @(arabic ? "بحث" : "Search")
+                        </label>
+                        <input id="cbw-global-search" type="search" autocomplete="off"
+                               placeholder="@(arabic ? "ابحث في مساحة العمل…" : "Search the workspace…")" />
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-1">
+                    <a class="cbw-iconbtn" href="@Url.Action("Notifications", "Workspace")"
+                       aria-label="@(arabic ? "الإشعارات" : "Notifications")">
+                        <i class="ki-outline ki-notification-bing fs-2"></i>
+                        @if (unreadNotifications > 0)
+                        {
+                            <span class="cbw-dot">@(unreadNotifications > 99 ? "99+" : unreadNotifications.ToString())</span>
+                        }
+                    </a>
+
+                    <a class="cbw-iconbtn" href="@Url.Action("Mentions", "Workspace")"
+                       aria-label="@(arabic ? "الإشارات إليّ" : "Mentions")">
+                        <i class="ki-outline ki-messages fs-2"></i>
+                        @if (unreadMentions > 0)
+                        {
+                            <span class="cbw-dot">@(unreadMentions > 99 ? "99+" : unreadMentions.ToString())</span>
+                        }
+                    </a>
+
+                    <div class="d-flex align-items-center ms-2 ps-2 border-start">
+                        @* Name + company, not job title: EmployeeViewModel carries JobTitleID but no resolved
+                           name, and resolving one here would put a query in the layout — which runs on every
+                           render including error pages. The company comes from the page. *@
+                        <div class="d-none d-sm-block text-end lh-sm me-2">
+                            <div class="fw-semibold fs-8">@CrossBuy.BL.EmployeeNames.Of(employee?.FullName, employee?.FullNameEn)</div>
+                            <div class="fs-9 text-muted">@(ViewBag.CompanyName as string ?? "")</div>
+                        </div>
+                        <div class="cbw-brand-mark cbw-user-mark">
+                            @(CrossBuy.BL.EmployeeNames.Of(employee?.FullName, employee?.FullNameEn) is { Length: > 0 } n ? n.Trim().FirstOrDefault() : '?')
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+
+            @* ============================ SIDEBAR ============================ *@
+            @* data-kt-drawer turns the sidebar into an off-canvas drawer below lg — this is the responsive
+               behaviour, and it is Metronic's own rather than a second implementation. *@
+            <div id="kt_app_sidebar" class="app-sidebar cbw-sidebar flex-column"
+                 data-kt-drawer="true"
+                 data-kt-drawer-name="app-sidebar"
+                 data-kt-drawer-activate="{default: true, lg: false}"
+                 data-kt-drawer-overlay="true"
+                 data-kt-drawer-width="260px"
+                 data-kt-drawer-direction="@(rtl ? "end" : "start")"
+                 data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
+
+                <div class="cbw-brand">
+                    <div class="cbw-brand-mark">CB</div>
+                    <div class="cbw-brand-text">
+                        <div class="cbw-brand-name">CrossBusiness</div>
+                        <div class="cbw-brand-sub">@(arabic ? "مساحة العمل" : "Workspace")</div>
+                    </div>
+                </div>
+
+                <div class="cbw-nav flex-column-fluid overflow-auto">
+                    @foreach (var navSection in nav)
+                    {
+                        <div class="cbw-nav-section">@navSection.Label(arabic)</div>
+
+                        foreach (var item in navSection.Items)
+                        {
+                            var isActive = !item.Soon
+                                && string.Equals(item.Controller, currentController, StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(item.Action, currentAction, StringComparison.OrdinalIgnoreCase)
+                                && item.Fragment == null;
+
+                            var href = item.Soon
+                                ? "#"
+                                : Url.Action(item.Action, item.Controller) + (item.Fragment is null ? "" : "#" + item.Fragment);
+
+                            <a class="cbw-nav-link @(isActive ? "is-active" : "") @(item.Soon ? "is-soon" : "")"
+                               href="@href"
+                               @(item.Soon ? "aria-disabled=true tabindex=-1" : "")>
+                                <i class="@item.Icon cbw-nav-icon"></i>
+                                <span class="cbw-nav-label">@item.Label(arabic)</span>
+
+                                @if (item.Soon)
+                                {
+                                    <span class="cbw-nav-soon">@(arabic ? "قريبًا" : "soon")</span>
+                                }
+                                else if (item.Badge is > 0)
+                                {
+                                    <span class="cbw-nav-badge @(item.BadgeIsAttention ? "is-attention" : "")">
+                                        @(item.Badge > 99 ? "99+" : item.Badge.ToString())
+                                    </span>
+                                }
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+
+            @* ============================ MAIN ============================ *@
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    <div class="cbw-main">
+                        @RenderBody()
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Metronic bundles last, as in every other layout in this product. *@
+<script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+<script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

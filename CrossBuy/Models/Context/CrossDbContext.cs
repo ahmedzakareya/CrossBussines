@@ -242,113 +242,6 @@ namespace CrossBuy.Models.Context
 				e.HasIndex(x => x.CreatedAt).HasDatabaseName("IX_BusinessEvents_CreatedAt");
 			});
 
-			builder.Entity<Platform.BusinessEventDispatch>(e =>
-			{
-				e.ToTable("BusinessEventDispatch");
-				e.HasKey(x => x.ID);
-				e.Property(x => x.ID).ValueGeneratedOnAdd();
-				e.Property(x => x.Consumer).HasMaxLength(40).IsRequired();
-				e.Property(x => x.Status).HasMaxLength(20).IsRequired();
-				e.Property(x => x.Error).HasMaxLength(400);
-				e.HasIndex(x => new { x.EventId, x.Consumer }).IsUnique().HasDatabaseName("UX_BusinessEventDispatch_Event_Consumer");
-				e.HasIndex(x => new { x.Consumer, x.Status, x.UpdatedAt }).HasDatabaseName("IX_BusinessEventDispatch_Pending");
-				// No navigation property: the dispatch row is queue state, not part of the event aggregate.
-				e.HasOne<Platform.BusinessEvent>().WithMany()
-					.HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Restrict)
-					.HasConstraintName("FK_BusinessEventDispatch_Event");
-			});
-
-			// ---- Stage 1 Batch C: shared role assignments + project membership ----
-			// The real structure ships as idempotent SQL; this mapping exists so EF generates the same
-			// columns, keys and indexes the scripts create, and so a test host can materialise both tables
-			// from the model alone.
-			builder.Entity<Platform.PlatformRoleAssignment>(e =>
-			{
-				e.ToTable("PlatformRoleAssignments");
-				e.HasKey(x => x.ID);
-				e.Property(x => x.ID).ValueGeneratedOnAdd();
-				e.Property(x => x.Scope).HasMaxLength(40).IsRequired();
-				e.Property(x => x.PrincipalType).HasMaxLength(20).IsRequired();
-				e.Property(x => x.Role).HasMaxLength(60).IsRequired();
-				// The duplicate guard is FILTERED on IsActive so a revoked grant may be re-granted without
-				// deleting the audit row — see the script for why that matters.
-				e.HasIndex(x => new { x.CompanyID, x.Scope, x.PrincipalType, x.PrincipalId, x.Role, x.ScopeBranchId })
-					.IsUnique().HasFilter("[IsActive] = 1").HasDatabaseName("UX_PlatformRoleAssignments_ActiveGrant");
-				e.HasIndex(x => new { x.CompanyID, x.Scope, x.PrincipalType, x.PrincipalId })
-					.HasDatabaseName("IX_PlatformRoleAssignments_Principal");
-				e.HasIndex(x => new { x.CompanyID, x.Scope }).HasDatabaseName("IX_PlatformRoleAssignments_ScopeConfigured");
-
-				// Stage 2A Batch A — slice 2 columns. Lengths mirror the script exactly; a model that disagreed
-				// with the DDL would truncate silently on one path and not the other.
-				e.Property(x => x.Reason).HasMaxLength(400);
-				e.Property(x => x.SourceSystem).HasMaxLength(40);
-				e.Property(x => x.IdempotencyKey).HasMaxLength(120);
-
-				// Idempotency is a DATABASE guarantee, per company. Filtered to non-null keys because the key is
-				// optional and SQL Server treats NULLs as equal in a unique index — unfiltered, exactly one
-				// keyless grant per company would be permitted in total.
-				e.HasIndex(x => new { x.CompanyID, x.IdempotencyKey })
-					.IsUnique().HasFilter("[IdempotencyKey] IS NOT NULL")
-					.HasDatabaseName("UX_PlatformRoleAssignments_Idempotency");
-			});
-
-			// Stage 2A Batch B — B2: the explicit bootstrap policy store. A SEPARATE table from the grant store,
-			// because a policy is not a grant and the coexistence rule is that sources are never unioned.
-			builder.Entity<Platform.BootstrapAccessPolicy>(e =>
-			{
-				e.ToTable("BootstrapAccessPolicies");
-				e.HasKey(x => x.ID);
-				e.Property(x => x.ID).ValueGeneratedOnAdd();
-				e.Property(x => x.Scope).HasMaxLength(40).IsRequired();
-				e.Property(x => x.ActionCode).HasMaxLength(60).IsRequired();
-				e.Property(x => x.State).HasMaxLength(30).IsRequired();
-				e.Property(x => x.Reason).HasMaxLength(400);
-				e.Property(x => x.SourceSystem).HasMaxLength(40);
-
-				// ONE active policy per (company, scope, action). FILTERED on IsActive so superseded history
-				// survives — a company's record of what it used to permit is the audit trail, and a full unique
-				// key would force deleting it to change a policy.
-				e.HasIndex(x => new { x.CompanyID, x.Scope, x.ActionCode })
-					.IsUnique().HasFilter("[IsActive] = 1")
-					.HasDatabaseName("UX_BootstrapAccessPolicies_ActivePolicy");
-
-				// The reader's hot path: one company, one scope, active rows only.
-				e.HasIndex(x => new { x.CompanyID, x.Scope })
-					.HasDatabaseName("IX_BootstrapAccessPolicies_CompanyScope");
-
-				// Review and expiry sweeps (B12 warnings) scan by expiry across companies.
-				e.HasIndex(x => x.ExpiresAt).HasDatabaseName("IX_BootstrapAccessPolicies_Expiry");
-			});
-
-			// ---- Stage 1 Batch B / B2: the pilot company query filters ----
-			// LAST in OnModelCreating, deliberately: a HasQueryFilter call replaces any previous filter for that
-			// entity, so applying these after every other mapping means nothing above can silently drop one.
-			// The twelve entities, the ten deliberately-unfiltered ones, and the reasoning are in
-			// CompanyQueryFilters. BusinessEventDispatch — configured immediately above — is NOT filtered.
-			//
-			// `this` is passed, not the holder: see the CompanyScope property's comment. The model is cached, so a
-			// filter must read the scope through the EXECUTING context or it would serve every request from the
-			// Task ecosystem: checklist, dependency edges (unique per pair), templates.
-			CrossBuy.Models.Context.Tasks.TaskEcosystemModel.Configure(builder);
-			CrossBuy.Models.Context.Calendar.CalendarSchedulingModel.Configure(builder);
-
-			// first request's company.
-			// Project membership (Phase 3C-1). ProjectsAccessService reads this to decide whether the
-			// caller is a member of the project, so the mapping lands with the authorization that needs it.
-			builder.Entity<Accounting.ProjectMember>(e =>
-			{
-				e.ToTable("ProjectMembers");
-				e.HasKey(x => x.ID);
-				e.Property(x => x.ID).ValueGeneratedOnAdd();
-				e.Property(x => x.RoleOnProject).HasMaxLength(20).IsRequired();
-				e.Property(x => x.AllocationPct).HasPrecision(5, 2);
-				e.HasIndex(x => new { x.ProjectId, x.EmployeeId })
-					.IsUnique().HasFilter("[IsActive] = 1").HasDatabaseName("UX_ProjectMembers_ActiveMembership");
-				e.HasIndex(x => new { x.CompanyID, x.EmployeeId, x.ProjectId }).HasDatabaseName("IX_ProjectMembers_Access");
-				// No navigation properties: membership is read by id through the access service, and a
-				// navigation would invite an Include() that loads a project the caller may not access.
-			});
-
 			// ---- AI Foundation Increment 1: AiProjections ----
 			// The ONLY table the future AI/RAG layer reads. Structure ships in
 			// deploy/sql/platform_ai_projections.sql; this mapping exists so EF generates the same names and
@@ -436,6 +329,126 @@ namespace CrossBuy.Models.Context
 			// from the Communication call because these are not Communication tables - CommunicationSchemaParity
 			// asserts that model maps exactly its own slice, and it was right to fail when they were merged.
 			Documents.PlatformDocumentModel.Configure(builder);
+			// ---- Stage 0 (Slice-003): CommMessage outbox dispatch index ----
+			// Structure ships in deploy/sql/comm_outbox_slice_003.sql; this mapping exists so EF generates the
+			// same index (and so a test host can materialise it from the model alone).
+			builder.Entity<Comm.CommMessage>(e =>
+			{
+				e.HasIndex(x => new { x.Status, x.Attempts, x.ClaimedAt, x.UpdatedAt })
+					.HasDatabaseName("IX_CommMessages_Dispatch")
+					.HasFilter("[Status] <> 'Sent'");
+			});
+
+			builder.Entity<Platform.BusinessEventDispatch>(e =>
+			{
+				e.ToTable("BusinessEventDispatch");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Consumer).HasMaxLength(40).IsRequired();
+				e.Property(x => x.Status).HasMaxLength(20).IsRequired();
+				e.Property(x => x.Error).HasMaxLength(400);
+				e.HasIndex(x => new { x.EventId, x.Consumer }).IsUnique().HasDatabaseName("UX_BusinessEventDispatch_Event_Consumer");
+				e.HasIndex(x => new { x.Consumer, x.Status, x.UpdatedAt }).HasDatabaseName("IX_BusinessEventDispatch_Pending");
+				// No navigation property: the dispatch row is queue state, not part of the event aggregate.
+				e.HasOne<Platform.BusinessEvent>().WithMany()
+					.HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Restrict)
+					.HasConstraintName("FK_BusinessEventDispatch_Event");
+			});
+
+			// ---- Stage 1 Batch C: shared role assignments + project membership ----
+			// The real structure ships as idempotent SQL; this mapping exists so EF generates the same
+			// columns, keys and indexes the scripts create, and so a test host can materialise both tables
+			// from the model alone.
+			builder.Entity<Platform.PlatformRoleAssignment>(e =>
+			{
+				e.ToTable("PlatformRoleAssignments");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Scope).HasMaxLength(40).IsRequired();
+				e.Property(x => x.PrincipalType).HasMaxLength(20).IsRequired();
+				e.Property(x => x.Role).HasMaxLength(60).IsRequired();
+				// The duplicate guard is FILTERED on IsActive so a revoked grant may be re-granted without
+				// deleting the audit row — see the script for why that matters.
+				e.HasIndex(x => new { x.CompanyID, x.Scope, x.PrincipalType, x.PrincipalId, x.Role, x.ScopeBranchId })
+					.IsUnique().HasFilter("[IsActive] = 1").HasDatabaseName("UX_PlatformRoleAssignments_ActiveGrant");
+				e.HasIndex(x => new { x.CompanyID, x.Scope, x.PrincipalType, x.PrincipalId })
+					.HasDatabaseName("IX_PlatformRoleAssignments_Principal");
+				e.HasIndex(x => new { x.CompanyID, x.Scope }).HasDatabaseName("IX_PlatformRoleAssignments_ScopeConfigured");
+
+				// Stage 2A Batch A — slice 2 columns. Lengths mirror the script exactly; a model that disagreed
+				// with the DDL would truncate silently on one path and not the other.
+				e.Property(x => x.Reason).HasMaxLength(400);
+				e.Property(x => x.SourceSystem).HasMaxLength(40);
+				e.Property(x => x.IdempotencyKey).HasMaxLength(120);
+
+				// Idempotency is a DATABASE guarantee, per company. Filtered to non-null keys because the key is
+				// optional and SQL Server treats NULLs as equal in a unique index — unfiltered, exactly one
+				// keyless grant per company would be permitted in total.
+				e.HasIndex(x => new { x.CompanyID, x.IdempotencyKey })
+					.IsUnique().HasFilter("[IdempotencyKey] IS NOT NULL")
+					.HasDatabaseName("UX_PlatformRoleAssignments_Idempotency");
+			});
+
+			// Stage 2A Batch B — B2: the explicit bootstrap policy store. A SEPARATE table from the grant store,
+			// because a policy is not a grant and the coexistence rule is that sources are never unioned.
+			builder.Entity<Platform.BootstrapAccessPolicy>(e =>
+			{
+				e.ToTable("BootstrapAccessPolicies");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.Scope).HasMaxLength(40).IsRequired();
+				e.Property(x => x.ActionCode).HasMaxLength(60).IsRequired();
+				e.Property(x => x.State).HasMaxLength(30).IsRequired();
+				e.Property(x => x.Reason).HasMaxLength(400);
+				e.Property(x => x.SourceSystem).HasMaxLength(40);
+
+				// ONE active policy per (company, scope, action). FILTERED on IsActive so superseded history
+				// survives — a company's record of what it used to permit is the audit trail, and a full unique
+				// key would force deleting it to change a policy.
+				e.HasIndex(x => new { x.CompanyID, x.Scope, x.ActionCode })
+					.IsUnique().HasFilter("[IsActive] = 1")
+					.HasDatabaseName("UX_BootstrapAccessPolicies_ActivePolicy");
+
+				// The reader's hot path: one company, one scope, active rows only.
+				e.HasIndex(x => new { x.CompanyID, x.Scope })
+					.HasDatabaseName("IX_BootstrapAccessPolicies_CompanyScope");
+
+				// Review and expiry sweeps (B12 warnings) scan by expiry across companies.
+				e.HasIndex(x => x.ExpiresAt).HasDatabaseName("IX_BootstrapAccessPolicies_Expiry");
+			});
+
+			builder.Entity<Accounting.ProjectMember>(e =>
+			{
+				e.ToTable("ProjectMembers");
+				e.HasKey(x => x.ID);
+				e.Property(x => x.ID).ValueGeneratedOnAdd();
+				e.Property(x => x.RoleOnProject).HasMaxLength(20).IsRequired();
+				e.Property(x => x.AllocationPct).HasPrecision(5, 2);
+				e.HasIndex(x => new { x.ProjectId, x.EmployeeId })
+					.IsUnique().HasFilter("[IsActive] = 1").HasDatabaseName("UX_ProjectMembers_ActiveMembership");
+				e.HasIndex(x => new { x.CompanyID, x.EmployeeId, x.ProjectId }).HasDatabaseName("IX_ProjectMembers_Access");
+				// No navigation properties: membership is read by id through the access service, and a
+				// navigation would invite an Include() that loads a project the caller may not access.
+			});
+
+			// ---- Stage 1 Batch B / B2: the pilot company query filters ----
+			// LAST in OnModelCreating, deliberately: a HasQueryFilter call replaces any previous filter for that
+			// entity, so applying these after every other mapping means nothing above can silently drop one.
+			// The twelve entities, the ten deliberately-unfiltered ones, and the reasoning are in
+			// CompanyQueryFilters. BusinessEventDispatch — configured immediately above — is NOT filtered.
+			//
+			// `this` is passed, not the holder: see the CompanyScope property's comment. The model is cached, so a
+			// filter must read the scope through the EXECUTING context or it would serve every request from the
+			// first request's company.
+			// ---- Construction & Contracting C1 — commercial foundation mapping ----
+			// Indexes, concurrency tokens and the one-primary-contract-per-project rule. Placed BEFORE the
+			// query-filter call above so it cannot displace a filter, and kept in its own class so this tab's
+			// footprint in this shared file stays at one line plus its DbSet declarations.
+			CrossBuy.Models.Context.Construction.ConstructionCommercialModel.Configure(builder);
+
+			// Task ecosystem: checklist, dependency edges (unique per pair), templates.
+			CrossBuy.Models.Context.Tasks.TaskEcosystemModel.Configure(builder);
+			CrossBuy.Models.Context.Calendar.CalendarSchedulingModel.Configure(builder);
 
 			// Client Portal (TAB-3). One line, same as the platforms above: the external identity table
 			// is mapped in a file that work stream owns, so this shared file stays a list of calls.
@@ -492,33 +505,16 @@ namespace CrossBuy.Models.Context
         public DbSet<Chat.ConversationMember> ConversationMembers { get; set; }
         public DbSet<Chat.ChatMessage> ChatMessages { get; set; }
         public DbSet<Chat.ChatReaction> ChatReactions { get; set; }
-        public DbSet<Reporting.ReportTemplate> ReportTemplates { get; set; }
-        public DbSet<Reporting.ReportTemplateVersion> ReportTemplateVersions { get; set; }
-        public DbSet<Reporting.ReportCategory> ReportCategories { get; set; }
-        public DbSet<Reporting.ReportTag> ReportTags { get; set; }
-        public DbSet<Reporting.ReportTagLink> ReportTagLinks { get; set; }
-        public DbSet<Reporting.ReportFavorite> ReportFavorites { get; set; }
-        public DbSet<Reporting.ReportShare> ReportShares { get; set; }
-        public DbSet<Reporting.ReportAsset> ReportAssets { get; set; }
-
-        // HR Product Batch 1 — employee onboarding. Four tables, appended in TAB-2's own region.
-        public DbSet<Hr.EmployeeOnboarding> EmployeeOnboardings { get; set; }
-        public DbSet<Hr.EmployeeOnboardingItem> EmployeeOnboardingItems { get; set; }
-        public DbSet<Hr.OnboardingTemplate> OnboardingTemplates { get; set; }
-        public DbSet<Hr.OnboardingTemplateItem> OnboardingTemplateItems { get; set; }
-
-        // HR Product Batch 2 — roster / shift management. Four tables, same TAB-2 region.
-        public DbSet<Hr.WorkShift> WorkShifts { get; set; }
-        public DbSet<Hr.RosterPeriod> RosterPeriods { get; set; }
-        public DbSet<Hr.RosterAssignment> RosterAssignments { get; set; }
-        public DbSet<Hr.RosterAssignmentRevision> RosterAssignmentRevisions { get; set; }
-        public DbSet<Reporting.ReportRun> ReportRuns { get; set; }
-        public DbSet<Reporting.ReportArchiveEntry> ReportArchiveEntries { get; set; }
-        public DbSet<Reporting.ReportSchedule> ReportSchedules { get; set; }
-        public DbSet<Reporting.ReportScheduleRecipient> ReportScheduleRecipients { get; set; }
-        public DbSet<Reporting.ReportDeliveryAttempt> ReportDeliveryAttempts { get; set; }
         public DbSet<Comm.CommMessage> CommMessages { get; set; }
         public DbSet<Comm.CommAttachment> CommAttachments { get; set; }
+        public DbSet<Calendar.CalendarEvent> CalendarEvents { get; set; }
+        public DbSet<Calendar.CalendarEventAttendee> CalendarEventAttendees { get; set; }
+        // Calendar scheduling satellites (recurrence / time zone / resources) — new tables, never
+        // columns on CalendarEvents, so an unapplied script cannot break the existing calendar.
+        public DbSet<Calendar.CalendarEventSchedule> CalendarEventSchedules { get; set; }
+        public DbSet<Calendar.CalendarResource> CalendarResources { get; set; }
+        public DbSet<Calendar.CalendarEventResource> CalendarEventResources { get; set; }
+        public DbSet<Library.LibraryItem> LibraryItems { get; set; }
         public DbSet<Comm.Announcement> Announcements { get; set; }
         public DbSet<Comm.AnnouncementRead> AnnouncementReads { get; set; }
         public DbSet<Comm.DocComment> DocComments { get; set; }
@@ -533,7 +529,6 @@ namespace CrossBuy.Models.Context
         // Structure is deployed by deploy/sql/platform_ai_egress_audit.sql (migrations are disabled).
         public DbSet<Platform.AiEgressAudit> AiEgressAudits { get; set; }
 
-
         // Stage 1 Batch C — the ONE shared module role-assignment table, and project membership.
         // Structure ships in deploy/sql/platform_role_assignments.sql and deploy/sql/project_members.sql
         // (migrations are disabled). Nothing but IPlatformRoleDirectory may query PlatformRoleAssignments.
@@ -544,21 +539,46 @@ namespace CrossBuy.Models.Context
         // written once and cannot drift between call sites.
         public DbSet<Platform.BootstrapAccessPolicy> BootstrapAccessPolicies { get; set; }
         public DbSet<Accounting.ProjectMember> ProjectMembers { get; set; }
-        // Company document library (FileManager). No fluent configuration: LibraryItem carries its own
-        // conventions and no index is declared for it in the working tree, so the DbSet is the whole mapping.
-        public DbSet<Library.LibraryItem> LibraryItems { get; set; }
-        public DbSet<Calendar.CalendarEvent> CalendarEvents { get; set; }
-        public DbSet<Calendar.CalendarEventAttendee> CalendarEventAttendees { get; set; }
-        // Calendar scheduling satellites (recurrence / time zone / resources) — new tables, never
-        // columns on CalendarEvents, so an unapplied script cannot break the existing calendar.
-        public DbSet<Calendar.CalendarEventSchedule> CalendarEventSchedules { get; set; }
-        public DbSet<Calendar.CalendarResource> CalendarResources { get; set; }
-        public DbSet<Calendar.CalendarEventResource> CalendarEventResources { get; set; }
-        // ---- Task ecosystem (TAB 4) — all NEW tables; no existing Tasks table is altered ----
-        public DbSet<Tasks.TaskChecklistItem> TaskChecklistItems { get; set; }
-        public DbSet<Tasks.TaskDependency> TaskDependencies { get; set; }
-        public DbSet<Tasks.TaskTemplate> TaskTemplates { get; set; }
-        public DbSet<Tasks.TaskTemplateItem> TaskTemplateItems { get; set; }
+
+        // ---- Reporting Platform (ADR-037) ----
+        // Structure ships in deploy/sql/reporting_platform.sql (migrations are disabled). Every table is
+        // company-scoped and additive: the reporting platform writes NONE of these from a financial path, and it
+        // writes no GL or stock at all — JournalEntryService and StockService remain the only writers of those.
+        // CompanyID = 0 on ReportTemplates / ReportCategories means a PLATFORM row that belongs to no tenant.
+        public DbSet<Reporting.ReportTemplate> ReportTemplates { get; set; }
+        public DbSet<Reporting.ReportTemplateVersion> ReportTemplateVersions { get; set; }
+        public DbSet<Reporting.ReportCategory> ReportCategories { get; set; }
+        public DbSet<Reporting.ReportTag> ReportTags { get; set; }
+        public DbSet<Reporting.ReportTagLink> ReportTagLinks { get; set; }
+        public DbSet<Reporting.ReportFavorite> ReportFavorites { get; set; }
+        public DbSet<Reporting.ReportShare> ReportShares { get; set; }
+        public DbSet<Reporting.ReportRun> ReportRuns { get; set; }
+        public DbSet<Reporting.ReportArchiveEntry> ReportArchiveEntries { get; set; }
+        public DbSet<Reporting.ReportSchedule> ReportSchedules { get; set; }
+        public DbSet<Reporting.ReportScheduleRecipient> ReportScheduleRecipients { get; set; }
+        public DbSet<Reporting.ReportDeliveryAttempt> ReportDeliveryAttempts { get; set; }
+        // Report Studio V2: stored logos, signatures and stamps. One line, approved as a shared-file edit;
+        // the entity and its DDL live in the Reporting tree the slice owns.
+        public DbSet<Reporting.ReportAsset> ReportAssets { get; set; }
+
+        // HR Product Batches 1 and 2 - employee onboarding and roster/shift management.
+        //
+        // Re-inserted here rather than where they were first written: that region was relocated by
+        // another work stream in the same file, and the move carried these lines with it.
+        public DbSet<Hr.WorkShift> WorkShifts { get; set; }
+        public DbSet<Hr.RosterPeriod> RosterPeriods { get; set; }
+        public DbSet<Hr.RosterAssignment> RosterAssignments { get; set; }
+        public DbSet<Hr.RosterAssignmentRevision> RosterAssignmentRevisions { get; set; }
+
+        // HR Product Batch 1 - employee onboarding. Four tables, one block.
+        //
+        // Re-inserted here rather than where they were first written: that region was relocated by
+        // another work stream in the same file, and the move carried these four lines with it.
+        public DbSet<Hr.EmployeeOnboarding> EmployeeOnboardings { get; set; }
+        public DbSet<Hr.EmployeeOnboardingItem> EmployeeOnboardingItems { get; set; }
+        public DbSet<Hr.OnboardingTemplate> OnboardingTemplates { get; set; }
+        public DbSet<Hr.OnboardingTemplateItem> OnboardingTemplateItems { get; set; }
+
         public DbSet<FinalSettlement> FinalSettlements { get; set; }
         public DbSet<LeaveCarryOver> LeaveCarryOvers { get; set; }
         public DbSet<LeaveApprovalStep> LeaveApprovalSteps { get; set; }
@@ -597,6 +617,23 @@ namespace CrossBuy.Models.Context
         public DbSet<Accounting.VariationOrder> VariationOrders { get; set; }                        // Projects & Contracting P6-د variation order (أمر تغيير)
         public DbSet<Accounting.VariationOrderLine> VariationOrderLines { get; set; }                // Projects & Contracting P6-د variation order lines
         public DbSet<Accounting.EquipmentDepreciationAllocation> EquipmentDepreciationAllocations { get; set; }  // Projects & Contracting P6-هـ owned-equipment depreciation allocation to project
+
+        // ---- Construction & Contracting C1 — commercial foundation (CR-01/CR-02/CR-03) ----
+        // All NEW tables; no existing table is altered. Mapping lives in ConstructionCommercialModel.
+        public DbSet<Construction.ClientContract> ClientContracts { get; set; }                              // C1 D-01 contract ownership
+        public DbSet<Construction.BoqLineState> BoqLineStates { get; set; }                                  // C1 CR-01 BOQ line stable identity + retirement
+        public DbSet<Construction.CommercialRevision> CommercialRevisions { get; set; }                      // C1 CR-03 immutable commercial revision
+        public DbSet<Construction.CommercialRevisionLine> CommercialRevisionLines { get; set; }              // C1 CR-03 previous/new per line
+        public DbSet<Construction.SubcontractScope> SubcontractScopes { get; set; }                          // C1 CR-02 the certification cap
+        public DbSet<Construction.SubcontractCertificateLine> SubcontractCertificateLines { get; set; }      // C1 CR-02 line-level certification
+        public DbSet<Construction.CertificateLineSnapshot> CertificateLineSnapshots { get; set; }            // C1 CR-03 client certificate line snapshot
+        public DbSet<Construction.ConstructionAuditEntry> ConstructionAuditEntries { get; set; }
+
+        // ---- Task ecosystem (TAB 4) — all NEW tables; no existing Tasks table is altered ----
+        public DbSet<Tasks.TaskChecklistItem> TaskChecklistItems { get; set; }
+        public DbSet<Tasks.TaskDependency> TaskDependencies { get; set; }
+        public DbSet<Tasks.TaskTemplate> TaskTemplates { get; set; }
+        public DbSet<Tasks.TaskTemplateItem> TaskTemplateItems { get; set; }             // C1 append-only field-level audit
         public DbSet<Accounting.PostingRule> PostingRules { get; set; }
         public DbSet<Accounting.AccountingUserRole> AccountingUserRoles { get; set; }
         public DbSet<Accounting.AccountingSettings> AccountingSettings { get; set; }

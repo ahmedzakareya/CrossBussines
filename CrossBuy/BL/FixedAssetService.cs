@@ -105,10 +105,10 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, FixedAsset? asset)> CreateAssetAsync(int companyId, FixedAssetInput input, int? userId)
 		{
-			if (string.IsNullOrWhiteSpace(input.Name)) return (false, "اسم الأصل مطلوب", null);
-			if (input.Cost <= 0) return (false, "التكلفة يجب أن تكون أكبر من صفر", null);
-			if (input.SalvageValue < 0 || input.SalvageValue >= input.Cost) return (false, "قيمة الخردة يجب أن تكون بين صفر وأقل من التكلفة", null);
-			if (input.UsefulLifeMonths <= 0) return (false, "العمر الإنتاجي يجب أن يكون أكبر من صفر", null);
+			if (string.IsNullOrWhiteSpace(input.Name)) return (false, "Asset name is required", null);
+			if (input.Cost <= 0) return (false, "The cost must be greater than zero", null);
+			if (input.SalvageValue < 0 || input.SalvageValue >= input.Cost) return (false, "The salvage value must be between zero and less than the cost", null);
+			if (input.UsefulLifeMonths <= 0) return (false, "The useful life must be greater than zero", null);
 
 			AssetCategory? cat = input.CategoryId.HasValue
 				? await _context.AssetCategories.FirstOrDefaultAsync(c => c.ID == input.CategoryId && c.CompanyID == companyId) : null;
@@ -116,8 +116,8 @@ namespace CrossBuy.BL
 			var costAcc = input.CostAccountId ?? cat?.CostAccountId ?? await AccIdAsync(companyId, "1201") ?? 0;
 			var accumAcc = input.AccumDepAccountId ?? cat?.AccumDepAccountId ?? await AccIdAsync(companyId, "1202") ?? 0;
 			var expAcc = input.DepExpenseAccountId ?? cat?.DepExpenseAccountId ?? await AccIdAsync(companyId, "520103") ?? 0;
-			if (costAcc == 0 || accumAcc == 0 || expAcc == 0) return (false, "حسابات الأصول الثابتة غير مُهيّأة في شجرة الحسابات", null);
-			if (input.FundingAccountId <= 0) return (false, "اختر حساب التمويل (نقدية/بنك/مورد)", null);
+			if (costAcc == 0 || accumAcc == 0 || expAcc == 0) return (false, "The fixed-asset accounts are not configured in the chart of accounts", null);
+			if (input.FundingAccountId <= 0) return (false, "Choose the funding account (cash/bank/supplier)", null);
 
 			var asset = new FixedAsset
 			{
@@ -141,7 +141,7 @@ namespace CrossBuy.BL
 				Lines = new List<JournalLineInput>
 				{
 					new() { AccountId = costAcc, Debit = asset.Cost, Credit = 0, CostCenterId = asset.CostCenterId, Description = "تكلفة الأصل" },
-					new() { AccountId = input.FundingAccountId, Debit = 0, Credit = asset.Cost, Description = "سداد قيمة الأصل" },
+					new() { AccountId = input.FundingAccountId, Debit = 0, Credit = asset.Cost, Description = "Payment for the asset" },
 				},
 			}, userId);
 			if (!ok)
@@ -160,20 +160,20 @@ namespace CrossBuy.BL
 		// Entry: Dr Asset Cost (1201) / Cr Accumulated Depreciation (1202) [= accum] / Cr Opening Balance Equity (3301) [= NBV].
 		public async Task<(bool ok, string? error, FixedAsset? asset)> CreateOpeningAssetAsync(int companyId, FixedAssetInput input, decimal openingAccumDep, DateTime cutoff, int? userId)
 		{
-			if (string.IsNullOrWhiteSpace(input.Name)) return (false, "اسم الأصل مطلوب", null);
-			if (input.Cost <= 0) return (false, "التكلفة يجب أن تكون أكبر من صفر", null);
-			if (input.SalvageValue < 0 || input.SalvageValue >= input.Cost) return (false, "قيمة الخردة يجب أن تكون بين صفر وأقل من التكلفة", null);
-			if (input.UsefulLifeMonths <= 0) return (false, "العمر الإنتاجي يجب أن يكون أكبر من صفر", null);
-			if (openingAccumDep < 0 || openingAccumDep > R(input.Cost - input.SalvageValue)) return (false, "مجمّع الإهلاك الافتتاحي يجب أن يكون بين صفر و(التكلفة - الخردة)", null);
+			if (string.IsNullOrWhiteSpace(input.Name)) return (false, "Asset name is required", null);
+			if (input.Cost <= 0) return (false, "The cost must be greater than zero", null);
+			if (input.SalvageValue < 0 || input.SalvageValue >= input.Cost) return (false, "The salvage value must be between zero and less than the cost", null);
+			if (input.UsefulLifeMonths <= 0) return (false, "The useful life must be greater than zero", null);
+			if (openingAccumDep < 0 || openingAccumDep > R(input.Cost - input.SalvageValue)) return (false, "The opening accumulated depreciation must be between zero and (cost - salvage)", null);
 
 			AssetCategory? cat = input.CategoryId.HasValue
 				? await _context.AssetCategories.FirstOrDefaultAsync(c => c.ID == input.CategoryId && c.CompanyID == companyId) : null;
 			var costAcc = input.CostAccountId ?? cat?.CostAccountId ?? await AccIdAsync(companyId, "1201") ?? 0;
 			var accumAcc = input.AccumDepAccountId ?? cat?.AccumDepAccountId ?? await AccIdAsync(companyId, "1202") ?? 0;
 			var expAcc = input.DepExpenseAccountId ?? cat?.DepExpenseAccountId ?? await AccIdAsync(companyId, "520103") ?? 0;
-			if (costAcc == 0 || accumAcc == 0 || expAcc == 0) return (false, "حسابات الأصول الثابتة غير مُهيّأة", null);
+			if (costAcc == 0 || accumAcc == 0 || expAcc == 0) return (false, "The fixed-asset accounts are not configured", null);
 			var obe = await AccIdAsync(companyId, "3301");
-			if (obe == null) return (false, "حساب الرصيد الافتتاحي (3301) غير موجود", null);
+			if (obe == null) return (false, "The opening-balance account (3301) does not exist", null);
 			var cc = input.CostCenterId ?? await _context.CostCenters.Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
 
 			decimal cost = R(input.Cost), accum = R(openingAccumDep), nbv = R(cost - accum);
@@ -192,8 +192,8 @@ namespace CrossBuy.BL
 			asset.AssetNo = $"FA-{asset.AcquisitionDate:yyyy}-{asset.ID:D4}";
 			await _context.SaveChangesAsync();
 
-			var lines = new List<JournalLineInput> { new() { AccountId = costAcc, Debit = cost, Credit = 0, CostCenterId = cc, Description = "تكلفة أصل افتتاحي" } };
-			if (accum > 0) lines.Add(new() { AccountId = accumAcc, Debit = 0, Credit = accum, CostCenterId = cc, Description = "مجمّع إهلاك افتتاحي" });
+			var lines = new List<JournalLineInput> { new() { AccountId = costAcc, Debit = cost, Credit = 0, CostCenterId = cc, Description = "Opening asset cost" } };
+			if (accum > 0) lines.Add(new() { AccountId = accumAcc, Debit = 0, Credit = accum, CostCenterId = cc, Description = "Opening accumulated depreciation" });
 			if (nbv > 0) lines.Add(new() { AccountId = obe.Value, Debit = 0, Credit = nbv, Description = "رصيد افتتاحي - أصل" });
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
@@ -214,12 +214,12 @@ namespace CrossBuy.BL
 		{
 			var period = MonthEnd(periodDate);
 			var exists = await _context.DepreciationRuns.AnyAsync(r => r.CompanyID == companyId && r.PeriodDate == period && r.Status == "Posted");
-			if (exists) return (false, $"تم احتساب إهلاك هذه الفترة ({period:yyyy/MM}) من قبل", null);
+			if (exists) return (false, $"Depreciation for this period ({period:yyyy/MM}) has already been calculated", null);
 
 			var assets = await _context.FixedAssets
 				.Where(a => a.CompanyID == companyId && a.Status == "Active" && a.AcquisitionDate <= period)
 				.ToListAsync();
-			if (assets.Count == 0) return (false, "لا توجد أصول قابلة للإهلاك في هذه الفترة", null);
+			if (assets.Count == 0) return (false, "There are no depreciable assets in this period", null);
 
 			int? fallbackCc = await _context.CostCenters.Where(c => c.CompanyID == companyId).OrderBy(c => c.ID).Select(c => (int?)c.ID).FirstOrDefaultAsync();
 
@@ -243,15 +243,15 @@ namespace CrossBuy.BL
 				if (a.AccumulatedDepreciation >= depreciable) a.Status = "FullyDepreciated";
 
 				run.Lines.Add(new DepreciationLine { FixedAssetId = a.ID, Amount = amount, AccumulatedAfter = a.AccumulatedDepreciation, NetBookValueAfter = R(a.Cost - a.AccumulatedDepreciation) });
-				jlines.Add(new JournalLineInput { AccountId = a.DepExpenseAccountId, Debit = amount, Credit = 0, CostCenterId = a.CostCenterId ?? fallbackCc, Description = $"إهلاك {a.AssetNo}" });
-				jlines.Add(new JournalLineInput { AccountId = a.AccumDepAccountId, Debit = 0, Credit = amount, Description = $"مجمع إهلاك {a.AssetNo}" });
+				jlines.Add(new JournalLineInput { AccountId = a.DepExpenseAccountId, Debit = amount, Credit = 0, CostCenterId = a.CostCenterId ?? fallbackCc, Description = $"Depreciation of {a.AssetNo}" });
+				jlines.Add(new JournalLineInput { AccountId = a.AccumDepAccountId, Debit = 0, Credit = amount, Description = $"Accumulated depreciation of {a.AssetNo}" });
 				total += amount; count++;
 			}
 
 			if (count == 0)
 			{
 				await _context.SaveChangesAsync();  // persist any FullyDepreciated status changes
-				return (false, "لا توجد مبالغ إهلاك لاحتسابها في هذه الفترة", null);
+				return (false, "There are no depreciation amounts to calculate in this period", null);
 			}
 
 			run.TotalAmount = R(total); run.AssetCount = count;
@@ -279,31 +279,31 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DisposeAssetAsync(int companyId, int assetId, DateTime date, decimal proceeds, int cashAccountId, int? userId)
 		{
 			var a = await _context.FixedAssets.FirstOrDefaultAsync(x => x.ID == assetId && x.CompanyID == companyId);
-			if (a == null) return (false, "الأصل غير موجود");
-			if (a.Status == "Disposed") return (false, "الأصل مستبعد بالفعل");
-			if (proceeds < 0) return (false, "قيمة البيع لا يمكن أن تكون سالبة");
+			if (a == null) return (false, "Asset not found");
+			if (a.Status == "Disposed") return (false, "The asset has already been disposed of");
+			if (proceeds < 0) return (false, "The sale value cannot be negative");
 
 			var nbv = R(a.Cost - a.AccumulatedDepreciation);
 			var jlines = new List<JournalLineInput>();
 			// remove accumulated depreciation
 			if (a.AccumulatedDepreciation > 0)
-				jlines.Add(new JournalLineInput { AccountId = a.AccumDepAccountId, Debit = a.AccumulatedDepreciation, Credit = 0, Description = "عكس مجمع الإهلاك" });
+				jlines.Add(new JournalLineInput { AccountId = a.AccumDepAccountId, Debit = a.AccumulatedDepreciation, Credit = 0, Description = "Reversal of accumulated depreciation" });
 			// proceeds received
 			if (proceeds > 0)
-				jlines.Add(new JournalLineInput { AccountId = cashAccountId, Debit = R(proceeds), Credit = 0, Description = "متحصلات بيع أصل" });
+				jlines.Add(new JournalLineInput { AccountId = cashAccountId, Debit = R(proceeds), Credit = 0, Description = "Proceeds from the sale of an asset" });
 			// remove asset cost
-			jlines.Add(new JournalLineInput { AccountId = a.CostAccountId, Debit = 0, Credit = a.Cost, Description = "استبعاد تكلفة الأصل" });
+			jlines.Add(new JournalLineInput { AccountId = a.CostAccountId, Debit = 0, Credit = a.Cost, Description = "Derecognition of the asset cost" });
 
 			var diff = R(nbv - proceeds);   // >0 loss, <0 gain
 			if (diff > 0)
 			{
 				var lossAcc = await EnsureAccAsync(companyId, "5901", "خسائر بيع أصول ثابتة", "Loss on Asset Disposal", "EXP", "5", "Investing");
-				jlines.Add(new JournalLineInput { AccountId = lossAcc, Debit = diff, Credit = 0, Description = "خسارة بيع أصل" });
+				jlines.Add(new JournalLineInput { AccountId = lossAcc, Debit = diff, Credit = 0, Description = "Loss on the sale of an asset" });
 			}
 			else if (diff < 0)
 			{
 				var gainAcc = await EnsureAccAsync(companyId, "4901", "أرباح بيع أصول ثابتة", "Gain on Asset Disposal", "REV", "4", "Investing");
-				jlines.Add(new JournalLineInput { AccountId = gainAcc, Debit = 0, Credit = -diff, Description = "ربح بيع أصل" });
+				jlines.Add(new JournalLineInput { AccountId = gainAcc, Debit = 0, Credit = -diff, Description = "Gain on the sale of an asset" });
 			}
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput

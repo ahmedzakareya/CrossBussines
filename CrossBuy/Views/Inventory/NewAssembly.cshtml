@@ -48,7 +48,7 @@
                         <div><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
                             <select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>
                                 <option value="">@Localizer["Select"]</option>
-                                @foreach (var w in warehouses) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }
+                                @foreach (var w in warehouses) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }
                             </select></div>
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                             <h3 class="fs-5 fw-bold text-gray-800 mb-4">@Localizer["This item's components"]</h3>
                             <div class="table-responsive">
                                 <table class="table align-middle gy-3 mb-0" style="font-variant-numeric:tabular-nums;">
-                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                                         <th class="ps-4 min-w-200px">@Localizer["Component"]</th>
                                         <th class="text-end min-w-100px">@Localizer["Per unit"]</th>
                                         <th class="text-end min-w-110px">@Localizer["Total needed"]</th>
@@ -122,7 +122,7 @@
         '<td class="text-end text-muted">'+ (r.qtyPerUnit||0) + (r.uom? ' '+r.uom : '') +'</td>'+
         '<td class="text-end fw-bold text-gray-900">'+ (Math.round(need*10000)/10000) +'</td>'+
         '<td class="text-end '+(short?'':'text-gray-700')+'">'+ (r.available||0) +'</td>'+
-        '<td class="text-center pe-4"><span class="badge fw-bold" style="'+(short?'background:#fdeaea;color:#d92d20;':'background:#eaf3ef;color:#13433a;')+'">'+(short?lblShort:lblOk)+'</span></td>';
+        '<td class="text-center pe-4"><span class="badge fw-bold" style="'+(short?'background:#fdeaea;color:#d92d20;':'background:#E7F0FF;color:#0E4A9E;')+'">'+(short?lblShort:lblOk)+'</span></td>';
       body.appendChild(tr);
     });
   }

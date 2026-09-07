@@ -75,7 +75,8 @@ function Invoke-Sql([string]$sql, [int]$timeout = 600) {
 # -ArtifactDirectory; nothing here is a credential.
 #
 # The directory must already grant write access to the SQL Server service account, e.g.
-#   icacls C:\CrossBuyCertification /grant "NT Service\MSSQL$SQLEXPRESS:(OI)(CI)M"
+#   icacls C:\CrossBuyCertification /grant "NT Service\MSSQLSERVER:(OI)(CI)M"
+# (a named instance uses NT Service\MSSQL$<INSTANCE> instead)
 # The backup itself is written by SQL Server, not by this script, so a missing grant surfaces as a
 # loud BACKUP failure rather than a silent one.
 if ([string]::IsNullOrWhiteSpace($ArtifactDirectory)) {

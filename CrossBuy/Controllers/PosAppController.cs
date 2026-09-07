@@ -50,6 +50,11 @@ namespace CrossBuy.Controllers
 			public string? EmployeePhoto { get; set; }
 			public int BranchId { get; set; }
 			public string BranchName { get; set; } = "";
+			// Stage 1 Batch A: the branch's real company, carried so the screens that seed Session["Employee"]
+			// can state their tenancy instead of leaving it unresolved (which used to become company 1).
+			// A PosCtx blob written before this field existed deserialises it as null; the context factory then
+			// falls through to claims → the Employee row, which resolves correctly. Safe degradation, no re-login.
+			public int? BranchCompanyId { get; set; }
 			public List<string> Roles { get; set; } = new();
 			public int? TerminalId { get; set; }
 			public string? TerminalCode { get; set; }
@@ -99,7 +104,7 @@ namespace CrossBuy.Controllers
 			var gEmpCo = await _db.Employee.AsNoTracking().Where(e => e.ID == acc.EmployeeId).Select(e => (int?)e.EmpCompanyID).FirstOrDefaultAsync();
 			var gBrCo = await _db.Branches.AsNoTracking().Where(b => b.ID == acc.BranchId).Select(b => (int?)b.CompanyID).FirstOrDefaultAsync();
 			if (gEmpCo == null || gBrCo == null || gEmpCo.Value != gBrCo.Value) { await _signIn.SignOutAsync(); TempData["PosErr"] = L["Your account belongs to another company than this branch — cross-company operations are blocked."].Value; return RedirectToAction(nameof(Login)); }
-			var ctx = new PosCtx { EmployeeId = acc.EmployeeId, EmployeeName = acc.EmployeeName, EmployeeNameEn = acc.EmployeeNameEn, EmployeePhoto = acc.EmployeePhoto, BranchId = acc.BranchId, BranchName = acc.BranchName, Roles = acc.Roles };
+			var ctx = new PosCtx { EmployeeId = acc.EmployeeId, EmployeeName = acc.EmployeeName, EmployeeNameEn = acc.EmployeeNameEn, EmployeePhoto = acc.EmployeePhoto, BranchId = acc.BranchId, BranchName = acc.BranchName, BranchCompanyId = acc.BranchCompanyId, Roles = acc.Roles };
 			SetCtx(ctx);
 			return HomeFor(ctx);   // kitchen-only → KDS; others → start
 		}
@@ -458,8 +463,27 @@ namespace CrossBuy.Controllers
 			// A POS user signs in via Identity (not the admin Session), so seed it from the POS context.
 			if (string.IsNullOrEmpty(HttpContext.Session.GetString("Employee")))
 			{
+				// STAGE 1 BATCH A — this blob used to carry FullName/Email/ProfileImage and NOTHING else: no
+				// employee id, no company, no branch. BusinessContextAccessor read it, resolved nothing, and
+				// silently fell back to company 1 — so a kitchen screen on a branch belonging to company 71
+				// operated as company 1 for every event, notification and timeline read. The fallback is gone,
+				// which would now make this path throw, so the blob states the identity it actually has.
+				//
+				// BranchCompanyId (the branch's real company) is used, NOT PosLoginContext.CompanyId (the POS
+				// catalog company, deliberately 1 — see PosCompanyPolicy). Tenancy and catalog are different
+				// questions and this is the tenancy one.
 				HttpContext.Session.SetString("Employee", JsonSerializer.Serialize(
-					new CrossBuy.ViewModel.EmployeeViewModel { FullName = c.EmployeeName, Email = "", ProfileImage = "" }));
+					new CrossBuy.ViewModel.EmployeeViewModel
+					{
+						ID = c.EmployeeId,
+						FullName = c.EmployeeName,
+						FullNameEn = c.EmployeeNameEn,
+						Email = "",
+						ProfileImage = c.EmployeePhoto ?? "",
+						UserId = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "",
+						EmpCompanyID = c.BranchCompanyId,
+						BranchID = c.BranchId,
+					}));
 			}
 			ViewBag.Ctx = c;
 			ViewBag.SidebarMenu = CrossBuy.Models.Menu.MainMenu.Restaurant();   // POS/restaurant sidebar — NOT the accounting menu
@@ -549,7 +573,7 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> Drivers()
 		{
 			var c = Ctx(); if (c == null) return Json(new { ok = false, error = L["Session expired"].Value });
-			var drivers = (await _pos.GetDriversAsync(c.BranchId)).Where(d => d.IsActive).Select(d => new { id = d.ID, name = d.Name, phone = d.Phone });
+			var drivers = (await _pos.GetDriversAsync(c.BranchId)).Where(d => d.IsActive).Select(d => new { id = d.ID, name = CrossBuy.BL.DisplayName.Of(d.Name, d.NameEn), phone = d.Phone });
 			return Json(new { ok = true, drivers });
 		}
 
@@ -579,7 +603,20 @@ namespace CrossBuy.Controllers
 			var c = Ctx(); if (c == null) return RedirectToAction(nameof(Login));
 			if (!_access.CanOrder(c.Roles)) { TempData["PosErr"] = L["The delivery board is for cashier/manager roles"].Value; return RedirectToAction(nameof(Start)); }
 			if (string.IsNullOrEmpty(HttpContext.Session.GetString("Employee")))
-				HttpContext.Session.SetString("Employee", JsonSerializer.Serialize(new CrossBuy.ViewModel.EmployeeViewModel { FullName = c.EmployeeName, Email = "", ProfileImage = "" }));
+				// Same Stage 1 fix as the KDS screen above — see the comment there. An incomplete blob used to
+				// resolve to company 1; it now states the POS user's real employee id, branch and branch company.
+				HttpContext.Session.SetString("Employee", JsonSerializer.Serialize(
+					new CrossBuy.ViewModel.EmployeeViewModel
+					{
+						ID = c.EmployeeId,
+						FullName = c.EmployeeName,
+						FullNameEn = c.EmployeeNameEn,
+						Email = "",
+						ProfileImage = c.EmployeePhoto ?? "",
+						UserId = User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "",
+						EmpCompanyID = c.BranchCompanyId,
+						BranchID = c.BranchId,
+					}));
 			ViewBag.Ctx = c;
 			ViewBag.SidebarMenu = CrossBuy.Models.Menu.MainMenu.Restaurant();
 			ViewBag.IsManager = _access.IsManager(c.Roles);
@@ -620,7 +657,7 @@ namespace CrossBuy.Controllers
 		{
 			var c = Ctx(); if (c == null) return Json(new { ok = false });
 			var (rows, _) = await _receivables.SearchCustomersAsync(PosCompanyId, q, true, 1, 15);
-			return Json(new { ok = true, customers = rows.Select(x => new { id = x.ID, name = x.Name, phone = x.Phone }) });
+			return Json(new { ok = true, customers = rows.Select(x => new { id = x.ID, name = CrossBuy.BL.DisplayName.Of(x.Name, x.NameEn), phone = x.Phone }) });
 		}
 
 		// Quick-add a real customer (same Customer entity → shows in admin). Name + optional phone.

@@ -117,7 +117,7 @@ namespace CrossBuy.Tests.SqlServer
 			// walk-in customer, and 210201 is VAT output. Seeding the wrong codes leaves ControlAccountId at 0
 			// and the invoice fails with "account 0 does not exist in this company".
 			var cash = Acct("110101", "الصندوق", Co); var ar = Acct("1102", "العملاء", Co);
-			var vat = Acct("210201", "ض.ق.م مخرجات", Co);
+			var vat = Acct("210201", "Output VAT", Co);
 			var invF = Acct("110301", "Inv-Co2", Foreign); var cogsF = Acct("510101", "COGS-Co2", Foreign);
 			db.Accounts.AddRange(inv, cogs, adj, rev, cash, ar, vat, invF, cogsF);
 			await db.SaveChangesAsync();

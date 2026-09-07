@@ -11,12 +11,12 @@
 {
     <tr style="border-bottom:1px dashed #eef1f6;">
         <td class="ps-4 fw-bold text-gray-900"><a href="@Url.Action("AccountEditor","Crm", new { id = a.Id })" class="text-gray-900 text-hover-primary">@acctName(a)</a></td>
-        <td>@{ var ind = acctIndustry(a); } @if (!string.IsNullOrEmpty(ind)) { <span class="text-gray-700">@ind</span> } @if (!string.IsNullOrEmpty(a.Segment)) { <span class="badge fw-bold ms-1" style="background:#eaf3ef;color:#13433a;">@a.Segment</span> }</td>
+        <td>@{ var ind = acctIndustry(a); } @if (!string.IsNullOrEmpty(ind)) { <span class="text-gray-700">@ind</span> } @if (!string.IsNullOrEmpty(a.Segment)) { <span class="badge fw-bold ms-1" style="background:#E7F0FF;color:#0E4A9E;">@a.Segment</span> }</td>
         <td class="text-muted">@a.Phone</td>
         <td class="text-center"><span class="badge fw-bold" style="background:#f2f4f7;color:#475467;">@a.Contacts</span></td>
-        <td class="text-center"><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@a.Opps</span></td>
-        <td class="text-center">@if (a.CustomerId.HasValue) { <span class="badge fw-bold d-inline-flex align-items-center gap-1" style="background:#eaf3ef;color:#13433a;"><i class="ki-outline ki-check fs-7"></i>@SR["Customer"]</span> } else { <span class="text-muted fs-8">@Localizer["Prospect"]</span> }</td>
-        <td class="text-center"><span class="badge fw-bold" style="@(a.IsActive ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@(a.IsActive ? SR["Active"].Value : SR["Inactive"].Value)</span></td>
+        <td class="text-center"><span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@a.Opps</span></td>
+        <td class="text-center">@if (a.CustomerId.HasValue) { <span class="badge fw-bold d-inline-flex align-items-center gap-1" style="background:#E7F0FF;color:#0E4A9E;"><i class="ki-outline ki-check fs-7"></i>@SR["Customer"]</span> } else { <span class="text-muted fs-8">@Localizer["Prospect"]</span> }</td>
+        <td class="text-center"><span class="badge fw-bold" style="@(a.IsActive ? "background:#E7F0FF;color:#0E4A9E;" : "background:#f2f4f7;color:#475467;")">@(a.IsActive ? SR["Active"].Value : SR["Inactive"].Value)</span></td>
         <td class="text-end pe-4"><a href="@Url.Action("AccountEditor","Crm", new { id = a.Id })" class="btn btn-sm btn-icon btn-light-primary" title="@Localizer["Open"]"><i class="ki-outline ki-eye fs-5"></i></a></td>
     </tr>
 }

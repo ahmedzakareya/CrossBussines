@@ -23,7 +23,7 @@
 <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
     <div class="card mb-5"><div class="card-body"><div class="row g-5 align-items-end">
         <div class="col-md-5"><label class="required fw-semibold fs-6 mb-2">@SR["Warehouse"]</label>
-            <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+            <select id="whSel" class="form-select form-select-solid" data-control="select2"><option value="">@Localizer["Select warehouse"]</option>@foreach (var w in whs) { <option value="@w.ID" selected="@(fWh==w.ID)">@w.Code — @(isAr || string.IsNullOrWhiteSpace(w.NameEn) ? w.Name : w.NameEn)</option> }</select></div>
         <div class="col-md-7"><div class="text-muted fs-7">@Localizer["Per-item quantity on each rack — built automatically from located movements. Quantity only, no value/GL."]</div></div>
     </div></div></div>
 
@@ -39,7 +39,7 @@
                 <div class="card"><div class="card-header align-items-center py-5"><div class="card-title"><h3>@Localizer["Rack balances"]</h3></div>
                     <div class="card-toolbar"><div class="d-flex align-items-center position-relative"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="s" class="form-control form-control-solid form-control-sm w-250px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
                     <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-7 gy-3" id="t">
-                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0"><th>@Localizer["Location"]</th><th class="min-w-150px">@SR["Item"]</th><th style="width:120px" class="text-end">@Localizer["Qty"]</th><th style="width:220px">@Localizer["Count / move"]</th></tr></thead>
+                        <thead><tr class="text-start text-gray-500 fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Location"]</th><th class="min-w-150px">@SR["Item"]</th><th style="width:120px" class="text-end">@Localizer["Qty"]</th><th style="width:220px">@Localizer["Count / move"]</th></tr></thead>
                         <tbody class="fw-semibold text-gray-700">
                         @foreach (var r in rows)
                         {
@@ -70,7 +70,7 @@
             <div class="col-lg-4">
                 <div class="card"><div class="card-header"><div class="card-title"><h3>@Localizer["Reconciliation"]</h3></div></div>
                     <div class="card-body pt-2"><div class="text-muted fs-8 mb-3">@(Localizer["Rack-located vs warehouse total. \"Unlocated\" = qty with no location."])</div>
-                    <div class="table-responsive"><table class="table table-row-dashed align-middle fs-8"><thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@SR["Item"]</th><th class="text-end">@Localizer["Racks"]</th><th class="text-end">@Localizer["WH"]</th><th class="text-end">@Localizer["Unloc."]</th></tr></thead>
+                    <div class="table-responsive"><table class="table table-row-dashed align-middle fs-8"><thead><tr class="text-gray-500 fw-bold text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Item"]</th><th class="text-end">@Localizer["Racks"]</th><th class="text-end">@Localizer["WH"]</th><th class="text-end">@Localizer["Unloc."]</th></tr></thead>
                     <tbody class="fw-semibold">
                     @foreach (var x in recon)
                     {
@@ -106,7 +106,7 @@
 var whSel=document.getElementById('whSel');
 if(whSel){var go=function(){var v=whSel.value||'';location.href='@Url.Action("RackBalances","Inventory")'+(v?('?warehouseId='+v):'');};if(window.jQuery){jQuery(whSel).on('change select2:select',go);}else{whSel.addEventListener('change',go);}}
 var s=document.getElementById('s');if(s)s.addEventListener('input',function(){var q=(s.value||'').trim().toLowerCase();[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(r){r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none';});});
-var ALL_BINS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize((ViewBag.ActiveBins as List<CrossBuy.Models.Context.Inventory.BinLocation> ?? new()).Select(b=>new{id=b.ID,code=b.Code,name=b.Name,type=b.LocationType})));
+var ALL_BINS=@Html.Raw(System.Text.Json.JsonSerializer.Serialize((ViewBag.ActiveBins as List<CrossBuy.Models.Context.Inventory.BinLocation> ?? new()).Select(b=>new{id=b.ID,code=b.Code,name=(isAr||string.IsNullOrWhiteSpace(b.NameEn)?b.Name:b.NameEn),type=b.LocationType})));
 [].slice.call(document.querySelectorAll('.js-move')).forEach(function(btn){btn.addEventListener('click',function(){
   document.getElementById('mvItem').value=btn.getAttribute('data-item');
   document.getElementById('mvFrom').value=btn.getAttribute('data-from');

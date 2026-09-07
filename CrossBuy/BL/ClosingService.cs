@@ -73,16 +73,16 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> CloseYearAsync(int companyId, int fiscalYearId, int? userId)
 		{
 			var year = await _context.FiscalYears.FirstOrDefaultAsync(y => y.ID == fiscalYearId && y.CompanyID == companyId);
-			if (year == null) return (false, "السنة المالية غير موجودة");
-			if (year.Status == "Closed") return (false, "السنة المالية مقفلة بالفعل");
+			if (year == null) return (false, "Fiscal year not found");
+			if (year.Status == "Closed") return (false, "The fiscal year is already closed");
 			if (await _context.YearEndClosings.AnyAsync(c => c.CompanyID == companyId && c.FiscalYearId == fiscalYearId && c.Status == "Closed"))
-				return (false, "تم إقفال هذه السنة من قبل");
+				return (false, "This year has already been closed");
 
 			var retained = await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == "3201").Select(a => (int?)a.ID).FirstOrDefaultAsync();
-			if (retained == null) return (false, "حساب الأرباح المحتجزة (3201) غير موجود");
+			if (retained == null) return (false, "The retained-earnings account (3201) does not exist");
 
 			var move = await PnlMovementAsync(companyId, year.EndDate);
-			if (move.Count == 0) return (false, "لا توجد حسابات إيرادات أو مصروفات للإقفال");
+			if (move.Count == 0) return (false, "There are no revenue or expense accounts to close");
 
 			var lines = new List<JournalLineInput>();
 			foreach (var m in move)
@@ -90,15 +90,15 @@ namespace CrossBuy.BL
 				// zero each P&L account: revenue (net credit) → debit it; expense (net debit) → credit it
 				var debit = m.NetDebit < 0 ? -m.NetDebit : 0;   // close credit-balance (revenue) with a debit
 				var credit = m.NetDebit > 0 ? m.NetDebit : 0;   // close debit-balance (expense) with a credit
-				lines.Add(new JournalLineInput { AccountId = m.AccountId, Debit = debit, Credit = credit, CostCenterId = m.CostCenterId, Description = "إقفال نتيجة النشاط" });
+				lines.Add(new JournalLineInput { AccountId = m.AccountId, Debit = debit, Credit = credit, CostCenterId = m.CostCenterId, Description = "Closing of the result for the period" });
 			}
 
 			var totalDr = R(lines.Sum(l => l.Debit));
 			var totalCr = R(lines.Sum(l => l.Credit));
 			var diff = R(totalDr - totalCr);   // = net profit (>0) or net loss (<0)
-			if (diff > 0) lines.Add(new JournalLineInput { AccountId = retained.Value, Debit = 0, Credit = diff, Description = "ترحيل صافي الربح للأرباح المحتجزة" });
-			else if (diff < 0) lines.Add(new JournalLineInput { AccountId = retained.Value, Debit = -diff, Credit = 0, Description = "ترحيل صافي الخسارة للأرباح المحتجزة" });
-			if (lines.Count < 2) return (false, "لا توجد أرصدة للإقفال");
+			if (diff > 0) lines.Add(new JournalLineInput { AccountId = retained.Value, Debit = 0, Credit = diff, Description = "Transfer of net profit to retained earnings" });
+			else if (diff < 0) lines.Add(new JournalLineInput { AccountId = retained.Value, Debit = -diff, Credit = 0, Description = "Transfer of net loss to retained earnings" });
+			if (lines.Count < 2) return (false, "There are no balances to close");
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
@@ -127,10 +127,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> ReopenYearAsync(int companyId, int closingId, int? userId)
 		{
 			var closing = await _context.YearEndClosings.FirstOrDefaultAsync(c => c.ID == closingId && c.CompanyID == companyId);
-			if (closing == null) return (false, "سجل الإقفال غير موجود");
-			if (closing.Status == "Reopened") return (false, "تم إعادة فتح السنة بالفعل");
+			if (closing == null) return (false, "Closing record not found");
+			if (closing.Status == "Reopened") return (false, "The year has already been reopened");
 			var year = await _context.FiscalYears.FirstOrDefaultAsync(y => y.ID == closing.FiscalYearId && y.CompanyID == companyId);
-			if (year == null) return (false, "السنة المالية غير موجودة");
+			if (year == null) return (false, "Fiscal year not found");
 
 			// reopen periods/year first so the reversing entry can post on the close date
 			year.Status = "Open";
@@ -140,7 +140,7 @@ namespace CrossBuy.BL
 
 			if (closing.JournalEntryId.HasValue)
 			{
-				var (ok, err, _) = await _journals.ReverseAsync(closing.JournalEntryId.Value, userId, "إعادة فتح السنة المالية");
+				var (ok, err, _) = await _journals.ReverseAsync(closing.JournalEntryId.Value, userId, "Fiscal year reopening");
 				if (!ok) return (false, err);
 			}
 			closing.Status = "Reopened";

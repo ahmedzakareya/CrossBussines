@@ -80,7 +80,7 @@ namespace CrossBuy.Controllers.Api
 			=> await _context.JournalEntries.AsNoTracking()
 				.AnyAsync(e => e.ID == entryId && e.CompanyID == companyId, cancellationToken);
 
-		private IActionResult NotFoundSafe() => NotFound(new { success = false, message = "غير موجود" });
+		private IActionResult NotFoundSafe() => NotFound(new { success = false, message = "Not found" });
 
 		// ---- Dashboard / reference ----
 
@@ -220,7 +220,7 @@ namespace CrossBuy.Controllers.Api
 		[HttpPost("journals")]
 		public async Task<IActionResult> CreateJournal([FromBody] CreateJournalDto dto, CancellationToken cancellationToken = default)
 		{
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 
 			var auth = await _guard.AuthorizeAsync(PermPost, dto.CompanyID, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
@@ -301,7 +301,7 @@ namespace CrossBuy.Controllers.Api
 			// The service scopes the statement by company, so an accountId from another company resolves to null
 			// and answers exactly as a missing account does.
 			var st = await _gl.AccountStatementAsync(auth.CompanyId, accountId, from, to, costCenterId);
-			if (st == null) return NotFound(new { success = false, message = "الحساب غير موجود" });
+			if (st == null) return NotFound(new { success = false, message = "Account not found" });
 			return Ok(new { success = true, data = st });
 		}
 
@@ -359,7 +359,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> CreateCustomer([FromBody] CustomerDto dto, int companyId = 0,
 			CancellationToken cancellationToken = default)
 		{
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 			var auth = await _guard.AuthorizeAsync(PermPost, companyId, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
 
@@ -372,7 +372,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> CreateSalesInvoice([FromBody] SalesInvoiceDto dto,
 			CancellationToken cancellationToken = default)
 		{
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 			var auth = await _guard.AuthorizeAsync(PermPost, dto.CompanyID, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
 
@@ -387,7 +387,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> CreateReceipt([FromBody] ReceiptDto dto,
 			CancellationToken cancellationToken = default)
 		{
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 			var auth = await _guard.AuthorizeAsync(PermPay, dto.CompanyID, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
 
@@ -427,7 +427,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> CreateVendor([FromBody] VendorDto dto, int companyId = 0,
 			CancellationToken cancellationToken = default)
 		{
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 			var auth = await _guard.AuthorizeAsync(PermPost, companyId, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
 
@@ -440,7 +440,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> CreatePurchaseInvoice([FromBody] PurchaseInvoiceDto dto,
 			CancellationToken cancellationToken = default)
 		{
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 			var auth = await _guard.AuthorizeAsync(PermPost, dto.CompanyID, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
 
@@ -455,7 +455,7 @@ namespace CrossBuy.Controllers.Api
 		public async Task<IActionResult> CreatePayment([FromBody] PaymentDto dto,
 			CancellationToken cancellationToken = default)
 		{
-			if (dto == null) return BadRequest(new { success = false, message = "بيانات غير صحيحة" });
+			if (dto == null) return BadRequest(new { success = false, message = "Invalid data" });
 			var auth = await _guard.AuthorizeAsync(PermPay, dto.CompanyID, cancellationToken);
 			if (!auth.Ok) return auth.Error!;
 

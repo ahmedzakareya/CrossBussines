@@ -107,8 +107,16 @@ namespace CrossBuy.BL
 			var tasks = await _db.TaskItems.AsNoTracking().Where(t => taskIds.Contains(t.ID) && t.CompanyId == companyId && t.IsScheduled && t.MatchedAt == null).ToListAsync();
 			var vIds = tasks.Where(t => t.ExpectedPartyType == "Supplier" && t.ExpectedPartyId != null).Select(t => t.ExpectedPartyId!.Value).Distinct().ToList();
 			var cIds = tasks.Where(t => t.ExpectedPartyType == "Customer" && t.ExpectedPartyId != null).Select(t => t.ExpectedPartyId!.Value).Distinct().ToList();
-			var vNames = vIds.Count == 0 ? new Dictionary<int, string>() : await _db.Vendors.AsNoTracking().Where(v => vIds.Contains(v.ID)).ToDictionaryAsync(v => v.ID, v => v.Name);
-			var cNames = cIds.Count == 0 ? new Dictionary<int, string>() : await _db.Customers.AsNoTracking().Where(c => cIds.Contains(c.ID)).ToDictionaryAsync(c => c.ID, c => c.Name);
+			// RESOLVED FOR THE CURRENT CULTURE, the way TaskService already resolves every name it returns.
+			// This method returned t.Title, v.Name and c.Name raw, so the review screen showed Arabic task
+			// titles and Arabic party names next to English column headers even where an English twin was
+			// recorded - and one customer's Arabic name is stored as literal question marks (a non-Unicode
+			// insert, five rows in this database), which its NameEn spells correctly.
+			var isEn = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "ar";
+			var vNames = vIds.Count == 0 ? new Dictionary<int, string>() : await _db.Vendors.AsNoTracking().Where(v => vIds.Contains(v.ID))
+				.ToDictionaryAsync(v => v.ID, v => (isEn && !string.IsNullOrWhiteSpace(v.NameEn) ? v.NameEn : v.Name) ?? "");
+			var cNames = cIds.Count == 0 ? new Dictionary<int, string>() : await _db.Customers.AsNoTracking().Where(c => cIds.Contains(c.ID))
+				.ToDictionaryAsync(c => c.ID, c => (isEn && !string.IsNullOrWhiteSpace(c.NameEn) ? c.NameEn : c.Name) ?? "");
 			var groups = new List<SuggestionGroupDto>();
 			foreach (var t in tasks)
 			{
@@ -116,7 +124,8 @@ namespace CrossBuy.BL
 				if (cands.Count == 0) continue;
 				string? party = t.ExpectedPartyType == "Supplier" && t.ExpectedPartyId != null && vNames.TryGetValue(t.ExpectedPartyId.Value, out var vn) ? vn
 							  : t.ExpectedPartyType == "Customer" && t.ExpectedPartyId != null && cNames.TryGetValue(t.ExpectedPartyId.Value, out var cn) ? cn : null;
-				groups.Add(new SuggestionGroupDto { TaskId = t.ID, TaskTitle = t.Title, ExpectedType = t.ExpectedEntityType ?? "", PartyName = party, DueDate = t.DueDate, Candidates = cands });
+				var title = (isEn && !string.IsNullOrWhiteSpace(t.TitleEn)) ? t.TitleEn! : t.Title;
+				groups.Add(new SuggestionGroupDto { TaskId = t.ID, TaskTitle = title, ExpectedType = t.ExpectedEntityType ?? "", PartyName = party, DueDate = t.DueDate, Candidates = cands });
 			}
 			return groups;
 		}
@@ -126,10 +135,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> ConfirmAsync(int companyId, int taskId, int entityId)
 		{
 			var chosen = await _db.TaskMatchSuggestions.FirstOrDefaultAsync(s => s.CompanyId == companyId && s.TaskId == taskId && s.EntityId == entityId && s.ResolvedAt == null);
-			if (chosen == null) return (false, "الاقتراح غير موجود أو تم حسمه");
+			if (chosen == null) return (false, "The suggestion does not exist, or has already been resolved");
 			var t = await _db.TaskItems.FirstOrDefaultAsync(x => x.ID == taskId && x.CompanyId == companyId);
-			if (t == null) return (false, "المهمة غير موجودة");
-			if (!t.IsScheduled || t.MatchedAt != null) return (false, "المهمة لم تعد مجدولة");
+			if (t == null) return (false, "Task not found");
+			if (!t.IsScheduled || t.MatchedAt != null) return (false, "The task is no longer scheduled");
 			t.EntityType = chosen.EntityType; t.EntityId = chosen.EntityId; t.MatchedAt = DateTime.UtcNow; t.IsScheduled = false;
 			var all = await _db.TaskMatchSuggestions.Where(s => s.CompanyId == companyId && s.TaskId == taskId && s.ResolvedAt == null).ToListAsync();
 			foreach (var s in all) s.ResolvedAt = DateTime.UtcNow;   // chosen + the rest → closed
@@ -141,7 +150,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> DismissAsync(int companyId, int suggestionId)
 		{
 			var s = await _db.TaskMatchSuggestions.FirstOrDefaultAsync(x => x.ID == suggestionId && x.CompanyId == companyId && x.ResolvedAt == null);
-			if (s == null) return (false, "الاقتراح غير موجود أو تم حسمه");
+			if (s == null) return (false, "The suggestion does not exist, or has already been resolved");
 			s.ResolvedAt = DateTime.UtcNow;
 			await _db.SaveChangesAsync();
 			return (true, null);

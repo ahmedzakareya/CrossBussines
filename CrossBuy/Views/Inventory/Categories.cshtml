@@ -35,7 +35,7 @@
             <div class="card-body pt-0">
                 <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-5" id="t">
-                    <thead><tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                         <th class="min-w-250px">@Localizer["Category"]</th>
                         <th class="text-end min-w-100px">@Localizer["Inventory acct"]</th>
                         <th class="text-end min-w-100px">@Localizer["COGS acct"]</th>
@@ -60,8 +60,8 @@
                                     </a>
                                 </span>
                             </td>
-                            <td class="text-end text-muted fs-7">@(inv == null ? "—" : inv.Code)</td>
-                            <td class="text-end text-muted fs-7">@(cogs == null ? "—" : cogs.Code)</td>
+                            <td class="text-end text-muted fs-7 tabular-nums">@(inv == null ? "—" : inv.Code)</td>
+                            <td class="text-end text-muted fs-7 tabular-nums">@(cogs == null ? "—" : cogs.Code)</td>
                             <td class="text-end"><span class="badge badge-light-@(n.IsActive?"success":"danger")">@(n.IsActive?SR["Active"]:SR["Inactive"])</span></td>
                             <td class="text-end">
                                 <a href="#" class="btn btn-sm btn-light btn-active-light-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">@SR["Actions"]<i class="ki-outline ki-down fs-5 ms-1"></i></a>

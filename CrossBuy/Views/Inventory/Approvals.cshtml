@@ -9,7 +9,7 @@
     string emp(int? id) => id != null && names.TryGetValue(id.Value, out var n) ? n : (id != null ? "#" + id : "—");
     string docName(string d) => d switch { "PurchaseOrder" => Localizer["Purchase order"].Value, "StockTransfer" => Localizer["Inter-branch transfer"].Value, "StockCount" => Localizer["Stock count"].Value, _ => d };
     // brand-safe status styling (green approved / red rejected / amber-caution pending — no mint/yellow)
-    string stStyle(string s) => s switch { "Approved" => "background:#eaf3ef;color:#13433a;", "Rejected" => "background:#fdeaea;color:#d92d20;", _ => "background:#fef3e2;color:#b96a00;" };
+    string stStyle(string s) => s switch { "Approved" => "background:#E7F0FF;color:#0E4A9E;", "Rejected" => "background:#fdeaea;color:#d92d20;", _ => "background:#fef3e2;color:#b96a00;" };
     string stName(string s) => s switch { "Approved" => Localizer["Approved"].Value, "Rejected" => Localizer["Rejected"].Value, _ => Localizer["Pending"].Value };
     var pending = Model.Count(a => a.Status == "Pending");
 }
@@ -24,7 +24,7 @@
             <div class="card-body pt-6">
                 <div class="table-responsive">
                 <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #13433a;">
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
                         <th class="ps-4">@Localizer["Document"]</th><th class="text-end">@SR["Amount"]</th><th>@Localizer["Requested by"]</th><th>@SR["Date"]</th><th class="text-center">@SR["Status"]</th><th class="text-end min-w-200px pe-4">@Localizer["Action"]</th>
                     </tr></thead>
                     <tbody class="fw-semibold text-gray-700">

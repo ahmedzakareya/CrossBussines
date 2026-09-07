@@ -184,7 +184,7 @@ namespace CrossBuy.Controllers.Api
             // resolved and whether the target exists are all facts an unauthorized caller must not learn.
             PlatformGrantOutcome.Forbidden =>
                 StatusCode(StatusCodes.Status403Forbidden,
-                    new { success = false, message = "ليست لديك صلاحية لتنفيذ هذا الإجراء" }),
+                    new { success = false, message = "You do not have permission to perform this action" }),
 
             // A foreign-company grant is 404, identical to one that never existed.
             PlatformGrantOutcome.NotFound =>

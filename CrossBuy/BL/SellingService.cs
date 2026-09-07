@@ -75,8 +75,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, SalesOrder? so)> CreateSalesOrderAsync(int companyId, int customerId, int? warehouseId, DateTime date, DateTime? expected, string? notes, List<SoLineInput> lines, string? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null)
 		{
-			if (customerId <= 0) return (false, "العميل مطلوب", null);
-			if (lines == null || lines.Count == 0) return (false, "أمر البيع يجب أن يحتوي على بند واحد على الأقل", null);
+			if (customerId <= 0) return (false, "Customer is required", null);
+			if (lines == null || lines.Count == 0) return (false, "The sales order must contain at least one line", null);
 
 			var (cur, rate) = await ResolveCurAsync(companyId, currencyId, exchangeRate, date);
 			int __ddp = await _rounding.DecimalsAsync(companyId, cur);   // HM-2 Batch 5: document-currency dp (EGP no-op; KWD keeps fils; no static R)
@@ -98,7 +98,7 @@ namespace CrossBuy.BL
 			{
 				await _notify.NotifyRoleAsync(companyId, "inv", new[] { "WarehouseKeeper", "PurchasingOfficer", "InventoryManager" },
 					"أمر بيع جديد", "New sales order",
-					$"أمر البيع {so.OrderNo} بقيمة {so.GrandTotal:N2} بحاجة لتجهيز التسليم", $"Sales order {so.OrderNo} ({so.GrandTotal:N2}) is ready to prepare for delivery",
+					$"Sales order {so.OrderNo}, worth {so.GrandTotal:N2}, needs its delivery prepared", $"Sales order {so.OrderNo} ({so.GrandTotal:N2}) is ready to prepare for delivery",
 					"sales_order", so.ID);
 			}
 			catch { /* notifications never block the business flow */ }
@@ -114,8 +114,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, Quotation? q)> CreateQuotationAsync(int companyId, int customerId, int? warehouseId, DateTime date, DateTime? validUntil, string? notes, List<SoLineInput> lines, string? userId, int? currencyId = null, decimal? exchangeRate = null)
 		{
-			if (customerId <= 0) return (false, "العميل مطلوب", null);
-			if (lines == null || lines.Count == 0) return (false, "عرض السعر يجب أن يحتوي على بند واحد على الأقل", null);
+			if (customerId <= 0) return (false, "Customer is required", null);
+			if (lines == null || lines.Count == 0) return (false, "The quotation must contain at least one line", null);
 
 			var (cur, rate) = await ResolveCurAsync(companyId, currencyId, exchangeRate, date);
 			int __ddp = await _rounding.DecimalsAsync(companyId, cur);   // HM-2 Batch 5: document-currency dp (EGP no-op; no static R)
@@ -139,10 +139,10 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetQuotationStatusAsync(int companyId, int id, string status)
 		{
 			var allowed = new[] { "Draft", "Sent", "Accepted", "Rejected", "Expired" };
-			if (!allowed.Contains(status)) return (false, "حالة غير صالحة");
+			if (!allowed.Contains(status)) return (false, "Invalid status");
 			var q = await _context.Quotations.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (q == null) return (false, "عرض السعر غير موجود");
-			if (q.Status == "Converted") return (false, "تم تحويل عرض السعر لأمر بيع — لا يمكن تغيير حالته");
+			if (q == null) return (false, "Quotation not found");
+			if (q.Status == "Converted") return (false, "The quotation has been converted to a sales order — its status cannot be changed");
 			q.Status = status;
 			await _context.SaveChangesAsync();
 			return (true, null);
@@ -151,9 +151,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? salesOrderId)> ConvertQuotationToOrderAsync(int companyId, int id, string? userId)
 		{
 			var q = await _context.Quotations.Include(x => x.Lines).FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (q == null) return (false, "عرض السعر غير موجود", null);
-			if (q.Status == "Converted" || q.SalesOrderId != null) return (false, "تم تحويل عرض السعر لأمر بيع مسبقًا", null);
-			if (q.Status == "Rejected" || q.Status == "Expired") return (false, "لا يمكن تحويل عرض سعر مرفوض/منتهٍ", null);
+			if (q == null) return (false, "Quotation not found", null);
+			if (q.Status == "Converted" || q.SalesOrderId != null) return (false, "The quotation has already been converted to a sales order", null);
+			if (q.Status == "Rejected" || q.Status == "Expired") return (false, "A rejected or expired quotation cannot be converted", null);
 
 			var soLines = q.Lines.OrderBy(l => l.LineNo).Select(l => new SoLineInput
 			{ ItemId = l.ItemId, ItemDescription = l.ItemDescription, Qty = l.Qty, UoMId = l.UoMId, UnitPrice = l.UnitPrice, DiscountAmount = l.DiscountAmount, TaxRate = l.TaxRate }).ToList();
@@ -173,8 +173,8 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, DeliveryNote? dn)> CreateDeliveryAsync(int companyId, int? customerId, int warehouseId, int? soId, DateTime date, string? notes, List<DeliveryLineInput> lines, string? userId)
 		{
-			if (warehouseId <= 0) return (false, "المخزن مطلوب", null);
-			if (lines == null || lines.Count == 0) return (false, "إذن الصرف يجب أن يحتوي على بند واحد على الأقل", null);
+			if (warehouseId <= 0) return (false, "Warehouse is required", null);
+			if (lines == null || lines.Count == 0) return (false, "The delivery note must contain at least one line", null);
 
 			// HM-2 Batch 5: TotalCost is a FUNCTIONAL cost (Σ movement TotalCost) → round to functional dp via the central helper (EGP no-op; no static R).
 			int __fdp = await _rounding.DecimalsAsync(companyId, null);
@@ -191,14 +191,14 @@ namespace CrossBuy.BL
 				var (sok, serr, mv) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId, WarehouseId = warehouseId, Direction = -1, Qty = l.Qty, UoMId = l.UoMId,
-					BatchNo = l.BatchNo, SerialNo = l.SerialNo, BinLocationId = l.BinLocationId, SourceType = "Issue", SourceId = dn.ID, PostToGl = true, Notes = $"إذن صرف {dn.DeliveryNo}"
+					BatchNo = l.BatchNo, SerialNo = l.SerialNo, BinLocationId = l.BinLocationId, SourceType = "Issue", SourceId = dn.ID, PostToGl = true, Notes = $"Delivery note {dn.DeliveryNo}"
 				}, userId);
 				if (!sok)
 				{
 					_context.DeliveryNoteLines.RemoveRange(dn.Lines);
 					_context.DeliveryNotes.Remove(dn);
 					await _context.SaveChangesAsync();
-					return (false, $"تعذّر صرف صنف: {serr}", null);
+					return (false, $"Could not issue an item: {serr}", null);
 				}
 				dn.Lines.Add(new DeliveryNoteLine { DeliveryNoteId = dn.ID, LineNo = ln++, ItemId = l.ItemId, Qty = l.Qty, UoMId = l.UoMId, UnitCost = mv!.UnitCost, LineTotal = mv.TotalCost, BatchNo = l.BatchNo, SerialNo = l.SerialNo, SalesOrderLineId = l.SalesOrderLineId, StockMovementId = mv.ID });
 				total += mv.TotalCost;
@@ -220,7 +220,7 @@ namespace CrossBuy.BL
 			{
 				await _notify.NotifyRoleAsync(companyId, "acc", new[] { "Accountant", "ChiefAccountant" },
 					"تم تسليم بضاعة", "Goods delivered",
-					$"إذن الصرف {dn.DeliveryNo} بتكلفة {dn.TotalCost:N2} جاهز للفوترة", $"Delivery {dn.DeliveryNo} ({dn.TotalCost:N2}) is ready to invoice",
+					$"Delivery note {dn.DeliveryNo}, costing {dn.TotalCost:N2}, is ready to invoice", $"Delivery {dn.DeliveryNo} ({dn.TotalCost:N2}) is ready to invoice",
 					"delivery_posted", dn.ID);
 			}
 			catch { /* notifications never block the business flow */ }
@@ -232,15 +232,15 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error, int? invoiceId)> ConvertToInvoiceAsync(int companyId, int soId, string? userId)
 		{
 			var so = await _context.SalesOrders.Include(s => s.Lines).FirstOrDefaultAsync(s => s.ID == soId && s.CompanyID == companyId);
-			if (so == null) return (false, "أمر البيع غير موجود", null);
-			if (so.Status == "Closed") return (false, "أمر البيع محوّل لفاتورة بالفعل", null);
-			if (so.Status == "Cancelled") return (false, "أمر البيع ملغي", null);
+			if (so == null) return (false, "Sales order not found", null);
+			if (so.Status == "Closed") return (false, "The sales order has already been converted to an invoice", null);
+			if (so.Status == "Cancelled") return (false, "The sales order is cancelled", null);
 
 			var deliveries = await _context.DeliveryNotes.Where(d => d.CompanyID == companyId && d.SalesOrderId == soId && d.Status == "Posted").ToListAsync();
 			bool delivered = deliveries.Any();
 			int revenue = await _context.Accounts.Where(a => a.CompanyID == companyId && a.Code == "4101").Select(a => a.ID).FirstOrDefaultAsync();
 			if (revenue == 0) revenue = await _context.Accounts.Where(a => a.CompanyID == companyId && a.IsPostable && a.Code.StartsWith("4")).OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
-			if (revenue == 0) return (false, "لا يوجد حساب إيراد معرّف", null);
+			if (revenue == 0) return (false, "No revenue account is defined", null);
 
 			var lines = new List<SalesLineInput>();
 			foreach (var l in so.Lines.OrderBy(x => x.LineNo))
@@ -255,9 +255,9 @@ namespace CrossBuy.BL
 					WarehouseId = delivered ? (int?)null : so.WarehouseId,
 				});
 			}
-			if (lines.Count == 0) return (false, "لا توجد بنود قابلة للفوترة", null);
+			if (lines.Count == 0) return (false, "There are no invoiceable lines", null);
 
-			var (ok, err, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, so.CustomerId, DateTime.Today, lines, $"من أمر بيع {so.OrderNo}", null, so.CurrencyId, so.ExchangeRate, so.ProjectId);
+			var (ok, err, inv) = await _receivables.CreateSalesInvoiceAsync(companyId, so.CustomerId, DateTime.Today, lines, $"From sales order {so.OrderNo}", null, so.CurrencyId, so.ExchangeRate, so.ProjectId);
 			if (!ok) return (false, err, null);
 
 			so.Status = "Closed";

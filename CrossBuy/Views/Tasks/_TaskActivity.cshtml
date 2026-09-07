@@ -1,0 +1,174 @@
+@model int
+@{
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    Func<string, string, string> T = (ar, en) => isAr ? ar : en;
+}
+@* =================================================================================================
+   THE TASK ACTIVITY RAIL — one definition, used by /Tasks/Detail and /Tasks/Summary.
+
+   The summary screen first drew this as a flat list with one generic glyph per row while the
+   detail screen had the rail, the actor's photo and the event badge. Two renderers for the same
+   projection is the drift this file exists to prevent: the next change to the timeline would
+   otherwise have to be made twice, and the second copy is the one that gets forgotten.
+
+   SELF-CONTAINED ON PURPOSE. Its escaper, its date helpers and its read-more all live inside its
+   own IIFE under its own names, so it does not depend on - and cannot collide with - whatever the
+   host page happens to define. It reads the task id from its own root element rather than from a
+   variable in the page, which is what lets it drop into any page.
+   ================================================================================================= *@
+
+<div id="cbActivityList" class="cb-tl" data-task="@Model">
+    <div class="text-muted text-center fs-7 py-8">@T("جارٍ التحميل…", "Loading…")</div>
+</div>
+
+<style>
+    /* The rail itself lives in crossbuy-brand.css - one definition, shared with any other screen
+       that needs one. Only this partial's own read-more styling stays here. */
+    /* Read-more under its own names, so this partial neither needs nor overwrites the host's. */
+    .cbtl-body { unicode-bidi: plaintext; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .cbtl-clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .cbtl-more { background: none; border: 0; padding: 0; font-weight: 600; }
+</style>
+
+<script>
+(function () {
+    var root = document.getElementById('cbActivityList');
+    if (!root) return;
+    var taskId = root.getAttribute('data-task');
+    var photos = {};          // employeeId -> photo, filled per load
+    var loaded = false;
+
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = (s === null || s === undefined) ? '' : s;
+        return d.innerHTML;
+    }
+    // A stamp with no zone is UTC: the platform writes DateTime.UtcNow and EF returns it
+    // Kind=Unspecified, so it serialises without a "Z" and new Date() would read it as local.
+    function toDate(iso) {
+        if (!iso) return new Date(NaN);
+        var s = String(iso);
+        return new Date(/[zZ]$|[+\-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z');
+    }
+    function exact(iso) {
+        var d = toDate(iso); if (isNaN(d.getTime())) return '';
+        var p = function (n) { return (n < 10 ? '0' : '') + n; };
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+               ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    }
+    // Digits plus a one-letter unit, assembled - never toLocaleString, which reorders on RTL.
+    function ago(iso) {
+        var d = toDate(iso); if (isNaN(d.getTime())) return '';
+        var s = Math.floor((Date.now() - d.getTime()) / 1000); if (s < 0) s = 0;
+        if (s < 60) return '@T("الآن", "now")';
+        var m = Math.floor(s / 60); if (m < 60) return m + '@T("د", "m")';
+        var h = Math.floor(m / 60); if (h < 24) return h + '@T("س", "h")';
+        var dd = Math.floor(h / 24); if (dd < 100) return dd + '@T("ي", "d")';
+        return exact(iso);
+    }
+    function moreLabel(open) {
+        return open ? '@T("عرض أقل", "show less")' : '@T("عرض المزيد", "read more")';
+    }
+    // Half a LINE, not a pixel: a -webkit-box clamp rounds its own height, so a short line
+    // measures 23 against 21 and would trip a 1px test.
+    function wireMore(box) {
+        box.querySelectorAll('.cbtl-clamp').forEach(function (el) {
+            var btn = el.nextElementSibling;
+            if (!btn || !btn.classList.contains('cbtl-more')) return;
+            var cs = getComputedStyle(el);
+            var lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 14) * 1.5;
+            var hidden = (el.scrollHeight - el.clientHeight) < Math.max(6, lh / 2);
+            btn.classList.toggle('d-none', hidden);
+            if (hidden) { el.classList.add('cbtl-clamp'); btn.textContent = moreLabel(false); }
+        });
+    }
+    root.addEventListener('click', function (e) {
+        var btn = e.target.closest('.cbtl-more');
+        if (!btn) return;
+        var el = btn.previousElementSibling;
+        var open = el.classList.toggle('cbtl-clamp') === false;
+        btn.textContent = moreLabel(open);
+    });
+
+    function row(i) {
+        // Each event carries its OWN icon and colour from the platform registry.
+        var color = i.color || 'primary';
+        var icon = i.icon || 'ki-outline ki-abstract-26';
+        var hist = i.legacy
+            ? '<span class="badge badge-light-secondary fs-9 ms-2">@T("سجل قديم", "Historical")</span>'
+            : '';
+        var actor = i.actorName
+            ? '<span class="text-muted fs-8 ms-2">' + esc(i.actorName) + '</span>'
+            : '';
+        // The FACE when we know it, with the event's own icon kept as a corner badge so the row
+        // still says what KIND of event this was.
+        var face = photos[String(i.actorEmployeeId || '')] || '';
+        return '<div class="cb-tl-item">' +
+            '<div class="cb-tl-icon bg-light-' + esc(color) + '">' +
+                (face
+                    ? '<img src="' + encodeURI(face) + '" alt="' + esc(i.actorName || '') + '">' +
+                      '<span class="cb-tl-badge bg-' + esc(color) + '">' +
+                          '<i class="' + esc(icon) + ' text-white" style="font-size:9px"></i></span>'
+                    : '<span class="d-flex align-items-center justify-content-center w-100 h-100">' +
+                          '<i class="' + esc(icon) + ' fs-4 text-' + esc(color) + '"></i></span>') +
+            '</div>' +
+            '<div class="min-w-0">' +
+                '<div class="d-flex align-items-center flex-wrap gap-1">' +
+                    '<span class="fw-bold text-gray-900">' + esc(i.title) + '</span>' + hist + actor +
+                    '<span class="text-muted fs-8">·</span>' +
+                    '<span class="text-muted fs-8" title="' + esc(exact(i.createdAt)) + '">' + ago(i.createdAt) + '</span>' +
+                '</div>' +
+                (i.description
+                    ? '<div class="text-gray-700 fs-7 mt-1 cbtl-body cbtl-clamp">' + esc(i.description) + '</div>' +
+                      '<button type="button" class="cbtl-more text-primary fs-8 mt-1 d-none">' +
+                          '@T("عرض المزيد", "read more")</button>'
+                    : '') +
+            '</div>' +
+        '</div>';
+    }
+
+    // Named cbLoadActivity because the detail screen's tab already calls it by that name. Idempotent:
+    // a second call after a successful load does nothing, so a tab reopened five times fetches once.
+    window.cbLoadActivity = function (force) {
+        if (loaded && !force) return;
+        fetch('/PlatformTimeline/List?entityType=Task&entityId=' + encodeURIComponent(taskId) + '&take=100')
+            .then(function (r) {
+                // 403 is "not authorised to see this record's history" - saying that is not the same
+                // as showing an empty timeline, which reads as "nothing happened".
+                if (r.status === 403) return null;
+                return r.ok ? r.json() : [];
+            })
+            .then(function (rows) {
+                // Resolve the actors' photos FIRST, so the rows render once, already complete.
+                if (!rows || !rows.length) return rows;
+                var ids = [...new Set(rows.map(function (r) { return r.actorEmployeeId; })
+                                          .filter(Boolean))].join(',');
+                if (!ids) return rows;
+                return fetch('/Tasks/ActorAvatars?ids=' + encodeURIComponent(ids))
+                    .then(function (r) { return r.ok ? r.json() : {}; })
+                    .then(function (map) { photos = map || {}; return rows; })
+                    .catch(function () { return rows; });
+            })
+            .then(function (rows) {
+                if (rows === null) {
+                    root.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("غير مصرّح بعرض سجل هذه المهمة", "You are not authorised to view this activity")</div>';
+                    loaded = true; return;
+                }
+                if (!rows.length) {
+                    root.innerHTML = '<div class="text-muted text-center fs-7 py-8">@T("لا سجل بعد", "No activity yet")</div>';
+                    loaded = true; return;
+                }
+                root.innerHTML = rows.map(row).join('');
+                wireMore(root);          // decide the toggles once the rows are laid out
+                loaded = true;
+            })
+            .catch(function () {
+                root.innerHTML = '<div class="text-danger text-center fs-7 py-8">@T("تعذّر تحميل السجل", "Could not load the activity")</div>';
+            });
+    };
+
+    // A pane that is already on screen loads itself; a hidden one waits for its tab. offsetParent
+    // is the test because a .tab-pane that is not active has none.
+    if (root.offsetParent) window.cbLoadActivity();
+})();
+</script>

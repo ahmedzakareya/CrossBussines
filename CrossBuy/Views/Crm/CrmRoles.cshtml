@@ -27,7 +27,7 @@
                         <form asp-action="AssignCrmRole" method="post" data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Assign role?"]">@Html.AntiForgeryToken()
                             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Employee"]</label>
                                 <select name="employeeId" class="form-select form-select-solid" data-control="select2" required><option value="">@Localizer["Select"]</option>
-                                    @foreach (var e in employees) { <option value="@e.ID">@e.FullName</option> }</select></div>
+                                    @foreach (var e in employees) { <option value="@e.ID">@CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn)</option> }</select></div>
                             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Role"]</label>
                                 <select name="role" class="form-select form-select-solid">@foreach (var r in roles) { <option value="@r.v">@(isAr ? r.ar : r.en)</option> }</select></div>
                             <button class="btn btn-primary"><i class="ki-outline ki-check fs-3"></i>@Localizer["Assign"]</button>
@@ -40,13 +40,13 @@
                     <div class="card-body pt-2">
                         <div class="table-responsive">
                         <table class="table align-middle fs-6 gy-3" style="font-variant-numeric:tabular-nums;">
-                            <thead><tr class="text-start fw-bold fs-8 text-uppercase text-muted gs-0" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th>@Localizer["Role"]</th><th class="text-end pe-4"></th></tr></thead>
+                            <thead><tr class="text-start fw-bold fs-8 text-uppercase text-muted gs-0" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Employee"]</th><th>@Localizer["Role"]</th><th class="text-end pe-4"></th></tr></thead>
                             <tbody class="fw-semibold text-gray-700">
                             @foreach (var a in assignments)
                             {
                                 <tr style="border-bottom:1px dashed #eef1f6;">
                                     <td class="ps-4 fw-bold text-gray-800">@a.EmployeeName</td>
-                                    <td><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@roleName((string)a.Role)</span></td>
+                                    <td><span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@roleName((string)a.Role)</span></td>
                                     <td class="text-end pe-4"><form asp-action="RemoveCrmRole" method="post" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Remove role?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@a.ID" /><button class="btn btn-icon btn-light-danger btn-sm"><i class="ki-outline ki-trash fs-6"></i></button></form></td>
                                 </tr>
                             }

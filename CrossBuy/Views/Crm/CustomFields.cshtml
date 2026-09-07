@@ -35,17 +35,17 @@
         </div>
 
         <div class="card card-flush"><div class="card-body pt-6"><div class="table-responsive"><table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">@Localizer["Entity"]</th><th>@Localizer["Label"]</th><th class="text-center">@SR["Type"]</th><th class="text-center">@SR["Required"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
+            <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Entity"]</th><th>@Localizer["Label"]</th><th class="text-center">@SR["Type"]</th><th class="text-center">@SR["Required"]</th><th class="text-center">@SR["Status"]</th><th class="text-end pe-4"></th></tr></thead>
             <tbody>
             @if (!Model.Any()) { <tr><td colspan="6" class="text-center text-muted py-8">@Localizer["No custom fields"]</td></tr> }
             @foreach (var f in Model)
             {
                 <tr style="border-bottom:1px dashed #eef1f6;">
-                    <td class="ps-4"><span class="badge fw-bold" style="background:#eaf3ef;color:#13433a;">@etName(f.EntityType)</span></td>
+                    <td class="ps-4"><span class="badge fw-bold" style="background:#E7F0FF;color:#0E4A9E;">@etName(f.EntityType)</span></td>
                     <td class="fw-bold">@(isAr ? f.Label : (string.IsNullOrEmpty(f.LabelEn) ? f.Label : f.LabelEn))@{ var optsD = isAr ? f.Options : (string.IsNullOrEmpty(f.OptionsEn) ? f.Options : f.OptionsEn); }@if (!string.IsNullOrEmpty(optsD)) { <div class="text-muted fs-8">@optsD</div> }</td>
                     <td class="text-center">@ftName(f.FieldType)</td>
-                    <td class="text-center">@if (f.Required) { <i class="ki-outline ki-check-circle fs-4" style="color:#13433a;"></i> } else { <span class="text-gray-300">—</span> }</td>
-                    <td class="text-center"><span class="badge fw-bold" style="@(f.IsActive ? "background:#eaf3ef;color:#13433a;" : "background:#f2f4f7;color:#475467;")">@(f.IsActive?SR["Active"].Value:SR["Inactive"].Value)</span></td>
+                    <td class="text-center">@if (f.Required) { <i class="ki-outline ki-check-circle fs-4" style="color:#0E4A9E;"></i> } else { <span class="text-gray-300">—</span> }</td>
+                    <td class="text-center"><span class="badge fw-bold" style="@(f.IsActive ? "background:#E7F0FF;color:#0E4A9E;" : "background:#f2f4f7;color:#475467;")">@(f.IsActive?SR["Active"].Value:SR["Inactive"].Value)</span></td>
                     <td class="text-end pe-4"><form asp-action="DeleteCustomField" method="post" class="d-inline" data-cb-confirm data-cb-action="delete" data-cb-text="@Localizer["Delete field and its values?"]">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@f.ID" /><input type="hidden" name="entityType" value="@f.EntityType" /><button class="btn btn-sm btn-icon btn-light-danger"><i class="ki-outline ki-trash fs-5"></i></button></form></td>
                 </tr>
             }

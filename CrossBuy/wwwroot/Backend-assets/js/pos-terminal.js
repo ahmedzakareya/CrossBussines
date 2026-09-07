@@ -423,13 +423,13 @@
     function askMerge(srcId, srcCode, tgtId, tgtCode) {
         var html = '<div style="font-size:17px;font-weight:800;margin:8px 0">' + tr('طاولة ', 'Table ') + esc(srcCode) + ' <span style="color:#009ef7;font-size:22px">&#10142;</span> ' + tr('طاولة ', 'Table ') + esc(tgtCode) + '</div>'
             + '<div style="font-size:13px;color:#7e8299">' + (RTL ? ('طلب طاولة ' + esc(srcCode) + ' سينضمّ إلى طاولة ' + esc(tgtCode) + '، وتصبح طاولة ' + esc(srcCode) + ' فارغة.') : ('Table ' + esc(srcCode) + '’s order joins table ' + esc(tgtCode) + '; table ' + esc(srcCode) + ' becomes free.')) + '</div>';
-        if (window.Swal) Swal.fire({ title: tr('تأكيد الدمج', 'Confirm merge'), html: html, icon: 'question', showCancelButton: true, confirmButtonText: tr('دمج', 'Merge'), cancelButtonText: tr('رجوع', 'Back'), confirmButtonColor: '#13433a', reverseButtons: true }).then(function (r) { if (r.isConfirmed) doMerge(srcId, tgtId); });
+        if (window.Swal) Swal.fire({ title: tr('تأكيد الدمج', 'Confirm merge'), html: html, icon: 'question', showCancelButton: true, confirmButtonText: tr('دمج', 'Merge'), cancelButtonText: tr('رجوع', 'Back'), confirmButtonColor: '#0E4A9E', reverseButtons: true }).then(function (r) { if (r.isConfirmed) doMerge(srcId, tgtId); });
         else if (confirm(tr('دمج طاولة ', 'Merge table ') + srcCode + ' → ' + tgtCode + '؟')) doMerge(srcId, tgtId);
     }
     function askMove(orderId, srcCode, tgtId, tgtCode) {
         var html = '<div style="font-size:17px;font-weight:800;margin:8px 0">' + tr('طاولة ', 'Table ') + esc(srcCode || '?') + ' <span style="color:#1f9d5c;font-size:22px">&#10142;</span> ' + tr('طاولة ', 'Table ') + esc(tgtCode) + '</div>'
             + '<div style="font-size:13px;color:#7e8299">' + (RTL ? ('سينتقل الطلب (بعميله) إلى طاولة ' + esc(tgtCode) + '.') : ('The order (with its customer) moves to table ' + esc(tgtCode) + '.')) + '</div>';
-        if (window.Swal) Swal.fire({ title: tr('تأكيد النقل', 'Confirm move'), html: html, icon: 'question', showCancelButton: true, confirmButtonText: tr('نقل', 'Move'), cancelButtonText: tr('رجوع', 'Back'), confirmButtonColor: '#13433a', reverseButtons: true }).then(function (r) { if (r.isConfirmed) doMove(orderId, tgtId, tgtCode); });
+        if (window.Swal) Swal.fire({ title: tr('تأكيد النقل', 'Confirm move'), html: html, icon: 'question', showCancelButton: true, confirmButtonText: tr('نقل', 'Move'), cancelButtonText: tr('رجوع', 'Back'), confirmButtonColor: '#0E4A9E', reverseButtons: true }).then(function (r) { if (r.isConfirmed) doMove(orderId, tgtId, tgtCode); });
         else if (confirm(tr('نقل إلى طاولة ', 'Move to table ') + tgtCode + '؟')) doMove(orderId, tgtId, tgtCode);
     }
 
@@ -499,7 +499,7 @@
             var canNew = !closed && freeSeats > 0;
             if (canNew) body += mi('ki-plus-square', occ ? (tr('إضافة عميل على نفس الطاولة', 'Add a customer to this table') + ' · ' + freeSeats + ' ' + tr('مقعد فارغ', 'free')) : tr('فتح طلب جديد', 'Open a new order'), '#1f9d5c', 'new');
             if (occ) {
-                body += mi('ki-wallet', tr('تحصيل ودفع (آخر طلب)', 'Pay (latest order)'), '#13433a', 'pay');
+                body += mi('ki-wallet', tr('تحصيل ودفع (آخر طلب)', 'Pay (latest order)'), '#0E4A9E', 'pay');
                 body += mi('ki-tablet-text', tr('إرسال للمطبخ', 'Send to kitchen'), '#f6a609', 'kitchen');
                 body += mi('ki-arrows-loop', tr('دمج: ضمّ طلب هذه الطاولة لأخرى', 'Merge this table into another'), '#009ef7', 'merge');
                 body += mi('ki-arrow-two-diagonals', tr('نقل الطلب لطاولة فارغة', 'Move order to a free table'), '#f1416c', 'move');
@@ -723,7 +723,7 @@
             var img = l.image ? ('<img src="' + l.image + '" alt="">') : ('<span class="ph d-flex align-items-center justify-content-center"><i class="ki-outline ki-cup"></i></span>');
             var badge = sent > 0 ? (' <span class="posx-chip green" style="font-size:9px;padding:1px 6px">' + esc(L.kitchenBadge || '') + '</span>') : '';
             var mods = (l.modifiers && l.modifiers.length)
-                ? '<div class="text-muted fs-8">' + l.modifiers.map(function (m) { return esc(m.name) + (m.extraPrice > 0 ? ' +' + fmt(m.extraPrice) : ''); }).join('، ') + '</div>' : '';
+                ? '<div class="text-muted fs-8">' + l.modifiers.map(function (m) { return esc(m.name) + (m.extraPrice > 0 ? ' +' + fmt(m.extraPrice) : ''); }).join(', ') + '</div>' : '';
             return '<div class="posx-line">' + img
                 + '<div class="nm"><b>' + esc(l.name) + badge + '</b>' + mods + '</div>'
                 + '<div class="posx-qty">'
@@ -1078,7 +1078,7 @@
             else post(U.hold, { orderId: order.id }).then(function (j) { if (j.ok) toast('info', L.holdOk || ''); refreshHeldCount(); startFresh(); }).catch(startFresh);
         };
         var msg = tr('في فاتورة مفتوحة بأصناف — تبدأ فاتورة جديدة؟', 'An invoice with items is open — start a new one?');
-        if (window.Swal) Swal.fire({ title: tr('فاتورة مفتوحة', 'Open invoice'), text: msg, icon: 'warning', showCancelButton: true, confirmButtonText: tr('نعم، جديدة', 'Yes, new'), cancelButtonText: tr('رجوع', 'Back'), confirmButtonColor: '#13433a', reverseButtons: true }).then(function (r) { if (r.isConfirmed) proceed(); });
+        if (window.Swal) Swal.fire({ title: tr('فاتورة مفتوحة', 'Open invoice'), text: msg, icon: 'warning', showCancelButton: true, confirmButtonText: tr('نعم، جديدة', 'Yes, new'), cancelButtonText: tr('رجوع', 'Back'), confirmButtonColor: '#0E4A9E', reverseButtons: true }).then(function (r) { if (r.isConfirmed) proceed(); });
         else if (confirm(msg)) proceed();
     });
 
@@ -1329,7 +1329,7 @@
                     + '<div style="font-size:14px;color:#7e8299">' + esc(L.total) + ': <b>' + fmt(g) + '</b> &nbsp;·&nbsp; ' + esc(L.paid) + ': <b>' + fmt(paid) + '</b></div>',
                 icon: chg > 0.0001 ? 'info' : 'success',
                 showCancelButton: true, confirmButtonText: okTxt, cancelButtonText: backTxt,
-                confirmButtonColor: '#13433a', reverseButtons: true
+                confirmButtonColor: '#0E4A9E', reverseButtons: true
             }).then(function (r) { if (r.isConfirmed) doPay(snapshot, paid, chg); });
         } else {
             if (confirm(giveTxt + ': ' + fmt(chg) + ' ' + CUR)) doPay(snapshot, paid, chg);

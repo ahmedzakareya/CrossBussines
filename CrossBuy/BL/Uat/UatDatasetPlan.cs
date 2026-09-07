@@ -68,7 +68,7 @@ namespace CrossBuy.BL.Uat
 
 			// Arabic with NO English twin: the twin-fallback path.
 			("متابعة شكوى عميل على جودة صنف", null, "الجودة", null),
-			("ترتيب أرشيف الفواتير الورقية", null, "الإدارة", null),
+			("ترتيب أرشيف الفواتير الورقية", null, "Administration", null),
 			("مراجعة استهلاك الأصول الثابتة", null, "المالية", null),
 			("تحديث قائمة الأسعار للفرع الجديد", null, "المبيعات", null),
 		};
@@ -110,19 +110,23 @@ namespace CrossBuy.BL.Uat
 			"مراجعة كل سطر من سطور الفاتورة مقابل أمر الشراء وإشعار الاستلام، وتسجيل أي فرق في الكمية أو السعر " +
 			"في ورقة العمل مع بيان السبب والمستند المرجعي، ثم اعتماد السطر أو تحويله إلى بند مفتوح للمتابعة";
 
-		/// (Arabic name, English name, description). Each template's items are generated from ItemsFor below.
-		internal static readonly (string Ar, string En, string Desc)[] Templates =
+		/// (Arabic name, English name, Arabic description, English description). Each template's items are
+		/// generated from ItemsFor below.
+		///
+		/// DescEn was added because the screen showed an English name with an Arabic description under it:
+		/// the tuple carried one description and the entity had nowhere to put a second one.
+		internal static readonly (string Ar, string En, string Desc, string DescEn)[] Templates =
 		{
-			("إقفال شهري", "Monthly closing", "الخطوات القياسية لإقفال الفترة المحاسبية."),
-			("تعيين موظف جديد", "New employee onboarding", "من قبول العرض حتى أول يوم عمل."),
-			("افتتاح فرع جديد", "New branch opening", "التجهيزات والتراخيص وربط النظام."),
-			("جرد نصف سنوي", "Half-year stocktake", "التحضير، الجرد، المطابقة، الاعتماد."),
-			("مراجعة عقد مورّد", "Supplier contract review", "المراجعة القانونية والتجارية قبل التوقيع."),
-			("إطلاق صنف جديد", "New item launch", "التسعير، الباركود، الرفوف، الحملة."),
-			("تدقيق داخلي ربع سنوي", "Quarterly internal audit", "نطاق التدقيق والاختبارات والتقرير."),
-			("صيانة وقائية للمعدات", "Equipment preventive maintenance", "الجدول والفحوصات وقطع الغيار."),
-			("إعداد كشف الرواتب", "Payroll preparation", "الحضور، الإضافي، الخصومات، الاعتماد."),
-			("معالجة مرتجع مبيعات", "Sales return handling", "الاستلام، الفحص، الإشعار الدائن."),
+			("إقفال شهري", "Monthly closing", "الخطوات القياسية لإقفال الفترة المحاسبية.", "The standard steps for closing an accounting period."),
+			("تعيين موظف جديد", "New employee onboarding", "من قبول العرض حتى أول يوم عمل.", "From accepting the offer to the first day at work."),
+			("افتتاح فرع جديد", "New branch opening", "التجهيزات والتراخيص وربط النظام.", "Fit-out, licences and connecting the system."),
+			("جرد نصف سنوي", "Half-year stocktake", "التحضير، الجرد، المطابقة، الاعتماد.", "Preparation, counting, reconciliation, approval."),
+			("مراجعة عقد مورّد", "Supplier contract review", "المراجعة القانونية والتجارية قبل التوقيع.", "Legal and commercial review before signing."),
+			("إطلاق صنف جديد", "New item launch", "التسعير، الباركود، الرفوف، الحملة.", "Pricing, barcode, shelving, campaign."),
+			("تدقيق داخلي ربع سنوي", "Quarterly internal audit", "نطاق التدقيق والاختبارات والتقرير.", "Audit scope, testing and the report."),
+			("صيانة وقائية للمعدات", "Equipment preventive maintenance", "الجدول والفحوصات وقطع الغيار.", "Schedule, inspections and spare parts."),
+			("إعداد كشف الرواتب", "Payroll preparation", "الحضور، الإضافي، الخصومات، الاعتماد.", "Attendance, overtime, deductions, approval."),
+			("معالجة مرتجع مبيعات", "Sales return handling", "الاستلام، الفحص، الإشعار الدائن.", "Receipt, inspection, credit note."),
 		};
 
 		/// Template line generator: (title, titleEn, dueOffsetDays, priority, checklist lines).

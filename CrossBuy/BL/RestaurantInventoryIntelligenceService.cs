@@ -129,14 +129,14 @@ namespace CrossBuy.BL
 		/// nothing rather than to somebody else's data.
 		private async Task<(int warehouseId, string? error)> BranchWarehouseAsync(int companyId, int branchId, CancellationToken ct)
 		{
-			if (companyId <= 0) return (0, "لم يتم تحديد الشركة");
+			if (companyId <= 0) return (0, "No company has been selected");
 			bool ownsBranch = await _db.Branches.AsNoTracking().AnyAsync(b => b.ID == branchId && b.CompanyID == companyId, ct);
-			if (!ownsBranch) return (0, "الفرع غير موجود");
+			if (!ownsBranch) return (0, "Branch not found");
 			var wh = await _db.BranchPosSettings.AsNoTracking()
 				.Where(s => s.BranchId == branchId).Select(s => s.DefaultSalesWarehouseId).FirstOrDefaultAsync(ct);
-			if (wh == null || wh == 0) return (0, "لم يُحدَّد مخزن البيع الافتراضي للفرع (إعدادات نقاط البيع)");
+			if (wh == null || wh == 0) return (0, "The branch default sales warehouse is not set (POS settings)");
 			bool ownsWarehouse = await _db.Warehouses.AsNoTracking().AnyAsync(w => w.ID == wh.Value && w.CompanyID == companyId, ct);
-			if (!ownsWarehouse) return (0, "المخزن غير موجود");
+			if (!ownsWarehouse) return (0, "Warehouse not found");
 			return (wh.Value, null);
 		}
 
@@ -305,8 +305,8 @@ namespace CrossBuy.BL
 					RecommendedQty = qty,
 					// A made item is FLAGGED, never manufactured. Producing it stays an explicit operation.
 					Reason = isMake
-						? $"المتاح {available:0.####} ≤ حد إعادة الطلب {threshold:0.####} — صنف يُصنَّع: يحتاج أمر تشغيل، لا شراء"
-						: $"المتاح {available:0.####} ≤ حد إعادة الطلب {threshold:0.####} — يُوصى بالتوريد حتى {target:0.####}",
+						? $"Available {available:0.####} ≤ reorder point {threshold:0.####} — this is a manufactured item: it needs a work order, not a purchase"
+						: $"Available {available:0.####} ≤ reorder point {threshold:0.####} — replenishment up to {target:0.####} is recommended",
 					IsMakeItem = isMake,
 				});
 			}

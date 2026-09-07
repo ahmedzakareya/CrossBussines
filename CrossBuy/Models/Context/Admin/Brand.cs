@@ -21,6 +21,9 @@ namespace CrossBuy.Models.Context.Admin
 
 		// ---- document identity (shown on receipts / storefront) ----
 		public string? TradeName { get; set; }          // commercial display name (NOT a separate tax entity)
+		// English twin of the column above. Nullable and never required: read it through
+		// DisplayName.Or(<En>, <Ar>) so a row that never got one still shows a name.
+		public string? TradeNameEn { get; set; }
 		public string? Address { get; set; }
 		public string? Phone { get; set; }
 		public string? Email { get; set; }

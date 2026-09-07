@@ -1,4 +1,4 @@
-@using CrossBuy.BL
+﻿@using CrossBuy.BL
 @using CrossBuy.Models.Context.Accounting
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
@@ -11,68 +11,169 @@
 }
 
 @functions {
-    void RenderRows(List<AccountNode> nodes, bool isAr)
+    // ONE NODE = ONE <div>, not a <tr>.
+    //
+    // A table row cannot carry connector lines: its cells are placed by the table, and the border
+    // between two rows cuts straight through the elbow that should join a parent to its child. That
+    // was the real reason the old screen never read as a tree, and no amount of padding inside a
+    // <td> was going to fix it. Nesting the children INSIDE the parent's element is also what makes
+    // collapse a one-line operation instead of a walk over a flat row list.
+    //
+    // Type / Nature / Kind / Cost centre are not here. They moved to the detail pane on the right,
+    // and that is what buys the tree enough width for indentation to actually be visible.
+    void RenderNodes(List<AccountNode> nodes, bool isAr)
     {
-        foreach (var n in nodes)
+        for (int idx = 0; idx < nodes.Count; idx++)
         {
-            var pad = 2 + n.Level * 22;
+            var n = nodes[idx];
             var hasChildren = n.Children.Count > 0;
-            <tr class="acc-row @(n.IsPostable ? "" : "is-header")"
-                data-id="@n.Id" data-parent="@(n.ParentId?.ToString() ?? "")"
-                data-code="@n.Code" data-name="@n.Name" data-nameen="@n.NameEn"
-                data-postable="@n.IsPostable.ToString().ToLower()" data-cc="@n.RequireCostCenter.ToString().ToLower()" data-cf="@n.CashFlowCategory"
-                data-search="@(n.Code) @(n.Name) @(n.NameEn)">
-                <td>
-                    <div class="tree-cell">
-                        @for (int i = 0; i < n.Level; i++) { <span class="tree-guide"></span> }
-                        @if (hasChildren)
-                        {
-                            <i class="ki-outline ki-down acc-toggle fs-8"></i>
-                        }
-                        else
-                        {
-                            <span class="tree-spacer"></span>
-                        }
-                        <span class="badge fs-8 fw-bold" style="background:@(n.IsPostable ? "#eef1f5" : "#e9f1ee");color:@(n.IsPostable ? "#5e6278" : "#13433a");">@n.Code</span>
-                    </div>
-                </td>
-                <td>
-                    @if (!n.IsPostable)
+            var typeName = isAr ? n.TypeNameAr : DisplayName.Or(n.TypeNameEn, n.TypeNameAr);
+            var accName = isAr ? n.Name : DisplayName.Or(n.NameEn, n.Name);
+            <div class="coa-node@(hasChildren ? " has-kids" : "")@(idx == nodes.Count - 1 ? " is-last" : "")"
+                 data-id="@n.Id" data-parent="@(n.ParentId?.ToString() ?? "")" data-level="@n.Level"
+                 data-code="@n.Code" data-name="@n.Name" data-nameen="@n.NameEn"
+                 data-type="@typeName" data-balance="@n.NormalBalance"
+                 data-postable="@n.IsPostable.ToString().ToLower()" data-cc="@n.RequireCostCenter.ToString().ToLower()"
+                 data-cf="@n.CashFlowCategory" data-kids="@n.Children.Count"
+                 data-search="@(n.Code) @(n.Name) @(n.NameEn)">
+                <div class="coa-row" role="treeitem" tabindex="0" aria-level="@(n.Level + 1)">
+                    @if (hasChildren)
                     {
-                        <i class="ki-outline ki-folder fs-5 me-2" style="color:#13433a;"></i><span class="fw-bold text-gray-900">@(isAr ? n.Name : n.NameEn)</span>
+                        <button type="button" class="coa-twisty" tabindex="-1" aria-label="@Localizer["Expand"]"><i class="ki-outline ki-down fs-9"></i></button>
                     }
                     else
                     {
-                        <i class="ki-outline ki-abstract-8 fs-7 me-2" style="color:#13433a;"></i><span class="fw-semibold text-gray-800">@(isAr ? n.Name : n.NameEn)</span>
+                        <span class="coa-leaf"></span>
                     }
-                </td>
-                <td class="text-muted fs-7">@(isAr ? n.TypeNameAr : n.TypeNameEn)</td>
-                <td class="text-center">@if (n.NormalBalance == "D") { <span class="badge fw-bold" style="background:#e9f1ee;color:#13433a;">@SR["Debit"]</span> } else { <span class="badge fw-bold" style="background:#f1f3f7;color:#7e8299;">@SR["Credit"]</span> }</td>
-                <td class="text-center">@if (n.IsPostable) { <span class="badge fw-bold" style="background:#e9f1ee;color:#13433a;">@Localizer["Postable"]</span> } else { <span class="badge fw-bold" style="background:#eef1f5;color:#5e6278;">@Localizer["Header"]</span> }</td>
-                <td class="text-center">@if (n.RequireCostCenter) { <i class="ki-outline ki-check-circle fs-5" style="color:#13433a;"></i> } else { <span class="text-gray-300">—</span> }</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-icon btn-light-primary btn-sm acc-edit" title="@SR["Edit"]"><i class="ki-outline ki-pencil fs-6"></i></button>
-                </td>
-            </tr>
-            if (hasChildren) { RenderRows(n.Children, isAr); }
+                    <span class="coa-name">@accName</span>
+                    <span class="coa-code">@n.Code</span>
+                    @if (hasChildren) { <span class="coa-kids">@n.Children.Count</span> }
+                </div>
+                @if (hasChildren)
+                {
+                    <div class="coa-children">@{ RenderNodes(n.Children, isAr); }</div>
+                }
+            </div>
         }
     }
 }
 
 <style>
-    /* Chart-of-accounts — Metronic hierarchy tree */
-    #accTable td { vertical-align: middle; }
-    #accTable .tree-cell { display: flex; align-items: center; min-height: 32px; }
-    #accTable .tree-guide { flex: 0 0 22px; align-self: stretch; position: relative; }
-    #accTable .tree-guide::before { content: ""; position: absolute; inset-inline-start: 11px; top: 0; bottom: 0; border-inline-start: 1px dashed #cfdcd7; }
-    #accTable i.acc-toggle { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 6px; background: #e9f1ee !important; color: #13433a !important; display: inline-flex; align-items: center; justify-content: center; margin-inline-end: 8px; cursor: pointer; }
-    #accTable .tree-spacer { flex: 0 0 22px; margin-inline-end: 8px; }
-    #accTable tr.is-header { background: #f4f8f6 !important; cursor: pointer; }
-    #accTable tr.is-header > td:first-child { border-inline-start: 3px solid #13433a; }
-    #accTable tr.acc-row:hover { background: #eef5f2 !important; }
-    /* inset the tree content from the leading (right in RTL) edge so it doesn't hug the border/accent */
-    #accTable > :not(caption) > * > *:first-child { padding-inline-start: 1.25rem; }
+    /* ==========================================================================================
+       CHART OF ACCOUNTS — a real tree beside a detail pane.
+       The pattern large accounting systems use (NetSuite, SAP, Odoo) for a chart of accounts:
+       the hierarchy gets a narrow column of its own so indentation and connector lines have room,
+       and everything ABOUT the selected account goes to the right instead of competing for width.
+       ========================================================================================== */
+
+    /* ---- the tree ------------------------------------------------------------------------- */
+    #coaTree { --coa-step: 26px; --coa-line: #cdd6e4; }
+    .coa-node { position: relative; }
+
+    /* Children are nested, so one rule indents every depth and the vertical trunk is drawn once
+       per branch rather than once per row. inset-inline-* so RTL mirrors for free. */
+    .coa-children { position: relative; padding-inline-start: var(--coa-step); }
+    .coa-children::before {
+        content: ""; position: absolute; inset-block: 0; inset-inline-start: 12px;
+        border-inline-start: 1px solid var(--coa-line);
+    }
+    /* The trunk must stop at the LAST child's elbow, not run past it into empty space. */
+    .coa-node.is-last > .coa-children::before { bottom: auto; height: 0; }
+    .coa-children > .coa-node.is-last::after {
+        content: ""; position: absolute; inset-inline-start: -14px; top: 20px; bottom: -100px;
+        border-inline-start: 1px solid #fff; z-index: 1;
+    }
+    /* The elbow: a short horizontal stub from the trunk to this node's own row. */
+    .coa-children > .coa-node > .coa-row::before {
+        content: ""; position: absolute; inset-inline-start: -14px; top: 20px; width: 14px;
+        border-block-start: 1px solid var(--coa-line); z-index: 2;
+    }
+
+    .coa-row { position: relative; display: flex; align-items: center; gap: .75rem;
+        padding: .45rem .75rem; border-radius: 6px; cursor: pointer; min-height: 40px;
+        transition: background .12s; }
+    .coa-row:hover { background: #F3F7FF; }
+    .coa-row:focus-visible { outline: 2px solid #1877F2; outline-offset: 1px; }
+
+    .coa-twisty { flex: 0 0 20px; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px;
+        background: transparent; display: inline-flex; align-items: center;
+        justify-content: center; cursor: pointer; z-index: 3; }
+    /* The <i> and not the button: Metronic's .ki-outline sets its own color, so the glyph does not
+       inherit the button's. Every twisty colour below is stated on the icon for the same reason. */
+    .coa-twisty > i { color: #5e6278; }
+    .coa-twisty:hover { background: #D0E1FF; }
+    .coa-twisty:hover > i { color: #0E4A9E; }
+    .coa-twisty i { transition: transform .12s; }
+    .coa-node.is-collapsed > .coa-row .coa-twisty i { transform: rotate(-90deg); }
+    html[dir="rtl"] .coa-node.is-collapsed > .coa-row .coa-twisty i { transform: rotate(90deg); }
+    .coa-node.is-collapsed > .coa-children { display: none; }
+
+    /* A leaf gets a dot where a parent gets a twisty, so the two align and the eye can tell a
+       postable account from a heading without reading a badge. */
+    .coa-leaf { flex: 0 0 20px; display: inline-flex; align-items: center; justify-content: center; }
+    .coa-leaf::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #a1a5b7; }
+
+    /* NAME FIRST. A person scanning a chart of accounts is looking for "Cash & Banks", not for
+       1101 - the code is how the system identifies it, the name is how a human does. The old
+       layout led with the code and that is part of why the screen read as a grid of numbers. */
+    .coa-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        font-size: .9375rem; color: #4b5675; }
+    .coa-node[data-postable="false"] > .coa-row .coa-name { font-weight: 600; color: #071437; }
+    .coa-node[data-level="0"] > .coa-row .coa-name { font-size: 1rem; font-weight: 700; }
+    .coa-node[data-level="0"] > .coa-row { background: #f4f6f8; margin-block: 2px; }
+
+    .coa-code { flex: 0 0 auto; margin-inline-start: auto; font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum"; font-size: .75rem; font-weight: 600; color: #7e8299;
+        background: #f1f3f7; border-radius: 4px; padding: .15rem .5rem; }
+    .coa-kids { flex: 0 0 auto; font-size: .6875rem; font-weight: 600; color: #0E4A9E;
+        background: #E7F0FF; border-radius: 999px; padding: .15rem .5rem; min-width: 1.6rem; text-align: center; }
+
+    /* ---- SELECTED: last, and specific enough to win -------------------------------------------
+       This block sits at the END and is scoped under #coaTree on purpose. The first attempt put it
+       above the depth rules at EQUAL specificity (0,4,0 both), so
+       .coa-node[data-postable="false"] ... { color:#071437 } came later and won - a header account
+       selected on a solid #0E4A9E fill kept its near-black text. #coaTree raises this block to
+       (1,4,0), which no depth or postable rule can reach, so the contrast cannot be undone by
+       adding another rule below.
+       White on #0E4A9E measures 8.43:1 - the ratio crossbuy-brand.css records for --cb-blue-800,
+       and the reason 800 is the token that is allowed to carry white text at all. ---------------- */
+    #coaTree .coa-node.is-selected > .coa-row { background: #0E4A9E; }
+    #coaTree .coa-node.is-selected > .coa-row .coa-name { color: #fff; font-weight: 600; }
+    #coaTree .coa-node.is-selected > .coa-row .coa-twisty {
+        background: rgba(255, 255, 255, .18);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .45); }
+    #coaTree .coa-node.is-selected > .coa-row .coa-twisty > i { color: #fff; }
+    #coaTree .coa-node.is-selected > .coa-row .coa-twisty:hover { background: rgba(255,255,255,.34); }
+    #coaTree .coa-node.is-selected > .coa-row .coa-twisty:hover > i { color: #fff; }
+    /* The two chips were the other half of the problem: a #f1f3f7 pill with #7e8299 text on a solid
+       blue row is unreadable in both directions. They become translucent white on the fill. */
+    #coaTree .coa-node.is-selected > .coa-row .coa-code,
+    #coaTree .coa-node.is-selected > .coa-row .coa-kids {
+        color: #fff; background: rgba(255, 255, 255, .22); }
+    /* And the leaf dot, which was #a1a5b7 - invisible against the fill. */
+    #coaTree .coa-node.is-selected > .coa-row .coa-leaf::before { background: #fff; }
+    /* Hover must not repaint the selected row back to the pale tint. */
+    #coaTree .coa-node.is-selected > .coa-row:hover { background: #0E4A9E; }
+
+    /* The tree scrolls on its own so the detail pane stays put while you hunt for an account. */
+    #coaTree { max-height: 68vh; overflow-y: auto; overflow-x: hidden; }
+
+    /* ---- the detail pane ------------------------------------------------------------------- */
+    .coa-kv { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: .35rem 1rem; }
+    .coa-kv dt { font-size: .8125rem; font-weight: 500; color: #7e8299; }
+    .coa-kv dd { margin: 0; font-size: .9375rem; font-weight: 600; color: #071437; }
+    /* <bdi> defaults to unicode-bidi:isolate, which is the whole point - it keeps an Arabic name
+       rendering right-to-left inside a left-aligned cell instead of dragging the cell with it. */
+    .coa-kv dd > bdi { font: inherit; color: inherit; }
+    #coaKids .coa-kid { display: flex; align-items: center; gap: .75rem; padding: .45rem .25rem;
+        border-block-end: 1px dashed #e9edf2; cursor: pointer; }
+    #coaKids .coa-kid:last-child { border-block-end: 0; }
+    #coaKids .coa-kid:hover { background: #F3F7FF; }
+    /* .coa-code carries margin-inline-start:auto so it sits at the far edge of a TREE row. In this
+       list the code LEADS, so that margin pushed the whole line to the trailing edge. */
+    #coaKids .coa-code { margin-inline-start: 0; min-width: 4.5rem; text-align: center; }
 </style>
+
 <div class="d-flex flex-column flex-column-fluid">
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2">
         <div class="app-container container-fluid d-flex flex-stack">
@@ -90,38 +191,66 @@
 
     <div id="kt_app_content" class="app-content flex-column-fluid">
         <div class="app-container container-fluid">
-            <div class="card">
-                <div class="card-header border-0 pt-6">
-                    <div class="card-title">
-                        <div class="d-flex align-items-center position-relative my-1">
-                            <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
-                            <input type="text" id="accSearch" class="form-control form-control-solid w-300px ps-12" placeholder="@Localizer["Search by code or name..."]" autocomplete="off" />
+            <div class="row g-5">
+
+                <!--begin::The tree-->
+                <div class="col-xl-5">
+                    <div class="card card-flush">
+                        <div class="card-header align-items-center py-4">
+                            <div class="card-title">
+                                <div class="d-flex align-items-center position-relative my-1">
+                                    <i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i>
+                                    <input type="text" id="accSearch" class="form-control form-control-solid form-control-sm w-100 ps-12" placeholder="@Localizer["Search by code or name..."]" autocomplete="off" />
+                                </div>
+                            </div>
+                            <div class="card-toolbar gap-2">
+                                <button type="button" class="btn btn-sm btn-icon btn-light" id="expandAll" title="@Localizer["Expand all"]"><i class="ki-outline ki-plus-square fs-4"></i></button>
+                                <button type="button" class="btn btn-sm btn-icon btn-light" id="collapseAll" title="@Localizer["Collapse all"]"><i class="ki-outline ki-minus-square fs-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0 pb-4">
+                            <div id="coaTree" role="tree" aria-label="@Localizer["Chart of Accounts"]">@{ RenderNodes(Model, isAr); }</div>
+                            <div id="accNoResult" class="text-center py-10 text-muted d-none">@Localizer["No matching results"]</div>
                         </div>
                     </div>
-                    <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
-                        <button type="button" class="btn btn-sm btn-light-primary me-2" id="expandAll"><i class="ki-outline ki-plus-square fs-4"></i>@Localizer["Expand all"]</button>
-                        <button type="button" class="btn btn-sm btn-light" id="collapseAll"><i class="ki-outline ki-minus-square fs-4"></i>@Localizer["Collapse all"]</button>
+                </div>
+                <!--end::The tree-->
+
+                <!--begin::The detail pane-->
+                <div class="col-xl-7">
+                    <div class="card card-flush" id="coaDetail">
+                        <div class="card-header align-items-center py-4">
+                            <div class="card-title flex-column align-items-start gap-1">
+                                <h3 class="fw-bold text-gray-900 fs-4 m-0" id="coaTitle">—</h3>
+                                <span class="text-muted fs-8" id="coaPath"></span>
+                            </div>
+                            <div class="card-toolbar">
+                                <button type="button" class="btn btn-sm btn-light-primary" id="coaEdit"><i class="ki-outline ki-pencil fs-5"></i>@SR["Edit"]</button>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <dl class="coa-kv mb-0">
+                                <dt>@Localizer["Name (AR)"]</dt><dd><bdi id="coaNameAr">—</bdi></dd>
+                                <dt>@Localizer["Name (EN)"]</dt><dd><bdi id="coaNameEn">—</bdi></dd>
+                                <dt>@SR["Code"]</dt><dd id="coaCode" style="font-variant-numeric:tabular-nums;">—</dd>
+                                <dt>@SR["Type"]</dt><dd id="coaType">—</dd>
+                                <dt>@Localizer["Nature"]</dt><dd id="coaNature">—</dd>
+                                <dt>@Localizer["Kind"]</dt><dd id="coaKind">—</dd>
+                                <dt>@Localizer["Cost Ctr"]</dt><dd id="coaCc">—</dd>
+                            </dl>
+
+                            <div id="coaKidsWrap" class="d-none">
+                                <div class="separator separator-dashed my-5"></div>
+                                <div class="d-flex flex-stack mb-3">
+                                    <span class="fs-8 fw-bold text-uppercase text-muted" id="coaKidsLabel"></span>
+                                </div>
+                                <div id="coaKids"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body pt-0 pb-4">
-                    <div class="table-responsive">
-                        <table class="table table-row-dashed align-middle gy-3 mb-0" id="accTable">
-                            <thead class="fs-8 fw-bold text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
-                                <tr>
-                                    <th style="min-width:200px">@SR["Code"]</th>
-                                    <th>@SR["Account"]</th>
-                                    <th>@SR["Type"]</th>
-                                    <th class="text-center" style="width:100px">@Localizer["Nature"]</th>
-                                    <th class="text-center" style="width:120px">@Localizer["Kind"]</th>
-                                    <th class="text-center" style="width:90px">@Localizer["Cost Ctr"]</th>
-                                    <th class="text-center" style="width:70px">@Localizer["Action"]</th>
-                                </tr>
-                            </thead>
-                            <tbody>@{ RenderRows(Model, isAr); }</tbody>
-                        </table>
-                    </div>
-                    <div id="accNoResult" class="text-center py-10 text-muted d-none">@Localizer["No matching results"]</div>
-                </div>
+                <!--end::The detail pane-->
+
             </div>
         </div>
     </div>
@@ -134,11 +263,11 @@
         <div class="modal-body py-6 px-8">
             <div class="row">
                 <div class="col-5 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Code"]</label><input name="code" class="form-control form-control-solid" required /></div>
-                <div class="col-7 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Type"]</label><select name="accountTypeId" class="form-select form-select-solid" required>@foreach (var t in accountTypes) { <option value="@t.ID">@(isAr ? t.Name : t.NameEn)</option> }</select></div>
+                <div class="col-7 mb-4"><label class="required fw-semibold fs-6 mb-2">@SR["Type"]</label><select name="accountTypeId" class="form-select form-select-solid" required>@foreach (var t in accountTypes) { <option value="@t.ID">@(isAr ? t.Name : DisplayName.Or(t.NameEn, t.Name))</option> }</select></div>
             </div>
             <div class="mb-4"><label class="required fw-semibold fs-6 mb-2">@Localizer["Name (AR)"]</label><input name="name" class="form-control form-control-solid" required /></div>
             <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Name (EN)"]</label><input name="nameEn" class="form-control form-control-solid" /></div>
-            <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Parent"]</label><select name="parentId" class="form-select form-select-solid"><option value="">@Localizer["— (root)"]</option>@foreach (var a in allAccounts.Where(x => !x.IsPostable)) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : a.NameEn)</option> }</select></div>
+            <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Parent"]</label><select name="parentId" class="form-select form-select-solid"><option value="">@Localizer["— (root)"]</option>@foreach (var a in allAccounts.Where(x => !x.IsPostable)) { <option value="@a.Id">@a.Code — @(isAr ? a.Name : DisplayName.Or(a.NameEn, a.Name))</option> }</select></div>
             <div class="mb-4"><label class="fw-semibold fs-6 mb-2">@Localizer["Cash flow"]</label><select name="cashFlowCategory" class="form-select form-select-solid"><option value="">—</option><option value="Operating">@Localizer["Operating"]</option><option value="Investing">@Localizer["Investing"]</option><option value="Financing">@Localizer["Financing"]</option></select></div>
             <div class="d-flex gap-6">
                 <label class="form-check form-check-custom form-check-solid"><input class="form-check-input" type="checkbox" name="isPostable" value="true" /><span class="form-check-label fw-semibold">@Localizer["Postable"]</span></label>
@@ -169,62 +298,158 @@
     </form>
 </div></div></div>
 
+
 @section Scripts {
     <script>
         (function () {
-            var rows = Array.prototype.slice.call(document.querySelectorAll('#accTable tbody tr.acc-row'));
-            if (!rows.length) return;
-            var byParent = {}; rows.forEach(function (r) { var p = r.getAttribute('data-parent') || ''; (byParent[p] = byParent[p] || []).push(r); });
-            var collapsed = {};
-            function hasKids(id) { return !!byParent[id]; }
-            function setIcon(r, c) { var ic = r.querySelector('.acc-toggle'); if (ic) { ic.classList.toggle('ki-down', !c); ic.classList.toggle('ki-right', c); } }
-            function refresh() {
-                rows.forEach(function (r) {
-                    var cur = r.getAttribute('data-parent') || '', vis = true;
-                    while (cur) { if (collapsed[cur]) { vis = false; break; } var pr = document.querySelector('#accTable tr[data-id="' + cur + '"]'); cur = pr ? (pr.getAttribute('data-parent') || '') : ''; }
-                    r.style.display = vis ? '' : 'none'; setIcon(r, !!collapsed[r.getAttribute('data-id')]);
+            var tree = document.getElementById('coaTree');
+            if (!tree) return;
+            var nodes = Array.prototype.slice.call(tree.querySelectorAll('.coa-node'));
+            if (!nodes.length) return;
+
+            var L = {
+                postable: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Postable"].Value)),
+                header:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Header"].Value)),
+                debit:    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Debit"].Value)),
+                credit:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Credit"].Value)),
+                required: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Required"].Value)),
+                notReq:   @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Not required"].Value)),
+                children: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Children"].Value))
+            };
+            var byId = {};
+            nodes.forEach(function (n) { byId[n.getAttribute('data-id')] = n; });
+
+            // ---- selection drives the detail pane ------------------------------------------------
+            var selected = null;
+            function label(n) { return n.querySelector('.coa-name').textContent.trim(); }
+
+            function breadcrumb(n) {
+                var parts = [], cur = n.getAttribute('data-parent');
+                while (cur && byId[cur]) { parts.unshift(label(byId[cur])); cur = byId[cur].getAttribute('data-parent'); }
+                return parts.join('  ›  ');
+            }
+
+            function select(n) {
+                if (selected) selected.classList.remove('is-selected');
+                selected = n; n.classList.add('is-selected');
+
+                // Reveal it: a node found by search or reached from the detail pane may sit inside a
+                // collapsed branch, and selecting something invisible is a dead end.
+                var p = n.parentElement;
+                while (p && p !== tree) { if (p.classList.contains('coa-node')) p.classList.remove('is-collapsed'); p = p.parentElement; }
+
+                var g = function (a) { return n.getAttribute(a) || ''; };
+                document.getElementById('coaTitle').textContent = label(n);
+                document.getElementById('coaPath').textContent = breadcrumb(n);
+                document.getElementById('coaNameAr').textContent = g('data-name') || '—';
+                document.getElementById('coaNameEn').textContent = g('data-nameen') || '—';
+                document.getElementById('coaCode').textContent = g('data-code');
+                document.getElementById('coaType').textContent = g('data-type') || '—';
+                document.getElementById('coaNature').textContent = g('data-balance') === 'D' ? L.debit : L.credit;
+                document.getElementById('coaKind').textContent = g('data-postable') === 'true' ? L.postable : L.header;
+                document.getElementById('coaCc').textContent = g('data-cc') === 'true' ? L.required : L.notReq;
+
+                // Direct children, listed and clickable — the pane doubles as a way down the tree.
+                var kidsWrap = document.getElementById('coaKidsWrap'), kidsBox = document.getElementById('coaKids');
+                var kids = Array.prototype.slice.call((n.querySelector(':scope > .coa-children') || { children: [] }).children);
+                kidsBox.innerHTML = '';
+                if (kids.length) {
+                    document.getElementById('coaKidsLabel').textContent = L.children + ' (' + kids.length + ')';
+                    kids.forEach(function (k) {
+                        var row = document.createElement('div');
+                        row.className = 'coa-kid';
+                        row.setAttribute('data-goto', k.getAttribute('data-id'));
+                        // textContent, not innerHTML: escaping by DELETING < > & lost the ampersand in
+                        // "Cash & Banks". The DOM does the escaping correctly and keeps the character.
+                        var codeEl = document.createElement('span');
+                        codeEl.className = 'coa-code';
+                        codeEl.textContent = k.getAttribute('data-code');
+                        var nameEl = document.createElement('span');
+                        nameEl.className = 'fw-semibold text-gray-800';
+                        nameEl.textContent = label(k);
+                        row.appendChild(codeEl); row.appendChild(nameEl);
+                        kidsBox.appendChild(row);
+                    });
+                    kidsWrap.classList.remove('d-none');
+                } else {
+                    kidsWrap.classList.add('d-none');
+                }
+                n.querySelector('.coa-row').scrollIntoView({ block: 'nearest' });
+            }
+
+            tree.addEventListener('click', function (e) {
+                var tw = e.target.closest('.coa-twisty');
+                if (tw) { e.stopPropagation(); tw.closest('.coa-node').classList.toggle('is-collapsed'); return; }
+                var row = e.target.closest('.coa-row');
+                if (row) select(row.closest('.coa-node'));
+            });
+            tree.addEventListener('keydown', function (e) {
+                var row = e.target.closest('.coa-row');
+                if (!row) return;
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(row.closest('.coa-node')); }
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    var n = row.closest('.coa-node');
+                    if (n.classList.contains('has-kids')) { e.preventDefault(); n.classList.toggle('is-collapsed'); }
+                }
+            });
+            document.getElementById('coaKids').addEventListener('click', function (e) {
+                var k = e.target.closest('[data-goto]');
+                if (k && byId[k.getAttribute('data-goto')]) select(byId[k.getAttribute('data-goto')]);
+            });
+
+            // ---- the edit modal, filled from the SELECTED node -----------------------------------
+            document.getElementById('coaEdit').addEventListener('click', function () {
+                if (!selected) return;
+                var g = function (a) { return selected.getAttribute(a) || ''; };
+                document.getElementById('e_id').value = g('data-id');
+                document.getElementById('e_code').value = g('data-code');
+                document.getElementById('e_name').value = g('data-name');
+                document.getElementById('e_nameen').value = g('data-nameen');
+                document.getElementById('e_cf').value = g('data-cf');
+                document.getElementById('e_postable').checked = g('data-postable') === 'true';
+                document.getElementById('e_cc').checked = g('data-cc') === 'true';
+                document.getElementById('e_active').checked = true;
+                new bootstrap.Modal(document.getElementById('mEditAcc')).show();
+            });
+
+            // ---- expand / collapse / search -----------------------------------------------------
+            function setAll(collapse) {
+                nodes.forEach(function (n) {
+                    if (!n.classList.contains('has-kids')) return;
+                    n.classList.toggle('is-collapsed', collapse);
                 });
             }
-            document.querySelector('#accTable tbody').addEventListener('click', function (e) {
-                // edit button → open edit modal (must not toggle the row)
-                var ed = e.target.closest('.acc-edit');
-                if (ed) {
-                    var tr = ed.closest('tr');
-                    document.getElementById('e_id').value = tr.getAttribute('data-id');
-                    document.getElementById('e_code').value = tr.getAttribute('data-code');
-                    document.getElementById('e_name').value = tr.getAttribute('data-name');
-                    document.getElementById('e_nameen').value = tr.getAttribute('data-nameen');
-                    document.getElementById('e_cf').value = tr.getAttribute('data-cf') || '';
-                    document.getElementById('e_postable').checked = tr.getAttribute('data-postable') === 'true';
-                    document.getElementById('e_cc').checked = tr.getAttribute('data-cc') === 'true';
-                    document.getElementById('e_active').checked = true;
-                    new bootstrap.Modal(document.getElementById('mEditAcc')).show();
-                    return;
-                }
-                // click anywhere on a row that has children → expand / collapse it
-                var row = e.target.closest('tr.acc-row');
-                if (!row) return;
-                var id = row.getAttribute('data-id');
-                if (byParent[id]) { collapsed[id] = !collapsed[id]; refresh(); }
-            });
-            document.getElementById('expandAll').addEventListener('click', function () { collapsed = {}; refresh(); });
-            document.getElementById('collapseAll').addEventListener('click', function () { collapsed = {}; rows.forEach(function (r) { if (hasKids(r.getAttribute('data-id'))) collapsed[r.getAttribute('data-id')] = true; }); refresh(); });
+            document.getElementById('expandAll').addEventListener('click', function () { setAll(false); });
+            document.getElementById('collapseAll').addEventListener('click', function () { setAll(true); });
+
             var noRes = document.getElementById('accNoResult');
             document.getElementById('accSearch').addEventListener('input', function (e) {
                 var q = (e.target.value || '').trim().toLowerCase();
-                if (!q) { noRes.classList.add('d-none'); refresh(); return; }
-                var show = {}, any = false;
-                rows.forEach(function (r) {
-                    if ((r.getAttribute('data-search') || '').toLowerCase().indexOf(q) !== -1) {
-                        any = true; show[r.getAttribute('data-id')] = true;
-                        var pid = r.getAttribute('data-parent') || '';
-                        while (pid) { show[pid] = true; var pr = document.querySelector('#accTable tr[data-id="' + pid + '"]'); pid = pr ? (pr.getAttribute('data-parent') || '') : ''; }
-                    }
+                if (!q) {
+                    nodes.forEach(function (n) { n.style.display = ''; });
+                    noRes.classList.add('d-none');
+                    return;
+                }
+                var hit = {}, any = false;
+                nodes.forEach(function (n) {
+                    if ((n.getAttribute('data-search') || '').toLowerCase().indexOf(q) === -1) return;
+                    any = true; hit[n.getAttribute('data-id')] = true;
+                    // A match is useless without its ancestors: the path is how you know WHERE it is.
+                    var p = n.getAttribute('data-parent');
+                    while (p && byId[p]) { hit[p] = true; byId[p].classList.remove('is-collapsed'); p = byId[p].getAttribute('data-parent'); }
                 });
-                rows.forEach(function (r) { r.style.display = show[r.getAttribute('data-id')] ? '' : 'none'; });
+                nodes.forEach(function (n) { n.style.display = hit[n.getAttribute('data-id')] ? '' : 'none'; });
                 noRes.classList.toggle('d-none', any);
             });
-            refresh();
+
+            // ---- opening state: roots and their first level, first root selected ------------------
+            // Not "everything expanded": 63 nodes open at once is the wall of rows this redesign is
+            // replacing. Not "everything collapsed" either - an empty-looking tree hides that there
+            // is anything under the roots at all.
+            nodes.forEach(function (n) {
+                if (n.classList.contains('has-kids') && +n.getAttribute('data-level') >= 1) n.classList.add('is-collapsed');
+            });
+            select(nodes[0]);
         })();
     </script>
 }

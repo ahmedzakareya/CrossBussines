@@ -27,14 +27,14 @@
         <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Returned lines"]</h3></div>
             <div class="card-body pt-2"><div class="table-responsive">
                 <table class="table align-middle gy-3" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;"><th class="ps-4">#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@SR["Price"]</th><th class="text-end">@Localizer["Disc"]</th><th class="text-end">@Localizer["Tax%"]</th><th class="text-end pe-4">@SR["Total"]</th></tr></thead>
+                    <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">#</th><th>@SR["Description"]</th><th class="text-end">@Localizer["Qty"]</th><th class="text-end">@SR["Price"]</th><th class="text-end">@Localizer["Disc"]</th><th class="text-end">@Localizer["Tax%"]</th><th class="text-end pe-4">@SR["Total"]</th></tr></thead>
                     <tbody>
                     @foreach (var l in Model.Lines.OrderBy(x => x.LineNo))
                     {
                         <tr style="border-bottom:1px dashed #eef1f6;"><td class="ps-4 text-muted">@l.LineNo</td><td class="fw-semibold text-gray-800">@l.ItemDescription</td><td class="text-end">@l.Qty.ToString("0.##")</td><td class="text-end">@M(l.UnitPrice)</td><td class="text-end text-muted">@M(l.DiscountAmount)</td><td class="text-end text-muted">@l.TaxRate.ToString("0.##")%</td><td class="text-end fw-bold pe-4">@M(l.LineTotal)</td></tr>
                     }
                     </tbody>
-                    <tfoot><tr class="fw-bolder fs-6" style="background:#eaf3ef;border-top:2px solid #13433a;"><td colspan="6" class="ps-4 text-end" style="color:#1f6253;">@Localizer["Sub / Tax / Total"]</td><td class="text-end pe-4" style="color:#13433a;">@M(Model.SubTotal) / @M(Model.TaxTotal) / @M(Model.GrandTotal)</td></tr></tfoot>
+                    <tfoot><tr class="fw-bolder fs-6" style="background:#E7F0FF;border-top:2px solid #0E4A9E;"><td colspan="6" class="ps-4 text-end" style="color:#145DBF;">@Localizer["Sub / Tax / Total"]</td><td class="text-end pe-4" style="color:#0E4A9E;">@M(Model.SubTotal) / @M(Model.TaxTotal) / @M(Model.GrandTotal)</td></tr></tfoot>
                 </table>
             </div></div>
         </div>

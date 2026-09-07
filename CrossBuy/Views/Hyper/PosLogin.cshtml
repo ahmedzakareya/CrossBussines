@@ -12,26 +12,26 @@
 	<title>CrossBuy — @(isAr ? "هايبر ماركت" : "Hypermarket")</title>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
-	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+	<link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 	@if (isAr)
 	{
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
 		<style>body { font-family: 'Arial', sans-serif; } html[lang="ar"] body { font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }</style>
 	}
 	else
 	{
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 	}
 	<style>
-		.cb-btn-brand { background-color: #13433a; color: #fff; font-weight: 700; border: 0; }
-		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #1f6253; color: #fff; }
+		.cb-btn-brand { background-color: #0E4A9E; color: #fff; font-weight: 700; border: 0; }
+		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #145DBF; color: #fff; }
 	</style>
 	<script>if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 </head>
@@ -71,12 +71,12 @@
 					</div>
 				</div>
 			</div>
-			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #1f6253 0%, #13433a 45%, #0c2e28 100%);">
+			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #145DBF 0%, #0E4A9E 45%, #0B3D91 100%);">
 				<div class="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
 					<a href="/hyper/pos/login" class="mb-0 mb-lg-12">
-						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" />
+						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" asp-append-version="true" />
 					</a>
-					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-cashier.svg" alt="Hypermarket" />
+					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-cashier.svg" alt="Hypermarket" asp-append-version="true" />
 					<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">@(isAr ? "كاشير الهايبر ماركت" : "Hypermarket Cashier")</h1>
 					<div class="d-none d-lg-block text-white fs-base text-center">
 						@if (isAr)
@@ -95,7 +95,7 @@
 		</div>
 	</div>
 	<script>var hostUrl = "~/Backend-assets/";</script>
-	<script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
-	<script src="~/Backend-assets/js/scripts.bundle.js"></script>
+	<script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+	<script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
 </body>
 </html>

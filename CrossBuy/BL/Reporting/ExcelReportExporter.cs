@@ -91,7 +91,7 @@ namespace CrossBuy.BL.Reporting
 
             if (context.View.Truncated)
                 parts.Add(context.IsArabic
-                    ? "(تم قطع النتيجة — هناك صفوف غير معروضة)"
+                    ? "(The result was truncated — some rows are not shown)"
                     : "(TRUNCATED — rows are missing)");
 
             if (context.IsPreview)

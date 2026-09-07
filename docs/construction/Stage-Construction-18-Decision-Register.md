@@ -1,0 +1,40 @@
+# Stage-Construction-18 — Decision Register
+
+> **Generated file — do not edit by hand.**
+> Source of truth: `docs/construction/_generator/generate_construction_catalogs.py`.
+> Regenerate with `python docs/construction/_generator/generate_construction_catalogs.py`.
+> The paired CSV in this folder is emitted from the same dataset in the same run.
+
+15 business decisions that **must not be guessed**. Each carries current evidence from the live code,
+the real options, a recommendation with a reason, the consequence of taking it, and what it blocks.
+
+A recommendation is offered on every one of them — an unanswered question should not stop design work — but the
+recommendation is *not* an assumption in force: where a decision blocks a phase, the phase's gate requires the
+owner's answer.
+
+## Register
+
+| ID | Decision | CurrentEvidence | Options | Recommendation | Consequences | BlockingScope |
+|---|---|---|---|---|---|---|
+| D-01 | Can one project hold multiple active client contracts? | Today impossible: contract terms are columns on Project (Models/Context/Accounting/Dimensions.cs:36-44), so exactly one implicit contract exists. | (a) one contract per project; (b) many contracts per project with scope split; (c) one contract spanning many projects (programme) | (b) — a separate ClientContract entity with a project link, because packages and phased awards are normal in contracting and (a) forces fake projects. | (b) means BOQ, certificates and retention all key on ContractId, not ProjectId — a wider change in C3. | Blocks C3 and the certificate design |
+| D-02 | Do the client BOQ and the internal cost estimate share one structure? | Today one structure: BoqItem holds the client UnitPrice AND four estimated cost buckets on the same row (Boq.cs:20-25). | (a) keep one row with both; (b) separate client BOQ from internal estimate, linked | (b) — the client BOQ is contractual and immutable once approved, the internal estimate changes constantly; sharing a row is what makes rate changes dangerous. | (b) requires a migration path for existing BoqItem cost buckets and a mapping UI. | Blocks C2 |
+| D-03 | What are the certification approval limits? | None exist: ApproveAsync only checks Draft and GrossWork>0 (BL/ProgressBillingService.cs:191-200). | (a) single approver; (b) value-banded approvers; (c) role chain regardless of value | (b) with a role chain floor — value bands are how contracting firms actually delegate. | Needs a limits table and the approval engine of CR-14. | Blocks C6 |
+| D-04 | How is retention calculated? | Flat percent of period work: R = W x Project.RetentionPercent (BL/ProgressBillingService.cs:118). | (a) flat percent per certificate; (b) percent capped at a contract ceiling; (c) tiered (higher until X% complete, then lower); (d) per-BOQ-item applicability | (b)+(d) — a ceiling and an item-level applicability flag cover most Gulf contracts; (c) as an optional method. | Changes the certificate computation and needs a retention term set on the contract. | Blocks C3 and C6 |
+| D-05 | How is the advance recovered? | Pro-rata per certificate, capped at the remaining 2104 balance (BL/ProgressBillingService.cs:120). | (a) pro-rata (today); (b) start after X% progress; (c) fixed instalments; (d) back-loaded | Keep (a) as default, add (b) as a contract term — (b) is common and today unrepresentable. | Advance recovery rules move onto the contract entity. | Blocks C3 |
+| D-06 | How are materials on site (MOS) valued in a certificate? | Not supported: the certificate has no MOS concept (Models/Context/Accounting/ProgressBilling.cs). | (a) not certified at all; (b) at invoice cost; (c) at BOQ material rate; (d) at a contractual percentage of value | (d) with (b) as the valuation base — the contract usually caps MOS at a percentage. | Introduces a non-work component in the certificate that must be recovered as the work is executed. | Blocks C6 |
+| D-07 | What is the subcontractor over-certification policy? | None — unbounded (CR-02). | (a) hard block at allocated scope; (b) allow with an approved variation; (c) allow with a warning | (a) as the default with (b) as the authorised exception. (c) is what effectively happens today and it is the defect. | Requires SubcontractScope in C3 before any subcontractor certificate work in C6. | Blocks C3 and C6 |
+| D-08 | Does budget overspend block or warn? | Neither: there is no budget entity and no commitment check anywhere (BL/ProjectBudgetService.cs is a report). | (a) warn only; (b) block at approval of PO/subcontract; (c) per-company policy switch | (c) defaulting to warn — blocking procurement is a business risk the owner must choose, not us. | A blocking mode reaches into Purchasing approval, which is another module's behaviour. | Blocks C2 |
+| D-09 | What are the cost transfer rules between cost codes? | No cost codes and no transfer exist. | (a) no transfers; (b) transfers with approval and reason; (c) free transfer inside a category | (b) — a transfer is a commercial decision and must leave a reason and an approver. | Needs BudgetTransfer plus audit. | Blocks C2 |
+| D-10 | May one site access another site's warehouse? | Unconstrained: a warehouse has no site and no project (Models/Context/Inventory/Inventory.cs:144-159); any warehouse can be picked on a project material issue. | (a) site-restricted; (b) restricted with an approved exception; (c) unrestricted | (b) — cross-site borrowing is real but must be visible. | Requires Warehouse.SiteId (an Inventory-owned change) or a construction-side site-warehouse map. | Blocks C4 |
+| D-11 | How is physical progress calculated? | Value-weighted only: sum(executed value)/sum(BOQ value) (BL/ProgressService.cs:185). | (a) value-weighted (today); (b) quantity-weighted per WBS; (c) milestone; (d) weighted activity; (e) manual approved | Support (b),(c),(d),(e) per WBS node with an explicit ProgressMethod; keep (a) as a reporting rollup only, never as the definition of physical progress. | Requires ProgressMethod on WbsNode and a ProgressRecord entity. | Blocks C6 |
+| D-12 | What is the forecast (ETC/EAC) methodology? | None exists. | (a) remaining budget; (b) earned-value CPI-based; (c) manual per cost code; (d) rate-of-spend trend | (c) as the authoritative input with (a),(b),(d) shown as references — a forecast a commercial manager did not own is not used. | Forecast must be stamped with its method and author to be auditable. | Blocks C2 reporting |
+| D-13 | What is the drawing approval workflow? | No document control exists (CR-13). | (a) issue-only register; (b) internal review then issue; (c) consultant approval cycle with status codes (A/B/C) | (c) — consultant status codes are the norm and drive whether the site may build. | Determines whether a superseded revision is blocked or warned (screen 26). | Blocks C8 |
+| D-14 | What is the mobile offline policy? | No mobile construction surface exists yet (crossbuy_mobile/lib/screens/ has no project screen). | (a) online only; (b) offline draft, server authoritative; (c) full offline with conflict merge | (b) — drafts offline, every posting online, idempotency key per document. (c) is where duplicated site data comes from. | Sets the CR-18 contract before any mobile build. | Blocks C10 |
+| D-15 | What are the project closeout rules? | A Close permission exists with no process (BL/ProjectsAccessService.cs:41). | (a) status change only; (b) checklist-gated close that locks cost and certificates; (c) close plus a separate DLP-active state | (c) — a closed project with an active DLP is the real end state, and retention is still outstanding. | Needs handover, DLP and a lock on new cost/certificates. | Blocks C8 |
+
+## How these were chosen
+
+Each of these is a point where the code currently makes a silent choice that a contracting business would normally
+decide explicitly. D-04 is the clearest example: retention is a flat percent of period work because that is the one
+line of arithmetic that exists (`BL/ProgressBillingService.cs:118`) — not because a ceiling or a tiered method was
+considered and rejected.

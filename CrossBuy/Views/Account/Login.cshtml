@@ -23,17 +23,17 @@
 	<meta property="og:url" content="https://keenthemes.com/metronic" />
 	<meta property="og:site_name" content="Metronic by Keenthemes" />
 	<link rel="canonical" href="https://preview.keenthemes.com/metronic8" />
-	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" />
-    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" />
+	<link rel="shortcut icon" href="~/Backend-assets/media/logos/favicon.ico" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="~/Backend-assets/media/logos/crossbuy-favicon.svg" asp-append-version="true" />
 	<!--begin::Fonts(mandatory for all pages)-->
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
 	<!--end::Fonts-->
 	<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
 	@if ((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"))
 	{
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
-	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 		<link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
 
 		<style>
@@ -52,16 +52,16 @@
 	}
 	else
 	{
-		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
-		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
-	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" />
+		<link href="~/Backend-assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+		<link href="~/Backend-assets/css/style.bundle.css" rel="stylesheet" type="text/css" asp-append-version="true" />
+	<link href="~/Backend-assets/css/crossbuy-brand.css" rel="stylesheet" type="text/css" asp-append-version="true" />
 	}
 
 
 	<style>
 		/* CrossBuy brand button — overrides Metronic blue primary on the sign-in page (both AR & EN) */
-		.cb-btn-brand { background-color: #13433a; color: #fff; font-weight: 700; border: 0; }
-		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #1f6253; color: #fff; }
+		.cb-btn-brand { background-color: #0E4A9E; color: #fff; font-weight: 700; border: 0; }
+		.cb-btn-brand:hover, .cb-btn-brand:focus, .cb-btn-brand:active { background-color: #145DBF; color: #fff; }
 	</style>
 	<!--end::Global Stylesheets Bundle-->
 	<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
@@ -229,16 +229,16 @@
 			</div>
 			<!--end::Body-->
 			<!--begin::Aside-->
-			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #1f6253 0%, #13433a 45%, #0c2e28 100%);">
+			<div class="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2" style="background: radial-gradient(120% 120% at 80% 10%, #145DBF 0%, #0E4A9E 45%, #0B3D91 100%);">
 				<!--begin::Content-->
 				<div class="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
 					<!--begin::Logo-->
 					<a href="index.html" class="mb-0 mb-lg-12">
-						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" />
+						<img alt="CrossBuy" src="~/Backend-assets/media/logos/crossbuy-logo-light.svg" class="h-45px h-lg-55px" asp-append-version="true" />
 					</a>
 					<!--end::Logo-->
 					<!--begin::Image-->
-					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-auth.svg" alt="CrossBuy ERP" />
+					<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="~/Backend-assets/media/misc/crossbuy-auth.svg" alt="CrossBuy ERP" asp-append-version="true" />
 					<!--end::Image-->
 					<!--begin::Title-->
 					<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">@((System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar") ? "نظام متكامل لإدارة أعمالك" : "One System to Run Your Business")</h1>
@@ -268,11 +268,11 @@
 	<!--begin::Javascript-->
 	<script>var hostUrl = "~/Backend-assets/";</script>
 	<!--begin::Global Javascript Bundle(mandatory for all pages)-->
-	<script src="~/Backend-assets/plugins/global/plugins.bundle.js"></script>
-	<script src="~/Backend-assets/js/scripts.bundle.js"></script>
+	<script src="~/Backend-assets/plugins/global/plugins.bundle.js" asp-append-version="true"></script>
+	<script src="~/Backend-assets/js/scripts.bundle.js" asp-append-version="true"></script>
 	<!--end::Global Javascript Bundle-->
 	<!--begin::Custom Javascript(used for this page only)-->
-	<script src="~/Backend-assets/js/custom/authentication/sign-in/general.js"></script>
+	<script src="~/Backend-assets/js/custom/authentication/sign-in/general.js" asp-append-version="true"></script>
 	<!--end::Custom Javascript-->
 	<!--end::Javascript-->
 </body>
@@ -315,9 +315,9 @@
 				error: function () {
 					Swal.fire({
 						icon: 'error',
-						title: 'خطأ في النظام',
-						text: 'حدث خطأ أثناء المعالجة. حاول مرة أخرى لاحقًا.',
-						confirmButtonText: 'حسنًا',
+						title: 'System error',
+						text: 'Something went wrong while processing. Please try again later.',
+						confirmButtonText: 'OK',
 						confirmButtonColor: '#d33'
 					});
 				}

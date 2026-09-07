@@ -247,7 +247,7 @@ namespace CrossBuy.BL
 				"CrmViewer" => isAr ? "قارئ CRM" : "CRM viewer",
 				_ => r
 			};
-			return string.Join("، ", roles.Select(name));
+			return string.Join(", ", roles.Select(name));
 		}
 	}
 }

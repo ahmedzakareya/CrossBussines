@@ -1,0 +1,79 @@
+@using CrossBuy.BL.Workspace
+@using System.Globalization
+@model WorkspacePanelStateModel
+@{
+    var arabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+@*
+    ONE partial for every non-data state, so the five never drift into looking the same.
+
+    VISUAL LANGUAGE: Metronic's stock `alert bg-light-*` block — the same component the rest of the ERP uses.
+    No custom classes. The five stay distinguishable through Metronic's OWN semantic colours rather than
+    through a private stylesheet:
+
+      EMPTY            muted, centred     the source answered; there is nothing
+      UNAVAILABLE      bg-light-primary   not deployed here. Permanent until a deployment changes
+      ACCESS DENIED    bg-light-secondary nothing is broken; the answer is about you
+      TEMPORARY        bg-light-warning   it threw; try again
+      PARTIAL          bg-light-info      rendered ABOVE real rows, never instead of them
+
+    Collapsing unavailable into empty is how a broken deployment looks like a quiet week — which is exactly
+    what this partial exists to prevent.
+*@
+@switch (Model.State)
+{
+    case WorkspacePanelState.Unavailable:
+        <div class="alert bg-light-primary d-flex flex-column flex-sm-row p-5 mb-0" role="status">
+            <i class="ki-outline ki-information-5 fs-2hx text-primary me-4 mb-3 mb-sm-0"></i>
+            <div class="d-flex flex-column pe-0 pe-sm-10">
+                <h5 class="mb-1 text-gray-900">@(arabic ? "غير متاح في هذه البيئة" : "Not available in this environment")</h5>
+                <span class="fw-semibold fs-7 text-gray-700">@Model.Reason</span>
+            </div>
+        </div>
+        break;
+
+    case WorkspacePanelState.AccessDenied:
+        <div class="alert bg-light-secondary d-flex flex-column flex-sm-row p-5 mb-0" role="status">
+            <i class="ki-outline ki-lock-2 fs-2hx text-gray-600 me-4 mb-3 mb-sm-0"></i>
+            <div class="d-flex flex-column pe-0 pe-sm-10">
+                <h5 class="mb-1 text-gray-900">@(arabic ? "لا تملك صلاحية عرض هذا" : "You don't have access to this")</h5>
+                <span class="fw-semibold fs-7 text-gray-700">@Model.Reason</span>
+            </div>
+        </div>
+        break;
+
+    case WorkspacePanelState.TemporaryFailure:
+        <div class="alert bg-light-warning d-flex flex-column flex-sm-row p-5 mb-0" role="alert">
+            <i class="ki-outline ki-information-4 fs-2hx text-warning me-4 mb-3 mb-sm-0"></i>
+            <div class="d-flex flex-column pe-0 pe-sm-10">
+                <h5 class="mb-1 text-gray-900">@(arabic ? "تعذّر التحميل مؤقتًا" : "Couldn't load this just now")</h5>
+                <span class="fw-semibold fs-7 text-gray-700">@Model.Reason</span>
+            </div>
+        </div>
+        break;
+
+    case WorkspacePanelState.PartiallyAvailable:
+        @* Rendered ABOVE the rows by the calling view, never instead of them — the rows are real, the list is
+           incomplete, and the user needs both facts. *@
+        <div class="alert bg-light-info d-flex flex-column flex-sm-row p-5 mb-5" role="status">
+            <i class="ki-outline ki-information-3 fs-2hx text-info me-4 mb-3 mb-sm-0"></i>
+            <div class="d-flex flex-column pe-0 pe-sm-10">
+                <h5 class="mb-1 text-gray-900">@(arabic ? "قائمة غير مكتملة" : "This list is incomplete")</h5>
+                <span class="fw-semibold fs-7 text-gray-700">
+                    @Model.Reason
+                    @if (Model.MissingSources.Count > 0)
+                    {
+                        <span class="badge badge-light-warning fs-8 fw-bold ms-1">@string.Join(" · ", Model.MissingSources)</span>
+                    }
+                </span>
+            </div>
+        </div>
+        break;
+
+    default:
+        <div class="text-center text-muted py-10">
+            <i class="@Model.EmptyIcon fs-3x text-gray-400 d-block mb-3"></i>
+            <span class="fw-semibold fs-6">@(Model.EmptyText ?? (arabic ? "لا يوجد شيء هنا" : "Nothing here"))</span>
+        </div>
+        break;
+}

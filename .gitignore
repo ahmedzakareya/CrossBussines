@@ -56,3 +56,59 @@ Thumbs.db
 # ===== Claude Code local tooling (contains a local connection string) =====
 .claude/
 **/.claude/
+
+# ===== RUNTIME TENANT UPLOADS - THE HIGHEST-RISK EXCLUSION IN THIS FILE =====
+# wwwroot/uploads is the product's RUNTIME document store, not source. On this machine it already holds real
+# business documents that arrived with the CrossBuyDev clone - signed contracts, supplier agreements, invoices,
+# a company logo and calendar invitations. Committing them would publish confidential tenant data into git
+# history PERMANENTLY: a later `git rm` deletes the file from the tip and leaves every byte in the history any
+# clone carries. The directory is recreated by the application at runtime, so ignoring it costs nothing.
+# The .gitkeep exception preserves the folder itself for a fresh checkout without admitting any content.
+# NOTE the trailing /* rather than /: git cannot re-include a file that sits inside an EXCLUDED DIRECTORY,
+# because it never descends into it to see the exception. Excluding the directory's CONTENTS instead leaves the
+# directory itself visible, which is what lets the .gitkeep negation below actually take effect.
+CrossBuy/wwwroot/uploads/*
+**/wwwroot/uploads/*
+!**/wwwroot/uploads/.gitkeep
+
+# App_Data/report-assets is the SAME kind of directory and the same risk, one level less obvious.
+# ReportAssetOptions.RootPath defaults to App_Data/report-assets resolved against the CONTENT ROOT — which is
+# the project directory, i.e. INSIDE this repository — and the Report Studio picker writes real company logos,
+# signatures and stamps there at runtime. Deliberately NOT under wwwroot (the static-file middleware knows
+# nothing about companies, so a file there would be one guessable URL away from every isolation check), which
+# is exactly why the rule above does not already cover it.
+CrossBuy/App_Data/*
+**/App_Data/*
+!**/App_Data/.gitkeep
+
+# ===== Database artifacts =====
+# Backups and detached data files are environment state, not source, and are large. The copy-only backup taken
+# to clone CrossBuyDB2 -> CrossBuyDev is one of these.
+*.bak
+*.mdf
+*.ldf
+*.ndf
+*.trn
+*.dacpac
+*.bacpac
+
+# ===== Preservation / archive binaries =====
+# Stage preservation bundles and doc archives duplicate sources that are already tracked in this repository, so
+# in git they are dead weight that can never be diffed. Policy is artifact storage, not version control. Their
+# .sha256 companions are excluded with them: a checksum for a file the repo does not carry proves nothing.
+engineering/preservation/
+docs/**/_archive/
+*.zip
+*.rar
+*.7z
+*.zip.sha256
+
+# ===== UI-conformance run output =====
+# Screenshots and reports PRODUCED by a conformance run are per-machine and per-run. The APPROVED baselines under
+# tools/ui-conformance/baseline/ are the opposite - they are the record the gate measures against - so they are
+# re-included explicitly and must stay tracked.
+tools/ui-conformance/node_modules/
+tools/ui-conformance/output/
+tools/ui-conformance/screenshots/
+tools/ui-conformance/**/*.png
+!tools/ui-conformance/baseline/**

@@ -16,7 +16,8 @@
     THE ARTIFACT IS LOCAL AND UNTRACKED. It is a binary of a few hundred MB: it is not reviewable,
     not diffable, and must never enter Git. It is written to the SQL Server instance's own backup
     directory, which is outside the repository and already writable by the service account
-    (NT Service\MSSQL$SQLEXPRESS) - granting a new directory to a virtual account would be one more
+    (NT Service\MSSQLSERVER on a default instance) - granting a new directory to a virtual account
+    would be one more
     thing to get wrong.
 
     SAFETY. Fails closed on every axis: Development only, UI_CONFORMANCE=1 only, source must be
@@ -85,7 +86,8 @@ function Invoke-Sql([string]$sql, [int]$timeout = 600) {
 # -ArtifactDirectory; nothing here is a credential.
 #
 # The directory must already grant write access to the SQL Server service account, e.g.
-#   icacls C:\CrossBuyCertification /grant "NT Service\MSSQL$SQLEXPRESS:(OI)(CI)M"
+#   icacls C:\CrossBuyCertification /grant "NT Service\MSSQLSERVER:(OI)(CI)M"
+# (a named instance uses NT Service\MSSQL$<INSTANCE> instead)
 # The backup itself is written by SQL Server, not by this script, so a missing grant surfaces as a
 # loud BACKUP failure rather than a silent one.
 if ([string]::IsNullOrWhiteSpace($ArtifactDirectory)) {

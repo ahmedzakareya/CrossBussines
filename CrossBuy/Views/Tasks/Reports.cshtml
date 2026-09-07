@@ -77,8 +77,8 @@
         @if (r == "overdue")
         {
             var rows = ViewBag.Data as List<OverdueTaskRow> ?? new();
-            <table class="table table-row-bordered align-middle gy-3 fs-7">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("المهمة","Task")</th><th class="w-150px">@T("المسؤول","Assignee")</th><th class="w-120px">@T("الأولوية","Priority")</th><th class="w-140px">@T("ميعاد التسليم","Due")</th><th class="w-120px">@T("متأخّرة (أيام)","Late (days)")</th></tr></thead>
+            <table class="table table-row-bordered align-middle gy-3 fs-7" data-cb-pager="25">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase cb-thead-rule"><th>@T("المهمة","Task")</th><th class="w-150px">@T("المسؤول","Assignee")</th><th class="w-120px">@T("الأولوية","Priority")</th><th class="w-140px">@T("ميعاد التسليم","Due")</th><th class="w-120px">@T("متأخّرة (أيام)","Late (days)")</th></tr></thead>
                 <tbody>
                     @if (!rows.Any()) { <tr><td colspan="5" class="text-center text-muted py-10">@T("لا مهام متأخرة 🎉","No overdue tasks 🎉")</td></tr> }
                     @foreach (var x in rows)
@@ -108,8 +108,8 @@
                    this replaces were a hand-rolled copy of the component. *@
                 <button type="submit" class="btn btn-primary"><i class="ki-outline ki-magnifier fs-5"></i>@T("عرض","Show")</button>
             </form>
-            <table class="table table-row-bordered align-middle gy-3 fs-7">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("الموظف","Employee")</th><th class="w-150px text-end">@T("الساعات","Hours")</th><th class="w-150px text-end">@T("مهام مكتملة","Completed")</th><th class="w-150px text-end">@T("مهام مفتوحة","Open")</th></tr></thead>
+            <table class="table table-row-bordered align-middle gy-3 fs-7" data-cb-pager="25">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase cb-thead-rule"><th>@T("الموظف","Employee")</th><th class="w-150px text-end">@T("الساعات","Hours")</th><th class="w-150px text-end">@T("مهام مكتملة","Completed")</th><th class="w-150px text-end">@T("مهام مفتوحة","Open")</th></tr></thead>
                 <tbody>
                     @if (!rows.Any()) { <tr><td colspan="4" class="text-center text-muted py-10">@T("لا بيانات في الفترة","No data in this period")</td></tr> }
                     @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.Employee</td><td class="text-end fw-bold">@x.Hours.ToString("0.##")</td><td class="text-end">@x.Completed</td><td class="text-end text-muted">@x.Open</td></tr> }
@@ -120,8 +120,8 @@
         {
             var rows = ViewBag.Data as List<CostRow> ?? new();
             var head = r == "cost-project" ? T("المشروع","Project") : T("أمر التشغيل","Work order");
-            <table class="table table-row-bordered align-middle gy-3 fs-7">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@head</th><th class="w-150px text-end">@T("الساعات","Hours")</th><th class="w-175px text-end">@T("التكلفة التقريرية","Est. cost")</th></tr></thead>
+            <table class="table table-row-bordered align-middle gy-3 fs-7" data-cb-pager="25">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase cb-thead-rule"><th>@head</th><th class="w-150px text-end">@T("الساعات","Hours")</th><th class="w-175px text-end">@T("التكلفة التقريرية","Est. cost")</th></tr></thead>
                 <tbody>
                     @if (!rows.Any()) { <tr><td colspan="3" class="text-center text-muted py-10">@T("لا مهام مربوطة","No linked tasks")</td></tr> }
                     @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.RefLabel</td><td class="text-end">@x.Hours.ToString("0.##")</td><td class="text-end fw-bold">@x.Cost.ToString("0.##")</td></tr> }
@@ -133,8 +133,8 @@
         else if (r == "billable")
         {
             var rows = ViewBag.Data as List<BillableCustomerRow> ?? new();
-            <table class="table table-row-bordered align-middle gy-3 fs-7">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("العميل","Customer")</th><th class="w-175px text-end">@T("ساعات غير مفوترة","Uninvoiced hours")</th><th class="w-175px text-end">@T("المبلغ","Amount")</th></tr></thead>
+            <table class="table table-row-bordered align-middle gy-3 fs-7" data-cb-pager="25">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase cb-thead-rule"><th>@T("العميل","Customer")</th><th class="w-175px text-end">@T("ساعات غير مفوترة","Uninvoiced hours")</th><th class="w-175px text-end">@T("المبلغ","Amount")</th></tr></thead>
                 <tbody>
                     @if (!rows.Any()) { <tr><td colspan="3" class="text-center text-muted py-10">@T("لا ساعات قابلة للفوترة","No billable hours")</td></tr> }
                     @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.Customer</td><td class="text-end">@x.Hours.ToString("0.##")</td><td class="text-end fw-bold rep-amount">@x.Amount.ToString("0.##")</td></tr> }
@@ -145,8 +145,8 @@
         else if (r == "auto")
         {
             var rows = ViewBag.Data as List<AutoTaskRow> ?? new();
-            <table class="table table-row-bordered align-middle gy-3 fs-7">
-                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase"><th>@T("المهمة","Task")</th><th class="w-150px">@T("الحالة","Status")</th><th class="w-225px">@T("مفتاح القاعدة","Rule key")</th><th class="w-160px">@T("التاريخ","Created")</th></tr></thead>
+            <table class="table table-row-bordered align-middle gy-3 fs-7" data-cb-pager="25">
+                <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase cb-thead-rule"><th>@T("المهمة","Task")</th><th class="w-150px">@T("الحالة","Status")</th><th class="w-225px">@T("مفتاح القاعدة","Rule key")</th><th class="w-160px">@T("التاريخ","Created")</th></tr></thead>
                 <tbody>
                     @if (!rows.Any()) { <tr><td colspan="4" class="text-center text-muted py-10">@T("لا مهام مولّدة تلقائيًّا","No auto-generated tasks")</td></tr> }
                     @foreach (var x in rows) { <tr><td class="fw-bold text-gray-800">@x.Title</td><td><span class="badge badge-light">@x.Status</span></td><td class="text-muted"><code>@x.RuleKey</code></td><td class="text-muted">@x.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td></tr> }
@@ -167,3 +167,88 @@
     </script>
 }
 
+
+<style>
+</style>
+
+@* THE PAGER. It works on the rows already in the page - see the header of the script for why
+   that is the right call at this size, and for the row count at which it stops being. *@
+<script>
+(function () {
+    var L = {
+        showing: @Html.Raw(Json.Serialize(T("عرض", "Showing"))),
+        of:      @Html.Raw(Json.Serialize(T("من", "of"))),
+        prev:    @Html.Raw(Json.Serialize(T("السابق", "Previous"))),
+        next:    @Html.Raw(Json.Serialize(T("التالي", "Next"))),
+        page:    @Html.Raw(Json.Serialize(T("صفحة", "Page")))
+    };
+
+    document.querySelectorAll("table[data-cb-pager]").forEach(function (table) {
+        var size = parseInt(table.getAttribute("data-cb-pager"), 10) || 25;
+        var body = table.querySelector("tbody");
+        if (!body) return;
+        // Only DATA rows. The empty-state row is a message, not a record, and paging it would
+        // put "showing 1 to 1 of 1" under "no overdue tasks".
+        var rows = [].slice.call(body.rows).filter(function (tr) { return !tr.querySelector("[colspan]"); });
+        if (rows.length <= size) return;          // a table that fits needs no furniture
+
+        var pages = Math.ceil(rows.length / size);
+        var page = 1;
+
+        var bar = document.createElement("div");
+        bar.className = "d-flex flex-stack flex-wrap gap-3 pt-4 border-top border-gray-200";
+        table.parentNode.insertBefore(bar, table.nextSibling);
+
+        var count = document.createElement("div");
+        count.className = "text-muted fs-8";
+        var nav = document.createElement("nav");
+        nav.setAttribute("aria-label", L.page);
+        var list = document.createElement("ul");
+        list.className = "pagination pagination-sm m-0";
+        nav.appendChild(list);
+        bar.appendChild(count); bar.appendChild(nav);
+
+        function item(label, target, opts) {
+            opts = opts || {};
+            var li = document.createElement("li");
+            li.className = "page-item" + (opts.active ? " active" : "") + (opts.disabled ? " disabled" : "");
+            var btn = document.createElement("button");
+            btn.type = "button";                   // a button, not a link: nothing navigates
+            btn.className = "page-link";
+            btn.textContent = label;
+            if (opts.active) btn.setAttribute("aria-current", "page");
+            if (opts.label) btn.setAttribute("aria-label", opts.label);
+            if (opts.disabled) btn.disabled = true;
+            else btn.addEventListener("click", function () { show(target); });
+            li.appendChild(btn);
+            return li;
+        }
+
+        function show(p) {
+            page = Math.min(Math.max(1, p), pages);
+            var from = (page - 1) * size, to = Math.min(from + size, rows.length);
+            rows.forEach(function (tr, i) { tr.hidden = (i < from || i >= to); });
+
+            // dir + isolate: "1 - 25 of 88" is a numeric run sitting in Arabic text.
+            count.innerHTML = "";
+            var span = document.createElement("span");
+            span.setAttribute("dir", "ltr");
+            span.style.unicodeBidi = "isolate";
+            span.style.fontVariantNumeric = "tabular-nums";
+            span.textContent = (from + 1) + " - " + to;
+            count.appendChild(document.createTextNode(L.showing + " "));
+            count.appendChild(span);
+            count.appendChild(document.createTextNode(" " + L.of + " " + rows.length));
+
+            // A WINDOW of five, not every page. Eleven pages of numbers is its own wall of text.
+            list.innerHTML = "";
+            list.appendChild(item("‹", page - 1, { disabled: page === 1, label: L.prev }));
+            var first = Math.max(1, Math.min(page - 2, pages - 4));
+            var last = Math.min(pages, first + 4);
+            for (var i = first; i <= last; i++) list.appendChild(item(String(i), i, { active: i === page }));
+            list.appendChild(item("›", page + 1, { disabled: page === pages, label: L.next }));
+        }
+        show(1);
+    });
+})();
+</script>

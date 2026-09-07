@@ -1,5 +1,6 @@
 using CrossBuy.Models.Context;
 using CrossBuy.Models.Context.Accounting;
+using CrossBuy.Models.Platform;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossBuy.BL
@@ -51,7 +52,8 @@ namespace CrossBuy.BL
 		private readonly INotificationService _notify;
 		private readonly ICurrencyService _currency;
 		private readonly ICurrencyRounding _rounding;
-		public PayableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; }
+		private readonly CrossBuy.BL.Platform.IBusinessEventService _events;   // Platform Kernel: durable business facts (in-transaction)
+		public PayableService(CrossDbContext context, IJournalEntryService journals, IStockService stock, INotificationService notify, ICurrencyService currency, ICurrencyRounding rounding, CrossBuy.BL.Platform.IBusinessEventService events) { _context = context; _journals = journals; _stock = stock; _notify = notify; _currency = currency; _rounding = rounding; _events = events; }
 
 		private static decimal R4(decimal v) => Math.Round(v, 4, MidpointRounding.AwayFromZero);
 		private async Task<int?> AccIdAsync(int companyId, string code) =>
@@ -104,7 +106,7 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error)> SaveVendorAsync(int companyId, Vendor dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "اسم المورد مطلوب");
+			if (string.IsNullOrWhiteSpace(dto.Name)) return (false, "Supplier name is required");
 			var v = dto.ID > 0 ? await _context.Vendors.FirstOrDefaultAsync(x => x.ID == dto.ID && x.CompanyID == companyId) : null;
 			if (v == null)
 			{
@@ -125,8 +127,8 @@ namespace CrossBuy.BL
 			int companyId, int vendorId, DateTime date, List<PurchaseLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null)
 		{
 			var ven = await _context.Vendors.FirstOrDefaultAsync(v => v.ID == vendorId && v.CompanyID == companyId);
-			if (ven == null) return (false, "المورد غير موجود", null);
-			if (lines == null || lines.Count == 0) return (false, "الفاتورة يجب أن تحتوي على بند واحد على الأقل", null);
+			if (ven == null) return (false, "Supplier not found", null);
+			if (lines == null || lines.Count == 0) return (false, "The invoice must contain at least one line", null);
 
 			// HM-16: some lines may SETTLE posted goods receipts (vendor-invoice matching). Load + validate those GRNs and
 			// enforce SET-ONCE *before* any posting, so a failed match leaves zero effect. Loaded TRACKED so we can stamp
@@ -139,10 +141,10 @@ namespace CrossBuy.BL
 				foreach (var id in grnIds)
 				{
 					var g = grns.FirstOrDefault(x => x.ID == id);
-					if (g == null) return (false, $"إذن الاستلام ({id}) غير موجود", null);
-					if (g.Status != "Posted") return (false, $"إذن الاستلام ({g.ReceiptNo}) غير مُرحّل — لا يُفوتَر", null);
-					if (g.InvoiceId != null) return (false, $"إذن الاستلام ({g.ReceiptNo}) مُفوتَر بالفعل — لا يُفوتَر مرّتين", null);   // SET-ONCE guard
-					if (g.VendorId != null && g.VendorId != vendorId) return (false, $"إذن الاستلام ({g.ReceiptNo}) يخصّ مورّدًا آخر", null);
+					if (g == null) return (false, $"Goods receipt ({id}) not found", null);
+					if (g.Status != "Posted") return (false, $"Goods receipt ({g.ReceiptNo}) is not posted — it cannot be invoiced", null);
+					if (g.InvoiceId != null) return (false, $"Goods receipt ({g.ReceiptNo}) is already invoiced — it cannot be invoiced twice", null);   // SET-ONCE guard
+					if (g.VendorId != null && g.VendorId != vendorId) return (false, $"Goods receipt ({g.ReceiptNo}) belongs to a different supplier", null);
 				}
 			}
 
@@ -201,8 +203,8 @@ namespace CrossBuy.BL
 			foreach (var l in inv.Lines)
 				jlines.Add(new JournalLineInput { AccountId = l.ExpenseAccountId, Debit = ToBase(l.LineTotal), Credit = 0, CostCenterId = l.CostCenterId, ProjectId = projectId, Description = l.ItemDescription });
 			if (taxBase > 0 && vatIn != null)
-				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = taxBase, Credit = 0, ProjectId = projectId, Description = "ض.ق.م مدخلات" });
-			jlines.Add(new JournalLineInput { AccountId = ven.ControlAccountId, Debit = 0, Credit = inv.GrandTotalBase.Value, ProjectId = projectId, Description = $"فاتورة شراء {inv.InvoiceNo}" });
+				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = taxBase, Credit = 0, ProjectId = projectId, Description = "Input VAT" });
+			jlines.Add(new JournalLineInput { AccountId = ven.ControlAccountId, Debit = 0, Credit = inv.GrandTotalBase.Value, ProjectId = projectId, Description = $"Purchase invoice {inv.InvoiceNo}" });
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
@@ -224,28 +226,49 @@ namespace CrossBuy.BL
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,
 					Qty = l.Qty, UnitCostInBase = unitCost, SourceType = "PurchaseInvoice", SourceId = inv.ID, SourceLineId = l.ID,
-					PostToGl = false, Notes = $"استلام فاتورة شراء {inv.InvoiceNo}"
+					PostToGl = false, Notes = $"Receipt for purchase invoice {inv.InvoiceNo}"
 				}, userId?.ToString());
-				if (!sok) return (false, serr ?? "تعذّر استلام المخزون", null);
+				if (!sok) return (false, serr ?? "Could not receive the stock", null);
 			}
+
 			// HM-16: stamp each settled goods receipt as Invoiced — SET-ONCE, inside this transaction so the link shares
 			// the invoice's fate (a rolled-back invoice leaves the GRN open). Re-verify un-invoiced under the tx to keep
 			// the guard honest against a racing match (the earlier read was pre-tx). grns were loaded tracked above.
 			foreach (var g in grns)
 			{
-				if (g.InvoiceId != null) return (false, $"إذن الاستلام ({g.ReceiptNo}) مُفوتَر بالفعل — لا يُفوتَر مرّتين", null);
+				if (g.InvoiceId != null) return (false, $"Goods receipt ({g.ReceiptNo}) is already invoiced — it cannot be invoiced twice", null);
 				g.InvoiceId = inv.ID;
 			}
 			if (grns.Count > 0) await _context.SaveChangesAsync();
-			await tx.CommitAsync();
-			try
+
+			// Platform Kernel (ADR-001): the durable fact, INSIDE this transaction and BEFORE the commit, so
+			// the event shares the fate of the invoice, its journal entry AND its stock receipt. No try/catch:
+			// if the event cannot be written the purchase must not stand.
+			await _events.RecordAsync(new BusinessEventRecord
 			{
-				await _notify.NotifyRoleAsync(companyId, "acc", new[] { "ChiefAccountant" },
-					"فاتورة شراء جديدة", "New purchase invoice",
-					$"سُجّلت فاتورة شراء {inv.InvoiceNo} من المورد {ven.Name} بقيمة {inv.GrandTotal:N2}", $"Purchase invoice {inv.InvoiceNo} from {ven.Name} recorded ({inv.GrandTotal:N2})",
-					"purchase_invoice", inv.ID);
-			}
-			catch { /* notifications never block the business flow */ }
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice,
+				EntityId = inv.ID,
+				EventType = CrossBuy.BL.Platform.PurchaseInvoiceEvents.Created,
+				PayloadVersion = PurchaseInvoiceEventPayload.Version,
+				Visibility = BusinessEventVisibility.Internal,
+				DedupKey = $"PurchaseInvoice.Created:{inv.ID}",   // one Created per invoice, forever
+				Payload = new PurchaseInvoiceEventPayload
+				{
+					InvoiceNumber = inv.InvoiceNo,
+					SupplierId = inv.VendorId,
+					SupplierName = ven.Name,
+					InvoiceDate = inv.InvoiceDate,
+					NewStatus = inv.Status,
+					TotalAfter = inv.GrandTotal,
+				},
+			});
+
+			await tx.CommitAsync();
+
+			// Platform Kernel slice 2: the legacy after-commit NotifyRoleAsync that used to sit here was
+			// REMOVED — NotificationProjection now produces it from the event above, with the same audience
+			// ("acc"/ChiefAccountant), the same catalog type ("purchase_invoice") and the same wording.
+			// Keeping both would double-notify. See ADR-006.
 			return (true, null, inv);
 		}
 
@@ -261,14 +284,14 @@ namespace CrossBuy.BL
 		{
 			var gr = await _context.GoodsReceipts.AsNoTracking().Include(g => g.Lines)
 				.FirstOrDefaultAsync(g => g.ID == goodsReceiptId && g.CompanyID == companyId);
-			if (gr == null) return (false, "إذن الاستلام غير موجود", null);
-			if (gr.Status != "Posted" || gr.InvoiceId != null) return (false, "إذن الاستلام غير مُرحّل أو مُفوتَر بالفعل", null);
-			if (gr.VendorId == null) return (false, "إذن الاستلام بلا مورّد للفوترة عليه", null);
+			if (gr == null) return (false, "Goods receipt not found", null);
+			if (gr.Status != "Posted" || gr.InvoiceId != null) return (false, "The goods receipt is not posted, or is already invoiced", null);
+			if (gr.VendorId == null) return (false, "The goods receipt has no supplier to invoice", null);
 			// value guard: price variance is deferred — the billed amount must equal the received value or the match is refused.
 			int __fdp = await _rounding.DecimalsAsync(companyId, null);
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 			if (Rf(invoiceAmount) != Rf(gr.TotalCost))
-				return (false, $"قيمة الفاتورة ({Rf(invoiceAmount)}) تختلف عن قيمة المستلَم ({Rf(gr.TotalCost)})؛ مطابقة فرق السعر غير مدعومة — رُفِضت المطابقة", null);
+				return (false, $"The invoice value ({Rf(invoiceAmount)}) differs from the received value ({Rf(gr.TotalCost)}); price-variance matching is not supported — the match was rejected", null);
 			// build the GRNI-clearing lines from the receipt: ExpenseAccountId = category GRNI, ItemId = null (no re-receipt),
 			// GoodsReceiptId set so CreatePurchaseInvoiceAsync enforces set-once and stamps the GRN Invoiced in-transaction.
 			var lines = new List<PurchaseLineInput>();
@@ -276,12 +299,12 @@ namespace CrossBuy.BL
 			{
 				var grni = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId && i.CompanyID == companyId)
 					.Join(_context.ItemCategories, i => i.ItemCategoryId, c => c.ID, (i, c) => (int?)(c.GrniAccountId ?? c.InventoryAccountId)).FirstOrDefaultAsync();
-				if (grni == null || grni == 0) return (false, "أحد بنود الاستلام بلا حساب «بضاعة وردت ولم تُفوتَر»/مخزون مُهيّأ على فئته", null);
+				if (grni == null || grni == 0) return (false, "One of the receipt lines has no GRNI/inventory account configured on its category", null);
 				var name = await _context.Items.AsNoTracking().Where(i => i.ID == l.ItemId).Select(i => i.Name).FirstOrDefaultAsync();
 				lines.Add(new PurchaseLineInput { ItemDescription = name ?? $"GRN {gr.ReceiptNo} #{l.LineNo}", Qty = l.Qty, UnitPrice = l.UnitCost, DiscountAmount = 0, TaxRate = 0, ExpenseAccountId = grni.Value, ItemId = null, WarehouseId = null, GoodsReceiptId = gr.ID });
 			}
-			if (lines.Count == 0) return (false, "إذن الاستلام لا يحتوي بنودًا للفوترة", null);
-			return await CreatePurchaseInvoiceAsync(companyId, gr.VendorId.Value, invoiceDate, lines, $"مطابقة إذن استلام {gr.ReceiptNo}", userId);
+			if (lines.Count == 0) return (false, "The goods receipt has no lines to invoice", null);
+			return await CreatePurchaseInvoiceAsync(companyId, gr.VendorId.Value, invoiceDate, lines, $"Match of goods receipt {gr.ReceiptNo}", userId);
 		}
 
 		// P3: EDIT a posted purchase invoice — reverse the original postings (stock at the EXACT received cost), then re-post on the same row/number.
@@ -289,13 +312,25 @@ namespace CrossBuy.BL
 			int companyId, int invoiceId, int vendorId, DateTime date, List<PurchaseLineInput> lines, string? notes, int? userId, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null)
 		{
 			var inv = await _context.PurchaseInvoices.Include(i => i.Lines).FirstOrDefaultAsync(i => i.ID == invoiceId && i.CompanyID == companyId);
-			if (inv == null) return (false, "الفاتورة غير موجودة", null);
-			if (inv.Status != "Posted") return (false, "لا يمكن تعديل فاتورة غير مُرحّلة أو ملغاة", null);
+			if (inv == null) return (false, "Invoice not found", null);
+			if (inv.Status != "Posted") return (false, "An invoice that is not posted, or is cancelled, cannot be edited", null);
 			if (await _context.PaymentAllocations.AsNoTracking().AnyAsync(a => a.CompanyID == companyId && a.PurchaseInvoiceId == invoiceId))
-				return (false, "لا يمكن تعديل الفاتورة لوجود سداد مخصّص عليها — ألغِ التخصيص أولًا", null);
+				return (false, "The invoice cannot be edited because a payment is allocated to it — unallocate it first", null);
 			var ven = await _context.Vendors.FirstOrDefaultAsync(v => v.ID == vendorId && v.CompanyID == companyId);
-			if (ven == null) return (false, "المورد غير موجود", null);
-			if (lines == null || lines.Count == 0) return (false, "الفاتورة يجب أن تحتوي على بند واحد على الأقل", null);
+			if (ven == null) return (false, "Supplier not found", null);
+			if (lines == null || lines.Count == 0) return (false, "The invoice must contain at least one line", null);
+
+			// Platform Kernel slice 2: snapshot the header BEFORE any mutation so the event can carry a change
+			// SUMMARY (field names + total delta) instead of the entity graph.
+			var beforeVendorId = inv.VendorId;
+			var beforeInvoiceDate = inv.InvoiceDate;
+			var beforeCurrencyId = inv.CurrencyId;
+			var beforeExchangeRate = inv.ExchangeRate;
+			var beforeProjectId = inv.ProjectId;
+			var beforeNotes = inv.Notes;
+			var beforeStatus = inv.Status;
+			var beforeGrandTotal = inv.GrandTotal;
+			var beforeLineSignature = LineSignature(inv.Lines);
 
 			var vatIn = await AccIdAsync(companyId, "110401");
 			var functional = await _currency.GetFunctionalCurrencyIdAsync(companyId, null);
@@ -323,15 +358,15 @@ namespace CrossBuy.BL
 				var (rok, rerr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest {
 					Date = date, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = -1,
 					Qty = m.QtyBase, UoMId = null, OutCostOverride = m.UnitCost, PostToGl = false,
-					SourceType = "PurchaseInvoiceEdit", SourceId = invoiceId, Notes = $"عكس استلام تعديل فاتورة {inv.InvoiceNo}"
+					SourceType = "PurchaseInvoiceEdit", SourceId = invoiceId, Notes = $"Reversal of the receipt for the edit of invoice {inv.InvoiceNo}"
 				}, userId?.ToString());
-				if (!rok) return (false, rerr ?? "تعذّر عكس استلام المخزون", null);
+				if (!rok) return (false, rerr ?? "Could not reverse the stock receipt", null);
 			}
 			// (2) reverse the original GL entry (mirror; inventory/expense + VAT + AP all back out at the original amounts)
 			if (inv.JournalEntryId.HasValue)
 			{
-				var (rjok, rjerr, _) = await _journals.ReverseAsync(inv.JournalEntryId.Value, userId, $"تعديل فاتورة {inv.InvoiceNo}");
-				if (!rjok) return (false, rjerr ?? "تعذّر عكس قيد الفاتورة", null);
+				var (rjok, rjerr, _) = await _journals.ReverseAsync(inv.JournalEntryId.Value, userId, $"Edit of invoice {inv.InvoiceNo}");
+				if (!rjok) return (false, rjerr ?? "Could not reverse the invoice entry", null);
 			}
 
 			// (3) drop old lines
@@ -366,8 +401,8 @@ namespace CrossBuy.BL
 			foreach (var l in inv.Lines)
 				jlines.Add(new JournalLineInput { AccountId = l.ExpenseAccountId, Debit = ToBase(l.LineTotal), Credit = 0, CostCenterId = l.CostCenterId, ProjectId = projectId, Description = l.ItemDescription });
 			if (taxBase > 0 && vatIn != null)
-				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = taxBase, Credit = 0, ProjectId = projectId, Description = "ض.ق.م مدخلات" });
-			jlines.Add(new JournalLineInput { AccountId = ven.ControlAccountId, Debit = 0, Credit = inv.GrandTotalBase.Value, ProjectId = projectId, Description = $"فاتورة شراء {inv.InvoiceNo} (معدّلة)" });
+				jlines.Add(new JournalLineInput { AccountId = vatIn.Value, Debit = taxBase, Credit = 0, ProjectId = projectId, Description = "Input VAT" });
+			jlines.Add(new JournalLineInput { AccountId = ven.ControlAccountId, Debit = 0, Credit = inv.GrandTotalBase.Value, ProjectId = projectId, Description = $"Purchase invoice {inv.InvoiceNo} (edited)" });
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput
 			{
 				CompanyID = companyId, EntryDate = date, JournalType = "Auto", SourceType = "PurchaseInvoice", SourceId = inv.ID, CurrencyId = cur,
@@ -388,13 +423,53 @@ namespace CrossBuy.BL
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = 1,
 					Qty = l.Qty, UnitCostInBase = unitCost, SourceType = "PurchaseInvoice", SourceId = inv.ID, SourceLineId = l.ID,
-					PostToGl = false, Notes = $"استلام فاتورة شراء {inv.InvoiceNo} (معدّلة)"
+					PostToGl = false, Notes = $"Receipt for purchase invoice {inv.InvoiceNo} (edited)"
 				}, userId?.ToString());
-				if (!sok) return (false, serr ?? "تعذّر استلام المخزون", null);
+				if (!sok) return (false, serr ?? "Could not receive the stock", null);
 			}
+
+			// Platform Kernel (ADR-001): the durable fact, inside this transaction and before the commit.
+			// Field NAMES only. No DedupKey — an invoice may legitimately be edited more than once.
+			var changedFields = new List<string>();
+			if (beforeVendorId != inv.VendorId) changedFields.Add(nameof(inv.VendorId));
+			if (beforeInvoiceDate != inv.InvoiceDate) changedFields.Add(nameof(inv.InvoiceDate));
+			if (beforeCurrencyId != inv.CurrencyId) changedFields.Add(nameof(inv.CurrencyId));
+			if (beforeExchangeRate != inv.ExchangeRate) changedFields.Add(nameof(inv.ExchangeRate));
+			if (beforeProjectId != inv.ProjectId) changedFields.Add(nameof(inv.ProjectId));
+			if (beforeNotes != inv.Notes) changedFields.Add(nameof(inv.Notes));
+			if (beforeLineSignature != LineSignature(inv.Lines)) changedFields.Add(nameof(inv.Lines));
+			if (beforeGrandTotal != inv.GrandTotal) changedFields.Add(nameof(inv.GrandTotal));
+
+			await _events.RecordAsync(new BusinessEventRecord
+			{
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice,
+				EntityId = inv.ID,
+				EventType = CrossBuy.BL.Platform.PurchaseInvoiceEvents.Updated,
+				PayloadVersion = PurchaseInvoiceEventPayload.Version,
+				Visibility = BusinessEventVisibility.Internal,
+				Payload = new PurchaseInvoiceEventPayload
+				{
+					InvoiceNumber = inv.InvoiceNo,
+					SupplierId = inv.VendorId,
+					SupplierName = ven.Name,
+					InvoiceDate = inv.InvoiceDate,
+					ChangedFields = changedFields.Count > 0 ? changedFields.ToArray() : null,
+					OldStatus = beforeStatus,
+					NewStatus = inv.Status,
+					TotalBefore = beforeGrandTotal,
+					TotalAfter = inv.GrandTotal,
+				},
+			});
+
 			await tx.CommitAsync();
 			return (true, null, inv);
 		}
+
+		// Platform Kernel: a stable fingerprint of the invoice lines, used only to decide whether "Lines"
+		// belongs in an edit's changed-field list. Never stored in the event payload.
+		private static string LineSignature(IEnumerable<PurchaseInvoiceLine> lines) => string.Join("|",
+			lines.OrderBy(l => l.LineNo)
+				 .Select(l => $"{l.ItemId}:{l.ItemDescription}:{l.Qty}:{l.UnitPrice}:{l.DiscountAmount}:{l.TaxRate}:{l.WarehouseId}"));
 
 		// ---------------- P3-3b: Purchase returns / debit notes ----------------
 		public async Task<List<PurchaseReturn>> GetPurchaseReturnsAsync(int companyId) =>
@@ -409,12 +484,12 @@ namespace CrossBuy.BL
 			int companyId, int vendorId, int? originalInvoiceId, DateTime date, List<PurchaseLineInput> lines, string? notes, int? userId)
 		{
 			var ven = await _context.Vendors.FirstOrDefaultAsync(v => v.ID == vendorId && v.CompanyID == companyId);
-			if (ven == null) return (false, "المورد غير موجود", null);
+			if (ven == null) return (false, "Supplier not found", null);
 			var itemLines = (lines ?? new()).Where(l => l.ItemId != null && l.WarehouseId != null && l.Qty > 0).ToList();
-			if (itemLines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند صنف واحد على الأقل (مع المخزن)", null);
+			if (itemLines.Count == 0) return (false, "The return must contain at least one item line (with a warehouse)", null);
 			var grniAcc = await AccIdAsync(companyId, "210203");
 			var vatIn = await AccIdAsync(companyId, "110401");
-			if (grniAcc == null) return (false, "حساب فواتير لم ترد (210203) غير موجود", null);
+			if (grniAcc == null) return (false, "The invoices-not-received account (210203) does not exist", null);
 			// HM-2: a purchase return is valued at the item's STORED COST (functional — from mv.TotalCost via StockService), NOT the
 			// document/purchase amount (that would be HM-D16 territory). So all values are functional ⇒ round to the functional dp (Rf).
 			int __fdp = await _rounding.DecimalsAsync(companyId, null);
@@ -432,12 +507,12 @@ namespace CrossBuy.BL
 				var (sok, serr, mv) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = -1,
-					Qty = l.Qty, SourceType = "PurchaseReturn", SourceId = ret.ID, PostToGl = true, Notes = $"مرتجع شراء {ret.ReturnNo}"
+					Qty = l.Qty, SourceType = "PurchaseReturn", SourceId = ret.ID, PostToGl = true, Notes = $"Purchase return {ret.ReturnNo}"
 				}, userId?.ToString());
 				if (!sok || mv == null)
 				{
 					_context.PurchaseReturns.Remove(ret); await _context.SaveChangesAsync();
-					return (false, serr ?? "تعذّر إخراج البضاعة من المخزون", null);
+					return (false, serr ?? "Could not issue the goods out of stock", null);
 				}
 				var lineCost = Rf(mv.TotalCost);
 				var lineVat = Rf(lineCost * l.TaxRate / 100m);
@@ -473,15 +548,15 @@ namespace CrossBuy.BL
 			int companyId, int returnId, int vendorId, int? originalInvoiceId, DateTime date, List<PurchaseLineInput> lines, string? notes, int? userId)
 		{
 			var ret = await _context.PurchaseReturns.Include(r => r.Lines).FirstOrDefaultAsync(r => r.ID == returnId && r.CompanyID == companyId);
-			if (ret == null) return (false, "المرتجع غير موجود", null);
-			if (ret.Status != "Posted") return (false, "لا يمكن تعديل مرتجع غير مُرحّل", null);
+			if (ret == null) return (false, "Return not found", null);
+			if (ret.Status != "Posted") return (false, "A return that is not posted cannot be edited", null);
 			var ven = await _context.Vendors.FirstOrDefaultAsync(v => v.ID == vendorId && v.CompanyID == companyId);
-			if (ven == null) return (false, "المورد غير موجود", null);
+			if (ven == null) return (false, "Supplier not found", null);
 			var itemLines = (lines ?? new()).Where(l => l.ItemId != null && l.WarehouseId != null && l.Qty > 0).ToList();
-			if (itemLines.Count == 0) return (false, "المرتجع يجب أن يحتوي على بند صنف واحد على الأقل (مع المخزن)", null);
+			if (itemLines.Count == 0) return (false, "The return must contain at least one item line (with a warehouse)", null);
 			var grniAcc = await AccIdAsync(companyId, "210203");
 			var vatIn = await AccIdAsync(companyId, "110401");
-			if (grniAcc == null) return (false, "حساب فواتير لم ترد (210203) غير موجود", null);
+			if (grniAcc == null) return (false, "The invoices-not-received account (210203) does not exist", null);
 			int __fdp = await _rounding.DecimalsAsync(companyId, null);   // HM-2: functional-cost values
 			decimal Rf(decimal v) => Math.Round(v, __fdp, MidpointRounding.AwayFromZero);
 
@@ -496,13 +571,13 @@ namespace CrossBuy.BL
 				var (rok, rerr, _) = await _stock.PostMovementAsync(companyId, new MovementRequest {
 					Date = date, ItemId = m.ItemId, WarehouseId = m.WarehouseId, Direction = 1,
 					Qty = m.QtyBase, UnitCostInBase = m.UnitCost, PostToGl = false,
-					SourceType = "PurchaseReturnEdit", SourceId = returnId, Notes = $"عكس مرتجع {ret.ReturnNo}"
+					SourceType = "PurchaseReturnEdit", SourceId = returnId, Notes = $"Reversal of return {ret.ReturnNo}"
 				}, userId?.ToString());
-				if (!rok) return (false, rerr ?? "تعذّر عكس مخزون المرتجع", null);
-				if (m.JournalEntryId.HasValue) { var (jr, je, _) = await _journals.ReverseAsync(m.JournalEntryId.Value, userId, $"تعديل مرتجع {ret.ReturnNo}"); if (!jr) return (false, je ?? "تعذّر عكس قيد المخزون", null); }
+				if (!rok) return (false, rerr ?? "Could not reverse the return's stock", null);
+				if (m.JournalEntryId.HasValue) { var (jr, je, _) = await _journals.ReverseAsync(m.JournalEntryId.Value, userId, $"Edit of return {ret.ReturnNo}"); if (!jr) return (false, je ?? "Could not reverse the inventory entry", null); }
 			}
 			// (2) reverse the debit-note GL
-			if (ret.JournalEntryId.HasValue) { var (jr2, je2, _) = await _journals.ReverseAsync(ret.JournalEntryId.Value, userId, $"تعديل مرتجع {ret.ReturnNo}"); if (!jr2) return (false, je2 ?? "تعذّر عكس قيد الإشعار", null); }
+			if (ret.JournalEntryId.HasValue) { var (jr2, je2, _) = await _journals.ReverseAsync(ret.JournalEntryId.Value, userId, $"Edit of return {ret.ReturnNo}"); if (!jr2) return (false, je2 ?? "Could not reverse the credit-note entry", null); }
 
 			// (3) drop old lines
 			_context.PurchaseReturnLines.RemoveRange(ret.Lines); ret.Lines.Clear();
@@ -516,9 +591,9 @@ namespace CrossBuy.BL
 				var (sok, serr, mv) = await _stock.PostMovementAsync(companyId, new MovementRequest
 				{
 					Date = date, ItemId = l.ItemId!.Value, WarehouseId = l.WarehouseId!.Value, Direction = -1,
-					Qty = l.Qty, SourceType = "PurchaseReturn", SourceId = ret.ID, PostToGl = true, Notes = $"مرتجع شراء {ret.ReturnNo} (معدّل)"
+					Qty = l.Qty, SourceType = "PurchaseReturn", SourceId = ret.ID, PostToGl = true, Notes = $"Purchase return {ret.ReturnNo} (edited)"
 				}, userId?.ToString());
-				if (!sok || mv == null) return (false, serr ?? "تعذّر إخراج البضاعة من المخزون", null);
+				if (!sok || mv == null) return (false, serr ?? "Could not issue the goods out of stock", null);
 				var lineCost = Rf(mv.TotalCost); var lineVat = Rf(lineCost * l.TaxRate / 100m);
 				costTotal += lineCost; vatTotal += lineVat;
 				var item = await _context.Items.AsNoTracking().FirstOrDefaultAsync(i => i.ID == l.ItemId.Value);
@@ -551,9 +626,9 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> CreatePaymentAsync(int companyId, int vendorId, DateTime date, decimal amount, string method, int cashAccountId, string? notes, int? userId, decimal whtRate = 0, int? currencyId = null, decimal? exchangeRate = null, int? projectId = null)
 		{
 			var ven = await _context.Vendors.FirstOrDefaultAsync(v => v.ID == vendorId && v.CompanyID == companyId);
-			if (ven == null) return (false, "المورد غير موجود");
-			if (amount <= 0) return (false, "المبلغ يجب أن يكون أكبر من صفر");
-			if (whtRate < 0 || whtRate > 100) return (false, "نسبة الخصم والتحصيل غير صحيحة");
+			if (ven == null) return (false, "Supplier not found");
+			if (amount <= 0) return (false, "The amount must be greater than zero");
+			if (whtRate < 0 || whtRate > 100) return (false, "Invalid withholding and collection rate");
 			// HM-1-أ (هـ): payment row + its JE + the JournalEntryId back-ref must be ATOMIC (own-or-join) — closes the standalone 2-commit gap.
 			await using var tx = await ScopedTx.BeginOrJoinAsync(_context);
 
@@ -576,7 +651,7 @@ namespace CrossBuy.BL
 			var whtForeign = Rd(amount * whtRate / 100m);
 			var netForeign = Rd(amount - whtForeign);
 			var whtAcc = whtForeign > 0 ? await AccIdAsync(companyId, "210202") : null;   // Withholding Tax Payable
-			if (whtForeign > 0 && whtAcc == null) return (false, "حساب ضريبة الخصم والتحصيل (210202) غير موجود");
+			if (whtForeign > 0 && whtAcc == null) return (false, "The withholding and collection tax account (210202) does not exist");
 
 			var pay = new Payment { CompanyID = companyId, VendorId = vendorId, PaymentDate = date.Date, Amount = Rd(amount), Method = method, CashAccountId = cashAccountId, Status = "Posted", Notes = notes, CreatedAt = DateTime.UtcNow, CurrencyId = cur, ExchangeRate = rate };
 			_context.Payments.Add(pay);
@@ -621,9 +696,9 @@ namespace CrossBuy.BL
 			if (fxNet != 0)
 			{
 				var fxAcc = await AccIdAsync(companyId, fxNet > 0 ? "4902" : "5902");
-				if (fxAcc == null) { if (_context.Database.CurrentTransaction == null) { _context.Payments.Remove(pay); await _context.SaveChangesAsync(); } return (false,"حساب فروق العملة المحققة (4902/5902) غير مُهيّأ"); }
-				if (fxNet > 0) lines.Add(new() { AccountId = fxAcc.Value, Debit = 0, Credit = fxNet, Description = "ربح فرق عملة محقق", ProjectId = projectId });
-				else lines.Add(new() { AccountId = fxAcc.Value, Debit = -fxNet, Credit = 0, Description = "خسارة فرق عملة محققة", ProjectId = projectId });
+				if (fxAcc == null) { if (_context.Database.CurrentTransaction == null) { _context.Payments.Remove(pay); await _context.SaveChangesAsync(); } return (false,"The realised exchange-difference account (4902/5902) is not configured"); }
+				if (fxNet > 0) lines.Add(new() { AccountId = fxAcc.Value, Debit = 0, Credit = fxNet, Description = "Realised exchange gain", ProjectId = projectId });
+				else lines.Add(new() { AccountId = fxAcc.Value, Debit = -fxNet, Credit = 0, Description = "Realised exchange loss", ProjectId = projectId });
 			}
 
 			var (ok, err, entry) = await _journals.CreateAndPostAsync(new JournalEntryInput

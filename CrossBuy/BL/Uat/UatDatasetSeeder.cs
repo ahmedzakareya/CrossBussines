@@ -261,6 +261,7 @@ namespace CrossBuy.BL.Uat
 				var (ok, error, id) = await _tasks.SaveAsync(companyId, new TaskSaveInput
 				{
 					Title = spec.Title,
+					TitleEn = spec.TitleEn,
 					Description = spec.Description,
 					AssigneeEmployeeId = spec.AssigneeId,
 					Priority = spec.Priority,
@@ -316,6 +317,10 @@ namespace CrossBuy.BL.Uat
 		private sealed class TaskSpec
 		{
 			public required string Title { get; init; }
+			// The English twin. UatContent.TaskScenarios has carried an `En` for two thirds of its rows all
+			// along and nothing read it: the spec had no field for it, so every seeded task landed with
+			// TitleEn = NULL and an English UI fell back to the Arabic title on all 455 of them.
+			public string? TitleEn { get; init; }
 			public string? Description { get; init; }
 			public required int AssigneeId { get; init; }
 			public required string Priority { get; init; }
@@ -381,11 +386,19 @@ namespace CrossBuy.BL.Uat
 					string priority = priorities[rng.Next(priorities.Length)];
 					string status = StatusFor(slot.Label, seq);
 
+					// ONE number for both titles. It used to be produced by ++seq inside the Title
+					// expression, which cannot be reused for a second title without incrementing again.
+					int batch = ++seq;
+
 					specs.Add(new TaskSpec
 					{
 						// The sequence number is what guarantees a distinct natural key while keeping the title
 						// readable — "دفعة 12" is how these are actually referred to in a real backlog.
-						Title = $"{scenario.Ar} — دفعة {++seq}",
+						Title = $"{scenario.Ar} — دفعة {batch}",
+						// Null where the scenario has no twin ON PURPOSE: four rows in the pool are Arabic with
+						// no English, and they are the ones that exercise the fallback path. Seeding a machine
+						// translation there would delete the only test case for it.
+						TitleEn = scenario.En is null ? null : $"{scenario.En} — batch {batch}",
 						Description = scenario.Desc,
 						AssigneeId = assignee,
 						Priority = priority,
@@ -408,6 +421,7 @@ namespace CrossBuy.BL.Uat
 			specs.Add(new TaskSpec
 			{
 				Title = UatContent.LongTaskTitle,
+				TitleEn = UatContent.LongTaskTitleEn,   // already in the plan, never used until now
 				Description = UatContent.LongDescription,
 				AssigneeId = employees[0],
 				Priority = "Urgent",
@@ -425,6 +439,7 @@ namespace CrossBuy.BL.Uat
 			specs.Add(new TaskSpec
 			{
 				Title = "الإقفال الشهري للحسابات — يوليو (مكتمل)",
+				TitleEn = "Monthly accounts closing — July (completed)",
 				Description = "أُقفلت الفترة واعتُمد ميزان المراجعة. محفوظ كمرجع للفترة القادمة.",
 				AssigneeId = employees[0],
 				Priority = "High",
@@ -438,6 +453,7 @@ namespace CrossBuy.BL.Uat
 			specs.Add(new TaskSpec
 			{
 				Title = "مراجعة شاملة لمطابقة المشتريات — قيد التنفيذ",
+				TitleEn = "End-to-end purchase match review — in progress",
 				Description = UatContent.LongDescription,
 				AssigneeId = employees[0],
 				Priority = "Urgent",
@@ -457,6 +473,14 @@ namespace CrossBuy.BL.Uat
 				specs.Add(new TaskSpec
 				{
 					Title = $"مطابقة حركة متوقّعة — {label} (مجدولة {specs.Count})",
+					// THE ENGLISH TITLE DOES NOT REUSE `label`. That label is an Arabic string baked into
+					// UatPlan.ScheduledExpectations ("عميل تزامن D6 — ٣٠ يوليو"), so carrying it across left Arabic
+					// inside an otherwise English title. The window date is used instead, and the PARTY is not
+					// repeated here at all because the row already shows it in its own chip — which the service
+					// resolves from the customer's or vendor's English name, so it is localised properly there
+					// and would only be wrong here.
+					TitleEn = $"Expected movement match — {(entityType == "PurchaseInvoice" ? "purchase" : "sales")} " +
+							  $"on {from:yyyy-MM-dd} (scheduled {specs.Count})",
 					Description = "مهمة مجدولة بانتظار حركة مطابقة؛ يربطها المطابِق تلقائيًا أو يعرض المرشّحين للمراجعة.",
 					AssigneeId = employees[PickAssignee(specs.Count, employees.Count)],
 					Priority = "Normal",
@@ -625,7 +649,7 @@ namespace CrossBuy.BL.Uat
 				if (ok) { made++; continue; }
 				refused++;
 				// "already exists" is the idempotent path and is not worth a note on every re-run.
-				if (error != null && !error.Contains("موجودة بالفعل")) notes.Add($"dependency refused: {error}");
+				if (error != null && !error.Contains("already exists")) notes.Add($"dependency refused: {error}");
 			}
 
 			int owned = await _db.TaskDependencies.AsNoTracking()
@@ -662,6 +686,7 @@ namespace CrossBuy.BL.Uat
 					Name = name,
 					NameEn = $"{def.En} [{UatMarkers.RunId}]",
 					Description = def.Desc,
+					DescriptionEn = def.DescEn,
 					// One template is deliberately INACTIVE so the active/inactive filter on /Tasks/Templates
 					// has something to filter, and so "apply" correctly refuses it.
 					IsActive = i != plan.Templates - 1,
@@ -897,6 +922,7 @@ namespace CrossBuy.BL.Uat
 				int id = await _calendar.SaveAsync(companyId, spec.OwnerId, new CalEventInput
 				{
 					Title = spec.Title,
+					TitleEn = spec.TitleEn,
 					Description = spec.Description,
 					Location = spec.Location,
 					AllDay = spec.AllDay,
@@ -929,6 +955,10 @@ namespace CrossBuy.BL.Uat
 		private sealed class EventSpec
 		{
 			public required string Title { get; init; }
+			// UatContent.EventScenarios has always carried an English title in its `En` slot; it was used
+			// only to compose the DESCRIPTION, never as the event's own English title, because the entity
+			// had no column for one. It does now.
+			public string? TitleEn { get; init; }
 			public string? Description { get; init; }
 			public string? Location { get; init; }
 			public required bool AllDay { get; init; }
@@ -983,6 +1013,8 @@ namespace CrossBuy.BL.Uat
 					specs.Add(new EventSpec
 					{
 						Title = $"{def.Ar} — {seq + 1:00}",
+						// The same trailing number, so the two titles stay recognisably the same event.
+						TitleEn = string.IsNullOrWhiteSpace(def.En) ? null : $"{def.En} — {seq + 1:00}",
 						Description = Describe(def.En, seq),
 						Location = def.Location,
 						AllDay = allDay,

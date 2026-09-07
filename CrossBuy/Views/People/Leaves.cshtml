@@ -6,9 +6,14 @@
     Layout = "~/Views/Shared/_LayoutPeople.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     string nm(string? a, string? b) => (isAr ? a : b)?.Trim().Length > 0 ? (isAr ? a : b)! : (b ?? a ?? "—");
-    var statusBadge = new[] { "warning", "success", "danger" };
+    @* Pending is warning-STRONG, not `warning`. The brand layer already fixes the pale
+       yellow's TEXT colour, but the tint itself is the yellow this app has been clearing
+       out - and a leave request waiting on somebody is a caution, which is what
+       --cb-warning-strong is for. Approved stays `success` (complete) and rejected stays
+       `danger` (the one that wants attention); both are already right. *@
+    var statusBadge = new[] { "warning-strong", "success", "danger" };
     var statusText = new[] { Localizer["Pending"].Value, Localizer["Approved"].Value, Localizer["Rejected"].Value };
-    var stepColor = new[] { "warning", "success", "danger" };
+    var stepColor = new[] { "warning-strong", "success", "danger" };
     var stepIcon = new[] { "ki-time", "ki-check", "ki-cross" };
 }
 
@@ -135,7 +140,7 @@
                                                     <div class="symbol symbol-40px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-calendar-tick fs-2 text-primary"></i></span></div>
                                                     <div class="flex-grow-1">
                                                         <span class="fs-5 fw-bold text-gray-900">@nm(r.LeaveType?.NameAr, r.LeaveType?.NameEn)</span>
-                                                        <div class="fs-7 text-muted">@Localizer["Requested by"]: @(isAr ? r.Employee?.FullName : r.Employee?.FullNameEn)</div>
+                                                        <div class="fs-7 text-muted">@Localizer["Requested by"]: @(isAr ? r.Employee?.FullName : DisplayName.Or(r.Employee?.FullNameEn, r.Employee?.FullName))</div>
                                                     </div>
                                                     <span class="badge badge-light-@statusBadge[r.Status]">@statusText[r.Status]</span>
                                                 </div>
@@ -155,7 +160,11 @@
                                                     <button type="submit" name="approve" value="false" class="btn btn-sm btn-light-danger flex-shrink-0" data-cb-confirm data-cb-action="reject" data-cb-text="@Localizer["Reject this leave request?"]">
                                                         <i class="ki-outline ki-cross fs-3"></i>@SR["Reject"]
                                                     </button>
-                                                    <button type="submit" name="approve" value="true" class="btn btn-sm btn-success flex-shrink-0" data-cb-confirm data-cb-action="approve" data-cb-text="@Localizer["Approve this leave request?"]">
+                                                                                                        @* SAME WEIGHT AS REJECT. This was a solid btn-success beside a light
+                                                       btn-light-danger, so the two choices the reviewer has to weigh were
+                                                       drawn at different visual weights and the heavier one was "approve".
+                                                       Colour and icon tell them apart; weight should not take a side. *@
+                                                    <button type="submit" name="approve" value="true" class="btn btn-sm btn-light-success flex-shrink-0" data-cb-confirm data-cb-action="approve" data-cb-text="@Localizer["Approve this leave request?"]">
                                                         <i class="ki-outline ki-check fs-3"></i>@SR["Approve"]
                                                     </button>
                                                 </form>

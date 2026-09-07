@@ -18,6 +18,10 @@
     try { canManage = await InvAccess.CanAsync("manage"); } catch { canManage = true; }
     try { canAccManage = await AccAccess.CanAsync("manage"); } catch { canAccManage = true; }
     try { canCrmManage = await CrmAccess.CanAsync("manage"); } catch { canCrmManage = true; }
+    // "platform-ops" must mirror PlatformOpsAttribute EXACTLY, not approximate it: admin role, or the
+    // accounting management tier. Hiding a link the user could open is as wrong as showing one they cannot,
+    // and a nav predicate that drifts from the filter produces both over time.
+    bool canPlatformOps = CrossBuy.Models.PlatformOpsAttribute.IsAdmin(Context) || canAccManage;
     // "report" — a row that opens ONE named report. The Reports Center lists every report in the catalogue,
     // but opening one is a separate, fail-closed decision: a report whose permission key is unmapped is
     // refused with 404 to avoid handing out a catalogue oracle (ReportsController.Viewer). So a menu row for
@@ -46,11 +50,6 @@
         o.Controller == i.Controller && o.Action == i.Action
         && o.RouteValues is not null && i.RouteValues is not null
         && o.RouteValues.TryGetValue("id", out var a) && i.RouteValues.TryGetValue("id", out var b) && a == b);
-
-    // "platform-ops" must mirror PlatformOpsAttribute EXACTLY, not approximate it: admin role, or the
-    // accounting management tier. Hiding a link the user could open is as wrong as showing one they cannot,
-    // and a nav predicate that drifts from the filter produces both over time.
-    bool canPlatformOps = CrossBuy.Models.PlatformOpsAttribute.IsAdmin(Context) || canAccManage;
 
     bool ItemVisible(MenuItem i) => i.Perm switch { "manage" => canManage, "acc-manage" => canAccManage, "crm-manage" => canCrmManage, "platform-ops" => canPlatformOps, "report" => ReportVisible(i), _ => true };
 
@@ -166,16 +165,21 @@
     string[] manufSegs = { "/workorder", "/manufdashboard", "/workcenter", "/routing", "/productionplanning", "/plandetails", "/manufreports", "/newworkorder" };
     bool isManufPath = manufSegs.Any(seg => path.Contains(seg));
     var sysItems = new (string ar, string en, string url, string color, string key)[] {
-        ("المخازن", "Inventory", Url.Action("Index","Inventory") ?? "#", "#e7b53c", "inv"),
-        ("التصنيع", "Manufacturing", Url.Action("ManufDashboard","Inventory") ?? "#", "#d4793a", "manuf"),
-        ("المحاسبة", "Accounting", Url.Action("Index","Accounting") ?? "#", "#3aa76a", "acc"),
-        ("الإدارة", "Back-office", Url.Action("Index","Admin") ?? "#", "#27a99a", "svc"),
-        ("الموظفين", "People", Url.Action("Dashboard","People") ?? "#", "#7fd6a6", "ppl"),
-        ("CRM", "CRM", Url.Action("Index","Crm") ?? "#", "#8e7bef", "crm"),
-        ("المطعم", "Restaurant", Url.Action("Dashboard","Pos") ?? "#", "#e8532f", "rest"),
-        ("هايبر ماركت", "Hypermarket", Url.Action("Dashboard","Hyper") ?? "#", "#e0873a", "hyper"),
-        ("المهام", "Tasks", Url.Action("Index","Tasks") ?? "#", "#4b9fd6", "tasks"),
-        ("المشاريع والمقاولات", "Projects & Contracting", Url.Action("Dashboard","Project") ?? "#", "#e0a13a", "proj"),
+        ("Inventory", "Inventory", Url.Action("Index","Inventory") ?? "#", "#FBBF24", "inv"),
+        ("Manufacturing", "Manufacturing", Url.Action("ManufDashboard","Inventory") ?? "#", "#FDBA74", "manuf"),
+        ("Accounting", "Accounting", Url.Action("Index","Accounting") ?? "#", "#38BDF8", "acc"),
+        ("Administration", "Back-office", Url.Action("Index","Admin") ?? "#", "#22D3EE", "svc"),
+        ("Employees", "People", Url.Action("Dashboard","People") ?? "#", "#A8C5FF", "ppl"),
+        ("CRM", "CRM", Url.Action("Index","Crm") ?? "#", "#D8B4FE", "crm"),
+        ("Restaurant", "Restaurant", Url.Action("Dashboard","Pos") ?? "#", "#FDA4AF", "rest"),
+        ("Hypermarket", "Hypermarket", Url.Action("Dashboard","Hyper") ?? "#", "#F9A8D4", "hyper"),
+        ("Tasks", "Tasks", Url.Action("Index","Tasks") ?? "#", "#C4B5FD", "tasks"),
+        // Calendar is a system in its own right - three screens and its own sidebar (MainMenu.Calendar()) -
+        // but its ONLY way in was a single row buried in Back-office > General, so its Timeline and Resource
+        // View could not be found by anyone who did not already know they existed. Same array, same styling,
+        // same active rule as its neighbours: this is the switcher listing a system it had omitted.
+        ("التقويم", "Calendar", Url.Action("Index","Calendar") ?? "#", "#F0ABFC", "cal"),
+        ("المشاريع والمقاولات", "Projects & Contracting", Url.Action("Dashboard","Project") ?? "#", "#2DD4BF", "proj"),
     };
     string SysActive(string url, string key)
     {
@@ -184,6 +188,7 @@
         if (key == "hyper") return path.StartsWith("/hyper") ? "active" : "";   // Hypermarket = back-office /hyper + lane /hyper/pos
         if (key == "svc") return (path.StartsWith("/admin") || path.StartsWith("/service")) ? "active" : "";   // Back-office = HR dashboard (/admin) + setup (/service)
         if (key == "tasks") return path.StartsWith("/tasks") ? "active" : "";
+        if (key == "cal") return path.StartsWith("/calendar") ? "active" : "";
         if (key == "proj") return path.StartsWith("/project") ? "active" : "";   // Projects & Contracting system
         var u = url.TrimEnd('/').ToLowerInvariant(); var seg = u.Replace("/index","").Replace("/dashboard","");
         if (key == "inv") return (!isManufPath && (path == u || path.StartsWith("/inventory"))) ? "active" : "";   // inventory ≠ manufacturing
@@ -191,7 +196,14 @@
     }
 }
 <div class="menu-item pt-5 px-3">
-    <div class="menu-content"><span class="menu-heading fw-bold text-uppercase fs-7 text-muted">@Localizer["Systems"]</span></div>
+    @* Contrast (WCAG AA). text-muted resolves to --bs-text-muted #99A1B7, which is 2.58:1 on the sidebar's
+       white ground — the single largest colour-contrast source in the rendered audit (44 findings, and up to
+       ~130 nodes on a long menu because this heading repeats per category).
+       text-gray-700 (#4B5675) is the next step on Metronic's OWN grey ramp and measures 7.27:1. gray-600 was
+       rejected on measurement rather than taste: at 3.83:1 it still fails AA.
+       The heading stays a quiet, uppercase, small label — subdued relative to the menu items beside it, which
+       is the visual job it was doing. A token swap inside the existing ramp; no new colour, no hardcoded hex. *@
+    <div class="menu-content"><span class="menu-heading fw-bold text-uppercase fs-7 text-gray-700">@Localizer["Systems"]</span></div>
 </div>
 @foreach (var s in sysItems)
 {
@@ -205,8 +217,12 @@
 }
 <div class="menu-item px-3 mb-4">
     <a class="menu-link cb-sys" href="@(Url.Action("Choose","Portal") ?? "#")">
-        <span class="menu-icon"><i class="ki-outline ki-element-11 fs-5 text-muted"></i></span>
-        <span class="menu-title fw-semibold text-muted">@Localizer["All systems"]</span>
+        @* Same contrast swap as the Systems heading above: this is a real navigation label ("All systems"),
+           not decoration, so it must clear AA. text-muted 2.58:1 -> text-gray-700 7.27:1.
+           The icon keeps text-muted deliberately — it is a decorative glyph beside the label it belongs to,
+           and the contrast rule governs text, not adjacent iconography. *@
+        <span class="menu-icon"><i class="ki-outline ki-element-11 fs-5 text-muted" aria-hidden="true"></i></span>
+        <span class="menu-title fw-semibold text-gray-700">@Localizer["All systems"]</span>
     </a>
 </div>
 <!--end::Systems quick-switch-->

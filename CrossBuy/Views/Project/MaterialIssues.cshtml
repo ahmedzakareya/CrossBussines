@@ -39,7 +39,7 @@
                 else
                 {
                     <div class="table-responsive"><table class="table table-row-bordered align-middle">
-                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase"><th>#</th><th>@SR["Date"]</th><th>@SR["Warehouse"]</th><th class="text-center">@Localizer["Lines"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>#</th><th>@SR["Date"]</th><th>@SR["Warehouse"]</th><th class="text-center">@Localizer["Lines"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
                         <tbody>
                         @foreach (var r in issues)
                         {
@@ -94,7 +94,7 @@
             {
                 <div class="card"><div class="card-header"><h3 class="card-title fw-bold">@Localizer["Items to issue"]</h3></div>
                 <div class="card-body"><div class="table-responsive"><table class="table table-row-bordered align-middle">
-                    <thead><tr class="fw-bold fs-7 text-uppercase text-muted"><th style="min-width:240px">@SR["Item"]</th><th class="text-end" style="width:120px">@Localizer["Available"]</th><th class="text-end" style="width:130px">@Localizer["Issue qty"]</th><th style="min-width:220px">@Localizer["BOQ item"]</th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th style="min-width:240px">@SR["Item"]</th><th class="text-end" style="width:120px">@Localizer["Available"]</th><th class="text-end" style="width:130px">@Localizer["Issue qty"]</th><th style="min-width:220px">@Localizer["BOQ item"]</th></tr></thead>
                     <tbody id="rows">
                     @foreach (var b in balances)
                     {

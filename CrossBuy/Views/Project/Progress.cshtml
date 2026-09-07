@@ -51,7 +51,7 @@
                 else
                 {
                     <div class="table-responsive"><table class="table table-row-bordered align-middle">
-                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase">
+                        <thead><tr class="fw-bold text-muted fs-7 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                             <th>#</th><th>@Localizer["Measurement date"]</th><th class="text-end">@Localizer["Overall progress"]</th>
                             <th class="text-end">@Localizer["Executed value"]</th><th class="text-center">@SR["Status"]</th><th></th></tr></thead>
                         <tbody>
@@ -99,7 +99,7 @@
                     </div>
                     @if (!Model.HasBoq) { <div class="alert alert-warning">@Localizer["No BOQ — enter overall project %"]</div> }
 
-                    <div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr><th></th></tr></thead>
+                    <div class="table-responsive"><table class="table align-middle cb-2row"><thead><tr style="border-bottom:2px solid #0E4A9E;"><th></th></tr></thead>
                         <tbody id="rows">
                         @foreach (var l in Model.Lines)
                         {

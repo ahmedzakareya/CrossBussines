@@ -62,7 +62,7 @@
                 <div class="card-toolbar">
                     @if (balanced)
                     {
-                        <span class="badge fw-bold fs-7 py-2 px-3" style="background:#eaf3ef;color:#13433a;"><i class="ki-outline ki-check-circle fs-7 me-1" style="color:#13433a;"></i>@(isAr ? "متوازن" : "Balanced")</span>
+                        <span class="badge fw-bold fs-7 py-2 px-3" style="background:#E7F0FF;color:#0E4A9E;"><i class="ki-outline ki-check-circle fs-7 me-1" style="color:#0E4A9E;"></i>@(isAr ? "متوازن" : "Balanced")</span>
                     }
                     else
                     {
@@ -74,7 +74,7 @@
                 <div class="table-responsive">
                     <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
                         <thead>
-                            <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #13433a;">
+                            <tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;">
                                 <th class="ps-4" style="width:44px;">#</th>
                                 <th>@SR["Account"]</th>
                                 <th>@Localizer["Cost Center"] · @SR["Note"]</th>
@@ -93,7 +93,7 @@
                                 <td class="ps-4 text-muted fw-semibold">@l.LineNo</td>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <span class="badge fw-bold fs-8 me-2" style="background:#eaf3ef;color:#1f6253;">@(a != null ? a[0] : "")</span>
+                                        <span class="badge fw-bold fs-8 me-2" style="background:#E7F0FF;color:#145DBF;">@(a != null ? a[0] : "")</span>
                                         <span class="fw-bold text-gray-900">@(a != null ? (isAr ? a[1] : a[2]) : l.AccountId.ToString())</span>
                                     </div>
                                 </td>
@@ -104,10 +104,10 @@
                         }
                         </tbody>
                         <tfoot>
-                            <tr class="fw-bolder fs-5" style="background:#eaf3ef;border-top:2px solid #13433a;">
-                                <td colspan="3" class="ps-4 text-end" style="color:#1f6253;">@SR["Total"]</td>
-                                <td class="text-end" style="color:#13433a;border-inline-start:1px solid #cfe7db;">@totD.ToString("N2")</td>
-                                <td class="text-end pe-4" style="color:#13433a;">@totC.ToString("N2")</td>
+                            <tr class="fw-bolder fs-5" style="background:#E7F0FF;border-top:2px solid #0E4A9E;">
+                                <td colspan="3" class="ps-4 text-end" style="color:#145DBF;">@SR["Total"]</td>
+                                <td class="text-end" style="color:#0E4A9E;border-inline-start:1px solid #cfe7db;">@totD.ToString("N2")</td>
+                                <td class="text-end pe-4" style="color:#0E4A9E;">@totC.ToString("N2")</td>
                             </tr>
                         </tfoot>
                     </table>

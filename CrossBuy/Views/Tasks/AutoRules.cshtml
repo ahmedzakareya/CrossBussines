@@ -29,14 +29,14 @@
         <div class="card card-flush">
             <div class="card-body py-4">
                 <table class="table table-row-dashed align-middle fs-7">
-                    <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase">
+                    <thead><tr class="text-gray-500 fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;">
                         <th>@T("القاعدة", "Rule")</th><th class="w-300px">@T("المسؤول الافتراضي", "Default owner")</th><th class="w-120px text-center">@T("مفعّلة", "Active")</th><th class="w-120px"></th>
                     </tr></thead>
                     <tbody>
                         @foreach (var r in rules)
                         {
                             <tr>
-                                <td class="fw-bold text-gray-800">@(isAr ? r.LabelAr : r.LabelEn)<div class="text-muted fs-8">@r.RuleType</div></td>
+                                <td class="fw-bold text-gray-800">@(isAr ? r.LabelAr : DisplayName.Or(r.LabelEn, r.LabelAr))<div class="text-muted fs-8">@r.RuleType</div></td>
                                 <td>
                                     <form asp-action="SaveAutoRule" method="post" class="d-flex align-items-center gap-2" id="ruleForm_@r.RuleType">
                                         @Html.AntiForgeryToken()
@@ -47,7 +47,7 @@
                                            to; the rule name is only in the first cell, which is not
                                            programmatically tied to this control. Renders nothing visible. *@
                                         <select name="defaultAssigneeEmployeeId" class="form-select form-select-solid form-select-sm" data-control="select2" data-placeholder="@T("غير مُسنَد (يوزّعه المدير)", "Unassigned (manager routes)")"
-                                                aria-label="@T($"المسؤول الافتراضي لقاعدة {(isAr ? r.LabelAr : r.LabelEn)}", $"Default assignee for rule {(isAr ? r.LabelAr : r.LabelEn)}")">
+                                                aria-label="@T($"المسؤول الافتراضي لقاعدة {(isAr ? r.LabelAr : DisplayName.Or(r.LabelEn, r.LabelAr))}", $"Default assignee for rule {(isAr ? r.LabelAr : DisplayName.Or(r.LabelEn, r.LabelAr))}")">
                                             <option value="">@T("غير مُسنَد (يوزّعه المدير)", "Unassigned (manager routes)")</option>
                                             @foreach (var e in employees)
                                             {
@@ -63,7 +63,7 @@
                                            screen reader to read but "checkbox". The switch itself is
                                            unchanged; only its accessible name is added. *@
                                         <input class="form-check-input" type="checkbox" @(r.IsActive ? "checked" : "")
-                                               aria-label="@T($"تفعيل قاعدة {(isAr ? r.LabelAr : r.LabelEn)}", $"Enable rule {(isAr ? r.LabelAr : r.LabelEn)}")"
+                                               aria-label="@T($"تفعيل قاعدة {(isAr ? r.LabelAr : DisplayName.Or(r.LabelEn, r.LabelAr))}", $"Enable rule {(isAr ? r.LabelAr : DisplayName.Or(r.LabelEn, r.LabelAr))}")"
                                                onchange="cbToggleRule('@r.RuleType', this.checked)" />
                                     </div>
                                 </td>

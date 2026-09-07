@@ -56,7 +56,7 @@
                     <div class="card-header pt-6"><div class="card-title"><h2 class="fw-bold">@Localizer["Entry log"]</h2></div></div>
                     <div class="card-body pt-2"><div class="table-responsive">
                         <table class="table align-middle table-row-dashed fs-7 gy-2">
-                            <thead><tr class="text-gray-500 fw-bold text-uppercase"><th>@Localizer["Kind"]</th><th>@SR["Description"]</th><th class="text-end">@SR["Amount"]</th></tr></thead>
+                            <thead><tr class="text-gray-500 fw-bold text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th>@Localizer["Kind"]</th><th>@SR["Description"]</th><th class="text-end">@SR["Amount"]</th></tr></thead>
                             <tbody class="fw-semibold text-gray-700">
                             @foreach (var o in log) { <tr><td><span class="badge badge-light-primary">@kindName(o.Kind)</span></td><td class="text-muted">@o.Description</td><td class="text-end fw-bold">@o.Amount.ToString("N2")</td></tr> }
                             @if (log.Count == 0) { <tr><td colspan="3" class="text-center text-muted py-8">@Localizer["No entries yet"]</td></tr> }
@@ -85,7 +85,7 @@
                             <div class="tab-pane fade show active" id="t_stock">
                                 <form asp-action="OpAddStock" method="post" class="row g-3 oform">@Html.AntiForgeryToken()<input type="hidden" name="cutoff" class="cuf" />
                                     <div class="col-md-6"><label class="required fs-7 fw-semibold">@SR["Item"]</label><select name="itemId" class="form-select form-select-solid" data-control="select2" required>@foreach (var i in items) { <option value="@i.ID">@i.ItemCode — @(isAr ? i.Name : (string.IsNullOrEmpty(i.NameEn) ? i.Name : i.NameEn))</option> }</select></div>
-                                    <div class="col-md-6"><label class="required fs-7 fw-semibold">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : w.NameEn)</option> }</select></div>
+                                    <div class="col-md-6"><label class="required fs-7 fw-semibold">@SR["Warehouse"]</label><select name="warehouseId" class="form-select form-select-solid" data-control="select2" required>@foreach (var w in whs) { <option value="@w.ID">@w.Code — @(isAr ? w.Name : DisplayName.Or(w.NameEn, w.Name))</option> }</select></div>
                                     <div class="col-md-4"><label class="required fs-7 fw-semibold">@Localizer["Qty"]</label><input name="qty" type="number" step="0.0001" min="0" class="form-control form-control-solid" required /></div>
                                     <div class="col-md-4"><label class="required fs-7 fw-semibold">@Localizer["Unit cost"]</label><input name="unitCost" type="number" step="0.0001" min="0" class="form-control form-control-solid" required /></div>
                                     <div class="col-md-4"><label class="fs-7 fw-semibold">@Localizer["Batch (opt)"]</label><input name="batchNo" class="form-control form-control-solid" /></div>
@@ -129,7 +129,7 @@
                             <div class="tab-pane fade" id="t_gl">
                                 <form asp-action="OpAddGl" method="post" id="glForm">@Html.AntiForgeryToken()<input type="hidden" name="cutoff" class="cuf" /><input type="hidden" name="linesJson" id="glLines" />
                                     <div class="text-muted fs-7 mb-2">@Localizer["Enter the remaining trial-balance accounts (cash/banks/loans/capital…). The system balances via the Opening Balance Equity account."]</div>
-                                    <div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-muted text-uppercase"><th style="min-width:220px">@SR["Account"]</th><th style="width:140px" class="text-end">@SR["Debit"]</th><th style="width:140px" class="text-end">@SR["Credit"]</th><th style="width:40px"></th></tr></thead><tbody id="glRows"></tbody></table></div>
+                                    <div class="table-responsive"><table class="table table-row-bordered align-middle"><thead><tr class="fw-bold fs-7 text-muted text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th style="min-width:220px">@SR["Account"]</th><th style="width:140px" class="text-end">@SR["Debit"]</th><th style="width:140px" class="text-end">@SR["Credit"]</th><th style="width:40px"></th></tr></thead><tbody id="glRows"></tbody></table></div>
                                     <div class="d-flex justify-content-between">
                                         <button type="button" id="glAdd" class="btn btn-sm btn-light-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-plus fs-4"></i>@Localizer["Row"]</button>
                                         <button type="button" id="glSave" class="btn btn-primary @(locked ? "disabled" : "")" @(locked ? "disabled" : "")><i class="ki-outline ki-check fs-3"></i>@Localizer["Post balances"]</button>

@@ -443,7 +443,11 @@ namespace CrossBuy.Controllers
 			}
 			dto.RecentLeaves = reqs.OrderByDescending(r => r.ID).Take(6).Select(r => new CrossBuy.BL.HrLeaveRow
 			{
-				EmployeeName = r.Employee != null ? r.Employee.FullName : null,
+				// The name the reader sees, not the Arabic one: this list sits beside the expiring-documents
+				// card, which already resolved it, so the two cards disagreed about the same person.
+				EmployeeName = r.Employee != null
+					? CrossBuy.BL.EmployeeNames.Of(r.Employee.FullName, r.Employee.FullNameEn)
+					: null,
 				TypeAr = r.LeaveType != null ? r.LeaveType.NameAr : null,
 				TypeEn = r.LeaveType != null ? r.LeaveType.NameEn : null,
 				StartDate = r.StartDate,

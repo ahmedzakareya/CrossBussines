@@ -312,9 +312,9 @@ namespace CrossBuy.Controllers
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (rows, _) = await _crm.SearchCampaignsAsync(cid, q, status, 1, 100000);
-			var headers = new[] { "الحملة", "القناة", "الحالة", "الميزانية", "محتملون", "فرص", "رابحة", "قيمة الربح", "العائد %" };
+			var headers = new[] { "Campaign", "Channel", "Status", "Budget", "Leads", "Opportunities", "Won", "Won value", "ROI %" };
 			var data = rows.Select(c => (IReadOnlyList<object?>)new object?[] { c.Name, c.Channel, c.Status, c.Budget, c.Leads, c.Opps, c.Won, c.WonValue, c.RoiPct });
-			return File(CrossBuy.BL.ExcelExporter.Build("الحملات", headers, data, "الحملات — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "campaigns.xlsx");
+			return File(CrossBuy.BL.ExcelExporter.Build("Campaigns", headers, data, "Campaigns — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "campaigns.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> LeadsExport(string? q, string? status)
@@ -322,9 +322,9 @@ namespace CrossBuy.Controllers
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (rows, _) = await _crm.SearchLeadsAsync(cid, q, status, 1, 100000);
-			var headers = new[] { "الاسم", "الشركة", "الهاتف", "البريد", "المصدر", "الشريحة", "القيمة المتوقعة", "الحالة" };
+			var headers = new[] { "Name", "Company", "Phone", "Email", "Source", "Segment", "Expected value", "Status" };
 			var data = rows.Select(l => (IReadOnlyList<object?>)new object?[] { l.Name, l.Company, l.Phone, l.Email, l.Source, l.Segment, l.EstimatedValue, l.Status });
-			return File(CrossBuy.BL.ExcelExporter.Build("العملاء المحتملون", headers, data, "العملاء المحتملون — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "leads.xlsx");
+			return File(CrossBuy.BL.ExcelExporter.Build("Leads", headers, data, "Leads — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "leads.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> OpportunitiesExport(string? q, string? stage)
@@ -332,9 +332,9 @@ namespace CrossBuy.Controllers
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (rows, _) = await _crm.SearchOpportunitiesAsync(cid, q, stage, 1, 100000);
-			var headers = new[] { "العنوان", "العميل", "المرحلة", "القيمة", "الاحتمال %", "الإغلاق المتوقع" };
+			var headers = new[] { "Title", "Customer", "Stage", "Value", "Probability %", "Expected close" };
 			var data = rows.Select(o => (IReadOnlyList<object?>)new object?[] { o.Title, o.CustomerName, o.Stage, o.Amount, o.Probability, o.ExpectedCloseDate });
-			return File(CrossBuy.BL.ExcelExporter.Build("الفرص", headers, data, "الفرص البيعية — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "opportunities.xlsx");
+			return File(CrossBuy.BL.ExcelExporter.Build("Opportunities", headers, data, "Opportunities — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "opportunities.xlsx");
 		}
 
 		[HttpGet] public async Task<IActionResult> ActivitiesExport(string? q, bool? done)
@@ -342,9 +342,9 @@ namespace CrossBuy.Controllers
 			var (okCo, cid, denyCo) = await ResolveCompanyAsync();
 			if (!okCo) return denyCo;
 			var (rows, _) = await _crm.SearchActivitiesAsync(cid, q, done, 1, 100000);
-			var headers = new[] { "النوع", "الموضوع", "الاستحقاق", "الحالة", "ملاحظات" };
+			var headers = new[] { "Type", "Subject", "Due", "Status", "Notes" };
 			var data = rows.Select(a => (IReadOnlyList<object?>)new object?[] { a.Type, a.Subject, a.DueDate, a.Done ? "منجز" : "معلّق", a.Notes });
-			return File(CrossBuy.BL.ExcelExporter.Build("الأنشطة", headers, data, "الأنشطة والمهام — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "activities.xlsx");
+			return File(CrossBuy.BL.ExcelExporter.Build("Activities", headers, data, "Activities and tasks — CrossBuy"), CrossBuy.BL.ExcelExporter.ContentType, "activities.xlsx");
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][CrossBuy.Models.CrmPerm("edit")]
@@ -795,8 +795,8 @@ namespace CrossBuy.Controllers
 
 				var ownerNames = await _context.Employee.AsNoTracking()
 					.Where(e => e.EmpCompanyID == scope.CompanyId)
-					.Select(e => new { e.ID, e.FullName })
-					.ToDictionaryAsync(e => e.ID, e => e.FullName);
+					.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+					.ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
 
 				var directById = direct.ToDictionary(x => x.AccountId);
 				var viaOppById = viaOpp.ToDictionary(x => x.AccountId);
@@ -941,8 +941,8 @@ namespace CrossBuy.Controllers
 
 				var ownerNames = await _context.Employee.AsNoTracking()
 					.Where(e => e.EmpCompanyID == scope.CompanyId)
-					.Select(e => new { e.ID, e.FullName })
-					.ToDictionaryAsync(e => e.ID, e => e.FullName);
+					.Select(e => new { e.ID, e.FullName, e.FullNameEn })
+					.ToDictionaryAsync(e => e.ID, e => CrossBuy.BL.EmployeeNames.Of(e.FullName, e.FullNameEn));
 
 				var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 				var signals = rows.Select(r => new CrossBuy.BL.Platform.Ai.CrmOpportunityRiskRules.Signal

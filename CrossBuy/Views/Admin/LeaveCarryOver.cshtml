@@ -37,7 +37,7 @@
             {
                 <div class="table-responsive">
                 <table class="table align-middle table-row-dashed fs-6 gy-3">
-                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #13433a;"><th class="ps-4">@SR["Employee"]</th><th>@SR["LeaveType"]</th><th class="text-end">@Localizer["Remaining"]</th><th class="text-end">@Localizer["Limit"]</th><th class="text-end pe-4">@Localizer["Carried"]</th></tr></thead>
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@SR["Employee"]</th><th>@SR["LeaveType"]</th><th class="text-end">@Localizer["Remaining"]</th><th class="text-end">@Localizer["Limit"]</th><th class="text-end pe-4">@Localizer["Carried"]</th></tr></thead>
                     <tbody class="fw-semibold text-gray-700">
                     @foreach (var r in rows)
                     {
@@ -46,7 +46,7 @@
                             <td class="text-muted">@r.LeaveTypeName</td>
                             <td class="text-end">@r.Remaining @Localizer["d"]</td>
                             <td class="text-end">@r.Limit</td>
-                            <td class="text-end fw-bolder" style="color:#13433a;">@r.CarryDays</td>
+                            <td class="text-end fw-bolder" style="color:#0E4A9E;">@r.CarryDays</td>
                         </tr>
                     }
                     </tbody>

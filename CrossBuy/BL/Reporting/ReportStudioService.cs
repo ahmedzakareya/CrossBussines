@@ -167,7 +167,12 @@ namespace CrossBuy.BL.Reporting
     {
         public int TemplateId { get; set; }               // 0 = a new report
         public string DatasetCode { get; set; } = "";
+
+        // BOTH STORED NAMES, not a resolved one. The designer edits the record, so it has to round-trip
+        // exactly what the record holds: hand it one display name and the save writes that name back into
+        // whichever column it came from, quietly losing the other language.
         public string Name { get; set; } = "";
+        public string NameEn { get; set; } = "";
         public List<string> Columns { get; set; } = new();
         public List<StudioFilterDraft> Filters { get; set; } = new();
         public List<StudioSortDraft> Sorts { get; set; } = new();
@@ -343,8 +348,8 @@ namespace CrossBuy.BL.Reporting
                 {
                     DatasetCode = dataset.DatasetCode,
                     ReportCode = definition.Code,
-                    Title = Arabic ? dataset.TitleAr : dataset.TitleEn,
-                    Description = Arabic ? dataset.DescriptionAr : dataset.DescriptionEn,
+                    Title = Arabic ? dataset.TitleAr : DisplayName.Or(dataset.TitleEn, dataset.TitleAr),
+                    Description = Arabic ? dataset.DescriptionAr : DisplayName.Or(dataset.DescriptionEn, dataset.DescriptionAr),
                     Module = dataset.Module,
                     FieldCount = Visible(dataset, held).Count(),
                 });
@@ -408,7 +413,7 @@ namespace CrossBuy.BL.Reporting
                 .Select(f => new StudioFieldOption
                 {
                     Key = f.Key,
-                    Title = arabic ? f.TitleAr : f.TitleEn,
+                    Title = arabic ? f.TitleAr : DisplayName.Or(f.TitleEn, f.TitleAr),
                     Type = f.Type,
                     Filterable = f.Filterable,
                     Sortable = f.Sortable,
@@ -435,7 +440,7 @@ namespace CrossBuy.BL.Reporting
                 .Select(pd => new StudioParameterOption
                 {
                     Key = pd.Key,
-                    Title = arabic ? pd.TitleAr : pd.TitleEn,
+                    Title = arabic ? pd.TitleAr : DisplayName.Or(pd.TitleEn, pd.TitleAr),
                     Type = pd.Type,
                     Required = pd.Required,
                     AllowMultiple = pd.AllowMultiple,
@@ -447,7 +452,7 @@ namespace CrossBuy.BL.Reporting
                         .Select(o => new StudioParameterChoice
                         {
                             Value = o.Value,
-                            Label = arabic ? o.LabelAr : o.LabelEn,
+                            Label = arabic ? o.LabelAr : DisplayName.Or(o.LabelEn, o.LabelAr),
                         })
                         .ToList(),
                 })
@@ -554,7 +559,7 @@ namespace CrossBuy.BL.Reporting
                 {
                     // One message for "no such field" and for "not yours" — see above.
                     result.Errors.Add(arabic
-                        ? $"الحقل «{key}» غير متاح في هذه المجموعة."
+                        ? $"Field «{key}» is not available in this data set."
                         : $"Field '{key}' is not available on this data set.");
                     continue;
                 }
@@ -574,7 +579,7 @@ namespace CrossBuy.BL.Reporting
                 if (!permitted.TryGetValue(filter.Field, out var field))
                 {
                     result.Errors.Add(arabic
-                        ? $"لا يمكن الترشيح على «{filter.Field}»."
+                        ? $"You cannot filter on «{filter.Field}»."
                         : $"Cannot filter on '{filter.Field}'.");
                     continue;
                 }
@@ -626,7 +631,7 @@ namespace CrossBuy.BL.Reporting
                 if (!permitted.TryGetValue(sort.Field, out var field))
                 {
                     result.Errors.Add(arabic
-                        ? $"لا يمكن الترتيب على «{sort.Field}»."
+                        ? $"You cannot sort on «{sort.Field}»."
                         : $"Cannot sort on '{sort.Field}'.");
                     continue;
                 }
@@ -665,7 +670,7 @@ namespace CrossBuy.BL.Reporting
                 if (!declared.TryGetValue(key, out var descriptor))
                 {
                     result.Errors.Add(arabic
-                        ? $"المعامل «{key}» غير معرَّف لهذه المجموعة."
+                        ? $"Parameter «{key}» is not defined for this data set."
                         : $"Parameter '{key}' is not declared on this data set.");
                     continue;
                 }
@@ -673,7 +678,7 @@ namespace CrossBuy.BL.Reporting
                 if (descriptor.SystemSupplied)
                 {
                     result.Errors.Add(arabic
-                        ? $"المعامل «{key}» يحدده النظام ولا يمكن ضبطه."
+                        ? $"Parameter «{key}» is set by the system and cannot be overridden."
                         : $"Parameter '{key}' is supplied by the system and cannot be set.");
                     continue;
                 }
@@ -826,6 +831,13 @@ namespace CrossBuy.BL.Reporting
                 ? (Arabic ? "تقرير بدون اسم" : "Untitled report")
                 : draft.Name.Trim();
 
+            // NULL, not a copy of the Arabic name. `NameEn = name` used to run here, which is why the saved
+            // layouts on the Viewer and the Reports Center read Arabic while the UI was in English: the
+            // English column held an Arabic string, so there was nothing for the presenter to fall back to.
+            // Null means "no English name yet", and the presenter's `NameEn ?? Name` then shows the Arabic
+            // one - the same visible result, but recoverable the moment someone types an English name.
+            var nameEn = string.IsNullOrWhiteSpace(draft.NameEn) ? null : draft.NameEn.Trim();
+
             // PERSONAL scope: a Studio draft is the author's until somebody promotes it. Promotion to Company is
             // an explicit, separately-authorized act (ReportTemplateService), not a side effect of saving.
             //
@@ -836,7 +848,7 @@ namespace CrossBuy.BL.Reporting
                 Id = draft.TemplateId,
                 ReportCode = validation.Definition!.Code,
                 Name = name,
-                NameEn = name,
+                NameEn = nameEn,
                 Scope = ReportTemplateScope.Personal,
                 Layout = new ReportLayout
                 {
@@ -896,7 +908,8 @@ namespace CrossBuy.BL.Reporting
                 {
                     TemplateId = templateId,
                     DatasetCode = dataset.DatasetCode,
-                    Name = Arabic ? resolution.Template.Name : (resolution.Template.NameEn ?? resolution.Template.Name),
+                    Name = resolution.Template.Name,
+                    NameEn = resolution.Template.NameEn ?? "",
                     Columns = layout.VisibleColumns.Where(permitted.Contains).ToList(),
                     Filters = layout.Filters
                         .Where(f => permitted.Contains(f.Field))

@@ -2,7 +2,7 @@
 -- CrossBuy CRM schema updates (Module 3, items 3-1 .. 3-7).
 -- Run ONCE on the production CrossBuyDB2. Every script is idempotent
 -- (IF NOT EXISTS / COL_LENGTH guards) so re-running is safe.
---   sqlcmd -S localhost\SQLEXPRESS -d CrossBuyDB2 -E -C -b -i crm_schema_updates_3x.sql
+--   sqlcmd -S localhost -d CrossBuyDB2 -E -C -b -i crm_schema_updates_3x.sql
 -- ============================================================
 
 

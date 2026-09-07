@@ -45,7 +45,7 @@
                     <div class="card-header border-0 pt-6"><div class="card-title"><h3 class="fw-bold">@(isAr ? "بيانات الحساب" : "Account info")</h3></div></div>
                     <div class="card-body pt-2">
                         <div class="row gy-4">
-                            <div class="col-md-6"><div class="fs-7 text-muted">@SR["Name"]</div><div class="fw-bold text-gray-900">@Model.FullName</div></div>
+                            <div class="col-md-6"><div class="fs-7 text-muted">@SR["Name"]</div><div class="fw-bold text-gray-900">@CrossBuy.BL.EmployeeNames.Of(Model.FullName, Model.FullNameEn)</div></div>
                             <div class="col-md-6"><div class="fs-7 text-muted">@SR["Email"]</div><div class="fw-bold text-gray-900">@(string.IsNullOrWhiteSpace(Model.Email) ? "—" : Model.Email)</div></div>
                         </div>
                         <div class="separator my-5"></div>

@@ -39,10 +39,10 @@ namespace CrossBuy.BL
 
 		public async Task<(bool ok, string? error, int id)> SaveCourseAsync(TrainingCourse dto)
 		{
-			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Title)) return (false, "الكود والعنوان مطلوبان", 0);
+			if (string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Title)) return (false, "Code and title are required", 0);
 			var dup = await _db.TrainingCourses.AnyAsync(c => c.CompanyID == dto.CompanyID && c.Code == dto.Code && c.ID != dto.ID);
-			if (dup) return (false, "كود الدورة مستخدم من قبل", 0);
-			if (dto.StartDate.HasValue && dto.EndDate.HasValue && dto.EndDate < dto.StartDate) return (false, "تاريخ النهاية قبل البداية", 0);
+			if (dup) return (false, "That course code is already in use", 0);
+			if (dto.StartDate.HasValue && dto.EndDate.HasValue && dto.EndDate < dto.StartDate) return (false, "The end date is before the start date", 0);
 			TrainingCourse e;
 			if (dto.ID > 0)
 			{
@@ -71,7 +71,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> EnrollAsync(int companyId, int courseId, IEnumerable<int> employeeIds)
 		{
 			var course = await _db.TrainingCourses.AsNoTracking().FirstOrDefaultAsync(c => c.ID == courseId && c.CompanyID == companyId);
-			if (course == null) return (false, "الدورة غير موجودة");
+			if (course == null) return (false, "Cycle not found");
 			var existing = await _db.TrainingEnrollments.Where(x => x.CourseId == courseId).Select(x => x.EmployeeID).ToListAsync();
 			int added = 0;
 			foreach (var emp in employeeIds.Distinct())
@@ -80,7 +80,7 @@ namespace CrossBuy.BL
 				_db.TrainingEnrollments.Add(new TrainingEnrollment { CompanyID = companyId, CourseId = courseId, EmployeeID = emp, Status = "Planned", CreatedAt = DateTime.UtcNow });
 				added++;
 			}
-			if (added == 0) return (false, "لا يوجد موظفون جدد للتسجيل");
+			if (added == 0) return (false, "There are no new employees to enrol");
 			await _db.SaveChangesAsync();
 			return (true, null);
 		}
@@ -88,7 +88,7 @@ namespace CrossBuy.BL
 		public async Task<(bool ok, string? error)> SetEnrollmentStatusAsync(int companyId, int id, string status, decimal? score, string? certificate)
 		{
 			var e = await _db.TrainingEnrollments.FirstOrDefaultAsync(x => x.ID == id && x.CompanyID == companyId);
-			if (e == null) return (false, "التسجيل غير موجود");
+			if (e == null) return (false, "Enrolment not found");
 			var st = new[] { "Planned", "Attended", "Completed", "Cancelled" }.Contains(status) ? status : "Planned";
 			e.Status = st; e.Score = score; e.Certificate = certificate;
 			e.CompletedAt = st == "Completed" ? DateTime.UtcNow : null;

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CrossBuy.Controllers
@@ -9,13 +9,21 @@ namespace CrossBuy.Controllers
     [AllowAnonymous]
     public class StoreController : Controller
     {
-        private const int StoreCompanyId = 1;
+        // Stage 1 Batch B / B3 — the bare constant is gone. The public catalogue company now comes from
+        // configuration (Store:StoreCompanyId) through ICompanyIsolationBypass.PublicCatalogCompanyId, and every
+        // read runs inside an explicit PublicCompanyRead scope.
+        //
+        // That scope PINS the company and stays fully filtered. It is deliberately NOT the cross-company
+        // administrative bypass: an anonymous public page must never be able to hold a right that reads other
+        // companies, and PublicCompanyRead.AllowsCrossCompany is false by construction.
+        private int StoreCompanyId => _isolation.PublicCatalogCompanyId;
         private readonly CrossBuy.BL.IStoreCatalogService _catalog;
         private readonly CrossBuy.BL.IIdProtector _ids;
+        private readonly CrossBuy.BL.Platform.ICompanyIsolationBypass _isolation;
 
-        public StoreController(CrossBuy.BL.IStoreCatalogService catalog, CrossBuy.BL.IIdProtector ids)
+        public StoreController(CrossBuy.BL.IStoreCatalogService catalog, CrossBuy.BL.IIdProtector ids, CrossBuy.BL.Platform.ICompanyIsolationBypass isolation)
         {
-            _catalog = catalog; _ids = ids;
+            _catalog = catalog; _ids = ids; _isolation = isolation;
         }
 
         // GET /Store/Product/{id} — id is the ENCRYPTED token (never a raw DB id)
@@ -23,7 +31,8 @@ namespace CrossBuy.Controllers
         {
             var realId = _ids.Unprotect(id);
             if (realId == null) return NotFound();
-            var vm = await _catalog.GetProductAsync(StoreCompanyId, realId.Value);
+            using var publicScope = _isolation.BeginPublicCatalogRead("Anonymous storefront: product page.");
+			var vm = await _catalog.GetProductAsync(StoreCompanyId, realId.Value);
             if (vm == null) return NotFound();
             return View(vm);
         }
@@ -33,7 +42,8 @@ namespace CrossBuy.Controllers
         {
             var realId = _ids.Unprotect(id);
             if (realId == null) return NotFound();
-            var vm = await _catalog.GetCategoryAsync(StoreCompanyId, realId.Value);
+            using var publicScope = _isolation.BeginPublicCatalogRead("Anonymous storefront: category page.");
+			var vm = await _catalog.GetCategoryAsync(StoreCompanyId, realId.Value);
             if (vm == null) return NotFound();
             return View(vm);
         }

@@ -55,7 +55,7 @@ namespace CrossBuy.Tests
             EntityId = taskId,
             EventType = TaskEvents.Created,
             Visibility = BusinessEventVisibility.Internal,
-            Payload = new TaskEventPayload { Title = "مهمة" },
+            Payload = new TaskEventPayload { Title = "Task" },
         };
 
         private static async Task<long> RecordAsync(PlatformTestHost host, BusinessEventRecord record)
