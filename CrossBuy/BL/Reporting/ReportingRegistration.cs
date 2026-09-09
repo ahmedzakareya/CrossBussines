@@ -160,6 +160,19 @@ namespace CrossBuy.BL.Reporting
             // The voucher: one entry as a document, which is what the journal screen prints.
             services.AddScoped<IReportDataSource, JournalVoucherDataSource>();
 
+            // The trade documents. One source per table, one shape out — the field keys are identical
+            // across all three, which is what lets a single house layout print an invoice and a
+            // quotation without being authored twice.
+            services.AddScoped<IReportDataSource, SalesInvoiceDocumentSource>();
+            services.AddScoped<IReportDataSource, PurchaseInvoiceDocumentSource>();
+            services.AddScoped<IReportDataSource, QuotationDocumentSource>();
+
+            foreach (var document in TradeDocumentDatasets.All())
+            {
+                var definition = document;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+
             services.AddSingleton<IReportDefinitionProvider, InventoryReportDefinitionProvider>();
             services.AddScoped<IReportDataSource, StockOnHandDataSource>();
             services.AddScoped<IReportDataSource, StockMovementsDataSource>();

@@ -99,7 +99,10 @@ namespace CrossBuy.BL.Reporting
 
         // SystemSupplied: the binder fills it from the resolved BusinessContext and DISCARDS anything the caller
         // sends. Declared on every dataset so the isolation guarantee is visible as metadata, not just as code.
-        private static ReportParameterDescriptor CompanyParam() => new()
+        // INTERNAL rather than private: the trade-document datasets declare the same system parameter,
+        // and a second copy of it would be a second place for the isolation guarantee to be stated —
+        // which is exactly the kind of duplication that lets one of them quietly stop being true.
+        internal static ReportParameterDescriptor CompanyParam() => new()
         {
             Key = ReportSystemParameters.CompanyId, TitleAr = "الشركة", TitleEn = "Company",
             Type = ReportFieldType.Integer, SystemSupplied = true,
@@ -775,6 +778,13 @@ namespace CrossBuy.BL.Reporting
             // and there is only ever one entry in it for a date to order.
             yield return Build(AccountingDatasets.JournalVoucher(), "ki-outline ki-document", "primary", 145,
                 ReportSort.By("LineNo"));
+
+            // THE TRADE DOCUMENTS, projected through the same Build so they arrive in the catalog with the
+            // same shape as everything else. They live in TradeDocumentDatasets because they are shared by
+            // Sales and Purchasing rather than owned by Accounting, but a report is a report and there is
+            // one place that turns a dataset into one.
+            foreach (var document in TradeDocumentDatasets.All())
+                yield return Build(document, "ki-outline ki-bill", "success", 150, ReportSort.By("LineNo"));
         }
 
         internal static ReportDefinition Build(ReportDatasetDefinition dataset, string icon, string color,

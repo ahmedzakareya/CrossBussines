@@ -47,6 +47,9 @@ namespace CrossBuy.BL.Reporting
         // menu is the failure mode this whole file exists to make impossible, and a string literal in
         // a view would reintroduce it.
         public const string AccountingJournalEntry = "Accounting.JournalEntry";
+        public const string AccountingSalesInvoiceDetail = "Accounting.SalesInvoiceDetail";
+        public const string AccountingPurchaseInvoiceDetail = "Accounting.PurchaseInvoiceDetail";
+        public const string InventoryQuotationDetails = "Inventory.QuotationDetails";
     }
 
     public static class ReportScreenBindings
@@ -58,6 +61,28 @@ namespace CrossBuy.BL.Reporting
                 ScreenKey = ReportScreenKeys.AccountingJournalEntry,
                 ReportCode = AccountingDatasetCodes.JournalVoucher,
                 IdParameter = "JournalId",
+                SortOrder = 10,
+            },
+
+            new()
+            {
+                ScreenKey = ReportScreenKeys.AccountingSalesInvoiceDetail,
+                ReportCode = TradeDocumentDatasetCodes.SalesInvoice,
+                IdParameter = "InvoiceId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.AccountingPurchaseInvoiceDetail,
+                ReportCode = TradeDocumentDatasetCodes.PurchaseInvoice,
+                IdParameter = "InvoiceId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryQuotationDetails,
+                ReportCode = TradeDocumentDatasetCodes.Quotation,
+                IdParameter = "QuotationId",
                 SortOrder = 10,
             },
         };
