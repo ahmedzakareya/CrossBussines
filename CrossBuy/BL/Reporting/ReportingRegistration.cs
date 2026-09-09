@@ -166,6 +166,7 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, SalesInvoiceDocumentSource>();
             services.AddScoped<IReportDataSource, PurchaseInvoiceDocumentSource>();
             services.AddScoped<IReportDataSource, QuotationDocumentSource>();
+            services.AddScoped<IReportDataSource, PurchaseOrderDocumentSource>();
 
             foreach (var document in TradeDocumentDatasets.All())
             {

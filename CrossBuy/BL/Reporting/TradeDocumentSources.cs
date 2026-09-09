@@ -243,4 +243,73 @@ namespace CrossBuy.BL.Reporting
                 Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
         }
     }
+    public sealed class PurchaseOrderDocumentSource : IReportDataSource
+    {
+        private readonly CrossDbContext _db;
+        public PurchaseOrderDocumentSource(CrossDbContext db) { _db = db; }
+
+        public string Key => TradeDocumentDatasetCodes.PurchaseOrder;
+
+        public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            var context = query.Context;
+            var columns = query.RequestedColumns.Count > 0 ? query.RequestedColumns : query.Definition.Columns;
+            var builder = new ReportDataSetBuilder(columns);
+            if (context.CompanyId <= 0) return builder.Build(totalRowCount: 0);
+
+            var id = query.Parameters.GetInt("OrderId");
+            if (id is not > 0) return builder.Build(totalRowCount: 0);
+
+            var header = await _db.PurchaseOrders.AsNoTracking()
+                .Where(o => o.ID == id.Value && o.CompanyID == context.CompanyId)
+                .Select(o => new
+                {
+                    o.OrderNo, o.OrderDate, o.Status, o.Notes,
+                    o.SubTotal, o.TaxTotal, o.GrandTotal, o.VendorId,
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (header is null) return builder.Build(totalRowCount: 0);
+
+            bool arabic = AccountingSourceHelpers.Arabic(query);
+
+            var party = await _db.Vendors.AsNoTracking()
+                .Where(v => v.ID == header.VendorId)
+                .Select(v => arabic ? v.Name : (v.NameEn ?? v.Name))
+                .FirstOrDefaultAsync(cancellationToken);
+
+            int cap = query.MaxRows > 0 ? query.MaxRows : TradeDocumentDatasets.MaxRows;
+
+            // THE ITEM CODE IS JOINED. An order line carries an item id and a free-text description; an
+            // order a vendor is expected to fulfil without codes is one they will guess at.
+            var lines = await (
+                from l in _db.PurchaseOrderLines.AsNoTracking()
+                where l.PurchaseOrderId == id.Value
+                join it in _db.Items.AsNoTracking() on l.ItemId equals it.ID into ij
+                from it in ij.DefaultIfEmpty()
+                orderby l.LineNo
+                select new
+                {
+                    l.LineNo, l.ItemDescription, l.Qty, l.UnitPrice,
+                    l.DiscountAmount, l.TaxRate, l.LineTotal,
+                    ItemCode = it != null ? it.ItemCode : null,
+                })
+                .Take(cap + 1)
+                .ToListAsync(cancellationToken);
+
+            bool truncated = lines.Count > cap;
+            if (truncated) lines = lines.Take(cap).ToList();
+
+            foreach (var l in lines)
+                builder.AddRow(TradeDocumentRows.Row(
+                    l.LineNo, l.ItemCode, l.ItemDescription,
+                    l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
+                    header.OrderNo, header.OrderDate, party,
+                    AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
+                    header.SubTotal, header.TaxTotal, header.GrandTotal));
+
+            return builder.Build(truncated, truncated ? null : lines.Count,
+                Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
+        }
+    }
 }

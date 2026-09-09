@@ -50,6 +50,7 @@ namespace CrossBuy.BL.Reporting
         public const string AccountingSalesInvoiceDetail = "Accounting.SalesInvoiceDetail";
         public const string AccountingPurchaseInvoiceDetail = "Accounting.PurchaseInvoiceDetail";
         public const string InventoryQuotationDetails = "Inventory.QuotationDetails";
+        public const string InventoryPurchaseOrderDetail = "Inventory.PurchaseOrderDetail";
     }
 
     public static class ReportScreenBindings
@@ -83,6 +84,13 @@ namespace CrossBuy.BL.Reporting
                 ScreenKey = ReportScreenKeys.InventoryQuotationDetails,
                 ReportCode = TradeDocumentDatasetCodes.Quotation,
                 IdParameter = "QuotationId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryPurchaseOrderDetail,
+                ReportCode = TradeDocumentDatasetCodes.PurchaseOrder,
+                IdParameter = "OrderId",
                 SortOrder = 10,
             },
         };

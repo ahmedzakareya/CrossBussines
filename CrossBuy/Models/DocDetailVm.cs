@@ -12,6 +12,18 @@ namespace CrossBuy.Models
         public string BackLabel { get; set; } = "";
         public string BackLabelEn { get; set; } = "";
         public int? JournalEntryId { get; set; }                   // when set → link to the GL entry
+
+        // ---- PRINTING -----------------------------------------------------------------------------
+        //
+        // EIGHT DOCUMENTS render through DocumentDetails.cshtml — purchase and sales orders, receipts,
+        // deliveries, transfers, counts, write-offs, landed costs. Putting the print control in that one
+        // view means each of them gets it by naming itself here, and none of them grows print markup of
+        // its own to drift from the others.
+        //
+        // A document that has no report yet simply leaves ScreenKey null and renders no control, which
+        // is the honest state: a print button that opens nothing is worse than its absence.
+        public string? PrintScreenKey { get; set; }
+        public int? DocumentId { get; set; }
         public List<DocKv> Header { get; set; } = new();           // header key/value pairs
         public List<DocCol> Columns { get; set; } = new();         // line table columns
         public List<List<string>> Rows { get; set; } = new();      // line rows (cells line up with Columns)

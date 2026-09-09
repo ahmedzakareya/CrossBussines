@@ -25,6 +25,7 @@ namespace CrossBuy.BL.Reporting
         public const string SalesInvoice = "Sales.InvoiceDocument";
         public const string PurchaseInvoice = "Purchasing.InvoiceDocument";
         public const string Quotation = "Sales.QuotationDocument";
+        public const string PurchaseOrder = "Purchasing.OrderDocument";
     }
 
     public static class TradeDocumentDatasets
@@ -188,11 +189,20 @@ namespace CrossBuy.BL.Reporting
             "QuotationId", "رقم العرض الداخلي", "Quotation id",
             "العميل", "Customer");
 
+        public static ReportDatasetDefinition PurchaseOrder() => Build(
+            TradeDocumentDatasetCodes.PurchaseOrder,
+            "أمر شراء", "Purchase order",
+            "أمر شراء واحد بكل بنوده: الصنف والكمية والسعر، مع بيانات المورّد والإجماليات.",
+            "One purchase order with every line: item, quantity and price, with the vendor and the totals.",
+            "OrderId", "رقم الأمر الداخلي", "Order id",
+            "المورّد", "Vendor");
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return SalesInvoice();
             yield return PurchaseInvoice();
             yield return Quotation();
+            yield return PurchaseOrder();
         }
     }
 }

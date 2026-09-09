@@ -2389,7 +2389,10 @@ namespace CrossBuy.Controllers
 			if (d == null) { TempData["InvErr"] = L["Document not found"].Value; return RedirectToAction(nameof(PurchaseOrders)); }
 			var names = await ItemNamesAsync(d.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value)); var wh = await WhNamesAsync();
 			var vendor = await _context.Vendors.AsNoTracking().Where(v => v.ID == d.VendorId).Select(v => Ar() ? v.Name : (v.NameEn ?? v.Name)).FirstOrDefaultAsync() ?? "—";
-			var vm = new DocDetailVm { Title = "أمر شراء", TitleEn = "Purchase order", DocNo = d.OrderNo ?? ("#" + d.ID), DateStr = Dt(d.OrderDate), Status = d.Status, BackAction = nameof(PurchaseOrders), BackLabel = "أوامر الشراء", BackLabelEn = "Purchase orders" };
+			var vm = new DocDetailVm { Title = "أمر شراء", TitleEn = "Purchase order", DocNo = d.OrderNo ?? ("#" + d.ID), DateStr = Dt(d.OrderDate), Status = d.Status, BackAction = nameof(PurchaseOrders), BackLabel = "أوامر الشراء", BackLabelEn = "Purchase orders",
+				// The screen is bound to its reports in ReportScreenBindings; naming it here is all the
+				// shared view needs to offer every layout that exists for this document.
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryPurchaseOrderDetail, DocumentId = d.ID };
 			vm.Header.Add(new() { Label = "المورد", LabelEn = "Vendor", Value = vendor });
 			vm.Header.Add(new() { Label = "المخزن", LabelEn = "Warehouse", Value = d.WarehouseId == null ? "—" : wh.GetValueOrDefault(d.WarehouseId.Value, "—") });
 			vm.Header.Add(new() { Label = "تاريخ التوريد", LabelEn = "Expected", Value = DtN(d.ExpectedDate) });

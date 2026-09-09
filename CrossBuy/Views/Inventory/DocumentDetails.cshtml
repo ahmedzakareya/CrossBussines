@@ -20,6 +20,23 @@
             </ul>
         </div>
         <div class="d-flex gap-2 align-items-center">
+            @* PRINTING FOR EIGHT DOCUMENTS, DEFINED ONCE.
+               Purchase and sales orders, receipts, deliveries, transfers, counts, write-offs and landed
+               costs all render through this view, so the print control belongs here rather than in each
+               of them. A document names its screen on the view model and every layout bound to that
+               screen appears; one that has no report yet leaves it null and renders nothing, which is
+               honest — a print button that opens nothing is worse than its absence.
+
+               Nothing here prints the SCREEN: the platform renders the document, which is the rule. *@
+            @if (!string.IsNullOrWhiteSpace(Model.PrintScreenKey) && Model.DocumentId is > 0)
+            {
+                @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+                {
+                    ScreenKey = Model.PrintScreenKey!,
+                    DocumentId = Model.DocumentId!.Value.ToString(),
+                })
+            }
+
             @if (Model.JournalEntryId.HasValue) { <a href="@Url.Action("JournalEntry","Accounting", new { id = Model.JournalEntryId })" class="btn btn-sm btn-light-primary"><i class="ki-outline ki-document fs-5"></i>@Localizer["Journal entry"]</a> }
             <a href="@Url.Action(Model.BackAction,"Inventory")" class="btn btn-sm btn-light">@SR["Back"]</a>
         </div>
@@ -74,3 +91,10 @@
         </div>
     </div></div>
 </div>
+
+@* The shared report dialog — see Views/Shared/_ReportPreviewModal.cshtml. *@
+@if (!string.IsNullOrWhiteSpace(Model.PrintScreenKey) && Model.DocumentId is > 0)
+{
+    @await Html.PartialAsync("_ReportPreviewModal", (object)((isAr ? Model.Title : Model.TitleEn) + " " + Model.DocNo))
+}
+
