@@ -39,8 +39,8 @@
                Report Studio and appears here on its own; this screen never learns its name. *@
             @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
             {
-                ReportCode = "Accounting.JournalVoucher",
-                Parameters = new Dictionary<string, string> { ["JournalId"] = Model.ID.ToString() },
+                ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.AccountingJournalEntry,
+                DocumentId = Model.ID.ToString(),
                 DocumentTitle = Model.EntryNo,
             })
 

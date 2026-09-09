@@ -1,24 +1,30 @@
 namespace CrossBuy.BL.Reporting
 {
     // ============================================================================================
-    // WHAT A DOCUMENT SCREEN NEEDS TO OFFER ITS PRINT LAYOUTS.
+    // WHAT A DOCUMENT SCREEN SAYS TO GET ITS PRINT CONTROL.
     //
-    // A voucher has more than one template — the plain one, and the one with the ministry's mark on
-    // the right and the company's on the left — and which of them exists is DATA, authored in Report
-    // Studio. A screen that hardcodes one of them, or lists them in its own markup, is out of date the
-    // first time somebody adds a layout, and there is no build that would catch it.
+    // Only two things: WHICH SCREEN it is, and WHICH DOCUMENT is open. Everything else — which reports
+    // that screen prints, what each one calls its id parameter, which layouts exist — is looked up.
     //
-    // So the screen says only WHICH REPORT and FOR WHAT, and _ReportPrintMenu reads the rest.
+    // An earlier version took a report CODE. That bound the screen's MARKUP to one report, so printing
+    // a second document from the same screen meant editing a view, building and deploying, for a report
+    // the platform already knew how to render. The screen is bound to its reports in
+    // ReportScreenBindings now, which is one line per report and no markup at all.
     // ============================================================================================
     public sealed class ReportPrintMenuModel
     {
-        // The registered report the screen prints through — e.g. Accounting.JournalVoucher.
-        public required string ReportCode { get; init; }
+        // The screen, from ReportScreenKeys — a constant rather than a literal, so a typo is a compile
+        // error instead of a print control that silently renders nothing.
+        public required string ScreenKey { get; init; }
 
-        // The parameters that pin the report to THIS document: { ["JournalId"] = 15158 }. Kept as a
-        // dictionary rather than a typed id because the next screen to want this menu prints an invoice,
-        // and it should not have to change this class to do it.
-        public required IReadOnlyDictionary<string, string> Parameters { get; init; }
+        // The document on screen. A STRING because it is going into a query string either way, and an
+        // int here would only push the conversion to every caller.
+        public required string DocumentId { get; init; }
+
+        // Anything else a bound report needs pinned. Empty for the ordinary case; present because a
+        // report that takes a date as well as an id should not require a new model to be usable.
+        public IReadOnlyDictionary<string, string> ExtraParameters { get; init; }
+            = new Dictionary<string, string>(StringComparer.Ordinal);
 
         // Shown as the dialog's title. The document's own name reads better than the report's: a person
         // pressing Print on entry JV-2026-003615 is looking for that number, not for "Journal voucher".
