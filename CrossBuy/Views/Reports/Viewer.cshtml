@@ -1,4 +1,5 @@
 @using CrossBuy.BL.Reporting
+@using CrossBuy.Models.Context.Reporting
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @inject CrossBuy.BL.Communication.ICommActorDirectory Actors
@@ -451,11 +452,38 @@
                     var href = Url.Action("Viewer", "Reports", new { id = Model.Code })
                              + layoutQuery.Add("templateId", saved.Id.ToString()).ToUriComponent();
 
-                    <a class="btn btn-sm btn-flex fw-semibold @(saved.Id == Model.TemplateId ? "btn-primary" : "btn-light")"
-                       href="@href">
-                        @saved.Name
-                        <span class="badge badge-light fs-8 ms-1">@Localizer[saved.Scope.ToString()]</span>
-                    </a>
+                    var active = saved.Id == Model.TemplateId;
+
+                    @* EDIT LIVES ON THE LAYOUT ITSELF.
+                       Reaching a particular design in Studio meant a detour: back to the viewer, click
+                       the layout so it became the resolved one, then press "Design". Three steps to edit
+                       a thing whose name was already on screen. The pencil goes straight there.
+
+                       A PLATFORM layout opens too, and says so in its tooltip: Studio cannot save over a
+                       platform template, so editing one produces a personal copy. That is the product's
+                       existing rule — worth stating on the control rather than discovering after the
+                       save. *@
+                    var editTitle = saved.Scope == ReportTemplateScope.Platform
+                        ? Localizer["Edit in Report Studio — saving creates your own copy"].Value
+                        : Localizer["Edit in Report Studio"].Value;
+
+                    <div class="btn-group btn-group-sm" role="group" aria-label="@saved.Name">
+                        <a class="btn btn-sm btn-flex fw-semibold @(active ? "btn-primary" : "btn-light")"
+                           href="@href">
+                            @saved.Name
+                            <span class="badge badge-light fs-8 ms-1">@Localizer[saved.Scope.ToString()]</span>
+                        </a>
+
+                        @* A NEW TAB, like the Design button above it: the run on screen is not thrown
+                           away to go and look at the design. rel="noopener" because target="_blank"
+                           without it hands the opened page a reference back to this one. *@
+                        <a class="btn btn-sm btn-icon @(active ? "btn-primary" : "btn-light")"
+                           href="@Url.Action("Studio", "Reports", new { open = saved.Id })"
+                           target="_blank" rel="noopener"
+                           title="@editTitle" aria-label="@editTitle">
+                            <i class="ki-outline ki-pencil fs-6"></i>
+                        </a>
+                    </div>
                 }
             </div></div>
         }
