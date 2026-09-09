@@ -42,24 +42,35 @@ namespace CrossBuy.BL.Reporting
         public string PrimaryColor { get; init; } = BrandGreen;
         public string AccentColor { get; init; } = BrandGold;
 
-        // ---- SEMANTIC COLOURS, which are part of the identity and were the one thing missing from it.
+        // ---- SEMANTIC TONES, TAKEN FROM THE BRAND LAYER'S OWN VALUES ------------------------------
         //
-        // A report's banners were the only element painting itself with hex literals — #fff8dd, #7a5c14,
-        // #f1416c — while every other coloured thing in the document derived from PrimaryColor or
-        // AccentColor. A tenant could rebrand the whole report and the warnings stayed somebody else's
-        // amber, which is exactly how a document stops looking like it belongs to the product.
+        // A report is self-contained by rule — inline <style>, no external stylesheet — so it cannot read
+        // crossbuy-brand.css the way a screen does. That is a reason to COPY the token values, not a
+        // licence to invent them, and the banners had invented them: #fff8dd, #7a5c14, #f1416c, hexes
+        // belonging to stock Metronic, which the brand layer overrides. The report was wearing the
+        // theme's colours while every screen wore the product's.
         //
-        // KEPT SEMANTIC RATHER THAN BRANDED, deliberately. A truncation notice says data is MISSING; if
-        // it were painted in the brand colour it would read as decoration and be skipped. So these are
-        // the product's own warning and danger tones (Metronic's), named here so they are a stated
-        // decision that a deployment can override, not a literal buried in a stylesheet builder.
-        public string WarningColor { get; init; } = "#ffc700";
-        public string WarningSurface { get; init; } = "#fff8dd";
-        public string WarningText { get; init; } = "#7a5c14";
+        // These are crossbuy-brand.css's values verbatim (--bs-warning*, --bs-danger*). The ratios that
+        // file measures therefore still hold here; changing one of these without re-measuring silently
+        // invalidates the argument recorded beside it there.
+        //
+        // SEMANTIC, NOT BRANDED, deliberately: a truncation notice says data is MISSING, and painting it
+        // in the identity colour would make it read as decoration and be skipped.
+        public string WarningColor { get; init; } = "#F59E0B";
+        public string WarningSurface { get; init; } = "#FEF3C7";
+        public string WarningBorder { get; init; } = "#FCD34D";
+        public string WarningText { get; init; } = "#92400E";
 
-        public string DangerColor { get; init; } = "#f1416c";
-        public string DangerSurface { get; init; } = "#fff5f8";
-        public string DangerText { get; init; } = "#a3134b";
+        // WARNING KEEPS A DARK LABEL and every other family takes white. The brand layer states it —
+        // `--bs-warning-inverse: #071437` — because amber cannot carry small white text. A white icon on
+        // this tile would be the one thing on the page failing the standard the file exists to enforce.
+        public string WarningInverse { get; init; } = "#071437";
+
+        public string DangerColor { get; init; } = "#EF4444";
+        public string DangerSurface { get; init; } = "#FEE2E2";
+        public string DangerBorder { get; init; } = "#FCA5A5";
+        public string DangerText { get; init; } = "#991B1B";
+        public string DangerInverse { get; init; } = "#ffffff";
 
         // Free footer line (registration number, address). Rendered as text, escaped.
         public string? FooterNote { get; init; }

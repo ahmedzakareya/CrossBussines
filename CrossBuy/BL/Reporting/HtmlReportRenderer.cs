@@ -158,14 +158,18 @@ namespace CrossBuy.BL.Reporting
             // carried an English warning and nobody noticed because it still read as a sentence. That is
             // also why there is no French: the strings live in code, so there are only ever two.
             if (context.IsPreview)
-                sb.Append($"<div class=\"cbrep-banner cbrep-banner-preview\">{E(context.IsArabic
-                    ? "معاينة — عدد الصفوف محدود، وهذه ليست النسخة النهائية"
-                    : "PREVIEW — row count is limited; this is not the final document")}</div>");
+                Notice(sb, "preview",
+                    context.IsArabic ? "معاينة" : "Preview",
+                    context.IsArabic
+                        ? "عدد الصفوف محدود، وهذه ليست النسخة النهائية"
+                        : "The row count is limited; this is not the final document");
 
             if (context.View.Truncated)
-                sb.Append($"<div class=\"cbrep-banner cbrep-banner-truncated\">{E(context.IsArabic
-                    ? "النتيجة مقطوعة — بعض الصفوف غير معروضة"
-                    : "TRUNCATED — rows are missing from this output")}</div>");
+                Notice(sb, "truncated",
+                    context.IsArabic ? "النتيجة مقطوعة" : "Truncated",
+                    context.IsArabic
+                        ? "بعض الصفوف غير معروضة"
+                        : "Rows are missing from this output");
         }
 
         private static void AppendTable(StringBuilder sb, ReportRenderContext context)
@@ -362,16 +366,28 @@ namespace CrossBuy.BL.Reporting
             sb.Append(".cbrep-param{display:inline-block;margin-inline-end:14px;}");
             sb.Append(".cbrep-meta{font-size:8pt;color:#7e8299;text-align:end;white-space:nowrap;}");
 
-            sb.Append(".cbrep-banner{padding:5px 8px;margin-block-end:8px;font-size:8.5pt;font-weight:600;")
-              .Append("border-inline-start:3px solid;}");
-            // FROM THE BRANDING CONTRACT, not from literals. These two rules were the only colours in the
-            // document that a tenant could not change: rebrand everything and the warnings stayed amber.
-            sb.Append(".cbrep-banner-preview{background:").Append(context.Branding.WarningSurface)
-              .Append(";border-color:").Append(context.Branding.WarningColor)
-              .Append(";color:").Append(context.Branding.WarningText).Append(";}");
-            sb.Append(".cbrep-banner-truncated{background:").Append(context.Branding.DangerSurface)
-              .Append(";border-color:").Append(context.Branding.DangerColor)
-              .Append(";color:").Append(context.Branding.DangerText).Append(";}");
+            // THE HOUSE NOTICE. Dashed border, light surface, a 45px tile, an h4 and the body — the shape
+            // /Accounting/JournalEntry settled, in millimetre-free units because this sheet is also paper.
+            var b = context.Branding;
+            sb.Append(".cbrep-notice{display:flex;align-items:flex-start;gap:10px;")
+              .Append("padding:10px 12px;margin-block-end:10px;border:1px dashed;border-radius:6px;")
+              .Append("break-inside:avoid;}");
+            sb.Append(".cbrep-notice-tile{flex:0 0 auto;width:34px;height:34px;border-radius:6px;")
+              .Append("display:inline-flex;align-items:center;justify-content:center;}");
+            sb.Append(".cbrep-notice-body h4{margin:0 0 1px;font-size:10pt;font-weight:700;}");
+            sb.Append(".cbrep-notice-body div{font-size:8.5pt;font-weight:500;}");
+
+            sb.Append(".cbrep-notice-preview{background:").Append(b.WarningSurface)
+              .Append(";border-color:").Append(b.WarningBorder)
+              .Append(";color:").Append(b.WarningText).Append(";}");
+            sb.Append(".cbrep-notice-preview .cbrep-notice-tile{background:").Append(b.WarningColor)
+              .Append(";color:").Append(b.WarningInverse).Append(";}");
+
+            sb.Append(".cbrep-notice-truncated{background:").Append(b.DangerSurface)
+              .Append(";border-color:").Append(b.DangerBorder)
+              .Append(";color:").Append(b.DangerText).Append(";}");
+            sb.Append(".cbrep-notice-truncated .cbrep-notice-tile{background:").Append(b.DangerColor)
+              .Append(";color:").Append(b.DangerInverse).Append(";}");
 
             sb.Append(".cbrep-table{width:100%;border-collapse:collapse;}");
             sb.Append(".cbrep-table th{background:").Append(brand)
@@ -405,6 +421,42 @@ namespace CrossBuy.BL.Reporting
             }
 
             return sb.ToString();
+        }
+
+        // THE HOUSE NOTICE, which /Accounting/JournalEntry settled and the visual identity asks for
+        // everywhere: a dashed border in the tone, a light surface, a 45px icon tile, an h4 heading and
+        // then the body — coloured BY KIND rather than one look for everything.
+        //
+        // Rebuilt in plain CSS rather than reused: the screen writes
+        // `notice d-flex bg-light-warning rounded border-warning border border-dashed p-6`, and those
+        // are Metronic classes from a stylesheet a self-contained report may not load. So the SHAPE is
+        // copied and the tones come from ReportBranding, which now carries the brand layer's own values.
+        //
+        // THE ICON IS AN INLINE SVG for the same reason. `ki-outline ki-information-5` is an icon FONT,
+        // and a report that referenced it would render an empty box everywhere the font is absent —
+        // which is every archived PDF and every machine but this one.
+        private static void Notice(StringBuilder sb, string kind, string heading, string body)
+        {
+            var glyph = kind == "truncated"
+                // An exclamation: rows are missing, and that is not an informational aside.
+                ? "<path d=\"M12 7v6\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>"
+                  + "<circle cx=\"12\" cy=\"16.6\" r=\"1.3\" fill=\"currentColor\" stroke=\"none\"/>"
+                // An i-in-a-circle, matching ki-information-5, which is what the house uses for a
+                // notice the reader can act on.
+                : "<circle cx=\"12\" cy=\"7.6\" r=\"1.3\" fill=\"currentColor\" stroke=\"none\"/>"
+                  + "<path d=\"M12 11v6\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>";
+
+            sb.Append("<div class=\"cbrep-notice cbrep-notice-").Append(kind).Append("\">")
+              .Append("<span class=\"cbrep-notice-tile\">")
+              .Append("<svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" ")
+              .Append("stroke=\"currentColor\" aria-hidden=\"true\">")
+              .Append("<circle cx=\"12\" cy=\"12\" r=\"9.5\" stroke-width=\"1.8\"/>")
+              .Append(glyph)
+              .Append("</svg></span>")
+              .Append("<div class=\"cbrep-notice-body\">")
+              .Append("<h4>").Append(E(heading)).Append("</h4>")
+              .Append("<div>").Append(E(body)).Append("</div>")
+              .Append("</div></div>");
         }
 
         private static string PageSizeCss(ReportPageSetup setup)
