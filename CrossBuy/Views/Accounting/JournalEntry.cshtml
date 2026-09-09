@@ -34,26 +34,15 @@
                                   formats, the saved layouts and the design are.
 
                Both carry JournalId, so neither asks which entry you meant. *@
-            @{
-                var voucherPdf = Url.Action("Export", "Reports",
-                    new { id = "Accounting.JournalVoucher", format = "Pdf", JournalId = Model.ID })!;
-            }
-
-            @* NO CLICK OPENS A TAB AND NO CLICK DOWNLOADS. The document opens in the house dialog and
-               the reader decides from there whether to take it to a tab or save it — the same rule the
-               reports centre's own export strip follows, and the reason both live in one partial now
-               instead of one screen's markup.
-
-               data-report-view is the SAME url with inline=true; data-report-download is it without,
-               because the disposition is the endpoint's decision, not a `download` attribute's. *@
-            <button type="button" class="btn btn-sm btn-light-primary"
-                    data-report-view="@(voucherPdf)&inline=true"
-                    data-report-download="@voucherPdf"
-                    data-report-label="PDF"
-                    data-report-viewable="true"
-                    title="@Localizer["Open the printable voucher as a PDF"]">
-                <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
-            </button>
+            @* Every layout this report has, read live — see Views/Shared/_ReportPrintMenu.cshtml.
+               A second voucher design (one mark on the right, the company's on the left) is authored in
+               Report Studio and appears here on its own; this screen never learns its name. *@
+            @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+            {
+                ReportCode = "Accounting.JournalVoucher",
+                Parameters = new Dictionary<string, string> { ["JournalId"] = Model.ID.ToString() },
+                DocumentTitle = Model.EntryNo,
+            })
 
             <a class="btn btn-sm btn-light"
                href="@Url.Action("Viewer", "Reports", new { id = "Accounting.JournalVoucher", JournalId = Model.ID, run = true })"

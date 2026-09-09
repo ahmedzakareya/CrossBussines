@@ -1,0 +1,119 @@
+@using CrossBuy.BL.Reporting
+@using CrossBuy.Models.Context.Reporting
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject IReportTemplateService Templates
+@inject CrossBuy.BL.Platform.IBusinessContextAccessor Contexts
+@model ReportPrintMenuModel
+
+@*  ================================================================================================
+    PRINT, AS MANY LAYOUTS AS EXIST.
+
+    A document has more than one printable form — the plain voucher, and the one carrying the
+    ministry's mark on one side and the company's on the other — and WHICH ONES EXIST IS DATA. They
+    are authored in Report Studio, saved as templates, and can be added tomorrow by someone who does
+    not touch this repository. A screen listing them in its own markup is stale the first time that
+    happens, and nothing in a build would say so.
+
+    So this reads the live list. Anything an author saves for this report appears here by itself.
+
+    ONE LAYOUT IS A BUTTON, NOT A MENU. Opening a dropdown to choose from a list of one is a step that
+    teaches people the control is slow. The menu appears when there is actually a choice.
+
+    NOTHING HERE PRINTS THE SCREEN and nothing downloads on click: every item opens the shared dialog
+    (_ReportPreviewModal), which is where "open in a tab" and "download" live.
+    ================================================================================================ *@
+
+@{
+    var context = await Contexts.TryGetCurrentAsync();
+
+    // NO CONTEXT, NO MENU. Rendering a print control that cannot resolve a company would produce links
+    // that 404 — worse than an absent control, because the reader blames the document.
+    var layouts = context is { CompanyId: > 0 }
+        ? await Templates.ListAsync(Model.ReportCode, context)
+        : Array.Empty<ReportTemplateSummary>();
+
+    var arabic = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+    // The export url for one layout. `templateId` is omitted for the default entry so the platform
+    // RESOLVES one — that walk (Personal, Team, Company, Platform) is what decides the house layout,
+    // and naming a template here would quietly override a company's own choice.
+    string Url_(int? templateId, bool inline)
+    {
+        var route = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["id"] = Model.ReportCode,
+            ["format"] = "Pdf",
+        };
+        foreach (var (key, value) in Model.Parameters) route[key] = value;
+        if (templateId is > 0) route["templateId"] = templateId.Value.ToString();
+        if (inline) route["inline"] = "true";
+
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(
+            Url.Action("Export", "Reports")!, route);
+    }
+
+    string Name(ReportTemplateSummary t) =>
+        arabic ? t.Name : (string.IsNullOrWhiteSpace(t.NameEn) ? t.Name : t.NameEn!);
+}
+
+@if (layouts.Count <= 1)
+{
+    <button type="button" class="btn btn-sm btn-light-primary"
+            data-report-view="@Url_(null, true)"
+            data-report-download="@Url_(null, false)"
+            data-report-label="PDF"
+            data-report-viewable="true"
+            title="@Localizer["Open the printable document"]">
+        <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
+    </button>
+}
+else
+{
+    <div class="d-inline-flex">
+        @* The house dropdown: a button that opens a menu, not a select. Metronic's own menu engine
+           (data-kt-menu) is used rather than Bootstrap's so it matches every other menu in the app. *@
+        <button type="button" class="btn btn-sm btn-light-primary"
+                data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start"
+                title="@Localizer["Choose a print layout"]">
+            <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
+            <i class="ki-outline ki-down fs-7 ms-1"></i>
+        </button>
+
+        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold fs-7 w-250px py-3"
+             data-kt-menu="true">
+
+            @* THE DEFAULT FIRST, and without a templateId, so it follows the platform's own resolution
+               rather than pinning whichever layout happens to be first in this list. *@
+            <div class="menu-item px-3">
+                <a href="#" class="menu-link px-3"
+                   data-report-view="@Url_(null, true)"
+                   data-report-download="@Url_(null, false)"
+                   data-report-label="PDF"
+                   data-report-viewable="true">
+                    <span class="menu-icon"><i class="ki-outline ki-document fs-5"></i></span>
+                    <span class="menu-title">@Localizer["Default layout"]</span>
+                </a>
+            </div>
+
+            <div class="separator my-2"></div>
+
+            @foreach (var layout in layouts)
+            {
+                <div class="menu-item px-3">
+                    <a href="#" class="menu-link px-3 d-flex align-items-center justify-content-between"
+                       data-report-view="@Url_(layout.Id, true)"
+                       data-report-download="@Url_(layout.Id, false)"
+                       data-report-label="PDF · @Name(layout)"
+                       data-report-viewable="true"
+                       title="@Name(layout)">
+                        <span class="menu-title text-truncate">@Name(layout)</span>
+
+                        @* The scope, because "the company's layout" and "mine" are a meaningful
+                           difference when two of them share a name — and they usually do. *@
+                        <span class="badge badge-light fs-9 ms-2 flex-shrink-0">@Localizer[layout.Scope.ToString()]</span>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+}
