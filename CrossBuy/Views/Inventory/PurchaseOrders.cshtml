@@ -22,7 +22,29 @@
 
         <div class="card card-flush">
             <div class="card-header align-items-center py-4"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
-                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                    @* PRINTING THE LIST — the register, not a document.
+                       The screen is bound to Purchasing.OrderRegister in ReportScreenBindings, which
+                       names no id parameter because there is no single order to pin. What it does need
+                       is the filters the reader is looking at: a printed register that quietly ignored
+                       the status filter would be worse than none, because they would trust it.
+
+                       The query string SEEDS them, and the script at the foot of this file keeps them in
+                       step: cbServerList applies the filters over AJAX without touching the url, so a
+                       reader who filters and then prints would otherwise get the unfiltered register —
+                       measured, not assumed: the screen showed 5 rows and the register printed 4. *@
+                    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+                    {
+                        ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryPurchaseOrders,
+                        ExtraParameters = new Dictionary<string, string>(StringComparer.Ordinal)
+                        {
+                            ["Search"] = Context.Request.Query["q"].ToString(),
+                            ["Status"] = Context.Request.Query["status"].ToString(),
+                        },
+                    })
+
+                    <select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+                </div>
             </div>
             <div class="card-body pt-0">
                 <div class="table-responsive"><table class="table align-middle table-row-dashed fs-6 gy-4" id="t">
@@ -39,7 +61,41 @@
         </div>
     </div></div>
 </div>
+
+@* The shared report dialog — see Views/Shared/_ReportPreviewModal.cshtml. *@
+@await Html.PartialAsync("_ReportPreviewModal", (object)(isAr ? "سجل أوامر الشراء" : "Purchase order register"))
+
 @section Scripts {
+<script>
+/* THE REGISTER FOLLOWS THE FILTERS THE READER CAN SEE.
+   cbServerList applies `f_q` and `f_status` over AJAX and never touches the address bar, so the print
+   control — rendered server-side from the query string — would print whatever the url happened to say.
+   Measured before fixing: the list showed 5 rows and the register printed 4.
+
+   CAPTURE PHASE, deliberately. The dialog's own listener is bound on `document` in the bubble phase,
+   so this runs first and it is reading the attributes this rewrites; a bubble-phase listener here
+   would be a race that usually loses. */
+(function () {
+    var val = function (id) { var el = document.getElementById(id); return el ? (el.value || '') : ''; };
+
+    document.addEventListener('click', function (e) {
+        var link = e.target.closest ? e.target.closest('[data-report-view]') : null;
+        if (!link) { return; }
+
+        ['data-report-view', 'data-report-download'].forEach(function (attr) {
+            var raw = link.getAttribute(attr);
+            if (!raw) { return; }
+            /* Parsed as a url rather than string-replaced: a search term can contain an ampersand, and
+               a regex over a query string is how that becomes two parameters. */
+            var u = new URL(raw, window.location.origin);
+            u.searchParams.set('Search', val('f_q'));
+            u.searchParams.set('Status', val('f_status'));
+            link.setAttribute(attr, u.pathname + u.search);
+        });
+    }, true);
+})();
+</script>
+
 <script>
 cbServerList({ url:'@Url.Action("PurchaseOrdersData","Inventory")', exportUrl:'@Url.Action("PurchaseOrdersExport","Inventory")', suggestUrl:'@Url.Action("VendorsSuggest","Accounting")', isAr:@(isAr ? "true" : "false"),
   addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); } });

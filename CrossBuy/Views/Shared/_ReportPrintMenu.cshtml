@@ -63,8 +63,13 @@
         {
             ["id"] = binding.ReportCode,
             ["format"] = "Pdf",
-            [binding.IdParameter] = Model.DocumentId,
         };
+
+        // A DOCUMENT is pinned by its id; a REGISTER is not. A list screen prints the rows it is
+        // showing, so its binding names no id parameter and the screen contributes its filters
+        // instead — the same menu and the same dialog, a different shape of report.
+        if (!string.IsNullOrWhiteSpace(binding.IdParameter) && !string.IsNullOrWhiteSpace(Model.DocumentId))
+            route[binding.IdParameter!] = Model.DocumentId;
         foreach (var (key, value) in Model.ExtraParameters) route[key] = value;
         if (templateId is > 0) route["templateId"] = templateId.Value.ToString();
         if (inline) route["inline"] = "true";

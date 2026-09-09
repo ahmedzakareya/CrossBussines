@@ -783,8 +783,20 @@ namespace CrossBuy.BL.Reporting
             // same shape as everything else. They live in TradeDocumentDatasets because they are shared by
             // Sales and Purchasing rather than owned by Accounting, but a report is a report and there is
             // one place that turns a dataset into one.
+            //
+            // THE SORT IS PER DATASET, not one for the loop. A document reads in LINE order; a REGISTER has
+            // no lines and no LineNo column, and giving it one made ReportCatalog refuse the whole catalogue
+            // at start-up — which took every report down, not just this one. The validation was right and
+            // the loop was wrong: "all documents sort the same way" stopped being true the moment a
+            // register joined the list.
             foreach (var document in TradeDocumentDatasets.All())
-                yield return Build(document, "ki-outline ki-bill", "success", 150, ReportSort.By("LineNo"));
+            {
+                var sort = document.Fields.Any(f => string.Equals(f.Key, "LineNo", StringComparison.Ordinal))
+                    ? ReportSort.By("LineNo")
+                    : ReportSort.By("OrderDate", descending: true);
+
+                yield return Build(document, "ki-outline ki-bill", "success", 150, sort);
+            }
         }
 
         internal static ReportDefinition Build(ReportDatasetDefinition dataset, string icon, string color,

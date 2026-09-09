@@ -312,4 +312,75 @@ namespace CrossBuy.BL.Reporting
                 Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
         }
     }
+    public sealed class PurchaseOrderRegisterSource : IReportDataSource
+    {
+        private readonly CrossDbContext _db;
+        public PurchaseOrderRegisterSource(CrossDbContext db) { _db = db; }
+
+        public string Key => TradeDocumentDatasetCodes.PurchaseOrderRegister;
+
+        public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            var context = query.Context;
+            var columns = query.RequestedColumns.Count > 0 ? query.RequestedColumns : query.Definition.Columns;
+            var builder = new ReportDataSetBuilder(columns);
+            if (context.CompanyId <= 0) return builder.Build(totalRowCount: 0);
+
+            bool arabic = AccountingSourceHelpers.Arabic(query);
+            var search = query.Parameters.GetString("Search");
+            var status = query.Parameters.GetString("Status");
+
+            var rows = from o in _db.PurchaseOrders.AsNoTracking().Where(o => o.CompanyID == context.CompanyId)
+                       join v in _db.Vendors.AsNoTracking() on o.VendorId equals v.ID into vj
+                       from v in vj.DefaultIfEmpty()
+                       select new
+                       {
+                           o.ID, o.OrderNo, o.OrderDate, o.Status, o.GrandTotal,
+                           VendorAr = v != null ? v.Name : null,
+                           VendorEn = v != null ? v.NameEn : null,
+                       };
+
+            var applied = new List<ReportFilter>();
+
+            // THE SAME PREDICATE THE SCREEN USES — order number OR either spelling of the vendor. A
+            // register that filtered differently from the list it was printed from would be worse than
+            // no register: the reader would trust it.
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim();
+                rows = rows.Where(r => (r.OrderNo != null && r.OrderNo.Contains(s))
+                                    || (r.VendorAr != null && r.VendorAr.Contains(s))
+                                    || (r.VendorEn != null && r.VendorEn.Contains(s)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                rows = rows.Where(r => r.Status == status);
+                applied.Add(ReportFilter.Eq("Status", status));
+            }
+
+            int cap = query.MaxRows > 0 ? query.MaxRows : 5000;
+            var fetched = await rows
+                .OrderByDescending(r => r.ID)
+                .Take(cap + 1)
+                .ToListAsync(cancellationToken);
+
+            bool truncated = fetched.Count > cap;
+            if (truncated) fetched = fetched.Take(cap).ToList();
+
+            foreach (var r in fetched)
+                builder.AddRow(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["OrderNo"] = r.OrderNo,
+                    ["OrderDate"] = r.OrderDate,
+                    ["VendorName"] = AccountingSourceHelpers.Pick(arabic, r.VendorAr, r.VendorEn),
+                    ["Status"] = AccountingSourceHelpers.StatusLabel(r.Status, arabic),
+                    ["GrandTotal"] = r.GrandTotal,
+                });
+
+            return builder.Build(truncated, truncated ? null : fetched.Count, applied,
+                new[] { ReportSort.By("OrderDate", descending: true) });
+        }
+    }
 }

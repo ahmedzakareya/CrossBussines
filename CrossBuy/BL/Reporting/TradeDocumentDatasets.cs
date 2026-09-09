@@ -26,6 +26,7 @@ namespace CrossBuy.BL.Reporting
         public const string PurchaseInvoice = "Purchasing.InvoiceDocument";
         public const string Quotation = "Sales.QuotationDocument";
         public const string PurchaseOrder = "Purchasing.OrderDocument";
+        public const string PurchaseOrderRegister = "Purchasing.OrderRegister";
     }
 
     public static class TradeDocumentDatasets
@@ -197,12 +198,88 @@ namespace CrossBuy.BL.Reporting
             "OrderId", "رقم الأمر الداخلي", "Order id",
             "المورّد", "Vendor");
 
+
+        // ---- THE REGISTER, which is not a document ---------------------------------------------
+        //
+        // A list screen prints the rows it is SHOWING, under the filters it is showing them under. That
+        // is one row per order, no lines, and its parameters are the screen's own filters rather than a
+        // document id. Same platform, same menu, same dialog — a different shape of report.
+        //
+        // The filters mirror PurchaseOrdersData exactly: a printed register that quietly disagreed with
+        // the screen it was printed from would be worse than no register at all.
+        public static ReportDatasetDefinition PurchaseOrderRegister() => new()
+        {
+            DatasetCode = TradeDocumentDatasetCodes.PurchaseOrderRegister,
+            Module = "Trade",
+            TitleAr = "سجل أوامر الشراء",
+            TitleEn = "Purchase order register",
+            DescriptionAr = "أوامر الشراء بالحالة والمورّد والإجمالي — بنفس فلاتر الشاشة.",
+            DescriptionEn = "Purchase orders with status, vendor and total — under the screen's own filters.",
+            DataSourceKey = TradeDocumentDatasetCodes.PurchaseOrderRegister,
+            RequiredPermissionKey = AccountingReportPermissions.View,
+            MaxRows = 5000,
+            RowCapPolicy = ReportRowCapPolicy.TruncateAndDeclare,
+
+            Fields = new[]
+            {
+                new ReportDatasetField
+                {
+                    Key = "OrderNo", TitleAr = "رقم الأمر", TitleEn = "Order no.", WidthMm = 34,
+                },
+                new ReportDatasetField
+                {
+                    Key = "OrderDate", TitleAr = "التاريخ", TitleEn = "Date",
+                    Type = ReportFieldType.Date, Format = "yyyy-MM-dd", Groupable = true, WidthMm = 26,
+                },
+                new ReportDatasetField
+                {
+                    Key = "VendorName", TitleAr = "المورّد", TitleEn = "Vendor",
+                    Groupable = true, WidthMm = 60,
+                },
+                new ReportDatasetField
+                {
+                    Key = "Status", TitleAr = "الحالة", TitleEn = "Status",
+                    Groupable = true, WidthMm = 24,
+                    SupportedAggregates = new[] { ReportAggregate.Count },
+                },
+                new ReportDatasetField
+                {
+                    Key = "GrandTotal", TitleAr = "الإجمالي", TitleEn = "Total",
+                    Type = ReportFieldType.Money, Align = ReportAlign.End, WidthMm = 30,
+                    SupportedAggregates = new[] { ReportAggregate.Sum },
+                },
+            },
+
+            Parameters = new[]
+            {
+                new ReportParameterDescriptor
+                {
+                    Key = "Search", TitleAr = "بحث", TitleEn = "Search",
+                    HelpTextAr = "رقم الأمر أو اسم المورّد.", HelpTextEn = "Order number or vendor name.",
+                },
+                new ReportParameterDescriptor
+                {
+                    Key = "Status", TitleAr = "الحالة", TitleEn = "Status",
+                    Options = new[]
+                    {
+                        new ReportParameterOption { Value = "Draft", LabelAr = "مسودة", LabelEn = "Draft" },
+                        new ReportParameterOption { Value = "Approved", LabelAr = "معتمد", LabelEn = "Approved" },
+                        new ReportParameterOption { Value = "Received", LabelAr = "مُستلَم", LabelEn = "Received" },
+                        new ReportParameterOption { Value = "Closed", LabelAr = "مُقفل", LabelEn = "Closed" },
+                        new ReportParameterOption { Value = "Cancelled", LabelAr = "ملغى", LabelEn = "Cancelled" },
+                    },
+                },
+                AccountingDatasets.CompanyParam(),
+            },
+        };
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return SalesInvoice();
             yield return PurchaseInvoice();
             yield return Quotation();
             yield return PurchaseOrder();
+            yield return PurchaseOrderRegister();
         }
     }
 }

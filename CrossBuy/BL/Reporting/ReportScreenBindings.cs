@@ -33,8 +33,14 @@ namespace CrossBuy.BL.Reporting
         // A registered report — the same code the catalog and Report Studio use.
         public required string ReportCode { get; init; }
 
-        // The parameter that pins that report to the document on screen.
-        public required string IdParameter { get; init; }
+        // The parameter that pins the report to the document on screen — or NULL for a register.
+        //
+        // A LIST SCREEN PRINTS TOO, and what it prints is not a document: it is the rows it is showing,
+        // with the filters it is showing them under. That report has no document id to pin, so a
+        // binding without one is a register and the screen supplies its filters instead. Modelling it
+        // as "the same thing with a missing id" is what keeps one menu, one dialog and one rule for
+        // both, rather than a second print mechanism for lists.
+        public string? IdParameter { get; init; }
 
         // Ordering within the screen's menu. Explicit, because the order a person reads these in is a
         // decision and alphabetical order by report code is not one.
@@ -51,6 +57,7 @@ namespace CrossBuy.BL.Reporting
         public const string AccountingPurchaseInvoiceDetail = "Accounting.PurchaseInvoiceDetail";
         public const string InventoryQuotationDetails = "Inventory.QuotationDetails";
         public const string InventoryPurchaseOrderDetail = "Inventory.PurchaseOrderDetail";
+        public const string InventoryPurchaseOrders = "Inventory.PurchaseOrders";
     }
 
     public static class ReportScreenBindings
@@ -91,6 +98,14 @@ namespace CrossBuy.BL.Reporting
                 ScreenKey = ReportScreenKeys.InventoryPurchaseOrderDetail,
                 ReportCode = TradeDocumentDatasetCodes.PurchaseOrder,
                 IdParameter = "OrderId",
+                SortOrder = 10,
+            },
+
+            // The LIST prints its own rows under its own filters. No IdParameter: there is no document.
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryPurchaseOrders,
+                ReportCode = TradeDocumentDatasetCodes.PurchaseOrderRegister,
                 SortOrder = 10,
             },
         };

@@ -17,9 +17,9 @@ namespace CrossBuy.BL.Reporting
         // error instead of a print control that silently renders nothing.
         public required string ScreenKey { get; init; }
 
-        // The document on screen. A STRING because it is going into a query string either way, and an
-        // int here would only push the conversion to every caller.
-        public required string DocumentId { get; init; }
+        // The document on screen, or NULL on a list — which prints a register of the rows it is showing
+        // rather than one document. Kept as a STRING because it is going into a query string either way.
+        public string? DocumentId { get; init; }
 
         // Anything else a bound report needs pinned. Empty for the ordinary case; present because a
         // report that takes a date as well as an id should not require a new model to be usable.
