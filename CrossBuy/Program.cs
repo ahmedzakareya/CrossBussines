@@ -150,7 +150,8 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     // grant from reading that the company earned 800 on it, and reading how many units are on a shelf is a
     // different grant from reading what they cost.
     //
-    //   accounting.reports.view          the five Accounting datasets (registers + aging + profitability rows)
+    //   accounting.reports.view          the six Accounting datasets (registers + aging + profitability rows
+    //                                    + the journal voucher, which is one entry as a printable document)
     //   accounting.reports.profitability additionally reveals Revenue / COGS / Margin / Margin %
     //   inventory.reports.view           stock on hand and the movement register, QUANTITIES only
     //   inventory.reports.cost           additionally reveals AvgCost / TotalValue / UnitCost / movement value

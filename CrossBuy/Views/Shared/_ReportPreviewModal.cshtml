@@ -1,0 +1,163 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@model string
+
+@* ================================================================================================
+   THE REPORT PREVIEW DIALOG, SHARED.
+
+   It lived inside Views/Reports/Viewer.cshtml until a second screen needed it — the journal entry,
+   whose Print control must open the document here rather than in a tab. Copied, it would have become
+   the fourth thing in this module maintained in two places and drifting; every one of the others
+   (two page objects, three font stacks, two cell formatters) cost a day to find.
+
+   ANY SCREEN CAN USE IT. Render the partial once, then give a control these attributes:
+
+       data-report-view      the url to show INLINE   (…&inline=true)
+       data-report-download  the same url WITHOUT inline, so the endpoint serves an attachment
+       data-report-label     the format's name, shown beside the title
+       data-report-viewable  "false" for a format no browser can draw (XLSX), which swaps the frame
+                             for an explanation and hides the new-tab link
+
+   The listener is delegated from `document`, so controls added after load work too.
+   ================================================================================================ *@
+    @* ============================================================================================
+       THE REPORT PREVIEW MODAL — the app's own shell, copied rather than approximated.
+
+       Views/Accounting/AssetCategories.cshtml is the canonical modal in this product, and this is
+       its markup: modal-dialog modal-dialog-centered + mw-*px, an <h2 class="fw-bold"> title, a DIV
+       close button (btn btn-icon btn-sm + ki-cross fs-1), a modal-body with py-6 px-8, and a footer
+       of btn-light then btn-primary. The first version of this dialog used a generic Bootstrap
+       header and close button — the same library in a different dialect, which is exactly what a
+       house shell exists to prevent.
+
+       mw-1000px because the thing inside is a DOCUMENT. The rest of the product uses mw-650px for a
+       form and mw-900px for a wide one; a rendered A4 page needs more than either.
+
+       The document loads in an IFRAME rather than being injected: an exported report carries its own
+       <style> and its own @@page, which would leak into this screen, and a PDF can only be shown by
+       the browser's own viewer, which needs a frame to live in.
+       ============================================================================================ *@
+    <div class="modal fade" id="reportPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered mw-1000px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="fw-bold">
+                        @Model
+                        <span class="text-muted fs-6 fw-semibold ms-2" id="rpvFormat"></span>
+                    </h2>
+                    <div class="btn btn-icon btn-sm" data-bs-dismiss="modal" aria-label="@SR["Cancel"]">
+                        <i class="ki-outline ki-cross fs-1"></i>
+                    </div>
+                </div>
+
+                @* py-6 px-8 is the house body padding; the frame overrides it to sit edge to edge,
+                   because a document should not float inside a form's margins. *@
+                <div class="modal-body p-0 position-relative">
+                    @* THE LOADER. The document is rendered on the server — a PDF goes through the
+                       headless browser — so the dialog opens before there is anything to show. An
+                       empty dialog for four seconds is indistinguishable from a broken one.
+
+                       An OVERLAY rather than a replacement, so the frame keeps its height and the
+                       dialog does not resize under the reader when the document lands. Removed on
+                       the frame's own load event, which is the only honest signal that the bytes
+                       arrived. *@
+                    <div id="rpvLoading" class="d-none position-absolute top-0 start-0 w-100 h-100
+                                                align-items-center justify-content-center flex-column gap-3"
+                         style="background:rgba(255,255,255,.92);z-index:5;">
+                        <span class="spinner-border text-primary" style="width:2.5rem;height:2.5rem;" role="status"></span>
+                        <span class="fw-semibold text-gray-600">@Localizer["Preparing the document…"]</span>
+                    </div>
+
+                    <iframe id="rpvFrame" title="@Model"
+                            style="width:100%;height:74vh;border:0;display:block;background:#fff;"></iframe>
+
+                    @* Shown INSTEAD of the frame for a format no browser can draw. Says what the file
+                       is rather than showing an empty frame and letting the reader conclude the export
+                       is broken. d-none toggles it, not the hidden attribute - hidden is a UA
+                       display:none and loses to any d-* class on the same element. *@
+                    <div id="rpvNotice" class="d-none py-6 px-8">
+                        <div class="d-flex align-items-center p-5 rounded" style="background:var(--bs-light);">
+                            <i class="ki-outline ki-file-down fs-2hx text-primary me-4"></i>
+                            <div class="d-flex flex-column">
+                                <h4 class="mb-1 text-gray-900">@Localizer["This format cannot be shown in the browser."]</h4>
+                                <span class="text-gray-600">@Localizer["A spreadsheet has to be opened in Excel. Use Download."]</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+                    @* Hidden for a non-viewable format: opening a tab on an XLSX would download it,
+                       which is the thing this dialog exists to stop happening by accident. *@
+                    <a id="rpvNewTab" class="btn btn-light-primary" target="_blank" rel="noopener" href="#">
+                        <i class="ki-outline ki-exit-right-corner fs-4"></i>@Localizer["Open in a new tab"]
+                    </a>
+                    @* The real download: the SAME url without inline, so the endpoint serves it as an
+                       attachment. A `download` attribute would not be enough - the response decides. *@
+                    <a id="rpvDownload" class="btn btn-primary" href="#">
+                        <i class="ki-outline ki-file-down fs-4"></i>@Localizer["Download"]
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* The preview modal. One listener for every viewable-format button: the button carries the two
+   URLs it needs, so nothing here has to know the report code or rebuild a query string. */
+(function () {
+    var modalEl = document.getElementById('reportPreviewModal');
+    if (!modalEl) return;
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('[data-report-view]') : null;
+        if (!btn) return;
+        e.preventDefault();
+        var view = btn.getAttribute('data-report-view');
+        var viewable = btn.getAttribute('data-report-viewable') !== 'false';
+        var frame = document.getElementById('rpvFrame');
+        var notice = document.getElementById('rpvNotice');
+        var newTab = document.getElementById('rpvNewTab');
+
+        document.getElementById('rpvFormat').textContent = btn.getAttribute('data-report-label') || '';
+        document.getElementById('rpvDownload').setAttribute('href', btn.getAttribute('data-report-download'));
+
+        /* A format the browser cannot draw shows the notice and no frame, and loses the new-tab link:
+           opening a tab on a spreadsheet just downloads it, which is what this dialog prevents. */
+        frame.classList.toggle('d-none', !viewable);
+        notice.classList.toggle('d-none', viewable);
+        newTab.classList.toggle('d-none', !viewable);
+        if (viewable) newTab.setAttribute('href', view);
+
+        /* The loader goes up BEFORE the src is set and comes down on the frame's load event. Only
+           for a viewable format - the notice is instant and a spinner over it would flash. */
+        var loading = document.getElementById('rpvLoading');
+        loading.classList.toggle('d-none', !viewable);
+        loading.classList.toggle('d-flex', viewable);
+
+        /* Set LAST and cleared on close: a stale src would show the previous format for a moment,
+           and leaving it set keeps a rendered PDF in memory after the dialog is gone. */
+        if (viewable) frame.setAttribute('src', view);
+        else frame.removeAttribute('src');
+        if (window.bootstrap && bootstrap.Modal) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        else modalEl.classList.add('show');
+    });
+    /* load fires for a PDF too - the browser's own viewer counts as the frame's document. `error`
+       is handled as well: a 500 from the renderer must take the spinner down, or the dialog spins
+       for ever over a failure. */
+    ['load', 'error'].forEach(function (ev) {
+        document.getElementById('rpvFrame').addEventListener(ev, function () {
+            var l = document.getElementById('rpvLoading');
+            l.classList.add('d-none');
+            l.classList.remove('d-flex');
+        });
+    });
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        document.getElementById('rpvFrame').removeAttribute('src');
+        var l = document.getElementById('rpvLoading');
+        l.classList.add('d-none');
+        l.classList.remove('d-flex');
+    });
+})();
+</script>

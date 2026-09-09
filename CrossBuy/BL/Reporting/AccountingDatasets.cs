@@ -62,6 +62,10 @@ namespace CrossBuy.BL.Reporting
         public const string CustomerProfitability = "Accounting.CustomerProfitability";
         public const string JournalActivity = "Accounting.JournalActivity";
 
+        // ONE journal entry with its lines — the voucher a person prints and files, as opposed to
+        // JournalActivity, which lists entry HEADERS and has no debit or credit in it at all.
+        public const string JournalVoucher = "Accounting.JournalVoucher";
+
         public const string CategoryKey = "accounting.reporting";
     }
 
@@ -608,6 +612,131 @@ namespace CrossBuy.BL.Reporting
             },
         };
 
+        // ---- Accounting.JournalVoucher -------------------------------------------------------------
+        //
+        // THE DOCUMENT, not the list. JournalActivity answers "what was posted this month"; this answers
+        // "print me entry 15158", and the two cannot be the same dataset: a voucher is line-level, it is
+        // always exactly one entry, and its header fields repeat on every row so a design can place them
+        // as text while the table shows the lines.
+        //
+        // ROW-LEVEL HEADER FIELDS are deliberate and worth stating, because they look redundant. A visual
+        // template binds a Field element to a column and reads it from the FIRST row; without EntryNo and
+        // EntryDate on every line there is no way to put the entry number in the header band. The cost is
+        // a few repeated strings in a document that is a handful of rows by nature.
+        //
+        // NO DATE RANGE. Every other dataset here takes From/To; this one takes an entry id and refuses
+        // to run without it. A voucher report with no entry selected is not an empty report, it is a
+        // mistake, and returning "all lines of all entries" would be a slow way of saying so.
+        public static ReportDatasetDefinition JournalVoucher() => new()
+        {
+            DatasetCode = AccountingDatasetCodes.JournalVoucher,
+            Module = "Accounting",
+            TitleAr = "سند قيد يومية",
+            TitleEn = "Journal voucher",
+            DescriptionAr = "قيد واحد بكل سطوره: الحساب ومركز التكلفة والمدين والدائن والبيان، مع بيانات رأس القيد.",
+            DescriptionEn = "A single entry with every line: account, cost centre, debit, credit and note, with the entry header.",
+            DataSourceKey = AccountingDatasetCodes.JournalVoucher,
+            RequiredPermissionKey = AccountingReportPermissions.View,
+            MaxRows = MaxRows,
+            RowCapPolicy = ReportRowCapPolicy.TruncateAndDeclare,
+
+            Fields = new[]
+            {
+                // ---- the lines, which are what the table shows -------------------------------------
+                new ReportDatasetField
+                {
+                    Key = "LineNo", TitleAr = "م", TitleEn = "#",
+                    Type = ReportFieldType.Integer, Align = ReportAlign.Center, WidthMm = 10,
+                },
+                new ReportDatasetField
+                {
+                    Key = "AccountCode", TitleAr = "رمز الحساب", TitleEn = "Account code", WidthMm = 26,
+                },
+                new ReportDatasetField
+                {
+                    Key = "AccountName", TitleAr = "الحساب", TitleEn = "Account", WidthMm = 60,
+                    Groupable = true,
+                },
+                new ReportDatasetField
+                {
+                    Key = "CostCenterName", TitleAr = "مركز التكلفة", TitleEn = "Cost centre",
+                    Groupable = true, WidthMm = 34, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "ProjectName", TitleAr = "المشروع", TitleEn = "Project",
+                    Groupable = true, WidthMm = 34, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "LineDescription", TitleAr = "بيان السطر", TitleEn = "Line note", WidthMm = 55,
+                },
+
+                // TOTALLED, because a voucher that does not foot is not a voucher. The Sum aggregate is
+                // what puts the two control figures under the columns without anyone designing them.
+                new ReportDatasetField
+                {
+                    Key = "Debit", TitleAr = "مدين", TitleEn = "Debit",
+                    Type = ReportFieldType.Money, Align = ReportAlign.End, WidthMm = 28,
+                    // ToColumn takes SupportedAggregates[0] as the column total, so naming Sum here is
+                    // what puts the footing figure under the column -- there is no separate property.
+                    SupportedAggregates = new[] { ReportAggregate.Sum },
+                },
+                new ReportDatasetField
+                {
+                    Key = "Credit", TitleAr = "دائن", TitleEn = "Credit",
+                    Type = ReportFieldType.Money, Align = ReportAlign.End, WidthMm = 28,
+                    // ToColumn takes SupportedAggregates[0] as the column total, so naming Sum here is
+                    // what puts the footing figure under the column -- there is no separate property.
+                    SupportedAggregates = new[] { ReportAggregate.Sum },
+                },
+
+                // ---- the header, repeated per row so a design can place it -------------------------
+                new ReportDatasetField
+                {
+                    Key = "EntryNo", TitleAr = "رقم القيد", TitleEn = "Entry no.", WidthMm = 34,
+                },
+                new ReportDatasetField
+                {
+                    Key = "EntryDate", TitleAr = "تاريخ القيد", TitleEn = "Entry date",
+                    Type = ReportFieldType.Date, Format = "yyyy-MM-dd", WidthMm = 26,
+                },
+                new ReportDatasetField
+                {
+                    Key = "Status", TitleAr = "الحالة", TitleEn = "Status", WidthMm = 22,
+                },
+                new ReportDatasetField
+                {
+                    Key = "JournalType", TitleAr = "النوع", TitleEn = "Type", WidthMm = 24,
+                    VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "EntryDescription", TitleAr = "بيان القيد", TitleEn = "Entry description",
+                    WidthMm = 70, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "PostedAt", TitleAr = "تاريخ الترحيل", TitleEn = "Posted at",
+                    Type = ReportFieldType.DateTime, WidthMm = 30, VisibleByDefault = false,
+                },
+            },
+
+            Parameters = new[]
+            {
+                // REQUIRED, and the only one that matters. The screen passes it; the reports centre shows
+                // it as a box so the same report can be run for any entry without going back to a screen.
+                new ReportParameterDescriptor
+                {
+                    Key = "JournalId", TitleAr = "رقم القيد الداخلي", TitleEn = "Entry id",
+                    Type = ReportFieldType.Integer, Required = true,
+                    HelpTextAr = "معرّف القيد في النظام — تصل إليه شاشة القيد تلقائيًا.",
+                    HelpTextEn = "The entry's internal id — the journal screen fills this in for you.",
+                },
+                CompanyParam(),
+            },
+        };
+
         public static IEnumerable<ReportDatasetDefinition> All()
         {
             yield return SalesRevenue();
@@ -615,6 +744,7 @@ namespace CrossBuy.BL.Reporting
             yield return CustomerAging();
             yield return CustomerProfitability();
             yield return JournalActivity();
+            yield return JournalVoucher();
         }
     }
 
@@ -640,6 +770,11 @@ namespace CrossBuy.BL.Reporting
                 ReportSort.By("Invoiced", descending: true));
             yield return Build(AccountingDatasets.JournalActivity(), "ki-outline ki-notepad", "info", 140,
                 ReportSort.By("EntryDate", descending: true));
+
+            // The voucher sorts by LINE, not by date: a document is read in the order it was written,
+            // and there is only ever one entry in it for a date to order.
+            yield return Build(AccountingDatasets.JournalVoucher(), "ki-outline ki-document", "primary", 145,
+                ReportSort.By("LineNo"));
         }
 
         internal static ReportDefinition Build(ReportDatasetDefinition dataset, string icon, string color,
@@ -694,6 +829,47 @@ namespace CrossBuy.BL.Reporting
     // ============================================================================================
     internal static class AccountingSourceHelpers
     {
+
+        // ---- STORED CODES ARE NOT LABELS -------------------------------------------------------
+        //
+        // Status and JournalType are English words in the DATABASE — "Posted", "Auto" — and every
+        // screen and report that printed them printed the database. On an Arabic voucher that is one
+        // untranslated word in the middle of an otherwise Arabic document, and it is the word that
+        // says whether the entry counts.
+        //
+        // Mapped here rather than in a view because a REPORT has no view: it is rendered by the
+        // platform, exported to PDF and CSV, and archived. The map is deliberately exhaustive with a
+        // fall-through that returns the code itself — an unrecognised status must still print, and
+        // printing the raw code is a visible prompt to add it rather than a silent blank.
+        internal static string? StatusLabel(string? status, bool arabic)
+        {
+            if (string.IsNullOrWhiteSpace(status) || !arabic) return status;
+            return status switch
+            {
+                "Draft" => "مسودة",
+                "Submitted" => "مُقدَّم",
+                "Posted" => "مُرحَّل",
+                "Reversed" => "مَعكوس",
+                "Cancelled" => "ملغى",
+                _ => status,
+            };
+        }
+
+        internal static string? JournalTypeLabel(string? type, bool arabic)
+        {
+            if (string.IsNullOrWhiteSpace(type) || !arabic) return type;
+            return type switch
+            {
+                "Manual" => "يدوي",
+                "Auto" => "آلي",
+                "Recurring" => "دوري",
+                "Reversing" => "عكسي",
+                "Opening" => "افتتاحي",
+                "Closing" => "ختامي",
+                _ => type,
+            };
+        }
+
         // The inclusive upper bound, expressed once. A user asking for "1–31 January" means the 31st, and a
         // half-open range silently drops the last day — the bug this helper exists to prevent repeating.
         internal static DateTime ExclusiveEnd(DateTime? to) =>
@@ -1118,6 +1294,124 @@ namespace CrossBuy.BL.Reporting
 
             return builder.Build(truncated, truncated ? null : fetched.Count, applied,
                 new[] { ReportSort.By("EntryDate", descending: true) });
+        }
+    }
+    // ============================================================================================
+    // Accounting.JournalVoucher — ONE ENTRY, ITS LINES, AS A DOCUMENT.
+    //
+    // TENANCY IS CHECKED ON THE HEADER, NOT INFERRED FROM THE ID. The caller hands over an entry id
+    // from a URL, so the only thing standing between a tenant and another company's voucher is this
+    // query: the entry is loaded WITH CompanyID = the resolved context, and a miss returns an empty
+    // set rather than an error. "No such entry, as far as you are concerned" is the same answer the
+    // rest of the platform gives, and it does not confirm that the id exists.
+    //
+    // THE LINES ARE ORDERED BY LineNo. A voucher is read as a numbered document and the order is part
+    // of what it says; leaving it to the database's discretion would make two prints of one entry
+    // disagree about which line is first.
+    //
+    // ACCOUNT AND COST-CENTRE NAMES ARE JOINED, not stored on the line. The line carries ids, and a
+    // voucher showing "AccountId 412" is not a document anyone can file.
+    // ============================================================================================
+    public sealed class JournalVoucherDataSource : IReportDataSource
+    {
+        private readonly CrossDbContext _db;
+        public JournalVoucherDataSource(CrossDbContext db) { _db = db; }
+
+        public string Key => AccountingDatasetCodes.JournalVoucher;
+
+        public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            var context = query.Context;
+            var columns = query.RequestedColumns.Count > 0 ? query.RequestedColumns : query.Definition.Columns;
+            var builder = new ReportDataSetBuilder(columns);
+
+            if (context.CompanyId <= 0) return builder.Build(totalRowCount: 0);
+
+            var journalId = query.Parameters.GetInt("JournalId");
+
+            // NO ENTRY, NO DOCUMENT. The parameter is declared Required so the engine refuses before
+            // reaching here in the ordinary case; this is the guard for a caller that got past it, and
+            // it returns empty rather than every line in the company.
+            if (journalId is not > 0) return builder.Build(totalRowCount: 0);
+
+            var header = await _db.JournalEntries.AsNoTracking()
+                .Where(j => j.ID == journalId.Value && j.CompanyID == context.CompanyId)
+                .Select(j => new
+                {
+                    j.EntryNo, j.EntryDate, j.Status, j.JournalType, j.PostedAt,
+                    j.Description, j.DescriptionEn,
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (header is null) return builder.Build(totalRowCount: 0);
+
+            bool arabic = AccountingSourceHelpers.Arabic(query);
+            int cap = query.MaxRows > 0 ? query.MaxRows : AccountingDatasets.MaxRows;
+
+            var lines = await (
+                from l in _db.JournalEntryLines.AsNoTracking()
+                where l.JournalEntryId == journalId.Value
+                join a in _db.Accounts.AsNoTracking() on l.AccountId equals a.ID into aj
+                from a in aj.DefaultIfEmpty()
+                select new
+                {
+                    l.LineNo, l.Debit, l.Credit, l.Description, l.DescriptionEn,
+                    l.CostCenterId, l.ProjectId,
+                    AccountCode = a != null ? a.Code : null,
+                    AccountNameAr = a != null ? a.Name : null,
+                    AccountNameEn = a != null ? a.NameEn : null,
+                })
+                .OrderBy(l => l.LineNo)
+                .Take(cap + 1)
+                .ToListAsync(cancellationToken);
+
+            bool truncated = lines.Count > cap;
+            if (truncated) lines = lines.Take(cap).ToList();
+
+            // LOOKED UP IN ONE ROUND TRIP EACH, not per line. A voucher is a handful of rows, but the
+            // same code runs for an import correction with two hundred, and a name per line would be
+            // two hundred queries for a document.
+            var centreIds = lines.Where(l => l.CostCenterId.HasValue).Select(l => l.CostCenterId!.Value).Distinct().ToList();
+            var projectIds = lines.Where(l => l.ProjectId.HasValue).Select(l => l.ProjectId!.Value).Distinct().ToList();
+
+            var centres = centreIds.Count == 0
+                ? new Dictionary<int, string?>()
+                : await _db.CostCenters.AsNoTracking()
+                    .Where(c => centreIds.Contains(c.ID))
+                    .ToDictionaryAsync(c => c.ID, c => arabic ? c.Name : (c.NameEn ?? c.Name), cancellationToken);
+
+            var projects = projectIds.Count == 0
+                ? new Dictionary<int, string?>()
+                : await _db.Projects.AsNoTracking()
+                    .Where(p => projectIds.Contains(p.ID))
+                    .ToDictionaryAsync(p => p.ID, p => arabic ? p.Name : (p.NameEn ?? p.Name), cancellationToken);
+
+            var entryDescription = AccountingSourceHelpers.Pick(arabic, header.Description, header.DescriptionEn);
+
+            foreach (var l in lines)
+                builder.AddRow(new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["LineNo"] = l.LineNo,
+                    ["AccountCode"] = l.AccountCode,
+                    ["AccountName"] = AccountingSourceHelpers.Pick(arabic, l.AccountNameAr, l.AccountNameEn),
+                    ["CostCenterName"] = l.CostCenterId.HasValue && centres.TryGetValue(l.CostCenterId.Value, out var c) ? c : null,
+                    ["ProjectName"] = l.ProjectId.HasValue && projects.TryGetValue(l.ProjectId.Value, out var p) ? p : null,
+                    ["LineDescription"] = AccountingSourceHelpers.Pick(arabic, l.Description, l.DescriptionEn),
+                    ["Debit"] = l.Debit,
+                    ["Credit"] = l.Credit,
+
+                    // The header on every line — see the definition for why that is not redundant.
+                    ["EntryNo"] = header.EntryNo,
+                    ["EntryDate"] = header.EntryDate,
+                    ["Status"] = AccountingSourceHelpers.StatusLabel(header.Status, arabic),
+                    ["JournalType"] = AccountingSourceHelpers.JournalTypeLabel(header.JournalType, arabic),
+                    ["EntryDescription"] = entryDescription,
+                    ["PostedAt"] = header.PostedAt,
+                });
+
+            return builder.Build(truncated, truncated ? null : lines.Count,
+                Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
         }
     }
 }

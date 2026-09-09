@@ -16,6 +16,51 @@
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading fw-bold fs-3 m-0 d-flex align-items-center gap-2"><span class="text-muted fw-semibold">@Localizer["Entry"]</span><span class="text-gray-900 fw-bolder">@Model.EntryNo</span></h1>
         <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("Journals","Accounting")" class="text-muted">@Localizer["Journals"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Model.EntryNo</li></ul></div>
         <div class="d-flex gap-2">
+            @* ---- PRINT, AND ONLY THROUGH THE REPORTING PLATFORM -------------------------------------
+               Neither of these prints the screen. `window.print()`, a hidden print root, an iframe the
+               page writes a document into, a @@media print stylesheet — all forbidden, whatever the
+               screen: the platform owns page setup, template versioning and rollback, the four template
+               scopes, field-level permission, export policy, archiving and a real PDF renderer, and a
+               view that prints its own HTML has none of that and immediately drifts from the report of
+               the same name.
+
+               So the voucher is a DATASET — Accounting.JournalVoucher, one entry with its lines — and
+               these two are the two ways to reach it:
+
+                 · PRINT NOW      the PDF the platform renders from the voucher's template, opened in a
+                                  tab. One click, no decisions, which is what "print this" means when
+                                  you are already looking at the entry.
+                 · REPORTS CENTRE the same report in the viewer, where the parameters, the other export
+                                  formats, the saved layouts and the design are.
+
+               Both carry JournalId, so neither asks which entry you meant. *@
+            @{
+                var voucherPdf = Url.Action("Export", "Reports",
+                    new { id = "Accounting.JournalVoucher", format = "Pdf", JournalId = Model.ID })!;
+            }
+
+            @* NO CLICK OPENS A TAB AND NO CLICK DOWNLOADS. The document opens in the house dialog and
+               the reader decides from there whether to take it to a tab or save it — the same rule the
+               reports centre's own export strip follows, and the reason both live in one partial now
+               instead of one screen's markup.
+
+               data-report-view is the SAME url with inline=true; data-report-download is it without,
+               because the disposition is the endpoint's decision, not a `download` attribute's. *@
+            <button type="button" class="btn btn-sm btn-light-primary"
+                    data-report-view="@(voucherPdf)&inline=true"
+                    data-report-download="@voucherPdf"
+                    data-report-label="PDF"
+                    data-report-viewable="true"
+                    title="@Localizer["Open the printable voucher as a PDF"]">
+                <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
+            </button>
+
+            <a class="btn btn-sm btn-light"
+               href="@Url.Action("Viewer", "Reports", new { id = "Accounting.JournalVoucher", JournalId = Model.ID, run = true })"
+               title="@Localizer["Open in the reports centre — parameters, formats and layouts"]">
+                <i class="ki-outline ki-chart-simple fs-5"></i>@Localizer["Reports centre"]
+            </a>
+
             <a href="@Url.Action("Journals","Accounting")" class="btn btn-sm btn-light">@SR["Back"]</a>
             @if (Model.Status == "Posted")
             {
@@ -31,8 +76,8 @@
                 <div class="d-flex flex-stack flex-wrap gap-3 mb-2">
                     <h2 class="m-0 d-flex align-items-center gap-2"><span class="text-muted fw-semibold fs-4">@Localizer["Entry"]</span><span class="fw-bolder text-gray-900">@Model.EntryNo</span></h2>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge badge-light-info fs-7 fw-bold px-3 py-2">@Model.JournalType</span>
-                        <span class="badge badge-light-@StatusBadge(Model.Status) fs-7 fw-bold px-3 py-2">@Model.Status</span>
+                        <span class="badge badge-light-info fs-7 fw-bold px-3 py-2">@Localizer[Model.JournalType]</span>
+                        <span class="badge badge-light-@StatusBadge(Model.Status) fs-7 fw-bold px-3 py-2">@Localizer[Model.Status]</span>
                     </div>
                 </div>
                 <p class="fs-6 fw-semibold text-gray-600 py-1 m-0"><i class="ki-outline ki-calendar-8 fs-6 me-1"></i>@Model.EntryDate.ToString("yyyy/MM/dd")</p>
@@ -117,3 +162,8 @@
         <!--end::Lines-->
     </div></div>
 </div>
+
+@* The shared report dialog — see Views/Shared/_ReportPreviewModal.cshtml. Its title is the
+   document being previewed, which here is the voucher for this entry. *@
+@await Html.PartialAsync("_ReportPreviewModal", (object)(Localizer["Journal voucher"].Value + " " + (Model.EntryNo ?? "")))
+

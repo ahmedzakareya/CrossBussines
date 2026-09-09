@@ -157,6 +157,9 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, CustomerProfitabilityDataSource>();
             services.AddScoped<IReportDataSource, JournalActivityDataSource>();
 
+            // The voucher: one entry as a document, which is what the journal screen prints.
+            services.AddScoped<IReportDataSource, JournalVoucherDataSource>();
+
             services.AddSingleton<IReportDefinitionProvider, InventoryReportDefinitionProvider>();
             services.AddScoped<IReportDataSource, StockOnHandDataSource>();
             services.AddScoped<IReportDataSource, StockMovementsDataSource>();
