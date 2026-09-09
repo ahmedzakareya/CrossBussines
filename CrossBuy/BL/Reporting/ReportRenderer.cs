@@ -42,6 +42,25 @@ namespace CrossBuy.BL.Reporting
         public string PrimaryColor { get; init; } = BrandGreen;
         public string AccentColor { get; init; } = BrandGold;
 
+        // ---- SEMANTIC COLOURS, which are part of the identity and were the one thing missing from it.
+        //
+        // A report's banners were the only element painting itself with hex literals — #fff8dd, #7a5c14,
+        // #f1416c — while every other coloured thing in the document derived from PrimaryColor or
+        // AccentColor. A tenant could rebrand the whole report and the warnings stayed somebody else's
+        // amber, which is exactly how a document stops looking like it belongs to the product.
+        //
+        // KEPT SEMANTIC RATHER THAN BRANDED, deliberately. A truncation notice says data is MISSING; if
+        // it were painted in the brand colour it would read as decoration and be skipped. So these are
+        // the product's own warning and danger tones (Metronic's), named here so they are a stated
+        // decision that a deployment can override, not a literal buried in a stylesheet builder.
+        public string WarningColor { get; init; } = "#ffc700";
+        public string WarningSurface { get; init; } = "#fff8dd";
+        public string WarningText { get; init; } = "#7a5c14";
+
+        public string DangerColor { get; init; } = "#f1416c";
+        public string DangerSurface { get; init; } = "#fff5f8";
+        public string DangerText { get; init; } = "#a3134b";
+
         // Free footer line (registration number, address). Rendered as text, escaped.
         public string? FooterNote { get; init; }
 

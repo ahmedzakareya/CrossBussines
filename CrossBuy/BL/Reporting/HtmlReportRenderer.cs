@@ -152,14 +152,19 @@ namespace CrossBuy.BL.Reporting
 
             // Two honesty banners. Both are rendered, not logged: the person holding the paper is the one who
             // needs to know the document is provisional or incomplete.
+            //
+            // BOTH BRANCHES USED TO BE ENGLISH. The ternary tests IsArabic, and whoever wrote it varied the
+            // TONE — a quiet sentence and a shouting one — rather than the language, so an Arabic report
+            // carried an English warning and nobody noticed because it still read as a sentence. That is
+            // also why there is no French: the strings live in code, so there are only ever two.
             if (context.IsPreview)
                 sb.Append($"<div class=\"cbrep-banner cbrep-banner-preview\">{E(context.IsArabic
-                    ? "Preview — the number of rows is limited and this is not the final version"
+                    ? "معاينة — عدد الصفوف محدود، وهذه ليست النسخة النهائية"
                     : "PREVIEW — row count is limited; this is not the final document")}</div>");
 
             if (context.View.Truncated)
                 sb.Append($"<div class=\"cbrep-banner cbrep-banner-truncated\">{E(context.IsArabic
-                    ? "The result was truncated: some rows are not shown"
+                    ? "النتيجة مقطوعة — بعض الصفوف غير معروضة"
                     : "TRUNCATED — rows are missing from this output")}</div>");
         }
 
@@ -317,7 +322,6 @@ namespace CrossBuy.BL.Reporting
         private static string Css(ReportRenderContext context, bool print)
         {
             var brand = context.Branding.PrimaryColor;
-            var accent = context.Branding.AccentColor;
             var setup = context.PageSetup;
             var inv = System.Globalization.CultureInfo.InvariantCulture;
 
@@ -360,8 +364,14 @@ namespace CrossBuy.BL.Reporting
 
             sb.Append(".cbrep-banner{padding:5px 8px;margin-block-end:8px;font-size:8.5pt;font-weight:600;")
               .Append("border-inline-start:3px solid;}");
-            sb.Append(".cbrep-banner-preview{background:#fff8dd;border-color:").Append(accent).Append(";color:#7a5c14;}");
-            sb.Append(".cbrep-banner-truncated{background:#fff5f8;border-color:#f1416c;color:#a3134b;}");
+            // FROM THE BRANDING CONTRACT, not from literals. These two rules were the only colours in the
+            // document that a tenant could not change: rebrand everything and the warnings stayed amber.
+            sb.Append(".cbrep-banner-preview{background:").Append(context.Branding.WarningSurface)
+              .Append(";border-color:").Append(context.Branding.WarningColor)
+              .Append(";color:").Append(context.Branding.WarningText).Append(";}");
+            sb.Append(".cbrep-banner-truncated{background:").Append(context.Branding.DangerSurface)
+              .Append(";border-color:").Append(context.Branding.DangerColor)
+              .Append(";color:").Append(context.Branding.DangerText).Append(";}");
 
             sb.Append(".cbrep-table{width:100%;border-collapse:collapse;}");
             sb.Append(".cbrep-table th{background:").Append(brand)
