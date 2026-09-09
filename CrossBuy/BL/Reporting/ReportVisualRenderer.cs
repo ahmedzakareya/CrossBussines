@@ -246,7 +246,23 @@ namespace CrossBuy.BL.Reporting
 
                 if (first && reportHeader != null)
                 {
-                    Band(sb, ctx, reportHeader, null, null, y, contentW, p + 1, totalPages);
+                    // THE FIRST ROW, so a Field element in the letterhead resolves.
+                    //
+                    // This band was rendered with a null row, which meant a bound field in it could never
+                    // print anything — and that is exactly where a DOCUMENT states itself: its number, its
+                    // date, the party it is for. The starter layout puts those in the lines table instead,
+                    // repeating them down the page as columns, which is why a purchase order read as a
+                    // query result rather than as a purchase order.
+                    //
+                    // A document's header fields carry the SAME value on every row by construction — the
+                    // trade and voucher datasets repeat the header deliberately, for this — so the first
+                    // row is the document's own header. The whole set goes in as scope so a Summary works
+                    // here too.
+                    //
+                    // Safe by inspection: these elements previously rendered EMPTY, so nothing that reads
+                    // correctly today can start reading differently.
+                    Band(sb, ctx, reportHeader, rows.FirstOrDefault(), rows.ToList(), y, contentW,
+                         p + 1, totalPages);
                     y += reportHeader.HeightMm;
                 }
 
@@ -308,7 +324,12 @@ namespace CrossBuy.BL.Reporting
                     // Anchored to the bottom of the printable box rather than after the last row: a totals
                     // block that floats up the page when a report is short looks like a bug to the reader.
                     var footerY = Math.Max(y, contentH - (pageFooter?.HeightMm ?? 0) - reportFooter.HeightMm);
-                    Band(sb, ctx, reportFooter, null, rows.ToList(), footerY, contentW, p + 1, totalPages);
+                    // Same reasoning for the closing band: a Summary already worked here because the
+                    // scope was passed, but a Field did not — and a document's stored totals are FIELDS,
+                    // not sums of the lines. A footer that could only add up the rows would print a total
+                    // that disagrees with the invoice whenever there is a header discount.
+                    Band(sb, ctx, reportFooter, rows.FirstOrDefault(), rows.ToList(), footerY, contentW,
+                         p + 1, totalPages);
                 }
 
                 if (pageFooter != null)

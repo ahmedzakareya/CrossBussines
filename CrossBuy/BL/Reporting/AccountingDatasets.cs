@@ -856,11 +856,26 @@ namespace CrossBuy.BL.Reporting
             if (string.IsNullOrWhiteSpace(status) || !arabic) return status;
             return status switch
             {
+                // A JOURNAL's lifecycle.
                 "Draft" => "مسودة",
                 "Submitted" => "مُقدَّم",
                 "Posted" => "مُرحَّل",
                 "Reversed" => "مَعكوس",
                 "Cancelled" => "ملغى",
+
+                // A TRADE DOCUMENT's, which is a different lifecycle and was missing entirely — a
+                // purchase order printed "Received" in the middle of an Arabic document because this map
+                // only knew about journals. The fall-through hid it: an unmapped status prints its code,
+                // which reads as a word rather than as a gap.
+                "Approved" => "معتمد",
+                "Received" => "مُستلَم",
+                "Closed" => "مُقفل",
+                "Sent" => "مُرسَل",
+                "Accepted" => "مقبول",
+                "Rejected" => "مرفوض",
+                "Delivered" => "مُسلَّم",
+                "Partial" => "جزئي",
+                "Open" => "مفتوح",
                 _ => status,
             };
         }

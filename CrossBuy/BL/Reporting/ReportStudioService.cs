@@ -862,7 +862,18 @@ namespace CrossBuy.BL.Reporting
                 Scope = ReportTemplateScope.Personal,
                 Layout = new ReportLayout
                 {
-                    VisibleColumns = validation.Columns,
+                    // WHAT THE DESIGN BINDS, NOT ONLY WHAT THE COLUMN LIST SAYS.
+                    //
+                    // The preview path twenty lines up already does this, with a comment explaining why:
+                    // "a document whose Detail band draws InvoiceNo and GrandTotal would render two empty
+                    // boxes". The SAVED layout did not, so the fix held for as long as you stayed inside
+                    // the designer and broke the moment the template was run from a screen — a purchase
+                    // order printed its totals' labels with nothing beside them.
+                    //
+                    // Union rather than replace: a column can be in the table AND bound in a band, and a
+                    // field bound in a band is not necessarily a column anyone wants in the table. The
+                    // stored layout has to satisfy both readers of it.
+                    VisibleColumns = Bound(validation),
                     Filters = validation.Filters,
                     Sorts = validation.Sorts,
                     Parameters = validation.Parameters,
@@ -908,6 +919,21 @@ namespace CrossBuy.BL.Reporting
                 },
                 ChangeNote = "Report Studio",
             }, context, cancellationToken);
+        }
+
+        // The column list a stored layout needs: the author's columns plus every field its bands bind.
+        // Order is preserved — the table's columns keep the order the author gave them, and the extra
+        // bound fields are appended, because they are read by key and never by position.
+        private static List<string> Bound(StudioValidation validation)
+        {
+            var columns = new List<string>(validation.Columns);
+            if (validation.Visual is null) return columns;
+
+            foreach (var key in VisualFieldKeys(validation.Visual))
+                if (!columns.Contains(key, StringComparer.Ordinal))
+                    columns.Add(key);
+
+            return columns;
         }
 
         // ========================================================================================
