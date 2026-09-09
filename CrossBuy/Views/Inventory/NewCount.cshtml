@@ -86,7 +86,7 @@
 @section Scripts {
 <script>
 var whSel=document.getElementById('whSel');
-if(whSel){ var go=function(){ location.href='?warehouseId='+(whSel.value||''); }; if(window.jQuery&&jQuery(whSel).data('select2'))jQuery(whSel).on('change',go); else whSel.addEventListener('change',go); }
+if(whSel){ var go=function(){ location.href='?warehouseId='+(whSel.value||''); }; if(window.CB&&CB.onSelectChange)CB.onSelectChange(whSel,go); else whSel.addEventListener('change',go); }
 var rowsEl=document.getElementById('rows');
 function recalc(tr){
   if(tr.getAttribute('data-counted')!=='1'){ var d0=tr.querySelector('.diff'); d0.textContent=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["not counted"].Value)); d0.className='text-end fw-bold diff text-muted'; return; }

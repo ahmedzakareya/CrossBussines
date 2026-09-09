@@ -82,7 +82,19 @@ namespace CrossBuy.BL.Reporting
                       .ToList();
 
             // ---- pagination ---------------------------------------------------------------------------
-            double repeatH = (pageHeader?.HeightMm ?? 0) + (pageFooter?.HeightMm ?? 0);
+            // AN EMPTY BAND RESERVES NO PAPER.
+            //
+            // Blank() gives all seven bands a height, and a layout typically fills two or three. The
+            // rest were still charged: 24mm off every page for an empty page header and footer, and a
+            // whole extra sheet for an empty report footer that would not fit on the last one — which
+            // is exactly the blank "page 4 of 4" a four-page report ended with.
+            //
+            // Nothing can be lost by giving that space back: a band with no elements has nothing to
+            // draw. A band the designer HAS put something in is charged exactly as before.
+            static double Charged(ReportBand? band) =>
+                band is { Elements.Count: > 0 } ? band.HeightMm : 0;
+
+            double repeatH = Charged(pageHeader) + Charged(pageFooter);
             double detailH = Math.Max(1, detail?.HeightMm ?? 8);
 
             // ────────────────────────────────────────────────────────────────────────────────────────
@@ -123,7 +135,7 @@ namespace CrossBuy.BL.Reporting
 
             var pages = new List<List<(string Kind, ReportRow? Row, string? GroupKey, List<ReportRow>? GroupRows)>>();
             var current = new List<(string, ReportRow?, string?, List<ReportRow>?)>();
-            double used = (reportHeader?.HeightMm ?? 0);   // the report header prints once, on page 1
+            double used = Charged(reportHeader);   // the report header prints once, on page 1
 
             bool headCharged = false;
 
@@ -146,8 +158,10 @@ namespace CrossBuy.BL.Reporting
                 used += h;
             }
 
-            // The report footer needs room on the last page, or it gets one of its own.
-            double footerH = reportFooter?.HeightMm ?? 0;
+            // The report footer needs room on the last page, or it gets one of its own — but ONLY if
+            // there is a footer to print. An empty band asking for a sheet of its own is the blank
+            // trailing page this rule removes.
+            double footerH = Charged(reportFooter);
             if (current.Count > 0) pages.Add(current.Select(x => (x.Item1, x.Item2, x.Item3, x.Item4)).ToList());
             if (pages.Count == 0) pages.Add(new List<(string, ReportRow?, string?, List<ReportRow>?)>());
 
@@ -183,13 +197,13 @@ namespace CrossBuy.BL.Reporting
                   .Append(ctx.Arabic ? "ar" : "en").Append("\"><head><meta charset=\"utf-8\">");
                 sb.Append("<title>").Append(Enc(ctx.ReportTitle)).Append("</title>");
                 sb.Append("<style>");
-                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview);
+                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview, ctx.Arabic);
                 sb.Append("</style></head><body class=\"cbv\">");
             }
             else
             {
                 sb.Append("<style>");
-                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview);
+                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview, ctx.Arabic);
                 sb.Append("</style><div class=\"cbv\" dir=\"").Append(dir).Append("\">");
             }
 
@@ -406,7 +420,7 @@ namespace CrossBuy.BL.Reporting
                 {
                     var v = Value(r, c.FieldKey);
                     sb.Append("<td style=\"text-align:").Append(Align(c.Align)).Append("\">")
-                      .Append(Enc(FormatValue(v, c.Format, ctx))).Append("</td>");
+                      .Append(Enc(CellText(v, c, ctx))).Append("</td>");
                 }
                 sb.Append("</tr>");
             }
@@ -502,6 +516,46 @@ namespace CrossBuy.BL.Reporting
             };
         }
 
+        // A TABLE CELL IS FORMATTED BY ITS COLUMN'S TYPE, through the platform's one formatter.
+        //
+        // It used to go straight to FormatValue, which knows only what the CLR handed it, and the result was
+        // a designed report printing raw machine values: a Boolean came out "True" instead of نعم/Yes, and
+        // an Integer came out "6.00" because the fallback format is "N2" and a count is IFormattable like
+        // any other number. The plain column renderer never had either defect — it calls
+        // ReportValues.Format with the column — so the SAME report read correctly until its author gave it a
+        // design, which is the worst possible way for this to fail.
+        //
+        // The element's own format string still wins where the author set one; ReportValues.Format takes it
+        // as the column's override, so a deliberate pattern is honoured and everything else is typed.
+        private static string CellText(object? value, ReportTableColumn c, ReportVisualRenderContext ctx)
+        {
+            if (value == null) return "";
+
+            var column = ctx.Definition.Columns
+                .FirstOrDefault(x => string.Equals(x.Key, c.FieldKey, StringComparison.Ordinal));
+
+            // A column the definition no longer declares keeps the old behaviour rather than throwing: a
+            // saved design outliving a renamed field must still render.
+            if (column == null) return FormatValue(value, c.Format, ctx);
+
+            var culture = ctx.Arabic ? new CultureInfo("ar") : CultureInfo.InvariantCulture;
+
+            return string.IsNullOrWhiteSpace(c.Format)
+                ? ReportValues.Format(value, column, culture)
+                : ReportValues.Format(value, Overridden(column, c.Format!), culture);
+        }
+
+        // ReportColumn is a class the caller does not own, so an override is applied to a COPY. Mutating the
+        // definition's column would change the format for every other report sharing that dataset.
+        private static ReportColumn Overridden(ReportColumn column, string format) => new()
+        {
+            Key = column.Key,
+            TitleAr = column.TitleAr,
+            TitleEn = column.TitleEn,
+            Type = column.Type,
+            Format = format,
+        };
+
         private static string Format(object? value, ReportElement e, ReportVisualRenderContext ctx)
         {
             var s = e.Style;
@@ -559,11 +613,43 @@ namespace CrossBuy.BL.Reporting
             _ => "start",
         };
 
+        // `arabic` is here only for the font stack: the faces are preferred per culture, so the sheet has
+        // to know which language the run is in. See ReportTypography.
         private static void Css(StringBuilder sb, double paperW, double paperH, double contentW, double contentH,
-            ReportPageSetup page, bool screen)
+            ReportPageSetup page, bool screen, bool arabic)
         {
+            // THE FACE ITSELF, FIRST, before anything can ask for it.
+            //
+            // Naming a family only works if the machine looking at the document happens to have it, and
+            // that assumption broke three different ways in one afternoon — absent on the host, present on
+            // the host but missing from a browser whose font list predated the install, and absent again on
+            // any second machine. Writing the bytes into the document is what already makes the PDF immune,
+            // because Chromium embeds what it used; this gives the HTML the same immunity.
+            ReportFontLibrary.AppendFaceFor(sb, page.FontFamily);
+
             sb.Append("*{box-sizing:border-box;margin:0;padding:0}");
-            sb.Append("body.cbv{font-family:Inter,Tahoma,Arial,sans-serif;font-size:9pt;color:#111;background:")
+            // THE TEMPLATE'S FACE, through the same one function the table renderer uses. This sheet once
+            // hardcoded Inter,Tahoma,Arial while HtmlReportRenderer hardcoded 'Segoe UI',Tahoma,Arial — the
+            // same report in two faces depending on which renderer produced it, and neither changeable by
+            // the person designing it.
+            var docFamily = ReportTypography.DocumentFamily(page.FontFamily, arabic);
+            var docSizePt = page.FontSizePt is > 0 ? page.FontSizePt!.Value : 9;
+            // THE SELECTOR HAS TO MATCH THE ROOT THIS RENDER ACTUALLY EMITS, and it did not.
+            //
+            // A full document opens `<body class="cbv">`; a screen preview is a FRAGMENT and opens
+            // `<div class="cbv">`. Both took the same stylesheet, and that stylesheet said `body.cbv` — so
+            // on screen it matched nothing at all. Not the font, not the size, not the colour: the preview
+            // fell all the way back to the browser's initial values, which is why an Arabic report designed
+            // in Cairo displayed in TIMES NEW ROMAN while the identical PDF came out in Cairo. Measured with
+            // CDP's platform-font report: same CSS rule in both, 4868 glyphs of Times New Roman in one and
+            // 4819 of Cairo in the other.
+            //
+            // "In Studio I chose Cairo and here you show whatever you like" was exactly right, and the
+            // answer was never in the font stack — the rule was being written to an element that did not
+            // exist. The `screen` flag already tells us which root was emitted, so the selector follows it.
+            sb.Append(screen ? ".cbv{font-family:" : "body.cbv{font-family:").Append(docFamily)
+              .Append(";font-size:").Append(docSizePt.ToString("0.##", CultureInfo.InvariantCulture))
+              .Append("pt;color:#111;background:")
               .Append(screen ? "#e9ecef" : "#fff").Append(";}");
 
             if (!screen)

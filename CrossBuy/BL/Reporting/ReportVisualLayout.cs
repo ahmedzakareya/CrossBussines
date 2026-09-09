@@ -195,6 +195,105 @@ namespace CrossBuy.BL.Reporting
             },
         };
 
+        // ------------------------------------------------------------------------------------------
+        // A STARTER LAYOUT: the report as it looks TODAY, ready to be edited.
+        //
+        // Blank() gives the seven empty bands, which is the right answer for "design something new" and
+        // the wrong one for "change how this report looks" — the designer opened on an empty page and the
+        // reader had to rebuild, from memory, the table they had just been looking at. This lays the
+        // report's own title, date and column set onto the canvas so the first thing the designer shows
+        // is the thing being edited.
+        //
+        // Deliberately PLAIN: a title, a date, and one table. It is a starting point to change, not a
+        // house style to fight — anything more opinionated would have to be undone before it could be
+        // used.
+        public static ReportVisualLayout StarterFor(string title, IReadOnlyList<ReportColumn> columns,
+            ReportPageSetup? page = null)
+        {
+            var layout = Blank();
+            if (page is not null) layout.Page = page;
+
+            var (paperW, _) = ReportPaper.SizeOf(layout.Page.PageSize);
+            if (layout.Page.Orientation == ReportOrientation.Landscape)
+                paperW = ReportPaper.SizeOf(layout.Page.PageSize).HeightMm;
+            double contentW = Math.Max(20, paperW - layout.Page.MarginLeftMm - layout.Page.MarginRightMm);
+
+            var header = layout.Band(ReportBandKind.ReportHeader);
+            if (header is not null)
+            {
+                // A SYSTEM FIELD, NOT FROZEN TEXT. As a Text element the title was a copy of the report's
+                // name taken at the moment the canvas was seeded, so renaming the report left the printed
+                // heading saying the old thing — and the only way to correct it was to find the box and
+                // retype it. ReportSystemField.ReportName resolves at render time, so the heading follows
+                // the name for as long as nobody deliberately replaces it with their own text.
+                header.Elements.Add(new ReportElement
+                {
+                    Id = "starter-title", Kind = ReportElementKind.SystemField,
+                    SystemField = ReportSystemField.ReportName,
+                    XMm = 0, YMm = 4, WidthMm = contentW * 0.7, HeightMm = 10,
+                    Style = new ReportElementStyle { FontSizePt = 16, Bold = true },
+                });
+                header.Elements.Add(new ReportElement
+                {
+                    Id = "starter-date", Kind = ReportElementKind.SystemField,
+                    SystemField = ReportSystemField.CurrentDateTime,
+                    XMm = contentW * 0.7, YMm = 5, WidthMm = contentW * 0.3, HeightMm = 6,
+                    Style = new ReportElementStyle { FontSizePt = 8, Align = ReportTextAlign.End },
+                });
+            }
+
+            // The table goes in DETAIL and nowhere else — the validator rejects it anywhere else, because a
+            // table repeats dataset rows and only that band repeats.
+            var visible = columns.Where(c => c.VisibleByDefault && !c.Internal).ToList();
+            if (visible.Count == 0) visible = columns.Where(c => !c.Internal).ToList();
+
+            var detail = layout.Band(ReportBandKind.Detail);
+            if (detail is not null && visible.Count > 0)
+            {
+                // THE BAND HEIGHT IS THE PRINT ROW HEIGHT — the renderer charges one detail height for
+                // the table's header row and one for every data row. Blank()'s 8mm is tight for eight
+                // columns of text at 9pt once a border and a little padding are in; 10mm is a row a
+                // person can read and still fits about 24 rows on an A4 page.
+                detail.HeightMm = 10;
+
+                // The definition's own widths, scaled to the paper. A column that declared no width gets an
+                // even share, so a dataset that never set WidthMm still opens on a usable table rather than
+                // a row of 25mm stubs running off the page.
+                double declared = visible.Sum(c => c.WidthMm > 0 ? c.WidthMm : 0);
+                int unsized = visible.Count(c => c.WidthMm <= 0);
+                double spare = Math.Max(0, contentW - declared);
+                double each = unsized > 0 ? spare / unsized : 0;
+                double total = declared + (unsized * each);
+                double scale = total > 0 ? contentW / total : 1;
+
+                var table = new ReportElement
+                {
+                    Id = "starter-table", Kind = ReportElementKind.Table,
+                    // Fills its band exactly. An element taller than its band is drawn outside it in the
+                    // designer, and the renderer overrides the height anyway (bandHeight - YMm), so the
+                    // only value that is right in both places is the band's own.
+                    XMm = 0, YMm = 0, WidthMm = contentW, HeightMm = detail.HeightMm,
+                };
+                foreach (var c in visible)
+                {
+                    double w = (c.WidthMm > 0 ? c.WidthMm : each) * scale;
+                    table.Columns.Add(new ReportTableColumn
+                    {
+                        FieldKey = c.Key,
+                        HeaderText = null,                    // null = the column's own title, in the run's language
+                        WidthMm = Math.Clamp(w, 5, contentW),
+                        Align = c.Align == ReportAlign.End ? ReportTextAlign.End
+                              : c.Align == ReportAlign.Center ? ReportTextAlign.Center
+                              : ReportTextAlign.Start,
+                        Format = c.Format,
+                    });
+                }
+                detail.Elements.Add(table);
+            }
+
+            return layout;
+        }
+
         public ReportBand? Band(ReportBandKind kind) => Bands.FirstOrDefault(b => b.Kind == kind);
 
         public IEnumerable<ReportElement> AllElements => Bands.SelectMany(b => b.Elements);

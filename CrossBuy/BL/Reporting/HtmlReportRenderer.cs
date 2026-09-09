@@ -116,9 +116,14 @@ namespace CrossBuy.BL.Reporting
 
             sb.Append("<div class=\"cbrep-titles\">");
 
-            var company = context.Branding.Name(context.IsArabic);
-            if (!string.IsNullOrWhiteSpace(company))
-                sb.Append($"<div class=\"cbrep-company\">{E(company!)}</div>");
+            // NO COMPANY NAME. It used to print the caller's own company above the title, which read as
+            // the report's scope rather than as its issuer - «شركة 1» over a document covering eight
+            // companies - and the owner's decision is that it comes off every report, not just that one.
+            //
+            // Nothing identifying is lost: the title, the subtitle, the parameter strip, the generated-at
+            // stamp and the footer (CR / TRN numbers from ReportEngine's branding provider) all stay.
+            // ReportBranding still CARRIES the name - it is a DTO, and a later letterhead decision may want
+            // it - but no renderer prints it.
 
             sb.Append($"<h1 class=\"cbrep-title\">{E(context.Title)}</h1>");
 
@@ -329,12 +334,24 @@ namespace CrossBuy.BL.Reporting
                 sb.Append("html,body{margin:0;padding:0;}");
             }
 
-            sb.Append(".cbrep,.cbrep-body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;font-size:9.5pt;color:#181c32;}");
+            // THE TEMPLATE'S FACE, and only that. ReportTypography.DocumentFamily is the single place the
+            // decision is made, so this renderer and the visual one cannot disagree again; it also explains
+            // why the platform stack is no longer appended behind an author's choice. A face chosen in
+            // Report Studio is validated against the approved list before it is ever stored, so what
+            // arrives here is a bare family name and safe to interpolate.
+            var docFamily = ReportTypography.DocumentFamily(setup.FontFamily, context.IsArabic);
+
+            // The same embedded face. A report without a positioned design is still rendered from its
+            // template, and its typography must be just as portable — otherwise the two renderers would
+            // disagree about the font again, in a way that only shows up on someone else's machine.
+            ReportFontLibrary.AppendFaceFor(sb, setup.FontFamily);
+            var docSizePt = setup.FontSizePt is > 0 ? setup.FontSizePt!.Value : 9.5;
+            sb.Append(".cbrep,.cbrep-body{font-family:").Append(docFamily)
+              .Append(";font-size:").Append(docSizePt.ToString("0.##", inv)).Append("pt;color:#181c32;}");
             sb.Append(".cbrep-head{display:flex;align-items:flex-start;gap:12px;border-block-end:2px solid ")
               .Append(brand).Append(";padding-block-end:8px;margin-block-end:10px;}");
             sb.Append(".cbrep-logo{max-height:52px;max-width:160px;object-fit:contain;}");
             sb.Append(".cbrep-titles{flex:1;min-width:0;}");
-            sb.Append(".cbrep-company{font-size:10.5pt;font-weight:600;color:").Append(brand).Append(";}");
             sb.Append(".cbrep-title{font-size:15pt;font-weight:700;margin:2px 0 0;color:").Append(brand).Append(";}");
             sb.Append(".cbrep-subtitle{font-size:9pt;color:#5e6278;margin-block-start:2px;}");
             sb.Append(".cbrep-params{margin-block-start:5px;font-size:8.5pt;color:#3f4254;}");
@@ -367,7 +384,7 @@ namespace CrossBuy.BL.Reporting
 
             sb.Append(".cbrep-foot{display:flex;justify-content:space-between;gap:10px;margin-block-start:8px;")
               .Append("padding-block-start:5px;border-block-start:1px solid #e4e6ef;font-size:7.5pt;color:#7e8299;}");
-            sb.Append(".cbrep-code{font-family:Consolas,monospace;}");
+            sb.Append(".cbrep-code{font-family:").Append(ReportTypography.Monospace).Append(";}");
 
             if (print && setup.RepeatHeaderRow)
             {

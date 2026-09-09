@@ -97,6 +97,15 @@ namespace CrossBuy.BL.Reporting
         // call at any time; it is how a fresh database gets its category tree without a hand-written seed list.
         Task<int> SyncPlatformCategoriesAsync(CancellationToken cancellationToken = default);
 
+        // Gives every registered report a Platform-scope template built from its own definition, so a report is
+        // always rendered THROUGH a template and never from defaults buried in code. Idempotent and additive —
+        // see the implementation for why the rule exists and what it makes editable.
+        Task<int> SyncPlatformTemplatesAsync(CancellationToken cancellationToken = default);
+
+        // Writes the resolved document face into any LIVE template whose stored layout does not name one, so
+        // no report falls back to a font constant in code. Never overwrites a stated face; idempotent.
+        Task<int> BackfillTemplateTypographyAsync(CancellationToken cancellationToken = default);
+
         // ---- tags -------------------------------------------------------------------------------------
         Task<IReadOnlyList<ReportTagInfo>> GetTagsAsync(BusinessContext context,
             CancellationToken cancellationToken = default);
@@ -307,6 +316,229 @@ namespace CrossBuy.BL.Reporting
 
             await _db.SaveChangesAsync(cancellationToken);
             return keys.Count;
+        }
+
+        // ================================================================================================
+        // EVERY REPORT SHIPS WITH A TEMPLATE.
+        //
+        // THE RULE, by owner's decision: a report renders THROUGH A TEMPLATE, and rendering outside one is
+        // not allowed. Before this, a report with no saved layout fell back to
+        // ReportTemplateSource.DefinitionDefault — the definition's own columns and a page setup that was a
+        // constant in code. That is what made the typeface, the paper and the margins unreachable: the only
+        // way to change them was to edit C#, so the person using the product could not.
+        //
+        // With a Platform template per report the resolution walk ALWAYS finds one, and everything about the
+        // document — its font, its title, its paper, its columns, its bands — is data an author can edit in
+        // Report Studio or fork into their own scope. Nothing is hardcoded any more because nothing needs to
+        // be: the defaults live in a row.
+        //
+        // BUILT FROM THE DEFINITION, so it is the report as it already looks — not a blank page somebody has
+        // to design before the product works. ReportVisualLayout.StarterFor lays out the title, the date and
+        // the table; the columns, sorts and page setup come from the definition itself.
+        //
+        // PLATFORM SCOPE (CompanyID 0, no owner) for the same reason SyncPlatformCategoriesAsync writes
+        // platform rows: it belongs to the product, not to a tenant. A tenant cannot create one —
+        // ReportTemplateService.SaveAsync refuses Platform scope by design — and does not need to: editing
+        // one forks it into their own scope, which is what "edit a platform template" already means here.
+        //
+        // IDEMPOTENT AND ADDITIVE, exactly like the category sync. It never rewrites or deletes a template,
+        // so a deployment that has already been customised is left alone and this is safe on every start-up.
+        public async Task<int> SyncPlatformTemplatesAsync(CancellationToken cancellationToken = default)
+        {
+            var existing = await _db.ReportTemplates
+                .Where(t => t.CompanyID == 0 && t.Scope == ReportTemplateScope.Platform && t.DeletedAt == null)
+                .Select(t => t.ReportCode)
+                .ToListAsync(cancellationToken);
+
+            var missing = _catalog.GetDefinitions()
+                .Where(d => !existing.Contains(d.Code, StringComparer.Ordinal))
+                .ToList();
+
+            if (missing.Count == 0) return 0;
+
+            var now = _clock.LocalNow;
+
+            foreach (var definition in missing)
+            {
+                // THE TEMPLATE CARRIES THE TYPEFACE, which is the whole point of seeding one. A stored null
+                // would mean "whatever the code says", leaving the document's font a constant no author can
+                // see -- so the row names a real face that Studio's picker shows and can change.
+                var page = ReportPageSetup.Default.WithTypography(ReportTypography.DefaultDocumentFace, null);
+
+                var layout = new ReportLayout
+                {
+                    VisibleColumns = definition.Columns
+                        .Where(c => c.VisibleByDefault && !c.Internal)
+                        .Select(c => c.Key).ToList(),
+                    Sorts = definition.DefaultSorts,
+                    ShowGrandTotals = true,
+
+                    // The page setup and the visual design come from ONE object, so the table renderer and the
+                    // visual renderer cannot disagree about the paper — the drift that left a designed A5
+                    // exporting as A4.
+                    // THE SAME page object into both, because they are read by different renderers:
+                    // HtmlReportRenderer takes ReportLayout.PageSetup and ReportVisualRenderer takes
+                    // Visual.Page. Leaving StarterFor to build its own default is how a designed page kept
+                    // its paper and lost its font -- the visual renderer never saw the setup beside it.
+                    PageSetup = page,
+                    Visual = ReportVisualLayout.StarterFor(
+                        definition.TitleAr ?? definition.TitleEn ?? definition.Code, definition.Columns, page),
+
+                    // The document's heading follows the template's name from here on, which is why renaming
+                    // a report in Studio retitles what prints.
+                    TitleOverride = definition.TitleAr,
+                    TitleOverrideEn = definition.TitleEn,
+                };
+
+                var json = ReportLayoutJson.Serialize(layout);
+
+                var template = new ReportTemplate
+                {
+                    CompanyID = 0,
+                    ReportCode = definition.Code,
+                    Name = definition.TitleAr ?? definition.Code,
+                    NameEn = definition.TitleEn,
+                    Scope = ReportTemplateScope.Platform,
+                    OwnerEmpId = null,
+                    CurrentVersionNo = 1,
+                    IsDefault = true,
+                    CreatedAt = now,
+                };
+                _db.ReportTemplates.Add(template);
+                await _db.SaveChangesAsync(cancellationToken);   // the version needs the template's id
+
+                _db.ReportTemplateVersions.Add(new ReportTemplateVersion
+                {
+                    CompanyID = 0,
+                    TemplateId = template.Id,
+                    VersionNo = 1,
+                    LayoutJson = json,
+                    ContentHash = Convert.ToHexString(
+                        System.Security.Cryptography.SHA256.HashData(
+                            System.Text.Encoding.UTF8.GetBytes(json))).ToLowerInvariant(),
+                    ChangeNote = "Shipped with the report",
+
+                    // PUBLISHED. A version an author can still edit in place would let the shipped default
+                    // change without a new version, and an archived artifact records (TemplateId, VersionNo).
+                    IsPublished = true,
+                    PublishedAt = now,
+                    CreatedAt = now,
+                });
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+
+            return missing.Count;
+        }
+
+
+        // ================================================================================================
+        // BACKFILL: A LIVE TEMPLATE MUST NAME ITS TYPEFACE.
+        //
+        // "كله بيعرض من القالب ممنوع من بره القالب" — everything renders from the template, nothing from
+        // outside it. Seeding platform templates satisfied that for NEW rows and left every existing one
+        // behind, and those are the ones that actually run: a report resolves Personal before Company before
+        // Platform, so a user's own saved template wins and the freshly seeded platform default is never
+        // consulted. The measurement said so — an org-structure PDF resolved template 94, whose stored
+        // PageSetup had no font at all.
+        //
+        // WHY A MISSING FONT IS NOT A HARMLESS DEFAULT. The serializer omits nulls, so "no font" is not a
+        // stored choice, it is silence — and the renderers answer silence with a constant in
+        // ReportTypography. That constant is invisible in Studio, cannot be edited, and is not versioned,
+        // which is precisely the "I changed the font and the report did not" complaint. Writing the resolved
+        // face into the row makes the decision visible, editable and versioned like the rest of the design.
+        //
+        // BOTH PAGE OBJECTS, because a layout carries two of them: ReportLayout.PageSetup, which
+        // HtmlReportRenderer reads, and Visual.Page, which ReportVisualRenderer reads. Filling one and not
+        // the other is the drift that once printed a designed A5 onto A4.
+        //
+        // CURRENT VERSIONS ONLY. Older versions are history and a rollback should give back what it was.
+        // NEVER OVERWRITES a stated face, so an author's own choice is safe; a template that already names
+        // one is skipped, which is also what makes this idempotent and safe on every start-up.
+        public async Task<int> BackfillTemplateTypographyAsync(CancellationToken cancellationToken = default)
+        {
+            var face = ReportTypography.DefaultDocumentFace;
+
+            // NO `LayoutJson.Contains("FontFamily")` PRE-FILTER, and that mattered: the question is whether
+            // the PAGE names a face, and "FontFamily" also appears on every ELEMENT style. A template with a
+            // bold heading in a chosen font therefore looked like it already had a document face and was
+            // skipped whole — which is exactly the template this repair exists for. A substring test on a
+            // document cannot answer a question about one node inside it.
+            //
+            // So the shape is decided per row, in memory, by PatchDocumentFace, which returns null when
+            // there is nothing to do. The cost is parsing the live templates once per start-up; the cost of
+            // the shortcut was not repairing the rows that needed it.
+            var rows = await (
+                from v in _db.ReportTemplateVersions
+                join t in _db.ReportTemplates on v.TemplateId equals t.Id
+                where t.DeletedAt == null && t.CurrentVersionNo == v.VersionNo
+                select v).ToListAsync(cancellationToken);
+
+            if (rows.Count == 0) return 0;
+
+            var changed = 0;
+            foreach (var row in rows)
+            {
+                // PATCHED AS JSON, not round-tripped through ReportLayout.
+                //
+                // Deserializing and reserializing would rewrite the whole document through TODAY'S model,
+                // and anything the current build does not know about — a property added by a newer version,
+                // an element kind since renamed — would be silently dropped from an author's saved design.
+                // A repair is not allowed to lose work it did not come to fix. Editing the two nodes leaves
+                // every other byte of the layout exactly as its author saved it.
+                var json = PatchDocumentFace(row.LayoutJson, face);
+                if (json is null) continue;
+
+                row.LayoutJson = json;
+
+                // The hash follows the content it describes. Leaving a stale one would make every later
+                // integrity check report a tampered version.
+                row.ContentHash = Convert.ToHexString(
+                    System.Security.Cryptography.SHA256.HashData(
+                        System.Text.Encoding.UTF8.GetBytes(json))).ToLowerInvariant();
+                changed++;
+            }
+
+            if (changed > 0) await _db.SaveChangesAsync(cancellationToken);
+            return changed;
+        }
+
+        // Returns the layout with a document face written into whichever of its two page objects lacks one,
+        // or NULL when there is nothing to change — including when the row will not parse. An unreadable
+        // layout is left exactly as it is: replacing it with a re-serialized guess would destroy a design
+        // this method was never asked to touch.
+        private static string? PatchDocumentFace(string? layoutJson, string face)
+        {
+            if (string.IsNullOrWhiteSpace(layoutJson)) return null;
+
+            System.Text.Json.Nodes.JsonNode? root;
+            try
+            {
+                root = System.Text.Json.Nodes.JsonNode.Parse(layoutJson);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return null;
+            }
+
+            if (root is not System.Text.Json.Nodes.JsonObject obj) return null;
+
+            // BOTH page objects: ReportLayout.PageSetup is what HtmlReportRenderer reads and Visual.Page is
+            // what ReportVisualRenderer reads. They are the same shape and they have drifted before.
+            var touched = Fill(obj["PageSetup"], face) | Fill(obj["Visual"]?["Page"], face);
+            return touched ? root.ToJsonString() : null;
+
+            static bool Fill(System.Text.Json.Nodes.JsonNode? page, string face)
+            {
+                if (page is not System.Text.Json.Nodes.JsonObject setup) return false;
+
+                // A KEY THAT IS PRESENT AND EMPTY still counts as unstated, because that is what the
+                // renderers test: IsNullOrWhiteSpace, not null.
+                var current = setup["FontFamily"]?.GetValue<string?>();
+                if (!string.IsNullOrWhiteSpace(current)) return false;
+
+                setup["FontFamily"] = face;
+                return true;
+            }
         }
 
         // ================================================================================================

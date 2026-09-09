@@ -57,7 +57,7 @@
 @section Scripts {
 <script>
 var grSel=document.getElementById('grSel');
-if(grSel){var go=function(){location.href='?grId='+(grSel.value||'');};if(window.jQuery&&jQuery(grSel).data('select2'))jQuery(grSel).on('change',go);else grSel.addEventListener('change',go);}
+if(grSel){var go=function(){location.href='?grId='+(grSel.value||'');};if(window.CB&&CB.onSelectChange)CB.onSelectChange(grSel,go);else grSel.addEventListener('change',go);}
 var ACC=@Html.Raw(System.Text.Json.JsonSerializer.Serialize(accounts.Select(a=>new{a.Id,a.Code,name=(isAr?a.Name:DisplayName.Or(a.NameEn, a.Name))})));
 function aopts(){var o='<option value="">—</option>';ACC.forEach(function(a){o+='<option value="'+a.id+'">'+a.code+' — '+a.name+'</option>';});return o;}
 var rowsEl=document.getElementById('rows');

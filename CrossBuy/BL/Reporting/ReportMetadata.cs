@@ -257,6 +257,7 @@ namespace CrossBuy.BL.Reporting
         // Display order inside its category.
         public int SortOrder { get; init; }
 
+
         // ---- lookups the engine and shaper use constantly -------------------------------------------------
 
         public ReportColumn? FindColumn(string? key) => key == null

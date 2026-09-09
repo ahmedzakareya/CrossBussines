@@ -318,6 +318,55 @@
         }
     }
 
+    // ---- select change binding (select2-safe) -----------------------
+    //
+    // WHY THIS EXISTS. select2 announces a pick with jQuery's .trigger('change'), and jQuery's
+    // trigger runs jQuery handlers WITHOUT dispatching a DOM event - so a handler attached with
+    // addEventListener('change') never hears it. _LayoutInventory.cshtml carries a relay for
+    // exactly this ("relay select2's jQuery change to native addEventListener('change')
+    // listeners"), but it is bound inside the branch that is skipped for a select which is
+    // ALREADY select2-ified:
+    //
+    //     if ($(el).hasClass('select2-hidden-accessible')) return;   // <- skips the relay too
+    //
+    // and Metronic's own KTApp claims every select carrying data-control="select2" first, because
+    // scripts.bundle.js registers its DOMContentLoaded handler before that enhancer does. So any
+    // select with data-control="select2" ends up with select2 and NO relay.
+    //
+    // Measured on ReorderSettings, Planning, ExpiryAlerts and Serials: the only change handler on
+    // those selects was select2's own. Their filters were dead - picking a warehouse changed the
+    // control's value and its label and did nothing else at all.
+    //
+    // The views were also deciding which channel to use at parse time:
+    //
+    //     if (window.jQuery && jQuery(el).data('select2')) jQuery(el).on('change', go);
+    //     else el.addEventListener('change', go);
+    //
+    // At that point NOTHING has been select2-ified yet - both KTApp and the enhancer run on
+    // DOMContentLoaded, and an inline body script runs before it - so the jQuery branch was dead
+    // code and every one of those screens took the native branch.
+    //
+    // A view should not have to know which library claimed the control first. This binds BOTH
+    // channels and drops the duplicate, so it is right whether select2 is present, absent, or
+    // arrives afterwards.
+    CB.onSelectChange = function (el, handler) {
+        if (typeof el === 'string') el = document.getElementById(el);
+        if (!el || typeof handler !== 'function') return el || null;
+        var busy = false;
+        var fire = function (e) {
+            // One pick can arrive twice - once through jQuery and once as a real DOM event (a
+            // plain select fires natively and jQuery hears it too; where the layout's relay does
+            // exist, it re-dispatches). Collapse them to a single call per pick.
+            if (busy) return;
+            busy = true;
+            setTimeout(function () { busy = false; }, 0);
+            handler.call(el, e);
+        };
+        el.addEventListener('change', fire);
+        if (window.jQuery) window.jQuery(el).on('change', fire);
+        return el;
+    };
+
     document.addEventListener('submit', handleSubmit, true);
     document.addEventListener('click', handleClick, true);
 

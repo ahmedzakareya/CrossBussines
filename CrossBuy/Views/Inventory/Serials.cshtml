@@ -44,5 +44,5 @@
 @section Scripts {
 <script>(function(){var s=document.getElementById('s'),st=document.getElementById('stFilter'),rows=[].slice.call(document.querySelectorAll('#t tbody tr'));
  if(s)s.addEventListener('input',function(){var q=(s.value||'').trim().toLowerCase();rows.forEach(function(r){r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none';});});
- if(st){var go=function(){location.href='?status='+(st.value||'');};if(window.jQuery&&jQuery(st).data('select2'))jQuery(st).on('change',go);else st.addEventListener('change',go);}})();</script>
+ if(st){var go=function(){location.href='?status='+(st.value||'');};if(window.CB&&CB.onSelectChange)CB.onSelectChange(st,go);else st.addEventListener('change',go);}})();</script>
 }

@@ -212,6 +212,11 @@ namespace CrossBuy.BL.Reporting
         public int RowCount { get; init; }
         public int DurationMs { get; init; }
         public string? EmployeeName { get; init; }
+
+        // KEPT so the screen can show the person's picture beside the name. ReportRunHistoryRow has
+        // always carried it; this model dropped it, so a view had a name and no way to resolve a face.
+        public int? EmployeeId { get; init; }
+
         public DateTime StartedAt { get; init; }
         public long? ArchiveEntryId { get; init; }
         public string? ErrorCode { get; init; }
@@ -358,6 +363,16 @@ namespace CrossBuy.BL.Reporting
 
         public int DurationMs { get; init; }
         public long? ArchiveEntryId { get; init; }
+
+        // WHICH TEMPLATE THE RUN ACTUALLY USED, which is not the same as the one the URL asked for.
+        //
+        // Template resolution walks Personal → Team → Company → Platform, so a report opened with no
+        // templateId can still be rendered through a saved layout. Without this the screen could not tell
+        // the difference between "the definition's defaults" and "your own saved design", and the Design
+        // button therefore started a NEW template every time — quietly accumulating duplicates of the same
+        // report instead of editing the one in use.
+        public int? TemplateId { get; init; }
+        public int? TemplateVersionNo { get; init; }
 
         public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
         public IReadOnlyList<string> Errors { get; init; } = Array.Empty<string>();
@@ -869,6 +884,11 @@ namespace CrossBuy.BL.Reporting
             DurationMs = result.Run?.DurationMs ?? 0,
             ArchiveEntryId = result.Run?.ArchiveEntryId,
 
+            // The template the run RESOLVED, which the request need not have named — see the property's
+            // own comment. This is what lets the screen offer to edit the layout in use.
+            TemplateId = result.Run?.TemplateId,
+            TemplateVersionNo = result.Run?.TemplateVersionNo,
+
             Warnings = result.Diagnostics
                 .Where(d => d.Severity == ReportDiagnosticSeverity.Warning)
                 .Select(d => d.Message).ToList(),
@@ -920,6 +940,7 @@ namespace CrossBuy.BL.Reporting
             RowCount = r.RowCount,
             DurationMs = r.DurationMs,
             EmployeeName = r.EmployeeName,
+            EmployeeId = r.EmployeeId,
             StartedAt = r.StartedAt,
             ArchiveEntryId = r.ArchiveEntryId,
             ErrorCode = r.ErrorCode,

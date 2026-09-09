@@ -1,12 +1,81 @@
 @using CrossBuy.BL.Reporting
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@inject CrossBuy.BL.Communication.ICommActorDirectory Actors
 @model ReportViewerModel
 @{
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
     ViewData["Title"] = Model.Title;
     var preview = Model.Preview;
     var exportFailed = TempData["ReportExportFailed"] as string;
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+    // ---------------------------------------------------------------------------------------------
+    // THE PEOPLE IN THE RUN LOG, RESOLVED ONCE FOR THE WHOLE PAGE.
+    //
+    // Wherever this product names a person it shows their picture. ICommActorDirectory's own contract is
+    // "collect the ids first, resolve them once" — a lookup per row would be one query per line of the
+    // log. It returns the name in both languages AND the photo path in a single query.
+    // ---------------------------------------------------------------------------------------------
+    var runActors = await Actors.ResolveAsync(Model.History.Items.Select(r => r.EmployeeId));
+
+    // A photo path is only usable once it is ROOTED. Url.Content("~" + path) throws ArgumentException on
+    // anything that does not start with '/', and the one time that reached a shared layout it took every
+    // shell-rendered screen to HTTP 500 for the affected employee (see Controllers/Api/UatSeedController).
+    // Anything without a '.' is not a file name — it is a placeholder like "-" — and counts as no photo
+    // rather than as a broken image.
+    string? photoUrl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var s = raw.Replace("\\", "/").Trim();
+        if (!s.Contains('.')) return null;
+        if (!s.StartsWith("/")) s = "/" + s;
+        return Url.Content("~" + s);
+    }
+
+    // Initials when there is no photo, so the row still carries a face-shaped marker and stays scannable
+    // by person. A grey silhouette makes every unphotographed row look identical, which defeats the point.
+    string initials(string name)
+    {
+        var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        if (parts.Length == 1) return parts[0].Substring(0, 1);
+        return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);
+    }
+
+    // The person chip. Built with HtmlContentBuilder because Append() encodes and AppendHtml() does not —
+    // a name goes through Append, never through string concatenation into markup.
+    Microsoft.AspNetCore.Html.IHtmlContent person(int? id, string? fallbackName)
+    {
+        var b = new Microsoft.AspNetCore.Html.HtmlContentBuilder();
+        var actor = Actors.Get(runActors, id);
+        var name = id is > 0 ? actor.Display(isAr) : (fallbackName ?? "");
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            b.AppendHtml("<span class=\"text-gray-400\">&mdash;</span>");
+            return b;
+        }
+
+        var url = id is > 0 ? photoUrl(actor.AvatarUrl) : null;
+        b.AppendHtml("<span class=\"d-flex align-items-center gap-2\">");
+        b.AppendHtml("<span class=\"symbol symbol-25px symbol-circle flex-shrink-0\">");
+        if (url != null)
+        {
+            b.AppendHtml("<img src=\"");
+            b.Append(url);
+            b.AppendHtml("\" alt=\"\" />");
+        }
+        else
+        {
+            b.AppendHtml("<span class=\"symbol-label bg-light-primary text-primary fw-bold fs-8\">");
+            b.Append(initials(name));
+            b.AppendHtml("</span>");
+        }
+        b.AppendHtml("</span><span class=\"text-gray-800 fw-semibold text-truncate\">");
+        b.Append(name);
+        b.AppendHtml("</span></span>");
+        return b;
+    }
 }
 @*
     ============================================================================================
@@ -20,8 +89,13 @@
                         (ViewBag.SidebarMenu is NOT read by this layout; setting it would be dead code
                         implying an override that does not exist.)
       page wrapper      d-flex flex-column flex-column-fluid
-      toolbar           page-heading + breadcrumb-separatorless + bullet + Print button
-      filter card       card-flush + card-body py-5 + row g-4 align-items-end, labelled
+      toolbar           page-heading + breadcrumb-separatorless + bullet + the write affordances
+                        (favourite · save · design in Studio · fork). NO print button here — printing
+                        is the platform's, and the result strip is the only way to it.
+      export strip      one BUTTON per format, no links: every one opens the house modal, and the
+                        modal is where Download and Open-in-a-new-tab live. A click never drops a file
+                        in the downloads tray.
+      filter card       card-flush + card-body py-5 + row g-4 align-items-START, labelled
                         form-control-solid / form-select-solid, with the summary block last — exactly
                         where Valuation puts its grand total, in the same sizes and the same green
       result card       card-flush + card-body pt-6 + table-responsive
@@ -37,9 +111,11 @@
     artifact, so restyling it would break that promise. It is only wrapped in table-responsive, the
     same containment Inventory gives its own report tables.
 
-    NO PDF BUTTON unless the deployment can produce one — Model.Formats is the definition's permitted
-    formats intersected with the renderers registered now. Playwright is deferred by owner decision,
-    so today that is HTML / CSV / Excel. No Stimulsoft, no designer.
+    NO FORMAT BUTTON unless the deployment can produce one — Model.Formats is the definition's
+    permitted formats intersected with the renderers registered now, so the strip cannot offer a
+    format nothing can render. (This comment used to say "Playwright is deferred, so today that is
+    HTML / CSV / Excel". PlaywrightPdfReportRenderer is registered and PDF is measured working, so
+    the strip now carries it too.) No Stimulsoft.
     ============================================================================================
 *@
 
@@ -60,17 +136,25 @@
         </div>
 
         @* ---- WRITE AFFORDANCES ------------------------------------------------------------------
-           Rendered and DISABLED, never hidden. The seven write endpoints are held back by the
-           authorization analyzer pending TAB 1's surface addition — the feature is waiting on an
-           approval, not missing, and a hidden control would misrepresent that as "not built".
-           Metronic's own `disabled` class, as Inventory/Items.cshtml uses on its Add Product button. *@
-        @* flex-wrap IS THE 390px FIX, and it is the real cause rather than a symptom mask.
-           This group holds up to four buttons (favourite · save · fork · print). Its PARENT already wraps
-           (flex-stack flex-wrap gap-3), so the title and the action bar stack correctly on a phone — but the
-           action bar itself was a non-wrapping d-flex, so its four buttons stayed on one 414px line inside a
-           390px viewport and pushed the DOCUMENT into horizontal scroll. Nothing is hidden, clipped or removed:
-           the buttons simply wrap onto a second line, which is what the parent's own flex-wrap already assumes.
-           overflow:hidden would have removed the scrollbar and the Print button with it. *@
+           WIRED. The comment here used to say these were "rendered and DISABLED … held back by the
+           authorization analyzer pending TAB 1's surface addition". That stopped being true twice over:
+           TAB 1 declared the authority, ReportsCenterWriteEndpoints.cs was restored with all seven
+           endpoints live, and ReportingWriteSurface.IsActivated was flipped to true - so the buttons
+           rendered ENABLED. But no JavaScript anywhere in the solution read data-report-action, so
+           clicking one did nothing at all, silently. An enabled control that swallows the click is
+           worse than a disabled one: a disabled button says "not yet", a dead one says "broken".
+           The @@section Scripts at the foot of this file is the half that was missing.
+
+           When the surface is NOT activated the else-branch still renders them disabled with the
+           reason in a tooltip, which remains the right answer for that state.
+
+           flex-wrap IS THE 390px FIX, and it is the real cause rather than a symptom mask. Its PARENT
+           already wraps (flex-stack flex-wrap gap-3), so the title and the action bar stack correctly
+           on a phone — but the action bar itself was a non-wrapping d-flex, so its buttons stayed on
+           one 414px line inside a 390px viewport and pushed the DOCUMENT into horizontal scroll.
+           Nothing is hidden or clipped: they wrap onto a second line, which is what the parent's own
+           flex-wrap already assumes. overflow:hidden would have removed the scrollbar and a button
+           with it. *@
         <div class="d-flex align-items-center flex-wrap gap-2 gap-lg-3">
             @if (Model.WritesEnabled)
             {
@@ -80,7 +164,50 @@
                 <button type="button" class="btn btn-sm btn-flex btn-light fw-bold" data-report-action="save">
                     <i class="ki-outline ki-check fs-3"></i>@Localizer["Save configuration"]
                 </button>
-                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold" data-report-action="fork">
+
+                @* THE WAY INTO THE DESIGNER, which this screen did not have.
+                   The viewer could run a report and save its parameters but offered no route to
+                   Report Studio, so "change how this report is built or how it looks" had no door —
+                   the user had to find Studio in the rail and re-pick the dataset by hand.
+                   With a template open it reopens THAT template (Studio's `open` resolves it
+                   server-side and re-checks permissions); with none it opens the canvas, where the
+                   dataset is chosen. Both are the platform designer — nothing is drawn here. *@
+                @* A NEW TAB, by the owner's decision. The report on screen is a run that took time
+                   and carries the parameters the reader chose; navigating away throws it out to open a
+                   designer. rel="noopener" comes with target="_blank" - without it the new document
+                   gets a handle on this one through window.opener. *@
+                @* THE TEMPLATE THE RUN ACTUALLY USED, not the one the URL asked for.
+
+                   This link used to fall back to `code=` whenever the URL carried no templateId — and
+                   the URL usually does not, because template resolution walks Personal → Team →
+                   Company → Platform and finds a saved layout on its own. So the designer opened a NEW
+                   draft over the definition, and saving it produced a SECOND template of the same report
+                   instead of editing the one being displayed. Do it twice and you have three.
+
+                   preview.TemplateId is what the engine resolved. With it, Design opens THAT template and
+                   Save updates it; `code=` is used only when the report really is running on the
+                   definition's own defaults, where there is nothing yet to edit.
+
+                   Declared as a bare statement, not in `{ … }`: a block would scope the variable to
+                   itself and the anchor below could not see it (CS0103). And no `@@{` — the parser is
+                   already in code context inside @@if, where `@@{` is RZ1010. *@
+                var designTemplateId = Model.TemplateId ?? preview?.TemplateId;
+
+                <a class="btn btn-sm btn-flex btn-light-primary fw-bold" target="_blank" rel="noopener"
+                   href="@(designTemplateId.HasValue
+                            ? Url.Action("Studio", "Reports", new { open = designTemplateId })
+                            : Url.Action("Studio", "Reports", new { code = Model.Code })
+                              + (Context.Request.QueryString.HasValue
+                                 ? "&" + Context.Request.QueryString.Value!.TrimStart('?')
+                                 : ""))">
+                    <i class="ki-outline ki-pencil fs-3"></i>@Localizer["Design in Studio"]
+                </a>
+                @* FORK NEEDS A TEMPLATE TO FORK. Without ?templateId= the viewer is showing the
+                   definition's own defaults, and there is no row to copy. Disabled and explained beats
+                   a live button that can only ever fail. *@
+                <button type="button" class="btn btn-sm btn-flex btn-light fw-bold @(Model.TemplateId.HasValue ? "" : "disabled")"
+                        data-report-action="fork" disabled="@(!Model.TemplateId.HasValue)"
+                        title="@(Model.TemplateId.HasValue ? "" : Localizer["Open a saved template first — there is nothing to copy."].Value)">
                     <i class="ki-outline ki-copy fs-3"></i>@Localizer["Fork template"]
                 </button>
             }
@@ -96,9 +223,20 @@
                     <i class="ki-outline ki-copy fs-3"></i>@Localizer["Fork template"]
                 </button>
             }
-            <button onclick="window.print()" class="btn btn-sm btn-flex btn-light fw-bold"><i class="ki-outline ki-printer fs-3"></i>@SR["Print"]</button>
+            @* THE PRINT BUTTON IS GONE FROM HERE, and is not replaced.
+               It was `onclick="window.print()"` — the browser printing the application page, chrome and
+               sidebar included, rather than the platform rendering a document. Printing goes through the
+               reporting platform and nowhere else.
+               It was also a DUPLICATE with different behaviour: the result strip below already offers
+               Print / CSV / Excel / PDF / HTML, and every one of those is a link to /Reports/Export which
+               renders through the engine. Two controls with one name doing two different things is worse
+               than either. The export strip is the one that stays. *@
         </div>
     </div></div>
+
+    @* The API writes below are [AutoValidateAntiforgeryToken] and authenticate by session cookie, so the
+       token has to ride as a header. This is the only reason the form field exists on a read screen. *@
+    @Html.AntiForgeryToken()
 
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
 
@@ -141,6 +279,11 @@
             </div>
         }
 
+        @* Where a write action reports itself. Same alert block the failed-export message above
+           uses, so an outcome looks the same whoever produced it. aria-live makes a screen reader
+           announce it without the focus moving. *@
+        <div id="rpStatus" aria-live="polite"></div>
+
         <!--begin::Parameters (Inventory/ValuationReport.cshtml filter card, same classes)
              Running is a GET, so the URL after a run IS the report: bookmarkable and shareable — and
              not a shared grant, because the destination authorizes on arrival.-->
@@ -150,7 +293,14 @@
         <input type="hidden" name="run" value="true" />
 
         <div class="card card-flush mb-5"><div class="card-body py-5">
-            <div class="row g-4 align-items-end">
+            @* align-items-START, not end.
+               `end` aligns the BOTTOM of each column, and a column is label + control + help text.
+               The help texts are different lengths, so aligning the bottoms pushed every control to a
+               different height - with four parameters the row rendered as two staggered pairs, labels
+               and inputs alternating about 15px apart.
+               Aligning the tops instead puts every label on one line and therefore every control on
+               one line, and lets the help text below run to whatever length it needs. *@
+            <div class="row g-4 align-items-start">
 
                 @if (Model.Parameters.Count == 0)
                 {
@@ -160,7 +310,13 @@
                 @foreach (var parameter in Model.Parameters)
                 {
                     <div class="col-md-3">
-                        <label class="fw-semibold fs-7 text-muted mb-1" for="p_@parameter.Key">
+                        @* d-block + text-truncate keeps the label to ONE line whatever a module names its
+                           parameter. Top-alignment only lines the controls up while every label is the
+                           same height, and a two-line title would silently push its own control down
+                           again. The full text stays available in the tooltip, and the help line below
+                           already carries the explanation. *@
+                        <label class="fw-semibold fs-7 text-muted mb-1 d-block text-truncate"
+                               for="p_@parameter.Key" title="@parameter.Title">
                             @parameter.Title
                             @if (parameter.Required) { <span class="text-danger">*</span> }
                         </label>
@@ -170,7 +326,16 @@
                             <select class="form-select form-select-solid @(parameter.HasError ? "is-invalid" : "")"
                                     id="p_@parameter.Key" name="@parameter.Key" data-control="select2"
                                     multiple="@parameter.AllowMultiple">
-                                @if (!parameter.Required && !parameter.AllowMultiple)
+                                @* ONLY IF THE DATASET DID NOT DECLARE ONE ITSELF.
+                                   This line used to inject an "All" row unconditionally, so any dataset
+                                   that declares its own empty-valued option got TWO identical rows —
+                                   «الكل» listed twice, both with value "". Measured on this report and
+                                   live on Inventory.StockOnHand and Inventory.StockMovements too, which
+                                   declare the same option for their StockState / Direction filters.
+                                   The dataset's own wording wins when it has one: it can say "Any
+                                   direction" where a generic "All" is vaguer. *@
+                                @if (!parameter.Required && !parameter.AllowMultiple
+                                     && !parameter.Options.Any(o => string.IsNullOrEmpty(o.Value)))
                                 {
                                     <option value="">@SR["All"]</option>
                                 }
@@ -211,8 +376,25 @@
                 }
 
                 <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="ki-outline ki-magnifier fs-3"></i>@Localizer["Run report"]
+                    @* An INVISIBLE label of exactly the same classes. The button has no caption of its
+                       own, so under top-alignment it would sit level with the labels instead of level
+                       with the inputs it belongs beside. Reserving the same line puts it on the control
+                       row. `invisible` keeps the box and drops the ink - display:none would collapse it
+                       and bring the misalignment back. *@
+                    <label class="fw-semibold fs-7 mb-1 d-block invisible" aria-hidden="true">&nbsp;</label>
+                    @* indicator-label / indicator-progress is the house pattern (see
+                       BusinessEventMonitor/Index.cshtml): data-kt-indicator="on" swaps one for the
+                       other. Running is a full page navigation, so the only other signal was the
+                       browser's progress bar — which finishes as soon as the request is sent, long
+                       before a slow query answers. *@
+                    <button type="submit" class="btn btn-primary w-100" id="rpRun">
+                        <span class="indicator-label">
+                            <i class="ki-outline ki-magnifier fs-3"></i>@Localizer["Run report"]
+                        </span>
+                        <span class="indicator-progress">
+                            @Localizer["Please wait"]
+                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                        </span>
                     </button>
                 </div>
 
@@ -237,10 +419,40 @@
         {
             <div class="card card-flush mb-5"><div class="card-body py-4 d-flex flex-wrap align-items-center gap-2">
                 <span class="fw-semibold fs-7 text-muted me-2">@Localizer["Saved layouts"]</span>
+                @{
+                    @* SWITCHING A LAYOUT KEEPS THE RUN, which is the same rule the export buttons follow
+                       twenty lines below: carry the query the run used. These chips carried only the id
+                       and the template, so clicking one threw away `run=true` AND every parameter that
+                       had been typed — the report vanished back to "set the parameters and run", and the
+                       layout you picked was never rendered. Choosing a different layout for the report in
+                       front of you is not a request to start over.
+
+                       Rebuilt from the CURRENT query with `templateId` replaced, rather than appended, so
+                       a second click does not leave two of them in the URL. *@
+                    var layoutQuery = Microsoft.AspNetCore.Http.QueryString.Empty;
+                    var carriedRun = false;
+                    foreach (var pair in Context.Request.Query)
+                    {
+                        if (string.Equals(pair.Key, "templateId", StringComparison.OrdinalIgnoreCase)) continue;
+                        if (string.Equals(pair.Key, "run", StringComparison.OrdinalIgnoreCase)) carriedRun = true;
+                        foreach (var value in pair.Value) layoutQuery = layoutQuery.Add(pair.Key, value ?? "");
+                    }
+
+                    @* AND IT RUNS, even when the page it was clicked from had not.
+                       Preserving `run` was only half the fix: arrive at the report fresh, click a saved
+                       layout, and there was no run to preserve — so the chip landed on "set the parameters
+                       and run the report" and the layout was never drawn. Picking a layout IS the request
+                       to see it; a saved layout carries its own parameters, so there is nothing further to
+                       ask before showing it. *@
+                    if (!carriedRun) layoutQuery = layoutQuery.Add("run", "true");
+                }
                 @foreach (var saved in Model.Saved.Items)
                 {
+                    var href = Url.Action("Viewer", "Reports", new { id = Model.Code })
+                             + layoutQuery.Add("templateId", saved.Id.ToString()).ToUriComponent();
+
                     <a class="btn btn-sm btn-flex fw-semibold @(saved.Id == Model.TemplateId ? "btn-primary" : "btn-light")"
-                       asp-controller="Reports" asp-action="Viewer" asp-route-id="@Model.Code" asp-route-templateId="@saved.Id">
+                       href="@href">
                         @saved.Name
                         <span class="badge badge-light fs-8 ms-1">@Localizer[saved.Scope.ToString()]</span>
                     </a>
@@ -324,12 +536,46 @@
                            on screen. One request builder serves both paths (ReportsCenterPresenter.BuildRequest). *@
                         <div class="card-toolbar">
                             <div class="d-flex align-items-center gap-2">
+                                @{
+                                    var runQuery = Context.Request.QueryString.HasValue
+                                        ? "&" + Context.Request.QueryString.Value!.TrimStart('?')
+                                        : "";
+                                }
                                 @foreach (var format in Model.Formats)
                                 {
-                                    <a class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0"
-                                       href="@Url.Action("Export", "Reports", new { id = Model.Code, format, templateId = Model.TemplateId })@(Context.Request.QueryString.HasValue ? "&" + Context.Request.QueryString.Value!.TrimStart('?') : "")">
-                                        <i class="ki-outline ki-file-down fs-4"></i>@Localizer[format.ToString()]
-                                    </a>
+                                    var url = Url.Action("Export", "Reports",
+                                        new { id = Model.Code, format, templateId = Model.TemplateId }) + runQuery;
+
+                                    @* NOTHING HERE DOWNLOADS ON CLICK. Every format opens the modal, and the
+                                       modal is where "save it" and "open it in a tab" live. A click that
+                                       drops a file in the downloads tray unasked is what this replaces.
+
+                                       `viewable` says whether a BROWSER can render the bytes, which decides
+                                       what the modal shows — a document, or a description of a file it
+                                       cannot draw. It MUST agree with the `viewable` set in
+                                       ReportsController.Export: the two disagreed on CSV once, and the
+                                       result was a download link on a format the endpoint was perfectly
+                                       willing to display.
+
+                                       EVERY FORMAT IS VIEWABLE NOW. XLSX was the last exception, excused as
+                                       "a zip the browser cannot draw" — but the reader never wanted to look
+                                       at the zip, they wanted the data inside it, and a modal offering a
+                                       download and nothing else keeps the letter of "no click downloads"
+                                       while losing its point. Both data exports are previewed as a grid;
+                                       see ReportTabularPreview. *@
+                                    var viewable = format is ReportOutputFormat.Html
+                                                          or ReportOutputFormat.PrintHtml
+                                                          or ReportOutputFormat.Pdf
+                                                          or ReportOutputFormat.Csv
+                                                          or ReportOutputFormat.Xlsx;
+
+                                    <button type="button" class="btn btn-sm btn-light-primary text-nowrap flex-shrink-0"
+                                            data-report-view="@(url + "&inline=true")"
+                                            data-report-download="@url"
+                                            data-report-label="@Localizer[format.ToString()]"
+                                            data-report-viewable="@(viewable ? "true" : "false")">
+                                        <i class="ki-outline @(viewable ? "ki-eye" : "ki-file-down") fs-4"></i>@Localizer[format.ToString()]
+                                    </button>
                                 }
                             </div>
                         </div>
@@ -344,6 +590,54 @@
                            thing the product puts on a page, so it is the region a keyboard user is most likely
                            to need to scroll and least able to reach without tabindex. Named for the report
                            itself rather than a generic "preview" — that is what is being scrolled. *@
+                        @* THE PAGER. Hidden until the script finds more than one page in the rendered
+                           body, so a single-page report and a plain-table report show nothing extra.
+                           Metronic pagination classes, the same ones the product's lists use. *@
+                        <div id="rpPager" class="d-none align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                            @* WORDS, NOT ONLY ARROWS. In RTL "forward" points left, so an icon-only
+                               pager makes the reader guess — and the two buttons they reach for on
+                               page one are the disabled ones, which is how a working pager reads as
+                               broken. The arrows follow the page direction (ki-left is forward in
+                               Arabic, the same choice Inventory/Items.cshtml makes for its own
+                               pager); the label is what removes the ambiguity. *@
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm btn-light" data-rp-page="first"
+                                        title="@Localizer["First page"]">
+                                    <i class="ki-outline ki-double-right fs-5"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light" data-rp-page="prev">
+                                    <i class="ki-outline ki-right fs-5"></i>@Localizer["Previous page"]
+                                </button>
+
+                                <span class="fw-bold text-gray-800 mx-2">
+                                    @Localizer["Page"]
+                                    <span id="rpPageNo" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">1</span>
+                                    @Localizer["of"]
+                                    <span id="rpPageCount" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">1</span>
+                                </span>
+
+                                <button type="button" class="btn btn-sm btn-light-primary" data-rp-page="next">
+                                    <i class="ki-outline ki-left fs-5"></i>@Localizer["Next page"]
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light" data-rp-page="last"
+                                        title="@Localizer["Last page"]">
+                                    <i class="ki-outline ki-double-left fs-5"></i>
+                                </button>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                @* Jump straight to a page, which is the only usable way through a hundred. *@
+                                <label class="fs-8 fw-semibold text-muted" for="rpGoto">@Localizer["Go to page"]</label>
+                                <input id="rpGoto" type="number" min="1" class="form-control form-control-sm form-control-solid w-80px"
+                                       dir="ltr" style="font-variant-numeric:tabular-nums" />
+                                @* All pages at once, for reading straight through or for Ctrl+F. *@
+                                <div class="form-check form-check-sm form-check-custom ms-2">
+                                    <input id="rpShowAll" class="form-check-input" type="checkbox" />
+                                    <label class="form-check-label fs-8 fw-semibold" for="rpShowAll">@Localizer["Show all pages"]</label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="table-responsive" style="font-variant-numeric:tabular-nums;"
                              tabindex="0" role="region" aria-label="@Model.Title">
                             @Html.Raw(preview.Html)
@@ -370,8 +664,17 @@
                     <div class="card-body pt-0">
                         <div class="table-responsive" tabindex="0" role="region" aria-label="@Localizer["Run history"]">
                         <table class="table align-middle table-row-dashed fs-6 gy-4 mb-0">
-                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
-                                <th class="ps-4">@SR["Status"]</th><th class="text-end">@Localizer["Rows"]</th><th>@Localizer["By"]</th><th class="text-end pe-4">@SR["Date"]</th>
+                            @* READING ORDER: when · who · how many · what happened.
+                               It used to open on the status and finish on the date, and the first cell
+                               stacked a status badge over a format label — two unrelated facts in one
+                               column, which is why every row was two lines tall for one line of
+                               information. A log is read as an event: the time it happened, the person
+                               who did it, its size, then its outcome. *@
+                            <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0 cb-thead-rule">
+                                <th class="ps-4">@SR["Date"]</th>
+                                <th>@Localizer["By"]</th>
+                                <th class="text-end">@Localizer["Rows"]</th>
+                                <th class="text-end pe-4">@SR["Status"]</th>
                             </tr></thead>
                             <tbody class="fw-semibold text-gray-600">
                                 @if (!Model.History.HasItems)
@@ -381,17 +684,34 @@
                                 @foreach (var run in Model.History.Items)
                                 {
                                     <tr>
-                                        <td class="ps-4">
+                                        @* The stamp is isolated LTR with tabular figures: a timestamp is a run of
+                                           digits and separators, and left to the paragraph direction its parts
+                                           reorder around the colon. *@
+                                        <td class="ps-4 text-muted text-nowrap"
+                                            dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">
+                                            @run.StartedAt.ToString("yyyy/MM/dd HH:mm")
+                                        </td>
+
+                                        @* The person, with their picture. EmployeeName is the fallback for a run
+                                           whose employee row has since gone: the log keeps the name it recorded
+                                           rather than losing the line. *@
+                                        <td>@person(run.EmployeeId, run.EmployeeName)</td>
+
+                                        <td class="text-end" dir="ltr" style="unicode-bidi:isolate;font-variant-numeric:tabular-nums">
+                                            @(run.Failed ? "—" : run.RowCount.ToString("N0"))
+                                        </td>
+
+                                        @* Outcome AND format on ONE line: the badge says what happened, the chip
+                                           beside it says which artifact. Re-run stays on the badge, which is the
+                                           thing being repeated. *@
+                                        <td class="text-end pe-4 text-nowrap">
+                                            <span class="badge badge-light fs-8 me-1">@run.Format</span>
                                             <a class="badge badge-light-@(run.Failed ? "danger" : "success") fs-8"
                                                asp-controller="Reports" asp-action="Rerun" asp-route-id="@run.Id"
                                                title="@Localizer["Run again"]">
                                                 @(run.Failed ? Localizer["Failed"] : Localizer["Done"])
                                             </a>
-                                            <span class="d-block fs-8 text-muted">@run.Format</span>
                                         </td>
-                                        <td class="text-end">@(run.Failed ? "—" : run.RowCount.ToString("N0"))</td>
-                                        <td class="text-muted">@run.EmployeeName</td>
-                                        <td class="text-end text-muted pe-4">@run.StartedAt.ToString("yyyy/MM/dd HH:mm")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -481,4 +801,483 @@
     }
 
     </div></div>
-</div>
+
+    @* ============================================================================================
+       THE REPORT PREVIEW MODAL — the app's own shell, copied rather than approximated.
+
+       Views/Accounting/AssetCategories.cshtml is the canonical modal in this product, and this is
+       its markup: modal-dialog modal-dialog-centered + mw-*px, an <h2 class="fw-bold"> title, a DIV
+       close button (btn btn-icon btn-sm + ki-cross fs-1), a modal-body with py-6 px-8, and a footer
+       of btn-light then btn-primary. The first version of this dialog used a generic Bootstrap
+       header and close button — the same library in a different dialect, which is exactly what a
+       house shell exists to prevent.
+
+       mw-1000px because the thing inside is a DOCUMENT. The rest of the product uses mw-650px for a
+       form and mw-900px for a wide one; a rendered A4 page needs more than either.
+
+       The document loads in an IFRAME rather than being injected: an exported report carries its own
+       <style> and its own @@page, which would leak into this screen, and a PDF can only be shown by
+       the browser's own viewer, which needs a frame to live in.
+       ============================================================================================ *@
+    <div class="modal fade" id="reportPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered mw-1000px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="fw-bold">
+                        @Model.Title
+                        <span class="text-muted fs-6 fw-semibold ms-2" id="rpvFormat"></span>
+                    </h2>
+                    <div class="btn btn-icon btn-sm" data-bs-dismiss="modal" aria-label="@SR["Cancel"]">
+                        <i class="ki-outline ki-cross fs-1"></i>
+                    </div>
+                </div>
+
+                @* py-6 px-8 is the house body padding; the frame overrides it to sit edge to edge,
+                   because a document should not float inside a form's margins. *@
+                <div class="modal-body p-0 position-relative">
+                    @* THE LOADER. The document is rendered on the server — a PDF goes through the
+                       headless browser — so the dialog opens before there is anything to show. An
+                       empty dialog for four seconds is indistinguishable from a broken one.
+
+                       An OVERLAY rather than a replacement, so the frame keeps its height and the
+                       dialog does not resize under the reader when the document lands. Removed on
+                       the frame's own load event, which is the only honest signal that the bytes
+                       arrived. *@
+                    <div id="rpvLoading" class="d-none position-absolute top-0 start-0 w-100 h-100
+                                                align-items-center justify-content-center flex-column gap-3"
+                         style="background:rgba(255,255,255,.92);z-index:5;">
+                        <span class="spinner-border text-primary" style="width:2.5rem;height:2.5rem;" role="status"></span>
+                        <span class="fw-semibold text-gray-600">@Localizer["Preparing the document…"]</span>
+                    </div>
+
+                    <iframe id="rpvFrame" title="@Model.Title"
+                            style="width:100%;height:74vh;border:0;display:block;background:#fff;"></iframe>
+
+                    @* Shown INSTEAD of the frame for a format no browser can draw. Says what the file
+                       is rather than showing an empty frame and letting the reader conclude the export
+                       is broken. d-none toggles it, not the hidden attribute - hidden is a UA
+                       display:none and loses to any d-* class on the same element. *@
+                    <div id="rpvNotice" class="d-none py-6 px-8">
+                        <div class="d-flex align-items-center p-5 rounded" style="background:var(--bs-light);">
+                            <i class="ki-outline ki-file-down fs-2hx text-primary me-4"></i>
+                            <div class="d-flex flex-column">
+                                <h4 class="mb-1 text-gray-900">@Localizer["This format cannot be shown in the browser."]</h4>
+                                <span class="text-gray-600">@Localizer["A spreadsheet has to be opened in Excel. Use Download."]</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">@SR["Cancel"]</button>
+                    @* Hidden for a non-viewable format: opening a tab on an XLSX would download it,
+                       which is the thing this dialog exists to stop happening by accident. *@
+                    <a id="rpvNewTab" class="btn btn-light-primary" target="_blank" rel="noopener" href="#">
+                        <i class="ki-outline ki-exit-right-corner fs-4"></i>@Localizer["Open in a new tab"]
+                    </a>
+                    @* The real download: the SAME url without inline, so the endpoint serves it as an
+                       attachment. A `download` attribute would not be enough - the response decides. *@
+                    <a id="rpvDownload" class="btn btn-primary" href="#">
+                        <i class="ki-outline ki-file-down fs-4"></i>@Localizer["Download"]
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@* ================================================================================================
+   THE THREE WRITE CONTROLS.
+
+   Every endpoint below already existed and was already authorized; what was missing was this file.
+   The buttons carried data-report-action and nothing in the solution read it, so they rendered
+   enabled and swallowed the click.
+   ================================================================================================ *@
+@section Scripts {
+<script>
+(function () {
+    var CODE       = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Code));
+    var TEMPLATEID = @(Model.TemplateId?.ToString() ?? "null");
+
+    // THE TEMPLATE THAT ACTUALLY RENDERED, which is NOT the same thing as the one in the URL.
+    //
+    // Model.TemplateId is only what the address bar named. Open a report normally and it is null even
+    // though the engine resolved a template and drew its design on the screen — and that is the state a
+    // person saves from. So "save the current setup" sent no base, inherited nothing, and produced the
+    // bare 373-byte rows that rendered as plain tables.
+    //
+    // The Design link above already learned this lesson the hard way: without the resolved id it forked
+    // a duplicate instead of editing the template on screen. Same mistake, second place.
+    //
+    // Kept SEPARATE from TEMPLATEID on purpose. That constant also drives favourites and fork, where
+    // "the layout the user explicitly opened" is the right meaning and quietly widening it to "whatever
+    // resolved" would change what those two buttons act on.
+    var RESOLVEDID = @((Model.TemplateId ?? preview?.TemplateId)?.ToString() ?? "null");
+    var TITLE      = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Title));
+    var isFav      = @(Model.IsFavorite ? "true" : "false");
+
+    var L = {
+        favAdded   : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Added to favourites"].Value)),
+        favRemoved : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Removed from favourites"].Value)),
+        favourite  : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Favourite"].Value)),
+        unfavourite: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Unfavourite"].Value)),
+        askName    : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Name this configuration"].Value)),
+        nameHint   : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["It saves the report with the parameters currently on screen."].Value)),
+        nameNeeded : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["A name is required."].Value)),
+        saved      : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Configuration saved"].Value)),
+        unchanged  : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Nothing changed, so no new version was created."].Value)),
+        askFork    : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Name the copy"].Value)),
+        forked     : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Template copied"].Value)),
+        failed     : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["The action could not be completed."].Value)),
+        denied     : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["You are not allowed to do that."].Value)),
+        cancel     : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Cancel"].Value)),
+        ok         : @Html.Raw(System.Text.Json.JsonSerializer.Serialize(SR["Save"].Value))
+    };
+
+    // The API is [AutoValidateAntiforgeryToken] and authenticates by session cookie, so the token
+    // must travel as a header - a cross-origin page can set a cookie but not this header.
+    function token() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    function api(method, url, body) {
+        var opts = {
+            method: method,
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'RequestVerificationToken': token() }
+        };
+        if (body !== undefined) {
+            opts.headers['Content-Type'] = 'application/json; charset=utf-8';
+            opts.body = JSON.stringify(body);
+        }
+        return fetch(url, opts).then(function (r) {
+            // 204 has no body; 403/404 carry the refusal. Parsing is guarded so a refusal never
+            // surfaces as "Unexpected end of JSON input".
+            return r.text().then(function (txt) {
+                var data = null;
+                if (txt) { try { data = JSON.parse(txt); } catch (e) { data = null; } }
+                return { ok: r.ok, status: r.status, data: data };
+            });
+        });
+    }
+
+    // The outcome goes INTO THE PAGE, in the same alert block this screen already uses for a
+    // failed export.
+    //
+    // NOT CB.toast: it degrades to a browser alert() when toastr is absent, and toastr is not in
+    // this application's plugins bundle - the name appears in the file but none of the library's
+    // own markup classes do. Every CB.toast call on this layout is a modal dialog box, which is
+    // the wrong shape for 'saved' and an outright obstruction for 'saved, nothing changed'.
+    function say(kind, msg) {
+        var host = document.getElementById('rpStatus');
+        if (!host) return;
+        var icon = kind === 'danger' ? 'ki-information-5' : 'ki-check-circle';
+        host.innerHTML =
+            '<div class="alert alert-light-' + kind + ' d-flex align-items-center p-5 mb-5" role="alert">'
+          + '<i class="ki-outline ' + icon + ' fs-2hx text-' + kind + ' me-4"></i>'
+          + '<div class="d-flex flex-column"><span class="text-gray-700"></span></div></div>';
+        // textContent, not string concatenation: the message can be an engine diagnostic, and a
+        // diagnostic carries whatever a template name contained.
+        host.querySelector('span').textContent = msg;
+        host.scrollIntoView({ block: 'nearest' });
+    }
+
+    function fail(res) {
+        // The engine's own words when it sent any, because "could not be completed" tells nobody
+        // what to change. 404 is the catalog hiding a report from someone who may not see it.
+        var msg = L.failed;
+        if (res && res.status === 403) msg = L.denied;
+        if (res && res.data && res.data.diagnostics && res.data.diagnostics.length) {
+            msg = res.data.diagnostics.map(function (d) { return d.message || d.Message || ''; })
+                     .filter(Boolean).join(' \u00b7 ') || msg;
+        }
+        say('danger', msg);
+    }
+    function done(msg) { say('success', msg); }
+
+    // The parameters as they stand on screen. This is what makes a saved configuration mean
+    // "this report, with these arguments" - ReportLayout.Parameters is the field the engine reads
+    // back as the template's baked-in values.
+    function currentParameters() {
+        var out = {};
+        document.querySelectorAll('form[method="get"] [id^="p_"]').forEach(function (el) {
+            var key = el.id.replace(/^p_/, '');
+            if (!key) return;
+            var v = (el.type === 'checkbox') ? String(el.checked) : (el.value || '');
+            if (v !== '') out[key] = v;
+        });
+        return out;
+    }
+
+    // One dialog helper, so a name is never taken with a browser prompt(). Falls back to prompt
+    // only if SweetAlert is genuinely absent, which on this layout it is not.
+    function askName(title, hint, preset) {
+        if (!window.Swal) { var v = window.prompt(title, preset || ''); return Promise.resolve(v); }
+        return Swal.fire({
+            title: title, input: 'text', inputValue: preset || '', text: hint,
+            showCancelButton: true, confirmButtonText: L.ok, cancelButtonText: L.cancel,
+            customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' },
+            buttonsStyling: false,
+            inputValidator: function (v) { return (v && v.trim()) ? null : L.nameNeeded; }
+        }).then(function (r) { return r.isConfirmed ? r.value.trim() : null; });
+    }
+
+    function paintFavourite(btn) {
+        var label = btn.lastChild;
+        if (label && label.nodeType === 3) label.nodeValue = isFav ? L.unfavourite : L.favourite;
+        else btn.innerHTML = '<i class="ki-outline ki-star fs-3"></i>' + (isFav ? L.unfavourite : L.favourite);
+        btn.classList.toggle('btn-light-primary', isFav);
+        btn.classList.toggle('btn-light', !isFav);
+    }
+
+    function busy(btn, on) {
+        btn.disabled = !!on;
+        btn.classList.toggle('disabled', !!on);
+    }
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('[data-report-action]') : null;
+        if (!btn || btn.disabled) return;
+        e.preventDefault();
+        var action = btn.getAttribute('data-report-action');
+
+        if (action === 'favorite') {
+            busy(btn, true);
+            var req = isFav
+                ? api('DELETE', '/api/reports/favorites?reportCode=' + encodeURIComponent(CODE)
+                        + (TEMPLATEID ? '&templateId=' + TEMPLATEID : ''))
+                : api('POST', '/api/reports/favorites', { reportCode: CODE, templateId: TEMPLATEID });
+            req.then(function (res) {
+                busy(btn, false);
+                if (!res.ok) return fail(res);
+                // In place, not a reload: the run on screen would be thrown away for a one-word change.
+                isFav = !isFav;
+                paintFavourite(btn);
+                done(isFav ? L.favAdded : L.favRemoved);
+            });
+            return;
+        }
+
+        if (action === 'save') {
+            askName(L.askName, L.nameHint, TITLE).then(function (name) {
+                if (!name) return;                       // cancelled: no request, no toast
+                busy(btn, true);
+                api('POST', '/api/reports/saved', {
+                    id: 0,
+                    reportCode: CODE,
+                    name: name,
+                    scope: 3,                            // ReportTemplateScope.Personal - no string
+                                                         // enum converter is configured, so the wire
+                                                         // value has to be the number.
+                    isDefault: false,
+
+                    // The layout on screen, so saving it keeps its design. Without this the new template
+                    // was born with nothing but filter values and rendered as a bare table -- the report
+                    // you saved was not the report you got back.
+                    baseTemplateId: RESOLVEDID || 0,
+
+                    layout: { parameters: currentParameters() }
+                }).then(function (res) {
+                    busy(btn, false);
+                    if (!res.ok) return fail(res);
+                    // "unchanged" is reported rather than hidden, exactly as the endpoint intends:
+                    // saying "saved as v9" when nothing moved teaches users to distrust the message.
+                    done(res.data && res.data.unchanged ? L.unchanged : L.saved);
+                });
+            });
+            return;
+        }
+
+        if (action === 'fork') {
+            if (!TEMPLATEID) return;                     // the button is disabled in this state anyway
+            askName(L.askFork, L.nameHint, TITLE).then(function (name) {
+                if (!name) return;
+                busy(btn, true);
+                api('POST', '/api/reports/saved/' + TEMPLATEID + '/fork',
+                    { targetScope: 3, name: name }).then(function (res) {
+                    busy(btn, false);
+                    if (!res.ok) return fail(res);
+                    done(L.forked);
+                    // A fork produces a NEW template, and the only honest thing to show next is that
+                    // template - so this one navigation is the point of the action, not a refresh.
+                    if (res.data && res.data.templateId) {
+                        var u = new URL(location.href);
+                        u.searchParams.set('templateId', res.data.templateId);
+                        location.href = u.toString();
+                    }
+                });
+            });
+        }
+    });
+})();
+
+/* The preview modal. One listener for every viewable-format button: the button carries the two
+   URLs it needs, so nothing here has to know the report code or rebuild a query string. */
+(function () {
+    var modalEl = document.getElementById('reportPreviewModal');
+    if (!modalEl) return;
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('[data-report-view]') : null;
+        if (!btn) return;
+        e.preventDefault();
+        var view = btn.getAttribute('data-report-view');
+        var viewable = btn.getAttribute('data-report-viewable') !== 'false';
+        var frame = document.getElementById('rpvFrame');
+        var notice = document.getElementById('rpvNotice');
+        var newTab = document.getElementById('rpvNewTab');
+
+        document.getElementById('rpvFormat').textContent = btn.getAttribute('data-report-label') || '';
+        document.getElementById('rpvDownload').setAttribute('href', btn.getAttribute('data-report-download'));
+
+        /* A format the browser cannot draw shows the notice and no frame, and loses the new-tab link:
+           opening a tab on a spreadsheet just downloads it, which is what this dialog prevents. */
+        frame.classList.toggle('d-none', !viewable);
+        notice.classList.toggle('d-none', viewable);
+        newTab.classList.toggle('d-none', !viewable);
+        if (viewable) newTab.setAttribute('href', view);
+
+        /* The loader goes up BEFORE the src is set and comes down on the frame's load event. Only
+           for a viewable format - the notice is instant and a spinner over it would flash. */
+        var loading = document.getElementById('rpvLoading');
+        loading.classList.toggle('d-none', !viewable);
+        loading.classList.toggle('d-flex', viewable);
+
+        /* Set LAST and cleared on close: a stale src would show the previous format for a moment,
+           and leaving it set keeps a rendered PDF in memory after the dialog is gone. */
+        if (viewable) frame.setAttribute('src', view);
+        else frame.removeAttribute('src');
+        if (window.bootstrap && bootstrap.Modal) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        else modalEl.classList.add('show');
+    });
+    /* load fires for a PDF too - the browser's own viewer counts as the frame's document. `error`
+       is handled as well: a 500 from the renderer must take the spinner down, or the dialog spins
+       for ever over a failure. */
+    ['load', 'error'].forEach(function (ev) {
+        document.getElementById('rpvFrame').addEventListener(ev, function () {
+            var l = document.getElementById('rpvLoading');
+            l.classList.add('d-none');
+            l.classList.remove('d-flex');
+        });
+    });
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        document.getElementById('rpvFrame').removeAttribute('src');
+        var l = document.getElementById('rpvLoading');
+        l.classList.add('d-none');
+        l.classList.remove('d-flex');
+    });
+})();
+
+/* ─────────────────────────────────────────────────────────────────────────────────────────────
+   PAGING THE PREVIEW.
+
+   The visual renderer emits one .cbv-page per printed sheet; the screen used to stack every one
+   of them. Measured on a 4-page report: 4641px of scroll, with nothing to say which page was on
+   screen. Nothing here restyles the document - pages are shown or hidden, so what prints and
+   what exports is unchanged.
+
+   A report with no .cbv-page (the plain-table renderer) leaves the pager hidden and behaves
+   exactly as before: there are no page boundaries in that markup to page by.
+   ───────────────────────────────────────────────────────────────────────────────────────────── */
+(function () {
+    var pager = document.getElementById('rpPager');
+    if (!pager) return;
+
+    var pages = [].slice.call(document.querySelectorAll('.table-responsive .cbv-page'));
+    if (pages.length < 2) return;             // nothing to page: leave the pager hidden
+
+    var current = 0;
+    var showAll = false;
+    var noEl = document.getElementById('rpPageNo');
+    var countEl = document.getElementById('rpPageCount');
+    var gotoEl = document.getElementById('rpGoto');
+
+    countEl.textContent = pages.length;
+    gotoEl.setAttribute('max', pages.length);
+    pager.classList.remove('d-none');
+    pager.classList.add('d-flex');
+
+    function paint() {
+        for (var i = 0; i < pages.length; i++) {
+            /* d-none, not style.display: the renderer's own stylesheet sets display on .cbv-page,
+               and a class the utility layer owns cannot be overwritten by it. */
+            pages[i].classList.toggle('d-none', !showAll && i !== current);
+        }
+        noEl.textContent = showAll ? ('1–' + pages.length) : (current + 1);
+        gotoEl.value = showAll ? '' : (current + 1);
+        gotoEl.disabled = showAll;
+
+        /* A dead end is DISABLED and LOOKS disabled. Bootstrap's own :disabled styling is opacity
+           .65 with pointer-events:none, which on a light grey button is almost invisible while the
+           cursor still says "clickable" — measured on page one as opacity 0.65 vs 1, identical
+           colour, cursor:pointer. Muting the ink is what makes the state readable, and
+           aria-disabled carries it to a screen reader. */
+        pager.querySelectorAll('[data-rp-page]').forEach(function (b) {
+            var w = b.getAttribute('data-rp-page');
+            var atStart = current === 0, atEnd = current === pages.length - 1;
+            var off = showAll || ((w === 'first' || w === 'prev') ? atStart : atEnd);
+            b.disabled = off;
+            b.classList.toggle('disabled', off);
+            b.setAttribute('aria-disabled', off ? 'true' : 'false');
+            b.classList.toggle('text-gray-400', off);
+            /* next keeps its emphasis while it is live: it is the one control a reader wants. */
+            if (w === 'next') {
+                b.classList.toggle('btn-light-primary', !off);
+                b.classList.toggle('btn-light', off);
+            }
+        });
+    }
+
+    function go(i) {
+        current = Math.max(0, Math.min(pages.length - 1, i));
+        paint();
+
+        /* NO scrollIntoView ON THE PAGE. It was pages[current].scrollIntoView({block:'nearest'}),
+           and a rendered A4 sheet is taller than the window: 'nearest' then satisfies itself by
+           bringing the sheet's BOTTOM into view, so every press of Next scrolled the reader down
+           the page they had just turned to. The page swaps in place — the reader has not moved and
+           should not be moved.
+
+           The only case worth a scroll is the controls having been left behind: if the pager itself
+           is off screen, bring it back so the next press is reachable. Nothing happens otherwise. */
+        var r = pager.getBoundingClientRect();
+        var offScreen = r.bottom < 0 || r.top > (window.innerHeight || 0);
+        if (offScreen) { pager.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    }
+
+    pager.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('[data-rp-page]') : null;
+        if (!b || b.disabled) return;
+        var w = b.getAttribute('data-rp-page');
+        if (w === 'first') go(0);
+        else if (w === 'prev') go(current - 1);
+        else if (w === 'next') go(current + 1);
+        else if (w === 'last') go(pages.length - 1);
+    });
+
+    gotoEl.addEventListener('change', function () {
+        var v = parseInt(gotoEl.value, 10);
+        if (!isNaN(v)) go(v - 1);
+    });
+
+    document.getElementById('rpShowAll').addEventListener('change', function () {
+        showAll = this.checked;
+        paint();
+    });
+
+    paint();
+})();
+
+/* RUN REPORT shows that it is working. The form is a GET navigation, so the button is only needed
+   until the new document replaces this one - no timeout and no reset, because the page goes away. */
+(function () {
+    var form = document.querySelector('form[method="get"]');
+    var btn = document.getElementById('rpRun');
+    if (!form || !btn) return;
+    form.addEventListener('submit', function () {
+        btn.setAttribute('data-kt-indicator', 'on');
+        btn.disabled = true;
+    });
+})();
+</script>
+}

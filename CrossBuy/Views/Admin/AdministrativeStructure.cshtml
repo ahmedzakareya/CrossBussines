@@ -1,8 +1,19 @@
 ﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@using System.Text.Json
+@using CrossBuy.ViewModel
 @{
     ViewData["Title"] = Localizer["Administrative Structure"].Value;
     Layout = "~/Views/Shared/_LayoutBackend.cshtml";
+
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+    // Both languages inline, the same helper Views/Tasks/Index.cshtml uses. A NEW .resx key needs a
+    // satellite assembly, i.e. a build - and IViewLocalizer returns the KEY itself when it cannot
+    // resolve one, so a fresh key would print as English text on an Arabic document. The print
+    // templates below are all new strings, so they carry their own pair.
+    string T(string ar, string en) => isAr ? ar : en;
+
 }
 
 <style>
@@ -25,17 +36,16 @@
     .as-shell { background:var(--as-card); border:1px solid var(--as-border); border-radius:24px; box-shadow:var(--as-shadow); overflow:hidden; }
 
     /* ── HEADER ── */
-    .as-official-header { position:relative; padding:22px 26px; background:#ffffff; border-bottom:1px solid var(--as-border); }
-    .as-official-header::before { content:""; position:absolute; inset-inline-start:0; top:0; width:100%; height:4px; background:#145DBF; }
-    .as-official-main  { display:flex; align-items:center; gap:16px; }
-    .as-official-icon  { width:52px; height:52px; border-radius:16px; background:#E7F0FF; border:1px solid #D0E1FF; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 22px rgba(14,74,158,.10); }
-    .as-eyebrow        { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; background:#E7F0FF; color:#145DBF; border:1px solid #D0E1FF; font-size:12px; font-weight:800; margin-bottom:10px; }
-    .as-title          { color:#162033; font-size:23px; font-weight:800; margin:0; }
-    .as-subtitle       { color:#667085; font-size:13px; margin-top:7px; }
-    .as-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex-shrink:0; }
+    /* The .as-official-* block that used to live here is gone with the markup it styled: a second
+       copy of the page title, an eyebrow badge, an explanatory sentence and a 52px icon tile. Its
+       one surviving job - the 4px brand rule across the top of the shell - moves onto the command
+       bar below as .as-command-bar--lead. */
 
     /* ── COMMAND BAR ── */
     .as-command-bar    { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 20px; background:#fff; border-bottom:1px solid var(--as-border); }
+    /* The lead bar carries the brand rule the removed header used to own. */
+    .as-command-bar--lead { position:relative; padding-top:18px; }
+    .as-command-bar--lead::before { content:""; position:absolute; inset-inline-start:0; top:0; width:100%; height:4px; background:#145DBF; }
     .as-search-wrap    { flex:1; max-width:640px; }
     .as-search-box     { height:44px; border:1px solid var(--as-border); border-radius:14px; background:#ffffff; display:flex; align-items:center; gap:10px; padding:0 14px; box-shadow:0 4px 12px rgba(20,32,55,.04); }
     .as-search-box:focus-within { border-color:rgba(20,93,191,.45); box-shadow:0 0 0 4px rgba(20,93,191,.08); }
@@ -56,6 +66,8 @@
     .as-content  { background:var(--as-bg); padding:22px; min-height:570px; }
     .as-view-card{ background:var(--as-card); border:1px solid var(--as-border); border-radius:var(--as-radius); min-height:510px; overflow:hidden; }
     .as-view-head{ display:flex; justify-content:space-between; align-items:center; gap:14px; padding:18px 20px; border-bottom:1px solid var(--as-border); background:#ffffff; }
+    /* A usage hint plus at most one control - a third of the height the captioned version took. */
+    .as-view-head--slim{ padding:8px 20px; }
     .as-view-title{ font-size:15px; font-weight:900; color:var(--as-text); margin:0; }
     .as-view-hint { color:var(--as-muted); font-size:12px; margin-top:3px; }
     .as-tree-area { padding:22px; }
@@ -252,14 +264,8 @@
 
     /* ── MISC ── */
     .as-match     { outline:3px solid rgba(20,93,191,.16); border-color:rgba(20,93,191,.48)!important; }
-    .as-print-root{ display:none; }
-
-    @@media print {
-        body * { visibility:hidden!important; }
-        .as-print-root,.as-print-root * { visibility:visible!important; }
-        .as-print-root { display:block!important; position:absolute; inset:0; width:100%; background:#fff; }
-        @@page { size:A4 portrait; margin:10mm; }
-    }
+    /* No print rules and no print markup. This screen does not print; the toolbar links to the
+       Admin.OrgStructure.Units report and the platform renders it. */
     @@media (max-width:1199.98px) {
         .org-outer { grid-template-columns:1fr; }
         .org-side-panel { border-inline-end:0; border-bottom:1px solid var(--as-border); display:grid; grid-template-columns:1fr 1fr; }
@@ -299,30 +305,23 @@
             <div class="as-page">
                 <div class="as-shell">
 
-                    <!-- HEADER -->
-                    <div class="as-official-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
-                        <div class="as-official-main">
-                            <div class="as-official-icon">
-                                <i class="ki-outline ki-abstract-26 fs-2" style="color:#145DBF"></i>
-                            </div>
-                            <div>
-                                <div class="as-eyebrow"><i class="ki-outline ki-shield-tick fs-5"></i>@Localizer["Official administrative unit"]</div>
-                                <h2 class="as-title">@CrossBuy.Resources.SharedResources.AdministrativeStructure</h2>
-                                <div class="as-subtitle">@Localizer["Manage the administrative structure — companies, branches, administrative entities"]</div>
-                            </div>
-                        </div>
-                        <div class="as-header-actions">
-                            <button type="button" class="btn btn-light-primary fw-bold" id="btnExpandFlow">
-                                <i class="ki-outline ki-plus-square fs-4 me-1"></i>@Localizer["Expand"]
-                            </button>
-                            <button type="button" class="btn btn-light fw-bold" id="btnCollapseFlow">
-                                <i class="ki-outline ki-minus-square fs-4 me-1"></i>@Localizer["Collapse"]
-                            </button>
-                        </div>
-                    </div>
+                    @* ================================================================================
+                       ONE CONTROL ROW.
 
-                    <!-- COMMAND BAR -->
-                    <div class="as-command-bar">
+                       This screen opened with FIVE stacked bands before any content: the page toolbar
+                       (title + breadcrumb), an "official header" that repeated the same title as an
+                       h2 with an eyebrow badge and a sentence explaining what the screen is, a
+                       command bar, the tabs, and then a per-tab caption. Roughly 450px of chrome
+                       above a tree - on a 950px viewport the structure itself started below the fold.
+
+                       What was removed is only duplication: the second copy of the title (the toolbar
+                       above already names the page and the breadcrumb names it again), the eyebrow,
+                       the "manage the administrative structure" sentence, and the icon tile. What
+                       was KEPT is every control - search, the unit counter, expand, collapse, print -
+                       now on one line. The 4px brand rule moves onto this bar so the identity band
+                       survives the block it used to sit on.
+                       ================================================================================ *@
+                    <div class="as-command-bar as-command-bar--lead">
                         <div class="as-search-wrap">
                             <div class="as-search-box">
                                 <i class="ki-outline ki-magnifier fs-3" style="color:var(--as-primary)"></i>
@@ -336,9 +335,30 @@
                             <span class="as-chip" id="asSearchCount">
                                 <i class="ki-outline ki-chart-simple fs-5"></i>@Localizer["All units"]
                             </span>
-                            <button type="button" class="btn btn-light-primary fw-bold" id="btnPrintStructure">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-light fw-bold" id="btnExpandFlow" title="@Localizer["Expand"]">
+                                    <i class="ki-outline ki-plus-square fs-4"></i>
+                                </button>
+                                <button type="button" class="btn btn-light fw-bold" id="btnCollapseFlow" title="@Localizer["Collapse"]">
+                                    <i class="ki-outline ki-minus-square fs-4"></i>
+                                </button>
+                            </div>
+
+                            @* PRINTING GOES THROUGH REPORT STUDIO, AND ONLY THROUGH IT.
+
+                               This button used to open a menu of five templates this view built and
+                               printed itself as HTML. That is deleted. A print template belongs to the
+                               reporting platform, where page setup, template versioning, field-level
+                               permissions, scheduling, archiving and the PDF renderer already live - a
+                               screen that prints its own HTML has none of that and drifts away from the
+                               report of the same name.
+
+                               The structure is registered as the dataset Admin.OrgStructure.Units, so
+                               this is a link to that report rather than a print routine. *@
+                            <a class="btn btn-light-primary fw-bold"
+                               href="@Url.Action("Viewer", "Reports", new { id = CrossBuy.BL.Reporting.OrgStructureDatasetCodes.OrgUnits, run = true })">
                                 <i class="ki-outline ki-printer fs-4 me-1"></i>@SR["Print"]
-                            </button>
+                            </a>
                         </div>
                     </div>
 
@@ -365,11 +385,11 @@
 
                         <!-- ① Tree -->
                         <div class="tab-pane fade show active" id="treeViewTab" role="tabpanel">
+                            @* No caption band. The tab that is selected is called "Tree", so a heading
+                               reading "Tree view" under it, a hint naming the JS library that draws
+                               it, and a chip reading "Default" were three restatements and a leaked
+                               implementation detail, on top of the tree itself. *@
                             <div class="as-view-card">
-                                <div class="as-view-head">
-                                    <div><h3 class="as-view-title">@Localizer["Tree view"]</h3><div class="as-view-hint">@Localizer["Classic jsTree hierarchy"]</div></div>
-                                    <span class="as-chip"><i class="ki-outline ki-abstract-26 fs-5"></i>@Localizer["Default"]</span>
-                                </div>
                                 <div class="as-tree-area"><div id="kt_docs_jstree_customicons"></div></div>
                             </div>
                         </div>
@@ -377,17 +397,15 @@
                         <!-- ② Org Chart -->
                         <div class="tab-pane fade" id="modernOrgTab" role="tabpanel">
                             <div class="as-view-card">
-                                <div class="as-view-head">
-                                    <div>
-                                        <h3 class="as-view-title">@Localizer["3D org chart"]</h3>
-                                        <div class="as-view-hint">@Localizer["Drag to pan · Ctrl+wheel to zoom · double-click to focus an item"]</div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                                        <span class="as-chip"><i class="ki-outline ki-arrows-circle fs-5"></i>@Localizer["Drag to pan"]</span>
-                                        <button type="button" class="btn btn-light-primary fw-bold org-open-fullscreen-btn" id="btnOpenOrgFullscreen">
-                                            <i class="ki-outline ki-maximize fs-4 me-1"></i>@Localizer["Fullscreen"]
-                                        </button>
-                                    </div>
+                                @* Slimmed: the heading duplicated the tab, and the same "drag to pan"
+                                   advice was given twice - once as a hint and once as a chip beside
+                                   it. What is left is the one thing a reader cannot guess (the
+                                   keyboard/mouse gestures) and the one control that has to live here. *@
+                                <div class="as-view-head as-view-head--slim">
+                                    <div class="as-view-hint m-0">@Localizer["Drag to pan · Ctrl+wheel to zoom · double-click to focus an item"]</div>
+                                    <button type="button" class="btn btn-sm btn-light-primary fw-bold org-open-fullscreen-btn" id="btnOpenOrgFullscreen">
+                                        <i class="ki-outline ki-maximize fs-4 me-1"></i>@Localizer["Fullscreen"]
+                                    </button>
                                 </div>
                                 <div class="org-outer">
                                     <aside class="org-side-panel">
@@ -443,9 +461,11 @@
                         <!-- ③ Flow -->
                         <div class="tab-pane fade" id="flowOrgTab" role="tabpanel">
                             <div class="as-view-card">
-                                <div class="as-view-head">
-                                    <div><h3 class="as-view-title">@Localizer["Collapsible flow chart"]</h3><div class="as-view-hint">@Localizer["Click the arrow to collapse / expand branches"]</div></div>
-                                    <span class="as-chip"><i class="ki-outline ki-data fs-5"></i>@Localizer["Collapsible"]</span>
+                                @* Same treatment: the heading and the "Collapsible" chip both said what
+                                   the tab says. The usage line stays - it is the only part that told
+                                   the reader something. *@
+                                <div class="as-view-head as-view-head--slim">
+                                    <div class="as-view-hint m-0">@Localizer["Click the arrow to collapse / expand branches"]</div>
                                 </div>
                                 <div class="org-flow-scroll">
                                     <div class="fc-board">
@@ -464,7 +484,8 @@
 
                 </div>
             </div>
-            <div id="asPrintRoot" class="as-print-root"></div>
+            @* No print host. This screen has no print path at all - the toolbar links to the
+               Admin.OrgStructure.Units report and the reporting platform renders and prints it. *@
         </div>
     </div>
 
@@ -1191,23 +1212,12 @@ function applyStructureSearch(query){
 }
 
 /* ══════════════════════════════════════════════════════════
-   PRINT
+   PRINT — deliberately absent.
+
+   This block held five document builders, a print stylesheet, a letterhead and an iframe
+   writer. All of it is gone: printing is the reporting platform's job, and the toolbar link
+   goes to the Admin.OrgStructure.Units report. A screen does not print itself here.
 ══════════════════════════════════════════════════════════ */
-function buildPrintNode(data,item,level){
-    var ch=getChildren(data,item.h_ID),n=getName(item);
-    var html='<div style="border:1px solid #d9e0ea;border-radius:12px;background:#fff;padding:10px 14px;margin-bottom:8px;page-break-inside:avoid">'
-        +'<div style="font-size:14px;font-weight:800">'+escapeHtml(n)+'</div>'
-        +'<div style="font-size:11px;color:#667085;margin-top:3px">@Localizer["Level"] '+(level+1)+' · '+escapeHtml(getTypeLabel(item))+'</div>';
-    if(ch.length){ html+='<div style="margin-top:8px;margin-left:18px;padding-left:14px;border-left:2px solid #d9e0ea">'; ch.forEach(function(c){ html+=buildPrintNode(data,c,level+1); }); html+='</div>'; }
-    return html+'</div>';
-}
-function buildPrintStructure(){
-    var q=$('#asGlobalSearch').val(), data=getFilteredData(hierarchicalItemsCache,q), roots=getChildren(data,null);
-    var html='<div dir="ltr" style="font-family:Arial,sans-serif;padding:16mm"><div style="border-bottom:2px solid #172033;padding-bottom:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><h1 style="font-size:20px;margin:0">Administrative Structure</h1><p style="color:#667085;font-size:12px;margin:4px 0 0">@Localizer["Organisation chart"]</p></div><div style="border:1px solid #d0d5dd;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700">'+new Date().toLocaleString('en-GB')+'</div></div><div>';
-    roots.forEach(function(r){ html+=buildPrintNode(data,r,0); });
-    html+='</div></div>';
-    $('#asPrintRoot').html(html);
-}
 
 /* ══════════════════════════════════════════════════════════
    CONTEXT MENU
@@ -1313,7 +1323,7 @@ $(document).ready(function(){
     $('#asClearSearch' ).on('click',function(){ $('#asGlobalSearch').val(''); applyStructureSearch(''); $('#asGlobalSearch').trigger('focus'); });
 
     /* ── print ── */
-    $('#btnPrintStructure').on('click',function(){ buildPrintStructure(); window.print(); });
+    /* No print wiring: the toolbar Print control is a plain link to the platform report. */
 
     /* ── expand / collapse flow ── */
     $('#btnExpandFlow' ).on('click',function(){ $('#fcTree .fc-node').removeClass('collapsed'); $('a[href="#flowOrgTab"]').tab('show'); });

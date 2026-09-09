@@ -45,5 +45,5 @@
     </div></div>
 </div>
 @section Scripts {
-<script>(function(){var ds=document.getElementById('daysSel');if(ds){var go=function(){location.href='?days='+ds.value;};if(window.jQuery&&jQuery(ds).data('select2'))jQuery(ds).on('change',go);else ds.addEventListener('change',go);}})();</script>
+<script>(function(){var ds=document.getElementById('daysSel');if(ds){var go=function(){location.href='?days='+ds.value;};if(window.CB&&CB.onSelectChange)CB.onSelectChange(ds,go);else ds.addEventListener('change',go);}})();</script>
 }

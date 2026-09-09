@@ -165,6 +165,16 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportDataSource, CrmLeadsDataSource>();
             services.AddScoped<IReportDataSource, CrmOpportunitiesDataSource>();
 
+            // Administrative structure — dbo.Hierarchicals, the organisation tree behind
+            // /Admin/AdministrativeStructure. One dataset, one source, registered exactly like the modules
+            // above so it reaches Studio, widgets, exports and scheduling with no new execution path.
+            //
+            // Its tenancy is DERIVED rather than stored: that table has no CompanyID, so the source enters
+            // the tree only at the type-1 node carrying the caller's own company and walks down from there.
+            // See the file header for what that means and where it differs from the screen.
+            services.AddSingleton<IReportDefinitionProvider, OrgStructureReportDefinitionProvider>();
+            services.AddScoped<IReportDataSource, OrgStructureDataSource>();
+
             // HR Product Batch 2 — roster. Two data sources, no new engine and no second store.
             services.AddScoped<IReportDataSource, RosterScheduleDataSource>();
             services.AddScoped<IReportDataSource, RosterPlannedVsActualDataSource>();
@@ -214,6 +224,14 @@ namespace CrossBuy.BL.Reporting
             foreach (var roster in HrRosterDatasets.All())
             {
                 var definition = roster;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+
+            // The administrative structure, registered the same way. Same per-iteration capture: the loop
+            // variable's final value in a closure is the bug this pattern exists to avoid.
+            foreach (var org in OrgStructureDatasets.All())
+            {
+                var definition = org;
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
             }
 

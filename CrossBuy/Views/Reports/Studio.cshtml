@@ -207,6 +207,30 @@
                         </select>
                     </div>
 
+                    @* THE DOCUMENT FONT. Beside paper and margins because it is a property of the
+                       PAGE, not of a selected element — the properties panel's font sets one box,
+                       this sets the face everything inherits.
+
+                       The list is the server's ReportTypography.DesignerFaces, which is also what
+                       ReportVisualLayoutValidator accepts, so the designer cannot offer a face the
+                       save would reject. "Default" means the platform stack for the run's language,
+                       which is the right answer for a report read in both. *@
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="fs-8 fw-semibold text-muted" for="cbd-font">@(arabic ? "الخط" : "Font")</label>
+                        <select id="cbd-font" class="form-select form-select-sm w-140px">
+                            <option value="">@(arabic ? "افتراضي" : "Default")</option>
+                            @foreach (var face in CrossBuy.BL.Reporting.ReportTypography.DesignerFaces)
+                            {
+                                <option value="@face">@face</option>
+                            }
+                        </select>
+                        <input id="cbd-fontsize" type="number" step="0.5" min="5" max="30"
+                               class="form-control form-control-sm w-70px"
+                               title="@(arabic ? "حجم الخط (نقطة)" : "Font size (pt)")"
+                               aria-label="@(arabic ? "حجم خط المستند" : "Document font size")"
+                               placeholder="@(arabic ? "نقطة" : "pt")" />
+                    </div>
+
                     <div class="d-flex align-items-center gap-1 cbd-setup-wide">
                         <span class="fs-8 fw-semibold text-muted me-1">@(arabic ? "الهوامش (مم)" : "Margins (mm)")</span>
                         <input id="cbd-mt" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أعلى" : "Top")" aria-label="@(arabic ? "هامش أعلى" : "Top margin")" />
@@ -697,7 +721,25 @@
     // never to decide anything — the server recomputes the printable box from its own copy.
     var PAPER = { 0: [210, 297], 1: [148, 210], 2: [215.9, 279.4], 3: [215.9, 355.6], 4: [80, 297] };
 
-    var FONTS = ["Inter", "Tahoma", "Arial", "Cairo", "Amiri", "Times New Roman", "Courier New"];
+    // FROM THE SERVER, not a literal. The list used to name Amiri, which is not installed on this
+    // host - a designer that offers a face the render machine lacks produces a layout that looks one
+    // way in the browser and another on paper with nothing to explain it. ReportTypography.DesignerFaces
+    // is the same source the renderers read, and it puts the application's own two faces first.
+    var FONTS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        CrossBuy.BL.Reporting.ReportTypography.DesignerFaces));
+
+    // The canvas sheet takes the document font so the designer shows what will print. Called from
+    // renderCanvas; a null family falls back to the stylesheet, which is the platform stack.
+    function applyDocFont() {
+        // #cbd-page IS the sheet - the element renderCanvas sizes to the paper. Setting the family here
+        // means every band, box and table face inside it inherits the document font, which is what the
+        // print renderer does with body.cbv.
+        var host = document.getElementById("cbd-page");
+        if (!host) { return; }
+        var pg = (S.layout && S.layout.page) || {};
+        host.style.fontFamily = pg.fontFamily ? ('"' + pg.fontFamily + '"') : "";
+        host.style.fontSize = pg.fontSizePt ? (pg.fontSizePt + "pt") : "";
+    }
 
     function blankLayout() {
         var bands = [];
@@ -711,7 +753,16 @@
         }
         return {
             schemaVersion: 1,
-            page: { pageSize: 0, orientation: 0, marginTopMm: 18, marginBottomMm: 16, marginLeftMm: 12, marginRightMm: 12, rtl: AR },
+            // EVERY page key is present, including the two that used to be absent. syncPageInputs reads
+            // pg.fontFamily, and a state object that simply lacks the key cannot represent "the font this
+            // report has" — so an opened template showed "Default" in the picker and the next save wrote
+            // that emptiness back over the stored face. A missing key and a chosen null are not the same
+            // thing, and only one of them is safe to save.
+            page: {
+                pageSize: 0, orientation: 0,
+                marginTopMm: 18, marginBottomMm: 16, marginLeftMm: 12, marginRightMm: 12,
+                rtl: AR, fontFamily: null, fontSizePt: null
+            },
             gridMm: 5,
             snapToGrid: true,
             bands: bands,
@@ -993,6 +1044,7 @@
         var pageEl = $("cbd-page");
         pageEl.style.width = (pw * sc) + "px";
         pageEl.style.direction = pg.rtl ? "rtl" : "ltr";
+        applyDocFont();
 
         var bandsHeight = S.layout.bands.reduce(function (a, b) { return a + (b.heightMm || 0); }, 0);
         var boxHeight = Math.max(contentHeightMm(), bandsHeight);
@@ -1135,16 +1187,45 @@
         if (!e.columns || !e.columns.length) {
             return "<span class='text-muted fs-8'>" + (AR ? "جدول بلا أعمدة — أضف أعمدة من الخصائص" : "Empty table — add columns in Properties") + "</span>";
         }
+        // padding on the CELLS, not from table-sm's own spacing, so the two rows fit a print-row box.
+        var cell = "padding:.2mm .6mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+
+        // WIDTHS AS PERCENTAGES, NOT MILLIMETRES.
+        //
+        // The canvas zoom is applied by the designer itself: it converts every element's mm to px and
+        // multiplies by the zoom, which is why the host box carries an explicit px width. A `width:46mm`
+        // on a <th> is a REAL millimetre, which the browser renders at 3.78px/mm whatever the zoom — so
+        // the table stayed its full printed width inside a shrunken box and the last columns fell off
+        // the edge. Measured at 71%: a 501px box holding a 703px table, and 703/501 is exactly 1/0.71.
+        // A percentage of the box is zoom-independent and prints the same.
+        var totalMm = e.columns.reduce(function (s, c) { return s + (c.widthMm > 0 ? c.widthMm : 0); }, 0);
+        function pct(c) { return totalMm > 0 ? ((c.widthMm > 0 ? c.widthMm : 0) / totalMm * 100) : (100 / e.columns.length); }
+
         var head = e.columns.map(function (c) {
             var f = fieldOf(c.fieldKey);
-            return "<th style='width:" + c.widthMm + "mm;text-align:" + ["start", "center", "end", "justify"][c.align || 0] + "'>" +
+            return "<th style='" + cell + "width:" + pct(c).toFixed(3) + "%;text-align:" +
+                   ["start", "center", "end", "justify"][c.align || 0] + "'>" +
                    esc(c.headerText || (f ? f.title : c.fieldKey)) + "</th>";
         }).join("");
         var row = e.columns.map(function (c) {
-            return "<td class='text-primary'>{" + esc(c.fieldKey) + "}</td>";
+            return "<td class='text-primary' style='" + cell + "'>{" + esc(c.fieldKey) + "}</td>";
         }).join("");
-        return "<table class='table table-sm m-0 fs-8' style='table-layout:fixed;width:100%'>" +
-               "<thead><tr class='cb-thead-rule'>" + head + "</tr></thead><tbody><tr>" + row + "</tr></tbody></table>";
+        // THE FACE HAS TO FIT THE BOX IT IS DRAWN IN.
+        //
+        // It drew a Bootstrap table-sm — two rows at roughly 24px each, about 25mm — inside whatever
+        // height the element has. A table in the Detail band cannot be 25mm tall, because the renderer
+        // uses the BAND height as the print row height (see ReportVisualRenderer: the header costs one
+        // detail height and so does every row). So an honestly-sized table, 8-10mm, had its face
+        // clipped: measured 47px cells inside a 22px band, which is why only the last few column
+        // headers were legible and the rest looked missing.
+        //
+        // line-height 1, no cell padding and a clipping wrapper make the two rows fit an 8mm box. The
+        // face is a preview of a print row, so it should be the size of a print row.
+        return "<div style='overflow:hidden;height:100%'>" +
+               "<table class='table table-sm m-0 fs-8' " +
+               "style='table-layout:fixed;width:100%;line-height:1.05;border-collapse:collapse'>" +
+               "<thead><tr class='cb-thead-rule'>" + head + "</tr></thead>" +
+               "<tbody><tr>" + row + "</tr></tbody></table></div>";
     }
 
     function renderRulers(sc) {
@@ -2209,11 +2290,33 @@
         });
     }
 
+    // A VISIBLE OUTCOME. The status bar is below the fold on a 1000px window, so anything that
+    // only lands there has not been reported. Swal is already on this screen; a toast is used
+    // rather than CB.toast because that degrades to a modal alert() when toastr is missing, and
+    // toastr is not in this application's plugins bundle.
+    function notify(kind, text) {
+        if (typeof Swal === "undefined" || !Swal || !Swal.fire) { return; }
+        Swal.fire({
+            toast: true,
+            // Follows the page direction, so it never sits on top of the toolbar it reports about.
+            position: (document.documentElement.getAttribute("dir") === "rtl") ? "top-start" : "top-end",
+            icon: kind,
+            title: text,
+            showConfirmButton: false,
+            timer: kind === "error" ? 6000 : 2600,
+            timerProgressBar: true
+        });
+    }
+
     function showErrors(list) {
         var box = $("cbd-errors");
         if (!list || !list.length) { box.classList.add("d-none"); box.innerHTML = ""; return; }
         box.classList.remove("d-none");
         box.innerHTML = "<ul class='mb-0 ps-4'>" + list.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul>";
+        // AND a toast, for the same reason the save confirmation needed one: this box is inside the
+        // designer shell and can be scrolled out of sight, and a refusal nobody sees is a refusal
+        // that reads as "the button is broken".
+        notify("error", list[0]);
     }
 
     function loadDataset(code) {
@@ -2306,7 +2409,10 @@
             .then(function (res) {
                 if (!res.ok) { showErrors(res.d.errors || []); return; }
                 S.templateId = res.d.templateId;
-                $("cbd-status").textContent = (AR ? "تم الحفظ — نسخة " : "Saved — version ") + res.d.versionNo;
+                var msg = (AR ? "تم الحفظ — نسخة " : "Saved — version ") + res.d.versionNo;
+                // The status bar keeps its record; the toast is what the person actually sees.
+                $("cbd-status").textContent = msg;
+                notify("success", msg);
             });
     }
 
@@ -2395,7 +2501,17 @@
         S.filters = (dr.filters || []).map(function (f) { return { field: f.field, operator: f.operator, values: f.values || [] }; });
         S.sorts = (dr.sorts || []).map(function (s) { return { field: s.field, descending: !!s.descending }; });
         S.parameters = dr.parameters || {};
+        // THE TEMPLATE'S OWN PAGE, whether or not it has a visual design.
+        //
+        // This was `dr.visual || blankLayout()`. For a template with no Visual — one designed before the
+        // visual designer existed, or whose visual did not survive validation — the designer opened on
+        // blankLayout()'s hardcoded A4/portrait/18-16-12-12/no-font and the next save persisted exactly
+        // that, so opening a report and pressing save reset its paper, its margins and its font. The draft
+        // now carries the stored page setup separately, and it wins over any default.
         S.layout = dr.visual || blankLayout();
+        if (dr.pageSetup) {
+            S.layout.page = Object.assign({}, S.layout.page, dr.pageSetup);
+        }
         S.selection = [];
         undoStack.length = 0; redoStack.length = 0;
 
@@ -2418,6 +2534,8 @@
         $("cbd-mb").value = pg.marginBottomMm;
         $("cbd-ml").value = pg.marginLeftMm;
         $("cbd-mr").value = pg.marginRightMm;
+        $("cbd-font").value = pg.fontFamily || "";
+        $("cbd-fontsize").value = pg.fontSizePt ? pg.fontSizePt : "";
         $("cbd-grid").value = S.layout.gridMm;
         $("cbd-snap").checked = !!S.layout.snapToGrid;
     }
@@ -2441,6 +2559,24 @@
         bindNum("cbd-ml", function (v) { S.layout.page.marginLeftMm = v; });
         bindNum("cbd-mr", function (v) { S.layout.page.marginRightMm = v; });
         bindNum("cbd-grid", function (v) { S.layout.gridMm = Math.max(1, v); });
+
+        // A font change repaints the canvas, because the whole point is seeing it. snapshot() first so
+        // it lands on the undo stack like every other page edit.
+        $("cbd-font").addEventListener("change", function () {
+            snapshot();
+            var v = $("cbd-font").value;
+            S.layout.page.fontFamily = v ? v : null;
+            renderCanvas();
+        });
+        $("cbd-fontsize").addEventListener("change", function () {
+            snapshot();
+            var v = parseFloat($("cbd-fontsize").value);
+            // Out of range clears it rather than clamping silently: the server validates 5-30 and a
+            // value quietly changed under the author is worse than one that visibly did not take.
+            S.layout.page.fontSizePt = (isNaN(v) || v < 5 || v > 30) ? null : v;
+            if (S.layout.page.fontSizePt === null) { $("cbd-fontsize").value = ""; }
+            renderCanvas();
+        });
 
         $("cbd-snap").addEventListener("change", function () { S.layout.snapToGrid = $("cbd-snap").checked; });
         $("cbd-showgrid").addEventListener("change", function () { S.showGrid = $("cbd-showgrid").checked; renderCanvas(); });

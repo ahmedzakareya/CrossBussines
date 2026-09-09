@@ -175,7 +175,7 @@
 (function(){
   var wf = document.getElementById('whFilter');
   if (wf){ var go=function(){ var u=new URL(location.href); if(wf.value) u.searchParams.set('warehouseId',wf.value); else u.searchParams.delete('warehouseId'); location.href=u.toString(); };
-    if(window.jQuery && jQuery(wf).data('select2')) jQuery(wf).on('change', go); else wf.addEventListener('change', go); }
+    if(window.CB && CB.onSelectChange) CB.onSelectChange(wf, go); else wf.addEventListener('change', go); }
 
   var el = document.querySelector('#item_trend_chart');
   if (el && window.ApexCharts) {

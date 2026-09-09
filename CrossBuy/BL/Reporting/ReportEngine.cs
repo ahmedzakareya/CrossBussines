@@ -340,6 +340,10 @@ namespace CrossBuy.BL.Reporting
             // ---- 8. produce -------------------------------------------------------------------------------
             var branding = await _branding.GetAsync(context, cancellationToken);
 
+            // The CompanyScoped switch that stood here is gone with the thing it switched: no renderer prints
+            // a company name any more, so there was nothing left for a per-report flag to turn off. Keeping a
+            // flag nobody reads is how a codebase acquires settings that do nothing.
+
             var renderContext = new ReportRenderContext
             {
                 View = view,

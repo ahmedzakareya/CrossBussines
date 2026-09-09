@@ -127,7 +127,45 @@ namespace CrossBuy.BL.Reporting
         // trial balance readable.
         public bool RepeatHeaderRow { get; init; } = true;
 
+        // ---- typography, CHOSEN BY THE AUTHOR ------------------------------------------------------------
+        //
+        // null = the platform's own stack for the run's language (ReportTypography). A value here overrides
+        // it for the whole document: the body, the bands, the table, everything that does not carry its own
+        // element font.
+        //
+        // It sits on the PAGE SETUP because that is the one object already persisted in both layout shapes
+        // and already handed to every renderer — so one property covers HTML, the visual designer and the
+        // PDF header instead of three that could drift.
+        //
+        // The VALUE IS VALIDATED against ReportTypography.DesignerFaces before it reaches any CSS. A font
+        // name is a string that ends up inside a style attribute, and an approved list is the only reason
+        // that is safe; see ReportVisualLayoutValidator.
+        public string? FontFamily { get; init; }
+
+        // Base point size for the document. null = the renderer's own default, which differs per renderer
+        // because a data table and a designed page are not read at the same size.
+        public double? FontSizePt { get; init; }
+
         public static ReportPageSetup Default { get; } = new();
+
+        // A copy with the typography replaced. The validator needs it: these are init-only properties, so
+        // sanitising a stored font means producing a new setup rather than assigning over the old one.
+        public ReportPageSetup WithTypography(string? fontFamily, double? fontSizePt) => new()
+        {
+            PageSize = PageSize,
+            Orientation = Orientation,
+            MarginTopMm = MarginTopMm,
+            MarginBottomMm = MarginBottomMm,
+            MarginLeftMm = MarginLeftMm,
+            MarginRightMm = MarginRightMm,
+            Rtl = Rtl,
+            FontFamily = fontFamily,
+            FontSizePt = fontSizePt,
+            ShowHeader = ShowHeader,
+            ShowFooter = ShowFooter,
+            ShowPageNumbers = ShowPageNumbers,
+            RepeatHeaderRow = RepeatHeaderRow,
+        };
 
         public ReportPageSetup With(ReportPageSize? size = null, ReportOrientation? orientation = null, bool? rtl = null) => new()
         {
@@ -138,6 +176,8 @@ namespace CrossBuy.BL.Reporting
             MarginLeftMm = MarginLeftMm,
             MarginRightMm = MarginRightMm,
             Rtl = rtl ?? Rtl,
+            FontFamily = FontFamily,
+            FontSizePt = FontSizePt,
             ShowHeader = ShowHeader,
             ShowFooter = ShowFooter,
             ShowPageNumbers = ShowPageNumbers,

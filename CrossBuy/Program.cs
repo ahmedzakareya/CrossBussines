@@ -177,7 +177,19 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     // tier here because a schedule and the hours worked against it are the same sensitivity — if
     // payroll money ever reaches this data it needs its own tier, and that is a payroll decision.
     .MapPermission(CrossBuy.BL.Reporting.RosterReportPermissions.View,
-        "Admin", "SuperAdmin", "Auditor", "HrManager", "HrOfficer"));
+        "Admin", "SuperAdmin", "Auditor", "HrManager", "HrOfficer")
+    //   admin.orgstructure.reports.view   the administrative structure (dbo.Hierarchicals)
+    //   admin.orgstructure.reports.notes  additionally reveals the free-text Notes column
+    //
+    // HrManager and HrOfficer read the chart for the same reason Storekeeper reads stock: it is the
+    // register of their own working domain. The NOTES tier is not given to them - a note on an
+    // organisational unit is where a reorganisation-in-progress or a remark about a person is written,
+    // so it stays with administration until an owner decides otherwise. Narrow or widen by editing
+    // THESE lines; nothing in the platform changes.
+    .MapPermission(CrossBuy.BL.Reporting.OrgStructureReportPermissions.View,
+        "Admin", "SuperAdmin", "Auditor", "HrManager", "HrOfficer")
+    .MapPermission(CrossBuy.BL.Reporting.OrgStructureReportPermissions.Notes,
+        "Admin", "SuperAdmin"));
 
 // HR Product Batch 1 — employee onboarding. Appended in TAB-2's own region, next to the module's other
 // registration. The service is scoped because it takes the request's DbContext and BusinessContext.
@@ -918,6 +930,48 @@ app.UseAuthorization();
 app.UseMiddleware<CrossBuy.BL.Platform.CompanyScopeMiddleware>();
 
 app.UseHttpsRedirection();
+
+// ---- REPORTING: the platform rows the catalog implies ------------------------------------------
+//
+// EVERY REPORT RENDERS THROUGH A TEMPLATE, by owner's decision, so every registered report needs one
+// to exist. SyncPlatformTemplatesAsync builds a Platform-scope template from each definition — its
+// columns, its sorts, its page setup and a laid-out title/date/table — which is what makes the
+// typeface, the paper, the margins and the heading of ANY report editable in Report Studio instead
+// of being constants in C# that only a developer could change.
+//
+// Both syncs are IDEMPOTENT AND ADDITIVE and both say so in their own headers: they add what is
+// missing and never rewrite or delete, so a deployment whose templates have been customised is left
+// exactly as it is. SyncPlatformCategoriesAsync was written for start-up and had never been called
+// from anywhere.
+//
+// IT MUST NOT STOP THE APPLICATION. A missing template degrades a report to the definition's own
+// defaults; a seeder that throws on boot takes the whole product down. So it is logged and swallowed
+// — the one case where that is the right trade.
+using (var reportingScope = app.Services.CreateScope())
+{
+    try
+    {
+        var library = reportingScope.ServiceProvider.GetRequiredService<CrossBuy.BL.Reporting.IReportLibraryService>();
+        var categories = await library.SyncPlatformCategoriesAsync();
+        var templates = await library.SyncPlatformTemplatesAsync();
+
+        // AFTER the seed, because the rule is about what RUNS: a report resolves Personal before Company
+        // before Platform, so a saved template of the user's own wins and the freshly seeded platform
+        // default is never read. Seeding alone therefore left every template that actually runs falling
+        // back to a font constant in code, which is what "everything renders from the template" forbids.
+        var typography = await library.BackfillTemplateTypographyAsync();
+
+        if (categories > 0 || templates > 0 || typography > 0)
+            app.Logger.LogInformation(
+                "[REPORTING] platform seed: +{Categories} categories, +{Templates} templates, "
+                + "{Typography} templates given an explicit document face.",
+                categories, templates, typography);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "[REPORTING] platform seed failed; reports fall back to definition defaults.");
+    }
+}
 
 app.Run();
 

@@ -119,4 +119,18 @@
     <Folder Include="wwwroot\Files\" />
   </ItemGroup>
 
+  <!--
+    REPORT TYPEFACES TRAVEL INSIDE THE DOCUMENT, so they travel inside the assembly first.
+
+    A report used to name a font and depend on the viewing machine having it; embedding the file lets
+    ReportFontLibrary write it into the document as a data: URI, which is what already makes a PDF look
+    the same everywhere. A manifest resource is used rather than a wwwroot path because a renderer has
+    no content root — a path that resolves in development and not under IIS fails only after deployment.
+
+    Cairo is SIL OFL 1.1; OFL.txt ships beside the file as that licence requires.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="BL\Reporting\Fonts\*.ttf" />
+  </ItemGroup>
+
 </Project>

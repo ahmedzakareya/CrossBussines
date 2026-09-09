@@ -121,9 +121,9 @@
   function reload(){ page=1; load(); }
   function debounced(){ clearTimeout(timer); timer=setTimeout(reload, 300); }
 
-  if (window.jQuery && jQuery(wh).data('select2')) jQuery(wh).on('change', reload); else wh.addEventListener('change', reload);
+  if (window.CB && CB.onSelectChange) CB.onSelectChange(wh, reload); else wh.addEventListener('change', reload);
   instock.addEventListener('change', reload);
-  if (window.jQuery && jQuery(size).data('select2')) jQuery(size).on('change', reload); else size.addEventListener('change', reload);
+  if (window.CB && CB.onSelectChange) CB.onSelectChange(size, reload); else size.addEventListener('change', reload);
   document.getElementById('f_reset').addEventListener('click', function(){
     search.clear(); instock.checked=false; wh.value=''; if(window.jQuery&&jQuery(wh).data('select2')) jQuery(wh).val('').trigger('change.select2'); reload();
   });

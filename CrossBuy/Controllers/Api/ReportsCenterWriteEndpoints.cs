@@ -157,6 +157,18 @@ namespace CrossBuy.Controllers.Api
             public ReportLayout Layout { get; set; } = new();
             public string? ChangeNote { get; set; }
 
+            // THE LAYOUT THE SCREEN WAS SHOWING when this save was made.
+            //
+            // "Save the current setup" produced a template with NO DESIGN: the viewer posts the
+            // parameters it can see, and it cannot see the resolved template's bands, columns, page or
+            // font. So saving the report in front of you created a bare row, and picking it afterwards
+            // rendered a plain table -- the design silently gone, with nothing on screen to say why.
+            //
+            // Naming the base here lets the SERVER, which did the resolving, start from that layout and
+            // lay the posted parameters over it. Ignored when editing an existing template: that one
+            // already has a layout of its own.
+            public int? BaseTemplateId { get; set; }
+
             // OPTIMISTIC CONCURRENCY. The version the client believes it is editing. The service
             // refuses when it no longer matches, so two people editing one company layout produce a
             // visible conflict rather than a silent last-writer-wins overwrite.
@@ -186,6 +198,13 @@ namespace CrossBuy.Controllers.Api
                     return Conflict(new { code = "template_version_stale", current });
             }
 
+            // SAVING THE VIEW KEEPS THE VIEW. A new template inherits the design it was saved from —
+            // bands, columns, sorts, page setup and font — and only the parameters come from the client,
+            // because the parameters are the one part the screen actually knows about.
+            var layout = request.Id == 0
+                ? await InheritLayoutAsync(request, context, ct)
+                : request.Layout;
+
             var result = await _templates.SaveAsync(new ReportTemplateInput
             {
                 Id = request.Id,
@@ -196,7 +215,7 @@ namespace CrossBuy.Controllers.Api
                 TeamId = request.TeamId,
                 CategoryId = request.CategoryId,
                 IsDefault = request.IsDefault,
-                Layout = request.Layout,
+                Layout = layout,
                 ChangeNote = request.ChangeNote,
             }, context, ct);
 
@@ -206,6 +225,56 @@ namespace CrossBuy.Controllers.Api
             return result.Success
                 ? Ok(new { templateId = result.TemplateId, versionNo = result.VersionNo, unchanged = result.Unchanged })
                 : StatusCode(StatusCodes.Status403Forbidden, new { diagnostics = Shape(result.Diagnostics) });
+        }
+
+        // The base layout with the caller's parameters laid over it, or the posted layout unchanged when
+        // there is no base to inherit from.
+        //
+        // AUTHORIZED BY REUSE, not by a new rule: ListAsync already returns only the templates this caller
+        // may see, scope and ownership applied. Membership in that list is the permission. Writing a fresh
+        // check here would put the template visibility rules in a second place, which is how two answers to
+        // one question start to disagree.
+        private async Task<ReportLayout> InheritLayoutAsync(SaveLayoutRequest request,
+            BusinessContext context, CancellationToken ct)
+        {
+            if (request.BaseTemplateId is not > 0) return request.Layout;
+
+            var visible = await _templates.ListAsync(request.ReportCode, context, ct);
+            if (visible.All(t => t.Id != request.BaseTemplateId.Value)) return request.Layout;
+
+            var row = await _db.ReportTemplates.AsNoTracking()
+                .Where(t => t.Id == request.BaseTemplateId.Value && t.DeletedAt == null)
+                .Select(t => new { t.CurrentVersionNo })
+                .FirstOrDefaultAsync(ct);
+            if (row is null) return request.Layout;
+
+            var json = await _db.ReportTemplateVersions.AsNoTracking()
+                .Where(v => v.TemplateId == request.BaseTemplateId.Value && v.VersionNo == row.CurrentVersionNo)
+                .Select(v => v.LayoutJson)
+                .FirstOrDefaultAsync(ct);
+
+            // An unreadable base is not a reason to refuse the save; it is a reason to save what was posted.
+            var baseLayout = ReportLayoutJson.Deserialize(json);
+            if (baseLayout is null) return request.Layout;
+
+            // THE PARAMETERS ARE THE CLIENT'S, everything else is the base's. The screen knows what was
+            // typed into the filter boxes and nothing else about the design, so that is exactly the slice
+            // it is allowed to contribute.
+            return new ReportLayout
+            {
+                VisibleColumns = baseLayout.VisibleColumns,
+                Filters = baseLayout.Filters,
+                Sorts = baseLayout.Sorts,
+                Groupings = baseLayout.Groupings,
+                ShowGrandTotals = baseLayout.ShowGrandTotals,
+                PageSetup = baseLayout.PageSetup,
+                Visual = baseLayout.Visual,
+                TitleOverride = baseLayout.TitleOverride,
+                TitleOverrideEn = baseLayout.TitleOverrideEn,
+                Parameters = request.Layout.Parameters.Count > 0
+                    ? request.Layout.Parameters
+                    : baseLayout.Parameters,
+            };
         }
 
         public sealed class ForkRequest

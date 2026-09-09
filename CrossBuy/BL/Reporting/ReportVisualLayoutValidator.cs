@@ -59,10 +59,12 @@ namespace CrossBuy.BL.Reporting
 
         // An approved list, because a font name reaches the renderer's CSS. "Arial'; background:url(…)" is why
         // this is a list and not a free string.
-        public static readonly string[] ApprovedFonts =
-        {
-            "Inter", "Tahoma", "Arial", "Cairo", "Amiri", "Times New Roman", "Courier New",
-        };
+        //
+        // NOW ONE LIST. It was a literal here and a second literal in Studio's own FONTS array, and they had
+        // already drifted: this one named Amiri, which is not installed on the render host, and neither named
+        // Segoe UI, which is. A designer that offers a face the validator rejects — or a face the machine
+        // cannot draw — produces a layout that fails or looks wrong with nothing to explain it.
+        public static readonly string[] ApprovedFonts = ReportTypography.DesignerFaces;
 
         private static bool IsNumeric(ReportFieldType type) =>
             type is ReportFieldType.Integer or ReportFieldType.Decimal or ReportFieldType.Money;
@@ -97,10 +99,26 @@ namespace CrossBuy.BL.Reporting
             var fields = dataset.Fields.ToDictionary(f => f.Key, StringComparer.Ordinal);
             var contentWidth = ReportPaper.ContentWidthMm(layout.Page);
 
+            // THE PAGE FONT IS VALIDATED like an element font, and for the same reason: it reaches the
+            // sheet's CSS. An unapproved name is dropped back to the platform stack rather than rejected
+            // outright — a stored layout naming a face that has since left the list should still open.
+            var page = layout.Page;
+            if (page.FontFamily != null
+                && !ApprovedFonts.Contains(page.FontFamily, StringComparer.OrdinalIgnoreCase))
+            {
+                Reject(result, strict, $"Font '{page.FontFamily}' is not on the approved list.");
+                page = page.WithTypography(null, page.FontSizePt);
+            }
+            if (page.FontSizePt is { } pt && (pt < 5 || pt > 30))
+            {
+                Reject(result, strict, "A document font size must be between 5 and 30 points.");
+                page = page.WithTypography(page.FontFamily, null);
+            }
+
             var clean = new ReportVisualLayout
             {
                 SchemaVersion = ReportVisualLayout.CurrentSchemaVersion,
-                Page = layout.Page,
+                Page = page,
                 GridMm = layout.GridMm is >= 1 and <= 25 ? layout.GridMm : 5,
                 SnapToGrid = layout.SnapToGrid,
                 Parameters = new Dictionary<string, string?>(),

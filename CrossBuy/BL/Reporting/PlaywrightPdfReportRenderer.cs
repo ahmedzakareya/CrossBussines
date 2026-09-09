@@ -115,6 +115,24 @@ namespace CrossBuy.BL.Reporting
         // `.pageNumber` / `.totalPages` are the placeholder classes the Chromium print pipeline substitutes
         // (Playwright, Puppeteer and Chrome's own print-to-PDF all honour them), so this template is portable
         // across every Chromium-based binding rather than specific to Playwright.
+        //
+        // ------------------------------------------------------------------------------------------------
+        // A <style> BLOCK, NOT A style ATTRIBUTE, and this is not a matter of taste.
+        //
+        // The font stack contains a quoted family — "Segoe UI" — and the attribute was delimited with the
+        // same character, so the emitted markup read:
+        //
+        //     style="…;font-family:Dubai, "Segoe UI", Tahoma, Arial, sans-serif;padding:0 12mm;display:flex…"
+        //                                 ^ the attribute ends here
+        //
+        // Chromium therefore received `font-family:Dubai,` — a trailing comma, which is invalid, so the whole
+        // declaration was DROPPED and the footer fell back to the browser's default sans (Arial on Windows).
+        // That is where the stray ArialMT in every PDF came from: not the document, whose body measured as
+        // one family, but the running footer. The padding, the flex and the justification were lost with it,
+        // which is why the code and the page number sat together instead of at opposite margins.
+        //
+        // A font name will always need quotes eventually, so the fix is to stop putting CSS in an attribute
+        // rather than to pick a stack that happens to survive one.
         private static string BuildFooterTemplate(ReportRenderContext context)
         {
             var pageWord = context.IsArabic ? "صفحة" : "Page";
@@ -122,9 +140,16 @@ namespace CrossBuy.BL.Reporting
             var dir = context.Rtl ? "rtl" : "ltr";
             var code = WebUtility.HtmlEncode(context.View.Definition.Code);
 
-            return $"<div dir=\"{dir}\" style=\"width:100%;font-size:7pt;color:#7e8299;" +
-                   "font-family:'Segoe UI',Tahoma,Arial,sans-serif;padding:0 12mm;display:flex;" +
-                   "justify-content:space-between;\">" +
+            // THE DOCUMENT'S OWN FACE, resolved by the same function the body uses, so the page numbers
+            // are set in the typeface the template chose. Chromium renders this template as a SEPARATE
+            // document that inherits nothing from the body, so a footer left on the platform stack printed
+            // in a different family from the page above it — and on an Arabic report it set the Arabic word
+            // "صفحة" through a Latin stack.
+            var family = ReportTypography.DocumentFamily(context.PageSetup.FontFamily, context.IsArabic);
+
+            return "<style>.cbrep-foot{width:100%;font-size:7pt;color:#7e8299;font-family:" + family + ";" +
+                   "padding:0 12mm;display:flex;justify-content:space-between;}</style>" +
+                   $"<div dir=\"{dir}\" class=\"cbrep-foot\">" +
                    $"<span>{code}</span>" +
                    $"<span>{pageWord} <span class=\"pageNumber\"></span> {ofWord} " +
                    "<span class=\"totalPages\"></span></span></div>";

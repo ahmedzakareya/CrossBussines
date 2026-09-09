@@ -120,7 +120,7 @@
   function debounced(){ clearTimeout(timer); timer=setTimeout(reload, 300); }
 
   [cat, type, status, size].forEach(function(el){
-    if (window.jQuery && jQuery(el).data('select2')) jQuery(el).on('change', reload);
+    if (window.CB && CB.onSelectChange) CB.onSelectChange(el, reload);
     else el.addEventListener('change', reload);
   });
   document.getElementById('f_reset').addEventListener('click', function(){

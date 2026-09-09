@@ -186,6 +186,16 @@ namespace CrossBuy.BL.Reporting
         // §14. The positioned design. Null for a V1 column-list report, which is still a legitimate thing to
         // build — the designer is an addition, not a replacement.
         public ReportVisualLayout? Visual { get; set; }
+
+        // THE STORED PAGE, carried separately from Visual — because the save path used to derive the page
+        // from Visual alone, and a template whose Visual is null (one designed before the visual designer,
+        // or one whose visual failed validation) therefore opened on hardcoded defaults and SAVED them back
+        // over the real ones. Paper, orientation, all four margins, RTL and the document font were lost by
+        // opening a report and pressing save without touching anything.
+        //
+        // Nullable on purpose: null means "this draft is new and has no stored page", which is the only case
+        // where falling back to a default is correct.
+        public ReportPageSetup? PageSetup { get; set; }
     }
 
     public sealed class StudioValidation
@@ -858,6 +868,39 @@ namespace CrossBuy.BL.Reporting
                     Parameters = validation.Parameters,
                     ShowGrandTotals = true,
 
+                    // THE PAGE SETUP WAS NEVER PERSISTED, and everything the designer's page toolbar sets was
+                    // quietly lost with it: paper size, orientation, the four margins, RTL — and, once it
+                    // existed, the document font. The stored layout showed it plainly: two page objects, the
+                    // Visual one carrying what the author chose and the top-level one still at its defaults.
+                    //
+                    // That matters because the two are read by different code. ReportVisualRenderer uses
+                    // Visual.Page, so a positioned report looked right; HtmlReportRenderer and the engine's
+                    // own page geometry read ReportLayout.PageSetup, so anything going through them used A4
+                    // portrait with default margins however the report was designed.
+                    //
+                    // One source: the designed page IS the report's page.
+                    //
+                    // AND NEVER `Default` AS A FALLBACK, which was the second half of the same bug. When a
+                    // draft had no Visual, this wrote A4/portrait/18-16-12-12/no-font over whatever the
+                    // template held — so opening a report and pressing save silently reset its page. The
+                    // fallback is now what the draft CAME IN with; a real default is reached only by a draft
+                    // that has no stored page at all, which is what a new report is.
+                    PageSetup = validation.Visual?.Page ?? draft.PageSetup ?? ReportPageSetup.Default,
+
+                    // THE NAME TYPED IN THE DESIGNER IS THE DOCUMENT'S TITLE.
+                    //
+                    // It was stored only as the TEMPLATE's name — a label for the saved-reports list — so
+                    // renaming a report in Report Studio changed what the list called it and nothing that
+                    // printed. ReportLayout has carried TitleOverride/TitleOverrideEn all along and
+                    // ReportEngine.ResolveTitle already prefers it over the definition's title; nothing was
+                    // filling it.
+                    //
+                    // Both languages, separately: the Arabic box titles an Arabic run and the English box an
+                    // English one. Writing one into both — which an earlier line in this file did for the
+                    // template name — is how a layout ends up with an Arabic string in its English column.
+                    TitleOverride = name,
+                    TitleOverrideEn = nameEn,
+
                     // STRUCTURE, not markup. What is stored is bands, elements and millimetres — never the DOM
                     // the designer happened to build, which §14 forbids and which would make the saved report
                     // un-reopenable the first time the designer's HTML changed.
@@ -908,6 +951,11 @@ namespace CrossBuy.BL.Reporting
                 {
                     TemplateId = templateId,
                     DatasetCode = dataset.DatasetCode,
+
+                    // What the template ACTUALLY stores, so the designer opens on the real page and cannot
+                    // save a default over it. Not filtered by permissions: a margin is not data.
+                    PageSetup = layout.PageSetup,
+
                     Name = resolution.Template.Name,
                     NameEn = resolution.Template.NameEn ?? "",
                     Columns = layout.VisibleColumns.Where(permitted.Contains).ToList(),

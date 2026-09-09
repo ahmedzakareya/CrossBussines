@@ -31,7 +31,9 @@
         {
             <div class="card"><div class="card-header align-items-center py-5"><div class="card-title"><div class="d-flex align-items-center position-relative my-1"><i class="ki-outline ki-magnifier fs-3 position-absolute ms-4"></i><input type="text" id="s" class="form-control form-control-solid w-250px ps-12" placeholder="@SR["Search"]" autocomplete="off" /></div></div></div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table table-row-dashed align-middle fs-6 gy-3" id="t">
-                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;"><th>@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th style="width:160px">@Localizer["Reorder pt"]</th><th style="width:140px">@Localizer["Min"]</th><th style="width:140px">@Localizer["Max"]</th></tr></thead>
+                @* cb-thead-rule instead of a literal #0E4A9E: same rule, read from the token layer,
+                   so a change to the brand ink does not have to be hunted through the views. *@
+                <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0 cb-thead-rule"><th>@SR["Code"]</th><th class="min-w-200px">@SR["Item"]</th><th style="width:160px">@Localizer["Reorder pt"]</th><th style="width:140px">@Localizer["Min"]</th><th style="width:140px">@Localizer["Max"]</th></tr></thead>
                 <tbody class="fw-semibold text-gray-700">
                 @foreach (var r in rows)
                 {
@@ -50,7 +52,7 @@
 @section Scripts {
 <script>
 var whSel=document.getElementById('whSel');
-if(whSel){var go=function(){location.href='?warehouseId='+(whSel.value||'');};if(window.jQuery&&jQuery(whSel).data('select2'))jQuery(whSel).on('change',go);else whSel.addEventListener('change',go);}
+if(whSel){var go=function(){location.href='?warehouseId='+(whSel.value||'');};if(window.CB&&CB.onSelectChange)CB.onSelectChange(whSel,go);else whSel.addEventListener('change',go);}
 var s=document.getElementById('s'); if(s)s.addEventListener('input',function(){var q=(s.value||'').trim().toLowerCase();[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(r){r.style.display=(!q||(r.getAttribute('data-s')||'').toLowerCase().indexOf(q)!==-1)?'':'none';});});
 var save=document.getElementById('save');
 if(save)save.addEventListener('click',function(){function doSave(){var arr=[];[].slice.call(document.querySelectorAll('#t tbody tr')).forEach(function(tr){arr.push({itemId:parseInt(tr.getAttribute('data-item')),reorderPoint:parseFloat(tr.querySelector('.rp').value)||0,minQty:parseFloat(tr.querySelector('.mn').value)||0,maxQty:parseFloat(tr.querySelector('.mx').value)||0});});document.getElementById('settingsJson').value=JSON.stringify(arr);document.getElementById('f').submit();}if(window.CB&&CB.confirm){CB.confirm({type:'edit',text:@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Localizer["Save settings?"].Value))}).then(function(ok){if(ok)doSave();});}else{doSave();}});

@@ -2,11 +2,83 @@
 @model List<InventoryApproval>
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@inject CrossBuy.BL.Communication.ICommActorDirectory Actors
 @{
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
-    var names = ViewBag.EmpNames as Dictionary<int, string> ?? new();
     int myEmp = ViewBag.MyEmpId ?? 0;
-    string emp(int? id) => id != null && names.TryGetValue(id.Value, out var n) ? n : (id != null ? "#" + id : "—");
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+    // ---------------------------------------------------------------------------------------------
+    // EVERY PERSON ON THIS PAGE IS SHOWN WITH THEIR PICTURE.
+    //
+    // ONE query for the whole page. ICommActorDirectory's own contract is "collect the ids first,
+    // resolve them once" - an 80-row inbox names up to 160 people, and a lookup per cell would be
+    // 160 round trips. It returns the name in both languages AND the photo path, which is why it
+    // replaces the name-only dictionary the action used to hand over.
+    //
+    // NOTE for the next build: InventoryController.Approvals still builds ViewBag.EmpNames, which
+    // nothing reads any more. It is a wasted query, not a bug - drop it from the action.
+    // ---------------------------------------------------------------------------------------------
+    var actors = await Actors.ResolveAsync(
+        Model.Select(a => a.RequestedByEmployeeId).Concat(Model.Select(a => a.DecidedByEmployeeId)));
+
+    // A photo path is only usable once it is ROOTED. Url.Content("~" + path) throws
+    // ArgumentException on anything that does not start with '/', and the one time that reached the
+    // shared layout it took EVERY shell-rendered screen to HTTP 500 for the affected employee - see
+    // the note in Controllers/Api/UatSeedController.cs. So the path is rooted before it is used,
+    // and anything without a '.' is not a file name at all (a placeholder like "-") and counts as
+    // no photo rather than as a broken image.
+    string? photoUrl(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var s = raw.Replace("\\", "/").Trim();
+        if (!s.Contains('.')) return null;
+        if (!s.StartsWith("/")) s = "/" + s;
+        return Url.Content("~" + s);
+    }
+
+    // Initials when there is no photo, so the row still carries a face-shaped marker and stays
+    // scannable by person. A grey blank silhouette makes every unphotographed row look identical,
+    // which defeats the reason for putting a picture there.
+    string initials(string name)
+    {
+        var parts = (name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        if (parts.Length == 1) return parts[0].Substring(0, 1);
+        return parts[0].Substring(0, 1) + parts[1].Substring(0, 1);
+    }
+
+    // The person chip: picture (or initials) then the name. Built with HtmlContentBuilder because
+    // Append() encodes and AppendHtml() does not - a name goes through Append, never through string
+    // concatenation into markup.
+    Microsoft.AspNetCore.Html.IHtmlContent person(int? id, bool alignEnd = false)
+    {
+        var b = new Microsoft.AspNetCore.Html.HtmlContentBuilder();
+        if (id == null || id <= 0) { b.AppendHtml("<span class=\"text-gray-400\">&mdash;</span>"); return b; }
+
+        var actor = Actors.Get(actors, id);
+        var name = actor.Display(isAr);
+        var url = photoUrl(actor.AvatarUrl);
+
+        b.AppendHtml("<span class=\"d-flex align-items-center gap-2" + (alignEnd ? " justify-content-end" : "") + "\">");
+        b.AppendHtml("<span class=\"symbol symbol-25px symbol-circle flex-shrink-0\">");
+        if (url != null)
+        {
+            b.AppendHtml("<img src=\"");
+            b.Append(url);
+            b.AppendHtml("\" alt=\"\" />");
+        }
+        else
+        {
+            b.AppendHtml("<span class=\"symbol-label bg-light-primary text-primary fw-bold fs-8\">");
+            b.Append(initials(name));
+            b.AppendHtml("</span>");
+        }
+        b.AppendHtml("</span><span class=\"text-gray-800 fw-semibold text-truncate\">");
+        b.Append(name);
+        b.AppendHtml("</span></span>");
+        return b;
+    }
     string docName(string d) => d switch { "PurchaseOrder" => Localizer["Purchase order"].Value, "StockTransfer" => Localizer["Inter-branch transfer"].Value, "StockCount" => Localizer["Stock count"].Value, _ => d };
     // brand-safe status styling (green approved / red rejected / amber-caution pending — no mint/yellow)
     string stStyle(string s) => s switch { "Approved" => "background:#E7F0FF;color:#0E4A9E;", "Rejected" => "background:#fdeaea;color:#d92d20;", _ => "background:#fef3e2;color:#b96a00;" };
@@ -24,7 +96,8 @@
             <div class="card-body pt-6">
                 <div class="table-responsive">
                 <table class="table align-middle gy-4 mb-0" style="font-variant-numeric:tabular-nums;">
-                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0" style="border-bottom:2px solid #0E4A9E;">
+                    @* cb-thead-rule instead of a literal #0E4A9E - the same rule read from the token layer. *@
+                    <thead><tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0 cb-thead-rule">
                         <th class="ps-4">@Localizer["Document"]</th><th class="text-end">@SR["Amount"]</th><th>@Localizer["Requested by"]</th><th>@SR["Date"]</th><th class="text-center">@SR["Status"]</th><th class="text-end min-w-200px pe-4">@Localizer["Action"]</th>
                     </tr></thead>
                     <tbody class="fw-semibold text-gray-700">
@@ -33,7 +106,7 @@
                         <tr style="border-bottom:1px dashed #eef1f6;">
                             <td class="ps-4"><span class="fw-bold text-gray-900">@docName(a.DocType)</span>@if (a.ResultDocNo != null) { <span class="text-muted fs-7"> · @a.ResultDocNo</span> }</td>
                             <td class="text-end fw-bold text-gray-800">@a.Amount.ToString("N2")</td>
-                            <td class="text-muted">@emp(a.RequestedByEmployeeId)</td>
+                            <td>@person(a.RequestedByEmployeeId)</td>
                             <td class="text-muted">@(a.RequestedAt?.ToString("yyyy-MM-dd HH:mm"))</td>
                             <td class="text-center"><span class="badge fw-bold" style="@stStyle(a.Status)">@stName(a.Status)</span></td>
                             <td class="text-end pe-4">
@@ -53,7 +126,14 @@
                                 }
                                 else
                                 {
-                                    <span class="text-muted fs-7">@stName(a.Status) · @emp(a.DecidedByEmployeeId)</span>
+                                    @* The decision and the person who made it, with their picture. The word
+                                       stays: this column is headed "Action", so it has to say what was done
+                                       and not only who did it. *@
+                                    <span class="d-flex align-items-center gap-2 justify-content-end">
+                                        <span class="text-muted fs-7 flex-shrink-0">@stName(a.Status)</span>
+                                        <span class="text-gray-400">·</span>
+                                        @person(a.DecidedByEmployeeId, alignEnd: true)
+                                    </span>
                                 }
                             </td>
                         </tr>
