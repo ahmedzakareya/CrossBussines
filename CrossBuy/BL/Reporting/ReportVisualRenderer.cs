@@ -42,6 +42,20 @@ namespace CrossBuy.BL.Reporting
 
         // true = the on-screen designer preview (page shadows, no @page). false = a print/PDF document.
         public bool ScreenPreview { get; init; }
+
+        // THE RUN'S OWN KIND, which is not the same question as ScreenPreview.
+        //
+        // ScreenPreview says "this is a fragment for an embedded pane" — a matter of markup. IsPreview
+        // says "this run fetched fewer rows than the real thing would", which is a matter of TRUTH, and a
+        // document that does not admit it is a document someone will act on.
+        public bool IsPreview { get; init; }
+
+        // Whether the fetch hit its ceiling. Read from the view rather than passed twice, so the notice
+        // and the data cannot disagree.
+        public bool Truncated { get; init; }
+
+        // The tones and the identity, so the notice looks like the product rather than like this file.
+        public ReportBranding Branding { get; init; } = ReportBranding.Default;
     }
 
     public interface IReportVisualRenderer
@@ -197,15 +211,31 @@ namespace CrossBuy.BL.Reporting
                   .Append(ctx.Arabic ? "ar" : "en").Append("\"><head><meta charset=\"utf-8\">");
                 sb.Append("<title>").Append(Enc(ctx.ReportTitle)).Append("</title>");
                 sb.Append("<style>");
-                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview, ctx.Arabic);
+                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview, ctx.Arabic, ctx.Branding);
                 sb.Append("</style></head><body class=\"cbv\">");
             }
             else
             {
                 sb.Append("<style>");
-                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview, ctx.Arabic);
+                Css(sb, paperW, paperH, contentW, contentH, page, ctx.ScreenPreview, ctx.Arabic, ctx.Branding);
                 sb.Append("</style><div class=\"cbv\" dir=\"").Append(dir).Append("\">");
             }
+
+            // THE NOTICES, ABOVE THE SHEETS. A designed report printed none at all: these lived only in
+            // the column renderer, so the same run was honest as a plain table and silent as a designed
+            // document — and the designed one is what people hand to someone.
+            //
+            // OUTSIDE the .cbv-page boxes, deliberately. A sheet is a fixed geometry in millimetres and
+            // the engine has already decided how many of them there are; a block placed INSIDE the first
+            // one would push its content past the printable box and add a page nobody asked for. Above
+            // them, the notice sits in the preview pane where it is read and is simply not part of the
+            // paper.
+            //
+            // WHICH MEANS a truncated PRINTED document still says nothing, and that gap is real rather
+            // than closed. Its right home is a band the author controls in Studio, not a block this
+            // renderer injects into someone's layout.
+            if (ctx.IsPreview) ReportNotice.Render(sb, ReportNotice.Kind.Preview, ctx.Arabic);
+            if (ctx.Truncated) ReportNotice.Render(sb, ReportNotice.Kind.Truncated, ctx.Arabic);
 
             for (int p = 0; p < totalPages; p++)
             {
@@ -616,7 +646,7 @@ namespace CrossBuy.BL.Reporting
         // `arabic` is here only for the font stack: the faces are preferred per culture, so the sheet has
         // to know which language the run is in. See ReportTypography.
         private static void Css(StringBuilder sb, double paperW, double paperH, double contentW, double contentH,
-            ReportPageSetup page, bool screen, bool arabic)
+            ReportPageSetup page, bool screen, bool arabic, ReportBranding branding)
         {
             // THE FACE ITSELF, FIRST, before anything can ask for it.
             //
@@ -628,6 +658,7 @@ namespace CrossBuy.BL.Reporting
             ReportFontLibrary.AppendFaceFor(sb, page.FontFamily);
 
             sb.Append("*{box-sizing:border-box;margin:0;padding:0}");
+            ReportNotice.Css(sb, branding);
             // THE TEMPLATE'S FACE, through the same one function the table renderer uses. This sheet once
             // hardcoded Inter,Tahoma,Arial while HtmlReportRenderer hardcoded 'Segoe UI',Tahoma,Arial — the
             // same report in two faces depending on which renderer produced it, and neither changeable by
