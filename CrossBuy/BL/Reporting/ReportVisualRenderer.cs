@@ -36,6 +36,11 @@ namespace CrossBuy.BL.Reporting
         // a file and never holds a path.
         public IReadOnlyDictionary<int, string> Assets { get; init; } = new Dictionary<int, string>();
 
+        // role → data URI: the company's own mark and the branch's, resolved from the tenant's records
+        // rather than uploaded per template. Same rule as Assets — the renderer gets bytes, never a path.
+        public IReadOnlyDictionary<ReportImageRole, string> RoleImages { get; init; } =
+            new Dictionary<ReportImageRole, string>();
+
         public string ReportTitle { get; init; } = "";
         public bool Arabic { get; init; }
         public DateTime Now { get; init; } = DateTime.Now;
@@ -72,7 +77,12 @@ namespace CrossBuy.BL.Reporting
             var (paperW, paperH) = ReportPaper.Oriented(page);
             var contentW = ReportPaper.ContentWidthMm(page);
             var contentH = ReportPaper.ContentHeightMm(page);
-            var dir = page.Rtl ? "rtl" : "ltr";
+            // DIRECTION FOLLOWS THE LANGUAGE, not the stored template flag. `page.Rtl` defaults to
+            // true and is saved with the design, so an Arabic-authored template printed English right
+            // to left — columns mirrored, totals on the wrong edge. The saved design still mirrors
+            // itself, because element X is a distance from the CONTENT START edge emitted as
+            // `inset-inline-start`: one layout, resolved by `dir`.
+            var dir = ctx.Arabic ? "rtl" : "ltr";
 
             var reportHeader = layout.Band(ReportBandKind.ReportHeader);
             var pageHeader = layout.Band(ReportBandKind.PageHeader);
@@ -405,9 +415,18 @@ namespace CrossBuy.BL.Reporting
 
                 case ReportElementKind.Image:
                 {
-                    // A data URI the caller resolved from the asset store. There is no src the browser fetches
-                    // and no path the server reads at render time.
-                    if (e.AssetId is not > 0 || !ctx.Assets.TryGetValue(e.AssetId.Value, out var uri)) return;
+                    // A data URI the caller resolved — from the asset store when the author picked a
+                    // picture, otherwise from the element's ROLE, which is how "the company logo" and "the
+                    // branch logo" become the tenant's own marks instead of a copy pasted into a template.
+                    // Either way there is no src the browser fetches and no path the server reads here.
+                    //
+                    // THE UPLOADED ASSET WINS. An author who chose a picture chose it; the role is the
+                    // fallback, not an override.
+                    string? uri = null;
+                    if (e.AssetId is > 0) ctx.Assets.TryGetValue(e.AssetId.Value, out uri);
+                    if (string.IsNullOrEmpty(uri) && e.ImageRole != ReportImageRole.Custom)
+                        ctx.RoleImages.TryGetValue(e.ImageRole, out uri);
+                    if (string.IsNullOrEmpty(uri)) return;
 
                     var fit = e.Fit switch
                     {
@@ -432,7 +451,8 @@ namespace CrossBuy.BL.Reporting
 
             var text = e.Kind switch
             {
-                ReportElementKind.Text => e.Text ?? "",
+                // The author's own words, in the reader's language when there is one for it.
+                ReportElementKind.Text => TextFor(ctx, e),
                 ReportElementKind.Field => Format(Value(row, e.FieldKey), e, ctx),
                 ReportElementKind.SystemField => System(e.SystemField, ctx, pageNo, totalPages),
                 ReportElementKind.Summary => Format(Summarise(scope, e.FieldKey, e.Aggregate), e, ctx),
@@ -509,9 +529,21 @@ namespace CrossBuy.BL.Reporting
         // "GrandTotal" printed on a document going to a customer, while the DESIGNER showed "Total" the whole
         // time. The definition already carries the bilingual title for every column, so falling back to it
         // makes the printed table agree with the screen the author was looking at, in the reader's language.
+        /// The author's static text in the reader's language. Arabic is the fallback, never the
+        /// other way round: this product is authored in Arabic and an untranslated label must still
+        /// print rather than vanish.
+        private static string TextFor(ReportVisualRenderContext ctx, ReportElement e)
+        {
+            if (ctx.Arabic) return e.Text ?? e.TextEn ?? "";
+            return DisplayName.Or(e.TextEn, e.Text) ?? "";
+        }
+
         private static string HeaderFor(ReportVisualRenderContext ctx, ReportTableColumn c)
         {
-            if (!string.IsNullOrWhiteSpace(c.HeaderText)) return c.HeaderText!;
+            if (!string.IsNullOrWhiteSpace(c.HeaderText) || !string.IsNullOrWhiteSpace(c.HeaderTextEn))
+                return ctx.Arabic
+                    ? (c.HeaderText ?? c.HeaderTextEn)!
+                    : (DisplayName.Or(c.HeaderTextEn, c.HeaderText) ?? c.FieldKey);
 
             var column = ctx.Definition.Columns
                 .FirstOrDefault(x => string.Equals(x.Key, c.FieldKey, StringComparison.Ordinal));

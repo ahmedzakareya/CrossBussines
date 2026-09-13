@@ -12,7 +12,15 @@
     <div id="kt_app_toolbar" class="app-toolbar pt-6 pb-2"><div class="app-container container-fluid d-flex flex-stack">
         <div class="page-title d-flex flex-column justify-content-center gap-1"><h1 class="page-heading text-gray-900 fw-bold fs-3 m-0">@Localizer["Credit Note"] @Model.ReturnNo</h1>
         <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0"><li class="breadcrumb-item text-muted"><a href="@Url.Action("SalesReturns","Accounting")" class="text-muted">@Localizer["Sales returns"]</a></li><li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li><li class="breadcrumb-item text-muted">@Model.ReturnNo</li></ul></div>
-        <div class="d-flex gap-2"><a href="@Url.Action("SalesReturns","Accounting")" class="btn btn-light btn-sm">@SR["Back"]</a><button onclick="window.print()" class="btn btn-primary btn-sm"><i class="ki-outline ki-printer fs-3"></i>@SR["Print"]</button></div>
+        <div class="d-flex gap-2"><a href="@Url.Action("SalesReturns","Accounting")" class="btn btn-light btn-sm">@SR["Back"]</a>@* PRINTED FROM A TEMPLATE, NEVER FROM THE SCREEN. This was window.print(), which prints
+               the page — the toolbar, the sidebar and all — and cannot be redesigned without a
+               deployment. Every layout bound to this screen is read live; a second design authored
+               in Report Studio appears here on its own. *@
+            @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+            {
+                ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.AccountingSalesReturnDetail,
+                DocumentId = Model.ID.ToString(),
+            })</div>
     </div></div>
     <div id="kt_app_content" class="app-content flex-column-fluid"><div class="app-container container-fluid">
         <div class="card mb-5"><div class="card-body py-6"><div class="row g-6">
@@ -38,5 +46,30 @@
                 </table>
             </div></div>
         </div>
+        @* THE SAME THREE PANELS AS THE INVOICE THIS DOCUMENT REVERSES. A return is the document a
+           customer argues about, so leaving it without a discussion thread while its invoice has one
+           is the gap people work around by emailing each other. Both key off the same canonical
+           IEntityRegistry code. *@
+        @{
+            ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.SalesReturn;
+            ViewBag.TimelineEntityId = Model.ID;
+        }
+        @await Html.PartialAsync("_DocEventTimeline")
+
+        @* The conversation endpoints are named HERE, not inside the shared partial: the panel is
+           module-neutral and each screen names the actions its own module answers on. These are the
+           invoice endpoints — they take the entity code and resolve it through one gate, so a family
+           added to that map is served without three more actions. *@
+        @{
+            ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesReturn;
+            ViewBag.ConversationEntityId = Model.ID;
+            ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
+            ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
+            ViewBag.ConversationReactUrl = Url.Action("InvoiceConversationReact", "Accounting");
+        }
+        @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>
+
+@* The shared report dialog — see Views/Shared/_ReportPreviewModal.cshtml. *@
+@await Html.PartialAsync("_ReportPreviewModal", (object)"Sales return")

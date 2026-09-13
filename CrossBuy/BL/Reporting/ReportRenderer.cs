@@ -129,8 +129,21 @@ namespace CrossBuy.BL.Reporting
         // rule the HTML renderer already follows for styles.
         public IReadOnlyDictionary<int, string> Assets { get; init; } = new Dictionary<int, string>();
 
+        // ROLE → data URI, for the pictures that are facts about the TENANT rather than choices made in a
+        // template: the company's logo and the branch's. Resolved by the engine through
+        // IReportOrgImageProvider. An Image element with an asset id still wins — an author who picked a
+        // picture meant that picture — and a role with nothing behind it stays the empty box it was.
+        public IReadOnlyDictionary<ReportImageRole, string> RoleImages { get; init; } =
+            new Dictionary<ReportImageRole, string>();
+
         public bool IsArabic => Culture.TwoLetterISOLanguageName == "ar";
-        public bool Rtl => PageSetup.Rtl;
+
+        // DIRECTION IS A PROPERTY OF THE LANGUAGE. This read PageSetup.Rtl — a flag stored with the
+        // template and defaulting to true — so every report printed right-to-left whatever language
+        // it was rendered in, and an English document came out mirrored. The stored flag stays in the
+        // page setup as the DESIGN direction; what reaches paper follows the culture, and one saved
+        // layout mirrors itself because positions are logical (inset-inline-start), not left/right.
+        public bool Rtl => IsArabic;
 
         public string ColumnTitle(ReportColumn column) => IsArabic ? column.TitleAr : column.TitleEn;
     }

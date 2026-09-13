@@ -22,6 +22,16 @@ namespace CrossBuy.BL.Platform
         public const string SalesInvoice = "SalesInvoice";
         public const string PurchaseInvoice = "PurchaseInvoice";   // slice 2
         public const string Quotation = "Quotation";               // slice 3 (Stage 0)
+        public const string SalesReturn = "SalesReturn";           // the credit note
+        public const string PurchaseOrder = "PurchaseOrder";    // inventory document
+        public const string GoodsReceipt = "GoodsReceipt";     // inventory document
+        public const string SalesOrder = "SalesOrder";       // inventory document
+        public const string DeliveryNote = "DeliveryNote";     // inventory document
+        public const string StockTransfer = "StockTransfer";    // inventory document
+        public const string StockCount = "StockCount";       // inventory document
+        public const string StockWriteOff = "StockWriteOff";    // inventory document
+        public const string LandedCost = "LandedCost";       // inventory document
+        public const string PurchaseReturn = "PurchaseReturn";     // the debit note
         public const string JournalEntry = "JournalEntry";         // slice 3 (Stage 0)
         public const string Customer = "Customer";
         public const string Supplier = "Supplier";
@@ -102,7 +112,136 @@ namespace CrossBuy.BL.Platform
                 // Pilot entity for the kernel: the only type that produces events and renders a timeline.
                 SupportsTimeline = true,
                 SupportsComments = true,
-                SupportsFiles = false, SupportsFollowers = false,
+                // FILES: the conversation panel on this document accepts attachments (owner requirement,
+                // 2026-09-10). CommAttachmentService asks the surface for Attachments before it
+                // stores anything, and the surface reads this flag.
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeAccounting,
+                ListedInRecordPicker = true,
+            },
+            // THE INVENTORY DOCUMENTS. All eight already share one detail view, so registering them
+            // is what lets that one view carry the conversation and the activity panel for every one
+            // of them — a receipt that cannot be discussed while the order it answers can is the gap
+            // people work around by emailing each other.
+            //
+            // SupportsTimeline is true and only some of them have event PRODUCERS today, which is the
+            // honest state: the panel says "no activity yet" until the module publishes for that type.
+            new EntityDefinition
+            {
+                Code = PurchaseOrder,
+                DisplayNameAr = "أمر شراء", DisplayNameEn = "Purchase order",
+                Module = "Inventory", Icon = "ki-outline ki-purchase", Color = "primary",
+                RouteTemplate = "/Inventory/PurchaseOrderDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = GoodsReceipt,
+                DisplayNameAr = "إذن استلام", DisplayNameEn = "Goods receipt",
+                Module = "Inventory", Icon = "ki-outline ki-parcel", Color = "primary",
+                RouteTemplate = "/Inventory/ReceiptDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = SalesOrder,
+                DisplayNameAr = "أمر بيع", DisplayNameEn = "Sales order",
+                Module = "Inventory", Icon = "ki-outline ki-basket", Color = "primary",
+                RouteTemplate = "/Inventory/SalesOrderDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = DeliveryNote,
+                DisplayNameAr = "إذن صرف", DisplayNameEn = "Delivery note",
+                Module = "Inventory", Icon = "ki-outline ki-delivery", Color = "primary",
+                RouteTemplate = "/Inventory/DeliveryDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = StockTransfer,
+                DisplayNameAr = "تحويل مخزني", DisplayNameEn = "Stock transfer",
+                Module = "Inventory", Icon = "ki-outline ki-arrow-right-left", Color = "primary",
+                RouteTemplate = "/Inventory/TransferDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = StockCount,
+                DisplayNameAr = "جرد", DisplayNameEn = "Stock count",
+                Module = "Inventory", Icon = "ki-outline ki-abstract-26", Color = "primary",
+                RouteTemplate = "/Inventory/CountDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = StockWriteOff,
+                DisplayNameAr = "إهلاك مخزون", DisplayNameEn = "Stock write-off",
+                Module = "Inventory", Icon = "ki-outline ki-trash", Color = "primary",
+                RouteTemplate = "/Inventory/WriteOffDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = LandedCost,
+                DisplayNameAr = "تكلفة واردة", DisplayNameEn = "Landed cost",
+                Module = "Inventory", Icon = "ki-outline ki-dollar", Color = "primary",
+                RouteTemplate = "/Inventory/LandedCostDetails?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeInventory,
+                ListedInRecordPicker = true,
+            },
+
+            // THE CREDIT AND DEBIT NOTES. Registered so the three document panels — print, conversation
+            // and activity — work on them exactly as they do on the invoices they reverse. A return is
+            // the document a customer argues about; leaving it without a discussion thread while its
+            // invoice has one is the gap people work around by emailing each other.
+            //
+            // SupportsTimeline is true and there are no PRODUCERS for these types yet, which is the
+            // honest state: the panel renders "no activity yet" until ReceivableService/PayableService
+            // publish return events. It is not wired to something that lies.
+            new EntityDefinition
+            {
+                Code = SalesReturn,
+                DisplayNameAr = "مرتجع مبيعات", DisplayNameEn = "Sales return",
+                Module = "Accounting", Icon = "ki-outline ki-arrow-circle-left", Color = "warning",
+                RouteTemplate = "/Accounting/SalesReturnDetail?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
+                PermissionScope = ScopeAccounting,
+                ListedInRecordPicker = true,
+            },
+            new EntityDefinition
+            {
+                Code = PurchaseReturn,
+                DisplayNameAr = "مرتجع مشتريات", DisplayNameEn = "Purchase return",
+                Module = "Accounting", Icon = "ki-outline ki-arrow-circle-right", Color = "warning",
+                RouteTemplate = "/Accounting/PurchaseReturnDetail?id={id}",
+                SupportsSearch = true, SupportsTimeline = true, SupportsComments = true,
+                SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeAccounting,
                 ListedInRecordPicker = true,
             },
@@ -134,7 +273,10 @@ namespace CrossBuy.BL.Platform
                 SupportsSearch = true, SupportsTimeline = true,
                 // The comments widget (_DocTimeline) is already wired into PurchaseInvoiceDetail.
                 SupportsComments = true,
-                SupportsFiles = false, SupportsFollowers = false,
+                // FILES: the conversation panel on this document accepts attachments (owner requirement,
+                // 2026-09-10). CommAttachmentService asks the surface for Attachments before it
+                // stores anything, and the surface reads this flag.
+                SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeAccounting,
                 // Not offered by the TM-2 record picker before the kernel; keeping it out preserves that.
                 ListedInRecordPicker = false,
@@ -151,7 +293,10 @@ namespace CrossBuy.BL.Platform
                 RouteTemplate = "/Inventory/QuotationDetails?id={id}",
                 SupportsSearch = true, SupportsTimeline = false,
                 SupportsComments = true,     // _DocTimeline is wired on QuotationDetails.cshtml
-                SupportsFiles = false, SupportsFollowers = false,
+                // FILES: the conversation panel on this document accepts attachments (owner requirement,
+                // 2026-09-10). CommAttachmentService asks the surface for Attachments before it
+                // stores anything, and the surface reads this flag.
+                SupportsFiles = true, SupportsFollowers = false,
                 PermissionScope = ScopeInventory,
                 // Never a TM-2 picker type; keeping it out preserves the picker's seven types.
                 ListedInRecordPicker = false,
@@ -513,6 +658,62 @@ namespace CrossBuy.BL.Platform
                     label = await _db.PurchaseInvoices.AsNoTracking()
                         .Where(i => i.ID == entityId && i.CompanyID == companyId)
                         .Select(i => i.InvoiceNo ?? ("#" + i.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case PurchaseOrder:
+                    label = await _db.PurchaseOrders.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.OrderNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case GoodsReceipt:
+                    label = await _db.GoodsReceipts.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.ReceiptNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case SalesOrder:
+                    label = await _db.SalesOrders.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.OrderNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case DeliveryNote:
+                    label = await _db.DeliveryNotes.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.DeliveryNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case StockTransfer:
+                    label = await _db.StockTransfers.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.TransferNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case StockCount:
+                    label = await _db.StockCounts.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.CountNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case StockWriteOff:
+                    label = await _db.StockWriteOffs.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.WriteOffNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case LandedCost:
+                    label = await _db.LandedCosts.AsNoTracking()
+                        .Where(d => d.ID == entityId && d.CompanyID == companyId)
+                        .Select(d => d.LandedNo ?? ("#" + d.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+
+                // THE RESOLVER IS THE TENANCY CHECK, not a label lookup — PlatformPermissionProvider
+                // asks it "does this row exist in the caller's company" before any module role is
+                // consulted, so a registered code with no case here is denied for every action. That
+                // is why the returns' conversation and timeline answered 403 the moment they were
+                // registered and before this was added.
+                case SalesReturn:
+                    label = await _db.SalesReturns.AsNoTracking()
+                        .Where(r => r.ID == entityId && r.CompanyID == companyId)
+                        .Select(r => r.ReturnNo ?? ("#" + r.ID)).FirstOrDefaultAsync(cancellationToken);
+                    break;
+                case PurchaseReturn:
+                    label = await _db.PurchaseReturns.AsNoTracking()
+                        .Where(r => r.ID == entityId && r.CompanyID == companyId)
+                        .Select(r => r.ReturnNo ?? ("#" + r.ID)).FirstOrDefaultAsync(cancellationToken);
                     break;
                 case Quotation:
                     label = await _db.Quotations.AsNoTracking()

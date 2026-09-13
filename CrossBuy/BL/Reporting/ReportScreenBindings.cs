@@ -58,6 +58,20 @@ namespace CrossBuy.BL.Reporting
         public const string InventoryQuotationDetails = "Inventory.QuotationDetails";
         public const string InventoryPurchaseOrderDetail = "Inventory.PurchaseOrderDetail";
         public const string InventoryPurchaseOrders = "Inventory.PurchaseOrders";
+        public const string InventorySalesOrders = "Inventory.SalesOrders";
+        public const string InventoryGoodsReceipts = "Inventory.GoodsReceipts";
+        public const string AccountingPurchaseInvoices = "Accounting.PurchaseInvoices";
+        public const string AccountingSalesInvoices = "Accounting.SalesInvoices";
+        public const string AccountingSalesReturnDetail = "Accounting.SalesReturnDetail";
+        public const string AccountingPurchaseReturnDetail = "Accounting.PurchaseReturnDetail";
+
+        // The inventory document screens — all eight share one view, and each names its own key.
+        public const string InventorySalesOrderDetail = "Inventory.SalesOrderDetail";
+        public const string InventoryReceiptDetail = "Inventory.ReceiptDetail";
+        public const string InventoryDeliveryDetail = "Inventory.DeliveryDetail";
+        public const string InventoryTransferDetail = "Inventory.TransferDetail";
+        public const string InventoryWriteOffDetail = "Inventory.WriteOffDetail";
+        public const string InventoryCountDetail = "Inventory.CountDetail";
     }
 
     public static class ReportScreenBindings
@@ -95,19 +109,82 @@ namespace CrossBuy.BL.Reporting
             },
             new()
             {
+                ScreenKey = ReportScreenKeys.AccountingSalesReturnDetail,
+                ReportCode = TradeDocumentDatasetCodes.SalesReturn,
+                IdParameter = "ReturnId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.AccountingPurchaseReturnDetail,
+                ReportCode = TradeDocumentDatasetCodes.PurchaseReturn,
+                IdParameter = "ReturnId",
+                SortOrder = 10,
+            },
+            new()
+            {
                 ScreenKey = ReportScreenKeys.InventoryPurchaseOrderDetail,
                 ReportCode = TradeDocumentDatasetCodes.PurchaseOrder,
                 IdParameter = "OrderId",
                 SortOrder = 10,
             },
 
-            // The LIST prints its own rows under its own filters. No IdParameter: there is no document.
             new()
             {
-                ScreenKey = ReportScreenKeys.InventoryPurchaseOrders,
-                ReportCode = TradeDocumentDatasetCodes.PurchaseOrderRegister,
+                ScreenKey = ReportScreenKeys.InventorySalesOrderDetail,
+                ReportCode = TradeDocumentDatasetCodes.SalesOrder,
+                IdParameter = "OrderId",
                 SortOrder = 10,
             },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryReceiptDetail,
+                ReportCode = StockDocumentDatasetCodes.GoodsReceipt,
+                IdParameter = "ReceiptId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryDeliveryDetail,
+                ReportCode = StockDocumentDatasetCodes.DeliveryNote,
+                IdParameter = "DeliveryId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryTransferDetail,
+                ReportCode = StockDocumentDatasetCodes.StockTransfer,
+                IdParameter = "TransferId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryWriteOffDetail,
+                ReportCode = StockDocumentDatasetCodes.StockWriteOff,
+                IdParameter = "WriteOffId",
+                SortOrder = 10,
+            },
+            new()
+            {
+                ScreenKey = ReportScreenKeys.InventoryCountDetail,
+                ReportCode = StockDocumentDatasetCodes.StockCount,
+                IdParameter = "CountId",
+                SortOrder = 10,
+            },
+
+            // THE LISTS print their own rows under their own filters. No IdParameter on any of them:
+            // there is no single document to pin, and that absence is what tells the menu it is looking
+            // at a register.
+            new() { ScreenKey = ReportScreenKeys.InventoryPurchaseOrders,
+                    ReportCode = TradeRegisterCodes.PurchaseOrders, SortOrder = 10 },
+            new() { ScreenKey = ReportScreenKeys.InventorySalesOrders,
+                    ReportCode = TradeRegisterCodes.SalesOrders, SortOrder = 10 },
+            new() { ScreenKey = ReportScreenKeys.InventoryGoodsReceipts,
+                    ReportCode = TradeRegisterCodes.GoodsReceipts, SortOrder = 10 },
+            new() { ScreenKey = ReportScreenKeys.AccountingPurchaseInvoices,
+                    ReportCode = TradeRegisterCodes.PurchaseInvoices, SortOrder = 10 },
+            new() { ScreenKey = ReportScreenKeys.AccountingSalesInvoices,
+                    ReportCode = TradeRegisterCodes.SalesInvoices, SortOrder = 10 },
         };
 
         // Everything bound to a screen, in the order it should be offered. Returns empty for an unknown

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Text;
 
 namespace CrossBuy.BL.Reporting
 {
@@ -72,6 +73,7 @@ namespace CrossBuy.BL.Reporting
                 // exact "preview and PDF disagree" defect the one-layout rule exists to prevent.
                 Visual = context.Visual,
                 Assets = context.Assets,
+                RoleImages = context.RoleImages,
             };
 
             var html = _html.BuildPrintDocument(printContext);
@@ -147,7 +149,14 @@ namespace CrossBuy.BL.Reporting
             // "صفحة" through a Latin stack.
             var family = ReportTypography.DocumentFamily(context.PageSetup.FontFamily, context.IsArabic);
 
-            return "<style>.cbrep-foot{width:100%;font-size:7pt;color:#7e8299;font-family:" + family + ";" +
+            // AND THE FACE ITSELF, not only its name. Naming the family was not enough: this template is a
+            // SEPARATE document, so it does not see the body's @font-face either — measured on the PDF's
+            // /BaseFont list, which showed Cairo-Regular and Cairo-Bold for the page and a stray
+            // SegoeUI-Bold that was only ever this footer, setting the Arabic word "صفحة".
+            var face = new StringBuilder();
+            ReportFontLibrary.AppendFaceFor(face, context.PageSetup.FontFamily);
+
+            return "<style>" + face + ".cbrep-foot{width:100%;font-size:7pt;color:#7e8299;font-family:" + family + ";" +
                    "padding:0 12mm;display:flex;justify-content:space-between;}</style>" +
                    $"<div dir=\"{dir}\" class=\"cbrep-foot\">" +
                    $"<span>{code}</span>" +

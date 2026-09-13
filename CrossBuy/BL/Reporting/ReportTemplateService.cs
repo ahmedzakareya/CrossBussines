@@ -467,6 +467,29 @@ namespace CrossBuy.BL.Reporting
                 template.Name = input.Name.Trim();
                 template.NameEn = input.NameEn?.Trim();
                 template.CategoryId = input.CategoryId;
+
+                // PUBLISHING AN EXISTING LAYOUT. Scope used to be set only when CREATING, so "promote my
+                // draft to the company standard" could only be done by forking a copy and leaving two
+                // templates where the author wanted one.
+                //
+                // Gated on MANAGE, which the access check above has already required for Edit — and
+                // Manage is what an owner and an administrator hold, not a Run-only viewer. Platform is
+                // refused further up for everyone, so this cannot publish to other tenants.
+                if (input.Scope != template.Scope)
+                {
+                    if (decision.EffectiveLevel < ReportAccessLevel.Manage)
+                        return ReportTemplateSaveResult.Fail(ReportDiagnostic.Error(CodeTemplateDenied,
+                            "Changing who a template is for needs Manage on it."));
+
+                    template.Scope = input.Scope;
+
+                    // A team template must name its team; every other scope must NOT keep a stale one.
+                    template.TeamId = input.Scope == ReportTemplateScope.Team ? input.TeamId : null;
+
+                    // The default is per (company, report, scope, owner). A template that moves scope
+                    // would otherwise arrive as a second default in its new home.
+                    template.IsDefault = false;
+                }
                 template.updatedBy = context.EmployeeId;
                 template.UpdatedAt = now;
 

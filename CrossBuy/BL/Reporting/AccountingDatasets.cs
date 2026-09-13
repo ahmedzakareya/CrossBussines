@@ -797,6 +797,18 @@ namespace CrossBuy.BL.Reporting
 
                 yield return Build(document, "ki-outline ki-bill", "success", 150, sort);
             }
+
+            // THE WAREHOUSE DOCUMENTS. Same treatment as the priced ones — a document reads in LINE
+            // order — but a separate builder, because a receipt has a warehouse and a cost where an
+            // invoice has a customer and a price. See StockDocumentDatasets.
+            foreach (var document in StockDocumentDatasets.All())
+                yield return Build(document, "ki-outline ki-parcel", "primary", 155, ReportSort.By("LineNo"));
+
+            // THE REGISTERS. A list's report, sorted newest first, which is the order the list itself
+            // shows and therefore the only order a printed copy of it may arrive in.
+            foreach (var register in TradeRegisterDatasets.All())
+                yield return Build(register, "ki-outline ki-questionnaire-tablet", "info", 160,
+                    ReportSort.By("DocumentDate", descending: true));
         }
 
         internal static ReportDefinition Build(ReportDatasetDefinition dataset, string icon, string color,

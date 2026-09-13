@@ -108,6 +108,26 @@
                            placeholder="Report name (Arabic)" aria-label="Report name (Arabic)" dir="rtl" />
                 }
 
+                @* WHO THE LAYOUT IS FOR — the thing a designer could never say.
+                   ReportStudioService saved every draft as Personal, so a layout built here was
+                   invisible to the colleague printing the same invoice.
+
+                   PERSONAL and COMPANY only. Team is a real scope and the service supports it, but it
+                   needs a team PICKER and the Reports Centre already has that machinery; offering a
+                   scope here with no way to name its team would be a control that saves a refusal.
+                   Platform is absent because a tenant may never write one — the service refuses it. *@
+                <div class="d-flex align-items-center gap-2">
+                    <label class="fs-8 fw-semibold text-muted" for="cbd-scope">@(arabic ? "متاح لـ" : "Available to")</label>
+                    <select id="cbd-scope" class="form-select form-select-sm w-150px">
+                        <option value="3">@(arabic ? "أنا فقط" : "Only me")</option>
+                        <option value="1">@(arabic ? "كل الشركة" : "The whole company")</option>
+                    </select>
+                    <div class="form-check form-check-sm form-check-custom" title="@(arabic ? "النموذج الذي يُطبع تلقائيًا" : "The layout that prints by default")">
+                        <input id="cbd-default" class="form-check-input" type="checkbox" />
+                        <label class="form-check-label fs-8 fw-semibold" for="cbd-default">@(arabic ? "افتراضي" : "Default")</label>
+                    </div>
+                </div>
+
                 @* NEW and CLEAR are PAGE-level, and they sit here rather than beside the canvas footer's
                    Delete on purpose: that button removes what is SELECTED, these two remove the DESIGN.
                    Both ask before acting — neither is a click anyone wants to make by accident. *@
@@ -902,6 +922,7 @@
         { id: "line-v",  icon: "ki-text-italic",       label: AR ? "خط رأسي"         : "Vertical line",  make: function () { return el(KIND.Line, { widthMm: 0.4, heightMm: 20, style: { borderStyle: 1, borderColor: "#000000" } }); } },
         { id: "rect",    icon: "ki-abstract-41",       label: AR ? "مستطيل"          : "Rectangle",      make: function () { return el(KIND.Rectangle, { widthMm: 50, heightMm: 20, style: { borderStyle: 1, borderColor: "#000000" } }); } },
         { id: "logo",    icon: "ki-picture",           label: AR ? "شعار الشركة"     : "Company logo",   make: function () { return el(KIND.Image, { imageRole: 1, widthMm: 35, heightMm: 18 }); } },
+        { id: "brlogo",  icon: "ki-shop",              label: AR ? "شعار الفرع"      : "Branch logo",    make: function () { return el(KIND.Image, { imageRole: 4, widthMm: 30, heightMm: 16 }); } },
         { id: "sign",    icon: "ki-pencil",            label: AR ? "توقيع"           : "Signature",      make: function () { return el(KIND.Image, { imageRole: 2, widthMm: 40, heightMm: 18 }); } },
         { id: "stamp",   icon: "ki-shield-tick",       label: AR ? "ختم"             : "Stamp",          make: function () { return el(KIND.Image, { imageRole: 3, widthMm: 30, heightMm: 30 }); } },
         { id: "image",   icon: "ki-picture",           label: AR ? "صورة"            : "Image",          make: function () { return el(KIND.Image, { imageRole: 0, widthMm: 35, heightMm: 25 }); } },
@@ -921,7 +942,7 @@
     function el(kind, over) {
         var e = {
             id: uid(), kind: kind, xMm: 5, yMm: 3, widthMm: 40, heightMm: 6, z: 0,
-            text: null, fieldKey: null, systemField: SYS.CurrentDate, aggregate: AGG.Sum,
+            text: null, textEn: null, fieldKey: null, systemField: SYS.CurrentDate, aggregate: AGG.Sum,
             assetId: null, imageRole: 0, fit: 0, preserveAspect: true, columns: [],
             style: {
                 fontFamily: null, fontSizePt: 9, bold: false, italic: false, underline: false,
@@ -1171,7 +1192,9 @@
                     return "<img src='/api/reports/studio/assets/" + encodeURIComponent(e.assetId) + "' alt='' " +
                            "style='object-fit:" + ["contain", "cover", "fill"][e.fit || 0] + "'>";
                 }
-                var roles = [AR ? "صورة" : "Image", AR ? "شعار" : "Logo", AR ? "توقيع" : "Signature", AR ? "ختم" : "Stamp"];
+                var roles = [AR ? "صورة" : "Image", AR ? "شعار الشركة" : "Company logo",
+                             AR ? "توقيع" : "Signature", AR ? "ختم" : "Stamp",
+                             AR ? "شعار الفرع" : "Branch logo"];
                 return "<span class='text-muted fs-8'><i class='ki-outline ki-picture fs-5 me-1'></i>" + esc(roles[e.imageRole] || "") + "</span>";
             }
             case KIND.Line:
@@ -1733,8 +1756,16 @@
         h.push("<div class='separator my-3'></div>");
 
         if (e.kind === KIND.Text) {
-            h.push(row(AR ? "النص" : "Text",
+            h.push(row(AR ? "النص (عربي)" : "Text (Arabic)",
                 "<textarea id='p-text' rows='2' class='form-control form-control-sm'>" + esc(e.text || "") + "</textarea>"));
+
+            @* THE ENGLISH TWIN, captured beside the Arabic rather than translated afterwards. Left
+               empty the document prints the Arabic in both languages, which is what it did before
+               this existed — so an old template loses nothing by not having one. *@
+            h.push(row(AR ? "النص (إنجليزي)" : "Text (English)",
+                "<textarea id='p-text-en' rows='2' class='form-control form-control-sm' " +
+                "placeholder='" + esc(AR ? "يُطبع عند اختيار الإنجليزية" : "printed when the report is in English") + "'>" +
+                esc(e.textEn || "") + "</textarea>"));
         }
 
         if (e.kind === KIND.Field || e.kind === KIND.Summary) {
@@ -1762,8 +1793,13 @@
         }
 
         if (e.kind === KIND.Image) {
+            @* THE ROLE IS NOT DECORATION. "شعار الشركة" and "شعار الفرع" are RESOLVED at print time from
+               the tenant's own records, so a box with one of those roles and no uploaded picture is not
+               empty — it is the company's mark, and it stays correct when the company changes its logo or
+               the document is printed by another branch. Every other role is just a label on a picture. *@
             h.push(row(AR ? "الدور" : "Role", select("p-role", [
-                { v: 1, t: AR ? "شعار" : "Logo" }, { v: 2, t: AR ? "توقيع" : "Signature" },
+                { v: 1, t: AR ? "شعار الشركة" : "Company logo" }, { v: 4, t: AR ? "شعار الفرع" : "Branch logo" },
+                { v: 2, t: AR ? "توقيع" : "Signature" },
                 { v: 3, t: AR ? "ختم" : "Stamp" }, { v: 0, t: AR ? "أخرى" : "Other" }
             ], e.imageRole)));
             // THE UPLOAD BUTTON BELONGS HERE TOO, beside the picker that needs it.
@@ -1936,6 +1972,7 @@
         });
 
         on("p-text", "input", function () { e.text = $("p-text").value; renderCanvas(); });
+        on("p-text-en", "input", function () { e.textEn = $("p-text-en").value; renderCanvas(); });
         on("p-field", "change", function () { edit(function () { e.fieldKey = $("p-field").value || null; }); });
         on("p-agg", "change", function () { edit(function () { e.aggregate = parseInt($("p-agg").value, 10); }); });
         on("p-sys", "change", function () { edit(function () { e.systemField = parseInt($("p-sys").value, 10); }); });
@@ -2278,6 +2315,12 @@
             sorts: S.sorts,
             parameters: S.parameters,
             pageSize: 200,
+
+            // WHO IT IS FOR. A draft that does not say is Personal, which is what every layout designed
+            // here silently was before this control existed.
+            scope: parseInt(($("cbd-scope") || {}).value || "3", 10),
+            isDefault: !!(($("cbd-default") || {}).checked),
+
             visual: S.layout
         };
     }
@@ -2517,6 +2560,30 @@
 
         $("cbd-name").value = dr.name || "";
         $("cbd-name-en").value = dr.nameEn || "";
+
+        // WHO IT IS FOR, from the template rather than from a default. A control that opened on a
+        // guess would re-scope the layout on the next save — a personal draft silently published, or
+        // worse, a company standard quietly made private.
+        //
+        // A scope this designer does not offer (Team, Platform) is SHOWN AS IT IS by adding it to the
+        // list rather than falling back to "only me": the author must not be able to change what they
+        // cannot see, and pressing save must not move a team layout out of its team.
+        var scopeSel = $("cbd-scope");
+        if (scopeSel) {
+            var sc = (dr.scope == null) ? 3 : dr.scope;
+            if (!Array.prototype.some.call(scopeSel.options, function (o) { return +o.value === +sc; })) {
+                var extra = document.createElement("option");
+                extra.value = sc;
+                extra.textContent = (sc === 2) ? (AR ? "فريق" : "Team")
+                                  : (sc === 0) ? (AR ? "المنصة" : "Platform")
+                                  : String(sc);
+                extra.disabled = true;
+                scopeSel.appendChild(extra);
+            }
+            scopeSel.value = String(sc);
+        }
+        if ($("cbd-default")) { $("cbd-default").checked = !!dr.isDefault; }
+
         $("cbd-dataset").value = S.datasetCode;
         syncPageInputs();
         loadDataset(S.datasetCode);

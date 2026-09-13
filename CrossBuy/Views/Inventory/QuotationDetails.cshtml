@@ -100,11 +100,18 @@
            none on a caller's behalf — before d867505 it hardcoded Accounting's, which would have posted a
            quotation's messages at a permission gate written for invoices. *@
         @{
+            @* THE ACTIVITY PANEL. This was the one document detail screen without it, though the
+               registry has declared Quotation SupportsTimeline all along. *@
+            ViewBag.TimelineEntityType = CrossBuy.BL.Platform.EntityRegistry.Quotation;
+            ViewBag.TimelineEntityId = Model.ID;
+
             ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.Quotation;
             ViewBag.ConversationEntityId = Model.ID;
             ViewBag.ConversationListUrl = Url.Action("QuotationConversation", "Inventory");
             ViewBag.ConversationAddUrl = Url.Action("QuotationConversationAdd", "Inventory");
+            ViewBag.ConversationReactUrl = Url.Action("QuotationConversationReact", "Inventory");
         }
+        @await Html.PartialAsync("_DocEventTimeline")
         @await Html.PartialAsync("_EntityConversation")
     </div></div>
 </div>

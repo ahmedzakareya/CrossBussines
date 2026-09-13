@@ -96,14 +96,31 @@
 else if (single)
 {
     var e = entries[0];
-    <button type="button" class="btn btn-sm btn-light-primary"
-            data-report-view="@Url_(e.Binding, null, true)"
-            data-report-download="@Url_(e.Binding, null, false)"
-            data-report-label="PDF"
-            data-report-viewable="true"
-            title="@Localizer["Open the printable document"]">
-        <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
-    </button>
+    var only = e.Layouts.Count == 1 ? e.Layouts[0] : null;
+
+    <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-sm btn-light-primary"
+                data-report-view="@Url_(e.Binding, null, true)"
+                data-report-download="@Url_(e.Binding, null, false)"
+                data-report-label="PDF"
+                data-report-viewable="true"
+                title="@Localizer["Open the printable document"]">
+            <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
+        </button>
+
+        @* EDITING IS PART OF PRINTING, on the same control. Without this the only route to a layout was
+           the reports centre — find the report, then press its pencil — which is the detour the viewer's
+           own chips already lost. A screen that can print a layout should be able to change it. *@
+        <a class="btn btn-sm btn-icon btn-light-primary"
+           href="@(only is not null
+                    ? Url.Action("Studio", "Reports", new { open = only.Id })
+                    : Url.Action("Viewer", "Reports", new { id = e.Binding.ReportCode }))"
+           target="_blank" rel="noopener"
+           title="@(only is not null ? Localizer["Edit the layout"].Value : Localizer["Design a layout"].Value)"
+           aria-label="@(only is not null ? Localizer["Edit the layout"].Value : Localizer["Design a layout"].Value)">
+            <i class="ki-outline ki-pencil fs-6"></i>
+        </a>
+    </div>
 }
 else
 {
@@ -111,13 +128,18 @@ else
         @* Metronic's own menu engine (data-kt-menu) rather than Bootstrap's dropdown, so it matches
            every other menu in the product instead of being the same library in a different dialect. *@
         <button type="button" class="btn btn-sm btn-light-primary"
-                data-kt-menu-trigger="click" data-kt-menu-placement="bottom-start"
+                @* PLACEMENT IS CHOSEN, NOT INHERITED — the menu engine's start/end are not direction
+                   aware. Measured on an RTL page: the button sits at 358-460 and "bottom-start" put the
+                   menu at 358-633, i.e. its LEFT edge on the button's left, spilling to the right of the
+                   control instead of hanging under it. "bottom-end" aligns the right edges, which is what
+                   "start" means when the page reads right to left. *@
+                data-kt-menu-trigger="click" data-kt-menu-placement="@(arabic ? "bottom-end" : "bottom-start")"
                 title="@Localizer["Choose a print layout"]">
             <i class="ki-outline ki-printer fs-5"></i>@Localizer["Print"]
             <i class="ki-outline ki-down fs-7 ms-1"></i>
         </button>
 
-        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold fs-7 w-275px py-3"
+        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold fs-7 w-300px py-3"
              data-kt-menu="true">
 
             @for (var i = 0; i < entries.Count; i++)
@@ -150,21 +172,52 @@ else
 
                 @foreach (var layout in e.Layouts)
                 {
-                    <div class="menu-item px-3">
-                        <a href="#" class="menu-link px-3 d-flex align-items-center justify-content-between"
+                    @* THE ROW PRINTS, THE PENCIL EDITS — two SIBLINGS, never nested. An anchor inside an
+                       anchor is invalid and browsers repair it by splitting the outer one, which silently
+                       drops the print binding on the half that follows. *@
+                    <div class="menu-item px-3 d-flex align-items-center" style="min-width:0;">
+                        <a href="#" class="menu-link px-3 flex-grow-1 d-flex align-items-center justify-content-between"
+                           style="min-width:0;overflow:hidden;width:auto;flex:1 1 0;"
                            data-report-view="@Url_(e.Binding, layout.Id, true)"
                            data-report-download="@Url_(e.Binding, layout.Id, false)"
                            data-report-label="PDF · @Name(layout)"
                            data-report-viewable="true"
                            title="@Name(layout)">
-                            <span class="menu-title text-truncate">@Name(layout)</span>
+                            @* THE ELLIPSIS IS A PROPERTY OF A BOX ALLOWED TO BE NARROWER THAN ITS TEXT,
+                               and a flex item is not, by default. Measured: with `text-truncate` alone the
+                               row's own box was 160-460 (the menu) while its pencil sat at 132-157 —
+                               outside the menu entirely — because the name refused to shrink and pushed
+                               everything past the edge. The rule is inline because `min-w-0`, which reads
+                               like a Bootstrap utility, has no rule in this build's CSS at all. *@
+                            <span class="menu-title" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@Name(layout)</span>
 
                             @* The scope, because "the company's layout" and "mine" is a meaningful
                                difference when two of them share a name — and they usually do. *@
                             <span class="badge badge-light fs-9 ms-2 flex-shrink-0">@Localizer[layout.Scope.ToString()]</span>
                         </a>
+
+                        <a class="btn btn-sm btn-icon btn-light w-25px h-25px flex-shrink-0"
+                           href="@Url.Action("Studio", "Reports", new { open = layout.Id })"
+                           target="_blank" rel="noopener"
+                           title="@(layout.Scope == ReportTemplateScope.Platform
+                                     ? Localizer["Edit in Report Studio — saving creates your own copy"].Value
+                                     : Localizer["Edit the layout"].Value)">
+                            <i class="ki-outline ki-pencil fs-7"></i>
+                        </a>
                     </div>
                 }
+
+                @* AND A WAY TO MAKE A NEW ONE. Editing an existing layout is a pencil; starting another is
+                   not, and without this the answer to "I want a second design" was still to leave the
+                   screen and find the report by hand. *@
+                <div class="menu-item px-3">
+                    <a class="menu-link px-3 text-muted"
+                       href="@Url.Action("Viewer", "Reports", new { id = e.Binding.ReportCode })"
+                       target="_blank" rel="noopener">
+                        <span class="menu-icon"><i class="ki-outline ki-plus-square fs-5"></i></span>
+                        <span class="menu-title">@Localizer["Design a layout"]</span>
+                    </a>
+                </div>
             }
         </div>
     </div>

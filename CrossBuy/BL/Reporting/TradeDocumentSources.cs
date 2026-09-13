@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using CrossBuy.Models.Context;
+using CrossBuy.Models.Platform;
 
 namespace CrossBuy.BL.Reporting
 {
@@ -19,6 +20,53 @@ namespace CrossBuy.BL.Reporting
     // AND THE LINES ARE FILTERED BY THE DOCUMENT, not by company: they carry no CompanyID of their own,
     // and they are only ever reached through a header this caller was already allowed to load.
     // ============================================================================================
+    // WHO ISSUED THE DOCUMENT. A printed invoice is the issuing business's paper, and until now the
+    // dataset only knew the counterparty — so a template could head the page with the customer and
+    // nothing else. This reads the company, and the branch the document is being printed FROM.
+    //
+    // THE BRANCH IS THE CONTEXT'S, NOT THE DOCUMENT'S, and that is a fact about the schema rather than a
+    // shortcut: SalesInvoice, PurchaseInvoice, Quotation and PurchaseOrder all carry CompanyID and no
+    // BranchID. So it is BusinessContext.BranchId — the employee's branch — and it stays EMPTY when the
+    // context has none. Falling back to "the company's first branch" would print a fact the business
+    // never recorded, on a document a customer keeps.
+    //
+    // The branch read is filtered by company as well as by id. It comes from the resolved context and not
+    // from a URL, but a source that reaches a row without its tenancy predicate is one refactor away
+    // from being the hole.
+    internal readonly record struct TradeDocumentOrg(
+        string? CompanyName, string? CompanyTaxNo, string? CompanyAddress, string? CompanyPhone,
+        string? BranchName, string? BranchLocation, string? BranchPhone)
+    {
+        public static async Task<TradeDocumentOrg> LoadAsync(
+            CrossDbContext db, BusinessContext context, bool arabic, CancellationToken ct)
+        {
+            var company = await db.Companies.AsNoTracking()
+                .Where(c => c.CompanyID == context.CompanyId)
+                .Select(c => new
+                {
+                    // ComoanyNameAr is the model's own spelling of the Arabic name column.
+                    Name = arabic ? (c.ComoanyNameAr ?? c.CompanyName) : (c.CompanyName ?? c.ComoanyNameAr),
+                    c.TaxNumber, c.Address, c.PhoneNumber,
+                })
+                .FirstOrDefaultAsync(ct);
+
+            var branch = context.BranchId is > 0
+                ? await db.Branches.AsNoTracking()
+                    .Where(b => b.ID == context.BranchId!.Value && b.CompanyID == context.CompanyId)
+                    .Select(b => new
+                    {
+                        Name = arabic ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr),
+                        b.Location, b.PhoneNumber,
+                    })
+                    .FirstOrDefaultAsync(ct)
+                : null;
+
+            return new TradeDocumentOrg(
+                company?.Name, company?.TaxNumber, company?.Address, company?.PhoneNumber,
+                branch?.Name, branch?.Location, branch?.PhoneNumber);
+        }
+    }
+
     internal static class TradeDocumentRows
     {
         // Every source builds the same row, so the shape is written once. A missing key here is a blank
@@ -27,7 +75,7 @@ namespace CrossBuy.BL.Reporting
             int lineNo, string? itemCode, string? description,
             decimal qty, decimal unitPrice, decimal discount, decimal taxRate, decimal lineTotal,
             string? documentNo, DateTime documentDate, string? partyName, string? status, string? notes,
-            decimal subTotal, decimal taxTotal, decimal grandTotal) =>
+            decimal subTotal, decimal taxTotal, decimal grandTotal, TradeDocumentOrg org) =>
             new(StringComparer.Ordinal)
             {
                 ["LineNo"] = lineNo,
@@ -47,6 +95,14 @@ namespace CrossBuy.BL.Reporting
                 ["SubTotal"] = subTotal,
                 ["TaxTotal"] = taxTotal,
                 ["GrandTotal"] = grandTotal,
+
+                ["CompanyName"] = org.CompanyName,
+                ["CompanyTaxNo"] = org.CompanyTaxNo,
+                ["CompanyAddress"] = org.CompanyAddress,
+                ["CompanyPhone"] = org.CompanyPhone,
+                ["BranchName"] = org.BranchName,
+                ["BranchLocation"] = org.BranchLocation,
+                ["BranchPhone"] = org.BranchPhone,
             };
     }
 
@@ -80,6 +136,7 @@ namespace CrossBuy.BL.Reporting
             if (header is null) return builder.Build(totalRowCount: 0);
 
             bool arabic = AccountingSourceHelpers.Arabic(query);
+            var org = await TradeDocumentOrg.LoadAsync(_db, context, arabic, cancellationToken);
 
             // The OVERRIDE WINS when it is set. A one-off customer name typed on the invoice is what the
             // document was issued to, and printing the master record's name instead would make the
@@ -108,7 +165,7 @@ namespace CrossBuy.BL.Reporting
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.InvoiceNo, header.InvoiceDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
-                    header.SubTotal, header.TaxTotal, header.GrandTotal));
+                    header.SubTotal, header.TaxTotal, header.GrandTotal, org));
 
             return builder.Build(truncated, truncated ? null : lines.Count,
                 Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
@@ -144,6 +201,7 @@ namespace CrossBuy.BL.Reporting
             if (header is null) return builder.Build(totalRowCount: 0);
 
             bool arabic = AccountingSourceHelpers.Arabic(query);
+            var org = await TradeDocumentOrg.LoadAsync(_db, context, arabic, cancellationToken);
 
             var party = await _db.Vendors.AsNoTracking()
                 .Where(v => v.ID == header.VendorId)
@@ -167,7 +225,7 @@ namespace CrossBuy.BL.Reporting
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.InvoiceNo, header.InvoiceDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
-                    header.SubTotal, header.TaxTotal, header.GrandTotal));
+                    header.SubTotal, header.TaxTotal, header.GrandTotal, org));
 
             return builder.Build(truncated, truncated ? null : lines.Count,
                 Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
@@ -203,6 +261,7 @@ namespace CrossBuy.BL.Reporting
             if (header is null) return builder.Build(totalRowCount: 0);
 
             bool arabic = AccountingSourceHelpers.Arabic(query);
+            var org = await TradeDocumentOrg.LoadAsync(_db, context, arabic, cancellationToken);
 
             var party = await _db.Customers.AsNoTracking()
                 .Where(c => c.ID == header.CustomerId)
@@ -237,7 +296,7 @@ namespace CrossBuy.BL.Reporting
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.QuoteNo, header.QuoteDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
-                    header.SubTotal, header.TaxTotal, header.GrandTotal));
+                    header.SubTotal, header.TaxTotal, header.GrandTotal, org));
 
             return builder.Build(truncated, truncated ? null : lines.Count,
                 Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
@@ -272,6 +331,7 @@ namespace CrossBuy.BL.Reporting
             if (header is null) return builder.Build(totalRowCount: 0);
 
             bool arabic = AccountingSourceHelpers.Arabic(query);
+            var org = await TradeDocumentOrg.LoadAsync(_db, context, arabic, cancellationToken);
 
             var party = await _db.Vendors.AsNoTracking()
                 .Where(v => v.ID == header.VendorId)
@@ -306,18 +366,18 @@ namespace CrossBuy.BL.Reporting
                     l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
                     header.OrderNo, header.OrderDate, party,
                     AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
-                    header.SubTotal, header.TaxTotal, header.GrandTotal));
+                    header.SubTotal, header.TaxTotal, header.GrandTotal, org));
 
             return builder.Build(truncated, truncated ? null : lines.Count,
                 Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
         }
     }
-    public sealed class PurchaseOrderRegisterSource : IReportDataSource
+    public sealed class SalesReturnDocumentSource : IReportDataSource
     {
         private readonly CrossDbContext _db;
-        public PurchaseOrderRegisterSource(CrossDbContext db) { _db = db; }
+        public SalesReturnDocumentSource(CrossDbContext db) { _db = db; }
 
-        public string Key => TradeDocumentDatasetCodes.PurchaseOrderRegister;
+        public string Key => TradeDocumentDatasetCodes.SalesReturn;
 
         public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
         {
@@ -327,60 +387,179 @@ namespace CrossBuy.BL.Reporting
             var builder = new ReportDataSetBuilder(columns);
             if (context.CompanyId <= 0) return builder.Build(totalRowCount: 0);
 
+            var id = query.Parameters.GetInt("ReturnId");
+            if (id is not > 0) return builder.Build(totalRowCount: 0);
+
+            var header = await _db.SalesReturns.AsNoTracking()
+                .Where(r => r.ID == id.Value && r.CompanyID == context.CompanyId)
+                .Select(r => new
+                {
+                    r.ReturnNo, r.ReturnDate, r.Status, r.Notes,
+                    r.SubTotal, r.TaxTotal, r.GrandTotal, r.CustomerId,
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (header is null) return builder.Build(totalRowCount: 0);
+
             bool arabic = AccountingSourceHelpers.Arabic(query);
-            var search = query.Parameters.GetString("Search");
-            var status = query.Parameters.GetString("Status");
+            var org = await TradeDocumentOrg.LoadAsync(_db, context, arabic, cancellationToken);
 
-            var rows = from o in _db.PurchaseOrders.AsNoTracking().Where(o => o.CompanyID == context.CompanyId)
-                       join v in _db.Vendors.AsNoTracking() on o.VendorId equals v.ID into vj
-                       from v in vj.DefaultIfEmpty()
-                       select new
-                       {
-                           o.ID, o.OrderNo, o.OrderDate, o.Status, o.GrandTotal,
-                           VendorAr = v != null ? v.Name : null,
-                           VendorEn = v != null ? v.NameEn : null,
-                       };
+            var party = await _db.Customers.AsNoTracking()
+                .Where(c => c.ID == header.CustomerId)
+                .Select(c => arabic ? c.Name : (c.NameEn ?? c.Name))
+                .FirstOrDefaultAsync(cancellationToken);
 
-            var applied = new List<ReportFilter>();
-
-            // THE SAME PREDICATE THE SCREEN USES — order number OR either spelling of the vendor. A
-            // register that filtered differently from the list it was printed from would be worse than
-            // no register: the reader would trust it.
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var s = search.Trim();
-                rows = rows.Where(r => (r.OrderNo != null && r.OrderNo.Contains(s))
-                                    || (r.VendorAr != null && r.VendorAr.Contains(s))
-                                    || (r.VendorEn != null && r.VendorEn.Contains(s)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(status))
-            {
-                rows = rows.Where(r => r.Status == status);
-                applied.Add(ReportFilter.Eq("Status", status));
-            }
-
-            int cap = query.MaxRows > 0 ? query.MaxRows : 5000;
-            var fetched = await rows
-                .OrderByDescending(r => r.ID)
+            int cap = query.MaxRows > 0 ? query.MaxRows : TradeDocumentDatasets.MaxRows;
+            var lines = await _db.SalesReturnLines.AsNoTracking()
+                .Where(l => l.SalesReturnId == id.Value)
+                .OrderBy(l => l.LineNo)
                 .Take(cap + 1)
                 .ToListAsync(cancellationToken);
 
-            bool truncated = fetched.Count > cap;
-            if (truncated) fetched = fetched.Take(cap).ToList();
+            bool truncated = lines.Count > cap;
+            if (truncated) lines = lines.Take(cap).ToList();
 
-            foreach (var r in fetched)
-                builder.AddRow(new Dictionary<string, object?>(StringComparer.Ordinal)
+            foreach (var l in lines)
+                builder.AddRow(TradeDocumentRows.Row(
+                    l.LineNo, null, l.ItemDescription,
+                    l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
+                    header.ReturnNo, header.ReturnDate, party,
+                    AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
+                    header.SubTotal, header.TaxTotal, header.GrandTotal, org));
+
+            return builder.Build(truncated, truncated ? null : lines.Count,
+                Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
+        }
+    }
+
+    public sealed class PurchaseReturnDocumentSource : IReportDataSource
+    {
+        private readonly CrossDbContext _db;
+        public PurchaseReturnDocumentSource(CrossDbContext db) { _db = db; }
+
+        public string Key => TradeDocumentDatasetCodes.PurchaseReturn;
+
+        public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            var context = query.Context;
+            var columns = query.RequestedColumns.Count > 0 ? query.RequestedColumns : query.Definition.Columns;
+            var builder = new ReportDataSetBuilder(columns);
+            if (context.CompanyId <= 0) return builder.Build(totalRowCount: 0);
+
+            var id = query.Parameters.GetInt("ReturnId");
+            if (id is not > 0) return builder.Build(totalRowCount: 0);
+
+            var header = await _db.PurchaseReturns.AsNoTracking()
+                .Where(r => r.ID == id.Value && r.CompanyID == context.CompanyId)
+                .Select(r => new
                 {
-                    ["OrderNo"] = r.OrderNo,
-                    ["OrderDate"] = r.OrderDate,
-                    ["VendorName"] = AccountingSourceHelpers.Pick(arabic, r.VendorAr, r.VendorEn),
-                    ["Status"] = AccountingSourceHelpers.StatusLabel(r.Status, arabic),
-                    ["GrandTotal"] = r.GrandTotal,
-                });
+                    r.ReturnNo, r.ReturnDate, r.Status, r.Notes,
+                    r.SubTotal, r.TaxTotal, r.GrandTotal, r.VendorId,
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (header is null) return builder.Build(totalRowCount: 0);
 
-            return builder.Build(truncated, truncated ? null : fetched.Count, applied,
-                new[] { ReportSort.By("OrderDate", descending: true) });
+            bool arabic = AccountingSourceHelpers.Arabic(query);
+            var org = await TradeDocumentOrg.LoadAsync(_db, context, arabic, cancellationToken);
+
+            var party = await _db.Vendors.AsNoTracking()
+                .Where(v => v.ID == header.VendorId)
+                .Select(v => arabic ? v.Name : (v.NameEn ?? v.Name))
+                .FirstOrDefaultAsync(cancellationToken);
+
+            int cap = query.MaxRows > 0 ? query.MaxRows : TradeDocumentDatasets.MaxRows;
+            var lines = await _db.PurchaseReturnLines.AsNoTracking()
+                .Where(l => l.PurchaseReturnId == id.Value)
+                .OrderBy(l => l.LineNo)
+                .Take(cap + 1)
+                .ToListAsync(cancellationToken);
+
+            bool truncated = lines.Count > cap;
+            if (truncated) lines = lines.Take(cap).ToList();
+
+            foreach (var l in lines)
+                builder.AddRow(TradeDocumentRows.Row(
+                    l.LineNo, null, l.ItemDescription,
+                    // A PURCHASE RETURN IS PRICED AT COST, not at a selling price: the line carries
+                    // UnitCost (the average cost at the moment of return) and no discount, because a
+                    // return to a vendor reverses what the stock was worth, not what it was sold for.
+                    l.Qty, l.UnitCost, 0m, l.TaxRate, l.LineTotal,
+                    header.ReturnNo, header.ReturnDate, party,
+                    AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
+                    header.SubTotal, header.TaxTotal, header.GrandTotal, org));
+
+            return builder.Build(truncated, truncated ? null : lines.Count,
+                Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
+        }
+    }
+    public sealed class SalesOrderDocumentSource : IReportDataSource
+    {
+        private readonly CrossDbContext _db;
+        public SalesOrderDocumentSource(CrossDbContext db) { _db = db; }
+
+        public string Key => TradeDocumentDatasetCodes.SalesOrder;
+
+        public async Task<ReportDataSet> FetchAsync(ReportDataQuery query, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(query);
+            var context = query.Context;
+            var columns = query.RequestedColumns.Count > 0 ? query.RequestedColumns : query.Definition.Columns;
+            var builder = new ReportDataSetBuilder(columns);
+            if (context.CompanyId <= 0) return builder.Build(totalRowCount: 0);
+
+            var id = query.Parameters.GetInt("OrderId");
+            if (id is not > 0) return builder.Build(totalRowCount: 0);
+
+            var header = await _db.SalesOrders.AsNoTracking()
+                .Where(o => o.ID == id.Value && o.CompanyID == context.CompanyId)
+                .Select(o => new
+                {
+                    o.OrderNo, o.OrderDate, o.Status, o.Notes,
+                    o.SubTotal, o.TaxTotal, o.GrandTotal, o.CustomerId,
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (header is null) return builder.Build(totalRowCount: 0);
+
+            bool arabic = AccountingSourceHelpers.Arabic(query);
+            var org = await TradeDocumentOrg.LoadAsync(_db, context, arabic, cancellationToken);
+
+            var party = await _db.Customers.AsNoTracking()
+                .Where(c => c.ID == header.CustomerId)
+                .Select(c => arabic ? c.Name : (c.NameEn ?? c.Name))
+                .FirstOrDefaultAsync(cancellationToken);
+
+            int cap = query.MaxRows > 0 ? query.MaxRows : TradeDocumentDatasets.MaxRows;
+
+            // THE ITEM CODE IS JOINED. An order line carries an item id and a free-text description;
+            // an order a warehouse is expected to pick without codes is one they will guess at.
+            var lines = await (
+                from l in _db.SalesOrderLines.AsNoTracking()
+                where l.SalesOrderId == id.Value
+                join it in _db.Items.AsNoTracking() on l.ItemId equals it.ID into ij
+                from it in ij.DefaultIfEmpty()
+                orderby l.LineNo
+                select new
+                {
+                    l.LineNo, l.ItemDescription, l.Qty, l.UnitPrice,
+                    l.DiscountAmount, l.TaxRate, l.LineTotal,
+                    ItemCode = it != null ? it.ItemCode : null,
+                })
+                .Take(cap + 1)
+                .ToListAsync(cancellationToken);
+
+            bool truncated = lines.Count > cap;
+            if (truncated) lines = lines.Take(cap).ToList();
+
+            foreach (var l in lines)
+                builder.AddRow(TradeDocumentRows.Row(
+                    l.LineNo, l.ItemCode, l.ItemDescription,
+                    l.Qty, l.UnitPrice, l.DiscountAmount, l.TaxRate, l.LineTotal,
+                    header.OrderNo, header.OrderDate, party,
+                    AccountingSourceHelpers.StatusLabel(header.Status, arabic), header.Notes,
+                    header.SubTotal, header.TaxTotal, header.GrandTotal, org));
+
+            return builder.Build(truncated, truncated ? null : lines.Count,
+                Array.Empty<ReportFilter>(), new[] { ReportSort.By("LineNo") });
         }
     }
 }

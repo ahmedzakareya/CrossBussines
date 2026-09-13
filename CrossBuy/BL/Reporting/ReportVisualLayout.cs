@@ -62,6 +62,12 @@ namespace CrossBuy.BL.Reporting
         CompanyLogo = 1,
         Signature = 2,
         Stamp = 3,
+
+        // ADDITIVE, and the numbering is why it is safe: stored layouts hold the integer, so a new
+        // member at the end cannot change what an existing template means. The branch is a separate
+        // role rather than "the logo, resolved differently" because a document commonly carries BOTH —
+        // the company on one side and the branch that issued it on the other.
+        BranchLogo = 4,
     }
 
     public enum ReportImageFit
@@ -108,6 +114,10 @@ namespace CrossBuy.BL.Reporting
     {
         public string FieldKey { get; set; } = "";
         public string? HeaderText { get; set; }
+
+        // Same rule as the element's text: a TYPED header is the author's own words and needs both
+        // languages. An untyped one already resolves from the dataset's bilingual title.
+        public string? HeaderTextEn { get; set; }
         public double WidthMm { get; set; } = 25;
         public ReportTextAlign Align { get; set; } = ReportTextAlign.Start;
         public string? Format { get; set; }
@@ -130,6 +140,12 @@ namespace CrossBuy.BL.Reporting
         public int Z { get; set; }
 
         public string? Text { get; set; }
+
+        // THE ENGLISH TWIN. A label typed once printed in one language on a document that had been
+        // switched to the other — beside column headers that DID translate, because those fall back
+        // to the dataset's bilingual titles. Null means "no English yet", and the renderer falls back
+        // to Text, so every existing template keeps printing exactly what it printed before.
+        public string? TextEn { get; set; }
         public string? FieldKey { get; set; }
         public ReportSystemField SystemField { get; set; } = ReportSystemField.CurrentDate;
         public ReportAggregate Aggregate { get; set; } = ReportAggregate.Sum;

@@ -26,7 +26,15 @@ namespace CrossBuy.BL.Reporting
         public const string PurchaseInvoice = "Purchasing.InvoiceDocument";
         public const string Quotation = "Sales.QuotationDocument";
         public const string PurchaseOrder = "Purchasing.OrderDocument";
-        public const string PurchaseOrderRegister = "Purchasing.OrderRegister";
+
+        // The credit and debit notes. Same shape as the invoices they reverse, so they go through the
+        // same Build — a document that reverses an invoice should print as the same house document
+        // with a different name on it.
+        // The sales order belongs HERE, not with the stock documents: it has a customer and a
+        // price, which is exactly what this builder describes.
+        public const string SalesOrder = "Sales.OrderDocument";
+        public const string SalesReturn = "Sales.ReturnDocument";
+        public const string PurchaseReturn = "Purchasing.ReturnDocument";
     }
 
     public static class TradeDocumentDatasets
@@ -129,6 +137,43 @@ namespace CrossBuy.BL.Reporting
                     WidthMm = 60, VisibleByDefault = false,
                 },
 
+                // ---- the ISSUER, so a design can head the document with it -------------------------
+                new ReportDatasetField
+                {
+                    Key = "CompanyName", TitleAr = "الشركة", TitleEn = "Company",
+                    WidthMm = 55, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "CompanyTaxNo", TitleAr = "الرقم الضريبي", TitleEn = "Tax no.",
+                    WidthMm = 30, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "CompanyAddress", TitleAr = "عنوان الشركة", TitleEn = "Company address",
+                    WidthMm = 60, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "CompanyPhone", TitleAr = "هاتف الشركة", TitleEn = "Company phone",
+                    WidthMm = 30, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "BranchName", TitleAr = "الفرع", TitleEn = "Branch",
+                    WidthMm = 40, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "BranchLocation", TitleAr = "موقع الفرع", TitleEn = "Branch location",
+                    WidthMm = 50, VisibleByDefault = false,
+                },
+                new ReportDatasetField
+                {
+                    Key = "BranchPhone", TitleAr = "هاتف الفرع", TitleEn = "Branch phone",
+                    WidthMm = 30, VisibleByDefault = false,
+                },
+
                 // The document's OWN totals, not a sum of the lines. A stored total can differ from the
                 // arithmetic — a header discount, a rounding rule — and the document must print what the
                 // business recorded, not what a report recomputed.
@@ -199,79 +244,29 @@ namespace CrossBuy.BL.Reporting
             "المورّد", "Vendor");
 
 
-        // ---- THE REGISTER, which is not a document ---------------------------------------------
-        //
-        // A list screen prints the rows it is SHOWING, under the filters it is showing them under. That
-        // is one row per order, no lines, and its parameters are the screen's own filters rather than a
-        // document id. Same platform, same menu, same dialog — a different shape of report.
-        //
-        // The filters mirror PurchaseOrdersData exactly: a printed register that quietly disagreed with
-        // the screen it was printed from would be worse than no register at all.
-        public static ReportDatasetDefinition PurchaseOrderRegister() => new()
-        {
-            DatasetCode = TradeDocumentDatasetCodes.PurchaseOrderRegister,
-            Module = "Trade",
-            TitleAr = "سجل أوامر الشراء",
-            TitleEn = "Purchase order register",
-            DescriptionAr = "أوامر الشراء بالحالة والمورّد والإجمالي — بنفس فلاتر الشاشة.",
-            DescriptionEn = "Purchase orders with status, vendor and total — under the screen's own filters.",
-            DataSourceKey = TradeDocumentDatasetCodes.PurchaseOrderRegister,
-            RequiredPermissionKey = AccountingReportPermissions.View,
-            MaxRows = 5000,
-            RowCapPolicy = ReportRowCapPolicy.TruncateAndDeclare,
+        public static ReportDatasetDefinition SalesOrder() => Build(
+            TradeDocumentDatasetCodes.SalesOrder,
+            "أمر بيع", "Sales order",
+            "أمر بيع واحد بكل بنوده: الصنف والكمية والسعر، مع بيانات العميل والإجماليات.",
+            "One sales order with every line: item, quantity and price, with the customer and the totals.",
+            "OrderId", "رقم الأمر الداخلي", "Order id",
+            "العميل", "Customer");
 
-            Fields = new[]
-            {
-                new ReportDatasetField
-                {
-                    Key = "OrderNo", TitleAr = "رقم الأمر", TitleEn = "Order no.", WidthMm = 34,
-                },
-                new ReportDatasetField
-                {
-                    Key = "OrderDate", TitleAr = "التاريخ", TitleEn = "Date",
-                    Type = ReportFieldType.Date, Format = "yyyy-MM-dd", Groupable = true, WidthMm = 26,
-                },
-                new ReportDatasetField
-                {
-                    Key = "VendorName", TitleAr = "المورّد", TitleEn = "Vendor",
-                    Groupable = true, WidthMm = 60,
-                },
-                new ReportDatasetField
-                {
-                    Key = "Status", TitleAr = "الحالة", TitleEn = "Status",
-                    Groupable = true, WidthMm = 24,
-                    SupportedAggregates = new[] { ReportAggregate.Count },
-                },
-                new ReportDatasetField
-                {
-                    Key = "GrandTotal", TitleAr = "الإجمالي", TitleEn = "Total",
-                    Type = ReportFieldType.Money, Align = ReportAlign.End, WidthMm = 30,
-                    SupportedAggregates = new[] { ReportAggregate.Sum },
-                },
-            },
+        public static ReportDatasetDefinition SalesReturn() => Build(
+            TradeDocumentDatasetCodes.SalesReturn,
+            "مرتجع مبيعات", "Sales return",
+            "مرتجع مبيعات واحد بكل بنوده، مع بيانات العميل والإجماليات.",
+            "One sales return with every line, with the customer and the totals.",
+            "ReturnId", "رقم المرتجع الداخلي", "Return id",
+            "العميل", "Customer");
 
-            Parameters = new[]
-            {
-                new ReportParameterDescriptor
-                {
-                    Key = "Search", TitleAr = "بحث", TitleEn = "Search",
-                    HelpTextAr = "رقم الأمر أو اسم المورّد.", HelpTextEn = "Order number or vendor name.",
-                },
-                new ReportParameterDescriptor
-                {
-                    Key = "Status", TitleAr = "الحالة", TitleEn = "Status",
-                    Options = new[]
-                    {
-                        new ReportParameterOption { Value = "Draft", LabelAr = "مسودة", LabelEn = "Draft" },
-                        new ReportParameterOption { Value = "Approved", LabelAr = "معتمد", LabelEn = "Approved" },
-                        new ReportParameterOption { Value = "Received", LabelAr = "مُستلَم", LabelEn = "Received" },
-                        new ReportParameterOption { Value = "Closed", LabelAr = "مُقفل", LabelEn = "Closed" },
-                        new ReportParameterOption { Value = "Cancelled", LabelAr = "ملغى", LabelEn = "Cancelled" },
-                    },
-                },
-                AccountingDatasets.CompanyParam(),
-            },
-        };
+        public static ReportDatasetDefinition PurchaseReturn() => Build(
+            TradeDocumentDatasetCodes.PurchaseReturn,
+            "مرتجع مشتريات", "Purchase return",
+            "مرتجع مشتريات واحد بكل بنوده، مع بيانات المورّد والإجماليات.",
+            "One purchase return with every line, with the vendor and the totals.",
+            "ReturnId", "رقم المرتجع الداخلي", "Return id",
+            "المورّد", "Vendor");
 
         public static IEnumerable<ReportDatasetDefinition> All()
         {
@@ -279,7 +274,9 @@ namespace CrossBuy.BL.Reporting
             yield return PurchaseInvoice();
             yield return Quotation();
             yield return PurchaseOrder();
-            yield return PurchaseOrderRegister();
+            yield return SalesOrder();
+            yield return SalesReturn();
+            yield return PurchaseReturn();
         }
     }
 }

@@ -130,9 +130,10 @@ namespace CrossBuy.BL.Reporting
             IReportDataSourceRegistry dataSources, IReportDataShaper shaper, IReportOutputPipeline output,
             IReportArchiveService archive, IReportHistoryService history, IReportBrandingProvider branding,
             ReportEngineOptions options, IReportClock clock, ILogger<ReportEngine> logger,
-            IReportAssetService? assets = null)
+            IReportAssetService? assets = null, IReportOrgImageProvider? orgImages = null)
         {
             _assets = assets;
+            _orgImages = orgImages;
             _catalog = catalog;
             _authorization = authorization;
             _templates = templates;
@@ -151,6 +152,10 @@ namespace CrossBuy.BL.Reporting
         // OPTIONAL on purpose. A deployment (or a test host) with no asset store still renders every report; it
         // simply has no images to inline. Requiring it would couple every existing report to a V2 table.
         private readonly IReportAssetService? _assets;
+
+        // Same reasoning: a host with no web root and no company images renders every report, without the
+        // letterhead marks. Optional means the scheduler and the tests do not have to know about it.
+        private readonly IReportOrgImageProvider? _orgImages;
 
         // ----------------------------------------------------------------------------------------------
         // ASSET INLINING. The bytes are read through IReportAssetService, which applies the company predicate on
@@ -184,6 +189,43 @@ namespace CrossBuy.BL.Reporting
                         + Convert.ToBase64String(asset.Value.Bytes);
             }
             return map;
+        }
+
+        // ----------------------------------------------------------------------------------------------
+        // THE TENANT'S OWN MARKS. Resolved only when the layout places one — a report with no logo box
+        // does no company read and touches no file, which is why this is keyed off the DESIGN rather than
+        // fetched for every render.
+        //
+        // An element that also carries an asset id is skipped here: the uploaded picture wins in the
+        // renderer, so resolving a role it will not use would be a file read for nothing.
+        // ----------------------------------------------------------------------------------------------
+        private async Task<IReadOnlyDictionary<ReportImageRole, string>> ResolveOrgImagesAsync(
+            ReportVisualLayout? visual, BusinessContext context, CancellationToken cancellationToken)
+        {
+            var empty = (IReadOnlyDictionary<ReportImageRole, string>)new Dictionary<ReportImageRole, string>();
+            if (visual is null || _orgImages is null) return empty;
+
+            var wanted = visual.Bands
+                .SelectMany(b => b.Elements)
+                .Any(e => e.Kind == ReportElementKind.Image
+                          && e.AssetId is not > 0
+                          && (e.ImageRole == ReportImageRole.CompanyLogo || e.ImageRole == ReportImageRole.BranchLogo));
+
+            if (!wanted) return empty;
+
+            try
+            {
+                return await _orgImages.ResolveAsync(context, cancellationToken);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                // A LOGO IS NOT WORTH A FAILED DOCUMENT. The picture is decoration on a page whose numbers
+                // are the point, so a broken image path prints the report without it and says so in the log.
+                _logger.LogWarning(ex, "Report org images could not be resolved for company {CompanyId}.",
+                    context.CompanyId);
+                return empty;
+            }
         }
 
         public async Task<ReportResult> GenerateAsync(ReportRequest request, BusinessContext context,
@@ -363,6 +405,7 @@ namespace CrossBuy.BL.Reporting
                 // V2. Null for every column-list report, which is all of them until somebody designs one.
                 Visual = visual,
                 Assets = await ResolveAssetsAsync(visual, context, cancellationToken),
+                RoleImages = await ResolveOrgImagesAsync(visual, context, cancellationToken),
             };
 
             ReportArtifact artifact;

@@ -1853,6 +1853,12 @@ namespace CrossBuy.Controllers
 			{
 				["SalesInvoice"] = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice,
 				["PurchaseInvoice"] = CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice,
+
+				// The credit and debit notes go through the SAME endpoints. They are the same question
+				// asked of a different table, and three more actions per document family is how a
+				// permission gate ends up written four ways.
+				["SalesReturn"] = CrossBuy.BL.Platform.EntityRegistry.SalesReturn,
+				["PurchaseReturn"] = CrossBuy.BL.Platform.EntityRegistry.PurchaseReturn,
 			};
 
 		/// Resolved outcome of steps 1-3. `Ok == false` carries no detail on purpose.
@@ -1898,11 +1904,25 @@ namespace CrossBuy.Controllers
 
 			// 3 — the ROW, in the caller's own company. Company is in the WHERE clause, never checked
 			// after loading: a row from another company must never be materialised here at all.
-			bool exists = code == CrossBuy.BL.Platform.EntityRegistry.SalesInvoice
-				? await _context.SalesInvoices.AsNoTracking()
-					.AnyAsync(i => i.ID == id && i.CompanyID == ctx.CompanyId, ct)
-				: await _context.PurchaseInvoices.AsNoTracking()
-					.AnyAsync(i => i.ID == id && i.CompanyID == ctx.CompanyId, ct);
+			bool exists = code switch
+			{
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.SalesInvoice =>
+					await _context.SalesInvoices.AsNoTracking()
+						.AnyAsync(i => i.ID == id && i.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.PurchaseInvoice =>
+					await _context.PurchaseInvoices.AsNoTracking()
+						.AnyAsync(i => i.ID == id && i.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.SalesReturn =>
+					await _context.SalesReturns.AsNoTracking()
+						.AnyAsync(r => r.ID == id && r.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.PurchaseReturn =>
+					await _context.PurchaseReturns.AsNoTracking()
+						.AnyAsync(r => r.ID == id && r.CompanyID == ctx.CompanyId, ct),
+
+				// A family in the map with no row check here would be a document nobody verified
+				// exists — refuse rather than fall through to the last table in the chain.
+				_ => false,
+			};
 
 			if (!exists) return new ConversationGate();
 
@@ -1914,7 +1934,8 @@ namespace CrossBuy.Controllers
 		/// than used: a conversation that can list but not add is a worse answer than an honest 503.
 		private (CrossBuy.BL.Communication.ICommThreadService Threads,
 		         CrossBuy.BL.Communication.ICommCommentService Comments,
-		         CrossBuy.BL.Communication.ICommEntitySurface Surface)? TryConversation()
+		         CrossBuy.BL.Communication.ICommEntitySurface Surface,
+		         CrossBuy.BL.Communication.ICommReactionService? Reactions)? TryConversation()
 		{
 			var sp = HttpContext.RequestServices;
 			var threads = sp.GetService(typeof(CrossBuy.BL.Communication.ICommThreadService))
@@ -1923,7 +1944,15 @@ namespace CrossBuy.Controllers
 				as CrossBuy.BL.Communication.ICommCommentService;
 			var surface = sp.GetService(typeof(CrossBuy.BL.Communication.ICommEntitySurface))
 				as CrossBuy.BL.Communication.ICommEntitySurface;
-			return threads is null || comments is null || surface is null ? null : (threads, comments, surface);
+
+			// REACTIONS ARE OPTIONAL WHERE THE OTHER THREE ARE NOT. A deployment without them still has
+			// a working conversation — the panel simply offers no emoji — whereas a conversation that
+			// can list but not add is the half-present pair this method already refuses.
+			var reactions = sp.GetService(typeof(CrossBuy.BL.Communication.ICommReactionService))
+				as CrossBuy.BL.Communication.ICommReactionService;
+
+			return threads is null || comments is null || surface is null
+				? null : (threads, comments, surface, reactions);
 		}
 
 		/// The machine code the browser branches on. A CODE, not a sentence: an unavailable capability
@@ -1968,43 +1997,42 @@ namespace CrossBuy.Controllers
 			var page = await comm.Value.Comments.ListAsync(gate.Context!, thread.Id, null, ct);
 			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 
+			// THE AUTHORS' PHOTOGRAPHS, resolved once for the page rather than per comment. Scoped to
+			// this company by the resolver: an author from outside it comes back with no photo and the
+			// panel falls back to initials, so a thread cannot be used to read staff pictures out of a
+			// company the caller cannot see.
+			var avatars = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
+				_context, gate.Context!, page.Items.Select(c => c.Author.EmployeeId), ct);
+
 			return Json(new
 			{
 				ok = true,
 				threadId = thread.Id,
 				entity = new { code = gate.EntityCode, id },
-				comments = page.Items.Select(c => new
-				{
-					id = c.CommentId,
-					body = c.Body,
-					author = c.Author.Display(isAr),
-					authorEmployeeId = c.Author.EmployeeId,
-					createdAt = c.CreatedAt,
-					editedAt = c.EditedAt,
-					isDeleted = c.IsDeleted,
-					// Mentions come from the platform's own projection. LABELS only — deliberately not
-					// TargetId, TargetKey or ResolvedRecipientCount. Who else was notified, and how many
-					// people a role mention reached, is not this screen's business and leaking the count
-					// would describe the shape of an organisation the caller may not be able to see.
-					mentions = c.Mentions.Select(m => new
-					{
-						display = isAr ? (m.LabelAr ?? m.LabelEn) : (m.LabelEn ?? m.LabelAr),
-					}),
-				}),
+				canReact = comm.Value.Reactions is not null,
+				me = await CrossBuy.BL.Communication.CommPanel.MeAsync(_context, gate.Context!, isAr, ct),
+
+				// ONE PROJECTION for every module that renders this panel — parent, attachments,
+				// reactions and per-comment capabilities included. See CommPanel for what is
+				// deliberately left out (raw storage keys, mention target ids).
+				comments = CrossBuy.BL.Communication.CommPanel.Project(page.Items, isAr, avatars),
 			});
 		}
 
 		// POST /Accounting/InvoiceConversationAdd
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		[RequestSizeLimit(21_000_000)]   // CommPanel.MaxUploadBytes plus the form envelope
 		public async Task<IActionResult> InvoiceConversationAdd(string? entity, int id, string? body,
-			CancellationToken ct = default)
+			long? parentCommentId, IFormFile? file, CancellationToken ct = default)
 		{
 			// The SAME gate as the read. A caller who may not read the invoice may not comment on it,
 			// and the refusal is identical so the write path is not an existence oracle either.
 			var gate = await ConversationGateAsync(entity, id, ct);
 			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
 
-			if (string.IsNullOrWhiteSpace(body))
+			// A MESSAGE MAY BE A FILE. Requiring text would make "here is the signed copy" impossible
+			// to send without typing something to go with it.
+			if (string.IsNullOrWhiteSpace(body) && (file is null || file.Length == 0))
 				return Json(new { ok = false, error = L["Write a comment"].Value });
 
 			var comm = TryConversation();
@@ -2021,16 +2049,90 @@ namespace CrossBuy.Controllers
 					error = L["Conversations are unavailable in this environment"].Value,
 				});
 
+			// NOTHING REACHES DISK BEFORE THE GATE. The upload is staged only after the same permission
+			// check the read path runs, so a refused caller never leaves an orphan file behind — the
+			// ordering ChatController documents as F8-A, for the same reason.
+			CrossBuy.Models.Communication.CommAttachmentRequest? attachment = null;
+			if (file is { Length: > 0 })
+			{
+				// Resolved per request rather than injected: this controller's constructor is long and
+				// shared, and the web root is needed on exactly one path.
+				var env = HttpContext.RequestServices
+					.GetService(typeof(Microsoft.AspNetCore.Hosting.IWebHostEnvironment))
+					as Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
+				if (env is null) return Json(new { ok = false, error = L["The file could not be attached"].Value });
+
+				var (staged, refusal) = await CrossBuy.BL.Communication.CommPanel.StageAsync(
+					file, env.WebRootPath, ct);
+				if (staged is null)
+					return Json(new { ok = false, code = refusal, error = AttachmentRefusalText(refusal) });
+				attachment = staged;
+			}
+
 			// The platform owns body policy, mention parsing, the audit row and any notification fan-out.
 			// Nothing about a comment is re-implemented here, and no second notification channel exists.
 			var added = await comm.Value.Comments.AddAsync(gate.Context!,
 				new CrossBuy.Models.Communication.CommCommentRequest
 				{
 					Entity = reference,
-					Body = body,
+					Body = body ?? "",
+					ParentCommentId = parentCommentId is > 0 ? parentCommentId : null,
+					Attachments = attachment is null ? null : new[] { attachment },
 				}, ct);
 
 			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
+		}
+
+		/// One sentence per machine code, so the browser never has to compose a refusal.
+		private string AttachmentRefusalText(string code) => code switch
+		{
+			CrossBuy.BL.Communication.CommPanel.UploadRefusal.TooLarge =>
+				L["The file is larger than 20 MB"].Value,
+			CrossBuy.BL.Communication.CommPanel.UploadRefusal.Type =>
+				L["This kind of file cannot be attached"].Value,
+			_ => L["The file could not be attached"].Value,
+		};
+
+		// POST /Accounting/InvoiceConversationReact
+		//
+		// The SAME gate as the read, so reacting is not an existence oracle either. The platform decides
+		// whether this caller may react to this comment (CommCommentCapabilities.CanReact) and refuses
+		// on its own terms — this endpoint does not second-guess it.
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> InvoiceConversationReact(string? entity, int id, long commentId,
+			string? key, bool on, CancellationToken ct = default)
+		{
+			var gate = await ConversationGateAsync(entity, id, ct);
+			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+			var comm = TryConversation();
+			if (comm?.Reactions is null) return ConversationUnavailable();
+			if (commentId <= 0 || string.IsNullOrWhiteSpace(key))
+				return Json(new { ok = false, error = L["The reaction could not be saved"].Value });
+
+			try
+			{
+				var summary = on
+					? await comm.Value.Reactions.AddAsync(gate.Context!, commentId, key, ct)
+					: await comm.Value.Reactions.RemoveAsync(gate.Context!, commentId, key, ct);
+
+				return Json(new
+				{
+					ok = true,
+					commentId,
+					reactions = summary.Where(r => r.Count > 0)
+						.Select(r => new { key = r.ReactionKey, count = r.Count, mine = r.Mine }),
+				});
+			}
+			catch (CrossBuy.Models.Communication.CommAccessDeniedException)
+			{
+				// Indistinguishable from "no such comment", as everywhere else on this surface.
+				return NotFound(new { ok = false, code = "not_found" });
+			}
+			catch (CrossBuy.Models.Communication.CommValidationException)
+			{
+				return Json(new { ok = false, error = L["The reaction could not be saved"].Value });
+			}
 		}
 	}
 

@@ -24,7 +24,18 @@
 
         <div class="card">
             <div class="card-header border-0 pt-6"><div class="card-title"><span class="text-muted fs-7" id="resultCount">—</span></div>
-                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap"><select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
+                <div class="card-toolbar d-flex align-items-center gap-2 flex-wrap">
+                    @* The register for this list — every layout bound to the screen, read live. *@
+                    @await Html.PartialAsync("_ReportPrintMenu", new CrossBuy.BL.Reporting.ReportPrintMenuModel
+                    {
+                        ScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.AccountingSalesInvoices,
+                        ExtraParameters = new Dictionary<string, string>(StringComparer.Ordinal)
+                        {
+                            ["Search"] = Context.Request.Query["q"].ToString(),
+                            ["Status"] = Context.Request.Query["status"].ToString(),
+                        },
+                    })
+<select id="f_size" class="form-select form-select-solid form-select-sm w-auto" data-hide-search="true"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></div>
             </div>
             <div class="card-body pt-0"><div class="table-responsive"><table class="table align-middle gy-3" id="t" style="font-variant-numeric:tabular-nums;">
                 <thead><tr class="fw-bold fs-8 text-uppercase text-muted" style="border-bottom:2px solid #0E4A9E;"><th class="ps-4">@Localizer["Invoice No"]</th><th>@SR["Date"]</th><th class="text-end">@SR["Subtotal"]</th><th class="text-end">@SR["Tax"]</th><th class="text-end">@SR["Total"]</th><th class="text-center">@SR["Status"]</th><th class="text-center pe-4">@Localizer["Open"]</th></tr></thead>
@@ -37,7 +48,39 @@
         </div>
     </div></div>
 </div>
+
+@* The shared report dialog — see Views/Shared/_ReportPreviewModal.cshtml. *@
+@await Html.PartialAsync("_ReportPreviewModal", (object)(
+    System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar"
+        ? "سجل فواتير المبيعات" : "Sales invoice register"))
+
 @section Scripts {
+<script>
+/* THE REGISTER FOLLOWS THE FILTERS THE READER CAN SEE.
+   cbServerList applies the filters over AJAX and never touches the address bar, so the print control —
+   rendered server-side from the query string — would otherwise print whatever the url happened to say.
+
+   CAPTURE PHASE: the dialog's own listener is bound on `document` in the bubble phase and reads the
+   attributes this rewrites, so bubbling here would be a race that usually loses. */
+(function () {
+    var val = function (id) { var el = document.getElementById(id); return el ? (el.value || '') : ''; };
+    document.addEventListener('click', function (e) {
+        var link = e.target.closest ? e.target.closest('[data-report-view]') : null;
+        if (!link) { return; }
+        ['data-report-view', 'data-report-download'].forEach(function (attr) {
+            var raw = link.getAttribute(attr);
+            if (!raw) { return; }
+            /* Parsed as a url, not string-replaced: a search term can contain an ampersand, and a regex
+               over a query string is how that becomes two parameters. */
+            var u = new URL(raw, window.location.origin);
+            u.searchParams.set('Search', val('f_q'));
+            u.searchParams.set('Status', val('f_status'));
+            link.setAttribute(attr, u.pathname + u.search);
+        });
+    }, true);
+})();
+</script>
+
 <script>
 cbServerList({ url:'@Url.Action("SalesInvoicesData","Accounting")', exportUrl:'@Url.Action("SalesInvoicesExport","Accounting")', isAr:@(isAr ? "true" : "false"),
   addParams:function(p){ var s=document.getElementById('f_status'); if(s&&s.value)p.set('status',s.value); } });

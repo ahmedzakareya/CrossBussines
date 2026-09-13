@@ -165,11 +165,35 @@ namespace CrossBuy.BL.Reporting
             // quotation without being authored twice.
             services.AddScoped<IReportDataSource, SalesInvoiceDocumentSource>();
             services.AddScoped<IReportDataSource, PurchaseInvoiceDocumentSource>();
+            services.AddScoped<IReportDataSource, SalesReturnDocumentSource>();
+            services.AddScoped<IReportDataSource, SalesOrderDocumentSource>();
+            services.AddScoped<IReportDataSource, GoodsReceiptDocumentSource>();
+            services.AddScoped<IReportDataSource, DeliveryNoteDocumentSource>();
+            services.AddScoped<IReportDataSource, StockTransferDocumentSource>();
+            services.AddScoped<IReportDataSource, StockWriteOffDocumentSource>();
+            services.AddScoped<IReportDataSource, StockCountDocumentSource>();
+            services.AddScoped<IReportDataSource, PurchaseReturnDocumentSource>();
             services.AddScoped<IReportDataSource, QuotationDocumentSource>();
             services.AddScoped<IReportDataSource, PurchaseOrderDocumentSource>();
             services.AddScoped<IReportDataSource, PurchaseOrderRegisterSource>();
+            services.AddScoped<IReportDataSource, SalesOrderRegisterSource>();
+            services.AddScoped<IReportDataSource, GoodsReceiptRegisterSource>();
+            services.AddScoped<IReportDataSource, PurchaseInvoiceRegisterSource>();
+            services.AddScoped<IReportDataSource, SalesInvoiceRegisterSource>();
+
+            foreach (var register in TradeRegisterDatasets.All())
+            {
+                var definition = register;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
 
             foreach (var document in TradeDocumentDatasets.All())
+            {
+                var definition = document;
+                services.AddScoped<IReportDatasetDefinition>(_ => definition);
+            }
+
+            foreach (var document in StockDocumentDatasets.All())
             {
                 var definition = document;
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
@@ -287,6 +311,10 @@ namespace CrossBuy.BL.Reporting
                 return assets;
             });
             services.AddScoped<IReportAssetService, ReportAssetService>();
+
+            // The tenant's own marks for an Image element that carries a ROLE and no upload — the
+            // "company logo" tool in the designer has always produced one of those.
+            services.AddScoped<IReportOrgImageProvider, ReportOrgImageProvider>();
 
             // ---- R3: the user-facing surface --------------------------------------------------------------
             //

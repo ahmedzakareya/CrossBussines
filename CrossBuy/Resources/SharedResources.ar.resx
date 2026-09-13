@@ -828,6 +828,15 @@
   <data name="Only posted invoices can be edited" xml:space="preserve">
     <value>يمكن تعديل الفواتير المُرحّلة فقط</value>
   </data>
+  <data name="Cannot edit {0}: receipt {1} is allocated to it. Unallocate it from Receipts first." xml:space="preserve">
+    <value>لا يمكن تعديل ⁨{0}⁩: سند القبض ⁨{1}⁩ مخصّص عليها. ألغِ التخصيص من سندات القبض أولًا.</value>
+  </data>
+  <data name="Cannot edit {0}: payment {1} is allocated to it. Unallocate it from Payments first." xml:space="preserve">
+    <value>لا يمكن تعديل ⁨{0}⁩: سند الصرف ⁨{1}⁩ مخصّص عليها. ألغِ التخصيص من سندات الصرف أولًا.</value>
+  </data>
+  <data name=" and {0} more" xml:space="preserve">
+    <value> و⁨{0}⁩ غيره</value>
+  </data>
   <data name="Cannot edit: this invoice has an allocated receipt — unallocate it first" xml:space="preserve">
     <value>لا يمكن التعديل: الفاتورة عليها تحصيل مخصّص — ألغِ التخصيص أولًا</value>
   </data>
@@ -3329,4 +3338,31 @@
   <data name="Task templates" xml:space="preserve"><value>قوالب المهام</value></data>
   <data name="Timeline" xml:space="preserve"><value>الجدول الزمني</value></data>
   <data name="Resource view" xml:space="preserve"><value>عرض الموارد</value></data>
+  <data name="The file is larger than 20 MB" xml:space="preserve">
+    <value>حجم الملف أكبر من ٢٠ ميجابايت</value>
+  </data>
+  <data name="This kind of file cannot be attached" xml:space="preserve">
+    <value>لا يمكن إرفاق هذا النوع من الملفات</value>
+  </data>
+  <data name="The file could not be attached" xml:space="preserve">
+    <value>تعذّر إرفاق الملف</value>
+  </data>
+  <data name="The reaction could not be saved" xml:space="preserve">
+    <value>تعذّر حفظ التفاعل</value>
+  </data>
+  <data name="Everything that happens to this record will appear here" xml:space="preserve">
+    <value>كل ما يحدث لهذا السجل سيظهر هنا</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>اليوم</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>أمس</value>
+  </data>
+  <data name="Only the most recent entries are shown" xml:space="preserve">
+    <value>يُعرض أحدث ٢٠٠ حدث فقط — الأقدم غير معروض</value>
+  </data>
+  <data name="just now" xml:space="preserve">
+    <value>الآن</value>
+  </data>
 </root>

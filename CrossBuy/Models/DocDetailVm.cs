@@ -24,6 +24,11 @@ namespace CrossBuy.Models
         // is the honest state: a print button that opens nothing is worse than its absence.
         public string? PrintScreenKey { get; set; }
         public int? DocumentId { get; set; }
+
+        // The canonical IEntityRegistry code for this document. Naming it is ALL the shared view needs
+        // to carry the conversation and the activity timeline — both key off the same code, and a
+        // screen that leaves it null simply renders neither.
+        public string? EntityCode { get; set; }
         public List<DocKv> Header { get; set; } = new();           // header key/value pairs
         public List<DocCol> Columns { get; set; } = new();         // line table columns
         public List<List<string>> Rows { get; set; } = new();      // line rows (cells line up with Columns)

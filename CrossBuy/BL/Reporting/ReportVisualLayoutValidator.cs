@@ -225,8 +225,10 @@ namespace CrossBuy.BL.Reporting
             switch (e.Kind)
             {
                 case ReportElementKind.Text:
-                    // Kept verbatim; ENCODED at render. See the file header.
+                    // Kept verbatim; ENCODED at render. See the file header. BOTH languages: a twin
+                    // dropped here would be silently lost on the first save after it was typed.
                     clean.Text = e.Text ?? "";
+                    clean.TextEn = e.TextEn;
                     break;
 
                 case ReportElementKind.Line:
@@ -327,6 +329,7 @@ namespace CrossBuy.BL.Reporting
                         {
                             FieldKey = field!.Key,
                             HeaderText = column.HeaderText,
+                            HeaderTextEn = column.HeaderTextEn,
                             WidthMm = Math.Clamp(column.WidthMm, 5, contentWidth),
                             Align = column.Align,
                             Format = column.Format,

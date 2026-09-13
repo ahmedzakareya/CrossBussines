@@ -69,6 +69,7 @@
             ViewBag.ConversationEntityId = Model.ID;
             ViewBag.ConversationListUrl = Url.Action("InvoiceConversation", "Accounting");
             ViewBag.ConversationAddUrl = Url.Action("InvoiceConversationAdd", "Accounting");
+            ViewBag.ConversationReactUrl = Url.Action("InvoiceConversationReact", "Accounting");
         }
         @await Html.PartialAsync("_EntityConversation")
     </div></div>

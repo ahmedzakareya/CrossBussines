@@ -183,6 +183,20 @@ namespace CrossBuy.BL.Reporting
         // its option set or its type check by arriving pre-parsed.
         public Dictionary<string, string?> Parameters { get; set; } = new();
 
+        // WHO THE LAYOUT IS FOR. This used to be a constant — Personal — so nothing designed here was
+        // ever visible to a colleague. Null means "leave it as it is", which is what an ordinary save of
+        // an existing template does; a value is an explicit decision by the author.
+        //
+        // Platform is refused by ReportTemplateService: a tenant does not publish to other tenants.
+        public Models.Context.Reporting.ReportTemplateScope? Scope { get; set; }
+
+        // Required when Scope is Team, ignored otherwise — the service refuses a team template with no team.
+        public int? TeamId { get; set; }
+
+        // "This is the one that prints." The service owns the invariant: at most one default per
+        // (company, report, scope, owner), and setting one clears its siblings.
+        public bool IsDefault { get; set; }
+
         // §14. The positioned design. Null for a V1 column-list report, which is still a legitimate thing to
         // build — the designer is an addition, not a replacement.
         public ReportVisualLayout? Visual { get; set; }
@@ -848,18 +862,27 @@ namespace CrossBuy.BL.Reporting
             // one - the same visible result, but recoverable the moment someone types an English name.
             var nameEn = string.IsNullOrWhiteSpace(draft.NameEn) ? null : draft.NameEn.Trim();
 
-            // PERSONAL scope: a Studio draft is the author's until somebody promotes it. Promotion to Company is
-            // an explicit, separately-authorized act (ReportTemplateService), not a side effect of saving.
+            // WHO IT IS FOR, said by the author rather than assumed. This was the constant Personal, and
+            // the comment that stood here claimed promotion was "an explicit, separately-authorized act" —
+            // true of the service, but nothing in the designer could perform it, so every layout ever
+            // designed stayed invisible to everyone else. The act is now available and still authorized:
+            // ReportTemplateService refuses Platform outright, refuses a Team scope with no team, and
+            // checks Manage before it changes an existing template's scope.
             //
-            // The company and the owner are set by SaveAsync from the CONTEXT — this input carries neither, and
-            // there is no field on it that could.
+            // Personal remains the DEFAULT for a draft that does not say — a new design belongs to its
+            // author until they decide otherwise.
+            //
+            // The company and the owner are still set by SaveAsync from the CONTEXT: this input carries
+            // neither, and there is no field on it that could.
             return await _templates.SaveAsync(new ReportTemplateInput
             {
                 Id = draft.TemplateId,
                 ReportCode = validation.Definition!.Code,
                 Name = name,
                 NameEn = nameEn,
-                Scope = ReportTemplateScope.Personal,
+                Scope = draft.Scope ?? ReportTemplateScope.Personal,
+                TeamId = draft.TeamId,
+                IsDefault = draft.IsDefault,
                 Layout = new ReportLayout
                 {
                     // WHAT THE DESIGN BINDS, NOT ONLY WHAT THE COLUMN LIST SAYS.
@@ -984,6 +1007,13 @@ namespace CrossBuy.BL.Reporting
 
                     Name = resolution.Template.Name,
                     NameEn = resolution.Template.NameEn ?? "",
+
+                    // WHO IT IS FOR, so the designer can show it and the author can change it. Without
+                    // this the control would open on a guess and a save would quietly re-scope the
+                    // template to whatever the UI happened to default to.
+                    Scope = resolution.Template.Scope,
+                    TeamId = resolution.Template.TeamId,
+                    IsDefault = resolution.Template.IsDefault,
                     Columns = layout.VisibleColumns.Where(permitted.Contains).ToList(),
                     Filters = layout.Filters
                         .Where(f => permitted.Contains(f.Field))

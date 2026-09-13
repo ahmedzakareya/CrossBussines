@@ -1951,10 +1951,30 @@ namespace CrossBuy.Controllers
 
 		/// Resolved outcome of the gate. Ok == false deliberately carries no detail: a refusal must not
 		/// say whether the quotation is absent, belongs to another company, or is simply not permitted.
+		/// The document families this module answers conversation traffic for. One map, so adding the
+		/// tenth document is a line here and a line in the row check below — not three more actions.
+		private static readonly Dictionary<string, string> InventoryConversationFamilies =
+			new(StringComparer.Ordinal)
+			{
+				["Quotation"] = CrossBuy.BL.Platform.EntityRegistry.Quotation,
+				["PurchaseOrder"] = CrossBuy.BL.Platform.EntityRegistry.PurchaseOrder,
+				["GoodsReceipt"] = CrossBuy.BL.Platform.EntityRegistry.GoodsReceipt,
+				["SalesOrder"] = CrossBuy.BL.Platform.EntityRegistry.SalesOrder,
+				["DeliveryNote"] = CrossBuy.BL.Platform.EntityRegistry.DeliveryNote,
+				["StockTransfer"] = CrossBuy.BL.Platform.EntityRegistry.StockTransfer,
+				["StockCount"] = CrossBuy.BL.Platform.EntityRegistry.StockCount,
+				["StockWriteOff"] = CrossBuy.BL.Platform.EntityRegistry.StockWriteOff,
+				["LandedCost"] = CrossBuy.BL.Platform.EntityRegistry.LandedCost,
+			};
+
 		private sealed class QuotationConversationGate
 		{
 			public bool Ok;
 			public CrossBuy.Models.Platform.BusinessContext? Context;
+
+			/// The canonical code this gate resolved to — the endpoints thread it into the entity
+			/// reference so the thread is attached to the right document family.
+			public string EntityCode = CrossBuy.BL.Platform.EntityRegistry.Quotation;
 		}
 
 		private CrossBuy.BL.Platform.IBusinessContextAccessor? QuotationBusinessContexts =>
@@ -1964,9 +1984,17 @@ namespace CrossBuy.Controllers
 		/// One gate for both endpoints, so read and write cannot drift apart on authorization.
 		/// action is the module ability being claimed: read to load the conversation, doc to add to it.
 		private async Task<QuotationConversationGate> QuotationConversationGateAsync(
-			int id, string action, CancellationToken ct)
+			int id, string action, CancellationToken ct, string? entity = null)
 		{
 			if (id <= 0) return new QuotationConversationGate();
+
+			// An unknown or absent code resolves to the quotation, which is what this endpoint answered
+			// before the other eight documents joined it. An UNKNOWN one refuses: a caller naming a
+			// family this module does not serve must not be silently served a different document.
+			string code = CrossBuy.BL.Platform.EntityRegistry.Quotation;
+			if (!string.IsNullOrWhiteSpace(entity)
+				&& !InventoryConversationFamilies.TryGetValue(entity!, out code!))
+				return new QuotationConversationGate();
 
 			// 1 — COMPANY IS RESOLVED, never assumed. An unresolved scope refuses before any row is read,
 			// and co is not consulted here: the tenant authority for this path is the BusinessContext.
@@ -1989,18 +2017,39 @@ namespace CrossBuy.Controllers
 			if (inventory == null) return new QuotationConversationGate();
 
 			if (!await inventory.CanAsync(ctx, action,
-					CrossBuy.Models.Platform.PermissionTarget.ForEntity(
-						CrossBuy.BL.Platform.EntityRegistry.Quotation, id), ct))
+					CrossBuy.Models.Platform.PermissionTarget.ForEntity(code, id), ct))
 				return new QuotationConversationGate();
 
 			// 3 — THE ROW, in the caller own company. The company predicate is IN THE QUERY, so a
 			// quotation belonging to another company is never materialised — it is not loaded and then
 			// refused, which is what keeps foreign and absent indistinguishable to the caller.
-			bool exists = await _context.Quotations.AsNoTracking()
-				.AnyAsync(q => q.ID == id && q.CompanyID == ctx.CompanyId, ct);
+			// EACH FAMILY CHECKS ITS OWN TABLE. A family in the map with no case here would be a
+			// document nobody verified exists, so the default is REFUSE rather than fall through.
+			bool exists = code switch
+			{
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.Quotation =>
+					await _context.Quotations.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.PurchaseOrder =>
+					await _context.PurchaseOrders.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.GoodsReceipt =>
+					await _context.GoodsReceipts.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.SalesOrder =>
+					await _context.SalesOrders.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.DeliveryNote =>
+					await _context.DeliveryNotes.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.StockTransfer =>
+					await _context.StockTransfers.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.StockCount =>
+					await _context.StockCounts.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.StockWriteOff =>
+					await _context.StockWriteOffs.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				var c when c == CrossBuy.BL.Platform.EntityRegistry.LandedCost =>
+					await _context.LandedCosts.AsNoTracking().AnyAsync(d => d.ID == id && d.CompanyID == ctx.CompanyId, ct),
+				_ => false,
+			};
 			if (!exists) return new QuotationConversationGate();
 
-			return new QuotationConversationGate { Ok = true, Context = ctx };
+			return new QuotationConversationGate { Ok = true, Context = ctx, EntityCode = code };
 		}
 
 		/// The optional platform, asked for and never required. Both services come from ONE registration,
@@ -2008,7 +2057,8 @@ namespace CrossBuy.Controllers
 		/// worse answer than an honest 503.
 		private (CrossBuy.BL.Communication.ICommThreadService Threads,
 		         CrossBuy.BL.Communication.ICommCommentService Comments,
-		         CrossBuy.BL.Communication.ICommEntitySurface Surface)? TryQuotationConversation()
+		         CrossBuy.BL.Communication.ICommEntitySurface Surface,
+		         CrossBuy.BL.Communication.ICommReactionService? Reactions)? TryQuotationConversation()
 		{
 			var sp = HttpContext.RequestServices;
 			var threads = sp.GetService(typeof(CrossBuy.BL.Communication.ICommThreadService))
@@ -2017,7 +2067,14 @@ namespace CrossBuy.Controllers
 				as CrossBuy.BL.Communication.ICommCommentService;
 			var surface = sp.GetService(typeof(CrossBuy.BL.Communication.ICommEntitySurface))
 				as CrossBuy.BL.Communication.ICommEntitySurface;
-			return threads is null || comments is null || surface is null ? null : (threads, comments, surface);
+
+			// Reactions are optional where the other three are not: without them the panel simply
+			// offers no emoji, which is a smaller loss than a thread that lists but cannot be added to.
+			var reactions = sp.GetService(typeof(CrossBuy.BL.Communication.ICommReactionService))
+				as CrossBuy.BL.Communication.ICommReactionService;
+
+			return threads is null || comments is null || surface is null
+				? null : (threads, comments, surface, reactions);
 		}
 
 		/// A machine CODE, not a sentence: the browser must be able to tell "the platform is switched off"
@@ -2035,16 +2092,15 @@ namespace CrossBuy.Controllers
 
 		// GET /Inventory/QuotationConversation?id=123
 		[SessionValidation][HttpGet]
-		public async Task<IActionResult> QuotationConversation(int id, CancellationToken ct = default)
+		public async Task<IActionResult> QuotationConversation(int id, string? entity = null, CancellationToken ct = default)
 		{
-			var gate = await QuotationConversationGateAsync(id, "read", ct);
+			var gate = await QuotationConversationGateAsync(id, "read", ct, entity);
 			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
 
 			var comm = TryQuotationConversation();
 			if (comm == null) return QuotationConversationUnavailable();
 
-			var reference = new CrossBuy.Models.Communication.CommEntityRef(
-				CrossBuy.BL.Platform.EntityRegistry.Quotation, id);
+			var reference = new CrossBuy.Models.Communication.CommEntityRef(gate.EntityCode, id);
 
 			// The registry decides whether this family carries comments — not this controller.
 			var allowed = await comm.Value.Surface.EvaluateAsync(
@@ -2057,33 +2113,31 @@ namespace CrossBuy.Controllers
 			var page = await comm.Value.Comments.ListAsync(gate.Context!, thread.Id, null, ct);
 			bool isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
 
+			// THE AUTHORS' PHOTOGRAPHS, resolved once for the page rather than per comment. Scoped to
+			// this company by the resolver: an author from outside it comes back with no photo and the
+			// panel falls back to initials, so a thread cannot be used to read staff pictures out of a
+			// company the caller cannot see.
+			var avatars = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
+				_context, gate.Context!, page.Items.Select(c => c.Author.EmployeeId), ct);
+
 			return Json(new
 			{
 				ok = true,
 				threadId = thread.Id,
-				entity = new { code = CrossBuy.BL.Platform.EntityRegistry.Quotation, id },
-				comments = page.Items.Select(c => new
-				{
-					id = c.CommentId,
-					body = c.Body,
-					author = c.Author.Display(isAr),
-					authorEmployeeId = c.Author.EmployeeId,
-					createdAt = c.CreatedAt,
-					editedAt = c.EditedAt,
-					isDeleted = c.IsDeleted,
-					// LABELS only — never TargetId, TargetKey or ResolvedRecipientCount. How many people a
-					// role mention reached describes the shape of an organisation the caller may not see.
-					mentions = c.Mentions.Select(m => new
-					{
-						display = isAr ? (m.LabelAr ?? m.LabelEn) : (m.LabelEn ?? m.LabelAr),
-					}),
-				}),
+				entity = new { code = gate.EntityCode, id },
+				canReact = comm.Value.Reactions is not null,
+				me = await CrossBuy.BL.Communication.CommPanel.MeAsync(_context, gate.Context!, isAr, ct),
+
+				// ONE PROJECTION, shared with every other module that renders this panel.
+				comments = CrossBuy.BL.Communication.CommPanel.Project(page.Items, isAr, avatars),
 			});
 		}
 
 		// POST /Inventory/QuotationConversationAdd
 		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
-		public async Task<IActionResult> QuotationConversationAdd(int id, string? body, CancellationToken ct = default)
+		[RequestSizeLimit(21_000_000)]   // CommPanel.MaxUploadBytes plus the form envelope
+		public async Task<IActionResult> QuotationConversationAdd(int id, string? body,
+			long? parentCommentId, IFormFile? file, string? entity = null, CancellationToken ct = default)
 		{
 			// doc rather than read: adding to the record discussion is a mutation of the record history,
 			// so it claims the module document ability. A reader who may not change the quotation may not
@@ -2100,22 +2154,84 @@ namespace CrossBuy.Controllers
 			var comm = TryQuotationConversation();
 			if (comm == null) return QuotationConversationUnavailable();
 
-			var reference = new CrossBuy.Models.Communication.CommEntityRef(
-				CrossBuy.BL.Platform.EntityRegistry.Quotation, id);
+			var reference = new CrossBuy.Models.Communication.CommEntityRef(gate.EntityCode, id);
 
 			var allowed = await comm.Value.Surface.EvaluateAsync(
 				reference, CrossBuy.BL.Communication.CommCapabilities.Comments);
 			if (!allowed.Allowed) return QuotationConversationUnavailable("capability_disabled");
+
+			// NOTHING REACHES DISK BEFORE THE GATE, so a refused caller never leaves an orphan file.
+			CrossBuy.Models.Communication.CommAttachmentRequest? attachment = null;
+			if (file is { Length: > 0 })
+			{
+				var (staged, refusal) = await CrossBuy.BL.Communication.CommPanel.StageAsync(
+					file, _env.WebRootPath, ct);
+				if (staged is null)
+					return Json(new { ok = false, code = refusal, error = AttachmentRefusalText(refusal) });
+				attachment = staged;
+			}
 
 			// The platform owns body policy, mention parsing, the audit row and any notification fan-out.
 			var added = await comm.Value.Comments.AddAsync(gate.Context!,
 				new CrossBuy.Models.Communication.CommCommentRequest
 				{
 					Entity = reference,
-					Body = body,
+					Body = body ?? "",
+					ParentCommentId = parentCommentId is > 0 ? parentCommentId : null,
+					Attachments = attachment is null ? null : new[] { attachment },
 				}, ct);
 
 			return Json(new { ok = true, id = added.CommentId, threadId = added.ThreadId });
+		}
+
+		/// One sentence per machine code, so the browser never has to compose a refusal.
+		private string AttachmentRefusalText(string code) => code switch
+		{
+			CrossBuy.BL.Communication.CommPanel.UploadRefusal.TooLarge =>
+				L["The file is larger than 20 MB"].Value,
+			CrossBuy.BL.Communication.CommPanel.UploadRefusal.Type =>
+				L["This kind of file cannot be attached"].Value,
+			_ => L["The file could not be attached"].Value,
+		};
+
+		// POST /Inventory/QuotationConversationReact
+		//
+		// The same gate as the ADD, not the read: reacting is a mutation of the record's history, and
+		// this module already draws that line for comments.
+		[SessionValidation][HttpPost][ValidateAntiForgeryToken]
+		public async Task<IActionResult> QuotationConversationReact(int id, long commentId,
+			string? key, bool on, string? entity = null, CancellationToken ct = default)
+		{
+			var gate = await QuotationConversationGateAsync(id, "doc", ct, entity);
+			if (!gate.Ok) return NotFound(new { ok = false, code = "not_found" });
+
+			var comm = TryQuotationConversation();
+			if (comm?.Reactions is null) return QuotationConversationUnavailable();
+			if (commentId <= 0 || string.IsNullOrWhiteSpace(key))
+				return Json(new { ok = false, error = L["The reaction could not be saved"].Value });
+
+			try
+			{
+				var summary = on
+					? await comm.Value.Reactions.AddAsync(gate.Context!, commentId, key, ct)
+					: await comm.Value.Reactions.RemoveAsync(gate.Context!, commentId, key, ct);
+
+				return Json(new
+				{
+					ok = true,
+					commentId,
+					reactions = summary.Where(r => r.Count > 0)
+						.Select(r => new { key = r.ReactionKey, count = r.Count, mine = r.Mine }),
+				});
+			}
+			catch (CrossBuy.Models.Communication.CommAccessDeniedException)
+			{
+				return NotFound(new { ok = false, code = "not_found" });
+			}
+			catch (CrossBuy.Models.Communication.CommValidationException)
+			{
+				return Json(new { ok = false, error = L["The reaction could not be saved"].Value });
+			}
 		}
 
 
@@ -2355,7 +2471,11 @@ namespace CrossBuy.Controllers
 			if (d == null) { TempData["InvErr"] = L["Document not found"].Value; return RedirectToAction(nameof(GoodsReceipts)); }
 			var names = await ItemNamesAsync(d.Lines.Select(l => l.ItemId)); var wh = await WhNamesAsync();
 			var vendor = d.VendorId == null ? "—" : await _context.Vendors.AsNoTracking().Where(v => v.ID == d.VendorId).Select(v => Ar() ? v.Name : (v.NameEn ?? v.Name)).FirstOrDefaultAsync() ?? "—";
-			var vm = new DocDetailVm { Title = "إذن استلام", TitleEn = "Goods receipt", DocNo = d.ReceiptNo ?? ("#" + d.ID), DateStr = Dt(d.ReceiptDate), Status = d.Status, BackAction = nameof(GoodsReceipts), BackLabel = "أذون الاستلام", BackLabelEn = "Goods receipts" };
+			var vm = new DocDetailVm { Title = "إذن استلام", TitleEn = "Goods receipt", DocNo = d.ReceiptNo ?? ("#" + d.ID), DateStr = Dt(d.ReceiptDate), Status = d.Status, BackAction = nameof(GoodsReceipts), BackLabel = "أذون الاستلام", BackLabelEn = "Goods receipts",
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.GoodsReceipt, DocumentId = d.ID,
+				// The screen is bound to its reports in ReportScreenBindings; naming it here is all
+				// the shared view needs to offer every layout that exists for this document.
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryReceiptDetail };
 			vm.Header.Add(new() { Label = "المخزن", LabelEn = "Warehouse", Value = wh.GetValueOrDefault(d.WarehouseId, "—") });
 			vm.Header.Add(new() { Label = "المورد", LabelEn = "Vendor", Value = vendor });
 			vm.Header.Add(new() { Label = "ملاحظات", LabelEn = "Notes", Value = d.Notes ?? "—" });
@@ -2372,7 +2492,11 @@ namespace CrossBuy.Controllers
 			if (d == null) { TempData["InvErr"] = L["Document not found"].Value; return RedirectToAction(nameof(Deliveries)); }
 			var names = await ItemNamesAsync(d.Lines.Select(l => l.ItemId)); var wh = await WhNamesAsync();
 			var cust = d.CustomerId == null ? "—" : await _context.Customers.AsNoTracking().Where(v => v.ID == d.CustomerId).Select(v => Ar() ? v.Name : (v.NameEn ?? v.Name)).FirstOrDefaultAsync() ?? "—";
-			var vm = new DocDetailVm { Title = "إذن صرف", TitleEn = "Delivery note", DocNo = d.DeliveryNo ?? ("#" + d.ID), DateStr = Dt(d.DeliveryDate), Status = d.Status, BackAction = nameof(Deliveries), BackLabel = "أذون الصرف", BackLabelEn = "Deliveries" };
+			var vm = new DocDetailVm { Title = "إذن صرف", TitleEn = "Delivery note", DocNo = d.DeliveryNo ?? ("#" + d.ID), DateStr = Dt(d.DeliveryDate), Status = d.Status, BackAction = nameof(Deliveries), BackLabel = "أذون الصرف", BackLabelEn = "Deliveries",
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.DeliveryNote, DocumentId = d.ID,
+				// The screen is bound to its reports in ReportScreenBindings; naming it here is all
+				// the shared view needs to offer every layout that exists for this document.
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryDeliveryDetail };
 			vm.Header.Add(new() { Label = "المخزن", LabelEn = "Warehouse", Value = wh.GetValueOrDefault(d.WarehouseId, "—") });
 			vm.Header.Add(new() { Label = "العميل", LabelEn = "Customer", Value = cust });
 			vm.Header.Add(new() { Label = "ملاحظات", LabelEn = "Notes", Value = d.Notes ?? "—" });
@@ -2392,7 +2516,8 @@ namespace CrossBuy.Controllers
 			var vm = new DocDetailVm { Title = "أمر شراء", TitleEn = "Purchase order", DocNo = d.OrderNo ?? ("#" + d.ID), DateStr = Dt(d.OrderDate), Status = d.Status, BackAction = nameof(PurchaseOrders), BackLabel = "أوامر الشراء", BackLabelEn = "Purchase orders",
 				// The screen is bound to its reports in ReportScreenBindings; naming it here is all the
 				// shared view needs to offer every layout that exists for this document.
-				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryPurchaseOrderDetail, DocumentId = d.ID };
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryPurchaseOrderDetail, DocumentId = d.ID,
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.PurchaseOrder };
 			vm.Header.Add(new() { Label = "المورد", LabelEn = "Vendor", Value = vendor });
 			vm.Header.Add(new() { Label = "المخزن", LabelEn = "Warehouse", Value = d.WarehouseId == null ? "—" : wh.GetValueOrDefault(d.WarehouseId.Value, "—") });
 			vm.Header.Add(new() { Label = "تاريخ التوريد", LabelEn = "Expected", Value = DtN(d.ExpectedDate) });
@@ -2412,7 +2537,11 @@ namespace CrossBuy.Controllers
 			if (d == null) { TempData["InvErr"] = L["Document not found"].Value; return RedirectToAction(nameof(SalesOrders)); }
 			var names = await ItemNamesAsync(d.Lines.Where(l => l.ItemId != null).Select(l => l.ItemId!.Value)); var wh = await WhNamesAsync();
 			var cust = await _context.Customers.AsNoTracking().Where(v => v.ID == d.CustomerId).Select(v => Ar() ? v.Name : (v.NameEn ?? v.Name)).FirstOrDefaultAsync() ?? "—";
-			var vm = new DocDetailVm { Title = "أمر بيع", TitleEn = "Sales order", DocNo = d.OrderNo ?? ("#" + d.ID), DateStr = Dt(d.OrderDate), Status = d.Status, BackAction = nameof(SalesOrders), BackLabel = "أوامر البيع", BackLabelEn = "Sales orders" };
+			var vm = new DocDetailVm { Title = "أمر بيع", TitleEn = "Sales order", DocNo = d.OrderNo ?? ("#" + d.ID), DateStr = Dt(d.OrderDate), Status = d.Status, BackAction = nameof(SalesOrders), BackLabel = "أوامر البيع", BackLabelEn = "Sales orders",
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesOrder, DocumentId = d.ID,
+				// The screen is bound to its reports in ReportScreenBindings; naming it here is all
+				// the shared view needs to offer every layout that exists for this document.
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventorySalesOrderDetail };
 			vm.Header.Add(new() { Label = "العميل", LabelEn = "Customer", Value = cust });
 			vm.Header.Add(new() { Label = "المخزن", LabelEn = "Warehouse", Value = d.WarehouseId == null ? "—" : wh.GetValueOrDefault(d.WarehouseId.Value, "—") });
 			vm.Header.Add(new() { Label = "تاريخ التسليم", LabelEn = "Expected", Value = DtN(d.ExpectedDate) });
@@ -2431,7 +2560,11 @@ namespace CrossBuy.Controllers
 			var d = await _context.StockTransfers.AsNoTracking().Include(t => t.Lines).FirstOrDefaultAsync(t => t.ID == id && t.CompanyID == co);
 			if (d == null) { TempData["InvErr"] = L["Document not found"].Value; return RedirectToAction(nameof(StockTransfers)); }
 			var names = await ItemNamesAsync(d.Lines.Select(l => l.ItemId)); var wh = await WhNamesAsync();
-			var vm = new DocDetailVm { Title = "تحويل مخزني", TitleEn = "Stock transfer", DocNo = d.TransferNo ?? ("#" + d.ID), DateStr = Dt(d.TransferDate), Status = d.Status, BackAction = nameof(StockTransfers), BackLabel = "التحويلات بين المخازن", BackLabelEn = "Transfers", JournalEntryId = d.JournalEntryId };
+			var vm = new DocDetailVm { Title = "تحويل مخزني", TitleEn = "Stock transfer", DocNo = d.TransferNo ?? ("#" + d.ID), DateStr = Dt(d.TransferDate), Status = d.Status, BackAction = nameof(StockTransfers), BackLabel = "التحويلات بين المخازن", BackLabelEn = "Transfers", JournalEntryId = d.JournalEntryId,
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.StockTransfer, DocumentId = d.ID,
+				// The screen is bound to its reports in ReportScreenBindings; naming it here is all
+				// the shared view needs to offer every layout that exists for this document.
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryTransferDetail };
 			vm.Header.Add(new() { Label = "من مخزن", LabelEn = "From", Value = wh.GetValueOrDefault(d.FromWarehouseId, "—") });
 			vm.Header.Add(new() { Label = "إلى مخزن", LabelEn = "To", Value = wh.GetValueOrDefault(d.ToWarehouseId, "—") });
 			vm.Header.Add(new() { Label = "ملاحظات", LabelEn = "Notes", Value = d.Notes ?? "—" });
@@ -2447,7 +2580,11 @@ namespace CrossBuy.Controllers
 			var d = await _context.StockCounts.AsNoTracking().Include(t => t.Lines).FirstOrDefaultAsync(t => t.ID == id && t.CompanyID == co);
 			if (d == null) { TempData["InvErr"] = L["Document not found"].Value; return RedirectToAction(nameof(StockCounts)); }
 			var names = await ItemNamesAsync(d.Lines.Select(l => l.ItemId)); var wh = await WhNamesAsync();
-			var vm = new DocDetailVm { Title = "تسوية جرد", TitleEn = "Stock count", DocNo = d.CountNo ?? ("#" + d.ID), DateStr = Dt(d.CountDate), Status = d.Status, BackAction = nameof(StockCounts), BackLabel = "الجرد والتسويات", BackLabelEn = "Stock counts" };
+			var vm = new DocDetailVm { Title = "تسوية جرد", TitleEn = "Stock count", DocNo = d.CountNo ?? ("#" + d.ID), DateStr = Dt(d.CountDate), Status = d.Status, BackAction = nameof(StockCounts), BackLabel = "الجرد والتسويات", BackLabelEn = "Stock counts",
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.StockCount, DocumentId = d.ID,
+				// The screen is bound to its reports in ReportScreenBindings; naming it here is all
+				// the shared view needs to offer every layout that exists for this document.
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryCountDetail };
 			vm.Header.Add(new() { Label = "المخزن", LabelEn = "Warehouse", Value = wh.GetValueOrDefault(d.WarehouseId, "—") });
 			vm.Header.Add(new() { Label = "ملاحظات", LabelEn = "Notes", Value = d.Notes ?? "—" });
 			vm.Columns = new() { new() { Label = "الصنف", LabelEn = "Item" }, new() { Label = "الدفتري", LabelEn = "Book", Num = true }, new() { Label = "المعدود", LabelEn = "Counted", Num = true }, new() { Label = "الفرق", LabelEn = "Diff", Num = true }, new() { Label = "التكلفة", LabelEn = "Unit cost", Num = true }, new() { Label = "قيمة الفرق", LabelEn = "Diff value", Num = true }, new() { Label = "السبب", LabelEn = "Reason" } };
@@ -2462,7 +2599,11 @@ namespace CrossBuy.Controllers
 			var d = await _context.StockWriteOffs.AsNoTracking().Include(t => t.Lines).FirstOrDefaultAsync(t => t.ID == id && t.CompanyID == co);
 			if (d == null) { TempData["InvErr"] = L["Document not found"].Value; return RedirectToAction(nameof(WriteOffs)); }
 			var names = await ItemNamesAsync(d.Lines.Select(l => l.ItemId)); var wh = await WhNamesAsync();
-			var vm = new DocDetailVm { Title = "مستند إعدام", TitleEn = "Write-off", DocNo = d.WriteOffNo ?? ("#" + d.ID), DateStr = Dt(d.WriteOffDate), Status = d.Status, BackAction = nameof(WriteOffs), BackLabel = "الإعدام والتلف", BackLabelEn = "Write-offs", JournalEntryId = d.JournalEntryId, Danger = true };
+			var vm = new DocDetailVm { Title = "مستند إعدام", TitleEn = "Write-off", DocNo = d.WriteOffNo ?? ("#" + d.ID), DateStr = Dt(d.WriteOffDate), Status = d.Status, BackAction = nameof(WriteOffs), BackLabel = "الإعدام والتلف", BackLabelEn = "Write-offs", JournalEntryId = d.JournalEntryId, Danger = true,
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.StockWriteOff, DocumentId = d.ID,
+				// The screen is bound to its reports in ReportScreenBindings; naming it here is all
+				// the shared view needs to offer every layout that exists for this document.
+				PrintScreenKey = CrossBuy.BL.Reporting.ReportScreenKeys.InventoryWriteOffDetail };
 			vm.Header.Add(new() { Label = "المخزن", LabelEn = "Warehouse", Value = wh.GetValueOrDefault(d.WarehouseId, "—") });
 			vm.Header.Add(new() { Label = "السبب", LabelEn = "Reason", Value = ReasonName(d.Reason) });
 			vm.Header.Add(new() { Label = "ملاحظات", LabelEn = "Notes", Value = d.Notes ?? "—" });
@@ -2480,7 +2621,8 @@ namespace CrossBuy.Controllers
 			var grNo = await _context.GoodsReceipts.AsNoTracking().Where(g => g.ID == d.GoodsReceiptId).Select(g => g.ReceiptNo).FirstOrDefaultAsync() ?? ("#" + d.GoodsReceiptId);
 			var accIds = d.Charges.Select(c => c.AccountId).Distinct().ToList();
 			var accs = await _context.Accounts.AsNoTracking().Where(a => accIds.Contains(a.ID)).ToDictionaryAsync(a => a.ID, a => a.Code + " — " + (Ar() ? a.Name : (string.IsNullOrEmpty(a.NameEn) ? a.Name : a.NameEn)));
-			var vm = new DocDetailVm { Title = "تكلفة إضافية", TitleEn = "Landed cost", DocNo = d.LandedNo ?? ("#" + d.ID), DateStr = Dt(d.LandedDate), Status = d.Status, BackAction = nameof(LandedCosts), BackLabel = "التكاليف الإضافية", BackLabelEn = "Landed costs", JournalEntryId = d.JournalEntryId };
+			var vm = new DocDetailVm { Title = "تكلفة إضافية", TitleEn = "Landed cost", DocNo = d.LandedNo ?? ("#" + d.ID), DateStr = Dt(d.LandedDate), Status = d.Status, BackAction = nameof(LandedCosts), BackLabel = "التكاليف الإضافية", BackLabelEn = "Landed costs", JournalEntryId = d.JournalEntryId,
+				EntityCode = CrossBuy.BL.Platform.EntityRegistry.LandedCost, DocumentId = d.ID };
 			vm.Header.Add(new() { Label = "إذن الاستلام", LabelEn = "Goods receipt", Value = grNo });
 			vm.Header.Add(new() { Label = "طريقة التوزيع", LabelEn = "Allocation", Value = d.AllocationMethod == "Qty" ? (Ar() ? "بالكمية" : "By quantity") : (Ar() ? "بالقيمة" : "By value") });
 			vm.Header.Add(new() { Label = "ملاحظات", LabelEn = "Notes", Value = d.Notes ?? "—" });

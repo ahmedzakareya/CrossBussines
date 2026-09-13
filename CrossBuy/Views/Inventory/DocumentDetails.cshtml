@@ -87,9 +87,35 @@
                     }
                 </div></div>
             }
+
+            @* THE CONVERSATION AND THE ACTIVITY PANEL, for whichever of the eight documents this is.
+               Wired ONCE here rather than in eight actions: they share this view, so they share the
+               panels, and a document that names no entity code renders neither.
+
+               INSIDE the page's own .app-container, not in one of their own: a second container
+               appended after #kt_app_content is rebuilt by the layout script, which re-inserts its
+               markup as innerHTML — and a script inserted that way never executes. The panel was in
+               the DOM with a clean console and simply never loaded.
+
+               The conversation endpoints are the module's own — one gate resolves the family from
+               the code, so nine documents are served by three actions rather than twenty-seven. *@
+            @if (!string.IsNullOrWhiteSpace(Model.EntityCode) && Model.DocumentId is > 0)
+            {
+                ViewBag.TimelineEntityType = Model.EntityCode;
+                ViewBag.TimelineEntityId = Model.DocumentId;
+
+                ViewBag.ConversationEntityCode = Model.EntityCode;
+                ViewBag.ConversationEntityId = Model.DocumentId;
+                ViewBag.ConversationListUrl = Url.Action("QuotationConversation", "Inventory");
+                ViewBag.ConversationAddUrl = Url.Action("QuotationConversationAdd", "Inventory");
+                ViewBag.ConversationReactUrl = Url.Action("QuotationConversationReact", "Inventory");
+
+                @await Html.PartialAsync("_DocEventTimeline")
+                @await Html.PartialAsync("_EntityConversation")
+            }
             </div>
         </div>
-    </div></div>
+
 </div>
 
 @* The shared report dialog — see Views/Shared/_ReportPreviewModal.cshtml. *@
