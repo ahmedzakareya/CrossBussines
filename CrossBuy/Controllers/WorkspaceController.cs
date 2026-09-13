@@ -61,10 +61,13 @@ namespace CrossBuy.Controllers
         }
 
         // GET /Workspace/Notifications?unreadOnly=false
-        public async Task<IActionResult> Notifications(bool unreadOnly = false,
+        // PAGE SIZE 25, not the 50 this poured into one screen. The page number comes from the url so
+        // it is bookmarkable, back-button-correct and needs no script — the same choice the Agenda
+        // panel already made.
+        public async Task<IActionResult> Notifications(bool unreadOnly = false, int page = 1,
             CancellationToken cancellationToken = default)
         {
-            var panel = await _workspace.GetNotificationsAsync(unreadOnly, take: 50, cancellationToken);
+            var panel = await _workspace.GetNotificationsAsync(unreadOnly, take: 25, page, cancellationToken);
             ViewBag.UnreadOnly = unreadOnly;
             ViewBag.Capabilities = await _workspace.GetCapabilitiesAsync(cancellationToken);
             return View(panel);

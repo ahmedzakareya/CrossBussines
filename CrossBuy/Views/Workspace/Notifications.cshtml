@@ -13,10 +13,15 @@
     var unread = Model.Items.Count(n => !n.IsRead);
     ViewBag.UnreadNotifications = unread;
 
+    // WARN TAKES THE DEEPER AMBER, not Metronic's. crossbuy-brand.css measures #F59E0B at 2.15:1 for a
+    // white mark — under even the 3:1 a non-text graphic needs — and states plainly that the pale
+    // yellow "reads as decoration rather than caution". On a notification list that is the whole point
+    // of the colour, so it takes --cb-warning-strong (#B45309), which keeps the hue and moves only its
+    // depth. Unlike the report-hub cards, the colour is NOT removed here: these tones carry meaning.
     string ToneColor(WorkspaceTone t) => t switch
     {
         WorkspaceTone.Ok => "success",
-        WorkspaceTone.Warn => "warning",
+        WorkspaceTone.Warn => "warning-strong",
         WorkspaceTone.Critical => "danger",
         _ => "primary",
     };
@@ -140,6 +145,73 @@
                             </tbody>
                         </table>
                     </div>
+
+                    @* THE PAGER, on the same contract Views/Workspace/Agenda.cshtml already uses: the
+                       panel STATES its page, its size and the total, so nothing here is derived from
+                       Items.Count — a last page with 4 rows and a full page of 25 are told apart by the
+                       numbers rather than guessed at.
+
+                       This list had no pager at all and poured every notification into one screen; with
+                       fifty rows there was no way to reach the fifty-first.
+
+                       Plain links carrying `unreadOnly`, so the filter above and the page below stay
+                       consistent, the back button works and the pager needs no script. *@
+                    int pgNow = Model.Page ?? 1;
+                    int pgSize = Model.PageSize ?? 0;
+                    int pgTotal = Model.Total ?? Model.Items.Count;
+                    int pgCount = pgSize > 0 ? (int)Math.Ceiling(pgTotal / (double)pgSize) : 1;
+                    int shownFrom = pgTotal == 0 ? 0 : ((pgNow - 1) * pgSize) + 1;
+                    int shownTo = pgTotal == 0 ? 0 : Math.Min(pgNow * pgSize, pgTotal);
+                    <div class="d-flex flex-stack flex-wrap gap-3 pt-4 px-3">
+                        <div class="fs-7 text-muted">
+                            @(arabic
+                                ? $"عرض {shownFrom}–{shownTo} من {pgTotal}"
+                                : $"Showing {shownFrom}–{shownTo} of {pgTotal}")
+                        </div>
+
+                        @if (pgCount > 1)
+                        {
+                            <ul class="pagination mb-0">
+                                <li class="page-item @(pgNow <= 1 ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("Notifications", "Workspace", new { unreadOnly, page = pgNow - 1 })"
+                                       aria-label="@(arabic ? "السابق" : "Previous")">
+                                        <i class="ki-outline ki-@(arabic ? "right" : "left")" aria-hidden="true"></i>
+                                    </a>
+                                </li>
+
+                                @* Inside the <ul> we are back in MARKUP, so these need a code block —
+                                   unlike the ones above, which sit in a code context and must not. *@
+                                @{
+                                    int win = 2;
+                                    int lo = Math.Max(1, pgNow - win);
+                                    int hi = Math.Min(pgCount, pgNow + win);
+                                }
+                                @if (lo > 1)
+                                {
+                                    <li class="page-item"><a class="page-link" href="@Url.Action("Notifications", "Workspace", new { unreadOnly, page = 1 })">1</a></li>
+                                    @if (lo > 2) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+                                }
+                                @for (int n = lo; n <= hi; n++)
+                                {
+                                    <li class="page-item @(n == pgNow ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Notifications", "Workspace", new { unreadOnly, page = n })">@n</a>
+                                    </li>
+                                }
+                                @if (hi < pgCount)
+                                {
+                                    @if (hi < pgCount - 1) { <li class="page-item disabled"><span class="page-link">…</span></li> }
+                                    <li class="page-item"><a class="page-link" href="@Url.Action("Notifications", "Workspace", new { unreadOnly, page = pgCount })">@pgCount</a></li>
+                                }
+
+                                <li class="page-item @(pgNow >= pgCount ? "disabled" : "")">
+                                    <a class="page-link" href="@Url.Action("Notifications", "Workspace", new { unreadOnly, page = pgNow + 1 })"
+                                       aria-label="@(arabic ? "التالي" : "Next")">
+                                        <i class="ki-outline ki-@(arabic ? "left" : "right")" aria-hidden="true"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        }
+                    </div>
                 }
                 else if (Model.State is WorkspacePanelState.Ready or WorkspacePanelState.Empty)
                 {
@@ -158,7 +230,9 @@
                     {
                         WorkspacePanelState.Unavailable => "secondary",
                         WorkspacePanelState.AccessDenied => "dark",
-                        WorkspacePanelState.TemporaryFailure => "warning",
+                        // Same reasoning as ToneColor above: "this failed, try again" is a caution and
+                        // has to look like one.
+                        WorkspacePanelState.TemporaryFailure => "warning-strong",
                         _ => "info",
                     };
                     var icon = Model.State switch

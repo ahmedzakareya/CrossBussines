@@ -409,6 +409,19 @@ namespace CrossBuy.BL.Workspace
         Task<IReadOnlyList<WorkspaceNotification>> GetAsync(
             BusinessContext context, bool unreadOnly, int take, CancellationToken cancellationToken = default);
 
+        // A PAGE, and the size of the thing it is a page OF.
+        //
+        // The list screen poured every notification into one page — fifty rows and no way to reach the
+        // fifty-first. Paging needs two things the take-based read cannot give: an offset, and a TOTAL,
+        // because a pager that counts the rows it was handed cannot tell a short last page from the end
+        // of the data. Both are here rather than derived in the view.
+        Task<IReadOnlyList<WorkspaceNotification>> GetPageAsync(
+            BusinessContext context, bool unreadOnly, int skip, int take,
+            CancellationToken cancellationToken = default);
+
+        Task<int> CountAsync(BusinessContext context, bool unreadOnly,
+            CancellationToken cancellationToken = default);
+
         Task<int> CountUnreadAsync(BusinessContext context, CancellationToken cancellationToken = default);
     }
 
@@ -563,8 +576,11 @@ namespace CrossBuy.BL.Workspace
     {
         Task<WorkspaceDashboard> GetDashboardAsync(CancellationToken cancellationToken = default);
 
+        // `take` is the PAGE SIZE and `page` is 1-based, because it appears in a url a person reads
+        // and shares. Defaulted so every existing caller keeps working unchanged.
         Task<WorkspacePanel<WorkspaceNotification>> GetNotificationsAsync(
-            bool unreadOnly = false, int take = 20, CancellationToken cancellationToken = default);
+            bool unreadOnly = false, int take = 20, int page = 1,
+            CancellationToken cancellationToken = default);
 
         Task<WorkspacePanel<WorkspaceMention>> GetMentionsAsync(
             int take = 20, CancellationToken cancellationToken = default);

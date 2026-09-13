@@ -4,6 +4,20 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @model List<Branch>
 @{
+    @* A STORED IMAGE PATH IS NOT A URL. These columns hold whatever the upload wrote — Windows
+       backslashes, no leading slash — so every screen that shows one has to normalise it, and the
+       ones that forget render a broken image with no error anywhere. Views/Service/BranchDetails
+       does exactly this inline; it is written once here instead.
+
+       Returns null for "no image", so the caller can fall back to the icon rather than showing an
+       empty frame. *@
+    string? Logo(string? stored)
+    {
+        if (string.IsNullOrWhiteSpace(stored)) return null;
+        var path = stored.Replace("\\", "/").TrimStart('/');
+        return "/" + path;
+    }
+
     Layout = "~/Views/Shared/_LayoutAccounting.cshtml";
     var isAr = (System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar");
     var currencies = (ViewBag.Currencies as List<Currency>) ?? new List<Currency>();
@@ -62,7 +76,24 @@
             </div>
             <div class="card-body py-8">
                 <div class="d-flex flex-wrap align-items-center gap-6">
-                    <span class="symbol symbol-60px"><span class="symbol-label" style="background:#E7F0FF;"><i class="ki-outline ki-bank fs-2x" style="color:#0E4A9E;"></i></span></span>
+                    @* THE COMPANY'S OWN MARK when it has one. `object-fit: contain` because a logo is
+                       not a portrait — cropping one to fill a square is how a wordmark loses its last
+                       letter. onerror hides a path that no longer resolves, so a moved file leaves the
+                       tile empty rather than showing a broken-image glyph on a settings screen. *@
+                    <span class="symbol symbol-60px">
+                        @if (Logo(company?.CompanyImage) is string companyLogo)
+                        {
+                            <span class="symbol-label" style="background:#fff;border:1px solid #E4E6EF;">
+                                <img src="@companyLogo" alt="@company?.CompanyName"
+                                     style="max-width:44px;max-height:44px;object-fit:contain;"
+                                     onerror="this.style.display='none'" />
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="symbol-label" style="background:#E7F0FF;"><i class="ki-outline ki-bank fs-2x" style="color:#0E4A9E;"></i></span>
+                        }
+                    </span>
                     <div>
                         <div class="fw-bold fs-4 text-gray-900">@company?.CompanyName</div>
                         <div class="text-muted fw-semibold fs-7">@Localizer["Company"] · @Localizer["Functional currency"]</div>
@@ -75,7 +106,7 @@
                                 @foreach (var c in currencies) { <option value="@c.ID" selected="@(c.ID == companyCur)">@c.Code — @(isAr ? c.Name : (c.NameEn ?? c.Name))</option> }
                             </select>
                         </div>
-                        @if (!hasPostings) { <button class="btn btn-primary"><i class="ki-outline ki-check fs-3"></i>@SR["Save"]</button> }
+                        @if (!hasPostings) { <button class="btn btn-flex btn-primary text-nowrap"><i class="ki-outline ki-check fs-3 me-1"></i>@SR["Save"]</button> }
                     </form>
                 </div>
             </div>
@@ -101,7 +132,23 @@
                         @foreach (var b in Model)
                         {
                             <tr>
-                                <td class="ps-9"><span class="symbol symbol-35px me-3"><span class="symbol-label bg-light-primary"><i class="ki-outline ki-shop fs-5 text-primary"></i></span></span><span class="fw-bold text-gray-900">@(isAr ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr))</span></td>
+                                <td class="ps-9">
+                                    <span class="symbol symbol-35px me-3">
+                                        @if (Logo(b.ImageUrl) is string branchLogo)
+                                        {
+                                            <span class="symbol-label" style="background:#fff;border:1px solid #E4E6EF;">
+                                                <img src="@branchLogo" alt=""
+                                                     style="max-width:26px;max-height:26px;object-fit:contain;"
+                                                     onerror="this.style.display='none'" />
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="symbol-label bg-light-primary"><i class="ki-outline ki-shop fs-5 text-primary"></i></span>
+                                        }
+                                    </span>
+                                    <span class="fw-bold text-gray-900">@(isAr ? (b.NameAr ?? b.Name) : (b.Name ?? b.NameAr))</span>
+                                </td>
                                 <td><span class="badge badge-light-primary fw-bold">@CurName(b.FunctionalCurrencyId)</span></td>
                                 <td class="text-end pe-9">
                                     @if (b.CurrencyLockedAt != null)
@@ -113,10 +160,13 @@
                                         <form asp-action="SetBranchCurrency" method="post" class="d-flex align-items-center justify-content-end gap-2"
                                               data-cb-confirm data-cb-action="save" data-cb-text="@Localizer["Set branch functional currency?"]">@Html.AntiForgeryToken()
                                             <input type="hidden" name="branchId" value="@b.ID" />
-                                            <select name="currencyId" class="form-select form-select-solid form-select-sm w-auto">
+                                            @* MIN WIDTH, not w-auto. select2 swaps the native control for its own
+                                               container and the original measured 27px wide — so the visible
+                                               widget sized itself to nothing and sat oddly beside the button. *@
+                                            <select name="currencyId" class="form-select form-select-solid form-select-sm" style="min-width:120px">
                                                 @foreach (var c in currencies) { <option value="@c.ID" selected="@(c.ID == b.FunctionalCurrencyId)">@c.Code</option> }
                                             </select>
-                                            <button class="btn btn-sm btn-light-primary"><i class="ki-outline ki-check fs-5"></i>@SR["Save"]</button>
+                                            <button class="btn btn-sm btn-flex btn-light-primary text-nowrap"><i class="ki-outline ki-check fs-5 me-1"></i>@SR["Save"]</button>
                                         </form>
                                     }
                                 </td>

@@ -160,7 +160,8 @@ namespace CrossBuy.BL.Workspace
                 AgendaShown);
 
             var notifications = await SafeAsync("Notifications",
-                () => LoadNotificationsAsync(context, false, NotificationsShown, cancellationToken));
+                // The dashboard tile shows the newest few and has no pager, so it is always page 1.
+                () => LoadNotificationsAsync(context, false, NotificationsShown, 1, cancellationToken));
             var mentions = await SafeAsync("Mentions", () => LoadMentionsAsync(context, MentionsShown, cancellationToken));
             var favorites = await SafeAsync("Favorites", () => LoadFavoritesAsync(context, cancellationToken));
             var reports = Trim(await SafeAsync("Reports", () => LoadReportsAsync(context, cancellationToken)), ReportsShown);
@@ -216,7 +217,8 @@ namespace CrossBuy.BL.Workspace
         }
 
         public async Task<WorkspacePanel<WorkspaceNotification>> GetNotificationsAsync(
-            bool unreadOnly = false, int take = 20, CancellationToken cancellationToken = default)
+            bool unreadOnly = false, int take = 20, int page = 1,
+            CancellationToken cancellationToken = default)
         {
             var context = await _contexts.TryGetCurrentAsync(cancellationToken);
             if (context == null || context.CompanyId <= 0)
@@ -224,7 +226,7 @@ namespace CrossBuy.BL.Workspace
                     "No company is resolved for this session.");
 
             return await SafeAsync("Notifications",
-                () => LoadNotificationsAsync(context, unreadOnly, take, cancellationToken));
+                () => LoadNotificationsAsync(context, unreadOnly, take, page, cancellationToken));
         }
 
         public async Task<WorkspacePanel<WorkspaceMention>> GetMentionsAsync(
@@ -584,7 +586,7 @@ namespace CrossBuy.BL.Workspace
         }
 
         private async Task<WorkspacePanel<WorkspaceNotification>> LoadNotificationsAsync(
-            BusinessContext context, bool unreadOnly, int take, CancellationToken cancellationToken)
+            BusinessContext context, bool unreadOnly, int take, int page, CancellationToken cancellationToken)
         {
             if (!_notifications.IsAvailable)
                 return WorkspacePanel<WorkspaceNotification>.Unavailable(
@@ -594,8 +596,31 @@ namespace CrossBuy.BL.Workspace
                 return WorkspacePanel<WorkspaceNotification>.AccessDenied(
                     "This session has no employee, so personal notifications cannot be resolved.");
 
-            var rows = await _notifications.GetAsync(context, unreadOnly, take, cancellationToken);
-            return WorkspacePanel<WorkspaceNotification>.From(rows);
+            // THE PANEL STATES ITS PAGE, which is what lets the view render a pager without counting
+            // the rows it happens to have been given. `take` is the page SIZE here, and the caller's
+            // page number is 1-based because it appears in a url a person reads.
+            int size = Math.Clamp(take, 1, 100);
+            int current = Math.Max(1, page);
+
+            var total = await _notifications.CountAsync(context, unreadOnly, cancellationToken);
+
+            // A PAGE PAST THE END COMES BACK TO THE LAST ONE rather than rendering empty. Deleting a
+            // notification while sitting on the final page is enough to produce that url, and an empty
+            // screen with working pager buttons reads as data loss.
+            int pages = size > 0 ? Math.Max(1, (int)Math.Ceiling(total / (double)size)) : 1;
+            if (current > pages) current = pages;
+
+            var rows = await _notifications.GetPageAsync(
+                context, unreadOnly, (current - 1) * size, size, cancellationToken);
+
+            return new WorkspacePanel<WorkspaceNotification>
+            {
+                State = rows.Count == 0 ? WorkspacePanelState.Empty : WorkspacePanelState.Ready,
+                Items = rows,
+                Total = total,
+                Page = current,
+                PageSize = size,
+            };
         }
 
         // MENTIONS — the platform is resolved OPTIONALLY and is never activated as a side effect of rendering

@@ -16,12 +16,24 @@ namespace CrossBuy.Controllers
 		private readonly CrossDbContext _context;
 		private readonly ICurrencyService _currency;
 		private readonly IFxRevaluationService _reval;
-		private const int DefaultCompanyId = 1;
 		private readonly IStringLocalizer<CrossBuy.SharedResources> L;
-		public CurrencyController(CrossDbContext context, ICurrencyService currency, IFxRevaluationService reval, IStringLocalizer<CrossBuy.SharedResources> localizer) { _context = context; _currency = currency; _reval = reval; L = localizer; }
 
-		// whether the company books already have postings → functional currency becomes immutable
-		private Task<bool> HasPostingsAsync() => _context.JournalEntries.AnyAsync(e => e.CompanyID == DefaultCompanyId);
+		// THE COMPANY IS RESOLVED, NEVER A COMPILE-TIME CONSTANT.
+		//
+		// This controller held `private const int DefaultCompanyId = 1`, so every screen under it showed
+		// COMPANY 1 to whoever opened it — and these are WRITE screens. A company-2 accountant saw
+		// company 1's branches and could set their functional currency. The guard was worse than the
+		// display: "locked after the first posting" counted company 1's journal entries, so the
+		// protection that makes a functional currency immutable was being measured against the wrong
+		// books entirely.
+		//
+		// Same correction, same reasoning and same resolver as AccountingController's CORRECTION-005.
+		private readonly CrossBuy.BL.Platform.IRequestCompanyResolver _company;
+
+		public CurrencyController(CrossDbContext context, ICurrencyService currency, IFxRevaluationService reval, IStringLocalizer<CrossBuy.SharedResources> localizer, CrossBuy.BL.Platform.IRequestCompanyResolver company) { _context = context; _currency = currency; _reval = reval; L = localizer; _company = company; }
+
+		// whether THIS company's books already have postings → functional currency becomes immutable
+		private Task<bool> HasPostingsAsync(int companyId) => _context.JournalEntries.AnyAsync(e => e.CompanyID == companyId);
 
 		// ---------------- Currencies ----------------
 		[HttpGet]
@@ -93,22 +105,33 @@ namespace CrossBuy.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Setup()
 		{
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Currencies));
+			}
+
 			ViewBag.Currencies = await _context.Currencies.AsNoTracking().OrderBy(c => c.Code).ToListAsync();
-			ViewBag.HasPostings = await HasPostingsAsync();
+			ViewBag.HasPostings = await HasPostingsAsync(scope.CompanyId);
 			ViewBag.Company = await _context.Companies.AsNoTracking()
-				.Where(c => c.CompanyID == DefaultCompanyId)
+				.Where(c => c.CompanyID == scope.CompanyId)
 				.FirstOrDefaultAsync();
-			return View(await _context.Branches.AsNoTracking().Where(b => b.CompanyID == DefaultCompanyId).ToListAsync());
+			return View(await _context.Branches.AsNoTracking().Where(b => b.CompanyID == scope.CompanyId).ToListAsync());
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][AccPerm("manage")]
 		public async Task<IActionResult> SetCompanyCurrency(int currencyId)
 		{
-			if (await HasPostingsAsync())
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{ TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Setup)); }
+
+			if (await HasPostingsAsync(scope.CompanyId))
 			{ TempData["AccErr"] = L["The company currency cannot be changed once postings exist — the currency is locked"].Value; return RedirectToAction(nameof(Setup)); }
 			if (!await _context.Currencies.AnyAsync(c => c.ID == currencyId))
 			{ TempData["AccErr"] = L["Currency not found"].Value; return RedirectToAction(nameof(Setup)); }
-			var co = await _context.Companies.FirstOrDefaultAsync(c => c.CompanyID == DefaultCompanyId);
+			var co = await _context.Companies.FirstOrDefaultAsync(c => c.CompanyID == scope.CompanyId);
 			if (co != null) { co.DefaultCurrencyId = currencyId; await _context.SaveChangesAsync(); TempData["AccMsg"] = L["The company default currency has been set"].Value; }
 			return RedirectToAction(nameof(Setup));
 		}
@@ -116,7 +139,14 @@ namespace CrossBuy.Controllers
 		[HttpPost][ValidateAntiForgeryToken][AccPerm("manage")]
 		public async Task<IActionResult> SetBranchCurrency(int branchId, int currencyId)
 		{
-			var b = await _context.Branches.FirstOrDefaultAsync(x => x.ID == branchId && x.CompanyID == DefaultCompanyId);
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{ TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Setup)); }
+
+			// THE COMPANY PREDICATE IS IN THE QUERY, so a branch belonging to someone else is NOT FOUND
+			// rather than found and then refused — and "not found" is the same answer a bad id gets, so
+			// the difference cannot be used to learn that a branch exists in another company.
+			var b = await _context.Branches.FirstOrDefaultAsync(x => x.ID == branchId && x.CompanyID == scope.CompanyId);
 			if (b == null) { TempData["AccErr"] = L["Branch not found"].Value; return RedirectToAction(nameof(Setup)); }
 			if (b.CurrencyLockedAt != null)
 			{ TempData["AccErr"] = L["This branch currency is locked after the first transaction — it cannot be changed"].Value; return RedirectToAction(nameof(Setup)); }
@@ -133,15 +163,28 @@ namespace CrossBuy.Controllers
 		public async Task<IActionResult> Revaluation(DateTime? asOf, string rateType = "Central")
 		{
 			var d = asOf ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddDays(-1); // default: end of last month
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{
+				TempData["AccErr"] = L["You do not have permission to perform this action"].Value;
+				return RedirectToAction(nameof(Currencies));
+			}
+
 			ViewBag.AsOf = d; ViewBag.RateType = rateType;
-			ViewBag.History = await _reval.HistoryAsync(DefaultCompanyId);
-			return View(await _reval.PreviewAsync(DefaultCompanyId, d, rateType));
+			ViewBag.History = await _reval.HistoryAsync(scope.CompanyId);
+			return View(await _reval.PreviewAsync(scope.CompanyId, d, rateType));
 		}
 
 		[HttpPost][ValidateAntiForgeryToken][AccPerm("manage")]
 		public async Task<IActionResult> PostRevaluation(DateTime asOf, string rateType)
 		{
-			var (ok, err, _) = await _reval.PostAsync(DefaultCompanyId, asOf, rateType, null);
+			var scope = await _company.ResolveAsync();
+			if (!scope.Ok)
+			{ TempData["AccErr"] = L["You do not have permission to perform this action"].Value; return RedirectToAction(nameof(Revaluation)); }
+
+			// POSTING A REVALUATION WRITES JOURNAL ENTRIES. A constant here did not merely show the wrong
+			// company's numbers — it would have posted into its books.
+			var (ok, err, _) = await _reval.PostAsync(scope.CompanyId, asOf, rateType, null);
 			TempData[ok ? "AccMsg" : "AccErr"] = ok ? L["The revaluation and its automatic reversing entry have been posted"].Value : err;
 			return RedirectToAction(nameof(Revaluation), new { asOf = asOf.ToString("yyyy-MM-dd"), rateType });
 		}

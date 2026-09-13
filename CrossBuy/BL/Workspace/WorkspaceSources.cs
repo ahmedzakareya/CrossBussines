@@ -59,7 +59,21 @@ namespace CrossBuy.BL.Workspace
                 .Take(Math.Clamp(take, 1, 100))
                 .ToListAsync(cancellationToken);
 
-            return rows.Select(n => new WorkspaceNotification
+            return rows.Select(Project).ToList();
+        }
+
+        // ONE PROJECTION FOR BOTH READS. The take-based read and the paged one produce the same rows,
+        // and a second copy of this mapping is a second place for a tone or a language pick to drift —
+        // which on a notification list means two screens disagreeing about whether something is urgent.
+        //
+        // `arabic` is read from the ambient culture inside the projection rather than passed, so a
+        // caller cannot hand it the wrong one.
+        private static WorkspaceNotification Project(Models.Context.Admin.Notification n)
+        {
+            var arabic = System.Globalization.CultureInfo.CurrentUICulture
+                .TwoLetterISOLanguageName == "ar";
+
+            return new WorkspaceNotification
             {
                 Id = n.ID,
                 Title = WorkspaceCulture.Pick(n.TitleAr, n.TitleEn, arabic) ?? "",
@@ -74,7 +88,48 @@ namespace CrossBuy.BL.Workspace
                     "high" => WorkspaceTone.Warn,
                     _ => WorkspaceTone.Info,
                 },
-            }).ToList();
+            };
+        }
+
+        // ONE QUERY SHAPE FOR BOTH, so the page and its count can never disagree about what they are
+        // counting. A filter added to one and forgotten in the other is how a pager ends up offering a
+        // page that renders empty.
+        private IQueryable<Models.Context.Admin.Notification> Scope(
+            BusinessContext context, bool unreadOnly, DateTime now)
+        {
+            var q = _db.Notifications.AsNoTracking()
+                .Where(n => n.CompanyID == context.CompanyId
+                            && n.RecipientEmployeeID == context.EmployeeId!.Value
+                            // Expiry evaluated at READ time, never by a sweeper: an expiry that depends
+                            // on a background job keeps working when the job stops. It has to be in the
+                            // COUNT as well — my first version of this helper left it out, which would
+                            // have had the pager offering pages of rows the list does not show.
+                            && (n.ExpiresAt == null || n.ExpiresAt > now));
+
+            return unreadOnly ? q.Where(n => !n.IsRead) : q;
+        }
+
+        public async Task<IReadOnlyList<WorkspaceNotification>> GetPageAsync(
+            BusinessContext context, bool unreadOnly, int skip, int take,
+            CancellationToken cancellationToken = default)
+        {
+            if (context.EmployeeId is not > 0) return Array.Empty<WorkspaceNotification>();
+
+            var now = DateTime.UtcNow;
+            var rows = await Scope(context, unreadOnly, now)
+                .OrderByDescending(n => n.ID)
+                .Skip(Math.Max(0, skip))
+                .Take(Math.Clamp(take, 1, 100))
+                .ToListAsync(cancellationToken);
+
+            return rows.Select(Project).ToList();
+        }
+
+        public async Task<int> CountAsync(BusinessContext context, bool unreadOnly,
+            CancellationToken cancellationToken = default)
+        {
+            if (context.EmployeeId is not > 0) return 0;
+            return await Scope(context, unreadOnly, DateTime.UtcNow).CountAsync(cancellationToken);
         }
 
         public async Task<int> CountUnreadAsync(BusinessContext context, CancellationToken cancellationToken = default)

@@ -2,11 +2,22 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
 @{
     Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    @* THESE CARDS ARE NAVIGATION, NOT STATUS, so they wear the identity colour and not a semantic one.
+       A card is not reporting that stock is healthy or expiring; it is saying where a report lives, and
+       colouring it green or amber spends the two colours that mean something — so that when one of them
+       does appear, it reads as decoration.
+
+       The single exception is the reorder card, which points at the one report that exists BECAUSE
+       something is wrong. That one keeps danger, and now it is the only coloured thing on the page.
+
+       (The amber that used to be here was also failing on its own terms: crossbuy-brand.css measures
+       Metronic's #F59E0B at 2.15:1 for a white mark — under even the 3:1 a non-text graphic needs —
+       and publishes --cb-warning-strong for anything that must keep the hue.) *@
     var cards = new (string action, string label, string desc, string icon, string color)[] {
-        ("ValuationReport", Localizer["Inventory valuation"].Value, Localizer["Qty, value & avg cost per item/warehouse"].Value, "ki-dollar", "success"),
-        ("StagnantReport", Localizer["Slow-moving items"].Value, Localizer["Items with no movement for a while"].Value, "ki-time", "warning"),
+        ("ValuationReport", Localizer["Inventory valuation"].Value, Localizer["Qty, value & avg cost per item/warehouse"].Value, "ki-dollar", "primary"),
+        ("StagnantReport", Localizer["Slow-moving items"].Value, Localizer["Items with no movement for a while"].Value, "ki-time", "primary"),
         ("ReorderReport", Localizer["Reorder / low stock"].Value, Localizer["Items at/below reorder point or out of stock"].Value, "ki-information-5", "danger"),
-        ("ExpiryAlerts", Localizer["Expiry alerts"].Value, Localizer["Expired or soon-to-expire batches"].Value, "ki-time", "warning"),
+        ("ExpiryAlerts", Localizer["Expiry alerts"].Value, Localizer["Expired or soon-to-expire batches"].Value, "ki-time", "primary"),
     };
 }
 <div class="d-flex flex-column flex-column-fluid">
