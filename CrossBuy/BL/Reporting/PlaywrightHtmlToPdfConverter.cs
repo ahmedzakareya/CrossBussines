@@ -49,6 +49,23 @@ namespace CrossBuy.BL.Reporting
                 // opportunity for the page to fetch anything.
                 await page.SetContentAsync(html, new PageSetContentOptions { WaitUntil = WaitUntilState.Load });
 
+                // WAIT FOR THE DOCUMENT'S OWN FONT. `Load` does not cover it: an @font-face is fetched when
+                // the first glyph needs it, so printing immediately can capture a page still laid out in the
+                // fallback — which is how a report whose HTML says Cairo produced a PDF embedding only
+                // Segoe UI. Read off the artifact, not inferred: the PDF's /BaseFont list named one face and
+                // it was not the one the document declares.
+                //
+                // Bounded, and a failure here is not a failed document: if the promise never settles the
+                // report still prints, in the fallback face, rather than timing out the whole export.
+                try
+                {
+                    await page.EvaluateAsync("() => document.fonts && document.fonts.ready")
+                        .WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch (TimeoutException) { }
+                catch (Exception) { }
+
                 var pdf = new PagePdfOptions
                 {
                     Landscape = options.Landscape,
