@@ -19,12 +19,20 @@ namespace CrossBuy.Controllers
         private readonly IEntityRegistry _registry;
         private readonly IBusinessContextAccessor _context;
 
+        private readonly CrossBuy.Models.Context.CrossDbContext _db;
+
         public PlatformTimelineController(
-            ITimelineProjectionService timeline, IEntityRegistry registry, IBusinessContextAccessor context)
-        { _timeline = timeline; _registry = registry; _context = context; }
+            ITimelineProjectionService timeline, IEntityRegistry registry, IBusinessContextAccessor context,
+            CrossBuy.Models.Context.CrossDbContext db)
+        { _timeline = timeline; _registry = registry; _context = context; _db = db; }
 
         [HttpGet]
-        public async Task<IActionResult> List(string entityType, int entityId, int take = 50, CancellationToken cancellationToken = default)
+        // take defaults to the projection's own ceiling rather than 50: a document's history is not a
+        // feed, and a timeline that silently stops at fifty is one nobody can audit. The service clamps
+        // to MaxTake and the client declares it when the answer arrives full.
+        public async Task<IActionResult> List(string entityType, int entityId,
+            int take = CrossBuy.BL.Platform.TimelineProjectionService.MaxTake,
+            CancellationToken cancellationToken = default)
         {
             // Free-text entity types are rejected at the edge: an unregistered code is a bad request, and a
             // registered code whose timeline is not yet enabled is "nothing here", not an error.
@@ -47,6 +55,14 @@ namespace CrossBuy.Controllers
             }
 
             bool isArabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+
+            // THE ACTOR'S FACE. ActorEmployeeId has ridden along since the model was written, with a
+            // comment saying a UI has nothing to resolve an avatar from without it — and no UI ever
+            // resolved one. Same resolver the conversation panel uses, scoped to this company, so an
+            // actor from outside it simply has no photo and the row falls back to initials.
+            var photos = await CrossBuy.BL.Platform.EmployeePhotos.ResolveAsync(
+                _db, context, items.Select(i => i.ActorEmployeeId ?? 0), cancellationToken);
+
             return Json(items.Select(i => new
             {
                 eventUid = i.EventUid,
@@ -58,6 +74,7 @@ namespace CrossBuy.Controllers
                 // caller could say who acted but never show their face. A UI that wants an avatar
                 // has nothing to resolve it from without this.
                 actorEmployeeId = i.ActorEmployeeId,
+                actorAvatar = i.ActorEmployeeId is int aid && photos.TryGetValue(aid, out var ap) ? ap : null,
                 icon = i.Icon,
                 color = i.Color,
                 createdAt = i.CreatedAt,

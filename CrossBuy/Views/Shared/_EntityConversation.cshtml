@@ -1,78 +1,120 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@inject CrossBuy.BL.Platform.IBusinessContextAccessor Contexts
 @{
     // =========================================================================================
     // BUSINESS ENTITY CONVERSATION — one reusable panel, any supported entity family.
     //
-    // Include it from a document view after setting FOUR ViewBag values — what the record is, and
+    // Include it from a document view after setting these ViewBag values — what the record is, and
     // where this module answers conversation traffic:
     //
     //     ViewBag.ConversationEntityCode = CrossBuy.BL.Platform.EntityRegistry.SalesInvoice;
     //     ViewBag.ConversationEntityId   = Model.ID;
     //     ViewBag.ConversationListUrl    = Url.Action("InvoiceConversation", "Accounting");
     //     ViewBag.ConversationAddUrl     = Url.Action("InvoiceConversationAdd", "Accounting");
+    //     ViewBag.ConversationReactUrl   = Url.Action("InvoiceConversationReact", "Accounting");  // optional
     //
-    // The two URLs used to be resolved HERE, as Url.Action(..., "Accounting"). The header already
-    // claimed this file "knows nothing about invoices", and that claim was false: a second module
-    // including the partial silently posted its messages at the Accounting controller, against a
-    // permission gate written for invoices. Answering that by branching on the module — or by
-    // copying the file — would put the same 404/503 refusal semantics in two places to drift apart.
-    // So the endpoints are now the CALLER’s to name, and this file has no module in it at all.
+    // The urls used to be resolved HERE, as Url.Action(..., "Accounting"). The header already claimed
+    // this file "knows nothing about invoices", and that claim was false: a second module including
+    // the partial silently posted its messages at the Accounting controller, against a permission gate
+    // written for invoices. So the endpoints are the CALLER's to name, and this file has no module in
+    // it at all. A caller that names neither list nor add renders the disabled state below rather than
+    // fetching "undefined": a mis-wired panel must look broken, not look like a quiet record.
     //
-    // A caller that names neither renders the disabled state below rather than fetching "undefined":
-    // a mis-wired panel must look broken, not look like a record nobody has commented on.
-    //
-    // It stores NOTHING. The thread, the comments, the mentions and the audit trail live in the
-    // Communication Platform, reached through its entity-reference abstraction; this file renders
-    // whatever the endpoint returns. Adding a family is four ViewBag lines in that family’s view
-    // plus its own permission gate — never a copy of this.
+    // It stores NOTHING. The thread, the comments, the replies, the reactions, the attachments, the
+    // mentions and the audit trail live in the Communication Platform; this file renders what the
+    // endpoint returns and posts back what the person typed.
     //
     // WHY THE STATES ARE DISTINCT, and why that is not decoration:
     //   404  the caller may not read this record — or it does not exist. ONE indistinguishable
     //        answer on purpose, so the panel cannot be used to discover that a record exists in a
-    //        company the caller cannot see. The panel says "not available" and nothing more: no
-    //        thread id, no participant name, no mention count, no body.
+    //        company the caller cannot see. No thread id, no participant name, no body.
     //   503  Communication is not deployed here, or the family does not carry comments. A
     //        capability that is switched off must never look like a conversation nobody has joined.
     //   empty  the platform answered and there is genuinely nothing to show.
     // A collapsed set of states is how a broken deployment comes to look like a quiet week.
     //
-    // Metronic vocabulary only — card, symbol, separator, form-control, btn, ki-outline. No new
-    // stylesheet, no bespoke class, no invented colour. Spacing uses the logical properties
-    // (ms-/me-/text-start) so Arabic RTL mirrors without a second rule.
+    // -----------------------------------------------------------------------------------------
+    // IT IS A CONVERSATION, AND IT NOW LOOKS LIKE ONE (2026-09-10)
+    //
+    // The platform stores threads with replies, reactions, attachments, mentions, edit history, soft
+    // delete, read receipts and per-comment capabilities. This panel used to call two of those —
+    // ListAsync and AddAsync — and render {name, date, text} in a bare row. It was a comment box
+    // sitting on top of a discussion engine.
+    //
+    // What the redesign uses, all of it already in the payload:
+    //   · ParentCommentId  -> a real reply, rendered under what it answers
+    //   · Reactions        -> the platform's six frozen keys as emoji chips, `mine` computed server
+    //                         side so a chip cannot be shown pressed for the wrong reader
+    //   · Attachments      -> images inline, other files as a chip; a file alone is a valid message
+    //   · Capabilities     -> the reply and react affordances appear only where the platform allows
+    //
+    // Three defects went with it, none of them cosmetic:
+    //   · THE TIME WAS THREE HOURS EARLY. CreatedAt is DateTime.UtcNow serialised with NO zone marker
+    //     ("2026-09-01T11:04:40.85"), so new Date(iso) read it as local. A zoneless stamp from this
+    //     platform is UTC; the 'Z' is appended before parsing.
+    //   · IT WAS FORMATTED IN THE BROWSER'S LOCALE, not the page's — "9/1/2026, 11:04:40 AM" on an
+    //     Arabic screen, to the second. A conversation wants "how long ago"; the exact stamp is the
+    //     tooltip.
+    //   · EVERY AUTHOR WAS THE SAME GREY SILHOUETTE, so a thread of three people looked like one.
+    //
+    // Metronic vocabulary only — card, symbol, badge, separator, form-control, btn, ki-outline. The
+    // few inline styles are geometry the framework has no class for (bubble radius, the reply rail,
+    // an avatar's exact pixels) and each says why. Spacing uses logical properties (ms-/me-) so
+    // Arabic RTL mirrors without a second rule.
     // =========================================================================================
     var convCode = (ViewBag.ConversationEntityCode as string) ?? "";
     var convId = ViewBag.ConversationEntityId?.ToString() ?? "0";
-    var convBlank = Url.Content("~/Backend-assets/media/svg/avatars/blank.svg");
-    // Module-neutral: supplied by the including view. No Url.Action and no controller name here.
     var convListUrl = (ViewBag.ConversationListUrl as string) ?? "";
     var convAddUrl = (ViewBag.ConversationAddUrl as string) ?? "";
+    var convReactUrl = (ViewBag.ConversationReactUrl as string) ?? "";
     var convWired = !string.IsNullOrWhiteSpace(convListUrl) && !string.IsNullOrWhiteSpace(convAddUrl);
+
+    // WHO IS READING, so "mine" can be marked on a bubble. Nothing is disclosed by it: the id is the
+    // caller's own, and an unresolved context simply marks nothing.
+    var convCtx = await Contexts.TryGetCurrentAsync();
+    var convMe = convCtx?.EmployeeId?.ToString() ?? "";
 }
 <div class="card mt-5" id="cbConv"
      data-code="@convCode" data-id="@convId"
-     data-list="@convListUrl" data-add="@convAddUrl">
+     data-list="@convListUrl" data-add="@convAddUrl" data-react="@convReactUrl" data-me="@convMe">
+
     <div class="card-header align-items-center">
         <div class="card-title fw-bold fs-5 m-0">
             <i class="ki-outline ki-message-text-2 fs-3 text-primary me-2" aria-hidden="true"></i>@Localizer["Conversation"]
         </div>
         <div class="card-toolbar">
-            <span class="badge badge-light-primary d-none" id="cbConvCount"></span>
+            <span class="badge badge-light-primary fs-8 fw-bold d-none" id="cbConvCount"></span>
         </div>
     </div>
-    <div class="card-body pt-2">
-        @* Live region: a screen reader hears the list change instead of silently re-rendering. *@
-        <div id="cbConvList" class="mb-5" role="status" aria-live="polite">
+
+    <div class="card-body pt-3 pb-4">
+        @* Live region: a screen reader hears the list change instead of silently re-rendering.
+           max-height turns a long thread into its own scroller rather than pushing the composer off
+           the page — the box you reply in must stay reachable however long the discussion gets. *@
+        <div id="cbConvList" role="status" aria-live="polite"
+             style="max-height:560px;overflow-y:auto;overflow-x:hidden;">
             @if (convWired)
             {
-                <div class="text-muted text-center py-6 fs-7">@Localizer["Loading the conversation"]</div>
+                <div class="d-flex align-items-center text-muted fs-7 py-6">
+                    <span class="spinner-border spinner-border-sm me-3" role="presentation"></span>
+                    @Localizer["Loading the conversation"]
+                </div>
             }
             else
             {
                 @* No endpoints named by the including view. Distinct from empty and from 503: this is a
                    wiring mistake in the caller, and it must not be readable as "no messages yet". *@
-                <div class="alert bg-light-warning d-flex align-items-center p-4 mb-0">
-                    <i class="ki-outline ki-information-5 fs-2 text-warning me-3" aria-hidden="true"></i>
-                    <span class="fw-semibold fs-7 text-gray-700">@Localizer["Conversations are not configured for this screen"]</span>
+                <div class="notice d-flex rounded border border-dashed p-6"
+                     style="background:#FEF3C7;border-color:#B45309 !important;">
+                    <span class="symbol symbol-45px me-5">
+                        <span class="symbol-label" style="background:#B45309;">
+                            <i class="ki-outline ki-information-5 fs-2x text-white"></i>
+                        </span>
+                    </span>
+                    <div class="fw-semibold">
+                        <h4 class="text-gray-900 fw-bold mb-1">@Localizer["Conversations are not configured for this screen"]</h4>
+                        <div class="fs-7 text-gray-700">@Localizer["This panel was included without its endpoints"]</div>
+                    </div>
                 </div>
             }
         </div>
@@ -80,18 +122,103 @@
         <div id="cbConvComposer" class="d-none">
             <div class="separator my-4"></div>
             @Html.AntiForgeryToken()
-            <label class="form-label fs-8 text-muted" for="cbConvInput">@Localizer["Add a message"]</label>
-            <div class="d-flex align-items-start gap-3">
-                <textarea id="cbConvInput" class="form-control form-control-solid" rows="2"
-                          placeholder="@Localizer["Write a message"]"></textarea>
-                <button type="button" class="btn btn-primary flex-shrink-0" id="cbConvSend">
-                    <i class="ki-outline ki-send fs-4" aria-hidden="true"></i>@Localizer["Send"]
+
+            @* REPLY CONTEXT, above the box rather than inside it: what you are answering has to stay
+               visible while you type, and it has to be cancellable in one click. *@
+            <div id="cbConvReplyBar" class="d-none align-items-center justify-content-between rounded px-3 py-2 mb-2"
+                 style="background:var(--bs-gray-100);border-inline-start:3px solid var(--bs-primary);">
+                <div class="fs-8 text-gray-700 text-truncate" id="cbConvReplyText" style="min-width:0;"></div>
+                <button type="button" class="btn btn-sm btn-icon btn-active-light w-25px h-25px flex-shrink-0"
+                        id="cbConvReplyCancel" title="@Localizer["Cancel the reply"]">
+                    <i class="ki-outline ki-cross fs-6"></i>
                 </button>
             </div>
-            <div class="text-danger fs-8 mt-2 d-none" id="cbConvErr" role="alert"></div>
+
+            <div class="d-flex align-items-start gap-3">
+                <div class="symbol symbol-38px symbol-circle flex-shrink-0" id="cbConvMeAvatar"
+                     style="width:38px;height:38px;overflow:hidden;">
+                    <span class="symbol-label bg-light-primary"><i class="ki-outline ki-user fs-4 text-primary"></i></span>
+                </div>
+
+                @* ONE SHELL AROUND THE WHOLE COMPOSER — the text, its toolbar and the send button read
+                   as a single control, the way every messaging surface people already use is built.
+                   Focus is mirrored onto the shell by script so the border lights up as one thing. *@
+                <div class="flex-grow-1 rounded" id="cbConvShell"
+                     style="min-width:0;border:1px solid var(--bs-gray-300);background:var(--bs-body-bg);transition:border-color .15s;">
+                    <textarea id="cbConvInput" class="form-control border-0 bg-transparent px-4 pt-3 pb-1 fs-7"
+                              rows="1" maxlength="4000"
+                              style="resize:none;overflow:hidden;min-height:44px;box-shadow:none;"
+                              placeholder="@Localizer["Write a message"]"
+                              aria-label="@Localizer["Add a message"]"></textarea>
+
+                    @* THE CHOSEN FILE AS A THUMBNAIL, not a bar of text. A row carrying a GUID
+                       filename and a size tells you a file is attached; a picture of it tells you
+                       WHICH file, which is the thing you check before pressing send. Rendered from
+                       the local File through an object URL — nothing is uploaded to preview it. *@
+                    <div id="cbConvFileChip" class="d-none align-items-center gap-3 mx-4 mb-3">
+                        <div id="cbConvFilePreview" class="rounded overflow-hidden d-flex flex-column
+                             align-items-center justify-content-center flex-shrink-0 position-relative"
+                             style="width:72px;height:72px;background:var(--bs-gray-100);border:1px solid var(--bs-gray-300);"></div>
+                        <div style="min-width:0;">
+                            <div class="fs-8 fw-semibold text-gray-800 text-truncate" id="cbConvFileName"></div>
+                            <div class="fs-9 text-muted" id="cbConvFileSize"></div>
+                            <button type="button" class="btn btn-link p-0 fs-9 fw-semibold text-danger"
+                                    id="cbConvFileClear">@Localizer["Remove the file"]</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between px-3 pb-2 gap-2">
+                        <div class="d-flex align-items-center gap-1 position-relative">
+                            <button type="button" class="btn btn-sm btn-icon btn-active-light w-32px h-32px rounded"
+                                    id="cbConvAttach" title="@Localizer["Attach a file"]"
+                                    style="font-size:17px;line-height:1;">📎</button>
+                            <button type="button" class="btn btn-sm btn-icon btn-active-light w-32px h-32px rounded"
+                                    id="cbConvEmoji" title="@Localizer["Insert an emoji"]"
+                                    style="font-size:17px;line-height:1;">🙂</button>
+                            <input type="file" id="cbConvFile" class="d-none"
+                                   accept=".png,.jpg,.jpeg,.gif,.bmp,.webp,.avif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rtf" />
+                            <span class="text-muted fs-9 ms-2 d-none d-md-inline" id="cbConvHint">@Localizer["Ctrl + Enter to send"]</span>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-primary flex-shrink-0" id="cbConvSend" disabled>
+                            <i class="ki-outline ki-send fs-5" aria-hidden="true"></i>@Localizer["Send"]
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-danger fs-8 mt-2 ms-13 d-none" id="cbConvErr" role="alert"></div>
         </div>
     </div>
 </div>
+
+@* THE ATTACHMENT OPENS HERE, NOT IN A TAB. A new tab drops the reader out of the document they were
+   reading and shows a bare image on a black page with no way back but the browser history. The
+   dialog keeps the invoice underneath and still offers the tab and the download for whoever wants
+   them. ONE dialog per panel, reused: a modal built per click leaks a node on every click. *@
+<div class="modal fade" id="cbConvFileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header py-4">
+                <h5 class="modal-title fs-6 fw-bold text-truncate" id="cbConvFileTitle" style="min-width:0;"></h5>
+                <div class="d-flex align-items-center gap-2 ms-3">
+                    <a class="btn btn-sm btn-light-primary" id="cbConvFileOpen" target="_blank" rel="noopener">
+                        <i class="ki-outline ki-exit-right-corner fs-6"></i><span id="cbConvFileOpenText"></span>
+                    </a>
+                    <a class="btn btn-sm btn-light" id="cbConvFileDownload" download>
+                        <i class="ki-outline ki-cloud-download fs-6"></i><span id="cbConvFileDownloadText"></span>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-icon btn-active-light" data-bs-dismiss="modal" aria-label="close">
+                        <i class="ki-outline ki-cross fs-4"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-0 d-flex align-items-center justify-content-center"
+                 id="cbConvFileBody" style="min-height:60vh;background:var(--bs-gray-100);"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     var box = document.getElementById('cbConv');
@@ -106,110 +233,629 @@
     var id = box.getAttribute('data-id');
     var listUrl = box.getAttribute('data-list');
     var addUrl = box.getAttribute('data-add');
+    var reactUrl = box.getAttribute('data-react') || '';
+    var me = box.getAttribute('data-me') || '';
+
     var list = document.getElementById('cbConvList');
     var composer = document.getElementById('cbConvComposer');
     var countBadge = document.getElementById('cbConvCount');
-    var blank = '@convBlank';
+    var LOC = document.documentElement.lang || 'ar';
 
     var T = {
         empty: @Html.Raw(Json.Serialize(Localizer["No messages on this record yet"].Value)),
+        emptyHint: @Html.Raw(Json.Serialize(Localizer["Be the first to write one"].Value)),
         unavailable: @Html.Raw(Json.Serialize(Localizer["Conversations are unavailable in this environment"].Value)),
         denied: @Html.Raw(Json.Serialize(Localizer["This conversation is not available"].Value)),
         failed: @Html.Raw(Json.Serialize(Localizer["The conversation could not be loaded"].Value)),
         edited: @Html.Raw(Json.Serialize(Localizer["edited"].Value)),
-        removed: @Html.Raw(Json.Serialize(Localizer["message removed"].Value))
+        removed: @Html.Raw(Json.Serialize(Localizer["message removed"].Value)),
+        mine: @Html.Raw(Json.Serialize(Localizer["You"].Value)),
+        now: @Html.Raw(Json.Serialize(Localizer["just now"].Value)),
+        reply: @Html.Raw(Json.Serialize(Localizer["Reply"].Value)),
+        react: @Html.Raw(Json.Serialize(Localizer["React"].Value)),
+        replyingTo: @Html.Raw(Json.Serialize(Localizer["Replying to"].Value)),
+        reactFailed: @Html.Raw(Json.Serialize(Localizer["The reaction could not be saved"].Value)),
+        openTab: @Html.Raw(Json.Serialize(Localizer["Open in a new tab"].Value)),
+        download: @Html.Raw(Json.Serialize(Localizer["Download"].Value)),
+        noPreview: @Html.Raw(Json.Serialize(Localizer["This file has no preview"].Value))
     };
 
-    // Text goes in as TEXT. Every value below is server data that may contain a person's own words.
-    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
-    function when(iso) { if (!iso) { return ''; } try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+    // THE PLATFORM'S SIX FROZEN KEYS, and nothing else. CommReactionKeys is a closed set so reactions
+    // stay enumerable for reporting; inventing a seventh here would post a key the service refuses.
+    var REACTIONS = [
+        { key: 'like', ch: '👍' },
+        { key: 'celebrate', ch: '🎉' },
+        { key: 'insightful', ch: '💡' },
+        { key: 'thanks', ch: '🙏' },
+        { key: 'question', ch: '❓' },
+        { key: 'concern', ch: '⚠️' }
+    ];
+    var REACTION_CH = {};
+    REACTIONS.forEach(function (r) { REACTION_CH[r.key] = r.ch; });
 
-    function notice(text, tone) {
-        list.innerHTML = '<div class="alert bg-light-' + tone + ' d-flex align-items-center p-4 mb-0">' +
-            '<i class="ki-outline ki-information-5 fs-2 text-' + tone + ' me-3" aria-hidden="true"></i>' +
-            '<span class="fw-semibold fs-7 text-gray-700">' + esc(text) + '</span></div>';
+    // For the composer's own picker: these go INTO the text, so they are not the reaction set.
+    var TEXT_EMOJI = ['🙂','😀','😊','😉','👍','🙏','🎉','🔥','✅','❌','⚠️','❓','📌','📎','💰','📈','📉','🕒','✍️','👌'];
+
+    var state = { comments: [], replyTo: null, file: null, canReact: false };
+
+    // ---- text safety --------------------------------------------------------------------------
+    // Every value below is server data that may contain a person's own words.
+    function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+
+    // ---- time -----------------------------------------------------------------------------------
+    //
+    // A ZONELESS STAMP FROM THIS PLATFORM IS UTC. CreatedAt is DateTime.UtcNow and serialises without
+    // an offset, so parsing it raw made every message three hours early on a +03 machine.
+    function parseUtc(iso) {
+        if (!iso) { return null; }
+        var s = /(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : iso + 'Z';
+        var d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
     }
 
-    function row(c) {
-        var mentions = (c.mentions || [])
-            .filter(function (m) { return m.display; })
+    // ASSEMBLED, not formatted whole: Intl.RelativeTimeFormat gives the unit its correct Arabic
+    // plural, which a hand-built "منذ N يوم" does not.
+    function ago(d) {
+        var secs = Math.round((Date.now() - d.getTime()) / 1000);
+        if (secs < 45) { return T.now; }
+        var units = [['second', 60], ['minute', 60], ['hour', 24], ['day', 7], ['week', 4.35], ['month', 12], ['year', Infinity]];
+        var v = secs, unit = 'second';
+        for (var i = 0; i < units.length; i++) {
+            if (Math.abs(v) < units[i][1]) { unit = units[i][0]; break; }
+            v = v / units[i][1];
+        }
+        try { return new Intl.RelativeTimeFormat(LOC, { numeric: 'auto' }).format(-Math.round(v), unit); }
+        catch (e) { return d.toLocaleString(LOC); }
+    }
+
+    function exact(d) {
+        try {
+            return d.toLocaleString(LOC, { year: 'numeric', month: 'short', day: 'numeric',
+                                           hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return d.toLocaleString(); }
+    }
+
+    function bytes(n) {
+        if (!n && n !== 0) { return ''; }
+        var u = ['B', 'KB', 'MB', 'GB'], i = 0, v = n;
+        while (v >= 1024 && i < u.length - 1) { v = v / 1024; i++; }
+        return (i === 0 ? v : v.toFixed(1)) + ' ' + u[i];
+    }
+
+    // ---- identity ---------------------------------------------------------------------------------
+    //
+    // Brand-safe, each measured >= 4.5 against white, none in the 135-157 hue band crossbuy-brand.css
+    // reserves for semantic success — a person's avatar must never read as a status. Picked by a hash
+    // of the NAME so someone keeps the same colour on every screen and every reload.
+    var INK = ['#0E4A9E', '#3730A3', '#155E75', '#5B21B6', '#334155', '#7E22CE', '#0F766E', '#9D174D'];
+
+    function hue(name) {
+        var h = 0, s = name || '';
+        for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+        return INK[h % INK.length];
+    }
+
+    function initials(name) {
+        var parts = (name || '').trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) { return '?'; }
+        return (parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '')).toUpperCase();
+    }
+
+    function rgba(hex, a) {
+        var n = parseInt(hex.slice(1), 16);
+        return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+
+    // THE PIXELS ARE STATED ON BOTH BOXES. `width:100%` on the image needs an ancestor with a size to
+    // be a percentage OF, and `.symbol` is an inline-block sized by its content — so the percentage
+    // resolved against the photograph itself and a 38px avatar rendered at its full natural width.
+    function avatar(name, px, src) {
+        var c = hue(name), boxCss = 'width:' + px + 'px;height:' + px + 'px;';
+        var tile = '<span class="symbol-label fw-bold ' + (px >= 38 ? 'fs-7' : 'fs-8') + '" ' +
+                   'style="background:' + rgba(c, 0.12) + ';color:' + c + ';">' + esc(initials(name)) + '</span>';
+        var inner = src
+            ? '<img src="' + esc(src) + '" alt="" style="' + boxCss + 'object-fit:cover;border-radius:50%;display:block;" ' +
+              "onerror=\"this.outerHTML=this.getAttribute('data-fallback')\" data-fallback=\"" + esc(tile) + '" />'
+            : tile;
+        return '<span class="symbol symbol-' + px + 'px symbol-circle flex-shrink-0" ' +
+               'style="' + boxCss + 'overflow:hidden;" title="' + esc(name) + '">' + inner + '</span>';
+    }
+
+    function notice(title, tone, detail) {
+        var tones = { denied: ['#EEF2F6', '#334155'], off: ['#E7F0FF', '#0E4A9E'], warn: ['#FEF3C7', '#B45309'] };
+        var c = tones[tone] || tones.off;
+        list.innerHTML =
+            '<div class="notice d-flex rounded border border-dashed p-6" ' +
+            'style="background:' + c[0] + ';border-color:' + c[1] + ' !important;">' +
+            '<span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:' + c[1] + ';">' +
+            '<i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>' +
+            '<div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">' + esc(title) + '</h4>' +
+            (detail ? '<div class="fs-7 text-gray-700">' + esc(detail) + '</div>' : '') +
+            '</div></div>';
+    }
+
+    // ---- one message ------------------------------------------------------------------------------
+    function attachmentsHtml(c) {
+        if (!c.attachments || !c.attachments.length) { return ''; }
+        return '<div class="d-flex flex-wrap gap-2 mt-2">' + c.attachments.map(function (a) {
+            // data-act="file" rather than an href that navigates: the dialog is the destination, and
+            // the real url rides along so "open in a tab" and "download" still work from inside it.
+            var meta = 'data-act="file" data-url="' + esc(a.url) + '" data-name="' + esc(a.name) +
+                       '" data-type="' + esc(a.contentType || '') + '"';
+
+            var TILE = 84;   // px — recognisable, and four fit on one line
+
+            if (a.isImage) {
+                // The tile IS the control, and it is a THUMBNAIL: the picture at a size you can
+                // recognise, not at a size that outweighs the message it came with. The dialog shows
+                // it properly.
+                return '<a href="' + esc(a.url) + '" ' + meta + ' class="d-block rounded overflow-hidden" ' +
+                       'style="width:' + TILE + 'px;height:' + TILE + 'px;border:1px solid var(--bs-gray-300);' +
+                       'cursor:zoom-in;" title="' + esc(a.name) + '">' +
+                       '<img src="' + esc(a.url) + '" alt="' + esc(a.name) + '" ' +
+                       'style="width:100%;height:100%;display:block;object-fit:cover;" /></a>';
+            }
+
+            // A FILE GETS A TILE OF THE SAME SIZE, so a message carrying a picture and a spreadsheet
+            // reads as two attachments rather than as two unrelated widgets. Its extension is the
+            // label, because "XLSX" tells the reader what it is faster than a truncated filename.
+            var ext = (a.name || '').split('.').pop();
+            ext = (ext && ext.length <= 5 && ext !== a.name) ? ext.toUpperCase() : '';
+            return '<a href="' + esc(a.url) + '" ' + meta + ' ' +
+                   'class="d-flex flex-column align-items-center justify-content-center rounded text-gray-800" ' +
+                   'style="width:' + TILE + 'px;height:' + TILE + 'px;background:var(--bs-gray-100);' +
+                   'border:1px solid var(--bs-gray-300);cursor:pointer;" title="' + esc(a.name) + '">' +
+                   '<span style="font-size:22px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;">📄️</span>' +
+                   (ext ? '<span class="fs-9 fw-bold text-gray-700 mt-1">' + esc(ext) + '</span>' : '') +
+                   '<span class="fs-9 text-muted">' + esc(bytes(a.size)) + '</span></a>';
+        }).join('') + '</div>';
+    }
+
+    function reactionsHtml(c) {
+        var chips = (c.reactions || []).map(function (r) {
+            var ch = REACTION_CH[r.key] || '•';
+            return '<button type="button" class="btn btn-sm px-2 py-1 rounded-pill d-inline-flex align-items-center gap-1 ' +
+                   (r.mine ? 'bg-light-primary' : '') + '" ' +
+                   'data-act="toggle" data-c="' + c.id + '" data-key="' + esc(r.key) + '" data-on="' + (r.mine ? '0' : '1') + '" ' +
+                   'style="border:1px solid ' + (r.mine ? 'var(--bs-primary)' : 'var(--bs-gray-300)') + ';">' +
+                   '<span style="font-size:13px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;">' + ch + '</span>' +
+                   '<span class="fs-9 fw-semibold ' + (r.mine ? 'text-primary' : 'text-gray-700') + '">' + r.count + '</span>' +
+                   '</button>';
+        }).join('');
+        return chips ? '<div class="d-flex flex-wrap gap-1 mt-2">' + chips + '</div>' : '';
+    }
+
+    function actionsHtml(c) {
+        // WORDS, NOT GLYPHS, and under the bubble rather than floating on hover.
+        //
+        // The two buttons here were an outline smiley and ki-arrow-two-diagonals — which is the RESIZE
+        // icon, so the reply action was wearing the wrong picture as well as an ugly one. A 12px glyph
+        // in a grey square is a guess the reader has to make; "رد" is not. It is also why every social
+        // surface people already use (Facebook, LinkedIn) writes these as small text actions.
+        //
+        // ALWAYS VISIBLE, because a hover-only control does not exist on a touch screen at all.
+        var bits = [];
+        if (state.canReact && c.can && c.can.react && !c.isDeleted) {
+            bits.push('<button type="button" class="btn btn-link p-0 fs-9 fw-semibold text-muted text-hover-primary" ' +
+                      'data-act="picker" data-c="' + c.id + '">' + esc(T.react) + '</button>');
+        }
+        if (c.can && c.can.reply && !c.isDeleted) {
+            bits.push('<button type="button" class="btn btn-link p-0 fs-9 fw-semibold text-muted text-hover-primary" ' +
+                      'data-act="reply" data-c="' + c.id + '">' + esc(T.reply) + '</button>');
+        }
+        if (!bits.length) { return ''; }
+
+        return '<div class="d-flex align-items-center gap-2 mt-1 ms-2">' +
+            bits.join('<span class="text-gray-400 fs-9">·</span>') + '</div>';
+    }
+
+    function message(c, isReply) {
+        var isMine = me && String(c.authorEmployeeId || '') === me;
+        var d = parseUtc(c.createdAt);
+
+        var mentions = (c.mentions || []).filter(function (m) { return m.display; })
             .map(function (m) { return '<span class="badge badge-light-info fs-9 me-1">@@' + esc(m.display) + '</span>'; })
             .join('');
 
-        var meta = '<span class="text-muted fs-8">' + esc(when(c.createdAt)) + '</span>';
-        if (c.editedAt) { meta += '<span class="text-muted fs-8 ms-2">(' + esc(T.edited) + ')</span>'; }
+        var head =
+            '<div class="d-flex align-items-center gap-2 mb-1">' +
+                '<span class="fw-bold text-gray-900 fs-7 text-truncate" style="min-width:0;">' + esc(c.author) + '</span>' +
+                (isMine ? '<span class="badge badge-light-primary fs-9 flex-shrink-0">' + esc(T.mine) + '</span>' : '') +
+                (d ? '<span class="text-muted fs-9 flex-shrink-0" title="' + esc(exact(d)) + '">' + esc(ago(d)) + '</span>' : '') +
+                (c.editedAt ? '<span class="text-muted fs-9 flex-shrink-0">(' + esc(T.edited) + ')</span>' : '') +
+            '</div>';
 
-        var body = c.isDeleted
-            ? '<span class="text-muted fst-italic fs-7">' + esc(T.removed) + '</span>'
-            : '<span class="text-gray-800 fs-7">' + esc(c.body) + '</span>';
+        // A BUBBLE, not a line. `pre-wrap` keeps the paragraphs someone typed; `break-word` stops a
+        // pasted url widening the card. A body may be empty when the message IS the attachment.
+        var text = c.isDeleted
+            ? '<div class="fst-italic text-muted fs-7">' + esc(T.removed) + '</div>'
+            : ((c.body || '').trim()
+                ? '<div class="fs-7 text-gray-800" style="white-space:pre-wrap;word-break:break-word;">' + esc(c.body) + '</div>'
+                : '');
 
-        return '<div class="d-flex align-items-start mb-4">' +
-            '<div class="symbol symbol-35px symbol-circle me-3 flex-shrink-0">' +
-                '<img src="' + blank + '" alt="" aria-hidden="true" />' +
-            '</div>' +
-            '<div class="flex-grow-1">' +
-                '<div class="d-flex flex-wrap align-items-center gap-2 mb-1">' +
-                    '<span class="fw-bold text-gray-900 fs-7">' + esc(c.author) + '</span>' + meta +
-                '</div>' +
-                '<div class="text-start">' + body + '</div>' +
-                (mentions ? '<div class="mt-1">' + mentions + '</div>' : '') +
-            '</div>' +
-        '</div>';
+        // A BUBBLE HUGS ITS CONTENT. Stretched to the full width of the card, a two-word message reads
+        // as a form field with a tint — which is exactly what this panel looked like before. inline-block
+        // sizes it to the words; the cap stops a pasted paragraph running the width of a desk monitor.
+        var bubble =
+            '<div class="px-4 py-3 ' + (isMine ? 'bg-light-primary' : 'bg-light') + '" ' +
+            'style="border-radius:14px;display:inline-block;max-width:min(88%,620px);">' +
+            text + attachmentsHtml(c) + (mentions ? '<div class="mt-2">' + mentions + '</div>' : '') +
+            '</div>';
+
+        return '<div class="cb-msg d-flex align-items-start gap-3 mb-3" data-id="' + c.id + '">' +
+            avatar(c.author, isReply ? 30 : 38, c.authorAvatar) +
+            '<div class="flex-grow-1" style="min-width:0;">' + head + bubble + reactionsHtml(c) +
+            actionsHtml(c) +
+            '<div class="cb-picker d-none flex-wrap gap-1 mt-2"></div>' +
+            '</div></div>';
+    }
+
+    // ---- the thread -------------------------------------------------------------------------------
+    //
+    // REPLIES SIT UNDER WHAT THEY ANSWER, one visual level deep however deep the data goes. The
+    // platform bounds depth on write, but a UI that indents four times turns a discussion into a
+    // staircase; a reply to a reply still belongs to the same exchange and reads better flat under it.
+    function thread(items) {
+        var byId = {}, roots = [], kids = {};
+        items.forEach(function (c) { byId[c.id] = c; });
+        items.forEach(function (c) {
+            var p = c.parentId;
+            // A parent outside this page (or one the caller cannot see) must not swallow its child.
+            if (p && byId[p]) { (kids[p] = kids[p] || []).push(c); }
+            else { roots.push(c); }
+        });
+
+        function branch(c) {
+            var own = kids[c.id] || [];
+            var deeper = [];
+            own.forEach(function (k) { deeper = deeper.concat([k], kids[k.id] || []); });
+            if (!deeper.length) { return message(c, false); }
+
+            return message(c, false) +
+                '<div class="ms-13 ps-3 mb-3" style="border-inline-start:2px solid var(--bs-gray-200);">' +
+                deeper.map(function (k) { return message(k, true); }).join('') +
+                '</div>';
+        }
+
+        return roots.map(branch).join('');
     }
 
     function render(data) {
-        var items = data.comments || [];
-        if (!items.length) {
-            list.innerHTML = '<div class="text-muted text-center py-6 fs-7">' + esc(T.empty) + '</div>';
+        state.comments = data.comments || [];
+        state.canReact = !!data.canReact && !!reactUrl;
+
+        if (!state.comments.length) {
+            // EMPTY IS NOT A FAILURE, so it does not wear a failure's colour.
+            notice(T.empty, 'off', T.emptyHint);
         } else {
-            list.innerHTML = items.map(row).join('');
+            list.innerHTML = thread(state.comments);
         }
-        countBadge.textContent = items.length;
+
+        countBadge.textContent = state.comments.length;
         countBadge.classList.remove('d-none');
         composer.classList.remove('d-none');
+        paintMyAvatar(data.me);
     }
 
-    function load() {
-        var url = listUrl + '?entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id);
-        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(function (r) {
-                // 404 is the deliberately indistinguishable refusal; 503 is an inactive capability.
-                if (r.status === 404) { notice(T.denied, 'secondary'); return null; }
-                if (r.status === 503) { notice(T.unavailable, 'primary'); return null; }
-                if (!r.ok) { notice(T.failed, 'warning'); return null; }
-                return r.json();
+    // YOUR OWN FACE ON THE BOX YOU TYPE IN, from the server's answer rather than from your last
+    // message in this thread — which is why a record you had not written on yet showed a silhouette.
+    // The thread's own messages are the fallback, for a deployment whose endpoint does not send `me`.
+    function paintMyAvatar(who) {
+        var slot = document.getElementById('cbConvMeAvatar');
+        if (!slot || slot.getAttribute('data-done')) { return; }
+
+        var name = who && who.name, src = who && who.avatar;
+        if (!name) {
+            var mine = state.comments.filter(function (c) { return me && String(c.authorEmployeeId || '') === me; });
+            if (!mine.length) { return; }   // nothing to take a face from; the neutral mark stands
+            name = mine[mine.length - 1].author;
+            src = mine[mine.length - 1].authorAvatar;
+        }
+
+        slot.outerHTML = avatar(name, 38, src)
+            .replace('class="symbol', 'id="cbConvMeAvatar" data-done="1" class="symbol');
+    }
+
+    // ---- delegated interaction --------------------------------------------------------------------
+    //
+    // ONE listener on the container, because the list is replaced wholesale on every load and a
+    // listener bound to a button would die with it.
+    list.addEventListener('click', function (e) {
+        var btn = e.target.closest ? e.target.closest('[data-act]') : null;
+        if (!btn) { return; }
+        e.preventDefault();
+        var act = btn.getAttribute('data-act');
+        var cid = btn.getAttribute('data-c');
+
+        if (act === 'file') { openFile(btn); return; }
+
+        if (act === 'reply') { startReply(cid); return; }
+
+        if (act === 'picker') {
+            var pane = btn.closest('.cb-msg').querySelector('.cb-picker');
+            if (!pane) { return; }
+            if (!pane.classList.contains('d-none')) {
+                pane.classList.add('d-none'); pane.classList.remove('d-flex'); return;
+            }
+
+            // THE PICKER USED TO SEND on=true FOR EVERY EMOJI, so pressing the like you had already
+            // given re-added it: the server answered {count:1, mine:true} — unchanged — and the panel
+            // repainted identically. Nothing moved, which is indistinguishable from a dead button.
+            // It is a TOGGLE, so what it sends depends on what this reader has already given.
+            var subject = state.comments.filter(function (x) { return String(x.id) === String(cid); })[0];
+            var already = {};
+            ((subject && subject.reactions) || []).forEach(function (r) { if (r.mine) { already[r.key] = 1; } });
+
+            pane.innerHTML = REACTIONS.map(function (r) {
+                // The picker is the one place a picture IS the label — an emoji is what you are choosing.
+                var on = already[r.key] ? '0' : '1';
+                return '<button type="button" class="btn btn-sm px-2 py-1 rounded ' +
+                       (already[r.key] ? 'bg-light-primary' : 'btn-active-light') + '" ' +
+                       'data-act="toggle" data-c="' + cid + '" data-key="' + r.key + '" data-on="' + on + '" ' +
+                       'title="' + r.key + '" style="font-size:17px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;">' + r.ch + '</button>';
+            }).join('');
+            pane.classList.remove('d-none'); pane.classList.add('d-flex');
+            return;
+        }
+
+        if (act === 'toggle') { toggleReaction(cid, btn.getAttribute('data-key'), btn.getAttribute('data-on') === '1'); }
+    });
+
+    // ---- the attachment dialog ------------------------------------------------------------------
+    //
+    // WHAT CAN BE SHOWN, and what honestly cannot: an image renders, a PDF gets the browser's own
+    // viewer in a frame, and everything else (a spreadsheet, a zip) gets a plain card with the
+    // download — a frame pointed at a .xlsx shows a download prompt or a blank rectangle depending
+    // on the browser, which is worse than saying there is no preview.
+    function openFile(link) {
+        var url = link.getAttribute('data-url');
+        var name = link.getAttribute('data-name') || '';
+        var type = (link.getAttribute('data-type') || '').toLowerCase();
+        if (!url) { return; }
+
+        document.getElementById('cbConvFileTitle').textContent = name;
+        var open = document.getElementById('cbConvFileOpen');
+        var dl = document.getElementById('cbConvFileDownload');
+        open.setAttribute('href', url);
+        dl.setAttribute('href', url);
+        dl.setAttribute('download', name);
+        document.getElementById('cbConvFileOpenText').textContent = T.openTab;
+        document.getElementById('cbConvFileDownloadText').textContent = T.download;
+
+        var body = document.getElementById('cbConvFileBody');
+        if (type.indexOf('image/') === 0) {
+            body.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(name) + '" ' +
+                             'style="max-width:100%;max-height:80vh;display:block;object-fit:contain;" />';
+        } else if (type.indexOf('pdf') >= 0) {
+            body.innerHTML = '<iframe src="' + esc(url) + '" title="' + esc(name) + '" ' +
+                             'style="width:100%;height:80vh;border:0;background:#fff;"></iframe>';
+        } else {
+            body.innerHTML = '<div class="text-center py-10">' +
+                '<div style="font-size:44px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;" class="mb-3">📄️</div>' +
+                '<div class="fw-semibold text-gray-700 fs-6">' + esc(name) + '</div>' +
+                '<div class="text-muted fs-8 mt-1">' + esc(T.noPreview) + '</div></div>';
+        }
+
+        var el = document.getElementById('cbConvFileModal');
+        if (window.bootstrap && window.bootstrap.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(el).show();
+        } else {
+            // No Bootstrap on this page: the link still carries a real href, so let it behave like
+            // one rather than swallowing the click and showing nothing.
+            window.open(url, '_blank', 'noopener');
+        }
+    }
+
+    // Emptied on close, or a PDF keeps rendering behind the page.
+    (function () {
+        var fileModal = document.getElementById('cbConvFileModal');
+        if (fileModal) {
+            fileModal.addEventListener('hidden.bs.modal', function () {
+                document.getElementById('cbConvFileBody').innerHTML = '';
+            });
+        }
+    })();
+
+    function token() {
+        var el = box.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    function toggleReaction(commentId, key, on) {
+        if (!reactUrl) { return; }
+        var fd = new FormData();
+        fd.append('entity', code);
+        fd.append('id', id);
+        fd.append('commentId', commentId);
+        fd.append('key', key);
+        fd.append('on', on ? 'true' : 'false');
+        fd.append('__RequestVerificationToken', token());
+
+        fetch(reactUrl, { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                // A SILENT CATCH IS WHY "IT DOES NOT WORK" HAS NO CAUSE. If the endpoint is missing
+                // (an app running an older build), refused, or broken, the click used to do literally
+                // nothing — no chip, no message, nothing in the console. Say so.
+                if (!d || !d.ok) { fail(); return; }
+                // Repainted from the SERVER's summary, never from a guess about what the click did:
+                // `mine` and the counts are the platform's answer for this reader.
+                var target = state.comments.filter(function (c) { return String(c.id) === String(d.commentId); })[0];
+                if (target) { target.reactions = d.reactions || []; }
+                list.innerHTML = thread(state.comments);
             })
-            .then(function (d) { if (d && d.ok) { render(d); } else if (d) { notice(T.failed, 'warning'); } })
-            .catch(function () { notice(T.failed, 'warning'); });
+            .catch(fail);
+
+        function fail() {
+            var err = document.getElementById('cbConvErr');
+            if (!err) { return; }
+            err.textContent = T.reactFailed;
+            err.classList.remove('d-none');
+            setTimeout(function () { err.classList.add('d-none'); }, 4000);
+        }
     }
 
+    // ---- the composer -------------------------------------------------------------------------------
     var sendBtn = document.getElementById('cbConvSend');
     var input = document.getElementById('cbConvInput');
     var err = document.getElementById('cbConvErr');
+    var shell = document.getElementById('cbConvShell');
+    var fileInput = document.getElementById('cbConvFile');
+    var fileChip = document.getElementById('cbConvFileChip');
+    var replyBar = document.getElementById('cbConvReplyBar');
 
-    sendBtn.addEventListener('click', function () {
+    function refresh() {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 240) + 'px';
+        // A file on its own is a message, so the button is live for either.
+        sendBtn.disabled = !((input.value || '').trim() || state.file);
+    }
+    input.addEventListener('input', refresh);
+    input.addEventListener('focus', function () { shell.style.borderColor = 'var(--bs-primary)'; });
+    input.addEventListener('blur', function () { shell.style.borderColor = 'var(--bs-gray-300)'; });
+    input.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); send(); }
+    });
+
+    function startReply(commentId) {
+        var c = state.comments.filter(function (x) { return String(x.id) === String(commentId); })[0];
+        if (!c) { return; }
+        state.replyTo = c.id;
+        document.getElementById('cbConvReplyText').textContent = T.replyingTo + ' ' + c.author;
+        replyBar.classList.remove('d-none'); replyBar.classList.add('d-flex');
+        input.focus();
+    }
+    document.getElementById('cbConvReplyCancel').addEventListener('click', function () {
+        state.replyTo = null;
+        replyBar.classList.add('d-none'); replyBar.classList.remove('d-flex');
+    });
+
+    document.getElementById('cbConvAttach').addEventListener('click', function () { fileInput.click(); });
+    var previewUrl = null;
+    function dropPreview() {
+        // An object URL holds the file in memory until it is revoked. Picking five files in a row
+        // without this leaks all five.
+        if (previewUrl) { try { URL.revokeObjectURL(previewUrl); } catch (e) { } previewUrl = null; }
+    }
+
+    fileInput.addEventListener('change', function () {
+        var f = fileInput.files && fileInput.files[0];
+        if (!f) { return; }
+        state.file = f;
+        document.getElementById('cbConvFileName').textContent = f.name;
+        document.getElementById('cbConvFileSize').textContent = bytes(f.size);
+
+        dropPreview();
+        var pane = document.getElementById('cbConvFilePreview');
+        if (/^image\//.test(f.type || '')) {
+            previewUrl = URL.createObjectURL(f);
+            pane.innerHTML = '<img src="' + previewUrl + '" alt="" ' +
+                             'style="width:100%;height:100%;object-fit:cover;display:block;" />';
+        } else {
+            var ext = (f.name || '').split('.').pop();
+            ext = (ext && ext.length <= 5 && ext !== f.name) ? ext.toUpperCase() : '';
+            pane.innerHTML = '<span style="font-size:22px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;">📄️</span>' +
+                             (ext ? '<span class="fs-9 fw-bold text-gray-700 mt-1">' + esc(ext) + '</span>' : '');
+        }
+
+        fileChip.classList.remove('d-none'); fileChip.classList.add('d-flex');
+        refresh();
+    });
+    document.getElementById('cbConvFileClear').addEventListener('click', function () {
+        state.file = null; fileInput.value = '';
+        dropPreview();
+        document.getElementById('cbConvFilePreview').innerHTML = '';
+        fileChip.classList.add('d-none'); fileChip.classList.remove('d-flex');
+        refresh();
+    });
+
+    // EMOJI INTO THE TEXT, at the caret — a picker that appends to the end moves the cursor away from
+    // where the person was writing.
+    var emojiBtn = document.getElementById('cbConvEmoji');
+    emojiBtn.addEventListener('click', function () {
+        var open = box.querySelector('#cbConvEmojiPane');
+        if (open) { open.remove(); return; }
+        var pane = document.createElement('div');
+        pane.id = 'cbConvEmojiPane';
+        pane.className = 'd-flex flex-wrap gap-1 p-2 rounded shadow-sm bg-body';
+        pane.style.cssText = 'position:absolute;bottom:36px;inset-inline-start:0;z-index:20;width:220px;border:1px solid var(--bs-gray-300);';
+        pane.innerHTML = TEXT_EMOJI.map(function (ch) {
+            return '<button type="button" class="btn btn-sm btn-active-light px-2 py-1" ' +
+                   'style="font-size:16px;line-height:1;font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;" data-ch="' + ch + '">' + ch + '</button>';
+        }).join('');
+        pane.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-ch]');
+            if (!b) { return; }
+            var ch = b.getAttribute('data-ch');
+            var s = input.selectionStart == null ? (input.value || '').length : input.selectionStart;
+            var t = input.value || '';
+            input.value = t.slice(0, s) + ch + t.slice(input.selectionEnd == null ? s : input.selectionEnd);
+            input.focus();
+            input.selectionStart = input.selectionEnd = s + ch.length;
+            refresh();
+            pane.remove();
+        });
+        emojiBtn.parentElement.appendChild(pane);
+    });
+    document.addEventListener('click', function (e) {
+        var pane = box.querySelector('#cbConvEmojiPane');
+        if (pane && !pane.contains(e.target) && e.target !== emojiBtn && !emojiBtn.contains(e.target)) { pane.remove(); }
+    });
+
+    function load() {
+        var url = listUrl + (listUrl.indexOf('?') >= 0 ? '&' : '?') +
+                  'entity=' + encodeURIComponent(code) + '&id=' + encodeURIComponent(id);
+        fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                // 404 is the deliberately indistinguishable refusal; 503 is an inactive capability.
+                if (r.status === 404) { notice(T.denied, 'denied'); return null; }
+                if (r.status === 503) { notice(T.unavailable, 'off'); return null; }
+                if (!r.ok) { notice(T.failed, 'warn'); return null; }
+                return r.json();
+            })
+            .then(function (d) { if (d && d.ok) { render(d); } else if (d) { notice(T.failed, 'warn'); } })
+            .catch(function () { notice(T.failed, 'warn'); });
+    }
+
+    function send() {
         var text = (input.value || '').trim();
         err.classList.add('d-none');
-        if (!text) { return; }
+        if (!text && !state.file) { return; }
 
-        var tokenEl = box.querySelector('input[name="__RequestVerificationToken"]');
         var fd = new FormData();
         fd.append('entity', code);
         fd.append('id', id);
         fd.append('body', text);
-        if (tokenEl) { fd.append('__RequestVerificationToken', tokenEl.value); }
+        if (state.replyTo) { fd.append('parentCommentId', state.replyTo); }
+        if (state.file) { fd.append('file', state.file); }
+        fd.append('__RequestVerificationToken', token());
 
+        var label = sendBtn.innerHTML;
         sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="presentation"></span>';
+
         fetch(addUrl, { method: 'POST', credentials: 'same-origin', body: fd })
             .then(function (r) { return r.status === 404 || r.status === 503 ? null : r.json(); })
             .then(function (d) {
-                if (d && d.ok) { input.value = ''; load(); }
-                else { err.textContent = (d && d.error) ? d.error : T.failed; err.classList.remove('d-none'); }
+                if (d && d.ok) {
+                    input.value = '';
+                    state.file = null; fileInput.value = '';
+                    dropPreview();
+                    document.getElementById('cbConvFilePreview').innerHTML = '';
+                    fileChip.classList.add('d-none'); fileChip.classList.remove('d-flex');
+                    state.replyTo = null;
+                    replyBar.classList.add('d-none'); replyBar.classList.remove('d-flex');
+                    load();
+                } else {
+                    err.textContent = (d && d.error) ? d.error : T.failed;
+                    err.classList.remove('d-none');
+                }
             })
             .catch(function () { err.textContent = T.failed; err.classList.remove('d-none'); })
-            .finally(function () { sendBtn.disabled = false; });
-    });
+            .finally(function () { sendBtn.innerHTML = label; refresh(); });
+    }
 
+    sendBtn.addEventListener('click', send);
     load();
 })();
 </script>

@@ -1,19 +1,36 @@
 @inject Microsoft.AspNetCore.Mvc.Localization.IHtmlLocalizer<CrossBuy.SharedResources> SR
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CrossBuy.SharedResources> SL
 @{
     // Platform Kernel slice 1 — the business-event timeline for one document. Include from a document view
     // after setting ViewBag.TimelineEntityType (a canonical IEntityRegistry code) + ViewBag.TimelineEntityId.
     //
     // Deliberately a SEPARATE partial from _DocTimeline: that one is the comments widget and is already
     // included by three screens (sales invoice, purchase invoice, quotation). Changing it would have
-    // touched two documents outside this slice's pilot, so the event timeline is added alongside it and is
-    // wired into the sales invoice only.
+    // touched two documents outside this slice's pilot, so the event timeline is added alongside it.
+    //
+    // -------------------------------------------------------------------------------------------
+    // MADE A REAL TIMELINE (2026-09-10). Four changes, three of which are defects rather than taste:
+    //
+    //   · THE TIME WAS THREE HOURS EARLY. BusinessEventService writes CreatedAt = DateTime.UtcNow and it
+    //     serialises with NO zone marker, so `new Date(iso)` read it as local. Every entry in every
+    //     document's history claimed to have happened three hours before it did on a +03 machine. The
+    //     'Z' is appended before parsing — the same fix the conversation panel needed.
+    //   · IT WAS FORMATTED IN THE BROWSER'S LOCALE, not the page's: "9/1/2026, 11:06:46 AM" to the
+    //     second, on an Arabic screen. A history wants "how long ago", with the exact stamp on hover.
+    //   · IT STOPPED AT FIFTY, silently. A document history that truncates without saying so is one
+    //     nobody can audit. It now asks for the projection's own ceiling and DECLARES a full answer.
+    //   · THE ACTOR HAD NO FACE, though the endpoint's own comment said ActorEmployeeId was carried so
+    //     that a UI could resolve one. It is resolved by the same company-scoped helper the
+    //     conversation panel uses (BL/Platform/EmployeePhotos), and falls back to initials.
+    //
+    // And it is grouped by DAY. A flat list of stamps is a log; a timeline is a story with days in it.
+    // -------------------------------------------------------------------------------------------
     var tType = (ViewBag.TimelineEntityType as string) ?? "";
     var tId = ViewBag.TimelineEntityId?.ToString() ?? "0";
 }
-@* SHARED PARTIAL (SHF-20), used by three document views, edited on the repository owner's approval to
-   bring it onto the house card. card-flush + an h3 title is what the other 121 cards use; a plain .card
-   next to flush ones is the difference the owner pointed at on the work-order screen. The icon stays -
-   it is this partial's own affordance, not a colour decision. *@
+@* SHARED PARTIAL (SHF-20), used by three document views. card-flush + an h3 title is what the other
+   121 cards use; a plain .card next to flush ones is the difference the owner pointed at on the
+   work-order screen. *@
 <div class="card card-flush mt-5" id="cbEventTimeline" data-type="@tType" data-id="@tId">
     <div class="card-header align-items-center py-4">
         <div class="card-title">
@@ -21,10 +38,15 @@
                 <i class="ki-outline ki-time fs-3 text-primary me-2"></i>@SR["Activity timeline"]
             </h3>
         </div>
+        <div class="card-toolbar">
+            <span class="badge badge-light-primary fs-8 fw-bold d-none" id="cbEvtCount"></span>
+        </div>
     </div>
-    <div class="card-body">
-        <div id="cbEvtList" class="timeline timeline-border-dashed">
-            <div class="text-muted text-center py-6 fs-7">@SR["Loading..."]</div>
+    <div class="card-body pt-2">
+        <div id="cbEvtList">
+            <div class="d-flex align-items-center text-muted fs-7 py-6">
+                <span class="spinner-border spinner-border-sm me-3" role="presentation"></span>@SR["Loading..."]
+            </div>
         </div>
     </div>
 </div>
@@ -33,17 +55,137 @@
     var box = document.getElementById('cbEventTimeline'); if (!box || box.__wired) return; box.__wired = true;
     var type = box.getAttribute('data-type'), id = box.getAttribute('data-id');
     var host = document.getElementById('cbEvtList');
+    var countBadge = document.getElementById('cbEvtCount');
+    var LOC = document.documentElement.lang || 'ar';
+
+    var T = {
+        historical: @Html.Raw(Json.Serialize(SL["Historical"].Value)),
+        empty: @Html.Raw(Json.Serialize(SL["No activity yet"].Value)),
+        emptyHint: @Html.Raw(Json.Serialize(SL["Everything that happens to this record will appear here"].Value)),
+        denied: @Html.Raw(Json.Serialize(SL["You are not authorised to view this activity"].Value)),
+        failed: @Html.Raw(Json.Serialize(SL["Could not load the activity timeline"].Value)),
+        today: @Html.Raw(Json.Serialize(SL["Today"].Value)),
+        yesterday: @Html.Raw(Json.Serialize(SL["Yesterday"].Value)),
+        capped: @Html.Raw(Json.Serialize(SL["Only the most recent entries are shown"].Value)),
+        now: @Html.Raw(Json.Serialize(SL["just now"].Value))
+    };
 
     function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
-    function when(iso) { try { return new Date(iso).toLocaleString(); } catch (e) { return ''; } }
+
+    // ---- time ---------------------------------------------------------------------------------
+    //
+    // A ZONELESS STAMP FROM THIS PLATFORM IS UTC. Business events are written with DateTime.UtcNow.
+    function parseUtc(iso) {
+        if (!iso) { return null; }
+        var s = /(Z|[+-]\d{2}:?\d{2})$/.test(iso) ? iso : iso + 'Z';
+        var d = new Date(s);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    // ASSEMBLED, not formatted whole: Intl.RelativeTimeFormat gives the unit its correct Arabic
+    // plural, which a hand-built "منذ N يوم" does not.
+    function ago(d) {
+        var secs = Math.round((Date.now() - d.getTime()) / 1000);
+        if (secs < 45) { return T.now; }
+        var units = [['second', 60], ['minute', 60], ['hour', 24], ['day', 7], ['week', 4.35], ['month', 12], ['year', Infinity]];
+        var v = secs, unit = 'second';
+        for (var i = 0; i < units.length; i++) {
+            if (Math.abs(v) < units[i][1]) { unit = units[i][0]; break; }
+            v = v / units[i][1];
+        }
+        try { return new Intl.RelativeTimeFormat(LOC, { numeric: 'auto' }).format(-Math.round(v), unit); }
+        catch (e) { return d.toLocaleString(LOC); }
+    }
+
+    function exact(d) {
+        try {
+            return d.toLocaleString(LOC, { year: 'numeric', month: 'short', day: 'numeric',
+                                           hour: '2-digit', minute: '2-digit' });
+        } catch (e) { return d.toLocaleString(); }
+    }
+
+    function clockOnly(d) {
+        try { return d.toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' }); }
+        catch (e) { return ''; }
+    }
+
+    // The heading for a day: Today / Yesterday, then a written date. Not a number — a date band that
+    // reads "2026-09-01" makes the reader do the arithmetic the heading exists to save them.
+    function dayLabel(d) {
+        var a = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+        var days = Math.round((t - a) / 86400000);
+        if (days === 0) { return T.today; }
+        if (days === 1) { return T.yesterday; }
+        try { return d.toLocaleDateString(LOC, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
+        catch (e) { return d.toLocaleDateString(); }
+    }
+
+    // ---- the actor ------------------------------------------------------------------------------
+    //
+    // Same palette and the same hash as the conversation panel, so one person is one colour wherever
+    // they appear on this screen. Brand-safe: each measured >= 4.5 on white, none in the hue band
+    // crossbuy-brand.css reserves for semantic success — a person must never read as a status.
+    var INK = ['#0E4A9E', '#3730A3', '#155E75', '#5B21B6', '#334155', '#7E22CE', '#0F766E', '#9D174D'];
+    function hue(name) {
+        var h = 0, s = name || '';
+        for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; }
+        return INK[h % INK.length];
+    }
+    function initials(name) {
+        var parts = (name || '').trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) { return '?'; }
+        return (parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '')).toUpperCase();
+    }
+    function rgba(hex, a) {
+        var n = parseInt(hex.slice(1), 16);
+        return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+    function actorChip(name, src) {
+        if (!name) { return ''; }
+        var c = hue(name), px = 24;
+        var tile = '<span class="symbol-label fw-bold fs-9" style="background:' + rgba(c, 0.12) +
+                   ';color:' + c + ';">' + esc(initials(name)) + '</span>';
+        // Explicit pixels on BOTH boxes: `.symbol` is sized by its content, so a percentage on the
+        // image resolves against the photograph and renders it at its natural width.
+        var inner = src
+            ? '<img src="' + esc(src) + '" alt="" style="width:' + px + 'px;height:' + px + 'px;' +
+              'object-fit:cover;border-radius:50%;display:block;" ' +
+              "onerror=\"this.outerHTML=this.getAttribute('data-fallback')\" data-fallback=\"" + esc(tile) + '" />'
+            : tile;
+        return '<span class="d-inline-flex align-items-center gap-2">' +
+               '<span class="symbol symbol-circle" style="width:' + px + 'px;height:' + px + 'px;overflow:hidden;">' +
+               inner + '</span>' +
+               '<span class="text-gray-700 fs-8 fw-semibold">' + esc(name) + '</span></span>';
+    }
+
+    function notice(title, tone, detail) {
+        var tones = { denied: ['#EEF2F6', '#334155'], off: ['#E7F0FF', '#0E4A9E'], warn: ['#FEF3C7', '#B45309'] };
+        var c = tones[tone] || tones.off;
+        host.innerHTML =
+            '<div class="notice d-flex rounded border border-dashed p-6" ' +
+            'style="background:' + c[0] + ';border-color:' + c[1] + ' !important;">' +
+            '<span class="symbol symbol-45px me-5"><span class="symbol-label" style="background:' + c[1] + ';">' +
+            '<i class="ki-outline ki-information-5 fs-2x text-white"></i></span></span>' +
+            '<div class="fw-semibold"><h4 class="text-gray-900 fw-bold mb-1">' + esc(title) + '</h4>' +
+            (detail ? '<div class="fs-7 text-gray-700">' + esc(detail) + '</div>' : '') +
+            '</div></div>';
+    }
 
     function row(e) {
+        var d = parseUtc(e.createdAt);
+
         // A legacy row is history reconstructed from pre-kernel data — marked so nobody reads it as a
         // recorded event with an actor.
         var badge = e.legacy
-            ? '<span class="badge badge-light-secondary fs-9 ms-2">@SR["Historical"]</span>'
+            ? '<span class="badge badge-light-secondary fs-9">' + esc(T.historical) + '</span>'
             : '';
-        var actor = e.actorName ? '<span class="text-muted fs-8 ms-2">' + esc(e.actorName) + '</span>' : '';
+
+        var stamp = d
+            ? '<span class="text-muted fs-9 ms-auto flex-shrink-0" title="' + esc(exact(d)) + '">' +
+              esc(clockOnly(d)) + ' · ' + esc(ago(d)) + '</span>'
+            : '';
+
         return '<div class="timeline-item">' +
             '<div class="timeline-line w-40px"></div>' +
             '<div class="timeline-icon symbol symbol-circle symbol-40px">' +
@@ -51,33 +193,60 @@
                 '<i class="' + esc(e.icon) + ' fs-4 text-' + esc(e.color) + '"></i>' +
               '</div>' +
             '</div>' +
-            '<div class="timeline-content mb-8 mt-n1 ps-3">' +
-              '<div class="d-flex align-items-center flex-wrap">' +
-                '<span class="fw-bold text-gray-900">' + esc(e.title) + '</span>' + badge + actor +
-                '<span class="text-muted fs-8 ms-auto">' + when(e.createdAt) + '</span>' +
+            '<div class="timeline-content mb-6 mt-n1 ps-3">' +
+              '<div class="d-flex align-items-center flex-wrap gap-2">' +
+                '<span class="fw-bold text-gray-900 fs-7">' + esc(e.title) + '</span>' + badge + stamp +
               '</div>' +
               (e.description
                 ? '<div class="text-gray-700 fs-7 mt-1" style="unicode-bidi:plaintext" dir="auto">' + esc(e.description) + '</div>'
                 : '') +
+              (e.actorName ? '<div class="mt-2">' + actorChip(e.actorName, e.actorAvatar) + '</div>' : '') +
             '</div>' +
           '</div>';
     }
+
+    // DAY BANDS. The events arrive newest-first and stay that way; the band opens each new day.
+    function render(list) {
+        var html = '', lastDay = null;
+        list.forEach(function (e) {
+            var d = parseUtc(e.createdAt);
+            var key = d ? d.toDateString() : '';
+            if (key !== lastDay) {
+                lastDay = key;
+                html += '<div class="d-flex align-items-center my-4">' +
+                        '<span class="badge badge-light-primary fs-9 fw-bold flex-shrink-0">' +
+                        esc(d ? dayLabel(d) : '') + '</span>' +
+                        '<span class="flex-grow-1 ms-3" style="height:1px;background:var(--bs-gray-200);"></span>' +
+                        '</div>';
+            }
+            html += '<div class="timeline timeline-border-dashed">' + row(e) + '</div>';
+        });
+        return html;
+    }
+
+    var CAP = 200;   // TimelineProjectionService.MaxTake
 
     fetch('/PlatformTimeline/List?entityType=' + encodeURIComponent(type) + '&entityId=' + encodeURIComponent(id),
           { credentials: 'same-origin' })
         .then(function (r) {
             // 403 means "not authorised to view this record" — say so rather than showing an empty history.
-            if (r.status === 403) { host.innerHTML = '<div class="text-muted text-center py-6 fs-7">@SR["You are not authorised to view this activity"]</div>'; return null; }
+            if (r.status === 403) { notice(T.denied, 'denied'); return null; }
             return r.ok ? r.json() : [];
         })
         .then(function (list) {
-            if (list === null) return;
-            host.innerHTML = list.length
-                ? list.map(row).join('')
-                : '<div class="text-muted text-center py-6 fs-7">@SR["No activity yet"]</div>';
+            if (list === null) { return; }
+            if (!list.length) { notice(T.empty, 'off', T.emptyHint); countBadge.classList.add('d-none'); return; }
+
+            host.innerHTML = render(list) +
+                // A FULL ANSWER IS DECLARED. At exactly the ceiling there is probably older history
+                // behind it, and a list that stops without saying so reads as the whole story.
+                (list.length >= CAP
+                    ? '<div class="text-muted fs-8 text-center pt-2">' + esc(T.capped) + '</div>'
+                    : '');
+
+            countBadge.textContent = list.length;
+            countBadge.classList.remove('d-none');
         })
-        .catch(function () {
-            host.innerHTML = '<div class="text-muted text-center py-6 fs-7">@SR["Could not load the activity timeline"]</div>';
-        });
+        .catch(function () { notice(T.failed, 'warn'); });
 })();
 </script>
