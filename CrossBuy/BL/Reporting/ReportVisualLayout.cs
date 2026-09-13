@@ -41,6 +41,12 @@ namespace CrossBuy.BL.Reporting
         SystemField = 5,   // date, page number, report name…
         Summary = 6,       // Sum/Count/Avg/Min/Max over a field, within the band's scope
         Table = 7,         // a real report table with bound columns; rows repeat from the dataset
+
+        // A QR of a bound field or of typed text, rendered server-side into the document — see
+        // ReportQrCode for why it is an embedded image and why it is not a tax-authority payload.
+        // ADDITIVE at the end: a stored layout holds the integer, so this cannot change what an
+        // existing element means.
+        QrCode = 8,
     }
 
     public enum ReportSystemField

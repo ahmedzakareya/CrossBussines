@@ -246,6 +246,22 @@ namespace CrossBuy.BL.Reporting
                     break;
                 }
 
+                case ReportElementKind.QrCode:
+                {
+                    // EITHER a bound field OR typed text. A field goes through the same Bind as every
+                    // other binding — a QR must not become the one element that can read a column the
+                    // caller may not see — and text is kept verbatim and never reaches markup: it is
+                    // encoded into an image, so there is nothing here for a script to ride on.
+                    if (!string.IsNullOrWhiteSpace(e.FieldKey))
+                    {
+                        if (!Bind(e.FieldKey, fields, permitted, result, strict, out var qrField)) return null;
+                        clean.FieldKey = qrField!.Key;
+                    }
+                    clean.Text = e.Text;
+                    clean.TextEn = e.TextEn;
+                    break;
+                }
+
                 case ReportElementKind.Summary:
                 {
                     if (!Bind(e.FieldKey, fields, permitted, result, strict, out var field)) return null;

@@ -723,7 +723,7 @@
     var AR = @(arabic ? "true" : "false");
 
     var BAND = { ReportHeader: 0, PageHeader: 1, GroupHeader: 2, Detail: 3, GroupFooter: 4, PageFooter: 5, ReportFooter: 6 };
-    var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7 };
+    var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7, QrCode: 8 };
     var SYS  = { CurrentDate: 0, CurrentDateTime: 1, PageNumber: 2, TotalPages: 3, PageXOfY: 4, ReportName: 5 };
     var AGG  = { None: 0, Sum: 1, Average: 2, Min: 3, Max: 4, Count: 5 };
 
@@ -936,7 +936,8 @@
         { id: "pages",   icon: "ki-abstract-22",       label: AR ? "عدد الصفحات"     : "Total pages",    make: function () { return el(KIND.SystemField, { systemField: SYS.TotalPages, widthMm: 20, heightMm: 6 }); } },
         { id: "date",    icon: "ki-calendar",          label: AR ? "التاريخ"         : "Print date",     make: function () { return el(KIND.SystemField, { systemField: SYS.CurrentDate, widthMm: 30, heightMm: 6 }); } },
         { id: "datetime",icon: "ki-time",              label: AR ? "التاريخ والوقت"  : "Date and time",  make: function () { return el(KIND.SystemField, { systemField: SYS.CurrentDateTime, widthMm: 42, heightMm: 6 }); } },
-        { id: "repname", icon: "ki-document",          label: AR ? "اسم التقرير"     : "Report name",    make: function () { return el(KIND.SystemField, { systemField: SYS.ReportName, widthMm: 60, heightMm: 8, style: { bold: true } }); } }
+        { id: "repname", icon: "ki-document",          label: AR ? "اسم التقرير"     : "Report name",    make: function () { return el(KIND.SystemField, { systemField: SYS.ReportName, widthMm: 60, heightMm: 8, style: { bold: true } }); } },
+        { id: "qr",      icon: "ki-scan-barcode",      label: AR ? "رمز QR"          : "QR code",        make: function () { return el(KIND.QrCode, { widthMm: 25, heightMm: 25 }); } }
     ];
 
     function el(kind, over) {
@@ -1186,6 +1187,16 @@
                 var f2 = fieldOf(e.fieldKey);
                 var agg = ["", "SUM", "AVG", "MIN", "MAX", "COUNT"][e.aggregate] || "";
                 return "<span class='text-success'>" + esc(agg) + "(" + esc(f2 ? f2.title : (e.fieldKey || "?")) + ")</span>";
+            }
+            case KIND.QrCode: {
+                // A DESIGN-TIME FACE, like every other element here: the canvas says what the code
+                // WILL carry, not what it encodes. Generating a real QR per keystroke would be a
+                // round trip per drag, and the Preview button runs the actual report.
+                var qf = fieldOf(e.fieldKey);
+                var what = qf ? ("{" + qf.title + "}")
+                             : ((e.text || "").trim() ? e.text : (AR ? "غير مرتبط" : "unbound"));
+                return "<span class='text-muted fs-8 d-inline-flex align-items-center gap-1'>" +
+                       "<i class='ki-outline ki-scan-barcode fs-4'></i>" + esc(what) + "</span>";
             }
             case KIND.Image: {
                 if (e.assetId) {
@@ -1766,6 +1777,20 @@
                 "<textarea id='p-text-en' rows='2' class='form-control form-control-sm' " +
                 "placeholder='" + esc(AR ? "يُطبع عند اختيار الإنجليزية" : "printed when the report is in English") + "'>" +
                 esc(e.textEn || "") + "</textarea>"));
+        }
+
+        if (e.kind === KIND.QrCode) {
+            @* WHAT THE CODE CARRIES. A bound field wins over the text — the renderer says so — so the
+               picker offers an explicit "no field" entry rather than leaving the author to guess why
+               their typed payload is being ignored. *@
+            h.push(row(AR ? "الحقل" : "Field", select("p-field",
+                [{ v: "", t: AR ? "— نص ثابت —" : "— fixed text —" }].concat(S.fields.map(function (f) {
+                    return { v: f.key, t: f.title };
+                })), e.fieldKey || "")));
+            h.push(row(AR ? "النص الثابت" : "Fixed text",
+                "<textarea id='p-text' rows='2' class='form-control form-control-sm' " +
+                "placeholder='" + esc(AR ? "يُستخدم عندما لا يوجد حقل" : "used when no field is bound") + "'>" +
+                esc(e.text || "") + "</textarea>"));
         }
 
         if (e.kind === KIND.Field || e.kind === KIND.Summary) {

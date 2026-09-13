@@ -442,6 +442,25 @@ namespace CrossBuy.BL.Reporting
                     return;
                 }
 
+                case ReportElementKind.QrCode:
+                {
+                    // The payload is the BOUND FIELD when there is one, otherwise the typed text. A
+                    // field wins because a document's code is a fact about that document; the text is
+                    // for a fixed destination, like a portal address the same on every copy.
+                    var payload = !string.IsNullOrWhiteSpace(e.FieldKey)
+                        ? Text(Value(row, e.FieldKey))
+                        : TextFor(ctx, e);
+
+                    var qr = ReportQrCode.DataUri(payload);
+                    if (string.IsNullOrEmpty(qr)) return;
+
+                    // contain, always: a QR stretched to a non-square box is a QR that does not scan.
+                    sb.Append("<div class=\"cbv-el\" style=\"").Append(style).Append("\">")
+                      .Append("<img src=\"").Append(qr)
+                      .Append("\" alt=\"\" style=\"width:100%;height:100%;object-fit:contain\"></div>");
+                    return;
+                }
+
                 case ReportElementKind.Table:
                 {
                     Table(sb, ctx, e, style.ToString(), scope, contentW, showTableTotals, tableTotalScope);
