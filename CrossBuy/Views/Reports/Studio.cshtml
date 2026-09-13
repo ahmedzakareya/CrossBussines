@@ -251,6 +251,43 @@
                                placeholder="@(arabic ? "نقطة" : "pt")" />
                     </div>
 
+                    @* DIRECTION. "Auto" follows the language the report is printed in, which is what a
+                       document read in both wants and what every existing template gets. Forcing one is
+                       for a document that must match something outside the system — a pre-printed form,
+                       a bank or customs template. *@
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="fs-8 fw-semibold text-muted" for="cbd-dir">@(arabic ? "الاتجاه النصي" : "Text direction")</label>
+                        <select id="cbd-dir" class="form-select form-select-sm w-140px">
+                            <option value="0">@(arabic ? "حسب اللغة" : "Follow language")</option>
+                            <option value="1">@(arabic ? "من اليمين" : "Right to left")</option>
+                            <option value="2">@(arabic ? "من اليسار" : "Left to right")</option>
+                        </select>
+                    </div>
+
+                    @* THE FOUR THINGS THE RENDERERS ALREADY OBEY and nothing could set. They are stored
+                       on every template and read on every render: the running header and footer, whether
+                       the PDF gets a page footer at all, and whether a long table repeats its column
+                       header. The behaviour existed; only the code could choose it. *@
+                    <div class="d-flex align-items-center gap-3 cbd-setup-wide">
+                        <span class="fs-8 fw-semibold text-muted">@(arabic ? "يُطبع" : "Print")</span>
+                        <div class="form-check form-check-sm form-check-custom">
+                            <input id="cbd-show-header" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label fs-8 fw-semibold" for="cbd-show-header">@(arabic ? "ترويسة" : "Header")</label>
+                        </div>
+                        <div class="form-check form-check-sm form-check-custom">
+                            <input id="cbd-show-footer" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label fs-8 fw-semibold" for="cbd-show-footer">@(arabic ? "تذييل" : "Footer")</label>
+                        </div>
+                        <div class="form-check form-check-sm form-check-custom">
+                            <input id="cbd-show-pageno" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label fs-8 fw-semibold" for="cbd-show-pageno">@(arabic ? "أرقام الصفحات" : "Page numbers")</label>
+                        </div>
+                        <div class="form-check form-check-sm form-check-custom">
+                            <input id="cbd-repeat-head" class="form-check-input" type="checkbox" />
+                            <label class="form-check-label fs-8 fw-semibold" for="cbd-repeat-head">@(arabic ? "تكرار رأس الجدول" : "Repeat table header")</label>
+                        </div>
+                    </div>
+
                     <div class="d-flex align-items-center gap-1 cbd-setup-wide">
                         <span class="fs-8 fw-semibold text-muted me-1">@(arabic ? "الهوامش (مم)" : "Margins (mm)")</span>
                         <input id="cbd-mt" type="number" step="1" min="0" class="form-control form-control-sm w-60px" title="@(arabic ? "أعلى" : "Top")" aria-label="@(arabic ? "هامش أعلى" : "Top margin")" />
@@ -781,7 +818,18 @@
             page: {
                 pageSize: 0, orientation: 0,
                 marginTopMm: 18, marginBottomMm: 16, marginLeftMm: 12, marginRightMm: 12,
-                rtl: AR, fontFamily: null, fontSizePt: null
+
+                // direction 0 = follow the language, which is what a new design wants: the same layout
+                // read correctly in Arabic and in English. `rtl` is the retired flag — carried so a
+                // rollback still deserialises, read by nothing.
+                direction: 0, rtl: AR,
+
+                // The renderers default all four to true, so a new design starts where they do. Present
+                // as KEYS, not absent: a missing key and a chosen false are not the same thing, and the
+                // page inputs have to be able to represent both.
+                showHeader: true, showFooter: true, showPageNumbers: true, repeatHeaderRow: true,
+
+                fontFamily: null, fontSizePt: null
             },
             gridMm: 5,
             snapToGrid: true,
@@ -945,6 +993,7 @@
             id: uid(), kind: kind, xMm: 5, yMm: 3, widthMm: 40, heightMm: 6, z: 0,
             text: null, textEn: null, fieldKey: null, systemField: SYS.CurrentDate, aggregate: AGG.Sum,
             assetId: null, imageRole: 0, fit: 0, preserveAspect: true, columns: [],
+            qrEcc: 2, qrModulePixels: 8,
             style: {
                 fontFamily: null, fontSizePt: 9, bold: false, italic: false, underline: false,
                 align: 0, verticalAlign: 0, color: null, background: null, borderColor: null,
@@ -1791,6 +1840,16 @@
                 "<textarea id='p-text' rows='2' class='form-control form-control-sm' " +
                 "placeholder='" + esc(AR ? "يُستخدم عندما لا يوجد حقل" : "used when no field is bound") + "'>" +
                 esc(e.text || "") + "</textarea>"));
+
+            @* THE TRADE THE AUTHOR OWNS. Higher correction survives a stamp on the corner and spends
+               modules doing it; lower fits a longer payload and fails the first fold. *@
+            h.push(row(AR ? "تصحيح الخطأ" : "Error correction", select("p-qrecc", [
+                { v: 0, t: "L — 7%" }, { v: 1, t: "M — 15%" },
+                { v: 2, t: "Q — 25%" }, { v: 3, t: "H — 30%" }
+            ], e.qrEcc == null ? 2 : e.qrEcc)));
+            h.push(row(AR ? "دقة الطباعة (بكسل/وحدة)" : "Print resolution (px/module)",
+                "<input id='p-qrpx' type='number' min='2' max='20' step='1' class='form-control form-control-sm' value='" +
+                (e.qrModulePixels == null ? 8 : e.qrModulePixels) + "'>"));
         }
 
         if (e.kind === KIND.Field || e.kind === KIND.Summary) {
@@ -1940,7 +1999,8 @@
                    "<button type='button' class='btn btn-icon btn-sm btn-light-danger py-0 px-1' data-cdel='" + i + "' aria-label='" + (AR ? "حذف" : "Remove") + "'><i class='ki-outline ki-cross fs-6'></i></button>" +
                    "</span></div>" +
                    select("c-field-" + i, S.fields.map(function (f) { return { v: f.key, t: f.title }; }), c.fieldKey) +
-                   "<input id='c-head-" + i + "' type='text' class='form-control form-control-sm mt-1' placeholder='" + (AR ? "العنوان" : "Header") + "' value='" + esc(c.headerText || "") + "'>" +
+                   "<input id='c-head-" + i + "' type='text' class='form-control form-control-sm mt-1' placeholder='" + (AR ? "العنوان (عربي)" : "Header (Arabic)") + "' value='" + esc(c.headerText || "") + "'>" +
+                   "<input id='c-head-en-" + i + "' type='text' class='form-control form-control-sm mt-1' dir='ltr' placeholder='" + (AR ? "العنوان (إنجليزي)" : "Header (English)") + "' value='" + esc(c.headerTextEn || "") + "'>" +
                    "<div class='row g-1 mt-1'>" +
                    "<div class='col-6'><input id='c-width-" + i + "' type='number' step='1' min='5' class='form-control form-control-sm' value='" + c.widthMm + "' aria-label='" + (AR ? "العرض" : "Width") + "'></div>" +
                    "<div class='col-6'>" + select("c-align-" + i, [
@@ -1999,6 +2059,16 @@
         on("p-text", "input", function () { e.text = $("p-text").value; renderCanvas(); });
         on("p-text-en", "input", function () { e.textEn = $("p-text-en").value; renderCanvas(); });
         on("p-field", "change", function () { edit(function () { e.fieldKey = $("p-field").value || null; }); });
+        on("p-qrecc", "change", function () { edit(function () { e.qrEcc = parseInt($("p-qrecc").value, 10); }); });
+        on("p-qrpx", "change", function () {
+            edit(function () {
+                var v = parseInt($("p-qrpx").value, 10);
+                // The server clamps 2-20; mirroring it here means the author sees the value that will
+                // be stored rather than one quietly changed under them.
+                e.qrModulePixels = isNaN(v) ? 8 : Math.min(20, Math.max(2, v));
+                $("p-qrpx").value = e.qrModulePixels;
+            });
+        });
         on("p-agg", "change", function () { edit(function () { e.aggregate = parseInt($("p-agg").value, 10); }); });
         on("p-sys", "change", function () { edit(function () { e.systemField = parseInt($("p-sys").value, 10); }); });
         on("p-role", "change", function () { edit(function () { e.imageRole = parseInt($("p-role").value, 10); }); });
@@ -2024,6 +2094,7 @@
         on("p-color", "change", function () { edit(function () { e.style.color = $("p-color").value; }); });
         on("p-bg", "change", function () { edit(function () { e.style.background = $("p-bg").value; }); });
         on("p-bcolor", "change", function () { edit(function () { e.style.borderColor = $("p-bcolor").value; }); });
+        on("p-visible", "change", function () { edit(function () { e.style.visible = $("p-visible").checked; }); });
         on("p-border", "change", function () { edit(function () { e.style.borderStyle = parseInt($("p-border").value, 10); }); });
         on("p-pad", "change", function () { edit(function () { e.style.paddingMm = Math.max(0, num("p-pad", 0.5)); }); });
 
@@ -2044,7 +2115,7 @@
             edit(function () {
                 e.columns = e.columns || [];
                 var f = S.fields[0];
-                e.columns.push({ fieldKey: f ? f.key : "", headerText: null, widthMm: 25, align: 0, format: null, total: 0 });
+                e.columns.push({ fieldKey: f ? f.key : "", headerText: null, headerTextEn: null, widthMm: 25, align: 0, format: null, total: 0 });
             });
             renderProps();
         });
@@ -2052,6 +2123,7 @@
         (e.columns || []).forEach(function (c, i) {
             on("c-field-" + i, "change", function () { edit(function () { c.fieldKey = $("c-field-" + i).value; }); });
             on("c-head-" + i, "change", function () { edit(function () { c.headerText = $("c-head-" + i).value || null; }); });
+            on("c-head-en-" + i, "change", function () { edit(function () { c.headerTextEn = $("c-head-en-" + i).value || null; }); });
             on("c-width-" + i, "change", function () { edit(function () { c.widthMm = Math.max(5, num("c-width-" + i, 25)); }); });
             on("c-align-" + i, "change", function () { edit(function () { c.align = parseInt($("c-align-" + i).value, 10); }); });
             on("c-fmt-" + i, "change", function () { edit(function () { c.format = $("c-fmt-" + i).value || null; }); });
@@ -2197,6 +2269,34 @@
         });
     }
 
+    // ReportFilterOperator: 8 = Between, 9 = In, 10 = IsNull, 11 = IsNotNull.
+    function isBetween(op) { return op === 8; }
+    function isIn(op) { return op === 9; }
+    function takesNoValue(op) { return op === 10 || op === 11; }
+
+    // WHAT THE OPERATOR NEEDS, shown. One box for a comparison, two for a range, a list for IN, and
+    // none at all for "is null" — a value box beside "is empty" invites a value nothing will read.
+    function valueInputs(f, i) {
+        if (takesNoValue(f.operator)) {
+            return "<div class='col-7 d-flex align-items-center'><span class='fs-9 text-muted'>" +
+                   esc(AR ? "بدون قيمة" : "no value") + "</span></div>";
+        }
+        if (isBetween(f.operator)) {
+            return "<div class='col-7'><div class='row g-1'>" +
+                   "<div class='col-6'><input id='f-val-" + i + "' type='text' class='form-control form-control-sm' value='" +
+                   esc((f.values && f.values[0]) || "") + "' placeholder='" + esc(AR ? "من" : "from") + "'></div>" +
+                   "<div class='col-6'><input id='f-val2-" + i + "' type='text' class='form-control form-control-sm' value='" +
+                   esc((f.values && f.values[1]) || "") + "' placeholder='" + esc(AR ? "إلى" : "to") + "'></div>" +
+                   "</div></div>";
+        }
+        if (isIn(f.operator)) {
+            return "<div class='col-7'><input id='f-val-" + i + "' type='text' class='form-control form-control-sm' value='" +
+                   esc((f.values || []).join(", ")) + "' placeholder='" + esc(AR ? "قيم مفصولة بفاصلة" : "comma-separated") + "'></div>";
+        }
+        return "<div class='col-7'><input id='f-val-" + i + "' type='text' class='form-control form-control-sm' value='" +
+               esc((f.values && f.values[0]) || "") + "' aria-label='" + (AR ? "القيمة" : "Value") + "'></div>";
+    }
+
     function renderFilters() {
         $("cbd-filters").innerHTML = S.filters.map(function (f, i) {
             var field = fieldOf(f.field);
@@ -2211,15 +2311,44 @@
                    }), f.field) +
                    "<div class='row g-1 mt-1'>" +
                    "<div class='col-5'>" + select("f-op-" + i, ops.map(function (o) { return { v: o.operator, t: o.label }; }), f.operator) + "</div>" +
-                   "<div class='col-7'><input id='f-val-" + i + "' type='text' class='form-control form-control-sm' value='" + esc((f.values && f.values[0]) || "") + "' aria-label='" + (AR ? "القيمة" : "Value") + "'></div>" +
+                   valueInputs(f, i) +
                    "</div></div>";
         }).join("");
 
         S.filters.forEach(function (f, i) {
-            var fe = $("f-field-" + i), oe = $("f-op-" + i), ve = $("f-val-" + i);
+            var fe = $("f-field-" + i), oe = $("f-op-" + i);
             if (fe) { fe.addEventListener("change", function () { f.field = fe.value; renderFilters(); }); }
-            if (oe) { oe.addEventListener("change", function () { f.operator = parseInt(oe.value, 10); }); }
-            if (ve) { ve.addEventListener("change", function () { f.values = [ve.value]; }); }
+            // THE OPERATOR REPAINTS THE ROW: how many value boxes there are depends on it, and a
+            // range that kept a single box is how "between" came to mean "greater than" in silence.
+            if (oe) {
+                oe.addEventListener("change", function () {
+                    f.operator = parseInt(oe.value, 10);
+                    if (takesNoValue(f.operator)) { f.values = []; }
+                    else if (isBetween(f.operator) && (f.values || []).length < 2) {
+                        f.values = [(f.values || [])[0] || "", ""];
+                    }
+                    renderFilters();
+                });
+            }
+            // BETWEEN keeps two, IN keeps the list, everything else keeps one — and what the editor
+            // shows is what gets stored, so a second endpoint typed into a range is not discarded on
+            // the next repaint.
+            var v1 = $("f-val-" + i), v2 = $("f-val2-" + i);
+            function commit() {
+                if (isBetween(f.operator)) {
+                    f.values = [v1 ? v1.value : "", v2 ? v2.value : ""];
+                } else if (isIn(f.operator)) {
+                    f.values = (v1 ? v1.value : "").split(",")
+                        .map(function (s) { return s.trim(); })
+                        .filter(function (s) { return s.length > 0; });
+                } else if (takesNoValue(f.operator)) {
+                    f.values = [];
+                } else {
+                    f.values = [v1 ? v1.value : ""];
+                }
+            }
+            if (v1) { v1.addEventListener("change", commit); }
+            if (v2) { v2.addEventListener("change", commit); }
         });
         Array.prototype.forEach.call($("cbd-filters").querySelectorAll("[data-fdel]"), function (b) {
             b.addEventListener("click", function () {
@@ -2622,6 +2751,14 @@
         var pg = S.layout.page;
         $("cbd-paper").value = pg.pageSize;
         $("cbd-orient").value = pg.orientation;
+
+        // A LAYOUT SAVED BEFORE THESE EXISTED has no value for them, and the renderers' own defaults
+        // are true — so an absent flag reads as ON rather than silently turning a header off.
+        if ($("cbd-dir")) { $("cbd-dir").value = String(pg.direction == null ? 0 : pg.direction); }
+        if ($("cbd-show-header")) { $("cbd-show-header").checked = pg.showHeader !== false; }
+        if ($("cbd-show-footer")) { $("cbd-show-footer").checked = pg.showFooter !== false; }
+        if ($("cbd-show-pageno")) { $("cbd-show-pageno").checked = pg.showPageNumbers !== false; }
+        if ($("cbd-repeat-head")) { $("cbd-repeat-head").checked = pg.repeatHeaderRow !== false; }
         $("cbd-mt").value = pg.marginTopMm;
         $("cbd-mb").value = pg.marginBottomMm;
         $("cbd-ml").value = pg.marginLeftMm;
@@ -2669,6 +2806,28 @@
             if (S.layout.page.fontSizePt === null) { $("cbd-fontsize").value = ""; }
             renderCanvas();
         });
+
+        // DIRECTION repaints, because the canvas mirrors with it — an author changing it has to see
+        // the design flip, not discover it at print time.
+        if ($("cbd-dir")) {
+            $("cbd-dir").addEventListener("change", function () {
+                snapshot();
+                S.layout.page.direction = parseInt($("cbd-dir").value, 10);
+                renderCanvas();
+            });
+        }
+
+        // The four page flags. No repaint: none of them changes the canvas, they change what the
+        // RENDERER emits — the running header, the page footer, the repeated table header.
+        function bindFlag(id, apply) {
+            var node = $(id);
+            if (!node) { return; }
+            node.addEventListener("change", function () { snapshot(); apply(node.checked); renderStatus(); });
+        }
+        bindFlag("cbd-show-header", function (v) { S.layout.page.showHeader = v; });
+        bindFlag("cbd-show-footer", function (v) { S.layout.page.showFooter = v; });
+        bindFlag("cbd-show-pageno", function (v) { S.layout.page.showPageNumbers = v; });
+        bindFlag("cbd-repeat-head", function (v) { S.layout.page.repeatHeaderRow = v; });
 
         $("cbd-snap").addEventListener("change", function () { S.layout.snapToGrid = $("cbd-snap").checked; });
         $("cbd-showgrid").addEventListener("change", function () { S.showGrid = $("cbd-showgrid").checked; renderCanvas(); });

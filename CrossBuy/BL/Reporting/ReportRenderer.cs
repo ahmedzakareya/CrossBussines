@@ -138,12 +138,18 @@ namespace CrossBuy.BL.Reporting
 
         public bool IsArabic => Culture.TwoLetterISOLanguageName == "ar";
 
-        // DIRECTION IS A PROPERTY OF THE LANGUAGE. This read PageSetup.Rtl — a flag stored with the
-        // template and defaulting to true — so every report printed right-to-left whatever language
-        // it was rendered in, and an English document came out mirrored. The stored flag stays in the
-        // page setup as the DESIGN direction; what reaches paper follows the culture, and one saved
-        // layout mirrors itself because positions are logical (inset-inline-start), not left/right.
-        public bool Rtl => IsArabic;
+        // THE AUTHOR'S CHOICE, and the language when they have not made one.
+        //
+        // This read PageSetup.Rtl — a flag stored with the template and defaulting to true — so every
+        // report printed right-to-left whatever language it was rendered in. Following the language
+        // fixed that; Direction gives the author back the case where a document must hold ONE
+        // direction because it matches something outside the system.
+        public bool Rtl => PageSetup.Direction switch
+        {
+            ReportPageDirection.Rtl => true,
+            ReportPageDirection.Ltr => false,
+            _ => IsArabic,
+        };
 
         public string ColumnTitle(ReportColumn column) => IsArabic ? column.TitleAr : column.TitleEn;
     }

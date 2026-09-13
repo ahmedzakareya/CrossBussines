@@ -106,7 +106,7 @@ namespace CrossBuy.BL.Reporting
 
                 HeaderTemplate = null,
                 FooterTemplate = setup.ShowPageNumbers ? BuildFooterTemplate(context) : null,
-                Rtl = setup.Rtl,
+                Rtl = context.Rtl,
                 DocumentTitle = context.Title,
             };
         }

@@ -102,6 +102,20 @@ namespace CrossBuy.BL.Reporting
         Landscape = 1,
     }
 
+    // Which way a printed document reads.
+    //
+    // Auto — follow the language the report is rendered in. Arabic is right-to-left, English is
+    //        left-to-right, and one saved design serves both: an element's X is a distance from the
+    //        content START edge, emitted as inset-inline-start, so the layout mirrors itself.
+    // Rtl / Ltr — hold this direction whatever the language. For a document that has to match
+    //        something outside the system: a pre-printed form, a customs or bank template.
+    public enum ReportPageDirection
+    {
+        Auto = 0,
+        Rtl = 1,
+        Ltr = 2,
+    }
+
     // Page geometry and direction for paged output (PDF, print). Ignored by data exports (CSV/XLSX), which have
     // no pages — the pipeline does not pretend otherwise.
     public sealed class ReportPageSetup
@@ -115,9 +129,23 @@ namespace CrossBuy.BL.Reporting
         public double MarginLeftMm { get; init; } = 12;
         public double MarginRightMm { get; init; } = 12;
 
-        // true = right-to-left layout. Defaults to true: the product's primary language is Arabic and every
-        // existing report screen is RTL, so RTL is the default rather than the option.
+        // RETIRED. Read by nothing — see Direction. It stays on the contract so a stored layout still
+        // deserialises (every existing template has `rtl: true` in its JSON) and so a rollback does not
+        // lose the field. Do not add a reader: two properties answering one question is the drift this
+        // module has already paid for twice.
+        [Obsolete("Use Direction. Kept so stored layouts deserialise; nothing reads it.")]
         public bool Rtl { get; init; } = true;
+
+        // WHICH WAY THE DOCUMENT READS, and it is the AUTHOR'S choice with a sensible default.
+        //
+        // This was the stored bool above, defaulting to true, so an Arabic-authored template printed
+        // English right-to-left — columns mirrored, totals on the wrong edge. Making it follow the
+        // language fixed that and took away the other case: a document that must hold ONE direction
+        // whatever it is read in, because it matches a pre-printed form or a foreign template.
+        //
+        // Auto is the default and is what every existing template gets: a layout saved before this
+        // existed has no value for it, and following the reader is what those layouts want.
+        public ReportPageDirection Direction { get; init; } = ReportPageDirection.Auto;
 
         public bool ShowHeader { get; init; } = true;
         public bool ShowFooter { get; init; } = true;
@@ -158,7 +186,7 @@ namespace CrossBuy.BL.Reporting
             MarginBottomMm = MarginBottomMm,
             MarginLeftMm = MarginLeftMm,
             MarginRightMm = MarginRightMm,
-            Rtl = Rtl,
+            Direction = Direction,
             FontFamily = fontFamily,
             FontSizePt = fontSizePt,
             ShowHeader = ShowHeader,
@@ -167,7 +195,8 @@ namespace CrossBuy.BL.Reporting
             RepeatHeaderRow = RepeatHeaderRow,
         };
 
-        public ReportPageSetup With(ReportPageSize? size = null, ReportOrientation? orientation = null, bool? rtl = null) => new()
+        public ReportPageSetup With(ReportPageSize? size = null, ReportOrientation? orientation = null,
+            ReportPageDirection? direction = null) => new()
         {
             PageSize = size ?? PageSize,
             Orientation = orientation ?? Orientation,
@@ -175,7 +204,7 @@ namespace CrossBuy.BL.Reporting
             MarginBottomMm = MarginBottomMm,
             MarginLeftMm = MarginLeftMm,
             MarginRightMm = MarginRightMm,
-            Rtl = rtl ?? Rtl,
+            Direction = direction ?? Direction,
             FontFamily = FontFamily,
             FontSizePt = FontSizePt,
             ShowHeader = ShowHeader,

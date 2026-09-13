@@ -34,35 +34,47 @@ namespace CrossBuy.BL.Reporting
         // camera reads off paper — past it, the code is a decoration that never scans.
         public const int MaxPayloadChars = 900;
 
-        private const int PixelsPerModule = 8;
+        // Clamped, not trusted: the element carries a number an author typed, and the cost of a module
+        // size is quadratic in the image. Two is unreadable, twenty is a megabyte of PNG for a 25mm box.
+        public const int MinModulePixels = 2;
+        public const int MaxModulePixels = 20;
 
+        // Keyed by payload AND by the settings that change the image — the same text at ECC H is a
+        // different code, and a cache that ignored that would serve the wrong one.
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> Cache = new();
 
         /// <summary>A data: URI for the payload, or null when there is nothing to encode.</summary>
-        public static string? DataUri(string? payload)
+        public static string? DataUri(string? payload, ReportQrEcc ecc = ReportQrEcc.Q, int modulePixels = 8)
         {
             if (string.IsNullOrWhiteSpace(payload)) return null;
 
             var text = payload.Trim();
             if (text.Length > MaxPayloadChars) return null;
 
-            if (Cache.TryGetValue(text, out var cached)) return cached;
+            var px = Math.Clamp(modulePixels <= 0 ? 8 : modulePixels, MinModulePixels, MaxModulePixels);
+            var key = ((int)ecc) + ":" + px + ":" + text;
+            if (Cache.TryGetValue(key, out var cached)) return cached;
 
             try
             {
-                // ECC Q (25% recovery) is what a printed code wants: paper creases, ink spreads and a
-                // stamp lands on the corner. L would fit more data in fewer modules and fail the first
-                // time someone folds the invoice.
-                using var generator = new QRCodeGenerator();
-                using var data = generator.CreateQrCode(text, QRCodeGenerator.ECCLevel.Q);
+                var level = ecc switch
+                {
+                    ReportQrEcc.L => QRCodeGenerator.ECCLevel.L,
+                    ReportQrEcc.M => QRCodeGenerator.ECCLevel.M,
+                    ReportQrEcc.H => QRCodeGenerator.ECCLevel.H,
+                    _ => QRCodeGenerator.ECCLevel.Q,
+                };
 
-                var png = new PngByteQRCode(data).GetGraphic(PixelsPerModule);
+                using var generator = new QRCodeGenerator();
+                using var data = generator.CreateQrCode(text, level);
+
+                var png = new PngByteQRCode(data).GetGraphic(px);
                 var uri = "data:image/png;base64," + Convert.ToBase64String(png);
 
                 // Bounded on purpose: a document has a handful of distinct payloads, and an unbounded
                 // cache keyed by arbitrary text is a memory leak with a business name on it.
                 if (Cache.Count > 256) Cache.Clear();
-                Cache[text] = uri;
+                Cache[key] = uri;
                 return uri;
             }
             catch (Exception)

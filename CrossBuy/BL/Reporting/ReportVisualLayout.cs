@@ -76,6 +76,16 @@ namespace CrossBuy.BL.Reporting
         BranchLogo = 4,
     }
 
+    // How much of a QR can be lost and still read. The four levels the format defines, in the format's
+    // own order — named rather than numbered so a stored layout says what it means.
+    public enum ReportQrEcc
+    {
+        L = 0,   // ~7%  recovery
+        M = 1,   // ~15%
+        Q = 2,   // ~25% — the default: printed paper creases, and a stamp lands on the corner
+        H = 3,   // ~30% — for a code that will be stamped over or printed small
+    }
+
     public enum ReportImageFit
     {
         Contain = 0,   // whole image inside the box, aspect preserved
@@ -160,6 +170,17 @@ namespace CrossBuy.BL.Reporting
         public ReportImageRole ImageRole { get; set; } = ReportImageRole.Custom;
         public ReportImageFit Fit { get; set; } = ReportImageFit.Contain;
         public bool PreserveAspect { get; set; } = true;
+
+        // ---- the QR's own settings, which are the author's and not the code's ---------------------
+        //
+        // ERROR CORRECTION is a real trade about a real document: H survives a stamp landing on the
+        // corner and spends modules doing it; L fits a longer payload and fails the first time someone
+        // folds the invoice. Q is the default because printed paper is the normal case here.
+        public ReportQrEcc QrEcc { get; set; } = ReportQrEcc.Q;
+
+        // Pixels per module in the generated image. Higher is a crisper code on paper and a bigger
+        // document; the renderer clamps it, so a value here cannot produce a 40 MB PNG.
+        public int QrModulePixels { get; set; } = 8;
 
         public List<ReportTableColumn> Columns { get; set; } = new();
         public ReportElementStyle Style { get; set; } = new();

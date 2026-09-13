@@ -77,12 +77,17 @@ namespace CrossBuy.BL.Reporting
             var (paperW, paperH) = ReportPaper.Oriented(page);
             var contentW = ReportPaper.ContentWidthMm(page);
             var contentH = ReportPaper.ContentHeightMm(page);
-            // DIRECTION FOLLOWS THE LANGUAGE, not the stored template flag. `page.Rtl` defaults to
-            // true and is saved with the design, so an Arabic-authored template printed English right
-            // to left — columns mirrored, totals on the wrong edge. The saved design still mirrors
-            // itself, because element X is a distance from the CONTENT START edge emitted as
-            // `inset-inline-start`: one layout, resolved by `dir`.
-            var dir = ctx.Arabic ? "rtl" : "ltr";
+            // THE AUTHOR'S CHOICE, and the language when they have not made one. `page.Rtl` used to
+            // decide this: a bool stored with the design and defaulting to true, so an Arabic-authored
+            // template printed English right to left — columns mirrored, totals on the wrong edge.
+            // The saved design still mirrors itself either way, because element X is a distance from
+            // the CONTENT START edge emitted as `inset-inline-start`: one layout, resolved by `dir`.
+            var dir = page.Direction switch
+            {
+                ReportPageDirection.Rtl => "rtl",
+                ReportPageDirection.Ltr => "ltr",
+                _ => ctx.Arabic ? "rtl" : "ltr",
+            };
 
             var reportHeader = layout.Band(ReportBandKind.ReportHeader);
             var pageHeader = layout.Band(ReportBandKind.PageHeader);
@@ -451,7 +456,7 @@ namespace CrossBuy.BL.Reporting
                         ? Text(Value(row, e.FieldKey))
                         : TextFor(ctx, e);
 
-                    var qr = ReportQrCode.DataUri(payload);
+                    var qr = ReportQrCode.DataUri(payload, e.QrEcc, e.QrModulePixels);
                     if (string.IsNullOrEmpty(qr)) return;
 
                     // contain, always: a QR stretched to a non-square box is a QR that does not scan.

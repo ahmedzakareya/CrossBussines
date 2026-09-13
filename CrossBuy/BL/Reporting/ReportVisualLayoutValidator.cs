@@ -259,6 +259,13 @@ namespace CrossBuy.BL.Reporting
                     }
                     clean.Text = e.Text;
                     clean.TextEn = e.TextEn;
+
+                    // CLAMPED HERE TOO, not only at render: a stored layout is read by more than one
+                    // path, and a value that only the renderer bounds is a value the next reader trusts.
+                    clean.QrEcc = Enum.IsDefined(e.QrEcc) ? e.QrEcc : ReportQrEcc.Q;
+                    clean.QrModulePixels = Math.Clamp(
+                        e.QrModulePixels <= 0 ? 8 : e.QrModulePixels,
+                        ReportQrCode.MinModulePixels, ReportQrCode.MaxModulePixels);
                     break;
                 }
 
