@@ -277,7 +277,26 @@ namespace CrossBuy.BL.Reporting
                 services.AddScoped<IReportDatasetDefinition>(_ => definition);
             }
 
-            services.AddScoped<IReportDatasetRegistry, ReportDatasetRegistry>();
+            // THE REGISTRY IS NOW TWO LAYERS, and the order is the security-bearing part.
+            //
+            // ReportDatasetRegistry stays the authority on code-authored datasets: it validates them at
+            // construction and refuses duplicates, exactly as before. DerivedAwareDatasetRegistry wraps
+            // it and adds this company's own narrowings to ListForStudioAsync — and can only ever ADD,
+            // because it builds each derivation from a parent the inner registry has already returned
+            // as permitted.
+            //
+            // The concrete type is registered separately so the decorator can take it without a circular
+            // resolve, and so the store below can ask the code-authored layer for RegisteredCodes — the
+            // list a derived code may not collide with. Asking the DECORATOR for that would let one
+            // derivation's code block another's, which is the store's job and not the registry's.
+            services.AddScoped<ReportDatasetRegistry>();
+            services.AddScoped<IReportDerivedDatasetStore>(sp => new ReportDerivedDatasetStore(
+                sp.GetRequiredService<CrossBuy.Models.Context.CrossDbContext>(),
+                sp.GetRequiredService<ReportDatasetRegistry>(),
+                sp.GetRequiredService<IReportClock>()));
+            services.AddScoped<IReportDatasetRegistry>(sp => new DerivedAwareDatasetRegistry(
+                sp.GetRequiredService<ReportDatasetRegistry>(),
+                sp.GetRequiredService<IReportDerivedDatasetStore>()));
 
             // ---- WAVE 1: Report Studio -------------------------------------------------------------------
             //

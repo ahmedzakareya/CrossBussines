@@ -170,6 +170,18 @@ namespace CrossBuy.BL.Reporting
         Task<ReportAccessDecision> AuthorizeTemplateAsync(ReportDefinition definition, ReportTemplate template,
             ReportAccessLevel required, BusinessContext context, CancellationToken cancellationToken = default);
 
+        // MAY THIS CALLER AUTHOR A DERIVED DATASET? A shaping right, not a reading one: the holder decides
+        // what the company is OFFERED in the Studio, and the derivation they produce grants no data of its
+        // own because it inherits its parent's permission.
+        //
+        // IT LIVES HERE RATHER THAN AS A BARE IReportPermissionEvaluator CALL IN THE ENDPOINT, and the
+        // analyzer is what made that the right shape: CBA003 flags a permission check in a mutating
+        // endpoint that is not a DECLARED authority, because a check nobody declared is one no other
+        // caller is obliged to make. Routing it through the platform's own authorization service puts the
+        // decision where every other reporting decision already is, and gives it one implementation.
+        Task<ReportAccessDecision> AuthorizeDatasetAuthoringAsync(BusinessContext context,
+            CancellationToken cancellationToken = default);
+
         // The subset of a catalog listing the caller may see. Used by the report browser so a user is never shown
         // a report they cannot run.
         Task<IReadOnlyList<ReportDefinition>> FilterVisibleAsync(IEnumerable<ReportDefinition> definitions,
@@ -231,6 +243,19 @@ namespace CrossBuy.BL.Reporting
             if (shared > level) { level = shared; source = ReportAccessSource.Share; }
 
             return Satisfies(level, required, source, definition.Code);
+        }
+
+        public async Task<ReportAccessDecision> AuthorizeDatasetAuthoringAsync(BusinessContext context,
+            CancellationToken cancellationToken = default)
+        {
+            // Fail closed on an unresolved tenant, like every other decision in this file.
+            if (context is not { CompanyId: > 0 })
+                return ReportAccessDecision.Deny("no_company_scope", "No company scope.");
+
+            return await _permissions.HasPermissionAsync(
+                       ReportPermissions.AuthorDatasets, context, cancellationToken)
+                ? ReportAccessDecision.Allow(ReportAccessLevel.Manage, ReportAccessSource.ModulePermission)
+                : ReportAccessDecision.Deny("dataset_authoring_denied", "Authoring report datasets is not permitted.");
         }
 
         public async Task<ReportAccessDecision> AuthorizeTemplateAsync(ReportDefinition definition,

@@ -47,6 +47,35 @@ namespace CrossBuy.BL.Reporting
         // ADDITIVE at the end: a stored layout holds the integer, so this cannot change what an
         // existing element means.
         QrCode = 8,
+
+        // A chart of ONE measure aggregated along ONE category axis, drawn server-side as inline SVG.
+        // ADDITIVE at the end, same rule as QrCode: a stored layout holds the integer.
+        //
+        // SVG rather than a charting library: the same markup has to survive the HTML viewer, the print
+        // view and Chromium's PDF pass, and a library that paints into a canvas after load paints nothing
+        // into a PDF. It also keeps the platform's "no arbitrary server fetch" rule intact — there is no
+        // script and no external asset in a drawn chart.
+        Chart = 9,
+
+        // A pivot: one measure aggregated across a ROW axis and a COLUMN axis. The columns are discovered
+        // from the data, which is the whole point of a cross-tab and the reason it cannot be expressed as
+        // a Table — a Table's columns are authored, a cross-tab's are found.
+        CrossTab = 10,
+
+        // ANOTHER REPORT, EMBEDDED. The first element whose rows come from a dataset this report is not
+        // built on, which is why the engine resolves it and the renderer only draws what it was handed:
+        // a renderer that could fetch would be a second data path, and the platform has exactly one.
+        SubReport = 11,
+    }
+
+    // Which drawing a Chart element makes. Column/Bar are the same data with the axes swapped — kept as
+    // two kinds rather than a flag because that is how an author names them.
+    public enum ReportChartKind
+    {
+        Column = 0,   // vertical bars, categories along the bottom
+        Bar = 1,      // horizontal bars, categories down the side — survives long Arabic labels
+        Line = 2,
+        Pie = 3,
     }
 
     public enum ReportSystemField
@@ -181,6 +210,53 @@ namespace CrossBuy.BL.Reporting
         // Pixels per module in the generated image. Higher is a crisper code on paper and a bigger
         // document; the renderer clamps it, so a value here cannot produce a 40 MB PNG.
         public int QrModulePixels { get; set; } = 8;
+
+        // ---- the two grouping axes, shared by Chart and CrossTab -----------------------------------
+        //
+        // THE MEASURE IS `FieldKey` AND THE FUNCTION IS `Aggregate` — deliberately the same two properties
+        // Summary already uses. A chart is a Summary drawn along an axis and a cross-tab is a Summary in a
+        // grid; giving each its own measure property would have meant three validators answering the same
+        // question "may this field be summed" and three chances to answer it differently.
+
+        /// The axis a measure is grouped ALONG: a chart's categories, a cross-tab's rows.
+        public string? CategoryFieldKey { get; set; }
+
+        /// The SECOND axis, and it belongs to the cross-tab alone: the field whose distinct values become
+        /// columns. A chart is single-series in this increment and the validator refuses a value here on
+        /// one, rather than accepting it and drawing something the author did not ask for.
+        public string? SeriesFieldKey { get; set; }
+
+        public ReportChartKind ChartKind { get; set; } = ReportChartKind.Column;
+
+        /// A CEILING ON DISCOVERED CATEGORIES, because the author cannot see the data when they place the
+        /// element. A field that turns out to hold 4,000 distinct values would otherwise draw 4,000 bars —
+        /// an unreadable chart and a 40MB document. Above the ceiling the largest are kept and the
+        /// remainder collapses into one honest "other" slice, which is never silently dropped.
+        public int MaxCategories { get; set; } = 12;
+
+        /// Print the value beside each bar, slice or cell.
+        public bool ShowValues { get; set; } = true;
+
+        /// Cross-tab only: add a total row and a total column.
+        public bool ShowGrandTotals { get; set; } = true;
+
+        // ---- sub-report -----------------------------------------------------------------------------
+        //
+        // THE CHILD REPORT, BY ITS CATALOGUE CODE. Not a dataset code and not a query: naming a report
+        // means the child arrives with the permission key, the column list and the tenancy its own
+        // definition already declares, so embedding it can never show more than running it would.
+        public string? SubReportCode { get; set; }
+
+        /// The child column matched against the PARENT GROUP's value.
+        ///
+        /// The link is the group, not a row, because a Detail band in this platform renders once with the
+        /// whole page run rather than once per row — there is no "current row" there to link to. Null in a
+        /// report band, where the child is embedded whole and unlinked.
+        public string? LinkChildFieldKey { get; set; }
+
+        // NO COLUMN LIST. The sub-report prints the CHILD definition's own visible columns, so there is no
+        // second place where "may this reader see this field" gets answered — and no way for a parent
+        // layout to name a child column that the child report would itself have hidden.
 
         public List<ReportTableColumn> Columns { get; set; } = new();
         public ReportElementStyle Style { get; set; } = new();

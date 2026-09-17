@@ -165,6 +165,141 @@ namespace CrossBuy.BL.Reporting
         // Nothing runs at all unless a visual layout actually references an image. That is what keeps every
         // existing report (and a test host with no ReportAssets table) on precisely the path it was on before.
         // ----------------------------------------------------------------------------------------------
+        // ----------------------------------------------------------------------------------------------
+        // SUB-REPORTS — resolved HERE, never in the renderer.
+        //
+        // Three things this placement buys, each of which was the reason not to do it the obvious way:
+        //
+        //   1. THE PERMISSION GATE IS THE ONE THAT ALREADY EXISTS. The child arrives as a catalogue
+        //      DEFINITION and goes through AuthorizeReportAsync — the same call a direct run makes. There
+        //      is no second answer to "may this reader see this", so the two cannot drift apart.
+        //
+        //   2. ONE QUERY, NOT ONE PER GROUP. The link values present on this run are collected first and
+        //      pushed down as a single IN filter. Resolving in the renderer would have meant a round trip
+        //      per group band — the N+1 that makes a 40-customer report 40 queries.
+        //
+        //   3. THE CHILD'S OWN COLUMNS. Nothing here lets the parent layout name a child column, so a
+        //      sub-report shows exactly what running the child would show, and never a field the child
+        //      report itself hides.
+        //
+        // A REFUSED CHILD IS RECORDED, NOT DROPPED. Denied comes back true and the renderer prints a
+        // refusal, because an empty table under a customer's name reads as "no invoices" and that is a
+        // different — and wrong — statement.
+        // ----------------------------------------------------------------------------------------------
+        private const int SubReportRowCeiling = 5000;
+
+        private async Task<IReadOnlyDictionary<string, ReportSubReportData>> ResolveSubReportsAsync(
+            ReportVisualLayout? visual, ReportView view, BusinessContext context, CultureInfo culture,
+            CancellationToken cancellationToken)
+        {
+            var empty = (IReadOnlyDictionary<string, ReportSubReportData>)
+                new Dictionary<string, ReportSubReportData>(StringComparer.Ordinal);
+            if (visual is null) return empty;
+
+            var placements = visual.Bands
+                .SelectMany(b => b.Elements.Select(e => (Band: b, Element: e)))
+                .Where(p => p.Element.Kind == ReportElementKind.SubReport
+                            && !string.IsNullOrWhiteSpace(p.Element.SubReportCode))
+                .ToList();
+
+            if (placements.Count == 0) return empty;
+
+            var map = new Dictionary<string, ReportSubReportData>(StringComparer.Ordinal);
+
+            foreach (var (band, element) in placements)
+            {
+                var child = _catalog.GetDefinitions()
+                    .FirstOrDefault(d => string.Equals(d.Code, element.SubReportCode, StringComparison.Ordinal));
+
+                if (child is null) continue;   // renamed or retired: the renderer says "unavailable"
+
+                var title = culture.TwoLetterISOLanguageName == "ar" ? child.TitleAr : child.TitleEn;
+
+                var decision = await _authorization.AuthorizeReportAsync(child, ReportAccessLevel.Run, context, cancellationToken);
+                if (!decision.Allowed)
+                {
+                    map[element.Id] = new ReportSubReportData { Title = title, Denied = true };
+                    continue;
+                }
+
+                // The values this run will actually ask for. Collected from the PARENT's own rows, so the
+                // child query is narrowed to what the page can display rather than fetched whole.
+                var groupField = band.GroupFieldKey;
+                var linked = element.LinkChildFieldKey is { Length: > 0 } && groupField is { Length: > 0 };
+
+                var links = linked
+                    ? view.Rows.Select(r => ReportValues.AsString(r[groupField!], culture))
+                          .Where(v => v.Length > 0).Distinct(StringComparer.Ordinal).ToList()
+                    : new List<string>();
+
+                if (linked && links.Count == 0)
+                {
+                    map[element.Id] = new ReportSubReportData { Title = title, Columns = child.Columns };
+                    continue;
+                }
+
+                var filters = new List<ReportFilter>(child.DefaultFilters);
+                if (linked)
+                    filters.Add(new ReportFilter
+                    {
+                        Field = element.LinkChildFieldKey!,
+                        Operator = ReportFilterOperator.In,
+                        Values = links!,
+                    });
+
+                ReportDataSet childData;
+                try
+                {
+                    var source = _dataSources.Resolve(child.DataSourceKey, child.Code);
+                    childData = await source.FetchAsync(new ReportDataQuery
+                    {
+                        Definition = child,
+                        Context = context,
+                        Parameters = ReportParameterSet.Empty,
+                        Filters = filters,
+                        Sorts = child.DefaultSorts,
+                        Groupings = Array.Empty<ReportGrouping>(),
+                        RequestedColumns = child.Columns,
+                        MaxRows = SubReportRowCeiling,
+                        Kind = ReportRunKind.Full,
+                        Culture = culture,
+                    }, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // A CHILD FAILURE IS NOT THE PARENT'S FAILURE. The main report still prints; the
+                    // sub-report says it is unavailable. Failing the whole run because an embedded table
+                    // could not load would be a worse answer than an honest gap.
+                    _logger.LogError(ex, "Sub-report '{Child}' failed inside {ReportCode}.",
+                        child.Code, visual.SchemaVersion);
+                    continue;
+                }
+
+                var rows = childData.Rows;
+                var truncated = rows.Count >= SubReportRowCeiling;
+
+                if (!linked)
+                {
+                    map[element.Id] = new ReportSubReportData
+                    {
+                        Title = title, Columns = child.Columns, Unlinked = rows, Truncated = truncated,
+                    };
+                    continue;
+                }
+
+                var byLink = rows
+                    .GroupBy(r => ReportValues.AsString(r[element.LinkChildFieldKey!], culture), StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => (IReadOnlyList<ReportRow>)g.ToList(), StringComparer.Ordinal);
+
+                map[element.Id] = new ReportSubReportData
+                {
+                    Title = title, Columns = child.Columns, ByLink = byLink, Truncated = truncated,
+                };
+            }
+
+            return map;
+        }
+
         private async Task<IReadOnlyDictionary<int, string>> ResolveAssetsAsync(ReportVisualLayout? visual,
             BusinessContext context, CancellationToken cancellationToken)
         {
@@ -406,6 +541,7 @@ namespace CrossBuy.BL.Reporting
                 Visual = visual,
                 Assets = await ResolveAssetsAsync(visual, context, cancellationToken),
                 RoleImages = await ResolveOrgImagesAsync(visual, context, cancellationToken),
+                SubReports = await ResolveSubReportsAsync(visual, view, context, culture, cancellationToken),
             };
 
             ReportArtifact artifact;

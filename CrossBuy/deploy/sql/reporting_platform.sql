@@ -594,12 +594,57 @@ BEGIN
 END;
 GO
 
+-- =================================================================================================
+-- DERIVED DATASETS - dbo.ReportDatasetSpecs
+--
+-- A company's own narrowings of the code-authored datasets: parent code, a new name, and the kept
+-- subset as JSON. The row carries NO data-source key and NO permission key, because the contract it
+-- stores has no property for either - both are inherited from the parent when the definition is built.
+-- That absence is the security argument, and it is deliberately visible in the schema.
+--
+-- Idempotent and additive, like every other table in this slice.
+-- =================================================================================================
+IF OBJECT_ID(N'dbo.ReportDatasetSpecs', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.ReportDatasetSpecs (
+        Id                INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ReportDatasetSpecs PRIMARY KEY,
+        CompanyID         INT            NOT NULL,
+        DatasetCode       NVARCHAR(128)  NOT NULL,
+        ParentDatasetCode NVARCHAR(128)  NOT NULL,
+        TitleAr           NVARCHAR(200)  NOT NULL DEFAULT(N''),
+        TitleEn           NVARCHAR(200)  NOT NULL DEFAULT(N''),
+        DescriptionAr     NVARCHAR(600)  NULL,
+        DescriptionEn     NVARCHAR(600)  NULL,
+        SpecJson          NVARCHAR(MAX)  NOT NULL DEFAULT(N'{}'),
+        IsActive          BIT            NOT NULL DEFAULT(1),
+        DeletedAt         DATETIME2      NULL,
+        CreatedBy         INT            NULL,
+        CreatedAt         DATETIME2      NULL,
+        UpdatedBy         INT            NULL,
+        UpdatedAt         DATETIME2      NULL
+    );
+
+    -- The registry build: this company's live derivations, every time a caller lists datasets.
+    CREATE INDEX IX_ReportDatasetSpecs_Company
+        ON dbo.ReportDatasetSpecs (CompanyID, IsActive)
+        INCLUDE (DatasetCode, ParentDatasetCode, TitleAr, TitleEn);
+
+    -- ONE CLAIM PER CODE, PER COMPANY. Two live rows claiming one code would make "which dataset is
+    -- this" a question the query plan answers - the same ambiguity the in-memory registry refuses for
+    -- code-authored datasets, enforced here for the stored ones. FILTERED so a retired derivation does
+    -- not block re-using its name.
+    CREATE UNIQUE INDEX UX_ReportDatasetSpecs_Company_Code
+        ON dbo.ReportDatasetSpecs (CompanyID, DatasetCode)
+        WHERE DeletedAt IS NULL;
+END;
+GO
+
 SELECT t.TableName,
        CASE WHEN OBJECT_ID(N'dbo.' + t.TableName, N'U') IS NULL THEN 'MISSING' ELSE 'ok' END AS Status
 FROM (VALUES
         (N'ReportTemplates'), (N'ReportTemplateVersions'), (N'ReportCategories'),
         (N'ReportTags'), (N'ReportTagLinks'), (N'ReportFavorites'), (N'ReportShares'),
-        (N'ReportRuns'), (N'ReportArchiveEntries'),
+        (N'ReportRuns'), (N'ReportArchiveEntries'), (N'ReportDatasetSpecs'),
         (N'ReportSchedules'), (N'ReportScheduleRecipients'), (N'ReportDeliveryAttempts'),
         (N'ReportAssets')
      ) AS t(TableName)

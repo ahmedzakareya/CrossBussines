@@ -561,6 +561,11 @@ namespace CrossBuy.Models.Context
         // the entity and its DDL live in the Reporting tree the slice owns.
         public DbSet<Reporting.ReportAsset> ReportAssets { get; set; }
 
+        // Derived datasets: a company's own narrowings of the code-authored datasets. One line, appended
+        // in the Reporting region this slice already owns; the entity and its DDL live in the Reporting
+        // tree. The row stores a projection, never a query - see ReportDatasetSpec for why that matters.
+        public DbSet<Reporting.ReportDatasetSpec> ReportDatasetSpecs { get; set; }
+
         // HR Product Batches 1 and 2 - employee onboarding and roster/shift management.
         //
         // Re-inserted here rather than where they were first written: that region was relocated by

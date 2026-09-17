@@ -286,5 +286,20 @@ namespace CrossBuy.BL.Reporting
 
         // Administering the reporting platform (platform templates, categories, other people's schedules).
         public const string Administer = "reporting.administer";
+
+        // AUTHORING A DERIVED DATASET — narrowing a code-authored dataset into a new named one.
+        //
+        // ITS OWN KEY, NOT Administer AND NOT A MODULE'S View KEY. Two reasons, and both are about what
+        // the holder can do rather than what they can see:
+        //
+        //   · It is not "run a report". An author shapes what EVERYONE ELSE in the company is offered in
+        //     the Studio, which is an administrative act even though the result grants no new access.
+        //   · It is not Administer either. Administer reaches other people's schedules and platform
+        //     templates; a company wanting someone to define report shapes should not have to hand over
+        //     the rest of the platform to do it.
+        //
+        // The key grants NO data. A derived dataset inherits its parent's permission, so an author who
+        // holds this and nothing else can define a shape they are still refused at run time.
+        public const string AuthorDatasets = "reporting.datasets.author";
     }
 }

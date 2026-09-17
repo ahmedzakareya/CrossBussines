@@ -1138,5 +1138,158 @@ namespace CrossBuy.Tests
             Assert.DoesNotContain("left:25mm", rtlHtml);
             Assert.DoesNotContain("right:25mm", rtlHtml);
         }
+
+        // =========================================================================================
+        // CHARTS AND CROSS-TABS.
+        //
+        // Both are new element kinds that READ A SCOPE OF ROWS and AGGREGATE it, which makes them the
+        // first elements whose output depends on data the author never sees while placing them. That
+        // creates three questions no earlier element had to answer, and each has a test below:
+        //
+        //   * can either become a side door onto a field the reader may not see?  (no: the same gate)
+        //   * can either sit where "the rows" means something other than it appears to?
+        //   * can data the author cannot predict make the document unbounded?     (no: the ceiling)
+        // =========================================================================================
+
+        private static ReportElement Chart(ReportChartKind kind, string measure, string category,
+            ReportAggregate aggregate = ReportAggregate.Sum) => new()
+        {
+            Id = Guid.NewGuid().ToString("N")[..8],
+            Kind = ReportElementKind.Chart,
+            ChartKind = kind,
+            FieldKey = measure,
+            CategoryFieldKey = category,
+            Aggregate = aggregate,
+            XMm = 5, YMm = 2, WidthMm = 90, HeightMm = 55,
+        };
+
+        private static ReportElement Pivot(string measure, string rowField, string columnField,
+            ReportAggregate aggregate = ReportAggregate.Sum) => new()
+        {
+            Id = Guid.NewGuid().ToString("N")[..8],
+            Kind = ReportElementKind.CrossTab,
+            FieldKey = measure,
+            CategoryFieldKey = rowField,
+            SeriesFieldKey = columnField,
+            Aggregate = aggregate,
+            XMm = 5, YMm = 2, WidthMm = 120, HeightMm = 50,
+        };
+
+        private static VisualLayoutValidation Check(ReportVisualLayout layout, params string[] permitted) =>
+            new ReportVisualLayoutValidator().Validate(
+                layout, AccountingDatasets.SalesRevenue(),
+                new HashSet<string>(permitted, StringComparer.Ordinal), new HashSet<int>());
+
+        [Fact]
+        public void A_chart_axis_is_bound_through_the_same_gate_as_any_other_field()
+        {
+            // The measure is permitted and the CATEGORY is not. Grouping by a field is reading it - the
+            // axis labels print its values - so a chart that bound its axis on a laxer rule than a Field
+            // element would be a way to read a column the reader was never given.
+            var layout = Layout();
+            Put(layout, ReportBandKind.ReportHeader, Chart(ReportChartKind.Column, "GrandTotal", "CustomerName"));
+
+            Assert.False(Check(layout, "GrandTotal").Ok);
+            Assert.True(Check(layout, "GrandTotal", "CustomerName").Ok);
+        }
+
+        [Fact]
+        public void A_cross_tab_binds_both_of_its_axes()
+        {
+            var layout = Layout();
+            Put(layout, ReportBandKind.ReportFooter, Pivot("GrandTotal", "CustomerName", "Status"));
+
+            Assert.False(Check(layout, "GrandTotal", "CustomerName").Ok);   // column axis withheld
+            Assert.False(Check(layout, "GrandTotal", "Status").Ok);         // row axis withheld
+            Assert.True(Check(layout, "GrandTotal", "CustomerName", "Status").Ok);
+        }
+
+        [Fact]
+        public void A_chart_takes_only_an_aggregate_the_dataset_allows_on_that_field()
+        {
+            // CustomerName declares CountDistinct and nothing else. Summing a customer's NAME is the same
+            // nonsense Summary already refuses, and it has to be refused by the same answer.
+            var layout = Layout();
+            Put(layout, ReportBandKind.ReportHeader,
+                Chart(ReportChartKind.Pie, "CustomerName", "Status", ReportAggregate.Sum));
+
+            Assert.False(Check(layout, "CustomerName", "Status").Ok);
+
+            var ok = Layout();
+            Put(ok, ReportBandKind.ReportHeader,
+                Chart(ReportChartKind.Pie, "CustomerName", "Status", ReportAggregate.CountDistinct));
+            Assert.True(Check(ok, "CustomerName", "Status").Ok);
+        }
+
+        [Theory]
+        [InlineData(ReportBandKind.PageHeader)]
+        [InlineData(ReportBandKind.PageFooter)]
+        [InlineData(ReportBandKind.Detail)]
+        public void A_chart_is_refused_in_a_band_whose_scope_would_misrepresent_it(ReportBandKind band)
+        {
+            // Page bands carry no rows at all. Detail carries THIS PAGE's run - a chart there would draw
+            // one page while looking exactly like a chart of the report, which is the failure a reader
+            // cannot see and therefore cannot catch.
+            var layout = Layout();
+            Put(layout, band, Chart(ReportChartKind.Column, "GrandTotal", "Status"));
+
+            Assert.False(Check(layout, "GrandTotal", "Status").Ok);
+        }
+
+        [Theory]
+        [InlineData(ReportBandKind.ReportHeader)]
+        [InlineData(ReportBandKind.ReportFooter)]
+        [InlineData(ReportBandKind.GroupHeader)]
+        [InlineData(ReportBandKind.GroupFooter)]
+        public void A_chart_is_accepted_in_every_band_that_carries_a_whole_scope(ReportBandKind band)
+        {
+            var layout = Layout();
+            Put(layout, band, Chart(ReportChartKind.Column, "GrandTotal", "Status"));
+
+            Assert.True(Check(layout, "GrandTotal", "Status").Ok);
+        }
+
+        [Fact]
+        public void A_series_field_on_a_chart_is_refused_rather_than_ignored()
+        {
+            // This increment draws one series. Accepting the property and dropping it would leave the
+            // author looking at a chart that answers a different question from the one they configured.
+            var layout = Layout();
+            var e = Put(layout, ReportBandKind.ReportHeader,
+                Chart(ReportChartKind.Column, "GrandTotal", "Status"));
+            e.SeriesFieldKey = "CustomerName";
+
+            Assert.False(Check(layout, "GrandTotal", "Status", "CustomerName").Ok);
+        }
+
+        [Fact]
+        public void A_cross_tab_refuses_the_same_field_on_both_axes()
+        {
+            var layout = Layout();
+            Put(layout, ReportBandKind.ReportFooter, Pivot("GrandTotal", "Status", "Status"));
+
+            Assert.False(Check(layout, "GrandTotal", "Status").Ok);
+        }
+
+        [Fact]
+        public void The_category_ceiling_is_clamped_so_no_data_shape_can_make_the_document_unbounded()
+        {
+            var layout = Layout();
+            var e = Put(layout, ReportBandKind.ReportHeader,
+                Chart(ReportChartKind.Bar, "GrandTotal", "CustomerName"));
+            e.MaxCategories = 100_000;
+
+            var result = Check(layout, "GrandTotal", "CustomerName");
+            Assert.True(result.Ok);
+
+            var clean = result.Sanitised!.Band(ReportBandKind.ReportHeader)!.Elements.Single();
+            Assert.InRange(clean.MaxCategories, 2, 40);
+
+            // Zero is a default, not a refusal: an author who clears the box gets the platform's number
+            // rather than a chart with no bars.
+            e.MaxCategories = 0;
+            Assert.Equal(12, Check(layout, "GrandTotal", "CustomerName")
+                .Sanitised!.Band(ReportBandKind.ReportHeader)!.Elements.Single().MaxCategories);
+        }
     }
 }

@@ -67,6 +67,7 @@ namespace CrossBuy.BL.Reporting
                     Data = context.View,
                     Assets = context.Assets,
                     RoleImages = context.RoleImages,
+                    SubReports = context.SubReports,
                     ReportTitle = context.Title,
                     Arabic = context.IsArabic,
                     Now = context.GeneratedAt,

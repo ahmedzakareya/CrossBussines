@@ -61,6 +61,37 @@ namespace CrossBuy.BL.Reporting
 
         // The tones and the identity, so the notice looks like the product rather than like this file.
         public ReportBranding Branding { get; init; } = ReportBranding.Default;
+
+        /// Resolved sub-reports, keyed by the element id that asked for one.
+        public IReadOnlyDictionary<string, ReportSubReportData> SubReports { get; init; } =
+            new Dictionary<string, ReportSubReportData>(StringComparer.Ordinal);
+    }
+
+    // ============================================================================================
+    // A RESOLVED SUB-REPORT — the child's rows, already fetched, already authorized, already bucketed.
+    //
+    // THE RENDERER IS HANDED THIS; IT NEVER FETCHES IT. That split is the whole design. A renderer that
+    // could reach a data source would be a second data path past the engine's permission gate, and it
+    // would run one query per group — the N+1 that turns a 40-group report into 40 round trips. The
+    // engine runs ONE query filtered to the groups on the page and buckets the answer here.
+    //
+    // Denied is a STATE, not an absence. A child the reader may not run prints a refusal where the table
+    // would have been, because a silently empty sub-report reads as "this customer has no invoices".
+    // ============================================================================================
+    public sealed class ReportSubReportData
+    {
+        public required string Title { get; init; }
+        public IReadOnlyList<ReportColumn> Columns { get; init; } = Array.Empty<ReportColumn>();
+
+        /// Child rows keyed by the parent group's value. Empty for an unlinked sub-report.
+        public IReadOnlyDictionary<string, IReadOnlyList<ReportRow>> ByLink { get; init; } =
+            new Dictionary<string, IReadOnlyList<ReportRow>>(StringComparer.Ordinal);
+
+        /// The whole child, for a sub-report embedded in a report band.
+        public IReadOnlyList<ReportRow> Unlinked { get; init; } = Array.Empty<ReportRow>();
+
+        public bool Denied { get; init; }
+        public bool Truncated { get; init; }
     }
 
     public interface IReportVisualRenderer
@@ -111,18 +142,18 @@ namespace CrossBuy.BL.Reporting
                       .ToList();
 
             // ---- pagination ---------------------------------------------------------------------------
-            // AN EMPTY BAND RESERVES NO PAPER.
-            //
-            // Blank() gives all seven bands a height, and a layout typically fills two or three. The
-            // rest were still charged: 24mm off every page for an empty page header and footer, and a
-            // whole extra sheet for an empty report footer that would not fit on the last one — which
-            // is exactly the blank "page 4 of 4" a four-page report ended with.
-            //
-            // Nothing can be lost by giving that space back: a band with no elements has nothing to
-            // draw. A band the designer HAS put something in is charged exactly as before.
-            static double Charged(ReportBand? band) =>
-                band is { Elements.Count: > 0 } ? band.HeightMm : 0;
-
+            // AN EMPTY BAND RESERVES NO PAPER.
+            //
+            // Blank() gives all seven bands a height, and a layout typically fills two or three. The
+            // rest were still charged: 24mm off every page for an empty page header and footer, and a
+            // whole extra sheet for an empty report footer that would not fit on the last one — which
+            // is exactly the blank "page 4 of 4" a four-page report ended with.
+            //
+            // Nothing can be lost by giving that space back: a band with no elements has nothing to
+            // draw. A band the designer HAS put something in is charged exactly as before.
+            static double Charged(ReportBand? band) =>
+                band is { Elements.Count: > 0 } ? band.HeightMm : 0;
+
             double repeatH = Charged(pageHeader) + Charged(pageFooter);
             double detailH = Math.Max(1, detail?.HeightMm ?? 8);
 
@@ -187,9 +218,9 @@ namespace CrossBuy.BL.Reporting
                 used += h;
             }
 
-            // The report footer needs room on the last page, or it gets one of its own — but ONLY if
-            // there is a footer to print. An empty band asking for a sheet of its own is the blank
-            // trailing page this rule removes.
+            // The report footer needs room on the last page, or it gets one of its own — but ONLY if
+            // there is a footer to print. An empty band asking for a sheet of its own is the blank
+            // trailing page this rule removes.
             double footerH = Charged(reportFooter);
             if (current.Count > 0) pages.Add(current.Select(x => (x.Item1, x.Item2, x.Item3, x.Item4)).ToList());
             if (pages.Count == 0) pages.Add(new List<(string, ReportRow?, string?, List<ReportRow>?)>());
@@ -471,6 +502,24 @@ namespace CrossBuy.BL.Reporting
                     Table(sb, ctx, e, style.ToString(), scope, contentW, showTableTotals, tableTotalScope);
                     return;
                 }
+
+                case ReportElementKind.Chart:
+                {
+                    Chart(sb, ctx, e, style.ToString(), scope);
+                    return;
+                }
+
+                case ReportElementKind.CrossTab:
+                {
+                    CrossTab(sb, ctx, e, style.ToString(), scope);
+                    return;
+                }
+
+                case ReportElementKind.SubReport:
+                {
+                    SubReport(sb, ctx, e, style.ToString(), groupKey);
+                    return;
+                }
             }
 
             var text = e.Kind switch
@@ -489,6 +538,406 @@ namespace CrossBuy.BL.Reporting
 
             sb.Append("<div class=\"cbv-el\" style=\"").Append(style).Append("\"><span>")
               .Append(Enc(text)).Append("</span></div>");
+        }
+
+        // ---- charts and cross-tabs -------------------------------------------------------------------
+        //
+        // THE ONE BUCKETING ROUTINE BOTH USE. A chart's categories and a cross-tab's axes are the same
+        // question asked of different fields, so they are grouped by the same code and capped by the same
+        // ceiling — two implementations would have drifted the first time one of them learned about nulls.
+        //
+        // THE CEILING NEVER DROPS DATA SILENTLY. Everything past it folds into one labelled bucket, so a
+        // total under a capped chart still adds up to the total above it.
+        private const double PxPerMm = 96.0 / 25.4;
+
+        private static List<(string Label, decimal Value)> Buckets(
+            ReportVisualRenderContext ctx, IReadOnlyList<ReportRow> rows, ReportElement e, bool naturalOrder)
+        {
+            var grouped = rows
+                .GroupBy(r => Text(Value(r, e.CategoryFieldKey)) ?? "")
+                .Select(g => (Label: g.Key, Value: Dec(Summarise(g.ToList(), e.FieldKey, e.Aggregate))))
+                .ToList();
+
+            if (!naturalOrder) grouped = grouped.OrderByDescending(x => x.Value).ToList();
+
+            var cap = Math.Max(2, e.MaxCategories);
+            if (grouped.Count <= cap) return grouped;
+
+            var kept = grouped.Take(cap - 1).ToList();
+            var rest = grouped.Skip(cap - 1).ToList();
+            kept.Add((Other(ctx, rest.Count), rest.Sum(x => x.Value)));
+            return kept;
+        }
+
+        private static decimal Dec(object? v) => v == null ? 0m : ReportValues.AsDecimal(v);
+
+        private static string Other(ReportVisualRenderContext ctx, int count) =>
+            ctx.Arabic ? $"أخرى ({count})" : $"Other ({count})";
+
+        private static string Empty(ReportVisualRenderContext ctx) =>
+            ctx.Arabic ? "لا توجد بيانات لعرضها." : "No data to chart.";
+
+        private static void Chart(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            string style, List<ReportRow>? scope)
+        {
+            var rows = scope ?? new List<ReportRow>();
+            var s = e.Style ?? new ReportElementStyle();
+            var data = Buckets(ctx, rows, e, naturalOrder: e.ChartKind == ReportChartKind.Line);
+
+            sb.Append("<div class=\"cbv-el cbv-chart\" style=\"").Append(style).Append("\">");
+
+            if (data.Count == 0)
+            {
+                sb.Append("<span class=\"cbv-chart-empty\">").Append(Enc(Empty(ctx))).Append("</span></div>");
+                return;
+            }
+
+            var w = Math.Max(20.0, e.WidthMm) * PxPerMm;
+            var h = Math.Max(15.0, e.HeightMm) * PxPerMm;
+            var baseColor = Hex(s.Color) ?? "#1877F2";
+            var ink = Hex(s.Color) == null ? "#3F4254" : baseColor;
+            var fs = Math.Max(6.0, s.FontSizePt) * 96.0 / 72.0 * 0.85;
+
+            // A DRAWN CHART IS NOT A SCRIPTED ONE. No <script>, no external href, no foreignObject — the
+            // same three things ReportAssetService refuses in an uploaded SVG are absent here by construction.
+            sb.Append("<svg class=\"cbv-chart-svg\" viewBox=\"0 0 ").Append(Num(w)).Append(' ').Append(Num(h))
+              .Append("\" width=\"100%\" height=\"100%\" preserveAspectRatio=\"xMidYMid meet\" role=\"img\">");
+
+            switch (e.ChartKind)
+            {
+                case ReportChartKind.Pie: Pie(sb, ctx, e, data, w, h, baseColor, ink, fs); break;
+                case ReportChartKind.Bar: Bars(sb, ctx, e, data, w, h, baseColor, ink, fs, horizontal: true); break;
+                case ReportChartKind.Line: Line(sb, ctx, e, data, w, h, baseColor, ink, fs); break;
+                default: Bars(sb, ctx, e, data, w, h, baseColor, ink, fs, horizontal: false); break;
+            }
+
+            sb.Append("</svg></div>");
+        }
+
+        private static void Bars(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            List<(string Label, decimal Value)> data, double w, double h, string color, string ink,
+            double fs, bool horizontal)
+        {
+            var max = data.Max(d => Math.Abs(d.Value));
+            if (max <= 0) max = 1;
+            var pad = fs * 0.6;
+
+            if (horizontal)
+            {
+                // LABELS DOWN THE SIDE, which is why this kind exists: an Arabic category name has nowhere
+                // to go under a vertical column, and rotating it is not reading.
+                var labelW = Math.Min(w * 0.42, w - fs * 6);
+                var trackW = Math.Max(fs, w - labelW - pad * 2 - (e.ShowValues ? fs * 4.5 : 0));
+                var rowH = (h - pad) / data.Count;
+                var barH = Math.Max(2.0, rowH * 0.62);
+
+                for (var i = 0; i < data.Count; i++)
+                {
+                    var y = pad / 2 + i * rowH;
+                    var len = trackW * (double)(Math.Abs(data[i].Value) / max);
+                    sb.Append("<text x=\"").Append(Num(labelW)).Append("\" y=\"").Append(Num(y + rowH / 2 + fs * .35))
+                      .Append("\" text-anchor=\"end\" font-size=\"").Append(Num(fs)).Append("\" fill=\"").Append(ink)
+                      .Append("\">").Append(Enc(Clip(data[i].Label, 28))).Append("</text>");
+                    sb.Append("<rect x=\"").Append(Num(labelW + pad)).Append("\" y=\"").Append(Num(y + (rowH - barH) / 2))
+                      .Append("\" width=\"").Append(Num(len)).Append("\" height=\"").Append(Num(barH))
+                      .Append("\" fill=\"").Append(Shade(color, i, data.Count)).Append("\" rx=\"1\"></rect>");
+                    if (e.ShowValues)
+                        sb.Append("<text x=\"").Append(Num(labelW + pad + len + pad * .6))
+                          .Append("\" y=\"").Append(Num(y + rowH / 2 + fs * .35))
+                          .Append("\" font-size=\"").Append(Num(fs * .9)).Append("\" fill=\"").Append(ink)
+                          .Append("\">").Append(Enc(Format(data[i].Value, e, ctx))).Append("</text>");
+                }
+                return;
+            }
+
+            var axisH = fs * 1.6;
+            var valueH = e.ShowValues ? fs * 1.3 : 0;
+            var plotH = Math.Max(fs, h - axisH - valueH - pad);
+            var colW = w / data.Count;
+            var barW = Math.Max(2.0, colW * 0.6);
+
+            sb.Append("<line x1=\"0\" y1=\"").Append(Num(valueH + plotH)).Append("\" x2=\"").Append(Num(w))
+              .Append("\" y2=\"").Append(Num(valueH + plotH)).Append("\" stroke=\"").Append(ink)
+              .Append("\" stroke-opacity=\".25\" stroke-width=\"1\"></line>");
+
+            for (var i = 0; i < data.Count; i++)
+            {
+                var bh = plotH * (double)(Math.Abs(data[i].Value) / max);
+                var x = i * colW + (colW - barW) / 2;
+                var y = valueH + plotH - bh;
+                sb.Append("<rect x=\"").Append(Num(x)).Append("\" y=\"").Append(Num(y))
+                  .Append("\" width=\"").Append(Num(barW)).Append("\" height=\"").Append(Num(bh))
+                  .Append("\" fill=\"").Append(Shade(color, i, data.Count)).Append("\" rx=\"1\"></rect>");
+                if (e.ShowValues)
+                    sb.Append("<text x=\"").Append(Num(i * colW + colW / 2)).Append("\" y=\"").Append(Num(y - fs * .3))
+                      .Append("\" text-anchor=\"middle\" font-size=\"").Append(Num(fs * .85)).Append("\" fill=\"")
+                      .Append(ink).Append("\">").Append(Enc(Format(data[i].Value, e, ctx))).Append("</text>");
+                sb.Append("<text x=\"").Append(Num(i * colW + colW / 2)).Append("\" y=\"")
+                  .Append(Num(valueH + plotH + fs * 1.15)).Append("\" text-anchor=\"middle\" font-size=\"")
+                  .Append(Num(fs)).Append("\" fill=\"").Append(ink).Append("\">")
+                  .Append(Enc(Clip(data[i].Label, Math.Max(4, (int)(colW / (fs * .55)))))).Append("</text>");
+            }
+        }
+
+        private static void Line(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            List<(string Label, decimal Value)> data, double w, double h, string color, string ink, double fs)
+        {
+            var max = data.Max(d => Math.Abs(d.Value));
+            if (max <= 0) max = 1;
+            var axisH = fs * 1.6;
+            var plotH = Math.Max(fs, h - axisH - fs);
+            var step = data.Count == 1 ? 0 : w / (data.Count - 1);
+            var x0 = data.Count == 1 ? w / 2 : 0;
+
+            var points = new StringBuilder();
+            for (var i = 0; i < data.Count; i++)
+            {
+                var x = x0 + i * step;
+                var y = fs + plotH - plotH * (double)(Math.Abs(data[i].Value) / max);
+                if (i > 0) points.Append(' ');
+                points.Append(Num(x)).Append(',').Append(Num(y));
+            }
+
+            sb.Append("<polyline points=\"").Append(points).Append("\" fill=\"none\" stroke=\"").Append(color)
+              .Append("\" stroke-width=\"1.6\" stroke-linejoin=\"round\" stroke-linecap=\"round\"></polyline>");
+
+            for (var i = 0; i < data.Count; i++)
+            {
+                var x = x0 + i * step;
+                var y = fs + plotH - plotH * (double)(Math.Abs(data[i].Value) / max);
+                sb.Append("<circle cx=\"").Append(Num(x)).Append("\" cy=\"").Append(Num(y))
+                  .Append("\" r=\"2\" fill=\"").Append(color).Append("\"></circle>");
+                sb.Append("<text x=\"").Append(Num(x)).Append("\" y=\"").Append(Num(fs + plotH + fs * 1.15))
+                  .Append("\" text-anchor=\"middle\" font-size=\"").Append(Num(fs)).Append("\" fill=\"").Append(ink)
+                  .Append("\">").Append(Enc(Clip(data[i].Label, 10))).Append("</text>");
+            }
+        }
+
+        private static void Pie(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            List<(string Label, decimal Value)> data, double w, double h, string color, string ink, double fs)
+        {
+            var total = data.Sum(d => Math.Abs(d.Value));
+            if (total <= 0) total = 1;
+
+            var legendW = Math.Min(w * 0.45, fs * 12);
+            var plotW = w - legendW;
+            var r = Math.Max(4.0, Math.Min(plotW, h) / 2 - 2);
+            var cx = plotW / 2;
+            var cy = h / 2;
+
+            double angle = -Math.PI / 2;
+            for (var i = 0; i < data.Count; i++)
+            {
+                var frac = (double)(Math.Abs(data[i].Value) / total);
+                var sweep = frac * Math.PI * 2;
+                var x1 = cx + r * Math.Cos(angle);
+                var y1 = cy + r * Math.Sin(angle);
+                angle += sweep;
+                var x2 = cx + r * Math.Cos(angle);
+                var y2 = cy + r * Math.Sin(angle);
+
+                // A SINGLE CATEGORY IS A WHOLE CIRCLE, and an arc cannot draw one: start and end land on the
+                // same point and the path collapses to nothing. That case gets a real circle instead.
+                if (data.Count == 1 || frac >= 0.999)
+                    sb.Append("<circle cx=\"").Append(Num(cx)).Append("\" cy=\"").Append(Num(cy))
+                      .Append("\" r=\"").Append(Num(r)).Append("\" fill=\"").Append(Shade(color, i, data.Count))
+                      .Append("\"></circle>");
+                else
+                    sb.Append("<path d=\"M").Append(Num(cx)).Append(' ').Append(Num(cy))
+                      .Append(" L").Append(Num(x1)).Append(' ').Append(Num(y1))
+                      .Append(" A").Append(Num(r)).Append(' ').Append(Num(r)).Append(" 0 ")
+                      .Append(sweep > Math.PI ? '1' : '0').Append(" 1 ")
+                      .Append(Num(x2)).Append(' ').Append(Num(y2)).Append(" Z\" fill=\"")
+                      .Append(Shade(color, i, data.Count)).Append("\"></path>");
+
+                var ly = fs * 1.4 * i + fs;
+                if (ly > h - 2) continue;
+                sb.Append("<rect x=\"").Append(Num(plotW + 2)).Append("\" y=\"").Append(Num(ly - fs * .75))
+                  .Append("\" width=\"").Append(Num(fs * .8)).Append("\" height=\"").Append(Num(fs * .8))
+                  .Append("\" fill=\"").Append(Shade(color, i, data.Count)).Append("\" rx=\"1\"></rect>");
+                var label = e.ShowValues
+                    ? $"{Clip(data[i].Label, 16)} · {Format(data[i].Value, e, ctx)}"
+                    : Clip(data[i].Label, 22);
+                sb.Append("<text x=\"").Append(Num(plotW + 2 + fs * 1.2)).Append("\" y=\"").Append(Num(ly))
+                  .Append("\" font-size=\"").Append(Num(fs * .9)).Append("\" fill=\"").Append(ink).Append("\">")
+                  .Append(Enc(label)).Append("</text>");
+            }
+        }
+
+        // ---- the cross-tab element -------------------------------------------------------------------
+        private static void CrossTab(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            string style, List<ReportRow>? scope)
+        {
+            var rows = scope ?? new List<ReportRow>();
+            sb.Append("<div class=\"cbv-el cbv-table-wrap\" style=\"").Append(style).Append("\">");
+
+            if (rows.Count == 0)
+            {
+                sb.Append("<span class=\"cbv-chart-empty\">").Append(Enc(Empty(ctx))).Append("</span></div>");
+                return;
+            }
+
+            // COLUMNS ARE DISCOVERED, NOT AUTHORED — the difference between this and a Table. The same
+            // ceiling applies, folding the tail into one column so the grand total still reconciles.
+            var colBuckets = Buckets(ctx, rows, new ReportElement
+            {
+                CategoryFieldKey = e.SeriesFieldKey,
+                FieldKey = e.FieldKey,
+                Aggregate = e.Aggregate,
+                MaxCategories = e.MaxCategories,
+                Style = e.Style,
+            }, naturalOrder: false);
+            var cols = colBuckets.Select(c => c.Label).ToList();
+            var folded = cols.Count > 0 && cols[^1].StartsWith(ctx.Arabic ? "أخرى (" : "Other (", StringComparison.Ordinal);
+            var namedCols = folded ? cols.Take(cols.Count - 1).ToHashSet(StringComparer.Ordinal) : cols.ToHashSet(StringComparer.Ordinal);
+
+            var rowKeys = rows.Select(r => Text(Value(r, e.CategoryFieldKey)) ?? "")
+                              .Distinct(StringComparer.Ordinal).ToList();
+
+            sb.Append("<table class=\"cbv-table cbv-crosstab\"><thead><tr><th></th>");
+            foreach (var c in cols) sb.Append("<th>").Append(Enc(c)).Append("</th>");
+            if (e.ShowGrandTotals)
+                sb.Append("<th>").Append(Enc(ctx.Arabic ? "الإجمالي" : "Total")).Append("</th>");
+            sb.Append("</tr></thead><tbody>");
+
+            foreach (var rk in rowKeys)
+            {
+                var band = rows.Where(r => string.Equals(Text(Value(r, e.CategoryFieldKey)) ?? "", rk,
+                                                          StringComparison.Ordinal)).ToList();
+                sb.Append("<tr><th scope=\"row\">").Append(Enc(rk)).Append("</th>");
+                foreach (var c in cols)
+                {
+                    var cell = folded && ReferenceEquals(c, cols[^1])
+                        ? band.Where(r => !namedCols.Contains(Text(Value(r, e.SeriesFieldKey)) ?? "")).ToList()
+                        : band.Where(r => string.Equals(Text(Value(r, e.SeriesFieldKey)) ?? "", c,
+                                                        StringComparison.Ordinal)).ToList();
+                    sb.Append("<td>").Append(Enc(cell.Count == 0
+                        ? ""
+                        : Format(Summarise(cell, e.FieldKey, e.Aggregate), e, ctx))).Append("</td>");
+                }
+                if (e.ShowGrandTotals)
+                    sb.Append("<td class=\"cbv-ct-total\">")
+                      .Append(Enc(Format(Summarise(band, e.FieldKey, e.Aggregate), e, ctx))).Append("</td>");
+                sb.Append("</tr>");
+            }
+            sb.Append("</tbody>");
+
+            if (e.ShowGrandTotals)
+            {
+                sb.Append("<tfoot><tr><th scope=\"row\">").Append(Enc(ctx.Arabic ? "الإجمالي" : "Total")).Append("</th>");
+                foreach (var c in cols)
+                {
+                    var cell = folded && ReferenceEquals(c, cols[^1])
+                        ? rows.Where(r => !namedCols.Contains(Text(Value(r, e.SeriesFieldKey)) ?? "")).ToList()
+                        : rows.Where(r => string.Equals(Text(Value(r, e.SeriesFieldKey)) ?? "", c,
+                                                        StringComparison.Ordinal)).ToList();
+                    sb.Append("<td>").Append(Enc(cell.Count == 0
+                        ? ""
+                        : Format(Summarise(cell, e.FieldKey, e.Aggregate), e, ctx))).Append("</td>");
+                }
+                sb.Append("<td class=\"cbv-ct-total\">")
+                  .Append(Enc(Format(Summarise(rows, e.FieldKey, e.Aggregate), e, ctx))).Append("</td></tr></tfoot>");
+            }
+
+            sb.Append("</table></div>");
+        }
+
+        // ---- the sub-report element ------------------------------------------------------------------
+        //
+        // DRAWS WHAT IT WAS HANDED, and says so when it was handed nothing. The three outcomes are
+        // deliberately distinguishable on paper, because they mean different things to a reader:
+        //
+        //   refused   — you may not run this report        (never looks like "no rows")
+        //   no rows   — you may, and this group has none
+        //   truncated — you are not seeing all of them
+        private static void SubReport(StringBuilder sb, ReportVisualRenderContext ctx, ReportElement e,
+            string style, string? groupKey)
+        {
+            sb.Append("<div class=\"cbv-el cbv-table-wrap cbv-subreport\" style=\"").Append(style).Append("\">");
+
+            if (!ctx.SubReports.TryGetValue(e.Id, out var sub))
+            {
+                // The engine resolves every sub-report the layout places, so a miss means the child could
+                // not be found at all — a renamed or retired report code in an old template.
+                sb.Append("<span class=\"cbv-sub-note\">")
+                  .Append(Enc(ctx.Arabic ? "التقرير الفرعي غير متاح." : "This sub-report is unavailable."))
+                  .Append("</span></div>");
+                return;
+            }
+
+            sb.Append("<div class=\"cbv-sub-title\">").Append(Enc(sub.Title)).Append("</div>");
+
+            if (sub.Denied)
+            {
+                sb.Append("<span class=\"cbv-sub-note\">")
+                  .Append(Enc(ctx.Arabic ? "لا تملك صلاحية عرض هذا التقرير." : "You may not view this report."))
+                  .Append("</span></div>");
+                return;
+            }
+
+            var rows = e.LinkChildFieldKey == null
+                ? sub.Unlinked
+                : (groupKey != null && sub.ByLink.TryGetValue(groupKey, out var hit)
+                    ? hit
+                    : Array.Empty<ReportRow>());
+
+            if (rows.Count == 0 || sub.Columns.Count == 0)
+            {
+                sb.Append("<span class=\"cbv-sub-note\">")
+                  .Append(Enc(ctx.Arabic ? "لا توجد سجلات." : "No records."))
+                  .Append("</span></div>");
+                return;
+            }
+
+            sb.Append("<table class=\"cbv-table\"><thead><tr>");
+            foreach (var c in sub.Columns)
+                sb.Append("<th>").Append(Enc(ctx.Arabic ? c.TitleAr : c.TitleEn)).Append("</th>");
+            sb.Append("</tr></thead><tbody>");
+
+            foreach (var r in rows)
+            {
+                sb.Append("<tr>");
+                foreach (var c in sub.Columns)
+                    sb.Append("<td>").Append(Enc(FormatValue(Value(r, c.Key), c.Format, ctx))).Append("</td>");
+                sb.Append("</tr>");
+            }
+            sb.Append("</tbody></table>");
+
+            if (sub.Truncated)
+                sb.Append("<span class=\"cbv-sub-note\">")
+                  .Append(Enc(ctx.Arabic ? "القائمة مقطوعة — هناك سجلات أخرى." : "Truncated — more records exist."))
+                  .Append("</span>");
+
+            sb.Append("</div>");
+        }
+
+        // ---- drawing helpers -------------------------------------------------------------------------
+        private static string Num(double v) =>
+            Math.Round(v, 2).ToString(CultureInfo.InvariantCulture);
+
+        private static string? Hex(string? c) =>
+            !string.IsNullOrWhiteSpace(c) && c.Length == 7 && c[0] == '#' ? c : null;
+
+        private static string Clip(string s, int max) =>
+            string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s[..Math.Max(1, max - 1)] + "…");
+
+        /// One authored colour becomes a readable series, by walking lightness rather than hue.
+        ///
+        /// A generated hue ramp would have produced colours the author never chose and the brand sheet never
+        /// measured — and the platform already refuses any colour that is not an authored #rrggbb. Tints of
+        /// the one colour keep that promise: every slice is demonstrably the author's colour.
+        private static string Shade(string hex, int i, int n)
+        {
+            if (n <= 1 || hex.Length != 7) return hex;
+
+            int R = Convert.ToInt32(hex.Substring(1, 2), 16),
+                G = Convert.ToInt32(hex.Substring(3, 2), 16),
+                B = Convert.ToInt32(hex.Substring(5, 2), 16);
+
+            var t = i / (double)(n - 1) * 0.72 - 0.26;   // -0.26 (darker) .. +0.46 (lighter)
+            double Mix(int c) => t >= 0 ? c + (255 - c) * t : c * (1 + t);
+
+            return $"#{(int)Math.Clamp(Mix(R), 0, 255):x2}{(int)Math.Clamp(Mix(G), 0, 255):x2}{(int)Math.Clamp(Mix(B), 0, 255):x2}";
         }
 
         // ---- the table element ------------------------------------------------------------------------
@@ -785,6 +1234,21 @@ namespace CrossBuy.BL.Reporting
             sb.Append(".cbv-table th,.cbv-table td{border-block-end:.2mm solid #ccc;padding:.6mm 1mm;}");
             sb.Append(".cbv-table thead th{border-block-end:.4mm solid #0E4A9E;font-weight:700;}");
             sb.Append(".cbv-table tfoot td{border-block-start:.4mm solid #0E4A9E;font-weight:700;}");
+
+            // A CROSS-TAB'S ROW HEADINGS ARE <th scope=row>, so they need the column headings' weight
+            // without their bottom rule — the grid reads as a matrix, not as a stack of tables.
+            sb.Append(".cbv-crosstab th[scope=row]{text-align:start;font-weight:600;}");
+            sb.Append(".cbv-crosstab td{text-align:end;}");
+            sb.Append(".cbv-crosstab .cbv-ct-total{font-weight:700;}");
+
+            // The chart box does not clip its drawing: an SVG sized to the element already fits, and
+            // `overflow:hidden` on the shared .cbv-el would cut a value label sitting on the top bar.
+            sb.Append(".cbv-chart{overflow:visible;align-items:stretch;}");
+            sb.Append(".cbv-chart-svg{display:block;width:100%;height:100%;}");
+            sb.Append(".cbv-chart-empty{color:#7E8299;font-style:italic;align-self:center;}");
+            sb.Append(".cbv-subreport{display:block;overflow:visible;}");
+            sb.Append(".cbv-sub-title{font-weight:700;color:#0E4A9E;margin-block-end:.8mm;}");
+            sb.Append(".cbv-sub-note{color:#7E8299;font-style:italic;}");
         }
 
         private static string Mm(double v) => v.ToString("0.###", CultureInfo.InvariantCulture) + "mm";

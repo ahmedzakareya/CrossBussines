@@ -61,6 +61,8 @@ namespace CrossBuy.Controllers.Api
         private readonly IReportAuthorizationService _authorization;
         private readonly IBusinessContextAccessor _contexts;
         private readonly CrossDbContext _db;
+        private readonly IReportDerivedDatasetStore _derived;
+        private readonly IReportDatasetRegistry _datasets;
 
         public ReportsCenterWriteApiController(
             IReportTemplateService templates,
@@ -68,7 +70,9 @@ namespace CrossBuy.Controllers.Api
             IReportService reports,
             IReportAuthorizationService authorization,
             IBusinessContextAccessor contexts,
-            CrossDbContext db)
+            CrossDbContext db,
+            IReportDerivedDatasetStore derived,
+            IReportDatasetRegistry datasets)
         {
             _templates = templates;
             _library = library;
@@ -76,6 +80,8 @@ namespace CrossBuy.Controllers.Api
             _authorization = authorization;
             _contexts = contexts;
             _db = db;
+            _derived = derived;
+            _datasets = datasets;
         }
 
         // An unresolved context writes NOTHING. CLAUDE.md: an unresolved company scope reads no
@@ -437,5 +443,115 @@ namespace CrossBuy.Controllers.Api
         // =========================================================================================
         private static object Shape(IReadOnlyList<ReportDiagnostic> diagnostics) =>
             diagnostics.Select(d => new { code = d.Code, message = d.Message, field = d.Field });
+
+        // =====================================================================================
+        // DERIVED DATASETS - a company's own narrowings of the code-authored datasets.
+        //
+        // TWO GATES, AND BOTH ARE NEEDED because they answer different questions:
+        //
+        //   reporting.datasets.author    may this caller SHAPE what the company is offered?
+        //   the parent's own report gate may this caller SEE the data being shaped?
+        //
+        // Neither implies the other. An admin without accounting access may not mint an accounting
+        // dataset even though the derivation would grant them nothing at run time - the catalogue would
+        // still have gained an entry describing data they cannot see, and a catalogue is information.
+        // An accountant without the author key may run everything and define nothing.
+        // =====================================================================================
+
+        [HttpGet("datasets/derived")]
+        public async Task<IActionResult> ListDerived(CancellationToken ct)
+        {
+            var context = await ResolveAsync(ct);
+            if (context is null) return Unauthorized();
+
+            if (!(await _authorization.AuthorizeDatasetAuthoringAsync(context, ct)).Allowed)
+                return NotFound();
+
+            var rows = await _derived.ListAsync(context, ct);
+            return Ok(rows.Select(r => new
+            {
+                datasetCode = r.DatasetCode,
+                parentDatasetCode = r.ParentDatasetCode,
+                titleAr = r.TitleAr,
+                titleEn = r.TitleEn,
+                updatedAt = r.UpdatedAt ?? r.CreatedAt,
+            }));
+        }
+
+        [HttpPost("datasets/derived")]
+        public async Task<IActionResult> SaveDerived([FromBody] ReportDerivedDatasetSpec spec,
+            CancellationToken ct)
+        {
+            var context = await ResolveAsync(ct);
+            if (context is null) return Unauthorized();
+
+            if (spec is null) return BadRequest(new { errors = new[] { "No specification was supplied." } });
+
+            if (!(await _authorization.AuthorizeDatasetAuthoringAsync(context, ct)).Allowed)
+                return NotFound();
+
+            // THE PARENT'S OWN GATE, called HERE rather than left to the store.
+            //
+            // The store resolves the parent through the permission-filtered list and would refuse anyway,
+            // so this is not the only check - it is the VISIBLE one. CBA001 does not descend into services
+            // to discover an authority call, and it is right not to: a rule found by descent is a rule no
+            // reader of this endpoint can see and any other caller can bypass.
+            var parent = await ResolveParentAsync(spec.ParentDatasetCode, context, ct);
+            if (parent is null) return NotFound();
+
+            var result = await _derived.SaveAsync(spec, context, ct);
+
+            // A refusal is a RESULT with reasons, not an exception. The author needs to know which rule
+            // they crossed to fix it - the same contract the Studio's own save endpoint keeps.
+            return result.Ok
+                ? Ok(new { datasetCode = result.Definition!.DatasetCode })
+                : StatusCode(StatusCodes.Status403Forbidden, new { errors = result.Errors });
+        }
+
+        [HttpDelete("datasets/derived/{datasetCode}")]
+        public async Task<IActionResult> DeleteDerived(string datasetCode, CancellationToken ct)
+        {
+            var context = await ResolveAsync(ct);
+            if (context is null) return Unauthorized();
+
+            if (!(await _authorization.AuthorizeDatasetAuthoringAsync(context, ct)).Allowed)
+                return NotFound();
+
+            // The parent is resolved FROM THE STORED ROW, never from the request - the same rule the
+            // template-id endpoints above keep. A code from the wire must not be able to name one
+            // derivation while the gate clears another.
+            var row = (await _derived.ListAsync(context, ct))
+                .FirstOrDefault(r => string.Equals(r.DatasetCode, datasetCode, StringComparison.Ordinal));
+            if (row is null) return NotFound();
+
+            if (await ResolveParentAsync(row.ParentDatasetCode, context, ct) is null) return NotFound();
+
+            return await _derived.DeleteAsync(datasetCode, context, ct) ? Ok(new { ok = true }) : NotFound();
+        }
+
+        // The parent, if this caller may both SEE it and RUN it. Null covers "no such dataset", "not
+        // permitted" and "not a code-authored dataset" with one answer, so none of these endpoints can be
+        // used to enumerate the catalogue.
+        private async Task<ReportDefinition?> ResolveParentAsync(string? parentCode,
+            BusinessContext context, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(parentCode)) return null;
+
+            var visible = await _datasets.ListForStudioAsync(context, ct);
+            var dataset = visible.FirstOrDefault(d =>
+                string.Equals(d.DatasetCode, parentCode, StringComparison.Ordinal));
+            if (dataset is null) return null;
+
+            // The dataset's own report, through the platform's report gate - the authority call CBA001
+            // requires to be visible in a mutating endpoint's own call graph.
+            var definition = await _reports.DescribeAsync(dataset.DataSourceKey, ct);
+            if (definition is null) return null;
+
+            var decision = await _authorization.AuthorizeReportAsync(
+                definition, ReportAccessLevel.Run, context, ct);
+
+            return decision.Allowed ? definition : null;
+        }
+
     }
 }

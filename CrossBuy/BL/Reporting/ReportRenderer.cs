@@ -136,6 +136,12 @@ namespace CrossBuy.BL.Reporting
         public IReadOnlyDictionary<ReportImageRole, string> RoleImages { get; init; } =
             new Dictionary<ReportImageRole, string>();
 
+        // Resolved sub-reports, keyed by the element id that placed one. Carried through the render
+        // context rather than fetched downstream, for the reason the engine's resolver states: a renderer
+        // that could reach a data source would be a second data path past the permission gate.
+        public IReadOnlyDictionary<string, ReportSubReportData> SubReports { get; init; } =
+            new Dictionary<string, ReportSubReportData>(StringComparer.Ordinal);
+
         public bool IsArabic => Culture.TwoLetterISOLanguageName == "ar";
 
         // THE AUTHOR'S CHOICE, and the language when they have not made one.

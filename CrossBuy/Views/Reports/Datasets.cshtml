@@ -1,0 +1,275 @@
+@{
+    @* GLOBAL UI RULE: Inventory is the only visual authority. Inventory shell, Inventory cards. *@
+    Layout = "~/Views/Shared/_LayoutInventory.cshtml";
+    var isAr = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = isAr ? "مجموعات البيانات المشتقّة" : "Derived datasets";
+}
+
+@*
+    DERIVED DATASETS — the authoring screen.
+
+    THE SCREEN HOLDS NO DECISION. Every list it shows comes from an endpoint that gates itself, and the
+    save endpoint re-checks every rule the builder enforces. Nothing here is a permission check, and
+    nothing here is validation: the errors printed below are the SERVER's own strings, so a reader is
+    told the rule that was actually applied rather than a client-side paraphrase of it.
+
+    WHY THE FIELD LIST IS FETCHED PER PARENT rather than held for all of them: the fields endpoint is the
+    Studio's, and it answers only for a dataset the caller may build over. Fetching them all up front
+    would mean asking about datasets nobody selected, and getting a useful refusal for each.
+*@
+
+@Html.AntiForgeryToken()
+
+<div class="d-flex flex-column gap-6">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h1 class="fs-2 fw-bold m-0">@(isAr ? "مجموعات البيانات المشتقّة" : "Derived datasets")</h1>
+            <div class="text-muted fs-7 mt-1">
+                @(isAr
+                    ? "اشتقّ مجموعة جديدة من مجموعة قائمة: اختر الحقول، سمّها، وثبّت فلاتر. الصلاحيات تُورَّث من الأصل ولا تُكتَب هنا."
+                    : "Derive a new dataset from an existing one: pick fields, name it, bake in filters. Permissions are inherited from the parent and are never written here.")
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="cbd-new">
+            <i class="ki-outline ki-plus fs-4 me-1"></i>@(isAr ? "اشتقاق جديد" : "New derivation")
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-row-bordered align-middle m-0">
+                    <thead>
+                        <tr class="fw-bold fs-7 text-gray-600 text-uppercase">
+                            <th class="ps-6">@(isAr ? "الاسم" : "Name")</th>
+                            <th>@(isAr ? "الكود" : "Code")</th>
+                            <th>@(isAr ? "مشتقّة من" : "Derived from")</th>
+                            <th class="text-end pe-6"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cbd-rows"></tbody>
+                </table>
+            </div>
+            <div id="cbd-empty" class="d-none p-8 text-center">
+                @* The platform's refusal/empty treatment: a dashed notice, not a blank table. *@
+                <div class="border border-dashed border-gray-300 rounded p-6 text-gray-600">
+                    @(isAr ? "لا توجد مجموعات مشتقّة بعد." : "No derived datasets yet.")
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--begin::Editor-->
+    <div class="card d-none" id="cbd-editor">
+        <div class="card-header">
+            <h3 class="card-title fw-bold" id="cbd-editor-title"></h3>
+            <div class="card-toolbar">
+                <button type="button" class="btn btn-sm btn-light" id="cbd-cancel">@(isAr ? "إلغاء" : "Cancel")</button>
+                <button type="button" class="btn btn-sm btn-primary ms-2" id="cbd-save">@(isAr ? "حفظ" : "Save")</button>
+            </div>
+        </div>
+        <div class="card-body d-flex flex-column gap-5">
+
+            <div id="cbd-errors" class="d-none">
+                <div class="border border-dashed border-danger rounded p-4 text-danger fs-7">
+                    <div class="fw-bold mb-2">@(isAr ? "لم يُحفَظ:" : "Not saved:")</div>
+                    <ul class="m-0 ps-4" id="cbd-error-list"></ul>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label class="form-label required">@(isAr ? "مشتقّة من" : "Derived from")</label>
+                    <select class="form-select form-select-sm" id="cbd-parent"></select>
+                    <div class="form-text">
+                        @(isAr ? "المصدر والصلاحية يُورَّثان من هذه المجموعة." : "Source and permission are inherited from this dataset.")
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">@(isAr ? "الكود" : "Code")</label>
+                    <input type="text" class="form-control form-control-sm" id="cbd-code" dir="ltr"
+                           placeholder="acct.overdue">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">@(isAr ? "الاسم بالعربية" : "Arabic name")</label>
+                    <input type="text" class="form-control form-control-sm" id="cbd-title-ar">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label required">@(isAr ? "الاسم بالإنجليزية" : "English name")</label>
+                    <input type="text" class="form-control form-control-sm" id="cbd-title-en" dir="ltr">
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label required">@(isAr ? "الحقول المحتفَظ بها" : "Fields kept")</label>
+                <div class="border rounded p-4" id="cbd-fields"
+                     style="max-height:320px;overflow:auto"></div>
+                <div class="form-text">
+                    @(isAr
+                        ? "لا يمكن إضافة حقل غير موجود في الأصل — المشتقّة تضيّق ولا توسّع."
+                        : "A field the parent does not have cannot be added — a derivation narrows, it never widens.")
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--end::Editor-->
+
+</div>
+
+<script>
+(function () {
+    var AR = @(isAr ? "true" : "false");
+    var $ = function (id) { return document.getElementById(id); };
+    function esc(v) {
+        return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    }
+
+    var PARENTS = [];
+    var FIELDS = [];      // the selected parent's fields
+    var MINE = [];
+
+    function token() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : "";
+    }
+
+    function get(url) {
+        return fetch(url, { credentials: "same-origin" })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; });
+    }
+
+    // ---- the list ------------------------------------------------------------------------------
+    function renderList() {
+        var rows = $("cbd-rows"), empty = $("cbd-empty");
+        if (!MINE.length) { rows.innerHTML = ""; empty.classList.remove("d-none"); return; }
+        empty.classList.add("d-none");
+
+        rows.innerHTML = MINE.map(function (d) {
+            return "<tr>" +
+                "<td class='ps-6 fw-semibold'>" + esc(AR ? d.titleAr : d.titleEn) + "</td>" +
+                "<td class='text-muted' dir='ltr'>" + esc(d.datasetCode) + "</td>" +
+                "<td class='text-muted' dir='ltr'>" + esc(d.parentDatasetCode) + "</td>" +
+                "<td class='text-end pe-6'>" +
+                    "<button type='button' class='btn btn-sm btn-light-danger' data-del='" +
+                    esc(d.datasetCode) + "'>" + (AR ? "حذف" : "Delete") + "</button>" +
+                "</td></tr>";
+        }).join("");
+
+        Array.prototype.forEach.call(rows.querySelectorAll("[data-del]"), function (b) {
+            b.addEventListener("click", function () { remove(b.getAttribute("data-del")); });
+        });
+    }
+
+    function load() {
+        get("/api/reports/datasets/derived").then(function (list) {
+            MINE = list || [];
+            renderList();
+        });
+    }
+
+    function remove(code) {
+        // A MUTATION NEVER RELOADS THE PAGE: the row goes, the rest of the screen stays where it was.
+        fetch("/api/reports/datasets/derived/" + encodeURIComponent(code), {
+            method: "DELETE",
+            credentials: "same-origin",
+            headers: { "RequestVerificationToken": token() }
+        }).then(function () { load(); });
+    }
+
+    // ---- the editor ----------------------------------------------------------------------------
+    function openEditor() {
+        $("cbd-editor").classList.remove("d-none");
+        $("cbd-editor-title").textContent = AR ? "اشتقاق جديد" : "New derivation";
+        $("cbd-errors").classList.add("d-none");
+        ["cbd-code", "cbd-title-ar", "cbd-title-en"].forEach(function (id) { $(id).value = ""; });
+        loadFields();
+        $("cbd-editor").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function loadFields() {
+        var code = $("cbd-parent").value;
+        $("cbd-fields").innerHTML = "<span class='text-muted fs-7'>" +
+            (AR ? "جارٍ التحميل…" : "Loading…") + "</span>";
+        if (!code) { $("cbd-fields").innerHTML = ""; FIELDS = []; return; }
+
+        get("/api/reports/studio/fields?datasetCode=" + encodeURIComponent(code)).then(function (r) {
+            FIELDS = (r && r.fields) || [];
+            $("cbd-fields").innerHTML = FIELDS.length
+                ? FIELDS.map(function (f, i) {
+                    return "<label class='form-check form-check-custom form-check-sm mb-2'>" +
+                        "<input class='form-check-input' type='checkbox' data-key='" + esc(f.key) + "'>" +
+                        "<span class='form-check-label'>" + esc(f.title || f.key) +
+                        " <span class='text-muted' dir='ltr'>(" + esc(f.key) + ")</span></span></label>";
+                }).join("")
+                : "<span class='text-muted fs-7'>" + (AR ? "لا توجد حقول." : "No fields.") + "</span>";
+        });
+    }
+
+    function showErrors(list) {
+        var box = $("cbd-errors");
+        if (!list || !list.length) { box.classList.add("d-none"); return; }
+        $("cbd-error-list").innerHTML = list.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("");
+        box.classList.remove("d-none");
+        box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function save() {
+        var keys = Array.prototype.slice
+            .call($("cbd-fields").querySelectorAll("input[type=checkbox]:checked"))
+            .map(function (c) { return { key: c.getAttribute("data-key") }; });
+
+        var spec = {
+            datasetCode: $("cbd-code").value.trim(),
+            parentDatasetCode: $("cbd-parent").value,
+            titleAr: $("cbd-title-ar").value.trim(),
+            titleEn: $("cbd-title-en").value.trim(),
+            fields: keys,
+            fixedFilters: []
+        };
+
+        fetch("/api/reports/datasets/derived", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json", "RequestVerificationToken": token() },
+            body: JSON.stringify(spec)
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (body) {
+                return { ok: r.ok, body: body };
+            });
+        }).then(function (res) {
+            if (res.ok) {
+                // THE SERVER'S OWN STRINGS, or none at all. There is no client-side validation here on
+                // purpose: a second vocabulary would tell an author about a rule the server never applied.
+                showErrors(null);
+                $("cbd-editor").classList.add("d-none");
+                if (window.CB && CB.toast) CB.toast.success(AR ? "تم الحفظ" : "Saved");
+                load();
+            } else {
+                showErrors(res.body && res.body.errors ? res.body.errors
+                    : [AR ? "تعذّر الحفظ." : "Could not save."]);
+            }
+        });
+    }
+
+    // ---- boot ------------------------------------------------------------------------------------
+    get("/api/reports/datasets").then(function (list) {
+        PARENTS = list || [];
+        $("cbd-parent").innerHTML = PARENTS.map(function (d) {
+            return "<option value='" + esc(d.datasetCode) + "'>" +
+                   esc(AR ? d.titleAr : d.titleEn) + "</option>";
+        }).join("");
+        loadFields();
+    });
+
+    $("cbd-parent").addEventListener("change", loadFields);
+    $("cbd-new").addEventListener("click", openEditor);
+    $("cbd-cancel").addEventListener("click", function () { $("cbd-editor").classList.add("d-none"); });
+    $("cbd-save").addEventListener("click", save);
+
+    load();
+})();
+</script>

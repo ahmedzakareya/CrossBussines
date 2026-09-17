@@ -125,6 +125,12 @@ builder.Services.AddCrossBusinessReporting(reporting => reporting
     // B6, by owner decision.
     .MapPermission(CrossBuy.BL.Reporting.ReportPermissions.Administer, "Admin", "SuperAdmin")
 
+    // Authoring derived datasets. Admin-tier because an author shapes what the whole company is offered
+    // in the Studio - and deliberately a SEPARATE key from Administer, so a company can grant one
+    // without the other. It reveals nothing on its own: a derived dataset inherits its parent's
+    // permission, so an author who cannot run the parent still cannot run the derivation.
+    .MapPermission(CrossBuy.BL.Reporting.ReportPermissions.AuthorDatasets, "Admin", "SuperAdmin")
+
     // ---- R1 ACTIVATION: the Business Event log ----
     //
     // THREE TIERS, MAPPED SEPARATELY AND DELIBERATELY NARROWLY.

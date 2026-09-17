@@ -74,6 +74,7 @@ namespace CrossBuy.BL.Reporting
                 Visual = context.Visual,
                 Assets = context.Assets,
                 RoleImages = context.RoleImages,
+                SubReports = context.SubReports,
             };
 
             var html = _html.BuildPrintDocument(printContext);

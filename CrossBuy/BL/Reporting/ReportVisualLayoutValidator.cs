@@ -71,6 +71,13 @@ namespace CrossBuy.BL.Reporting
 
         private const double MaxDimensionMm = 2000;   // far beyond any paper; catches nonsense, not creativity
 
+        // THE CEILING ON DISCOVERED CATEGORIES. The author places a chart or a cross-tab without seeing the
+        // data, so the number of bars or columns is decided at render time by whatever the field holds. 40 is
+        // already past readable on any paper size; it exists to bound the document, and the renderer folds
+        // everything past the ceiling into one visible "other" rather than dropping it.
+        private const int DefaultMaxCategories = 12;
+        private const int MaxMaxCategories = 40;
+
         public VisualLayoutValidation Validate(ReportVisualLayout layout, IReportDatasetDefinition dataset,
             IReadOnlySet<string> permittedFieldKeys, IReadOnlySet<int> permittedAssetIds) =>
             Run(layout, dataset, permittedFieldKeys, permittedAssetIds, strict: true);
@@ -281,23 +288,8 @@ namespace CrossBuy.BL.Reporting
                     // anyone can defend, and the dataset should not have to say so field by field. So an
                     // undeclared field falls back to TYPE compatibility, which is a fact about the column
                     // rather than a second opinion about the dataset.
-                    if (field!.SupportedAggregates.Count > 0)
-                    {
-                        if (!field.SupportedAggregates.Contains(e.Aggregate))
-                        {
-                            Reject(result, strict,
-                                $"{e.Aggregate} is not available on '{field.TitleEn}'.", result.Dropped, field.Key);
-                            return null;
-                        }
-                    }
-                    else if ((e.Aggregate == ReportAggregate.Sum || e.Aggregate == ReportAggregate.Average)
-                             && !IsNumeric(field.Type))
-                    {
-                        Reject(result, strict,
-                            $"{e.Aggregate} is not available on '{field.TitleEn}'.", result.Dropped, field.Key);
-                        return null;
-                    }
-                    clean.FieldKey = field.Key;
+                    if (!AggregateAllowed(field!, e.Aggregate, result, strict)) return null;
+                    clean.FieldKey = field!.Key;
                     clean.Aggregate = e.Aggregate;
                     break;
                 }
@@ -370,12 +362,141 @@ namespace CrossBuy.BL.Reporting
                     break;
                 }
 
+                case ReportElementKind.Chart:
+                case ReportElementKind.CrossTab:
+                {
+                    // BOTH READ A SCOPE OF ROWS, so both are refused in the two bands that have none.
+                    //
+                    // Detail is refused too, and that is the less obvious half. A Detail band renders one run
+                    // per page, so a chart placed there would draw THIS PAGE's rows while looking exactly like
+                    // a chart of the report — the same quiet wrongness the Table's totals comment records,
+                    // except a reader cannot even see the row count to catch it. Report and group bands carry
+                    // a whole, meaningful scope; those are the four that are allowed.
+                    if (band.Kind is ReportBandKind.PageHeader or ReportBandKind.PageFooter
+                                  or ReportBandKind.Detail)
+                    {
+                        Reject(result, strict,
+                            $"A {e.Kind} summarises a whole scope of rows and belongs in a report or group band.");
+                        return null;
+                    }
+
+                    // The measure, validated by exactly the rule Summary uses.
+                    if (!Bind(e.FieldKey, fields, permitted, result, strict, out var measure)) return null;
+                    if (!AggregateAllowed(measure!, e.Aggregate, result, strict)) return null;
+
+                    // The category axis. Binding it through the SAME gate as any other field is what stops a
+                    // chart becoming a side door onto a column the reader may not see: grouping by a field is
+                    // reading it, and the axis labels print its values.
+                    if (!Bind(e.CategoryFieldKey, fields, permitted, result, strict, out var category)) return null;
+
+                    clean.FieldKey = measure!.Key;
+                    clean.Aggregate = e.Aggregate;
+                    clean.CategoryFieldKey = category!.Key;
+                    clean.ShowValues = e.ShowValues;
+                    clean.MaxCategories = Math.Clamp(
+                        e.MaxCategories <= 0 ? DefaultMaxCategories : e.MaxCategories, 2, MaxMaxCategories);
+
+                    if (e.Kind == ReportElementKind.Chart)
+                    {
+                        // A SERIES FIELD ON A CHART IS REFUSED, NOT IGNORED. This increment draws one series;
+                        // accepting the property and dropping it would leave an author looking at a chart that
+                        // silently answers a different question from the one they configured.
+                        if (!string.IsNullOrWhiteSpace(e.SeriesFieldKey))
+                        {
+                            Reject(result, strict, "A chart draws one series; it takes no series field.");
+                            return null;
+                        }
+                        clean.ChartKind = Enum.IsDefined(e.ChartKind) ? e.ChartKind : ReportChartKind.Column;
+                    }
+                    else
+                    {
+                        // The column axis is what makes a cross-tab a cross-tab, so it is required rather than
+                        // optional — without it this is a Summary with extra steps.
+                        if (!Bind(e.SeriesFieldKey, fields, permitted, result, strict, out var series)) return null;
+                        if (string.Equals(series!.Key, category.Key, StringComparison.Ordinal))
+                        {
+                            Reject(result, strict, "A cross-tab needs two different fields for its rows and columns.");
+                            return null;
+                        }
+                        clean.SeriesFieldKey = series.Key;
+                        clean.ShowGrandTotals = e.ShowGrandTotals;
+                    }
+                    break;
+                }
+
+                case ReportElementKind.SubReport:
+                {
+                    // WHAT THIS VALIDATOR CAN AND CANNOT ANSWER, stated plainly because the gap is the
+                    // interesting part. It holds the PARENT's dataset, so it can check shape and placement.
+                    // It cannot check that the child report exists, that this reader may run it, or which
+                    // of its columns they may see — those are questions about a definition it was never
+                    // given. The engine answers them at resolve time and a refused child renders as a
+                    // refusal notice, which is why nothing here tries to guess.
+                    if (band.Kind is not (ReportBandKind.GroupHeader or ReportBandKind.GroupFooter
+                                       or ReportBandKind.ReportHeader or ReportBandKind.ReportFooter))
+                    {
+                        Reject(result, strict,
+                            "A sub-report is linked to a group, or embedded whole in a report band.");
+                        return null;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(e.SubReportCode) || e.SubReportCode.Length > 128)
+                    {
+                        Reject(result, strict, "A sub-report names no child report.");
+                        return null;
+                    }
+
+                    // A LINK BELONGS TO A GROUP BAND AND ONLY THERE. In a report band there is no group
+                    // value to match against, so a link key would be configuration that silently does
+                    // nothing — refused rather than dropped, for the reason the chart's series key is.
+                    var linked = band.Kind is ReportBandKind.GroupHeader or ReportBandKind.GroupFooter;
+                    if (!linked && !string.IsNullOrWhiteSpace(e.LinkChildFieldKey))
+                    {
+                        Reject(result, strict,
+                            "A sub-report in a report band is embedded whole and takes no link field.");
+                        return null;
+                    }
+                    if (linked && string.IsNullOrWhiteSpace(e.LinkChildFieldKey))
+                    {
+                        Reject(result, strict, "A sub-report in a group band needs a link field.");
+                        return null;
+                    }
+                    if (e.LinkChildFieldKey is { Length: > 128 })
+                    {
+                        Reject(result, strict, "A sub-report link field is not a field name.");
+                        return null;
+                    }
+
+                    clean.SubReportCode = e.SubReportCode.Trim();
+                    clean.LinkChildFieldKey = linked ? e.LinkChildFieldKey!.Trim() : null;
+                    break;
+                }
+
                 default:
                     Reject(result, strict, $"Unknown element kind {(int)e.Kind}.");
                     return null;
             }
 
             return clean;
+        }
+
+        /// May this aggregate be applied to this field? ONE answer, shared by Summary, Chart and CrossTab.
+        ///
+        /// The rule the dataset states wins. A field that declares no list falls back to TYPE compatibility,
+        /// which is a fact about the column rather than a second opinion about the dataset: Count and Min/Max
+        /// are meaningful on anything, while SUM(InvoiceNo) is not a number anyone can defend.
+        private static bool AggregateAllowed(ReportDatasetField field, ReportAggregate aggregate,
+            VisualLayoutValidation result, bool strict)
+        {
+            var ok = field.SupportedAggregates.Count > 0
+                ? field.SupportedAggregates.Contains(aggregate)
+                : aggregate is not (ReportAggregate.Sum or ReportAggregate.Average) || IsNumeric(field.Type);
+
+            if (!ok)
+                Reject(result, strict,
+                    $"{aggregate} is not available on '{field.TitleEn}'.", result.Dropped, field.Key);
+
+            return ok;
         }
 
         private static bool Bind(string? key, IReadOnlyDictionary<string, ReportDatasetField> fields,

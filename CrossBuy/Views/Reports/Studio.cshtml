@@ -760,7 +760,19 @@
     var AR = @(arabic ? "true" : "false");
 
     var BAND = { ReportHeader: 0, PageHeader: 1, GroupHeader: 2, Detail: 3, GroupFooter: 4, PageFooter: 5, ReportFooter: 6 };
-    var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7, QrCode: 8 };
+    var KIND = { Text: 0, Field: 1, Image: 2, Line: 3, Rectangle: 4, SystemField: 5, Summary: 6, Table: 7, QrCode: 8, Chart: 9, CrossTab: 10, SubReport: 11 };
+    var CHART = { Column: 0, Bar: 1, Line: 2, Pie: 3 };
+
+    // A sub-report links to a GROUP, so a group band is where a linked one belongs; a report band
+    // embeds the child whole and unlinked. Detail is out for the same reason a chart is: it renders
+    // once with the page's run, so there is no single parent value there to link on.
+    var SUB_GROUP_BANDS = [2, 4];      // GroupHeader, GroupFooter
+    var SUB_REPORT_BANDS = [0, 6];     // ReportHeader, ReportFooter
+
+    // The four bands a chart or a cross-tab may sit in. Both read a SCOPE of rows, and only these four
+    // carry one: page bands have no rows at all, and a Detail band holds the current page's run — a chart
+    // there would draw one page while looking like a chart of the report.
+    var SCOPED_BANDS = [0, 2, 4, 6];   // ReportHeader, GroupHeader, GroupFooter, ReportFooter
     var SYS  = { CurrentDate: 0, CurrentDateTime: 1, PageNumber: 2, TotalPages: 3, PageXOfY: 4, ReportName: 5 };
     var AGG  = { None: 0, Sum: 1, Average: 2, Min: 3, Max: 4, Count: 5 };
 
@@ -985,8 +997,26 @@
         { id: "date",    icon: "ki-calendar",          label: AR ? "التاريخ"         : "Print date",     make: function () { return el(KIND.SystemField, { systemField: SYS.CurrentDate, widthMm: 30, heightMm: 6 }); } },
         { id: "datetime",icon: "ki-time",              label: AR ? "التاريخ والوقت"  : "Date and time",  make: function () { return el(KIND.SystemField, { systemField: SYS.CurrentDateTime, widthMm: 42, heightMm: 6 }); } },
         { id: "repname", icon: "ki-document",          label: AR ? "اسم التقرير"     : "Report name",    make: function () { return el(KIND.SystemField, { systemField: SYS.ReportName, widthMm: 60, heightMm: 8, style: { bold: true } }); } },
-        { id: "qr",      icon: "ki-scan-barcode",      label: AR ? "رمز QR"          : "QR code",        make: function () { return el(KIND.QrCode, { widthMm: 25, heightMm: 25 }); } }
+        { id: "qr",      icon: "ki-scan-barcode",      label: AR ? "رمز QR"          : "QR code",        make: function () { return el(KIND.QrCode, { widthMm: 25, heightMm: 25 }); } },
+        { id: "colchart",icon: "ki-chart-simple-2",    label: AR ? "أعمدة بيانية"    : "Column chart",   make: function () { return el(KIND.Chart, { chartKind: CHART.Column, widthMm: 90, heightMm: 55 }); } },
+        { id: "barchart",icon: "ki-chart-simple-3",    label: AR ? "أشرطة بيانية"    : "Bar chart",      make: function () { return el(KIND.Chart, { chartKind: CHART.Bar, widthMm: 90, heightMm: 55 }); } },
+        { id: "linechart",icon: "ki-chart-line-down",  label: AR ? "خط بياني"        : "Line chart",     make: function () { return el(KIND.Chart, { chartKind: CHART.Line, widthMm: 90, heightMm: 50 }); } },
+        { id: "piechart",icon: "ki-chart-pie-simple",  label: AR ? "دائرة بيانية"    : "Pie chart",      make: function () { return el(KIND.Chart, { chartKind: CHART.Pie, widthMm: 85, heightMm: 50 }); } },
+        { id: "crosstab",icon: "ki-abstract-26",       label: AR ? "جدول محوري"      : "Cross-tab",      make: function () { return el(KIND.CrossTab, { widthMm: 120, heightMm: 50 }); } },
+        { id: "subrep",  icon: "ki-questionnaire-tablet", label: AR ? "تقرير فرعي"   : "Sub-report",     make: function () { return el(KIND.SubReport, { widthMm: 130, heightMm: 40 }); } }
     ];
+
+    // The reports this reader may run, for the sub-report picker. Fetched once and cached: the catalogue
+    // endpoint already filters by permission, so the list can only ever offer a child they could open
+    // directly - the picker is not a place where access is decided.
+    var SUBCAT = null;
+    function loadSubCatalog(then) {
+        if (SUBCAT) { then(SUBCAT); return; }
+        fetch("/api/reports/center/catalog", { credentials: "same-origin" })
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (list) { SUBCAT = list || []; then(SUBCAT); })
+            .catch(function () { SUBCAT = []; then(SUBCAT); });
+    }
 
     function el(kind, over) {
         var e = {
@@ -994,6 +1024,9 @@
             text: null, textEn: null, fieldKey: null, systemField: SYS.CurrentDate, aggregate: AGG.Sum,
             assetId: null, imageRole: 0, fit: 0, preserveAspect: true, columns: [],
             qrEcc: 2, qrModulePixels: 8,
+            categoryFieldKey: null, seriesFieldKey: null, chartKind: CHART.Column,
+            maxCategories: 12, showValues: true, showGrandTotals: true,
+            subReportCode: null, linkChildFieldKey: null,
             style: {
                 fontFamily: null, fontSizePt: 9, bold: false, italic: false, underline: false,
                 align: 0, verticalAlign: 0, color: null, background: null, borderColor: null,
@@ -1246,6 +1279,33 @@
                              : ((e.text || "").trim() ? e.text : (AR ? "غير مرتبط" : "unbound"));
                 return "<span class='text-muted fs-8 d-inline-flex align-items-center gap-1'>" +
                        "<i class='ki-outline ki-scan-barcode fs-4'></i>" + esc(what) + "</span>";
+            }
+            case KIND.Chart: {
+                // A DESIGN-TIME FACE, same rule as the QR: the canvas names what will be drawn, it does
+                // not draw it. The real bars need the real rows, and Preview runs the real report.
+                var cf = fieldOf(e.categoryFieldKey), mf = fieldOf(e.fieldKey);
+                var icons = ["ki-chart-simple-2", "ki-chart-simple-3", "ki-chart-line-down", "ki-chart-pie-simple"];
+                var kinds = AR ? ["أعمدة", "أشرطة", "خط", "دائرة"] : ["Column", "Bar", "Line", "Pie"];
+                var agg3 = ["", "SUM", "AVG", "MIN", "MAX", "COUNT", "COUNTD"][e.aggregate] || "";
+                return "<span class='text-primary fs-8 d-inline-flex align-items-center gap-1'>" +
+                       "<i class='ki-outline " + (icons[e.chartKind] || icons[0]) + " fs-3'></i>" +
+                       esc(kinds[e.chartKind] || "") + " · " + esc(agg3) + "(" + esc(mf ? mf.title : (e.fieldKey || "?")) + ")" +
+                       " / " + esc(cf ? cf.title : (AR ? "بلا محور" : "no axis")) + "</span>";
+            }
+            case KIND.CrossTab: {
+                var xr = fieldOf(e.categoryFieldKey), xc = fieldOf(e.seriesFieldKey), xm = fieldOf(e.fieldKey);
+                var agg4 = ["", "SUM", "AVG", "MIN", "MAX", "COUNT", "COUNTD"][e.aggregate] || "";
+                return "<span class='text-primary fs-8 d-inline-flex align-items-center gap-1'>" +
+                       "<i class='ki-outline ki-abstract-26 fs-3'></i>" +
+                       esc(agg4) + "(" + esc(xm ? xm.title : (e.fieldKey || "?")) + ")" +
+                       " · " + esc(xr ? xr.title : "?") + " × " + esc(xc ? xc.title : "?") + "</span>";
+            }
+            case KIND.SubReport: {
+                var rep = (SUBCAT || []).filter(function (r) { return r.code === e.subReportCode; })[0];
+                var name = rep ? (AR ? rep.titleAr : rep.titleEn) : (e.subReportCode || (AR ? "غير محدد" : "not set"));
+                return "<span class='text-primary fs-8 d-inline-flex align-items-center gap-1'>" +
+                       "<i class='ki-outline ki-questionnaire-tablet fs-3'></i>" + esc(name) +
+                       (e.linkChildFieldKey ? (" · " + esc(e.linkChildFieldKey)) : "") + "</span>";
             }
             case KIND.Image: {
                 if (e.assetId) {
@@ -1852,6 +1912,94 @@
                 (e.qrModulePixels == null ? 8 : e.qrModulePixels) + "'>"));
         }
 
+        if (e.kind === KIND.SubReport) {
+            var inGroup = SUB_GROUP_BANDS.indexOf(p.b.kind) >= 0;
+            var inReport = SUB_REPORT_BANDS.indexOf(p.b.kind) >= 0;
+
+            if (!inGroup && !inReport) {
+                h.push("<div class='alert alert-warning py-2 px-3 fs-8 mb-3'>" +
+                    esc(AR ? "التقرير الفرعي يرتبط بمجموعة، أو يُدرَج كاملًا في حِزمة تقرير — لن يُقبل هنا."
+                           : "A sub-report is linked to a group, or embedded whole in a report band.") +
+                    "</div>");
+            }
+
+            h.push(row(AR ? "التقرير" : "Report", select("p-subcode",
+                [{ v: "", t: AR ? "— اختر —" : "— choose —" }].concat((SUBCAT || []).map(function (r) {
+                    return { v: r.code, t: (AR ? r.titleAr : r.titleEn) || r.code };
+                })), e.subReportCode || "")));
+
+            if (inGroup) {
+                @* THE LINK IS A CHILD COLUMN, so it is typed rather than picked: the designer holds this
+                   report's fields, not the child's, and offering the parent's list here would invite a
+                   key that cannot match anything. *@
+                h.push(row(AR ? "حقل الربط في التقرير الفرعي" : "Link field (child)",
+                    "<input id='p-sublink' type='text' class='form-control form-control-sm' value='" +
+                    esc(e.linkChildFieldKey || "") + "' placeholder='" +
+                    esc(AR ? "يطابَق بقيمة المجموعة" : "matched against the group value") + "'>"));
+                h.push("<div class='text-muted fs-8 mb-3'>" +
+                    esc(AR ? "يُطابَق هذا العمود بقيمة الحقل الذي تجمّع عليه هذه الحِزمة."
+                           : "This child column is matched against the field this band groups on.") + "</div>");
+            }
+
+            h.push("<div class='text-muted fs-8'>" +
+                esc(AR ? "يعرض التقرير الفرعي أعمدة التقرير الأصلية — لا يمكن إظهار عمود يخفيه هو."
+                       : "A sub-report prints the child report's own columns; it cannot reveal one the child hides.") +
+                "</div>");
+
+            if (!SUBCAT) loadSubCatalog(function () { renderProps(); });
+        }
+
+        if (e.kind === KIND.Chart || e.kind === KIND.CrossTab) {
+            var isCt = e.kind === KIND.CrossTab;
+            var fieldOpts = S.fields.map(function (f) { return { v: f.key, t: f.title }; });
+
+            @* THE BAND WARNING IS SHOWN, NOT ENFORCED HERE. The server refuses the placement either way;
+               saying so at the point of confusion beats a rejected save the author has to decode. *@
+            if (SCOPED_BANDS.indexOf(p.b.kind) < 0) {
+                h.push("<div class='alert alert-warning py-2 px-3 fs-8 mb-3'>" +
+                    esc(AR ? "هذا العنصر يلخّص نطاقًا كاملًا من الصفوف، ومكانه حِزمة تقرير أو مجموعة — لن يُقبل هنا."
+                           : "This element summarises a whole scope of rows and belongs in a report or group band.") +
+                    "</div>");
+            }
+
+            if (!isCt) {
+                h.push(row(AR ? "نوع الرسم" : "Chart type", select("p-chartkind", [
+                    { v: CHART.Column, t: AR ? "أعمدة" : "Column" },
+                    { v: CHART.Bar, t: AR ? "أشرطة" : "Bar" },
+                    { v: CHART.Line, t: AR ? "خط" : "Line" },
+                    { v: CHART.Pie, t: AR ? "دائرة" : "Pie" }
+                ], e.chartKind == null ? CHART.Column : e.chartKind)));
+            }
+
+            h.push(row(isCt ? (AR ? "حقل الصفوف" : "Row field") : (AR ? "المحور" : "Category axis"),
+                select("p-cat", fieldOpts, e.categoryFieldKey || "")));
+
+            if (isCt) {
+                h.push(row(AR ? "حقل الأعمدة" : "Column field",
+                    select("p-series", fieldOpts, e.seriesFieldKey || "")));
+            }
+
+            h.push(row(AR ? "القيمة" : "Measure", select("p-field", fieldOpts, e.fieldKey || "")));
+            h.push(row(AR ? "الدالة" : "Function", select("p-agg", [
+                { v: AGG.Sum, t: "SUM" }, { v: AGG.Average, t: "AVG" },
+                { v: AGG.Min, t: "MIN" }, { v: AGG.Max, t: "MAX" }, { v: AGG.Count, t: "COUNT" }
+            ], e.aggregate)));
+
+            @* THE CEILING IS THE AUTHOR'S, because only they know their data's shape. Past it the tail
+               folds into one labelled bucket — it is never dropped, so totals still reconcile. *@
+            h.push(row(isCt ? (AR ? "أقصى عدد أعمدة" : "Max columns") : (AR ? "أقصى عدد فئات" : "Max categories"),
+                "<input id='p-maxcat' type='number' min='2' max='40' step='1' class='form-control form-control-sm' value='" +
+                (e.maxCategories == null ? 12 : e.maxCategories) + "'>"));
+
+            h.push(row(AR ? "إظهار القيم" : "Show values",
+                "<input id='p-showvals' type='checkbox' class='form-check-input' " + (e.showValues === false ? "" : "checked") + ">"));
+
+            if (isCt) {
+                h.push(row(AR ? "صف وعمود الإجمالي" : "Grand totals",
+                    "<input id='p-showtotals' type='checkbox' class='form-check-input' " + (e.showGrandTotals === false ? "" : "checked") + ">"));
+            }
+        }
+
         if (e.kind === KIND.Field || e.kind === KIND.Summary) {
             h.push(row(AR ? "الحقل" : "Field", select("p-field", S.fields.map(function (f) {
                 return { v: f.key, t: f.title };
@@ -2070,6 +2218,24 @@
             });
         });
         on("p-agg", "change", function () { edit(function () { e.aggregate = parseInt($("p-agg").value, 10); }); });
+
+        @* CHART AND CROSS-TAB. Each writes ONE property and re-renders — the canvas face is derived from
+           the element, so there is nothing here that reads the DOM back into the model. *@
+        on("p-subcode", "change", function () { edit(function () { e.subReportCode = $("p-subcode").value || null; }); });
+        on("p-sublink", "change", function () { edit(function () { e.linkChildFieldKey = ($("p-sublink").value || "").trim() || null; }); });
+
+        on("p-chartkind", "change", function () { edit(function () { e.chartKind = parseInt($("p-chartkind").value, 10); }); });
+        on("p-cat", "change", function () { edit(function () { e.categoryFieldKey = $("p-cat").value || null; }); });
+        on("p-series", "change", function () { edit(function () { e.seriesFieldKey = $("p-series").value || null; }); });
+        on("p-showvals", "change", function () { edit(function () { e.showValues = $("p-showvals").checked; }); });
+        on("p-showtotals", "change", function () { edit(function () { e.showGrandTotals = $("p-showtotals").checked; }); });
+        on("p-maxcat", "change", function () {
+            edit(function () {
+                var v = parseInt($("p-maxcat").value, 10);
+                e.maxCategories = isNaN(v) ? 12 : Math.max(2, Math.min(40, v));
+            });
+            $("p-maxcat").value = e.maxCategories;
+        });
         on("p-sys", "change", function () { edit(function () { e.systemField = parseInt($("p-sys").value, 10); }); });
         on("p-role", "change", function () { edit(function () { e.imageRole = parseInt($("p-role").value, 10); }); });
         on("p-asset", "change", function () {

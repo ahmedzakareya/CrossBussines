@@ -101,6 +101,22 @@ namespace CrossBuy.Controllers
         // The screen is handed only what the CALLER may build over. Nothing about the shape of a dataset the
         // caller cannot use reaches the browser, so there is no client-side filtering to get wrong.
         // =========================================================================================
+        // =========================================================================================
+        // DATASETS - authoring a derived dataset.
+        //
+        // THE SCREEN IS A SHELL AND HOLDS NO DECISION. Everything it shows comes from endpoints that
+        // already gate themselves: the parent list from the permission-filtered catalogue, the fields
+        // from the Studio's own field endpoint, the saved derivations from an endpoint that checks the
+        // author key. So there is nothing here to authorize, and inventing a check would be inventing a
+        // SECOND answer to questions already answered.
+        //
+        // A caller without the author key reaches the page and finds it empty, because every endpoint
+        // behind it returns nothing to them. That is the platform's ordinary shape - the screen is not
+        // the gate, and a screen that looks like one invites someone to trust it.
+        // =========================================================================================
+        [HttpGet]
+        public IActionResult Datasets() => View();
+
         [HttpGet]
         public async Task<IActionResult> Studio(int? open, string? code, CancellationToken cancellationToken)
         {
