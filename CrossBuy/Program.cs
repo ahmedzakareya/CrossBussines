@@ -594,6 +594,12 @@ builder.Services.AddScoped<IOpeningBalanceService, OpeningBalanceService>();
 builder.Services.AddScoped<IIntegrityCheckService, IntegrityCheckService>();
 builder.Services.AddHostedService<IntegrityCheckHostedService>();
 builder.Services.AddHostedService<CrmReminderHostedService>();
+
+// Scheduled reports. Registered here rather than inside AddCrossBusinessReporting because a background
+// loop is a decision about this PROCESS, not a property of the reporting library - the same reason the
+// other workers are listed here. It is DISABLED unless a host calls RunScheduledReports(), so adding
+// this line changes nothing on its own; see ReportScheduleHostedService for why that order matters.
+builder.Services.AddHostedService<CrossBuy.BL.Reporting.ReportScheduleHostedService>();
 builder.Services.AddHostedService<TaskGeneratorHostedService>();   // TM-7
 builder.Services.AddHostedService<TaskScheduleMatchHostedService>();   // TM-9-ب: scheduled-task matcher
 // Overdue manager escalation. It suppresses ITSELF when the host is a certification runtime, via

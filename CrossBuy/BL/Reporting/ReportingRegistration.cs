@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace CrossBuy.BL.Reporting
@@ -21,11 +21,11 @@ namespace CrossBuy.BL.Reporting
     //   SCOPED is used for everything that touches CrossDbContext or the BusinessContext: the engine, the façade,
     //   authorization, templates, library, history, archive, schedules, delivery, and every data source.
     //
-    //   NO HOSTED SERVICE is registered. The schedule runner is scoped and invocable; the worker that would drive
-    //   it is a separate, reviewed change — see the header of ReportScheduleService.cs for the three reasons.
-    //   When that worker is added it must take IServiceScopeFactory (a hosted service is a singleton and may never
-    //   inject a scoped service) and must be added to Stage1DiWiringTests, which builds the real graph with
-    //   ValidateOnBuild + ValidateScopes.
+    //   NO HOSTED SERVICE is registered BY THIS METHOD, and that is still deliberate. The worker now exists
+    //   — ReportScheduleHostedService — but a host adds it itself, next to its other workers, because a
+    //   background loop is a decision about the PROCESS and this method describes a library. It is also
+    //   disabled by default: see that class for the three recorded reasons and which of them each part of
+    //   its design answers.
     // ============================================================================================
     public static class ReportingServiceCollectionExtensions
     {
@@ -108,6 +108,11 @@ namespace CrossBuy.BL.Reporting
             services.AddScoped<IReportScheduleService, ReportScheduleService>();
             services.AddScoped<IReportSchedulePrincipalFactory, IdentityReportSchedulePrincipalFactory>();
             services.AddScoped<IReportScheduleRunner, ReportScheduleRunner>();
+
+            // The worker's own options. Registered as a singleton instance so a host can configure it
+            // through ReportingPlatformOptions.ScheduleWorker before the graph is built - and so the
+            // hosted service, which is itself a singleton, can take it without a scope.
+            services.AddSingleton(options.ScheduleWorker);
 
             // ---- the pipeline + the one public door ------------------------------------------------------
             services.AddScoped<IReportEngine, ReportEngine>();
@@ -364,6 +369,11 @@ namespace CrossBuy.BL.Reporting
         public ReportPermissionOptions Permissions { get; } = new();
         public ReportAssetOptions Assets { get; } = new();
 
+        // The schedule worker. Disabled by default - see ReportScheduleHostedService for the recorded
+        // reason, which is that unattended generation and delivery waits on a review this slice cannot
+        // perform for itself.
+        public ReportScheduleWorkerOptions ScheduleWorker { get; } = new();
+
         // Convenience for the common case: point the archive at the web root's uploads folder, matching where the
         // product's other uploads live.
         public ReportingPlatformOptions UseArchiveRoot(string rootPath)
@@ -386,6 +396,15 @@ namespace CrossBuy.BL.Reporting
         public ReportingPlatformOptions MapPermission(string permissionKey, params string[] roles)
         {
             Permissions.RoleMap[permissionKey] = roles;
+            return this;
+        }
+
+        // Turns the schedule worker on, and is the ONLY thing that does. Named for what it enables
+        // rather than for the object it sets, so a reader of Program.cs sees the decision.
+        public ReportingPlatformOptions RunScheduledReports(TimeSpan? sweepInterval = null)
+        {
+            ScheduleWorker.Enabled = true;
+            if (sweepInterval is { TotalSeconds: > 0 }) ScheduleWorker.SweepInterval = sweepInterval.Value;
             return this;
         }
 
