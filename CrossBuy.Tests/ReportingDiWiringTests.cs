@@ -39,6 +39,12 @@ namespace CrossBuy.Tests
             // it to be RESOLVABLE, which is exactly what ValidateOnBuild checks.
             services.AddScoped<IBusinessContextAccessor, StubBusinessContextAccessor>();
 
+            // THE FOURTH. ReportOrgImageProvider needs IWebHostEnvironment to locate the company
+            // and branch marks; the graph stopped building when nobody registered one. See
+            // ReportingTestHostEnvironment for why it is a stub rather than a real web root.
+            services.AddSingleton<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>(
+                new ReportingTestHostEnvironment());
+
             services.AddCrossBusinessReporting(configure);
 
             return services.BuildServiceProvider(new ServiceProviderOptions
@@ -127,7 +133,7 @@ namespace CrossBuy.Tests
         }
 
         [Fact]
-        public void Renderers_and_exporters_are_registered_and_the_pdf_engine_reports_itself_unavailable()
+        public void Renderers_and_exporters_are_registered_and_pdf_availability_follows_its_converter()
         {
             using var provider = Build();
 
@@ -139,10 +145,21 @@ namespace CrossBuy.Tests
             Assert.NotNull(exporters.Resolve(ReportOutputFormat.Csv));
             Assert.NotNull(exporters.Resolve(ReportOutputFormat.Xlsx));
 
-            // Registered, so the failure is a clear operator-facing reason rather than "no renderer" — but not
-            // available, so it is never offered.
-            Assert.Throws<ReportRendererUnavailableException>(() => renderers.Resolve(ReportOutputFormat.Pdf));
-            Assert.DoesNotContain(ReportOutputFormat.Pdf, renderers.AvailableFormats);
+            // PDF IS REGISTERED EITHER WAY, so a failure is a clear operator-facing reason rather than
+            // "no renderer". Whether it is AVAILABLE is a fact about the DEPLOYMENT: the Playwright browser
+            // is a separate download, present on some machines and not on others.
+            //
+            // This test used to assert unavailability outright, which was true of the increment that wrote
+            // it and stopped being true when Microsoft.Playwright was referenced and the converter
+            // registered. It then failed on any machine with the browser installed - a test enshrining a
+            // stale belief about its own product.
+            //
+            // So the invariant asserted is the one that holds in both deployments: the registry's claim and
+            // its behaviour AGREE. Advertised means resolvable; not advertised means a named refusal.
+            if (renderers.AvailableFormats.Contains(ReportOutputFormat.Pdf))
+                Assert.NotNull(renderers.Resolve(ReportOutputFormat.Pdf));
+            else
+                Assert.Throws<ReportRendererUnavailableException>(() => renderers.Resolve(ReportOutputFormat.Pdf));
         }
 
         [Fact]
@@ -195,6 +212,12 @@ namespace CrossBuy.Tests
             services.AddDbContext<CrossDbContext>(o => o.UseSqlite("DataSource=:memory:"));
             services.AddScoped<IBusinessContextAccessor, StubBusinessContextAccessor>();
 
+            // THE FOURTH. ReportOrgImageProvider needs IWebHostEnvironment to locate the company
+            // and branch marks; the graph stopped building when nobody registered one. See
+            // ReportingTestHostEnvironment for why it is a stub rather than a real web root.
+            services.AddSingleton<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>(
+                new ReportingTestHostEnvironment());
+
             services.AddCrossBusinessReporting();
 
             // THE substitution point, exercised exactly as a future StimulsoftRenderer would be added: one line,
@@ -220,6 +243,12 @@ namespace CrossBuy.Tests
             services.AddScoped<ICompanyScopeHolder, CompanyScopeHolder>();
             services.AddDbContext<CrossDbContext>(o => o.UseSqlite("DataSource=:memory:"));
             services.AddScoped<IBusinessContextAccessor, StubBusinessContextAccessor>();
+
+            // THE FOURTH. ReportOrgImageProvider needs IWebHostEnvironment to locate the company
+            // and branch marks; the graph stopped building when nobody registered one. See
+            // ReportingTestHostEnvironment for why it is a stub rather than a real web root.
+            services.AddSingleton<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>(
+                new ReportingTestHostEnvironment());
 
             services.AddCrossBusinessReporting();
 

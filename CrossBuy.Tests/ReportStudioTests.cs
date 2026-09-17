@@ -670,6 +670,12 @@ namespace CrossBuy.Tests
             services.AddDbContext<CrossBuy.Models.Context.CrossDbContext>(o => o.UseSqlite("DataSource=:memory:"));
             services.AddScoped<IBusinessContextAccessor, GraphAccessor>();
 
+            // THE FOURTH. ReportOrgImageProvider needs IWebHostEnvironment to locate the company
+            // and branch marks; the graph stopped building when nobody registered one. See
+            // ReportingTestHostEnvironment for why it is a stub rather than a real web root.
+            services.AddSingleton<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>(
+                new ReportingTestHostEnvironment());
+
             services.AddCrossBusinessReporting();
 
             // Construction IS the first assertion: BuildServiceProvider throws here if ANY reporting service —

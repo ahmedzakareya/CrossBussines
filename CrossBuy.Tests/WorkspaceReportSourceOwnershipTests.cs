@@ -1,4 +1,4 @@
-using CrossBuy.BL.Platform;
+﻿using CrossBuy.BL.Platform;
 using CrossBuy.BL.Reporting;
 using CrossBuy.BL.Workspace;
 using CrossBuy.Models.Context;
@@ -48,6 +48,11 @@ namespace CrossBuy.Tests
             services.AddScoped<ICompanyScopeHolder, CompanyScopeHolder>();
             services.AddDbContext<CrossDbContext>(o => o.UseSqlite("DataSource=:memory:"));
             services.AddScoped<IBusinessContextAccessor, UnresolvedContextAccessor>();
+
+            // The reporting graph's fourth external dependency - ReportOrgImageProvider needs it to find
+            // the company and branch marks. See ReportingTestHostEnvironment.
+            services.AddSingleton<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>(
+                new ReportingTestHostEnvironment());
 
             // The real registrations, in the order Program.cs calls them (Reporting at 204, Workspace at 242).
             services.AddCrossBusinessReporting();

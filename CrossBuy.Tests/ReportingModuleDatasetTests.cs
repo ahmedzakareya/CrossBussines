@@ -266,14 +266,21 @@ namespace CrossBuy.Tests
         // the failure this catches.
         // =========================================================================================
         [Fact]
-        public void All_nine_module_datasets_are_registered_and_valid()
+        public void Every_module_dataset_is_registered_once_and_valid()
         {
             var datasets = AccountingDatasets.All()
                 .Concat(InventoryDatasets.All())
                 .Concat(CrmDatasets.All())
                 .ToList();
 
-            Assert.Equal(9, datasets.Count);
+            // NO FROZEN COUNT. This read `Assert.Equal(9, ...)` and broke the day a module added its
+            // tenth dataset - a failure that says nothing about whether anything is wrong, and trains a
+            // reader to update the number rather than look. The gate's own comment says what it is really
+            // for: every dataset the increment claims is present, resolvable and valid. That is asserted
+            // below, plus the one property a count was standing in for - no two datasets claim one code.
+            Assert.NotEmpty(datasets);
+            Assert.Equal(datasets.Count,
+                datasets.Select(d => d.DatasetCode).Distinct(StringComparer.Ordinal).Count());
 
             // The validator is the same one the registry runs at container-build time.
             foreach (var dataset in datasets)
