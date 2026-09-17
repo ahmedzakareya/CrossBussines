@@ -492,9 +492,15 @@
         if (s.visible === false) { st.push("opacity:.35"); }
 
         var sel = S.selection.indexOf(e.id) >= 0;
+        // EIGHT HANDLES, NOT FOUR. The corners change both dimensions at once, so with only corners
+        // there was no way to set a height without also disturbing the width - and a chart or a table
+        // that is the right width and the wrong height is the common case, not the rare one. The four
+        // edge handles each move ONE axis and leave the other exactly where the author put it.
         var handles = sel
             ? "<span class='cbd-handle nw' data-h='nw'></span><span class='cbd-handle ne' data-h='ne'></span>" +
-              "<span class='cbd-handle sw' data-h='sw'></span><span class='cbd-handle se' data-h='se'></span>"
+              "<span class='cbd-handle sw' data-h='sw'></span><span class='cbd-handle se' data-h='se'></span>" +
+              "<span class='cbd-handle n'  data-h='n'></span><span class='cbd-handle s'  data-h='s'></span>" +
+              "<span class='cbd-handle w'  data-h='w'></span><span class='cbd-handle e'  data-h='e'></span>"
             : "";
 
         // cbd-el-img is what lets an image FILL its frame instead of dictating its own height — see the
@@ -740,14 +746,127 @@
                 });
             }
 
+            // CAPTURE PHASE, so a Ctrl-drag that starts on top of an element is a marquee before that
+            // element's own mousedown can claim it as a move. Without capture the element wins - it is
+            // the deeper node - and Ctrl over a full canvas would just drag whatever was under it.
             bandEl.addEventListener("mousedown", function (ev) {
-                if (ev.target === bandEl || ev.target.classList.contains("cbd-band-tag")) {
+                // TWO WAYS IN, and the second one is not a convenience.
+                //
+                // Empty space starts a marquee. But a finished report has NO empty space - every pixel
+                // of a designed band is covered by an element, card background or rule - and that is
+                // exactly when rubber-banding is worth having. Requiring bare canvas made the gesture
+                // unavailable on the only layouts that need it.
+                //
+                // So Ctrl (or Alt) starts one anywhere, over elements included. It cannot be confused
+                // with a move: a plain drag on an element still moves that element, untouched.
+                if (ev.target === bandEl || ev.ctrlKey || ev.altKey) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    beginMarquee(ev, kind, bandEl);
+                } else if (ev.target.classList.contains("cbd-band-tag")) {
                     S.selectedBand = kind;
                     if (!ev.shiftKey) { S.selection = []; }
                     renderCanvas(); renderProps(); renderBandList();
                 }
-            });
+            }, true);
         });
+    }
+
+    // =============================================================================================
+    // DRAG TO SELECT.
+    //
+    // The selection has always been an ARRAY - shift-click could build one, and every move, nudge and
+    // delete already act on all of it. What was missing was the gesture people actually reach for, so
+    // multi-select looked absent rather than awkward.
+    //
+    // THE BOX IS DRAWN IN PIXELS AND RESOLVED IN MILLIMETRES. Everything persisted is mm, so the rect
+    // is converted once, at the end, and compared against element geometry in the model rather than
+    // against the DOM. An element hidden behind another is still inside the box, and still selected -
+    // which is the behaviour a reader of the band list expects.
+    //
+    // INTERSECTION, NOT CONTAINMENT. Requiring a box to swallow an element whole means a careful drag
+    // is needed to catch a wide table; touching it is what an author means by "and that one".
+    // =============================================================================================
+    function beginMarquee(ev, kind, bandEl) {
+        var sc = scale();
+        var rect = bandEl.getBoundingClientRect();
+        var startX = ev.clientX, startY = ev.clientY;
+        var additive = ev.shiftKey;
+        var before = additive ? S.selection.slice() : [];
+
+        var box = document.createElement("div");
+        box.className = "cbd-marquee";
+        bandEl.appendChild(box);
+
+        var moved = false;
+
+        function draw(mx, my) {
+            var x = Math.min(startX, mx), y = Math.min(startY, my);
+            var w = Math.abs(mx - startX), h = Math.abs(my - startY);
+            box.style.left = (x - rect.left) + "px";
+            box.style.top = (y - rect.top) + "px";
+            box.style.width = w + "px";
+            box.style.height = h + "px";
+            return { x: x, y: y, w: w, h: h };
+        }
+
+        function hits(px) {
+            // pixels -> millimetres, against the band's own origin. RTL is handled the way the rest of
+            // the canvas handles it: x is a distance from the CONTENT START edge, so the box is mirrored
+            // here rather than every element being stored twice.
+            var x1 = (px.x - rect.left) / sc, x2 = (px.x + px.w - rect.left) / sc;
+            if (S.layout.page.rtl) {
+                var wMm = rect.width / sc;
+                var t = wMm - x2; x2 = wMm - x1; x1 = t;
+            }
+            var y1 = (px.y - rect.top) / sc, y2 = (px.y + px.h - rect.top) / sc;
+
+            // NOT named 'band': a var of that name hoists over the band() function above and the
+            // call becomes 'band is not a function' at the first drag.
+            var bnd = band(kind);
+            if (!bnd) { return []; }
+            return bnd.elements.filter(function (e) {
+                return e.xMm < x2 && (e.xMm + e.widthMm) > x1
+                    && e.yMm < y2 && (e.yMm + e.heightMm) > y1;
+            }).map(function (e) { return e.id; });
+        }
+
+        function onMove(mv) {
+            if (!moved && Math.abs(mv.clientX - startX) < 3 && Math.abs(mv.clientY - startY) < 3) { return; }
+            moved = true;
+            var px = draw(mv.clientX, mv.clientY);
+            var ids = hits(px);
+            S.selectedBand = kind;
+            S.selection = additive ? before.concat(ids.filter(function (id) { return before.indexOf(id) < 0; })) : ids;
+            paintSelection();
+        }
+
+        function onUp(mv) {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            if (box.parentNode) { box.parentNode.removeChild(box); }
+
+            // A CLICK IS NOT A DRAG. Without this an ordinary click on empty canvas would clear the
+            // selection through the marquee path and re-render twice.
+            if (!moved) {
+                S.selectedBand = kind;
+                if (!additive) { S.selection = []; }
+            }
+            renderCanvas(); renderProps(); renderBandList();
+        }
+
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    }
+
+    // Repaints the selection outline WITHOUT rebuilding the canvas: a full renderCanvas on every
+    // mousemove would drop the marquee element it is drawing and stutter on a large report.
+    function paintSelection() {
+        Array.prototype.forEach.call($("cbd-content").querySelectorAll("[data-el]"), function (node) {
+            var on = S.selection.indexOf(node.getAttribute("data-el")) >= 0;
+            node.classList.toggle("sel", on);
+        });
+        renderStatus();
     }
 
     function dropField(key, at) {
@@ -950,16 +1069,22 @@
             var dy = (e2.clientY - startY) / sc;
             if (!taken) { snapshot(); taken = true; }
 
-            var west = handle === "nw" || handle === "sw";
-            var north = handle === "nw" || handle === "ne";
+            // WHICH AXES THIS HANDLE OWNS. An edge handle names one letter, so it moves one dimension
+            // and the other is left untouched - not recomputed and rounded back to the same value,
+            // because snap() would drift it a fraction of a millimetre on every mousemove.
+            var west  = handle === "nw" || handle === "sw" || handle === "w";
+            var north = handle === "nw" || handle === "ne" || handle === "n";
+            var horiz = handle.indexOf("w") >= 0 || handle.indexOf("e") >= 0;
+            var vert  = handle.indexOf("n") >= 0 || handle.indexOf("s") >= 0;
 
-            var w = west ? o.w - dx : o.w + dx;
-            var h = north ? o.h - dy : o.h + dy;
-
-            p.e.widthMm = Math.max(1, snap(w));
-            p.e.heightMm = Math.max(1, snap(h));
-            if (west) { p.e.xMm = Math.max(0, snap(o.x + (o.w - p.e.widthMm))); }
-            if (north) { p.e.yMm = Math.max(0, snap(o.y + (o.h - p.e.heightMm))); }
+            if (horiz) {
+                p.e.widthMm = Math.max(1, snap(west ? o.w - dx : o.w + dx));
+                if (west) { p.e.xMm = Math.max(0, snap(o.x + (o.w - p.e.widthMm))); }
+            }
+            if (vert) {
+                p.e.heightMm = Math.max(1, snap(north ? o.h - dy : o.h + dy));
+                if (north) { p.e.yMm = Math.max(0, snap(o.y + (o.h - p.e.heightMm))); }
+            }
 
             renderCanvas();
             drawGuides(sc);

@@ -600,7 +600,18 @@ namespace CrossBuy.BL.Reporting
 
             // A DRAWN CHART IS NOT A SCRIPTED ONE. No <script>, no external href, no foreignObject — the
             // same three things ReportAssetService refuses in an uploaded SVG are absent here by construction.
-            sb.Append("<svg class=\"cbv-chart-svg\" viewBox=\"0 0 ").Append(Num(w)).Append(' ').Append(Num(h))
+            // direction:ltr ON THE DRAWING, and it is not a language decision.
+            //
+            // Every x below is an absolute coordinate this method computed, and text-anchor is resolved
+            // against the INHERITED direction: under the document's dir="rtl" an anchor of "end" means
+            // the text's logical end, which for an Arabic run is its LEFT edge - so a label anchored to
+            // sit beside a bar grew across it instead. Category names printed on top of their own bars.
+            //
+            // Pinning the drawing to ltr makes "end" mean "ends at x, extends left" for every label,
+            // which is what the arithmetic assumes. It does NOT affect the Arabic itself: glyph shaping
+            // and the right-to-left order inside a text run are properties of the text, not of this
+            // attribute, so the labels still read correctly - they just stop moving.
+            sb.Append("<svg class=\"cbv-chart-svg\" direction=\"ltr\" viewBox=\"0 0 ").Append(Num(w)).Append(' ').Append(Num(h))
               .Append("\" width=\"100%\" height=\"100%\" preserveAspectRatio=\"xMidYMid meet\" role=\"img\">");
 
             switch (e.ChartKind)
@@ -626,8 +637,11 @@ namespace CrossBuy.BL.Reporting
             {
                 // LABELS DOWN THE SIDE, which is why this kind exists: an Arabic category name has nowhere
                 // to go under a vertical column, and rotating it is not reading.
-                var labelW = Math.Min(w * 0.42, w - fs * 6);
-                var trackW = Math.Max(fs, w - labelW - pad * 2 - (e.ShowValues ? fs * 4.5 : 0));
+                // HALF THE WIDTH FOR NAMES. 42% was measured against English keys and is not enough for a
+                // real Arabic customer name, which arrived clipped to an ambiguous stub - two customers
+                // whose names differ only past the cut are two bars a reader cannot tell apart.
+                var labelW = Math.Min(w * 0.5, w - fs * 6);
+                var trackW = Math.Max(fs, w - labelW - pad * 2 - (e.ShowValues ? fs * 5.5 : 0));
                 var rowH = (h - pad) / data.Count;
                 var barH = Math.Max(2.0, rowH * 0.62);
 
@@ -637,7 +651,7 @@ namespace CrossBuy.BL.Reporting
                     var len = trackW * (double)(Math.Abs(data[i].Value) / max);
                     sb.Append("<text x=\"").Append(Num(labelW)).Append("\" y=\"").Append(Num(y + rowH / 2 + fs * .35))
                       .Append("\" text-anchor=\"end\" font-size=\"").Append(Num(fs)).Append("\" fill=\"").Append(ink)
-                      .Append("\">").Append(Enc(Clip(data[i].Label, 28))).Append("</text>");
+                      .Append("\">").Append(Enc(Clip(data[i].Label, Math.Max(6, (int)(labelW / (fs * 0.5)))))).Append("</text>");
                     sb.Append("<rect x=\"").Append(Num(labelW + pad)).Append("\" y=\"").Append(Num(y + (rowH - barH) / 2))
                       .Append("\" width=\"").Append(Num(len)).Append("\" height=\"").Append(Num(barH))
                       .Append("\" fill=\"").Append(Shade(color, i, data.Count)).Append("\" rx=\"1\"></rect>");
@@ -791,8 +805,27 @@ namespace CrossBuy.BL.Reporting
             var folded = cols.Count > 0 && cols[^1].StartsWith(ctx.Arabic ? "أخرى (" : "Other (", StringComparison.Ordinal);
             var namedCols = folded ? cols.Take(cols.Count - 1).ToHashSet(StringComparer.Ordinal) : cols.ToHashSet(StringComparer.Ordinal);
 
-            var rowKeys = rows.Select(r => Text(Value(r, e.CategoryFieldKey)) ?? "")
-                              .Distinct(StringComparer.Ordinal).ToList();
+            // THE CEILING APPLIES TO ROWS TOO, and it did not - which made it half a ceiling.
+            //
+            // Columns were capped and rows were taken whole, so a cross-tab over a high-cardinality row
+            // field grew without limit: it outgrew the box the author sized for it and printed straight
+            // over whatever was placed underneath. That is exactly the unbounded document the ceiling
+            // exists to prevent, so rows now fold the same way columns do - biggest kept, the tail
+            // gathered into one labelled row rather than dropped, so the corner total still reconciles.
+            var rowKeys = Buckets(ctx, rows, new ReportElement
+            {
+                CategoryFieldKey = e.CategoryFieldKey,
+                FieldKey = e.FieldKey,
+                Aggregate = e.Aggregate,
+                MaxCategories = e.MaxCategories,
+                Style = e.Style,
+            }, naturalOrder: false).Select(b => b.Label).ToList();
+
+            var rowsFolded = rowKeys.Count > 0
+                && rowKeys[^1].StartsWith(ctx.Arabic ? "أخرى (" : "Other (", StringComparison.Ordinal);
+            var namedRows = rowsFolded
+                ? rowKeys.Take(rowKeys.Count - 1).ToHashSet(StringComparer.Ordinal)
+                : rowKeys.ToHashSet(StringComparer.Ordinal);
 
             sb.Append("<table class=\"cbv-table cbv-crosstab\"><thead><tr><th></th>");
             foreach (var c in cols) sb.Append("<th>").Append(Enc(c)).Append("</th>");
@@ -802,8 +835,10 @@ namespace CrossBuy.BL.Reporting
 
             foreach (var rk in rowKeys)
             {
-                var band = rows.Where(r => string.Equals(Text(Value(r, e.CategoryFieldKey)) ?? "", rk,
-                                                          StringComparison.Ordinal)).ToList();
+                var band = rowsFolded && ReferenceEquals(rk, rowKeys[^1])
+                    ? rows.Where(r => !namedRows.Contains(Text(Value(r, e.CategoryFieldKey)) ?? "")).ToList()
+                    : rows.Where(r => string.Equals(Text(Value(r, e.CategoryFieldKey)) ?? "", rk,
+                                                    StringComparison.Ordinal)).ToList();
                 sb.Append("<tr><th scope=\"row\">").Append(Enc(rk)).Append("</th>");
                 foreach (var c in cols)
                 {

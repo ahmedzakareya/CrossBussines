@@ -41,7 +41,17 @@ namespace CrossBuy.BL.Reporting
         public Task<ReportArtifact> RenderAsync(ReportRenderContext context,
             CancellationToken cancellationToken = default)
         {
-            var full = context.Format == ReportOutputFormat.PrintHtml;
+            // A FRAGMENT WHEN IT IS EMBEDDED, A DOCUMENT WHEN IT BECOMES A FILE.
+            //
+            // The condition used to be "PrintHtml only", which is right about the preview pane and wrong
+            // about everything else: an Html EXPORT is downloaded, saved and emailed as a .html file, and
+            // a fragment has no <meta charset> and no dir. Opened from disk, an Arabic report rendered as
+            // mojibake and laid itself out left-to-right - the document was correct and unreadable, which
+            // is the worst of the three possible states.
+            //
+            // The distinction is the RUN KIND, not the format. Preview is the one that goes inside a page
+            // that already has a <head>; every other run produces an artifact somebody keeps.
+            var full = context.Format == ReportOutputFormat.PrintHtml || !context.IsPreview;
             var html = Build(context, fullDocument: full);
             var fileName = ReportFileName.For(context.View.Definition, context.Format, context.GeneratedAt);
             return Task.FromResult(ReportArtifact.FromText(fileName, context.Format, html));
