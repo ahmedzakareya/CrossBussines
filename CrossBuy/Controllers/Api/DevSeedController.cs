@@ -15390,6 +15390,309 @@ $@"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0
 			await _db.SaveChangesAsync();
 			return Ok(new { ok = true, note = "batches removed, no stock touched — invariant intact", log });
 		}
+		// =====================================================================================================
+		// FISCAL WINDOW. Gives a calendar year its twelve monthly periods so entries can be posted into it.
+		//
+		// WHY IT IS A SEPARATE ENDPOINT. The sales seeder below could have created a missing period the moment
+		// it hit one, and nobody would have noticed. That is exactly the reason not to: opening a period is a
+		// change to what the ledger will accept, and burying it inside a routine that advertises itself as a
+		// data generator means the next person to read the generator learns nothing about it.
+		//
+		// WHAT IT WILL NOT DO. It refuses a year that carries journal entries. A year with entries has been
+		// operated, and adding periods to it - or moving its status - is a REOPEN: that belongs to
+		// IAccountingPeriodControlService, which demands period-reopen authority, gates on readiness, requires a
+		// stated reason and writes an audit row. None of those are things a seeding endpoint should be able to
+		// arrange for itself. This handles only the other case: a year that exists, holds nothing, and has never
+		// been given the periods it needs before anything can be posted into it at all.
+		//
+		// Idempotent: a month that already has a period is left exactly as it is, whatever its status. Re-running
+		// it never reopens anything.
+		//
+		//   GET /api/dev/fiscal-window-open?key=seed123&year=2025
+		// =====================================================================================================
+		[HttpGet("fiscal-window-open")]
+		public async Task<IActionResult> FiscalWindowOpen(string key, int year,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (year is < 2000 or > 2100) return BadRequest(new { message = "year out of range" });
+
+			const int companyId = 1;
+			await ctx.ForHttpAsync();   // pins the company scope — see the sales seeder for why this is the factory
+
+			var start = new DateTime(year, 1, 1);
+			var end = new DateTime(year, 12, 31);
+
+			var entries = await _db.JournalEntries.CountAsync(e => e.CompanyID == companyId
+				&& e.EntryDate >= start && e.EntryDate <= end);
+			if (entries > 0)
+				return BadRequest(new
+				{
+					message = $"fiscal year {year} already carries {entries} journal entries — opening it is a reopen, "
+							+ "which belongs to IAccountingPeriodControlService with authority, a reason and an audit row",
+				});
+
+			var fy = await _db.FiscalYears.FirstOrDefaultAsync(y => y.CompanyID == companyId
+				&& y.StartDate <= start && y.EndDate >= end);
+			var createdYear = false;
+			if (fy == null)
+			{
+				fy = new CrossBuy.Models.Context.Accounting.FiscalYear
+				{
+					CompanyID = companyId, Name = year.ToString(), StartDate = start, EndDate = end, Status = "Open",
+				};
+				_db.FiscalYears.Add(fy);
+				await _db.SaveChangesAsync();
+				createdYear = true;
+			}
+			else if (fy.Status != "Open")
+			{
+				// Safe only because of the zero-entries check above: this year was never operated, so "Closed"
+				// is the state it was created in rather than the result of anyone closing books in it.
+				fy.Status = "Open";
+			}
+
+			var existing = await _db.FiscalPeriods.Where(p => p.FiscalYearId == fy.ID)
+				.Select(p => p.PeriodNo).ToListAsync();
+
+			var added = 0;
+			for (byte m = 1; m <= 12; m++)
+			{
+				if (existing.Contains(m)) continue;
+				var s = new DateTime(year, m, 1);
+				_db.FiscalPeriods.Add(new CrossBuy.Models.Context.Accounting.FiscalPeriod
+				{
+					FiscalYearId = fy.ID, PeriodNo = m, StartDate = s, EndDate = s.AddMonths(1).AddDays(-1), Status = "Open",
+				});
+				added++;
+			}
+
+			// Period 13 is the adjustment period every other year in this database carries; a year without one
+			// would quietly differ from its neighbours at close.
+			if (!existing.Contains((byte)13))
+			{
+				_db.FiscalPeriods.Add(new CrossBuy.Models.Context.Accounting.FiscalPeriod
+				{
+					FiscalYearId = fy.ID, PeriodNo = 13, StartDate = end, EndDate = end, Status = "Open",
+				});
+				added++;
+			}
+
+			await _db.SaveChangesAsync();
+			return Ok(new { ok = true, year, fiscalYearId = fy.ID, createdYear, periodsAdded = added, alreadyThere = existing.Count });
+		}
+
+		// =====================================================================================================
+		// SALES HISTORY. Builds a real eighteen-month sales register so the reporting work has something to
+		// report ON. The register held 441 invoices spanning five weeks, which is enough to prove a chart
+		// RENDERS and not nearly enough to show whether it says anything: six weeks cannot carry a seasonal
+		// shape, and forty-one customers over five weeks put every one of them in the same bucket.
+		//
+		// IT GOES THROUGH THE SERVICE, NOT THROUGH INSERT. CreateSalesInvoiceAsync writes the invoice, the
+		// balanced journal (Dr AR / Cr revenue / Cr output VAT), the customer's receivable and the business
+		// event inside ONE transaction. Seeding the SalesInvoices table directly would produce a sales report
+		// that reads correctly beside a trial balance that no longer balances, and the first person to notice
+		// would be whoever trusted the two together. Slower by a wide margin, and not optional.
+		//
+		// THE SHAPE IS DELIBERATE. A report drawn over uniform noise shows a flat line and six equal bars: it
+		// proves the renderer works and teaches the reader nothing. So the generator carries the structure a
+		// sales history actually has - a Pareto customer curve, a seasonal year, a growth trend, a weekly
+		// rhythm, and a collection rate that decays with invoice age. Every one of those is visible in the
+		// finished report, which is the point of putting them in.
+		//
+		// NO STOCK IS INVENTED. Lines carry no ItemId, so no movement is posted and no warehouse goes
+		// negative against inventory that was never purchased. The line text still names real items, and the
+		// sales dataset exposes no item column, so nothing downstream is poorer for it.
+		//
+		// CHUNKED. Five thousand invoices is five thousand transactions; one HTTP request would sit past any
+		// timeout. Each call does `count` starting at `offset`, and the RNG seed is derived from the offset,
+		// so a chunk is reproducible on its own and no two chunks draw the same customers in the same order.
+		//
+		//   GET /api/dev/sales-history-seed?key=seed123&offset=0&count=250&months=18
+		// =====================================================================================================
+		[HttpGet("sales-history-seed")]
+		public async Task<IActionResult> SalesHistorySeed(string key, int offset = 0, int count = 250, int months = 18,
+			[FromServices] CrossBuy.BL.Platform.IBusinessContextFactory ctx = null!)
+		{
+			if (key != "seed123") return Unauthorized(new { message = "bad key" });
+			if (count is < 1 or > 1000) return BadRequest(new { message = "count must be 1..1000" });
+
+			const int companyId = 1;
+			var started = DateTime.UtcNow;
+
+			// RESOLVE THE CONTEXT BEFORE READING ANYTHING. The global company filters compare against a scope
+			// holder that IBusinessContextFactory pins when a BusinessContext is first resolved - and nothing in
+			// this request has resolved one yet. Reading Customers first therefore compared CompanyID against the
+			// unresolved 0, which matches no row and fails closed: the endpoint reported that no customer had a
+			// control account while forty-one of them did.
+			//
+			// It is the FACTORY and not IBusinessContextAccessor, for a reason worth writing down: the accessor
+			// caches its answer per DI scope INCLUDING the negative one, and CompanyScopeMiddleware has already
+			// asked once, earlier in this same request, before this controller's dev-context filter put the
+			// "Employee" blob in the session. So the accessor answers "no company" from cache forever after,
+			// however many times it is asked. The factory re-resolves and publishes.
+			//
+			// This is the fix rather than IgnoreQueryFilters(), because a seeder that read around the tenancy
+			// filter would be the one place in the codebase where that looked acceptable.
+			await ctx.ForHttpAsync();
+
+			// ---- the ingredients, read once -------------------------------------------------------------
+			// A customer WITHOUT a control account cannot be posted to - CreateSalesInvoiceAsync builds the
+			// AR debit from cust.ControlAccountId - so they are excluded here rather than failing 5,000 times.
+			var customers = await _db.Customers.AsNoTracking()
+				.Where(c => c.CompanyID == companyId && c.ControlAccountId > 0 && c.IsActive)
+				.OrderBy(c => c.ID).Select(c => c.ID).ToListAsync();
+			if (customers.Count == 0) return BadRequest(new { message = "no customer has a control account" });
+
+			var revenueAccounts = await _db.Accounts.AsNoTracking()
+				.Where(a => a.CompanyID == companyId && a.Code.StartsWith("4") && a.IsPostable && a.IsActive)
+				.OrderBy(a => a.Code).Select(a => a.ID).ToListAsync();
+			if (revenueAccounts.Count == 0) return BadRequest(new { message = "no leaf revenue account" });
+
+			var itemNames = await _db.Items.AsNoTracking()
+				.Where(i => i.CompanyID == companyId && i.IsActive)
+				.OrderBy(i => i.ID).Select(i => new { i.Name, i.NameEn, i.SalesPrice }).Take(400).ToListAsync();
+
+			// The cash account the existing receipts already use, rather than a code guessed from the chart -
+			// a wrong guess posts every collection to a till that means something else.
+			var cashAccountId = await _db.Receipts.AsNoTracking().Where(r => r.CompanyID == companyId)
+				.GroupBy(r => r.CashAccountId).OrderByDescending(g => g.Count()).Select(g => g.Key)
+				.FirstOrDefaultAsync();
+			if (cashAccountId <= 0)
+				cashAccountId = await _db.Accounts.AsNoTracking()
+					.Where(a => a.CompanyID == companyId && a.Code.StartsWith("1101"))
+					.OrderBy(a => a.Code).Select(a => a.ID).FirstOrDefaultAsync();
+
+			// THE CUSTOMER CURVE. Real sales concentrate: a handful of accounts carry most of the revenue and
+			// a long tail buys occasionally. Squaring a uniform draw bends a flat pick into that curve, and
+			// the deterministic shuffle decides WHICH customers land at the head of it - without it the curve
+			// would follow customer id, so the oldest record would always be the biggest account.
+			var ranked = customers.OrderBy(id => (id * 2654435761L) % 1000003).ToList();
+
+			var today = DateTime.Today;
+			var firstDay = today.AddMonths(-months);
+			var totalDays = Math.Max(1, (int)(today - firstDay).TotalDays);
+
+			var rnd = new Random(20260917 + offset);
+			int made = 0, receipts = 0, failed = 0;
+			var firstError = (string?)null;
+
+			for (var n = 0; n < count; n++)
+			{
+				// ---- WHEN ---------------------------------------------------------------------------------
+				// Three effects, multiplied, then accepted or rejected against a draw - which is how you
+				// sample an arbitrary shape without having to integrate it.
+				DateTime date;
+				var guard = 0;
+				while (true)
+				{
+					var day = rnd.Next(totalDays + 1);
+					date = firstDay.AddDays(day);
+
+					var progress = (double)day / totalDays;
+					var growth = 0.75 + 0.5 * progress;                                    // the business grows over the window
+					var season = 1.0 + 0.32 * Math.Sin((date.Month - 3) * Math.PI / 6.0);  // a year with a high and a low season
+					var weekday = date.DayOfWeek is DayOfWeek.Friday ? 0.25                // the Gulf weekend is Friday-Saturday
+								: date.DayOfWeek is DayOfWeek.Saturday ? 0.55
+								: date.DayOfWeek is DayOfWeek.Sunday or DayOfWeek.Monday ? 1.15 : 1.0;
+
+					if (rnd.NextDouble() < growth * season * weekday / 1.9) break;
+					if (++guard > 60) break;   // bounded: a pathological draw must not hang the request
+				}
+
+				// ---- WHO ----------------------------------------------------------------------------------
+				var pick = Math.Pow(rnd.NextDouble(), 2.1);
+				var customerId = ranked[Math.Min(ranked.Count - 1, (int)(pick * ranked.Count))];
+
+				// ---- WHAT ---------------------------------------------------------------------------------
+				// Invoice size follows the customer's rank: the head accounts place larger orders, which is
+				// what makes a top-customers chart separate rather than sit in a row of equal bars.
+				var weight = 1.0 + (1.0 - pick) * 6.0;
+				var lineCount = 1 + rnd.Next(rnd.NextDouble() < 0.35 ? 4 : 2);
+				var lines = new List<CrossBuy.BL.SalesLineInput>(lineCount);
+				for (var l = 0; l < lineCount; l++)
+				{
+					var it = itemNames.Count > 0 ? itemNames[rnd.Next(itemNames.Count)] : null;
+					var basePrice = it?.SalesPrice is > 0 ? it.SalesPrice!.Value : 0m;
+					if (basePrice <= 0) basePrice = 40m + rnd.Next(1200);
+
+					// A price that never moves makes every repeat order identical; +/-12% is the spread a real
+					// register shows between a list price and what was actually charged.
+					var price = Math.Round(basePrice * (decimal)(0.88 + rnd.NextDouble() * 0.24) * (decimal)weight / 2.5m, 2);
+					if (price < 5m) price = 5m + rnd.Next(40);
+
+					lines.Add(new CrossBuy.BL.SalesLineInput
+					{
+						ItemDescription = it?.Name ?? it?.NameEn ?? $"بند {l + 1}",
+						Qty = 1 + rnd.Next(rnd.NextDouble() < 0.3 ? 24 : 6),
+						UnitPrice = price,
+						DiscountAmount = rnd.NextDouble() < 0.18 ? Math.Round(price * (decimal)(0.05 + rnd.NextDouble() * 0.1), 2) : 0m,
+						TaxRate = rnd.NextDouble() < 0.86 ? 14m : 0m,     // most sales are taxable; some are exempt
+						RevenueAccountId = revenueAccounts[rnd.Next(revenueAccounts.Count)],
+						ItemId = null,          // deliberate: see the header - no stock is invented
+					});
+				}
+
+				// ---- WRITE --------------------------------------------------------------------------------
+				// A FRESH SCOPE PER INVOICE. The controller's own DbContext lives for the whole request, and
+				// tracking five thousand invoices with their lines in it turns every later SaveChanges into a
+				// scan of everything that came before - the chunk would finish an order of magnitude slower
+				// than it started.
+				using (var scope = _scopes.CreateScope())
+				{
+					// A new scope carries a new ICompanyScopeHolder, and an unresolved one filters every read to
+					// company 0 - which is why the first run of this loop reported "Customer not found" forty-one
+					// existing customers later. ForWorker publishes the company to the holder AND binds the context
+					// to the scope, which is the mechanism the background workers already use for the same reason:
+					// work that is not a request still has to say which tenant it belongs to.
+					scope.ServiceProvider.GetRequiredService<CrossBuy.BL.Platform.IBusinessContextFactory>()
+						 .ForWorker(companyId);
+
+					var ar = scope.ServiceProvider.GetRequiredService<CrossBuy.BL.IReceivableService>();
+					var (ok, err, inv) = await ar.CreateSalesInvoiceAsync(
+						companyId, customerId, date, lines, "بيانات تاريخية للتقارير", SeedPreparer);
+
+					if (!ok || inv == null) { failed++; firstError ??= err; continue; }
+					made++;
+
+					// ---- COLLECTION -----------------------------------------------------------------------
+					// An invoice raised last week is usually still open; one raised a year ago is usually
+					// settled. Without that decay the aging report has no age in it, and "outstanding" would
+					// be a fixed fraction of every month alike.
+					var age = (today - date).TotalDays;
+					var collected = Math.Min(0.92, 0.30 + age / 220.0);
+					if (rnd.NextDouble() < collected)
+					{
+						var delay = 4 + rnd.Next(rnd.NextDouble() < 0.7 ? 35 : 90);
+						var paidOn = date.AddDays(delay);
+						if (paidOn <= today)
+						{
+							// A part payment is a real event, not an error - and it is what makes a balance
+							// that is neither zero nor the whole invoice.
+							var amount = rnd.NextDouble() < 0.78
+								? inv.GrandTotal
+								: Math.Round(inv.GrandTotal * (decimal)(0.3 + rnd.NextDouble() * 0.5), 2);
+							var (rok, _) = await ar.CreateReceiptAsync(
+								companyId, customerId, paidOn, amount,
+								rnd.NextDouble() < 0.55 ? "Bank" : "Cash", cashAccountId,
+								$"تحصيل {inv.InvoiceNo}", SeedPreparer);
+							if (rok) receipts++;
+						}
+					}
+				}
+			}
+
+			return Ok(new
+			{
+				ok = failed == 0,
+				offset, requested = count,
+				invoices = made, receipts, failed, firstError,
+				window = $"{firstDay:yyyy-MM-dd} .. {today:yyyy-MM-dd}",
+				customers = customers.Count,
+				seconds = Math.Round((DateTime.UtcNow - started).TotalSeconds, 1),
+			});
+		}
+
 	}
 }
 
