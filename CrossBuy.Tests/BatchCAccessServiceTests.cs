@@ -54,7 +54,8 @@ namespace CrossBuy.Tests
             => new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance);
 
         private static HrAccessService Hr(PlatformTestHost host)
-            => new(host.Db, Directory(host), Org(host), NullLogger<HrAccessService>.Instance);
+            => new(host.Db, Directory(host), Org(host), B6TestWiring.Policies(host.Db),
+                   NullLogger<HrAccessService>.Instance);
 
         // The REAL AccountingAccessService over the test host, because ProjectsAccessService now takes the concrete
         // type (see its constructor comment — IEnumerable<IModuleAccessService> was a circular dependency).

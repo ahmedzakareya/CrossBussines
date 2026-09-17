@@ -55,6 +55,7 @@ namespace CrossBuy.Tests
         private static HrAccessService Hr(PlatformTestHost host) =>
             new(host.Db, new PlatformRoleDirectory(host.Db, NullLogger<PlatformRoleDirectory>.Instance),
                 new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance),
+                B6TestWiring.Policies(host.Db),
                 NullLogger<HrAccessService>.Instance);
 
         private static PosAccessService Pos(PlatformTestHost host) => new(host.Db);

@@ -291,7 +291,7 @@ namespace CrossBuy.Tests
             // SetStatusAsync's guards run BEFORE any event is recorded, so a rejected transition leaves the
             // log untouched. Reproduced here through the real service, whose dependencies for this path are
             // just the DbContext and the event service.
-            var manuf = new ManufService(host.Db, null!, null!, host.Events());
+            var manuf = new ManufService(host.Db, null!, null!, host.Events(), null!);
 
             host.Db.ManufWorkOrders.Add(new ManufWorkOrder
             {
@@ -316,7 +316,7 @@ namespace CrossBuy.Tests
         public async Task A_real_work_order_transition_through_the_service_records_one_event()
         {
             using var host = new PlatformTestHost();
-            var manuf = new ManufService(host.Db, null!, null!, host.Events());
+            var manuf = new ManufService(host.Db, null!, null!, host.Events(), null!);
 
             host.Db.ManufWorkOrders.Add(new ManufWorkOrder
             {

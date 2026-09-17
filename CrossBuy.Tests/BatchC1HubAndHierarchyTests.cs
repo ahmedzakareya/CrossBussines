@@ -88,7 +88,7 @@ namespace CrossBuy.Tests
                 NullLogger<BusinessContextFactory>.Instance);
 
             var groups = new RecordingGroups();
-            var hub = new ChatHub(null!, access, contexts, NullLogger<ChatHub>.Instance)
+            var hub = new ChatHub(null!, access, host.Db)
             {
                 Context = new FakeCallerContext(employeeId),
                 Groups = groups,
@@ -300,7 +300,8 @@ namespace CrossBuy.Tests
             var accessor = new BusinessContextAccessor(new BusinessContextFactory(
                 http, host.Db, host.Holder, NullLogger<BusinessContextFactory>.Instance));
             return new CrmAccessService(host.Db, http, accessor,
-                new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance));
+                new OrgHierarchy(host.Db, NullLogger<OrgHierarchy>.Instance),
+                B6TestWiring.Policies(host.Db), NullLogger<CrmAccessService>.Instance);
         }
 
         // The leak: Hierarchical has no CompanyID, so a node grafted under this manager made another company's

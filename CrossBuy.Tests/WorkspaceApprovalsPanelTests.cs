@@ -348,7 +348,16 @@ namespace CrossBuy.Tests
 				Task.FromResult<IReadOnlyList<WorkspaceNotification>>(Array.Empty<WorkspaceNotification>());
 
 			public Task<int> CountUnreadAsync(BusinessContext context,
-				CancellationToken cancellationToken = default) => Task.FromResult(0);
+				CancellationToken cancellationToken = default) => Task.FromResult(0);			
+			// Added when IWorkspaceNotificationSource grew paging. The double still means the same thing it
+			// always did - this caller has NO notifications - so a page of them is empty and the total is
+			// zero. Returning anything else would make a "no notifications" fixture assert against them.
+			public Task<IReadOnlyList<WorkspaceNotification>> GetPageAsync(BusinessContext context,
+			    bool unreadOnly, int skip, int take, CancellationToken cancellationToken = default) =>
+			    Task.FromResult<IReadOnlyList<WorkspaceNotification>>(Array.Empty<WorkspaceNotification>());
+			
+			public Task<int> CountAsync(BusinessContext context, bool unreadOnly,
+			    CancellationToken cancellationToken = default) => Task.FromResult(0);
 		}
 
 		private sealed class NoIdentity : IWorkspaceIdentityResolver

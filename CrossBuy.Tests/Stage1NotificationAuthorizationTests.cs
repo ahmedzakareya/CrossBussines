@@ -52,7 +52,8 @@ namespace CrossBuy.Tests
                 new AccountingAccessService(host.Db, NoHttp(), accessor, Policies(host.Db), Log<AccountingAccessService>()),
                 new InventoryAccessService(host.Db, NoHttp(), accessor, Policies(host.Db), Log<InventoryAccessService>()),
                 new CrmAccessService(host.Db, NoHttp(), accessor,
-                    new OrgHierarchy(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<OrgHierarchy>.Instance)),
+                    new OrgHierarchy(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<OrgHierarchy>.Instance),
+                B6TestWiring.Policies(host.Db), NullLogger<CrmAccessService>.Instance),
                 new PosAccessService(host.Db),
             };
             var adapters = new List<IModulePermissionAdapter>

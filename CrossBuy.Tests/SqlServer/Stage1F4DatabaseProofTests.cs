@@ -213,7 +213,8 @@ namespace CrossBuy.Tests.SqlServer
             using var db = Db();
             var hr = new HrAccessService(
                 db, new PlatformRoleDirectory(db, NullLogger<PlatformRoleDirectory>.Instance),
-                new OrgHierarchy(db, NullLogger<OrgHierarchy>.Instance), NullLogger<HrAccessService>.Instance);
+                new OrgHierarchy(db, NullLogger<OrgHierarchy>.Instance),
+                B6TestWiring.Policies(db), NullLogger<HrAccessService>.Instance);
 
             // payroll-manage is NEVER bootstrap-open, so this is refused with no role rows at all
             Assert.False(await hr.CanAsync(Ctx(CashierId, CompanyOne), HrActions.PayrollManage));

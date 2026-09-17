@@ -86,7 +86,8 @@ namespace CrossBuy.Tests.SqlServer
             var db = _sql.ContextFor(_probe!, CompanyOne);
             var directory = new PlatformRoleDirectory(db, NullLogger<PlatformRoleDirectory>.Instance);
             var hr = new HrAccessService(db, directory,
-                new OrgHierarchy(db, NullLogger<OrgHierarchy>.Instance), NullLogger<HrAccessService>.Instance);
+                new OrgHierarchy(db, NullLogger<OrgHierarchy>.Instance), B6TestWiring.Policies(db),
+                NullLogger<HrAccessService>.Instance);
             var events = new BusinessEventService(
                 db, new EntityRegistry(db), new StubContextAccessor(), NullLogger<BusinessEventService>.Instance);
 

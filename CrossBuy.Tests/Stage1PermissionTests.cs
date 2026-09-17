@@ -50,7 +50,8 @@ namespace CrossBuy.Tests
 
         private static CrmAccessService Crm(PlatformTestHost host)
             => new(host.Db, NoHttp(), new BusinessContextAccessor(host.Contexts(http: NoHttp())),
-                new OrgHierarchy(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<OrgHierarchy>.Instance));
+                new OrgHierarchy(host.Db, Microsoft.Extensions.Logging.Abstractions.NullLogger<OrgHierarchy>.Instance),
+                B6TestWiring.Policies(host.Db), NullLogger<CrmAccessService>.Instance);
 
         private static PosAccessService Pos(PlatformTestHost host) => new(host.Db);
 

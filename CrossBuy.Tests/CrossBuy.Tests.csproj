@@ -45,6 +45,28 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      OBSOLETE SUITE, EXCLUDED RATHER THAN DELETED.
+
+      CommOutboxConcurrencyTests calls SqlServerFixture.CommStore, a factory the fixture's own comment
+      records as REMOVED ON RECOVERY: it built SqlCommMessageDispatchStore, which that note classifies
+      as superseded by BL/Communication/CommNotificationDispatcher, and it classified this suite's
+      recovery as obsolete rather than authoritative.
+
+      The suite nevertheless came back in a later whole-tree snapshot, and because it references a
+      member nobody restored it stopped the WHOLE test project from compiling - which is why none of
+      the other suites could run either. Honouring the recorded decision costs one obsolete file;
+      overriding it by writing the missing factory would have re-animated a test against a superseded
+      implementation.
+
+      The file is kept, not deleted, so whoever owns Communication can decide: rewrite it against the
+      current dispatcher, or retire it for good.
+    -->
+    <Compile Remove="SqlServer\CommOutboxConcurrencyTests.cs" />
+    <None Include="SqlServer\CommOutboxConcurrencyTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CrossBuy\CrossBuy.csproj" />
   </ItemGroup>
 

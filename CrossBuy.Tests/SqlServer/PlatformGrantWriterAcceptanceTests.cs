@@ -108,7 +108,7 @@ namespace CrossBuy.Tests.SqlServer
             var db = Db(companyId);
             var directory = new PlatformRoleDirectory(db, NullLogger<PlatformRoleDirectory>.Instance);
             var org = new OrgHierarchy(db, NullLogger<OrgHierarchy>.Instance);
-            var hr = new HrAccessService(db, directory, org, NullLogger<HrAccessService>.Instance);
+            var hr = new HrAccessService(db, directory, org, B6TestWiring.Policies(db), NullLogger<HrAccessService>.Instance);
 
             var events = new BusinessEventService(
                 db, new EntityRegistry(db), new StubContextAccessor(), NullLogger<BusinessEventService>.Instance);
@@ -225,6 +225,7 @@ namespace CrossBuy.Tests.SqlServer
                 var directory = new PlatformRoleDirectory(freshHr, NullLogger<PlatformRoleDirectory>.Instance);
                 var service = new HrAccessService(freshHr, directory,
                     new OrgHierarchy(freshHr, NullLogger<OrgHierarchy>.Instance),
+                    B6TestWiring.Policies(db),
                     NullLogger<HrAccessService>.Instance);
 
                 Assert.True(await service.CanAsync(target, HrActions.PayrollManage),
@@ -257,6 +258,7 @@ namespace CrossBuy.Tests.SqlServer
                 var directory = new PlatformRoleDirectory(fresh, NullLogger<PlatformRoleDirectory>.Instance);
                 var service = new HrAccessService(fresh, directory,
                     new OrgHierarchy(fresh, NullLogger<OrgHierarchy>.Instance),
+                    B6TestWiring.Policies(db),
                     NullLogger<HrAccessService>.Instance);
 
                 Assert.False(await service.CanAsync(target, HrActions.PayrollManage),
@@ -290,6 +292,7 @@ namespace CrossBuy.Tests.SqlServer
                 var svc = new HrAccessService(before,
                     new PlatformRoleDirectory(before, NullLogger<PlatformRoleDirectory>.Instance),
                     new OrgHierarchy(before, NullLogger<OrgHierarchy>.Instance),
+                    B6TestWiring.Policies(before),
                     NullLogger<HrAccessService>.Instance);
 
                 Assert.True(await svc.CanAsync(other, HrActions.LeaveManage,
@@ -307,6 +310,7 @@ namespace CrossBuy.Tests.SqlServer
                 var svc = new HrAccessService(after,
                     new PlatformRoleDirectory(after, NullLogger<PlatformRoleDirectory>.Instance),
                     new OrgHierarchy(after, NullLogger<OrgHierarchy>.Instance),
+                    B6TestWiring.Policies(after),
                     NullLogger<HrAccessService>.Instance);
 
                 Assert.False(await svc.CanAsync(other, HrActions.LeaveManage,
@@ -534,6 +538,7 @@ namespace CrossBuy.Tests.SqlServer
             var svc = new HrAccessService(fresh,
                 new PlatformRoleDirectory(fresh, NullLogger<PlatformRoleDirectory>.Instance),
                 new OrgHierarchy(fresh, NullLogger<OrgHierarchy>.Instance),
+                B6TestWiring.Policies(fresh),
                 NullLogger<HrAccessService>.Instance);
 
             Assert.False(await svc.CanAsync(Actor(TargetEmployee, "user-target"), HrActions.PayrollManage),

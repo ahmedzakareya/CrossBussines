@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text;
 using CrossBuy.BL.Platform;
 using CrossBuy.BL.Reporting;
@@ -1114,7 +1114,7 @@ namespace CrossBuy.Tests
             host.SeedEmployee(7);
             await SeedSalesAsync(host);
 
-            var layout = Layout(l => l.Page = l.Page.With(rtl: true));
+            var layout = Layout(l => l.Page = l.Page.With(direction: ReportPageDirection.Rtl));
             Put(layout, ReportBandKind.ReportHeader, Text("عنوان", x: 25));
             Put(layout, ReportBandKind.Detail, Field("InvoiceNo"));
 
@@ -1122,7 +1122,7 @@ namespace CrossBuy.Tests
                 ReportOutputFormat.PrintHtml, preview: false);
             var rtlHtml = Encoding.UTF8.GetString(rtl.Artifact!.Content);
 
-            layout.Page = layout.Page.With(rtl: false);
+            layout.Page = layout.Page.With(direction: ReportPageDirection.Ltr);
             var ltr = await Studio(host).RunAsync(Draft(layout, "InvoiceNo"),
                 ReportOutputFormat.PrintHtml, preview: false);
             var ltrHtml = Encoding.UTF8.GetString(ltr.Artifact!.Content);
